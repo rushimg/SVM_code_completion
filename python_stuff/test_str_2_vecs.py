@@ -1,51 +1,45 @@
 import sys,os,re
 import fnmatch
-import xml.etree.ElementTree as ET
 
-MATCH = "code_*"
-DIR_NAME = "../code_corpus/train"
-TRAIN = "../train_test/train.dat"
+TEST_IN = "../code_corpus/test/test_strings"
+TEST = "../train_test/test.dat"
 WORDS = "../train_test/words"
 CORRECT = ['5','6']
+
 def process_files():
         words_per_file = dict()
-	matches = []
-        for root, dirnames, filenames in os.walk(DIR_NAME):
-                for filename in fnmatch.filter(filenames, MATCH):
-                        matches.append(os.path.join(root, filename))
-	words = set()
-        # first iteration through matches to get all words
-	for match in matches:
-		words_per_file[match] = get_all_words(match)
-		words = words.union(words_per_file[match])
-	#print words
+	
+	test_strings = open(TEST_IN, 'r')
+	words = get_all_words_file()
 
-	train_f = open(TRAIN, 'w')
-	# second iteration through matches to get all word counts
-	for match in matches:
-		#print match.replace(DIR_NAME+'/code_','')
-		#print CORRECT
-		if match.replace(DIR_NAME+'/code_','') in CORRECT:
-			train_f.write('1')
+	
+	test_f = open(TEST, 'w')
+	for l in test_strings.readlines():
+		if True:
+			test_f.write('1')
 		else:
-			train_f.write('-1')
-		train_f.write(str(get_word_counts(words_per_file[match], words)))
-		train_f.write('\n')
-	train_f.close()	
-	print "Results printed to file: " + str(TRAIN)
+			test_f.write('-1')
+		test_f.write(str(get_word_counts(l,words)))
+		test_f.write('\n')
+	test_f.close()	
+	print "Results printed to file: " + str(TEST)
 	
 # this is by far not the best way to do this
 def get_word_counts(file_words, all_words):
 	word_count_dict = dict()
 	# initialize word dictionary
 	word_2_num_trans = list()
-	words_f = open(WORDS, 'w')
+	words_f = open(WORDS, 'r')
+	all_words = words_f.readlines()
+	#print all_words
 	for word in all_words:	
 		word_count_dict[word.lower()] = 0
-		words_f.write(word.lower()+'\n')
+		#words_f.write(word.lower()+'\n')
 	words_f.close()
-	for w in file_words:
-		word_count_dict[w.lower()] += 1  	
+	for w in file_words.split(' '):
+		#w = remove_wierd_chars(w)
+		if w in all_words:
+			word_count_dict[w.lower()] += 1  	
 	return clean_output_4_svm(word_count_dict)
 	
 #make the output of form feature:value, no zeo valued features
@@ -60,15 +54,12 @@ def clean_output_4_svm(word_count_dict):
 	return return_str
 
 # get a set of all words in all docs
-def get_all_words(file_name):
+def get_all_words_file():
 	words_in_file = set()
-	f = open(file_name, 'r')
+	f = open(WORDS, 'r')
 	lines = f.readlines()
 	for line in lines:
-		spaces = (remove_wierd_chars(line)).split(' ')
-		for space in spaces:
-			if space != '\n':
-				words_in_file.add(space)
+		words_in_file.add(line)
 	return words_in_file
 	
 def remove_wierd_chars(string):

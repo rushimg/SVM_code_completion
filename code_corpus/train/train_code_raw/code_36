@@ -1,0 +1,27 @@
+ /* KMP Matcher
+        * Performs string matching algorithm as defined in CLRS p.1005
+        * 
+        * @param input - original string
+        * @param pattern - pattern to be found in original string
+        * @return arrayList of all matches with given offsets
+        */
+        public ArrayList<Integer> KMPMatcher(String input, String pattern){
+                int n = input.length();
+                int m = pattern.length();
+                ArrayList<Integer> matches = new ArrayList<Integer>();
+                int[] PI;
+                PI = ComputePrefixFunction(pattern);
+                int q = -1;
+                for(int ii = 0; ii< n; ii++){
+                        while(q > -1 && pattern.charAt(q+1) != input.charAt(ii))
+                                q = PI[q];
+                        if(pattern.charAt(q+1) == input.charAt(ii))
+                                q++;
+                        if(q == (m-1)){
+                                matches.add(ii - (m-1));
+                                q = PI[q];
+                        }
+                }
+                
+                return matches;
+        }

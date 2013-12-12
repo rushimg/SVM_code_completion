@@ -1,0 +1,43 @@
+public String highlight(String text, List<List<Integer>> hits) {
+    if (hits == null || hits.isEmpty()) {
+      return(text);
+    }
+    
+    StringBuilder sb = new StringBuilder(text.length());
+    CharacterIterator iterator = new StringCharacterIterator(text);
+    boolean isCounting = true;
+    boolean tagOpened = false;
+    int currentIndex = 0;
+    char currentChar = iterator.first();
+
+    while (currentChar != CharacterIterator.DONE) {
+      // TODO: this is slow.
+      for (List<Integer> start_end : hits) {
+        if (start_end.get(0) == currentIndex) {
+          sb.append(tag(false));
+          tagOpened = true;
+        } else if (start_end.get(1) == currentIndex) {
+          sb.append(tag(true));
+          tagOpened = false;
+        }
+      }
+      
+      if (currentChar == '<') {
+        isCounting = false;
+      } else if (currentChar == '>' && !isCounting) {
+        isCounting = true;
+      }
+  
+      if (isCounting) {
+        currentIndex++;
+      }
+      sb.append(currentChar);
+      currentChar = iterator.next();
+    }
+    
+    if (tagOpened) {
+      sb.append(tag(true));
+    }
+    
+    return(sb.toString());
+  }

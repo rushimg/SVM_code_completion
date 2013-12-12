@@ -1,0 +1,41 @@
+/* removePattern(after, input, pattern, instances
+         * remove the next x instances of patter after a set amount of instances
+         * 
+         * @param after - number of instances to ignore
+         * @param instances - number of instances to delete
+         */
+        public String removePattern(int after, String input, String pattern, int instances){
+                if(pattern.length() > input.length()){
+                        System.out.println("removePattern Error::pattern is longer than input! Returning input unchanged.");
+                        return input;
+                }
+                else if(after < 0 || instances <= 0){
+                        System.out.println("removePattern Error::number specified for after or instances is invalid! Returning input unchanged.");
+                        return input;
+                }
+                
+                ArrayList<Integer> matches = KMPMatcher(input, pattern);
+                String newString = "";
+                int index = 0;
+                int arrayIndex = 0;
+                int instancesPassed = 0;
+                int instancesRemoved = 0;
+                while(index < input.length() && instancesRemoved < instances){
+                        if(index != matches.get(arrayIndex))
+                                newString += input.charAt(index++);
+                        else if(instancesPassed < after){
+                                newString += input.charAt(index++);
+                                instancesPassed++;
+                        }
+                        else{
+                                index += pattern.length();
+                                arrayIndex++;
+                                instancesRemoved++;
+                                if(arrayIndex == matches.size()){
+                                        newString += input.substring(index);
+                                        break;
+                                }
+                        }
+                }
+                return newString;                        
+        }

@@ -1,0 +1,21 @@
+ public ArrayList<String> getLinks(HTMLDocument htmlDoc, String currentUrl){
+                    ArrayList<String> links = new ArrayList<String>();
+                    
+                    for (HTMLDocument.Iterator iterator = htmlDoc.getIterator(HTML.Tag.A); iterator
+                        .isValid(); iterator.next()) {
+                      AttributeSet attributes = iterator.getAttributes();
+                      String srcString = (String) attributes
+                          .getAttribute(HTML.Attribute.HREF);
+              if (srcString != null){ // check for null, it happens
+                      if (srcString.contains("bu.edu")){
+                              srcString = this.checkLink(srcString, currentUrl);
+                              links.add(srcString);
+                            //  if(checkUrl(srcString))
+                                      urlQueue.enque(srcString); // add links to the pages that need to be crawled.
+                            //  else
+                            //          PeerToPeer.sendCrawlerURL(srcString);
+                      }
+              }
+                    }
+                    return links;
+        }

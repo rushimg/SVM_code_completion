@@ -1,0 +1,38 @@
+ /* removePattern(after, input, pattern)
+         * remove pattern following the "after"th instance
+         * 
+         * @param after - begin removing pattern after seeing this many instances 
+         */
+        public String removePattern(int after, String input, String pattern){
+                if(pattern.length() > input.length()){
+                        System.out.println("removePattern Error::pattern is longer than input! Returning input unchanged.");
+                        return input;
+                }
+                else if(after < 0){
+                        System.out.println("removePattern Error::number specified for after is invalid! Returning input unchanged.");
+                        return input;
+                }
+                
+                ArrayList<Integer> matches = KMPMatcher(input, pattern);
+                String newString = "";
+                int index = 0;
+                int arrayIndex = 0;
+                int instancesPassed = 0;
+                while(index < input.length()){
+                        if(index != matches.get(arrayIndex))
+                                newString += input.charAt(index++);
+                        else if(instancesPassed < after){
+                                newString += input.charAt(index++);
+                                instancesPassed++;
+                        }
+                        else{
+                                index += pattern.length();
+                                arrayIndex++;
+                                if(arrayIndex == matches.size()){
+                                        newString += input.substring(index);
+                                        break;
+                                }
+                        }
+                }
+                return newString;        
+        }

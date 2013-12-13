@@ -1,0 +1,39 @@
+/**
+ * This class provides helper methods for creating common Elastic MapReduce step
+ * types. To use StepFactory, you should construct it with the appropriate
+ * bucket for your region. The official bucket format is
+ * "&lt;region&gt;.elasticmapreduce", so us-east-1 would use the bucket
+ * "us-east-1.elasticmapreduce".
+ * <p>
+ * Example usage, create an interactive Hive job flow with debugging enabled:
+ * <pre>
+ *   AWSCredentials credentials = new BasicAWSCredentials(accessKey, secretKey);
+ *   AmazonElasticMapReduce emr = new AmazonElasticMapReduceClient(credentials);
+ *
+ *   StepFactory stepFactory = new StepFactory();
+ *
+ *   StepConfig enableDebugging = new StepConfig()
+ *       .withName("Enable Debugging")
+ *       .withActionOnFailure("TERMINATE_JOB_FLOW")
+ *       .withHadoopJarStep(stepFactory.newEnableDebuggingStep());
+ *
+ *   StepConfig installHive = new StepConfig()
+ *       .withName("Install Hive")
+ *       .withActionOnFailure("TERMINATE_JOB_FLOW")
+ *       .withHadoopJarStep(stepFactory.newInstallHiveStep());
+ *
+ *   RunJobFlowRequest request = new RunJobFlowRequest()
+ *       .withName("Hive Interactive")
+ *       .withSteps(enableDebugging, installHive)
+ *       .withLogUri("s3://log-bucket/")
+ *       .withInstances(new JobFlowInstancesConfig()
+ *           .withEc2KeyName("keypair")
+ *           .withHadoopVersion("0.20")
+ *           .withInstanceCount(5)
+ *           .withKeepJobFlowAliveWhenNoSteps(true)
+ *           .withMasterInstanceType("m1.small")
+ *           .withSlaveInstanceType("m1.small"));
+ *
+ *   RunJobFlowResult result = emr.runJobFlow(request);
+ * </pre>
+ */

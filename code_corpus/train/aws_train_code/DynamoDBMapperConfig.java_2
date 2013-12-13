@@ -1,0 +1,19 @@
+/**
+ * Immutable configuration object for service call behavior. An instance of this
+ * configuration is supplied to every {@link DynamoDBMapper} at construction; if
+ * not provided explicitly, {@link DynamoDBMapperConfig#DEFAULT} is used. New
+ * instances can be given to the mapper object on individual save, load, and
+ * delete operations to override the defaults. For example:
+ * 
+ * <pre>
+ * DynamoDBMapper mapper = new DynamoDBMapper(dynamoDBClient);
+ * // Force this read to be consistent
+ * DomainClass obj = mapper.load(DomainClass.class, key, new DynamoDBMapperConfig(ConsistentReads.CONSISTENT));
+ * // Force this save operation to use putItem rather than updateItem
+ * mapper.save(obj, new DynamoDBMapperConfig(SaveBehavior.CLOBBER));
+ * // Save the object into a different table
+ * mapper.save(obj, new DynamoDBMapperConfig(new TableNameOverride("AnotherTable")));
+ * // Delete the object even if the version field is out of date
+ * mapper.delete(obj, new DynamoDBMapperConfig(SaveBehavior.CLOBBER));
+ * </pre>
+ */

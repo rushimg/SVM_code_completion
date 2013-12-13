@@ -1,0 +1,28 @@
+/**
+ * Promise is a future like object that is used as a placeholder for a result of
+ * an asynchronous API. Java Future is a synchronization construct that is used
+ * to block a thread that called get() method if result is not available yet.
+ * Promise differs from it as it cannot be used for blocking. A call to its
+ * get() method throws IllegalStateException if result is not available yet. The
+ * correct way to ensure that Promise is ready is to access it from a method
+ * that is annotated as @Asynchronous and have the given Promise as one its
+ * arguments or from {@link Task#doExecute()} method assuming that promise was
+ * passed to the Task as a constructor parameter.
+ * 
+ * <p>
+ * Promise is not linked to error handling like Future is. In case of exceptions
+ * they are propagated to the {@link TryCatchFinally#doCatch(Throwable)} method
+ * of the {@link TryCatchFinally} that owns the asynchronous task that failed.
+ * See {@link TryCatchFinally} for more info on the error handling.
+ * 
+ * <p>
+ * For promises that don't need a value and just used to ensure correct ordering
+ * of asynchronous operations the common pattern to use {@link Void} as a
+ * generic type.
+ * <p>
+ * 
+ * @param <V>
+ *            The result type returned by this Promise's get method. Use
+ *            {@link Void} to represent Promise that indicates completion of
+ *            operation that doesn't return a value.
+ */

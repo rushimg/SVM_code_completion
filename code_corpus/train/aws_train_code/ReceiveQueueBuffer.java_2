@@ -1,0 +1,15 @@
+/**
+ * The ReceiveQueueBuffer class is responsible for dequeueing of messages from
+ * a single SQS queue. It uses the provided executor to pre-fetch messages from the server
+ * and keeps them in a buffer which it uses to satisfy incoming requests.  The number of requests
+ * pre-fetched and kept in the buffer, as well as the maximum number of threads used to retrieve
+ * the messages are configurable. <p>
+ * 
+ *  Synchronization strategy:
+ *  - Threads must hold the TaskSpawnSyncPoint object monitor to spawn a new task or modify
+ *    the number of inflight tasks
+ *  - Threads must hold the monitor of the "futures" list to modify the list
+ *  - Threads must hold the monitor of the "finishedTasks" list to modify the list
+ *  - If you need to lock both futures and finishedTasks, lock futures first and
+ *    finishedTasks second
+ * */

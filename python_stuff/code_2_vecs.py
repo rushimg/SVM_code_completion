@@ -2,11 +2,11 @@ import sys,os,re
 import fnmatch
 import xml.etree.ElementTree as ET
 
-MATCH = "doc_*"
-DIR_NAME = "../code_corpus/train/train_code_w_doc"
+MATCH = "*java*"
+DIR_NAME = "../code_corpus/train/aws_train_code"
 TRAIN = "../train_test/train.dat"
 WORDS = "../train_test/words"
-CORRECT = ['0']
+CORRECT = ['XpathUtils.java_9']
 def process_files():
         words_per_file = dict()
 	matches = []
@@ -14,15 +14,22 @@ def process_files():
                 for filename in fnmatch.filter(filenames, MATCH):
                         matches.append(os.path.join(root, filename))
 	words = set()
+	length = str(len(matches))
+	count = 0
 	# first iteration through matches to get all words
 	for match in matches:
+		count +=1
+		print str(count) + " of " + length + " training example preprocessing done"
 		words_per_file[match] = get_all_words(match)
 		words = words.union(words_per_file[match])
-	#print words
+	print "prelinary processing done"
 	train_f = open(TRAIN, 'w')
 	# second iteration through matches to get all word counts
 	pattern = MATCH.replace('*','')
+	count = 0
 	for match in matches:
+		count +=1
+		print str(count) + " of " + length + " training examples done"
 		#print match.replace(DIR_NAME+'/code_','')
 		#print CORRECT
 		if match.replace(DIR_NAME+'/'+pattern,'') in CORRECT:

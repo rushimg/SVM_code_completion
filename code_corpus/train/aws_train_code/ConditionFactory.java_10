@@ -1,0 +1,31 @@
+    /**
+     * Constructs a new access policy condition that compares the Amazon
+     * Resource Name (ARN) of the source of an AWS resource that is modifying
+     * another AWS resource with the specified pattern.
+     * <p>
+     * For example, the source ARN could be an Amazon SNS topic ARN that is
+     * sending messages to an Amazon SQS queue. In that case, the SNS topic ARN
+     * would be compared the ARN pattern specified here.
+     * <p>
+     * The endpoint pattern may optionally contain the multi-character wildcard
+     * (*) or the single-character wildcard (?). Each of the six colon-delimited
+     * components of the ARN is checked separately and each can include a
+     * wildcard.
+     *
+     * <pre>
+     * Policy policy = new Policy(&quot;MyQueuePolicy&quot;);
+     * policy.withStatements(new Statement(&quot;AllowSNSMessages&quot;, Effect.Allow)
+     *         .withPrincipals(new Principal(&quot;*&quot;)).withActions(SQSActions.SendMessage)
+     *         .withResources(new Resource(myQueueArn))
+     *         .withConditions(ConditionFactory.newSourceArnCondition(myTopicArn)));
+     * </pre>
+     *
+     * @param sourceArnPattern
+     *            The ARN pattern against which the source ARN will be compared.
+     *            Each of the six colon-delimited components of the ARN is
+     *            checked separately and each can include a wildcard.
+     *
+     * @return A new access control policy condition that compares the ARN of
+     *         the source specified in an incoming request with the ARN pattern
+     *         specified here.
+     */

@@ -1,0 +1,13 @@
+/**
+ * This class is responsible for buffering outgoing SQS requests, i.e. requests
+ * to send a message, delete a message and change the visibility of the message. <br>
+ * 
+ * When a request arrives, the buffer adds the message to a message batch of an
+ * appropriate type (creating such a batch if there currently isn't one
+ * outstanding). When the outstanding batch becomes full, or when a configurable
+ * timeout expires, the buffer makes a call to SQS to execute the current batch. <br>
+ * 
+ * Internally, the batch objects maintain a list of futures corresponding to the
+ * requests added to them. When a batch completes, it loads the results into the
+ * futures and marks the futures as complete.
+ * */

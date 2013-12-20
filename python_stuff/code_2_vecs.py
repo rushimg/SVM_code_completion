@@ -1,6 +1,7 @@
 import sys,os,re
 import fnmatch
 import xml.etree.ElementTree as ET
+from tfidf import tfidf
 
 MATCH = "*.java*"
 DIR_NAME = "../code_corpus/train/aws_train_code"

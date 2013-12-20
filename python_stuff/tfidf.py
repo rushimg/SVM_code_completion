@@ -14,10 +14,12 @@ class tfidf:
 		return tf_idf
 	
 	def term_freq(self,term,document):
-		tf = 0
+		tf_count = 0
+		length_doc = len(document)
 		for word in document:
 			if word == term:
-				tf += 1
+				tf_count += 1
+		tf = float(tf_count)/float(length_doc)
 		return tf
 
 	'''we can pre-caluclate the idfs of each term 
@@ -32,3 +34,6 @@ class tfidf:
 					in_docs += 1	
 			idf_dict[term] = log(float(num_docs)/float(in_docs),10)	
 		return idf_dict
+	
+	def getIDF(self,term):
+		return self.idfs[term]

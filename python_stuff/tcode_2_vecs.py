@@ -2,11 +2,14 @@ import sys,os,re
 import fnmatch
 import xml.etree.ElementTree as ET
 
-MATCH = "*.java*"
-DIR_NAME = "../code_corpus/train/aws_train_code"
+#MATCH = "*.java*"
+#DIR_NAME = "../code_corpus/train/aws_train_code"
+MATCH  = "aws_*"
+DIR_NAME = "../code_corpus/test/aws"
 TRAIN = "../train_test/test.dat"
 WORDS = "../train_test/words"
-CORRECT = ['XpathUtils.java_9']
+#CORRECT = ['XpathUtils.java_9']
+CORRECT = ['2']
 def process_files():
         words_per_file = dict()
 	matches = []

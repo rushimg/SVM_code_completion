@@ -1,24 +1,34 @@
+from math import log
 
 class tfidf:
 	def __init__(self, terms, documents):
-		self.corpus = documents
-		self.idfs = pre_calc_idfs(terms, documents)
+		#self.corpus = documents
+		self.idfs = self.inv_doc_freq(terms, documents)
+		#self.document_terms = dict()
 
-	def calc_tfidf(term,document):
-		tf = calc_tf(term,document)
-		idf = calc_idf(term,document)
+	def calc_tfidf(self,term,document):
+		tf = self.term_freq(term,document)
+		idf = self.idfs[term]
+		#idf = calc_idf(term,document)
 		tf_idf = tf*idf
 		return tf_idf
 	
-	def calc_tf(term,document):
+	def term_freq(self,term,document):
+		tf = 0
+		for word in document:
+			if word == term:
+				tf += 1
 		return tf
-
-	def calc_idf(term,document):
-		return idf
 
 	'''we can pre-caluclate the idfs of each term 
 	so that we dont have to continuously recalculate them each time'''
-	def pre_calc_idf(terms,documents):
-		for term in terms:	
-			for document in documents:
-				
+	def inv_doc_freq(self,terms,document_terms):
+		idf_dict = dict()
+		num_docs = len(document_terms)
+		for term in terms:
+			in_docs = 0	
+			for document in document_terms:
+				if term in document_terms[document]:
+					in_docs += 1	
+			idf_dict[term] = log(float(num_docs)/float(in_docs),10)	
+		return idf_dict

@@ -3,8 +3,8 @@ import fnmatch
 import xml.etree.ElementTree as ET
 
 MATCH = "*.java"
-DIR_NAME = "../../aws-sdk-for-java"
-OUT_DIR_NAME = "../code_corpus/train/aws_train_code/"
+DIR_NAME = "../../twitter4j"
+OUT_DIR_NAME = "../code_corpus/twitter/"
 
 def process_files():
 	matches = []
@@ -28,7 +28,12 @@ def extract_doc_and_code(match,counter):
 		#if "@param" in line or "@result" in line:
 		#	print "JDOC"
 		#comment = ""
-		if "/*" in line:
+		if "/*" in line and "*/" in line:
+			comment=line
+			out = open(OUT_DIR_NAME+endstr + "_" +str(counter),'w')
+                        out.write(comment)
+			comment = ""
+		elif "/*" in line:
 			comment=line
 		elif "*/" in line:
 			counter += 1
@@ -36,8 +41,10 @@ def extract_doc_and_code(match,counter):
 			out = open(OUT_DIR_NAME+endstr + "_" +str(counter),'w')
 			out.write(comment)
 			out.close()
+			comment = ""
 			#print comment
-		elif "*" in line:
+		elif "* " in line:
+			#print line
 			comment +=line
 
 if __name__=='__main__':

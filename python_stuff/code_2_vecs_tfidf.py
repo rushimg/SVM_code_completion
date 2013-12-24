@@ -3,11 +3,12 @@ import fnmatch
 import xml.etree.ElementTree as ET
 from tfidf import tfidf
 
-MATCH = "*doc_*"
-DIR_NAME = "../code_corpus/train/train_code_w_doc"
-TRAIN = "../train_test/train_tf_1.dat"
-WORDS = "../train_test/words_tf_1"
-CORRECT = ['6']
+MATCH = "*.java*"
+DIR_NAME = "../code_corpus/train/aws_train_code/nt_train"
+TRAIN = "../train_test/train_tf_2.dat"
+WORDS = "../train_test/words_tf_2"
+CORRECT_PATTERN = 'XpathUtils.java_'
+CORRECT = ['../code_corpus/train/aws_train_code/XpathUtils.java_9']
 #CORRECT = ['rushi_test']
 def process_files():
         words_per_file = dict()
@@ -29,20 +30,22 @@ def process_files():
 		words_per_file[match] = get_all_words(match)
 		words = words.union(words_per_file[match])
 	
-	print "prelinary processing done"
+	print "preliminary processing done"
 	train_f = open(TRAIN, 'w')
 
 	# second iteration through matches to get all word counts
 	pattern = MATCH.replace('*','')
 	count = 0
 	calc_freq = tfidf(words, words_per_file)
-	
+	print "Done calculating idfs"	
 	#print calc_freq.getIDF('tweet')
 	for match in matches:
 		count +=1
 		print str(count) + " of " + length + " training examples done"
-
-		if match.replace(DIR_NAME+'/'+pattern,'') in CORRECT:
+	
+		if CORRECT_PATTERN in match:
+		#if match in CORRECT:
+		#if match.replace(DIR_NAME+'/'+pattern,'') in CORRECT:
 			#print calc_freq.term_freq('tweet',words_per_file[match])
 			train_f.write('+1')
 			#print len(words_per_file[match])

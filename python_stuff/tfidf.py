@@ -32,7 +32,8 @@ class tfidf:
 			for document in document_terms:
 				if term in document_terms[document]:
 					in_docs += 1	
-			idf_dict[term] = log(float(num_docs)/float(in_docs),10)	
+			if in_docs != 0:
+				idf_dict[term] = log(float(num_docs)/float(in_docs),10)	
 		return idf_dict
 	
 	def getIDF(self,term):

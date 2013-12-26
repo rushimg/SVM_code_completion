@@ -1,15 +1,13 @@
 from math import log
 
 class tfidf:
+
 	def __init__(self, terms, documents):
-		#self.corpus = documents
 		self.idfs = self.inv_doc_freq(terms, documents)
-		#self.document_terms = dict()
 
 	def calc_tfidf(self,term,document):
 		tf = self.term_freq(term,document)
 		idf = self.idfs[term]
-		#idf = calc_idf(term,document)
 		tf_idf = tf*idf
 		return tf_idf
 	
@@ -22,8 +20,10 @@ class tfidf:
 		tf = float(tf_count)/float(length_doc)
 		return tf
 
-	'''we can pre-caluclate the idfs of each term 
-	so that we dont have to continuously recalculate them each time'''
+	'''
+	we can pre-caluclate the idfs of each term 
+	so that we dont have to continuously recalculate them each time 
+	'''
 	def inv_doc_freq(self,terms,document_terms):
 		idf_dict = dict()
 		num_docs = len(document_terms)
@@ -38,3 +38,7 @@ class tfidf:
 	
 	def getIDF(self,term):
 		return self.idfs[term]
+
+
+
+

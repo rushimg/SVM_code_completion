@@ -19,15 +19,15 @@ def process_files():
 
 	length = str(len(matches))
 	count = 0
+	
 	# first iteration through matches to get all words
 	for match in matches:
 		count +=1
 		print str(count) + " of " + length + " test example preprocessing done"	
 		words_per_file[match] = get_all_words(match)
-	
 	print "preliminary processing done"
+	
 	train_f = open(TEST, 'w')
-
 	# second iteration through matches to get all word counts
 	pattern = MATCH.replace('*','')
 	count = 0
@@ -37,7 +37,7 @@ def process_files():
 	for match in matches:
 		count +=1
 		print str(count) + " of " + length + " testing examples done"
-	
+
 		if CORRECT_PATTERN in match:
 			train_f.write('+1')
 		else:
@@ -45,6 +45,7 @@ def process_files():
 		
 		train_f.write(str(get_word_counts(words_per_file[match], words, calc_freq)))
 		train_f.write('\n')
+	
 	train_f.close()	
 	print "Results printed to file: " + str(TEST)
 

@@ -3,8 +3,9 @@ import fnmatch
 import xml.etree.ElementTree as ET
 
 MATCH = "*.java"
-DIR_NAME = "../../twitter4j"
-OUT_DIR_NAME = "../code_corpus/twitter/"
+#DIR_NAME = "../../twitter4j"
+DIR_NAME = "../../aws-sdk-for-java"
+OUT_DIR_NAME = "../code_corpus/aws/"
 
 def process_files():
 	matches = []
@@ -12,28 +13,38 @@ def process_files():
                 for filename in fnmatch.filter(filenames, MATCH):
                         matches.append(os.path.join(root, filename))
 
-	counter = 0
 	for match in matches:
-		print match
-		extract_doc_and_code(match,counter)
-		counter += 1
+		print "PROCESSING FILE: " + match
+		extract_doc_and_code(match)
 
-def extract_doc_and_code(match,counter):
+def extract_doc_and_code(match):
 	f = open(match, 'r')
 	endstr=match.split('/')[-1]
-	print endstr
 	lines = f.readlines()
 	counter = 0
+	comment_pointer = ''
+	code = ''
 	for line in lines:
-		#if "@param" in line or "@result" in line:
-		#	print "JDOC"
-		#comment = ""
+		'''
+		if "@param" in line or "@result" in line:
+			print "JDOC"
+		comment = ""
+		'''
+		'''
 		if "/*" in line and "*/" in line:
 			comment=line
 			out = open(OUT_DIR_NAME+endstr + "_" +str(counter),'w')
                         out.write(comment)
+			out.close()
 			comment = ""
-		elif "/*" in line:
+			comment_pointer = OUT_DIR_NAME+endstr + "_" +str(counter)
+		'''
+		if "/*" in line:
+			if code != '':
+				code_f = open(comment_pointer + '_code', 'w')
+				code_f.write(code)
+				code_f.close()
+				code = ''
 			comment=line
 		elif "*/" in line:
 			counter += 1
@@ -42,11 +53,13 @@ def extract_doc_and_code(match,counter):
 			out.write(comment)
 			out.close()
 			comment = ""
-			#print comment
-		elif "* " in line:
-			#print line
+			comment_pointer = OUT_DIR_NAME+endstr + "_" +str(counter)
+		elif "*" in line:
 			comment +=line
-
+		else:
+			code += line
+					
+	
 if __name__=='__main__':
 	process_files()
 

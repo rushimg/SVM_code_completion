@@ -135,7 +135,7 @@ int main (int argc, char* argv[])
   }
   if((!no_accuracy) && (verbosity>=1)) {
     printf("Accuracy on test set: %.2f%% (%ld correct, %ld incorrect, %ld total)\n",(float)(correct)*100.0/totdoc,correct,incorrect,totdoc);
-    printf("Precision/recall on test set: %.2f%%/%.2f%%\n",(float)(res_a)*100.0/(res_a+res_b),(float)(res_a)*100.0/(res_a+res_c));
+    printf("Precision/recall on test set: %.2f%%\n",100.00*((float)(res_a)*100.0/(res_a+res_b))/((float)(res_a)*100.0/(res_a+res_c)));
   }
 
   return(0);

@@ -74,8 +74,9 @@ def get_word_counts(file_words, all_words, calc_freq):
 	words_f.close()
 	for w in file_words:
 		w = w.lower()
-		#if w == 'tweet':
-		#	print calc_freq.calc_tfidf(w,file_words)
+		#if w == 'double':
+			#print "here"
+			#print calc_freq.calc_tfidf(w,file_words)
 		if w in all_words:
 			word_count_dict[w.lower()] = calc_freq.calc_tfidf(w,file_words)
 	return clean_output_4_svm(word_count_dict)

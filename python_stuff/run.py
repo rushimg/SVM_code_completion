@@ -18,26 +18,3 @@ def run_preproc(in_dir):
 	
 if __name__=='__main__':
         run_preproc(sys.argv[1])
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

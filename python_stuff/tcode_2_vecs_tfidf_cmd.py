@@ -46,7 +46,7 @@ def process_files(in_dir):
 	count = 0
 	calc_freq = tfidf(words, words_per_file)
 	print "Done calculating idfs"	
-	#print calc_freq.getIDF('tweet')
+	print "PARAM " + str(calc_freq.getIDF('@param'))
 	for match in matches:
 		count +=1
 		print str(count) + " of " + length + " testing examples done"

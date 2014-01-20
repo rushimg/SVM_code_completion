@@ -8,7 +8,7 @@ DIR_NAME = "../code_corpus/aws"
 def process_files(in_dir):
         
 	words_per_file = dict()
-        
+        t_words_per_file = dict()
 	'''for root, dirnames, filenames in os.walk(DIR_NAME):
                 for filename in fnmatch.filter(filenames, MATCH):
                         matches.append(os.path.join(root, filename))
@@ -17,15 +17,26 @@ def process_files(in_dir):
 
         WORDS = in_dir+'words'
         TEST = in_dir+'test.dat'
+	
+	## SHOULD TFIDF be calc adding in test_data?
+	TRAIN_SET = []
+	for line in (open(in_dir+'train_corr','r')).readlines():
+        	if line.replace('\n','') != '':
+        	        TRAIN_SET.append(line.replace('\n',''))
+	for line in (open(in_dir+'train_wrong','r')).readlines():
+         	if line.replace('\n','') != '':
+        	        TRAIN_SET.append(line.replace('\n',''))
+
+	for t_match in TRAIN_SET:
+                t_words_per_file[t_match] = get_all_words(t_match)
+	
 
         CORRECT_LIST = []
         matches = []
-        #CORRECT_LIST = (open(in_dir+'train_corr','r')).readlines()
         for line in (open(in_dir+'test_corr','r')).readlines():
                 if line.replace('\n','') != '':
                         CORRECT_LIST.append(line.replace('\n',''))
                         matches.append(line.replace('\n',''))
-        #print CORRECT_LIST
         for line in open(in_dir+'test_wrong','r').readlines():
                 if line.replace('\n','') != '':
                         matches.append(line.replace('\n',''))
@@ -39,14 +50,14 @@ def process_files(in_dir):
 		count +=1
 		print str(count) + " of " + length + " test example preprocessing done"	
 		words_per_file[match] = get_all_words(match)
-	print "preliminary processing done"
-	
+	print "preliminary processing done"	
 	train_f = open(TEST, 'w')
 	# second iteration through matches to get all word counts
 	count = 0
-	calc_freq = tfidf(words, words_per_file)
+	# TODO: should this be t_words_per_file, words_per_file or the combination???
+	calc_freq = tfidf(words, t_words_per_file)
 	print "Done calculating idfs"	
-	print "PARAM " + str(calc_freq.getIDF('@param'))
+	#print "PARAM " + str(calc_freq.getIDF('@param'))
 	for match in matches:
 		count +=1
 		print str(count) + " of " + length + " testing examples done"

@@ -3,8 +3,8 @@ import fnmatch
 import xml.etree.ElementTree as ET
 
 MATCH = "*"
-DIR_NAME = "../../code_corpus/aws/"
-OUT_DIR_NAME = "../../code_corpus/aws_at/"
+DIR_NAME = "../../code_corpus/paypal/"
+OUT_DIR_NAME = "../../code_corpus/paypal_at/"
 at_tags = ["param","throws","see","return","link"]
 
 def process_files():

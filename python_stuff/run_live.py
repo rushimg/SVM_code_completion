@@ -61,7 +61,7 @@ def pre_proc_code(run_pre_proc):
 		words = set()
 		'''
 		f_words = open(TMP_DIR+'words_tmp.csv', 'r')
-                for word in f_words.readlines():
+        0%        for word in f_words.readlines():
                 	words.add(word.replace('\n',''))        
 		f_words.close()
 		'''
@@ -160,8 +160,16 @@ def initial_query(in_file,idfs):
 	calc_freq= tfidf(idfs.keys, None, idfs)
 	wrd_cnts = str(get_word_counts(in_words, idfs.keys(), calc_freq))
 	return wrd_cnts
-	#wrd_cnts = str(get_word_counts(in_words, words, calc_freq))
+	
+def retrieve_initial_set(input_feature_vec, feature_vecs):
 	# return a set of documents to be used as testing data
+	return "NOT_DONE_YET"
+
+def cosine_sim(vec_a, vec_b):
+	
+
+	# calculate the cosine similarity between two sparse vectors	
+	return "NOT DONE YET"
 
 def relevance_feed_back(test_docs):
 	# user manually annotates about ten examples which will be used as the training set	
@@ -196,4 +204,4 @@ def return_results():
 if __name__=='__main__':
 	feature_vectors_dict, idfs = pre_proc_code(True)
 	input_feature_vec = initial_query(sys.argv[1], idfs)
-
+	retrieve_initial_set(input_feature_vec, feature_vecstors_dict)

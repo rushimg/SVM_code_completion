@@ -2,10 +2,13 @@ from math import log
 
 class tfidf:
 
-	def __init__(self, terms, documents):
-		self.idfs = self.inv_doc_freq(terms, documents)
+	def __init__(self, terms, documents, idfs= None):
+		if idfs == None:
+			self.idfs = self.inv_doc_freq(terms, documents)
+		else:
+			self.idfs = idfs
 		self.terms = terms
-
+			 		
 	def calc_tfidf(self,term,document):
 		tf = self.term_freq(term,document)
 		idf = self.idfs[term]
@@ -46,4 +49,4 @@ class tfidf:
 		for word in self.terms:
 			ret_dict[word] = self.getIDF(word)
 		return ret_dict
-
+	

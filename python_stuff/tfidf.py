@@ -4,6 +4,7 @@ class tfidf:
 
 	def __init__(self, terms, documents):
 		self.idfs = self.inv_doc_freq(terms, documents)
+		self.terms = terms
 
 	def calc_tfidf(self,term,document):
 		tf = self.term_freq(term,document)
@@ -39,6 +40,10 @@ class tfidf:
 	def getIDF(self,term):
 		return self.idfs[term]
 
-
-
+	
+	def getAllIdfs(self):
+		ret_dict = dict()
+		for word in self.terms:
+			ret_dict[word] = self.getIDF(word)
+		return ret_dict
 

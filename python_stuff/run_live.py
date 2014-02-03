@@ -195,9 +195,40 @@ def cosine_sim(vec_a, vec_b):
 def relevance_feed_back(train_docs):
 	# user manually annotates about ten examples which will be used as the training set	
 	# test set is entire corpus
+	counter = 0
+	train_values = dict()
 	for doc in train_docs:
-		print (doc[1])
+		temp_file = open(doc[1])
+		temp_text = temp_file.read()
+		print "Training Example " + str(counter) + ' :'
+		print temp_text
+		temp_input_var = str(input("Enter Classification( 1 or -1): "))
+		if (temp_input_var != '-1') and  (temp_input_var != '1'):
+			#add check here
+			temp_input_var = '-1'
+		train_values[doc[1]] = temp_input_var 
+		temp_file.close()
+		counter += 1
+	#print train_values
 
+	f_train_corr =  open(TMP_DIR+'train_corr','w')
+	f_train_wrong = open(TMP_DIR+'train_wrong','w')
+	
+	for key in train_values:
+		if train_values[key] == '1':
+			f_train_corr.write(key + '\n')
+			#print key
+		elif train_values[key] == '-1':
+			f_train_wrong.write(key + '\n')
+
+	f_train_corr.close()	
+	f_train_wrong.close()
+	print "Training data files Created"
+
+def test_data():
+	'''test on the entire corpus including the training(?)'''
+	x = 2
+	
 def run_svm(in_dir):	
 	print "Running SVM on " + in_dir
 	
@@ -228,3 +259,6 @@ if __name__=='__main__':
 	input_feature_vec = initial_query(sys.argv[1], idfs)
 	train_set = retrieve_initial_set(input_feature_vec, feature_vectors_dict)
 	relevance_feed_back(train_set)
+	#test_data
+	#run_svm
+	#return results

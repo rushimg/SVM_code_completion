@@ -3,6 +3,8 @@ import os, sys
 import fnmatch
 from tfidf import tfidf
 import csv
+import math
+import ast
 
 CORPUS = '../code_corpus/regular/facebook/'
 NUM_RETURN_RESULTS = 10
@@ -53,8 +55,7 @@ def pre_proc_code(run_pre_proc):
 		for match in matches:
 			wrd_cnts = str(get_word_counts(words_per_file[match], words, calc_freq))
                 	f_feature_vecs.write(match+','+ wrd_cnts +'\n')
-			feature_vectors_dict[match] = wrd_cnts
-             
+			feature_vectors_dict[match] = wrd_cnts   
 		
 	else:
 		print "Reading values from files in tmp/ directory"
@@ -163,18 +164,39 @@ def initial_query(in_file,idfs):
 	
 def retrieve_initial_set(input_feature_vec, feature_vecs):
 	# return a set of documents to be used as testing data
-	return "NOT_DONE_YET"
+	input_dict = convert_to_dict(input_feature_vec)
+	ranking_dict = dict()
+	for key in feature_vecs:
+		ranking_dict[key] = cosine_sim(convert_to_dict(feature_vecs[key]),input_dict)
+	
+	sorted_values = sorted([(value,key) for (key,value) in ranking_dict.items()])
+
+	return sorted_values[0:NUM_RETURN_RESULTS]
+
+def convert_to_dict(feature_vec):
+	if feature_vec[0] == ' ':
+                feature_vec = feature_vec[1:]
+        eval_string= '{' + feature_vec.replace(' ',',') + '}'
+        temp_dict = ast.literal_eval(eval_string)
+        return temp_dict
 
 def cosine_sim(vec_a, vec_b):
-	
+	# these are sparse vecors in string form with zero valued features removed
+	# This function cannot be used when vectors are in the normal form
+	card_a = len(vec_a)
+	card_b = len(vec_b)
+	a_dot_b = 0
+	for a in vec_a:
+		if a in vec_b:
+			a_dot_b += vec_a[a] * vec_b[a]
+	#print a_dot_b
+	return (float(a_dot_b)/(float(card_a)*float(card_b)))
 
-	# calculate the cosine similarity between two sparse vectors	
-	return "NOT DONE YET"
-
-def relevance_feed_back(test_docs):
+def relevance_feed_back(train_docs):
 	# user manually annotates about ten examples which will be used as the training set	
 	# test set is entire corpus
-	y = 2
+	for doc in train_docs:
+		print (doc[1])
 
 def run_svm(in_dir):	
 	print "Running SVM on " + in_dir
@@ -204,4 +226,5 @@ def return_results():
 if __name__=='__main__':
 	feature_vectors_dict, idfs = pre_proc_code(True)
 	input_feature_vec = initial_query(sys.argv[1], idfs)
-	retrieve_initial_set(input_feature_vec, feature_vecstors_dict)
+	train_set = retrieve_initial_set(input_feature_vec, feature_vectors_dict)
+	relevance_feed_back(train_set)

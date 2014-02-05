@@ -171,7 +171,7 @@ def retrieve_initial_set(input_feature_vec, feature_vecs):
 	
 	sorted_values = sorted([(value,key) for (key,value) in ranking_dict.items()])
 
-	return sorted_values[0:NUM_RETURN_RESULTS]
+	return sorted_values[(-1-NUM_RETURN_RESULTS):-1]
 
 def convert_to_dict(feature_vec):
 	if feature_vec[0] == ' ':
@@ -192,7 +192,7 @@ def cosine_sim(vec_a, vec_b):
 	#print a_dot_b
 	return (float(a_dot_b)/(float(card_a)*float(card_b)))
 
-def relevance_feed_back(train_docs):
+def relevance_feed_back(train_docs,feature_vectors_dict):
 	# user manually annotates about ten examples which will be used as the training set	
 	# test set is entire corpus
 	counter = 0
@@ -213,52 +213,79 @@ def relevance_feed_back(train_docs):
 
 	f_train_corr =  open(TMP_DIR+'train_corr','w')
 	f_train_wrong = open(TMP_DIR+'train_wrong','w')
-	
+	f_train_dat = open(TMP_DIR+'train.dat','w')
 	for key in train_values:
 		if train_values[key] == '1':
 			f_train_corr.write(key + '\n')
+			f_train_dat.write('+1' + feature_vectors_dict[key] +'\n')
 			#print key
 		elif train_values[key] == '-1':
 			f_train_wrong.write(key + '\n')
-
+			f_train_dat.write('-1' + feature_vectors_dict[key] +'\n')
 	f_train_corr.close()	
 	f_train_wrong.close()
+	f_train_dat.close()
+
 	print "Training data files Created"
 
-def test_data():
-	'''test on the entire corpus including the training(?)'''
-	x = 2
+def test_data(feature_vectors_dict):
+	'''* test on the entire corpus including the training(?)'''
+	'''** this does not need to be created every time'''
+	f_test = open(TMP_DIR+'test.dat','w')
+	f_test_map = open(TMP_DIR+'test_map.dat','w')
+	for k in feature_vectors_dict:
+		f_test.write('0' + feature_vectors_dict[k] + '\n')
+		f_test_map.write(k + '\n')
+	f_test.close()
+	f_test_map.close()
+	print "Testing data files Created"
 	
-def run_svm(in_dir):	
-	print "Running SVM on " + in_dir
+def run_svm():	
+	print "Running SVM"
 	
-	clean_cmd = 'bash ../train_test/clean_tests.sh ' + in_dir
-	os.system(clean_cmd)
+	#clean_cmd = 'bash ../train_test/clean_tests.sh ' + in_dir
+	#os.system(clean_cmd)
 	
-	train_cmd = 'python code_2_vecs_tfidf_cmd.py ' + in_dir
-	os.system(train_cmd)
+	#train_cmd = 'python code_2_vecs_tfidf_cmd.py ' + in_dir
+	#os.system(train_cmd)
 	
-	test_cmd = 'python tcode_2_vecs_tfidf_cmd.py ' + in_dir
-	os.system(test_cmd)
+	#test_cmd = 'python tcode_2_vecs_tfidf_cmd.py ' + in_dir
+	#os.system(test_cmd)
 	
-	learn_cmd = '../svm_light/svm_learn ' + in_dir+'train.dat ' + in_dir+'model'	
+	learn_cmd = '../svm_light/svm_learn ' + TMP_DIR+'train.dat ' + TMP_DIR+'model'	
 	os.system(learn_cmd)
 	
-	classify_cmd = '../svm_light/svm_classify ' + in_dir+'test.dat ' + in_dir+'model ' + in_dir+'predictions '
+	classify_cmd = '../svm_light/svm_classify ' + TMP_DIR+'test.dat ' + TMP_DIR+'model ' + TMP_DIR+'predictions '
         os.system(classify_cmd)
 
- 	map_cmd = 'bash ../train_test/map_tests_pred.sh ' + in_dir
-	os.system(map_cmd)
+ 	#map_cmd = 'bash ../train_test/map_tests_pred.sh ' + in_dir
+	#os.system(map_cmd)
+
+	print "Done running SVM Classfier"
 
 def return_results():
-	#return top k results
-	k = 5
-	
+	f_map = open(TMP_DIR+'test_map.dat','r')
+	f_predictions =  open(TMP_DIR+'predictions','r')
+	results_dict = dict()
+	map_lines = f_map.readlines()
+	counter = 0
+	for line in f_predictions.readlines():
+		results_dict[map_lines[counter]] = float(line.replace('\n',''))
+		counter +=1
+
+	sorted_values = sorted([(value,key) for (key,value) in results_dict.items()])
+	#sorted_values = reversed(sorted_values)
+        for val in sorted_values[(-1-NUM_RETURN_RESULTS):-1]:
+		print "Predicted Value: " + str(val[0]) + '\n'
+		temp_file = open(val[1].replace('\n',''), 'r')
+		#print val[1].replace('\n','')
+		print temp_file.read()
+		
 if __name__=='__main__':
 	feature_vectors_dict, idfs = pre_proc_code(True)
 	input_feature_vec = initial_query(sys.argv[1], idfs)
 	train_set = retrieve_initial_set(input_feature_vec, feature_vectors_dict)
-	relevance_feed_back(train_set)
-	#test_data
-	#run_svm
-	#return results
+	relevance_feed_back(train_set,feature_vectors_dict)
+	test_data(feature_vectors_dict)
+	run_svm()
+	return_results()

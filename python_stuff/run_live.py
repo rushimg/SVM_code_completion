@@ -46,7 +46,8 @@ def pre_proc_code(run_pre_proc):
 		print "Writing idf values to file tmp/idfs_tmp.csv'"
 		f_idfs = open(TMP_DIR+'idfs_tmp.csv', 'w')
 		for key in idfs:
-			f_idfs.write(key + ',' + str(idfs[key]) + '\n')			
+			if key != '':
+				f_idfs.write(key + ',' + str(idfs[key]) + '\n')			
 		f_idfs.close()
 		
 		#caluclate feature vectors
@@ -131,7 +132,8 @@ def get_all_words(file_name):
         lines = f.readlines()
         for line in lines:
                 spaces = (remove_wierd_chars(line)).split(' ')
-                for space in spaces:
+                #spaces = line.split(' ')
+		for space in spaces:
                         words_in_file.append(space)
         return words_in_file
 
@@ -150,17 +152,54 @@ def remove_wierd_chars(string):
         string = string.replace(',',' ')
         string = string.replace('  ',' ')
         string = string.replace('  ',' ')
-
+	string = string.replace(':','')
+	#string = string.replace('*/',' ')
+	#string = string.replace('*','')
+	#string = string.replace('/*',' ')
+	#string = string.replace('  ',' ')
+        #string = string.replace('  ',' ')
         return string.lower()
 
 def initial_query(in_file,idfs):
 	#f_in = open(in_file, 'r')
 	#in_text = f_in.read()	
+	#TODO: problem here with creating the feature vector for the input 
+		
 	print "Calculating feature vectors for input file: " + in_file
 	in_words = get_all_words(in_file)
-	calc_freq= tfidf(idfs.keys, None, idfs)
-	wrd_cnts = str(get_word_counts(in_words, idfs.keys(), calc_freq))
+	#calc_freq = tfidf(idfs.keys(), in_words, idfs)
+	#print idfs.keys()[85]
+	#print idfs.keys()[83]
+	#print idfs.keys()[82]
+	#print idfs.keys()[84]
+	
+	#print in_words
+	
+	f_idfs = open(TMP_DIR+'idfs_tmp.csv','r')
+	wrd_cnts = ''
+	word_counter = 1
+	for line in f_idfs.readlines():
+		comma = line.split(',')
+		word_counter += 1
+		if comma[0] in in_words:
+			tf = term_freq(comma[0], in_words)
+			#print word_counter
+			wrd_cnts = wrd_cnts + ' ' + str(word_counter) + ':' + str(float(comma[1].replace('\n',''))*tf)
+	
+	#calc_freq= tfidf(idfs.keys(), None, idfs)
+	#wrd_cnts = str(get_word_counts(in_words, idfs.keys(), calc_freq))
+	#print "1 "
+	#print wrd_cnts
 	return wrd_cnts
+
+def term_freq(term,document):
+	tf_count = 0
+	length_doc = len(document)
+	for word in document:
+        	if word == term:
+			tf_count += 1
+		tf = float(tf_count)/float(length_doc)
+	return tf
 	
 def retrieve_initial_set(input_feature_vec, feature_vecs):
 	# return a set of documents to be used as testing data
@@ -168,7 +207,11 @@ def retrieve_initial_set(input_feature_vec, feature_vecs):
 	ranking_dict = dict()
 	for key in feature_vecs:
 		ranking_dict[key] = cosine_sim(convert_to_dict(feature_vecs[key]),input_dict)
-	
+		if key == "../code_corpus/regular/facebook/DefaultFacebookClient.java_22":
+			print sorted(convert_to_dict(feature_vecs[key]).keys())
+			print sorted(input_dict.keys())
+			print  ranking_dict[key]	
+
 	sorted_values = sorted([(value,key) for (key,value) in ranking_dict.items()])
 
 	return sorted_values[(-1-NUM_RETURN_RESULTS):-1]
@@ -181,16 +224,22 @@ def convert_to_dict(feature_vec):
         return temp_dict
 
 def cosine_sim(vec_a, vec_b):
+	#print vec_a
 	# these are sparse vecors in string form with zero valued features removed
 	# This function cannot be used when vectors are in the normal form
+	big_a = 0
+	big_b = 0
+	for b in vec_b:
+		big_b += float(vec_b[b])*float(vec_b[b])
 	card_a = len(vec_a)
 	card_b = len(vec_b)
 	a_dot_b = 0
 	for a in vec_a:
+		big_a += float(vec_a[a])*float(vec_a[a])
 		if a in vec_b:
 			a_dot_b += vec_a[a] * vec_b[a]
 	#print a_dot_b
-	return (float(a_dot_b)/(float(card_a)*float(card_b)))
+	return (float(a_dot_b)/(math.sqrt(float(big_a))*math.sqrt(float(big_b))))
 
 def relevance_feed_back(train_docs,feature_vectors_dict):
 	# user manually annotates about ten examples which will be used as the training set	
@@ -276,13 +325,14 @@ def return_results():
 	sorted_values = sorted([(value,key) for (key,value) in results_dict.items()])
 	#sorted_values = reversed(sorted_values)
         for val in sorted_values[(-1-NUM_RETURN_RESULTS):-1]:
+		print "File : " + val[1].replace('\n','')
 		print "Predicted Value: " + str(val[0]) + '\n'
 		temp_file = open(val[1].replace('\n',''), 'r')
 		#print val[1].replace('\n','')
 		print temp_file.read()
 		
 if __name__=='__main__':
-	feature_vectors_dict, idfs = pre_proc_code(True)
+	feature_vectors_dict, idfs = pre_proc_code(False)
 	input_feature_vec = initial_query(sys.argv[1], idfs)
 	train_set = retrieve_initial_set(input_feature_vec, feature_vectors_dict)
 	relevance_feed_back(train_set,feature_vectors_dict)

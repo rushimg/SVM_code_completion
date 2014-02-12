@@ -207,14 +207,14 @@ def retrieve_initial_set(input_feature_vec, feature_vecs):
 	ranking_dict = dict()
 	for key in feature_vecs:
 		ranking_dict[key] = cosine_sim(convert_to_dict(feature_vecs[key]),input_dict)
-		if key == "../code_corpus/regular/facebook/DefaultFacebookClient.java_22":
-			print sorted(convert_to_dict(feature_vecs[key]).keys())
-			print sorted(input_dict.keys())
-			print  ranking_dict[key]	
-
+		#if key == "../code_corpus/regular/facebook/DefaultFacebookClient.java_22":
+		#	print sorted(convert_to_dict(feature_vecs[key]).keys())
+		#	print sorted(input_dict.keys())
+		#	print  ranking_dict[key]	
+	
 	sorted_values = sorted([(value,key) for (key,value) in ranking_dict.items()])
-
-	return sorted_values[(-1-NUM_RETURN_RESULTS):-1]
+	length = len(sorted_values)
+	return reversed(sorted_values[(length-NUM_RETURN_RESULTS):length])
 
 def convert_to_dict(feature_vec):
 	if feature_vec[0] == ' ':
@@ -250,6 +250,7 @@ def relevance_feed_back(train_docs,feature_vectors_dict):
 		temp_file = open(doc[1])
 		temp_text = temp_file.read()
 		print "Training Example " + str(counter) + ' :'
+		print doc[1]
 		print temp_text
 		temp_input_var = str(input("Enter Classification( 1 or -1): "))
 		if (temp_input_var != '-1') and  (temp_input_var != '1'):
@@ -324,7 +325,8 @@ def return_results():
 
 	sorted_values = sorted([(value,key) for (key,value) in results_dict.items()])
 	#sorted_values = reversed(sorted_values)
-        for val in sorted_values[(-1-NUM_RETURN_RESULTS):-1]:
+	length = len(sorted_values)
+        for val in reversed(sorted_values[(length-NUM_RETURN_RESULTS):length]):
 		print "File : " + val[1].replace('\n','')
 		print "Predicted Value: " + str(val[0]) + '\n'
 		temp_file = open(val[1].replace('\n',''), 'r')

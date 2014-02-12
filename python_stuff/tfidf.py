@@ -2,11 +2,12 @@ from math import log
 
 class tfidf:
 
-	def __init__(self, terms, documents, idfs= None):
-		if idfs == None:
-			self.idfs = self.inv_doc_freq(terms, documents)
-		else:
-			self.idfs = idfs
+	def __init__(self, terms, documents):
+		#idfs= None):
+		#if idfs == None:
+		self.idfs = self.inv_doc_freq(terms, documents)
+		#else:
+		#	self.idfs = idfs
 		self.terms = terms
 			 		
 	def calc_tfidf(self,term,document):

@@ -8,7 +8,7 @@ import ast
 
 CORPUS = '../code_corpus/regular/facebook/'
 NUM_RETURN_RESULTS = 10
-TMP_DIR = 'tmp/'
+TMP_DIR = '../tt_live/1_tests/'
 
 def pre_proc_code(run_pre_proc):
 	# grab all corpus files
@@ -330,8 +330,10 @@ def return_results():
 		print "File : " + val[1].replace('\n','')
 		print "Predicted Value: " + str(val[0]) + '\n'
 		temp_file = open(val[1].replace('\n',''), 'r')
+		#temp_file_code = open((val[1]+'_code').replace('\n',''), 'r')
 		#print val[1].replace('\n','')
 		print temp_file.read()
+		#print temp_file_code.read()
 		
 if __name__=='__main__':
 	feature_vectors_dict, idfs = pre_proc_code(False)

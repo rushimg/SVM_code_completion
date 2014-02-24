@@ -336,7 +336,7 @@ def return_results():
 		#print temp_file_code.read()
 		
 if __name__=='__main__':
-	feature_vectors_dict, idfs = pre_proc_code(False)
+	feature_vectors_dict, idfs = pre_proc_code(True)
 	input_feature_vec = initial_query(sys.argv[1], idfs)
 	train_set = retrieve_initial_set(input_feature_vec, feature_vectors_dict)
 	relevance_feed_back(train_set,feature_vectors_dict)

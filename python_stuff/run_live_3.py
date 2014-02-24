@@ -6,9 +6,10 @@ import csv
 import math
 import ast
 
-CORPUS = '../code_corpus/regular/aws/'
+CORPUS_1 = '../code_corpus/regular/facebook/'
+CORPUS_2 = '../code_corpus/regular/twitter/'
 NUM_RETURN_RESULTS = 10
-TMP_DIR = '../tt_live/demo_2/'
+TMP_DIR = '../tt_live/demo_3/'
 
 def pre_proc_code(run_pre_proc):
 	# grab all corpus files
@@ -18,9 +19,12 @@ def pre_proc_code(run_pre_proc):
 
 		matches = []
 		words_per_file = dict()
-		for root, dirnames, filenames in os.walk(CORPUS):
+		for root, dirnames, filenames in os.walk(CORPUS_1):
          	       for filename in fnmatch.filter(filenames, "*.java_*"):
                 	        matches.append(os.path.join(root, filename))
+	 	for root, dirnames, filenames in os.walk(CORPUS_2):
+                       for filename in fnmatch.filter(filenames, "*.java_*"):
+                                matches.append(os.path.join(root, filename))
 		words = set()
 		for match in matches:
 			print match

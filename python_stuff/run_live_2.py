@@ -6,9 +6,9 @@ import csv
 import math
 import ast
 
-CORPUS = '../code_corpus/regular/facebook/'
+CORPUS = '../code_corpus/regular/aws/'
 NUM_RETURN_RESULTS = 10
-TMP_DIR = '../tt_live/demo_1/'
+TMP_DIR = '../tt_live/demo_2/'
 
 def pre_proc_code(run_pre_proc):
 	# grab all corpus files

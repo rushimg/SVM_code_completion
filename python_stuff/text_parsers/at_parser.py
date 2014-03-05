@@ -35,6 +35,7 @@ def extract_at(match):
 				for word in spaces[1:]:
 					if not (word == "" or word == "*" or word == " " or word == "\n"): 
 						new_words += " " + '@'+head_word+"_"+word				
+			
 			group_counter += 1
 	else:
 		new_words = comment

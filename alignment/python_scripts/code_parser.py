@@ -13,27 +13,32 @@ Eclipse Plugin can do this for us
 OBJECT_REGEX = '([A-Z][a-z0-9]+)+'
 PRIMITIVE_TYPES = ['int', 'Int', 'String', 'string', 'byte', 'short', 'long', 'float','double','boolean', 'char']
 ACCESS_MODIFIERS = ['public','private','protected']
-
+STATEMENTS = ['while','if','for']
 obj_reg = re.compile(OBJECT_REGEX)
 	
-class CodeParser:
+#class CodeParser:
 	
-	 def __init__(self, in_f):
-		self.in_file = in_f
+#	 def __init__(self, in_f):
+#		self.in_file = in_f
 
 def run_parser(in_f):
 	# get all the text
 	f = open(in_f, 'r')
-	raw_text = f.read()
+	lines = f.readlines()
 	f.close()
 
+	raw_text = ''
+	for line in lines:
+		if not '//' in line:
+			raw_text += line
+	
 	text = clean(raw_text)
 	spaces = text.split(' ')
 
 	# get all the lines
-	f = open(in_f, 'r')
-	text_lines = f.readlines()
-	f.close()
+	#f = open(in_f, 'r')
+	#text_lines = f.readlines()
+	#f.close()
 
 	print "----------------Original Code-----------------------"
 	
@@ -89,7 +94,7 @@ def run_parser(in_f):
 		#('(' not in space)
 		#print space
 		#(spaces[types_count -1] not in ACCESS_MODIFIERS)
-		if (obj_reg.match(space) and (space not in classes) and ('(' not in space) and ('(' not in spaces[types_count+1]) and ('{' not in spaces[types_count+1] )):
+		if ((obj_reg.match(space) or (space in PRIMITIVE_TYPES) or ('java.util' in space)) and (space not in classes) and ('(' not in space) and ('(' not in spaces[types_count+1]) and ('{' not in spaces[types_count+1] )):
 			#print spaces[types_count-1]
 			#print spaces[types_count]
 			#print spaces[types_count +1]
@@ -101,6 +106,38 @@ def run_parser(in_f):
 	#spaces = None 
 	#spaces = text.split(' ')
 	print '\n'
+
+	print "-------------for/while/if Statements------------------"
+
+        statements = dict()
+        statement_count = 0
+        for space in spaces:
+ 
+                if ((space not in classes) and (spaces[statement_count-1] != 'new') and ('.' not in space) and (space in STATEMENTS)):
+                        encapsulated = ''
+                        start_flag = False
+                        start_curly = 0
+                        end_curly = 0
+                        for sub_space in spaces[statement_count:len(spaces)]:
+                                # get enclaspulated code by matching number of end and start curly brackets
+                                if '{' in sub_space:
+                                        start_curly+=1
+                                elif '}' in sub_space:
+                                        end_curly +=1
+                                if ('{' in sub_space) and (not start_flag):
+                                        start_curly +=1
+                                        start_flag = True
+                                if start_flag == True:
+                                        if (start_curly == end_curly):
+                                                break
+                                        else:
+                                                encapsulated += (sub_space +' ')
+
+                        statements[replace_paren(space)] = encapsulated
+                statement_count += 1
+        print statements
+        print '\n'
+
 	print "-------------------Methods--------------------------"
 	
 	methods = dict()
@@ -110,7 +147,7 @@ def run_parser(in_f):
 		#print space
 		#print obj_reg.match(space)
 		#obj_reg.match(space)
-		if ((space not in classes) and ('(' in space) and (spaces[method_count-1] != 'new')):
+		if ((space not in classes) and ('(' in space) and (spaces[method_count-1] != 'new') and ('.' not in space) and (replace_paren(space) != ' ')):
                         encapsulated = ''
 			start_flag = False
 			start_curly = 0
@@ -129,8 +166,8 @@ def run_parser(in_f):
 						break
 					else:
 						encapsulated += (sub_space +' ')	
-
-			methods[replace_paren(space)] = encapsulated
+			if (encapsulated != ''):
+				methods[replace_paren(space)] = encapsulated
                 method_count += 1
         print methods
 	print '\n'
@@ -155,6 +192,8 @@ def replace_paren(raw_text):
 	clean_text = raw_text
         clean_text = raw_text.replace('(',' ')
         clean_text = clean_text.replace(')',' ')
+	clean_text = clean_text.replace('\n','')
+	clean_text = clean_text.replace(';','')
 	return clean_text
 
 def clean(raw_text):

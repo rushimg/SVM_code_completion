@@ -16,7 +16,7 @@ class aligner:
 	f2 = eval((open(input_f_2,'r')).read())	
 	align(f1,f2)
 	'''
-	
+
 	def align(self):
 		return self.measure_var_numbers(self.vars_1,self.vars_2)
 
@@ -49,6 +49,10 @@ class aligner:
 	
 		return float(matched)/float(total)
 	
+	# edit distance functio
+	#def editDistance(str1,str2):
+		
+		
 	'''
 	if __name__=='__main__':
         run_aligner(sys.argv[1], sys.argv[2])

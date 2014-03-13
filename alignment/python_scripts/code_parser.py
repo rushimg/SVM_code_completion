@@ -80,7 +80,7 @@ def run_parser(in_f):
 			print line'''
 		
 	print '\n'
-	print "-------------Var Types and Names: -------------------"
+	print "-------------Var Types and Names(Definitions): -------------------"
 	var_types = dict()	
 	types_count = 0
 	
@@ -89,15 +89,33 @@ def run_parser(in_f):
 		#('(' not in space)
 		#(spaces[types_count -1] not in ACCESS_MODIFIERS)
 		if ((obj_reg.match(space) or (space in PRIMITIVE_TYPES) or ('java.util' in space)) and (space not in classes) and ('(' not in space) and ('(' not in spaces[types_count+1]) and ('{' not in spaces[types_count+1] )):
-			var_types[replace_paren(spaces[types_count + 1])] = space 	
+			var_types[remove_space(replace_paren(spaces[types_count + 1]))] = space
 		types_count += 1
 		
 	print var_types
-
 	print '\n'
 
-	print "-------------for/while/if Statements------------------"
+	print " ---------------Variable Usage----------------------------------"
+	
+	var_usage = dict()
+	
+	for ty in var_types:
+		var_usage[ty] = list()
+		for line in lines:
+			#print ty
+			#print line
+			clean_line = clean(line)
+			if (ty in clean_line):
+			
+				spaces2 = clean_line.split(' ')	
+				# get usage of var not definition
+				if not(var_types[ty] == spaces2[spaces2.index(ty)-1]):
+					var_usage[ty].append((clean(line)).replace('\n',''))
 
+	print var_usage
+	
+	print '\n'
+	print "-------------for/while/if Statements------------------"
         statements = dict()
         statement_count = 0
         for space in spaces:
@@ -183,11 +201,16 @@ def replace_paren(raw_text):
 	clean_text = clean_text.replace('\n','')
 	clean_text = clean_text.replace(';','')
 	return clean_text
-
+def remove_space(str_in):
+	str_out = str_in.replace(' ','')
+	return str_out
 def clean(raw_text):
 	clean_text = raw_text
-	clean_text = raw_text.replace('(','( ')
-	clean_text = clean_text.replace(')',') ')
+	clean_text = clean_text.replace('++',' ++ ')
+	clean_text = clean_text.replace(';',' ;')
+	clean_text = clean_text.replace('--',' -- ')
+	clean_text = clean_text.replace('(','( ')
+	clean_text = clean_text.replace(')',' ) ')
 	clean_text = clean_text.replace(',',' ')
 	clean_text = clean_text.replace('\t',' ')
 	clean_text = clean_text.replace('  ',' ')

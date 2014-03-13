@@ -2,11 +2,12 @@ import subprocess
 import os, sys
 import re
 '''
-File to parse out types and variable names from code 
 
-Elementry way of doing this based on regexes
+Similar to code parser, except specifically just for var names and types data
 
-Eclipse Plugin can do this for us
+Input is file containing[idealy compiable] code
+
+Output is dictonary of types in form varName: varType
 
 '''
 # Match CamelCase with first letter Capital
@@ -37,12 +38,13 @@ def run_parser(in_f):
 	text = clean(raw_text)
 	spaces = text.split(' ')
 
-	print "----------------Original Code-----------------------"
+	'''print "----------------Original Code-----------------------"
 	
 	print raw_text
 	print '\n'
 	
 	print "-----------------Classes----------------------------"
+	'''
 	class_count = 0
 	classes = dict()
 	for space in spaces:
@@ -69,18 +71,13 @@ def run_parser(in_f):
                                                 encapsulated += (sub_space +' ')
 			classes[spaces[class_count+1]] = encapsulated
 		class_count += 1
-	print classes
-	'''classes = dict()	
-	for line in text_lines:
-		if "class" in line:
-			line = line.replace('{','')
-			line_spaces = line.split(' ')
-			for line_space in line_spaces:
-				if line_space == class
-			print line'''
-		
-	print '\n'
-	print "-------------Var Types and Names: -------------------"
+	#print classes
+	classes = dict()	
+	
+	#print '\n'
+	
+	#print "-------------Var Types and Names: -------------------"
+	
 	var_types = dict()	
 	types_count = 0
 	
@@ -93,7 +90,7 @@ def run_parser(in_f):
 		types_count += 1
 		
 	print var_types
-
+	'''
 	print '\n'
 
 	print "-------------for/while/if Statements------------------"
@@ -158,7 +155,7 @@ def run_parser(in_f):
         print methods
 	print '\n'
 
-	'''
+
 	#print "------------------ Code Pieces: ---------------------" 	
 	#for space in spaces:
 	#	print space

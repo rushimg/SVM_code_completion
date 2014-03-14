@@ -1,3 +1,4 @@
+from variableObj import variableObj
 import subprocess
 import os, sys
 import re
@@ -26,7 +27,9 @@ class codeParser:
 		self.spaces = self.open_file(input_f1)
 		self.parse_classes()
 		self.parse_varTypes()
-	
+		self.listOf_varObj = list()
+		self.set_listOf_variableObj()
+
 	def open_file(self,in_f):
 		# get all the text
 		f = open(in_f, 'r')
@@ -103,6 +106,13 @@ class codeParser:
 		return self.var_types
 
 
+	def set_listOf_variableObj(self):
+		for key in self.var_types:
+			temp_varObj = variableObj(key,self.var_types[key],self.raw_text)
+			self.listOf_varObj.append(temp_varObj)
+	
+	def get_listOf_variableObj(self):
+		return self.listOf_varObj
 	'''
 	print " ---------------Variable Usage----------------------------------"
 	

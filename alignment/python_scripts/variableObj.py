@@ -8,11 +8,14 @@ Variable Object containg data pertaing to variable info such as name, type, usag
 
 class variableObj:
 	
-	def __init__(self, name, varType,code):
+	def __init__(self, name, varType,code,classes,methods,statements):
 		self.name = name
 		self.varType = varType
 		self.raw_code = code
 		self.declaration_usage()
+		self.classes = classes
+		self.methods = methods
+		self.statements = statements 
 
 	''' code precding the variable usage '''
 	#def preceding_code(self):
@@ -26,7 +29,8 @@ class variableObj:
 
 	''' all code that is in the scope of the variable '''
 	#def scope(self):
-	
+		#for use in self.usage()		
+
 	''' usage of variable '''
 	def get_usage(self):
 		return self.usage

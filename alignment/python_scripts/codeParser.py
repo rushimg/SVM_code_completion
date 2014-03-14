@@ -27,6 +27,8 @@ class codeParser:
 		self.spaces = self.open_file(input_f1)
 		self.parse_classes()
 		self.parse_varTypes()
+		self.parse_methods()
+		self.parse_statements()	
 		self.listOf_varObj = list()
 		self.set_listOf_variableObj()
 
@@ -108,93 +110,78 @@ class codeParser:
 
 	def set_listOf_variableObj(self):
 		for key in self.var_types:
-			temp_varObj = variableObj(key,self.var_types[key],self.raw_text)
+			temp_varObj = variableObj(key,self.var_types[key],self.raw_text,self.classes,self.methods,self.statements)
 			self.listOf_varObj.append(temp_varObj)
 	
 	def get_listOf_variableObj(self):
 		return self.listOf_varObj
-	'''
-	print " ---------------Variable Usage----------------------------------"
-	
-	var_usage = dict()
-	
-	for ty in var_types:
-		var_usage[ty] = list()
-		for line in lines:
-			#print ty
-			#print line
-			clean_line = clean(line)
-			if (ty in clean_line):
-			
-				spaces2 = clean_line.split(' ')	
-				# get usage of var not definition
-				if not(var_types[ty] == spaces2[spaces2.index(ty)-1]):
-					var_usage[ty].append((clean(line)).replace('\n',''))
 
-	print var_usage
+	def parse_methods(self):
+		spaces = self.spaces	
+		methods = dict()
+        	method_count = 0
+       		for space in spaces:
+                	# TODO: a bit hacky when saying that the previous word should not be 'new'
+			#obj_reg.match(space)
+			if ((space not in self.classes) and ('(' in space) and (spaces[method_count-1] != 'new') and ('.' not in space) and (self.replace_paren(space) != ' ')):
+                        	encapsulated = ''
+				start_flag = False
+				start_curly = 0
+				end_curly = 0
+				for sub_space in spaces[method_count:len(spaces)]:
+					# get enclaspulated code by matching number of end and start curly brackets
+					if '{' in sub_space:
+						start_curly+=1
+					elif '}' in sub_space:
+						end_curly +=1 
+					if ('{' in sub_space) and (not start_flag):
+						start_flag = True
+					if start_flag == True:
+						if (start_curly == end_curly):
+							break
+						else:
+							encapsulated += (sub_space +' ')	
+				if (encapsulated != ''):
+					methods[self.replace_paren(space)] = encapsulated
+                	method_count += 1
+		self.methods = methods
 	
-	print '\n'
-	print "-------------for/while/if Statements------------------"
-        statements = dict()
-        statement_count = 0
-        for space in spaces:
- 
-                if ((space not in classes) and (spaces[statement_count-1] != 'new') and ('.' not in space) and (space in STATEMENTS)):
-                        encapsulated = ''
-                        start_flag = False
-                        start_curly = 0
-                        end_curly = 0
-                        for sub_space in spaces[statement_count:len(spaces)]:
-                                # get enclaspulated code by matching number of end and start curly brackets
-                                if '{' in sub_space:
-                                        start_curly+=1
-                                elif '}' in sub_space:
-                                        end_curly +=1
-                                if ('{' in sub_space) and (not start_flag):
-                                        #start_curly +=1
-                                        start_flag = True
-                                if start_flag == True:
-					if (start_curly == end_curly):
-                                                break
-                                        else:
-                                                encapsulated += (sub_space +' ')
+	def get_methods(self):
+		return self.methods
+		
+	def parse_statements(self):
+        	spaces = self.spaces
+		statements = dict()
+        	statement_count = 0
+        	
+		for space in spaces:
+                	if ((space not in self.classes) and (spaces[statement_count-1] != 'new') and ('.' not in space) and (space in STATEMENTS)):
+                        	encapsulated = ''
+                        	start_flag = False
+                        	start_curly = 0
+                        	end_curly = 0
+                        	for sub_space in spaces[statement_count:len(spaces)]:
+                                	# get enclaspulated code by matching number of end and start curly brackets
+                                	if '{' in sub_space:
+                                        	start_curly+=1
+                                	elif '}' in sub_space:
+                                        	end_curly +=1
+                                	if ('{' in sub_space) and (not start_flag):
+                                        	#start_curly +=1
+                                        	start_flag = True
+                                	if start_flag == True:
+                                        	if (start_curly == end_curly):
+                                                	break
+                                        	else:
+                                                	encapsulated += (sub_space +' ')
 
-                        statements[replace_paren(space)] = encapsulated
-                statement_count += 1
-        print statements
-        print '\n'
-	# TODO: add in Method usage.
-	print "-------------------Methods Definitions----------------------"
+                        	statements[self.replace_paren(space)] = encapsulated
+                	statement_count += 1
+       		self.statements = statements
 	
-	methods = dict()
-        method_count = 0
-        for space in spaces:
-                # TODO: a bit hacky when saying that the previous word should not be 'new'
-		#obj_reg.match(space)
-		if ((space not in classes) and ('(' in space) and (spaces[method_count-1] != 'new') and ('.' not in space) and (replace_paren(space) != ' ')):
-                        encapsulated = ''
-			start_flag = False
-			start_curly = 0
-			end_curly = 0
-			for sub_space in spaces[method_count:len(spaces)]:
-				# get enclaspulated code by matching number of end and start curly brackets
-				if '{' in sub_space:
-					start_curly+=1
-				elif '}' in sub_space:
-					end_curly +=1 
-				if ('{' in sub_space) and (not start_flag):
-					start_flag = True
-				if start_flag == True:
-					if (start_curly == end_curly):
-						break
-					else:
-						encapsulated += (sub_space +' ')	
-			if (encapsulated != ''):
-				methods[replace_paren(space)] = encapsulated
-                method_count += 1
-        print methods
-	print '\n'
-	'''
+	def get_statements(self):
+		return self.statements
+	
 	def replace_paren(self,raw_text):
 		clean_text = raw_text
         	clean_text = raw_text.replace('(',' ')

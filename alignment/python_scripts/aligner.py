@@ -10,18 +10,14 @@ class aligner:
 		self.vars_1 = input_f1
 		self.vars_2 = input_f2
 
-	'''
-	def run_aligner(input_f_1, input_f_2):
-	f1 = eval((open(input_f_1,'r')).read())
-	f2 = eval((open(input_f_2,'r')).read())	
-	align(f1,f2)
-	'''
 
 	def align(self):
-		return self.measure_var_numbers(self.vars_1,self.vars_2)
+		return self.measure_var_numbers()
 
 	# measure number of overlapping vars over total number of vars
-	def measure_var_numbers(self,f1,f2):
+	def measure_var_numbers(self):
+		f1 = self.vars_1
+		f2 = self.vars_2
 		f1_count = dict()
 		f2_count = dict()
 		keys = set()
@@ -53,7 +49,3 @@ class aligner:
 	#def editDistance(str1,str2):
 		
 		
-	'''
-	if __name__=='__main__':
-        run_aligner(sys.argv[1], sys.argv[2])
-	'''

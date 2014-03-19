@@ -1,3 +1,5 @@
+#! /usr/local/bin/python
+
 from aligner import aligner
 	
 f1 = {'otherVar':'otherType','stringOne': 'String', 'boolOne ': 'boolean', 'intOne': 'int', 'otherIntOne':'int'} 

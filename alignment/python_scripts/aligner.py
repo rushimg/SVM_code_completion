@@ -14,6 +14,12 @@ class aligner:
 	def align(self):
 		return self.measure_var_numbers()
 
+	# what else could we put?
+	# edit distance with alignment and shifting? between var names
+	# jaccard of similar code context?
+	# if both in same method/class
+	# if both in if/for/while statment/loop
+
 	# measure number of overlapping vars over total number of vars
 	def measure_var_numbers(self):
 		f1 = self.vars_1
@@ -22,7 +28,7 @@ class aligner:
 		f2_count = dict()
 		keys = set()
 		matched = 0
-	
+		
 		for key in f1:
 			type_temp = f1[key]
 			if not (type_temp in f1_count.keys()):

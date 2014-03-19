@@ -17,25 +17,31 @@ class variableObj:
 		self.methods = methods
 		self.statements = statements 
 
-	''' code precding the variable usage '''
+	## Probably dont need these
+	#''' code precding the variable usage '''
 	#def preceding_code(self):
-		
-	''' code succeeding the variable usage '''
+	#''' code succeeding the variable usage '''
 	#def succeeding_code(self):
 	
 	''' variable type '''
 	def get_type(self):
 		return self.varType
-
-	''' all code that is in the scope of the variable '''
+	
+	## Add these in later
+	#''' all code that is in the scope of the variable '''
 	#def scope(self):
-		#for use in self.usage()		
+	#	#for use in self.usage():		
+	#''' all statements that variable is a part of '''
+	#def statements(self):
+	#''' dependencies of variables '''
+	#def dependencies(self):
+	
 
 	''' usage of variable '''
 	def get_usage(self):
 		return self.usage
 
-	''' differnentiate between usage & declaration of variable '''
+	''' differentiate between usage & declaration of variable '''
 	def declaration_usage(self):
 		self.declaration = ''
 		self.usage = list()

@@ -1,3 +1,5 @@
+#! /usr/local/bin/python
+
 from codeParser import codeParser
 from aligner import aligner
 

@@ -1,3 +1,5 @@
+#! /usr/local/bin/python
+
 import subprocess
 import os, sys
 import re
@@ -36,7 +38,7 @@ def run_parser(in_f):
 	
 	text = clean(raw_text)
 	spaces = text.split(' ')
-
+	#print '\n'
 	print "----------------Original Code-----------------------"
 	
 	print raw_text

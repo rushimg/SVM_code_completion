@@ -98,8 +98,9 @@ class codeParser:
 			#if ((not space == ' ') and (not space == '\n')):
 			#('(' not in space)
 			#(spaces[types_count -1] not in ACCESS_MODIFIERS)
-			if ((obj_reg.match(space) or (space in PRIMITIVE_TYPES) or ('java.util' in space)) and (space not in self.classes) and ('(' not in space) and ('(' not in spaces[types_count+1]) and ('{' not in spaces[types_count+1] )):
+			if ((obj_reg.match(space) or (space in PRIMITIVE_TYPES) or ('java.util' in space)) and (space not in self.classes) and ('(' not in space) and ('(' not in spaces[types_count+1]) and ('{' not in spaces[types_count+1] ) and ('{' not in space)):
 				var_types[self.remove_space(self.replace_paren(spaces[types_count + 1]))] = space
+				#var_types[((spaces[types_count + 1]))] = space
 			types_count += 1
 		
 		self.var_types = var_types

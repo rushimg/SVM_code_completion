@@ -19,8 +19,13 @@ class aligner:
 	# jaccard of similar code context?
 	# if both in same method/class
 	# if both in if/for/while statment/loop
-
 	# measure number of overlapping vars over total number of vars
+	
+	#TODO
+	# replace vars with stubbed generic names
+	# align pieces of code and find the difference 
+	# also need to add in a methods parser
+
 	def measure_var_numbers(self):
 		f1 = self.vars_1
 		f2 = self.vars_2

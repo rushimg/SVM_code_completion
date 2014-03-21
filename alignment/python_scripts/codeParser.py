@@ -1,4 +1,5 @@
 from variableObj import variableObj
+from methodObj import methodObj
 import subprocess
 import os, sys
 import re
@@ -15,7 +16,7 @@ Eclipse Plugin can do this for us
 
 # Match CamelCase with first letter Capital
 OBJECT_REGEX = '([A-Z][a-z0-9]+)+'
-PRIMITIVE_TYPES = ['int', 'Int', 'String', 'string', 'byte', 'short', 'long', 'float','double','boolean', 'char']
+PRIMITIVE_TYPES = ['int','int[]', 'Int', 'Int[]','String', 'String[]','string', 'string[]','byte','byte[]' ,'short','short[]', 'long','long[]', 'float','float[]','double','double[]','boolean', 'boolean[]','char','char[]']
 ACCESS_MODIFIERS = ['public','private','protected']
 STATEMENTS = ['while','if','for']
 obj_reg = re.compile(OBJECT_REGEX)
@@ -31,7 +32,10 @@ class codeParser:
 		self.parse_statements()	
 		self.listOf_varObj = list()
 		self.set_listOf_variableObj()
-
+		self.listOf_methObj = list()
+                #self.set_listOf_variableObj()
+		self.set_listOf_methodObj()
+		
 	def open_file(self,in_f):
 		# get all the text
 		f = open(in_f, 'r')
@@ -62,7 +66,7 @@ class codeParser:
 		class_count = 0
 		classes = dict()
 		for space in spaces:
-			if space == 'class':
+			if (space == 'class'):
 				# get next word after class	
 				# get enclaspulated code by matching number of end and start curly brackets
                         	encapsulated = ''
@@ -98,8 +102,9 @@ class codeParser:
 			#if ((not space == ' ') and (not space == '\n')):
 			#('(' not in space)
 			#(spaces[types_count -1] not in ACCESS_MODIFIERS)
-			if ((obj_reg.match(space) or (space in PRIMITIVE_TYPES) or ('java.util' in space)) and (space not in self.classes) and ('(' not in space) and ('(' not in spaces[types_count+1]) and ('{' not in spaces[types_count+1] )):
+			if ((obj_reg.match(space) or (space in PRIMITIVE_TYPES) or ('java.util' in space)) and (space not in self.classes) and ('(' not in space) and ('(' not in spaces[types_count+1]) and ('{' not in spaces[types_count+1] ) and ('{' not in space)):
 				var_types[self.remove_space(self.replace_paren(spaces[types_count + 1]))] = space
+				#var_types[((spaces[types_count + 1]))] = space
 			types_count += 1
 		
 		self.var_types = var_types
@@ -142,10 +147,33 @@ class codeParser:
 						else:
 							encapsulated += (sub_space +' ')	
 				if (encapsulated != ''):
-					methods[self.replace_paren(space)] = encapsulated
+					methods[self.replace_paren(space)] = ['']*3
+					if spaces[method_count-1] not in ACCESS_MODIFIERS:
+						methods[self.replace_paren(space)][0]= spaces[method_count-1] # return type
+					
+					method_input = ''
+					for s in spaces[method_count+1:len(spaces)]:
+						if (')' not in s):
+							method_input += (s + ' ')
+						else:
+							#method_input += ' )'
+							break
+					methods[self.replace_paren(space)][1]= method_input 
+					methods[self.replace_paren(space)][2]= encapsulated
                 	method_count += 1
 		self.methods = methods
 	
+	def set_listOf_methodObj(self):
+                for key in self.methods:
+			temp_methObj = methodObj(key)
+			temp_methObj.setOutput(self.methods[key][0]) 
+			temp_methObj.setInput(self.methods[key][1])        
+			temp_methObj.setEncapsulatedCode(self.methods[key][2])  
+                        self.listOf_methObj.append(temp_methObj)
+
+        def get_listOf_methodObj(self):
+                return self.listOf_methObj
+
 	def get_methods(self):
 		return self.methods
 		

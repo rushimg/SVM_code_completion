@@ -1,10 +1,11 @@
 #! /usr/local/bin/python
 
+import os, sys
 from codeParser import codeParser
 	
 #f1_n = '../tests/source_1.java'
 
-def run_varObj(f1_n):
+def run(f1_n):
 	t = codeParser(f1_n)
 	print "Testing " + f1_n + ' \n'
 	counter = 1
@@ -16,3 +17,6 @@ def run_varObj(f1_n):
 		print 'Declaration: ' + var.get_declaration()
 		print 'Usage: ' + str(var.get_usage())
 		counter += 1
+
+if __name__=='__main__':
+        run(sys.argv[1]) 

@@ -16,6 +16,7 @@ class interfaceParser:
 	def getJavaDocComments(self):
 		
 		comments_dict = dict()
+		code_dict = dict()
 		code_list = list()	
 		comment = ''
 		code = ''	
@@ -33,11 +34,21 @@ class interfaceParser:
 				#code = ''					
                 	elif "*" in line:
                         	comment +=line
-                	else:
-                        	code += line
+                	#else:
+                        	#code += line
 			lines_counter += 1
-		
-		#print code_list
+
+		lines_counter = 0
+		for line in self.text_lines:
+                        # TODO lines with multiplication will be caught here, need to avodi this bug 
+			if not("/*" in line) and not("*/" in line) and not("*" in line):
+                                code += line	
+			else:
+				code_dict[str(counter)] = code
+				code = ''
+                    	lines_counter += 1
+
+		print code_dict
 		return comments_dict
 	
 	def cleanMethodName(self,methodDefinitionLine):

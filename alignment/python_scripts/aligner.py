@@ -11,9 +11,12 @@ Class containing algorithm to align two methods as input and output a score {0 t
 class aligner:
 	# change this to take in variable object and method objects 
 	def __init__(self,input_f1, input_f2):
-
 		self.vars_1 = (codeParser(input_f1)).get_varTypes()
-		self.vars_2 = (codeParser(input_f2)).get_varTypes()
+                self.vars_2 = (codeParser(input_f2)).get_varTypes()
+
+
+		self.vars_list_1 = (codeParser(input_f1)).get_listOf_variableObj()
+		self.vars_list_2 = (codeParser(input_f2)).get_listOf_variableObj()
 		#self.methods_1 = methods_f1
 		#self.methods_2 = methods_f2
 		self.lines_1 = open(input_f1,'r').readlines()
@@ -58,6 +61,7 @@ class aligner:
                         no_space_lines_f2.append(self.rm_space_newLine(line))
 
                 matching_lines  = set()
+		# TODO: compare longer to shorter
                 for line2 in lines_f2:
 			spaces_2 = set(line2.split(' '))
 			for line1 in lines_f1:
@@ -74,8 +78,32 @@ class aligner:
 
 				#print line2
 				#print self.jaccard_dist(spaces_1,spaces_2)		
-				                       		
 
+	''' detect which variables are similar between files and replace both with the same generic name '''
+	def variable_replacement(self):
+		var_1 = self.vars_list_1
+		var_2 = self.vars_list_2
+
+		counter = 0
+		for var in  var_1:
+        		print '\n'
+        		print "Variable " + str(counter) + ':'
+        		print 'Type: ' + var.get_type()
+        		print 'Name: ' + var.get_name()
+        		print 'Declaration: ' + var.get_declaration()
+       			print 'Usage: ' + str(var.get_usage())
+			counter += 1
+
+		counter = 0
+                for var in  var_2:
+                        print '\n'
+                        print "Variable " + str(counter) + ':'
+                        print 'Type: ' + var.get_type()
+                        print 'Name: ' + var.get_name()
+                        print 'Declaration: ' + var.get_declaration()
+                        print 'Usage: ' + str(var.get_usage())
+                        counter += 1
+				
 	def print_alignment(self):
 		ml = self.matching_lines()
 		max_count = max(len(self.lines_1), len(self.lines_2))

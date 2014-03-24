@@ -12,4 +12,5 @@ print "Matching lines: " + str(t.matching_lines())
 print "Measure Var Numbers: " + str(t.measure_var_numbers())
 print '-------------------------------------------------------'
 print t.print_alignment()
-print t.fuzzy_matching_lines()
+#print t.fuzzy_matching_lines()
+print t.variable_replacement()

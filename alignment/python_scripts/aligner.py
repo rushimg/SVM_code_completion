@@ -1,35 +1,123 @@
+from variableObj import variableObj
+from methodObj import methodObj
 import subprocess
 import os, sys
 import re
-from variableObject import variableObject
+from codeParser import codeParser
 '''
 Class containing algorithm to align two methods as input and output a score {0 to 1} determining their similarity
 '''
 
 class aligner:
 	# change this to take in variable object and method objects 
-	def __init__(self, vars_f1, vars_f2, methods_f1, methods_f2):
-		self.vars_1 = vars_f1
-		self.vars_2 = vars_f2
-		self.methods_1 = methods_f1
-		self.methods_2 = methods_f2
+	def __init__(self,input_f1, input_f2):
 
+		self.vars_1 = (codeParser(input_f1)).get_varTypes()
+		self.vars_2 = (codeParser(input_f2)).get_varTypes()
+		#self.methods_1 = methods_f1
+		#self.methods_2 = methods_f2
+		self.lines_1 = open(input_f1,'r').readlines()
+		self.lines_2 = open(input_f2,'r').readlines()
+
+	
+	def matching_lines(self):
+		no_space_lines_f2 = []
+		no_space_lines_f1 = []
+		lines_f1 = self.lines_1
+		lines_f2 = self.lines_2
+		
+		for line in self.lines_1:
+			no_space_lines_f1.append(self.rm_space_newLine(line))
+		for line in self.lines_2:
+                        no_space_lines_f2.append(self.rm_space_newLine(line))
+           
+		matching_lines  = set()
+                for line in lines_f2:
+			temp_line = self.rm_space_newLine(line)
+			if (temp_line in no_space_lines_f1) and (temp_line != '{' and temp_line != '}'):
+                                # set of no space no newline lines
+				matching_lines.add(temp_line)
+
+		for line in lines_f1:
+                        temp_line = self.rm_space_newLine(line)
+                        if (temp_line in no_space_lines_f2) and (temp_line != '{' and temp_line != '}'):
+                                matching_lines.add(temp_line)
+
+		return matching_lines
+
+	''' fuzzy matching between lines '''
+	def fuzzy_matching_lines(self):	
+		no_space_lines_f2 = []
+                no_space_lines_f1 = []
+                lines_f1 = self.lines_1
+                lines_f2 = self.lines_2
+
+                for line in self.lines_1:
+                        no_space_lines_f1.append(self.rm_space_newLine(line))
+                for line in self.lines_2:
+                        no_space_lines_f2.append(self.rm_space_newLine(line))
+
+                matching_lines  = set()
+                for line2 in lines_f2:
+			spaces_2 = set(line2.split(' '))
+			for line1 in lines_f1:
+				spaces_1 = set(line1.split(' '))
+				if (self.jaccard_dist(spaces_1,spaces_2) < .5):
+					print "%-80s %s" % (line1.replace('\n',''), line2.replace('\n',''))
+					#try:
+					#	lines_f1.remove(line1)
+					#	lines_f2.remove(line2)
+					#except Exception:
+					#	pass
+				
+				#print line1
+
+				#print line2
+				#print self.jaccard_dist(spaces_1,spaces_2)		
+				                       		
+
+	def print_alignment(self):
+		ml = self.matching_lines()
+		max_count = max(len(self.lines_1), len(self.lines_2))
+		# pad lines
+		lines_f1 = self.lines_1 + [''] * (max_count - len(self.lines_1))	
+		lines_f2 = self.lines_2 + [''] * (max_count - len(self.lines_2))  
+		
+		print "%-80s %s" % ('file1','file2')
+		
+		for i in range(0,max_count):
+			print "%-80s %s" % (lines_f1[i].replace('\n',''), lines_f2[i].replace('\n',''))
+			#print lines_f1[i].replace('\n','') + ' ' + lines_f2[i].replace('\n','')
+
+	def rm_space_newLine(self,str_in):
+		str_out = (str_in.replace(' ','')).replace('\n','')
+		str_out = str_out.replace('{','')
+		str_out = str_out.replace('}','')
+		return str_out
 
 	def align(self):
 		return self.measure_var_numbers()
 
-	# what else could we put?
-	# edit distance with alignment and shifting? between var names
-	# jaccard of similar code context?
-	# if both in same method/class
-	# if both in if/for/while statment/loop
-	# measure number of overlapping vars over total number of vars
+	def jaccard_dist(self,a,b):
+		union = a.union(b)
+		inter = a.intersection(b)
+		len_union = float(len(union))
+		len_inter = float(len(inter))
+		jsim = len_inter/len_union
+		jdist = 1-jsim
+    		return jdist
+		
 	
 	#TODO
-	# replace vars with stubbed generic names
-	# align pieces of code and find the difference 
-	# also need to add in a methods parser
-
+	'''
+		1) Stub Variables
+		
+		2) "word" level alignment
+			-> edit distance
+		2.5) encapsulated code? statements? loops?
+		3) look at probablistic alignments
+	'''
+	
 	def measure_var_numbers(self):
 		f1 = self.vars_1
 		f2 = self.vars_2

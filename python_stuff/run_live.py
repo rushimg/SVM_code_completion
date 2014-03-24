@@ -7,7 +7,7 @@ import math
 import ast
 
 #CORPUS = '../code_corpus/regular/facebook/'
-NUM_RETURN_RESULTS = 10
+NUM_RETURN_RESULTS = 20
 #TMP_DIR = '../tt_live/demo_1/'
 
 def pre_proc_code(run_pre_proc):

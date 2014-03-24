@@ -1,14 +1,18 @@
 import subprocess
 import os, sys
 import re
+from variableObject import variableObject
 '''
 Class containing algorithm to align two methods as input and output a score {0 to 1} determining their similarity
 '''
 
 class aligner:
-	def __init__(self, input_f1, input_f2):
-		self.vars_1 = input_f1
-		self.vars_2 = input_f2
+	# change this to take in variable object and method objects 
+	def __init__(self, vars_f1, vars_f2, methods_f1, methods_f2):
+		self.vars_1 = vars_f1
+		self.vars_2 = vars_f2
+		self.methods_1 = methods_f1
+		self.methods_2 = methods_f2
 
 
 	def align(self):

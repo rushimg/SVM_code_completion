@@ -17,11 +17,36 @@ class aligner:
 
 		self.vars_list_1 = (codeParser(input_f1)).get_listOf_variableObj()
 		self.vars_list_2 = (codeParser(input_f2)).get_listOf_variableObj()
-		#self.methods_1 = methods_f1
-		#self.methods_2 = methods_f2
+		self.method_list_1 = (codeParser(input_f1)).get_listOf_methodObj()
+		self.method_list_2 = (codeParser(input_f2)).get_listOf_methodObj()
+			
 		self.lines_1 = open(input_f1,'r').readlines()
 		self.lines_2 = open(input_f2,'r').readlines()
 
+	'''
+	Match on return type and parameters
+	'''
+	def methodSignature(self):
+		methods_1 = self.method_list_1
+		methods_2 = self.method_list_2
+		cost = 0
+		if (len(methods_1) != 1 or len(methods_2) != 1):
+			cost += 100
+		
+		if (methods_1[0].getOutput() !=  methods_2[0].getOutput()):
+			cost += 5
+		
+		method_dict_1 = dict()
+		for in_type in methods_1[0].getInputTypes():
+			method_dict_1['temp'] = in_type	
+		
+		method_dict_2 = dict()  
+                for in_type in methods_2[0].getInputTypes():
+                        method_dict_2['temp'] = in_type
+         	
+		cost += 5*(1-self.measure_difference(method_dict_1,method_dict_2))
+		
+		return cost
 	
 	def matching_lines(self):
 		no_space_lines_f2 = []
@@ -126,6 +151,11 @@ class aligner:
 	def align(self):
 		return self.measure_var_numbers()
 
+	def disagreement_dist(self, a, b):
+		if a == b:
+			return 0
+		else: 
+			return 1
 	def jaccard_dist(self,a,b):
 		union = a.union(b)
 		inter = a.intersection(b)
@@ -135,46 +165,38 @@ class aligner:
 		jdist = 1-jsim
     		return jdist
 		
-	
-	#TODO
-	'''
-		1) Stub Variables
+	def measure_difference(self,f1,f2):
+                f1_count = dict()
+                f2_count = dict()
+                keys = set()
+                matched = 0
+
+                for key in f1:
+                        type_temp = f1[key]
+                        if not (type_temp in f1_count.keys()):
+                                f1_count[type_temp] = 1
+                                keys.add(type_temp)
+                        else:
+                                f1_count[type_temp] += 1
+                for key in f2:
+                        type_temp = f2[key]
+                        if not (type_temp in f2_count.keys()):
+                                f2_count[type_temp] = 1
+                                keys.add(type_temp)
+                        else:
+                                f2_count[type_temp] += 1
+
+                for key in keys:
+                        if (key in f1_count) and (key in f2_count):
+                                matched += min(f1_count[key],f2_count[key])
+                total = len(f1) + len(f2) - matched
+
+                return float(matched)/float(total)
 		
-		2) "word" level alignment
-			-> edit distance
-		2.5) encapsulated code? statements? loops?
-		3) look at probablistic alignments
-	'''
-	
 	def measure_var_numbers(self):
 		f1 = self.vars_1
 		f2 = self.vars_2
-		f1_count = dict()
-		f2_count = dict()
-		keys = set()
-		matched = 0
-		
-		for key in f1:
-			type_temp = f1[key]
-			if not (type_temp in f1_count.keys()):
- 				f1_count[type_temp] = 1
-				keys.add(type_temp)
-			else:
-				f1_count[type_temp] += 1
-		for key in f2:
-                	type_temp = f2[key]
-                	if not (type_temp in f2_count.keys()):
-                        	f2_count[type_temp] = 1
-				keys.add(type_temp)
-                	else:
-                        	f2_count[type_temp] += 1
-	
-		for key in keys:
-			if (key in f1_count) and (key in f2_count):
-				matched += min(f1_count[key],f2_count[key])
-		total = len(f1) + len(f2) - matched
-	
-		return float(matched)/float(total)
+		return self.measure_difference(f1,f2)	
 	
 	# edit distance functio
 	#def editDistance(str1,str2):

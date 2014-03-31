@@ -43,6 +43,7 @@ class interfaceParser:
                         # TODO lines with multiplication will be caught here, need to avodi this bug 
 			if not("/*" in line) and not("*/" in line) and not("*" in line):
                                 code += line	
+				#print code
 			else:
 				code_dict[str(counter)] = code
 				code = ''

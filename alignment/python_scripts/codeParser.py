@@ -220,16 +220,24 @@ class codeParser:
 		raw_list.extend(self.get_varTypes().values())
 		raw_list.extend(self.get_statements())
 		for var in  self.get_listOf_methodObj():
-        		signature = var.getOutput() + '_' + var.getInput()
+        		#raw_list.append(var.getOutput())
+			#counter = 0
+		
+			#for space in var.getInput():
+			#	if counter % 2 == 0:
+			#		raw_list.append(space)
+			#	counter += 1
+			'''
+			signature = var.getOutput() + '_' + var.getInput()
 			if signature:
 				signature = signature.replace(' ','_')
-        			print signature
+        			#print signature
 				if signature[-1] == '_':
 					signature = signature[:-1]
 				#if signature[0] == '_':
                 		#	signature = signature[1:]
 				raw_list.append(signature)
-	
+			'''
 		return raw_list
 	
 	def replace_paren(self,raw_text):

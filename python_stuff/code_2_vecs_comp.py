@@ -29,7 +29,7 @@ def process_files(in_dir):
 	#print matches
 	#matches = (open(in_dir+'train_corr','r')).readlines() + (open(in_dir+'train_wrong','r')).readlines()
 	words_per_file = dict()
-	
+		
 	words = set()
 	length = str(len(matches))
 	count = 0
@@ -85,7 +85,8 @@ def get_word_counts(file_words, all_words, calc_freq):
 		#	print calc_freq.calc_tfidf(w,file_words)
 		if w.lower() not in word_count_dict.keys():
 			word_count_dict[w.lower()] = 0
-		word_count_dict[w.lower()] += math.ceil(calc_freq.calc_tfidf(w,file_words))
+		word_count_dict[w.lower()] += 1
+		#word_count_dict[w.lower()] += math.ceil(calc_freq.calc_tfidf(w,file_words))
 	return clean_output_4_svm(word_count_dict)
 	
 #make the output of form feature:value, no zeo valued features

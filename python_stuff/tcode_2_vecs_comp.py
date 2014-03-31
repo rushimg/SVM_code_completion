@@ -93,7 +93,7 @@ def get_word_counts(file_words, all_words, calc_freq):
 		if w in all_words:
 			if w.lower() in word_count_dict.keys():
 				 word_count_dict[w.lower()] = 0
-			word_count_dict[w.lower()] += math.ceil(calc_freq.calc_tfidf(w,file_words))
+			word_count_dict[w.lower()] += 1
 	return clean_output_4_svm(word_count_dict)
 	
 #make the output of form feature:value, no zeo valued features

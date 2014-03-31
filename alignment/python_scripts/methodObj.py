@@ -29,3 +29,15 @@ class methodObj:
 	
 	def getInput(self):
 		return self.input
+
+
+	def getInputTypes(self):
+		inputs = self.getInput()
+		counter = 0
+		raw_list = list()
+		for space in inputs.split(' '):
+			if counter % 2 == 0:
+				if (space != '') and (space != ' '):
+					raw_list.append(space)
+			counter += 1
+		return raw_list

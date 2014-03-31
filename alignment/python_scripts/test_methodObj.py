@@ -13,5 +13,6 @@ for var in  t.get_listOf_methodObj():
 	print "Method " + str(counter) + ':'
 	print 'Output[return] Type: ' + var.getOutput()
 	print 'Input Parameters: ' + var.getInput()
+	print 'Input ParametersTypes: ' + str(var.getInputTypes())
 	print 'Encapsulated Code: ' + var.getEncapsulatedCode()
 	counter += 1

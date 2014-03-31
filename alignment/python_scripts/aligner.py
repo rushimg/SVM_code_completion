@@ -37,13 +37,15 @@ class aligner:
 			cost += 5
 		
 		method_dict_1 = dict()
+		counter = 0
 		for in_type in methods_1[0].getInputTypes():
-			method_dict_1['temp'] = in_type	
-		
+			method_dict_1[str(counter)] = in_type
+			counter += 1
+		counter = 0		
 		method_dict_2 = dict()  
                 for in_type in methods_2[0].getInputTypes():
-                        method_dict_2['temp'] = in_type
-         	
+                        method_dict_2[str(counter)] = in_type
+         		counter += 1
 		cost += 5*(1-self.measure_difference(method_dict_1,method_dict_2))
 		
 		return cost

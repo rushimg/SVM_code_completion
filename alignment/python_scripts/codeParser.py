@@ -128,6 +128,14 @@ class codeParser:
        		for space in spaces:
                 	# TODO: a bit hacky when saying that the previous word should not be 'new'
 			#obj_reg.match(space)
+			#if 'describeEventsAsync' in space:
+			#	print space not in self.classes
+			#	print ('(' in space)
+			#	print (spaces[method_count-1] != 'new') 
+			#	print  ('.' not in space)
+			#	print (self.replace_paren(space) != ' ')
+			#	print 'break'
+
 			if ((space not in self.classes) and ('(' in space) and (spaces[method_count-1] != 'new') and ('.' not in space) and (self.replace_paren(space) != ' ')):
                         	encapsulated = ''
 				start_flag = False
@@ -146,7 +154,8 @@ class codeParser:
 							break
 						else:
 							encapsulated += (sub_space +' ')	
-				if (encapsulated != ''):
+				#TODO: clean this
+				if (encapsulated != 'sadfjkfsdahjkjhkafsdjhkl'):
 					methods[self.replace_paren(space)] = ['']*3
 					if spaces[method_count-1] not in ACCESS_MODIFIERS:
 						methods[self.replace_paren(space)][0]= spaces[method_count-1] # return type
@@ -162,7 +171,6 @@ class codeParser:
 					methods[self.replace_paren(space)][2]= encapsulated
                 	method_count += 1
 		self.methods = methods
-	
 	def set_listOf_methodObj(self):
                 for key in self.methods:
 			temp_methObj = methodObj(key)

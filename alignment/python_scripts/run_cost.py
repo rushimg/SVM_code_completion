@@ -6,7 +6,10 @@ from codeParser import codeParser
 from aligner import aligner
 
 MAX_COST = 5
-
+'''
+run the cost based classifier
+final output line is the accuracy
+'''
 def read_test_data(in_dir):
 	f_test_corr = open(in_dir+'test_corr','r')	
 	f_test_wrong = open(in_dir+'test_wrong','r')

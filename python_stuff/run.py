@@ -5,7 +5,7 @@ def run_preproc(in_dir):
 	print "Running SVM on " + in_dir
 	
 	clean_cmd = 'bash ../train_test/clean_tests.sh ' + in_dir
-	os.system(clean_cmd)
+	#os.system(clean_cmd)
 	
 	train_cmd = 'python code_2_vecs_tfidf_cmd.py ' + in_dir
 	os.system(train_cmd)
@@ -20,7 +20,7 @@ def run_preproc(in_dir):
         os.system(classify_cmd)
 
  	map_cmd = 'bash ../train_test/map_tests_pred.sh ' + in_dir
-	os.system(map_cmd)
+	#os.system(map_cmd)
 	
 if __name__=='__main__':
         run_preproc(sys.argv[1])

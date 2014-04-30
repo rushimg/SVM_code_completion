@@ -1,0 +1,6 @@
+
+    BufferStrategy getBufferStrategy() {
+        return bufferStrategy;
+    }
+
+    

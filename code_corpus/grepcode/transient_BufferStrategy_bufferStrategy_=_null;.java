@@ -1,0 +1,4 @@
+
+    transient BufferStrategy bufferStrategy = null;
+
+    

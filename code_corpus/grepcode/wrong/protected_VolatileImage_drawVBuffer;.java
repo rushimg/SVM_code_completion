@@ -1,0 +1,3 @@
+
+        protected VolatileImage drawVBuffer; // = null
+        

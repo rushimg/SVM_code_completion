@@ -1,0 +1,6 @@
+
+    public int size() {
+        return size;
+    }
+
+    

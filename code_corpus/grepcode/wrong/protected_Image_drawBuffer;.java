@@ -1,0 +1,3 @@
+
+        protected Image drawBuffer; // = null
+        

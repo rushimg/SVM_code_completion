@@ -1,0 +1,26 @@
+/**
+     * Potentially coalesce an event being posted with an existing
+     * event.  This method is called by <code>EventQueue.postEvent</code>
+     * if an event with the same ID as the event to be posted is found in
+     * the queue (both events must have this component as their source).
+     * This method either returns a coalesced event which replaces
+     * the existing event (and the new event is then discarded), or
+     * <code>null</code> to indicate that no combining should be done
+     * (add the second event to the end of the queue).  Either event
+     * parameter may be modified and returned, as the other one is discarded
+     * unless <code>null</code> is returned.
+     * <p>
+     * This implementation of <code>coalesceEvents</code> coalesces
+     * two event types: mouse move (and drag) events,
+     * and paint (and update) events.
+     * For mouse move events the last event is always returned, causing
+     * intermediate moves to be discarded.  For paint events, the new
+     * event is coalesced into a complex <code>RepaintArea</code> in the peer.
+     * The new <code>AWTEvent</code> is always returned.
+     *
+     * @param  existingEvent  the event already on the <code>EventQueue</code>
+     * @param  newEvent       the event being posted to the
+     *          <code>EventQueue</code>
+     * @return a coalesced event, or <code>null</code> indicating that no
+     *          coalescing was done
+     */

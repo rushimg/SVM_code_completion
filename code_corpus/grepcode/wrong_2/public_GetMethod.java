@@ -1,0 +1,6 @@
+
+    public GetMethod() {
+        setFollowRedirects(true);
+    }
+
+    

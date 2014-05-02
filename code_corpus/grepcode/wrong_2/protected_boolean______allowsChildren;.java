@@ -1,0 +1,5 @@
+
+    protected boolean           allowsChildren;
+
+
+    

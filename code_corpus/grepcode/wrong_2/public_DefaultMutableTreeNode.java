@@ -1,0 +1,6 @@
+
+    public DefaultMutableTreeNode() {
+        this(null);
+    }
+
+    

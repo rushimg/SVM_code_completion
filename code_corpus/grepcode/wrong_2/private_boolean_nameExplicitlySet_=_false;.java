@@ -1,0 +1,4 @@
+
+    private boolean nameExplicitlySet = false;
+
+    

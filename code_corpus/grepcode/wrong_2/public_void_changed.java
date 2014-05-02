@@ -1,0 +1,6 @@
+
+  public void changed() {
+    version++;
+  }
+  
+  

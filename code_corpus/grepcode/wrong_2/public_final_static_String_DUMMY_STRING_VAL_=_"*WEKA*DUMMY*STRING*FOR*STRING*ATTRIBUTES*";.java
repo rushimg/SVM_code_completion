@@ -1,0 +1,4 @@
+
+  public final static String DUMMY_STRING_VAL = "*WEKA*DUMMY*STRING*FOR*STRING*ATTRIBUTES*";
+
+  

@@ -34,8 +34,7 @@ def extract_doc_and_code(match):
 			signature = code_lines[0]
 		print "SIGNATURE " + clean(signature)
 	
-		
-		 	
+		#if ';' in signature # then this is just a class variubale declaration 
 		f_out_code = open(out_dir+clean(signature)+'.java','w')
 		f_out_code.write(end_comment[1])
 		f_out_code.close()
@@ -48,6 +47,9 @@ def extract_doc_and_code(match):
 	#print out_dir
 			
 def clean(in_str):
+	
+	#'=_-742180568732916383L;'
+	# should we just discard files with ; at the end; this means that it is just a line
 	slash = in_str.split('/')
 	out_str = slash[0]
 	out_str = out_str.replace('(',' ')
@@ -55,10 +57,13 @@ def clean(in_str):
 	out_str = out_str.replace(',',' ')
 	out_str = out_str.replace('{','')
 	out_str = out_str.replace('}',' ')
+	out_str = out_str.replace('<',' ')
+	out_str = out_str.replace('>',' ')
 	out_str = out_str.replace('[]','List')
 	out_str = out_str.strip()
 	out_str = out_str.replace(' ','_')
 	out_str = out_str.replace('__','_')
+	out_str = out_str.replace('?','')
 	return out_str
 
 if __name__=='__main__':

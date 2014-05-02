@@ -1,0 +1,3 @@
+
+        protected BufferCapabilities caps; // = null
+        

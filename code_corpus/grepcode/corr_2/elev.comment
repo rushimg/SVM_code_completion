@@ -1,0 +1,76 @@
+orts the matrix rows into ascending order, according to the <i>natural
+     * ordering</i> of the values computed by applying the given aggregation
+     * function to each row; Particularly efficient when comparing expensive
+     * aggregates, because aggregates need not be recomputed time and again, as
+     * is the case for comparator based sorts. Essentially, this algorithm makes
+     * expensive comparisons cheap. Normally <tt>aggregates</tt> defines a
+     * summary measure of a row. Speedup over comparator based sorting =
+     * <tt>2*log(rows)</tt>, on average.
+     * <p>
+     * The returned view is backed by this matrix, so changes in the returned
+     * view are reflected in this matrix, and vice-versa. To sort ranges use
+     * sub-ranging views. To sort columns by rows, use dice views. To sort
+     * descending, use flip views ...
+     * <p>
+     * <b>Example:</b> Each aggregate is the sum of a row
+     * <table border="1" * cellspacing="0">
+     * <tr nowrap>
+     * <td valign="top"><tt>4 x 2 matrix: <br>
+     1, 1<br>
+     5, 4<br>
+     3, 0<br>
+     4, 4 <br>
+     </tt></td>
+     * <td align="left" valign="top"> <tt>aggregates=<br>
+     hep.aida.bin.BinFunctions1D.sum<br>
+     ==></tt></td>
+     * <td valign="top">
+     * <p>
+     * <tt>4 x 2 matrix:<br>
+     1, 1<br>
+     3, 0<br>
+     4, 4<br>
+     5, 4</tt><br>
+     * The matrix IS NOT SORTED.<br>
+     * The new VIEW IS SORTED.
+     * </p>
+     * </td>
+     * </tr>
+     * </table>
+     * 
+     * <table>
+     * <td class="PRE">
+     * 
+     * <pre>
+     * // sort 10000 x 1000 matrix by median or by sum of logarithms in a row (i.e. by geometric mean)
+     * DoubleMatrix2D matrix = new DenseDoubleMatrix2D(10000, 1000);
+     * matrix.assign(new cern.jet.random.engine.MersenneTwister()); // initialized randomly
+     * cern.jet.math.Functions F = cern.jet.math.Functions.functions; // alias for convenience
+     * 
+     * // THE QUICK VERSION (takes some 10 secs)
+     * DoubleMatrix2D sorted = quickSort(matrix, hep.aida.bin.BinFunctions1D.median);
+     * //DoubleMatrix2D sorted = quickSort(matrix,hep.aida.bin.BinFunctions1D.sumOfLogarithms);
+     * 
+     * // THE SLOW VERSION (takes some 300 secs)
+     * DoubleMatrix1DComparator comparator = new DoubleMatrix1DComparator() {
+     *     public int compare(DoubleMatrix1D x, DoubleMatrix1D y) {
+     *         double a = cern.colt.matrix.doublealgo.Statistic.bin(x).median();
+     *         double b = cern.colt.matrix.doublealgo.Statistic.bin(y).median();
+     *         // double a = x.aggregate(F.plus,F.log);
+     *         // double b = y.aggregate(F.plus,F.log);
+     *         return a &lt; b ? -1 : a == b ? 0 : 1;
+     *     }
+     * };
+     * DoubleMatrix2D sorted = quickSort(matrix, comparator);
+     * </pre>
+     * 
+     * </td>
+     * </table>
+     * 
+     * @param matrix
+     *            the matrix to be sorted.
+     * @param aggregate
+     *            the function to sort on; aggregates values in a row.
+     * @return a new matrix view having rows sorted. <b>Note that the original
+     *         matrix is left unaffected.</b>
+     */

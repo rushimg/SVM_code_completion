@@ -16,7 +16,7 @@ Eclipse Plugin can do this for us
 
 # Match CamelCase with first letter Capital
 OBJECT_REGEX = '([A-Z][a-z0-9]+)+'
-PRIMITIVE_TYPES = ['int','int[]', 'Int', 'Int[]','String', 'String[]','string', 'string[]','byte','byte[]' ,'short','short[]', 'long','long[]', 'float','float[]','double','double[]','boolean', 'boolean[]','char','char[]']
+PRIMITIVE_TYPES = ['Object','Object[]','Comparator','int','int[]', 'Int', 'Int[]','String', 'String[]','string', 'string[]','byte','byte[]' ,'short','short[]', 'long','long[]', 'float','float[]','double','double[]','boolean', 'boolean[]','char','char[]']
 ACCESS_MODIFIERS = ['public','private','protected']
 STATEMENTS = ['while','if','for']
 obj_reg = re.compile(OBJECT_REGEX)
@@ -163,6 +163,7 @@ class codeParser:
 					method_input = ''
 					for s in spaces[method_count+1:len(spaces)]:
 						if (')' not in s):
+							#print s
 							method_input += (s + ' ')
 						else:
 							#method_input += ' )'

@@ -1,0 +1,85 @@
+  /**
+     * Sorts the matrix rows into ascending order, according to the <i>natural
+     * ordering</i> of the matrix values in the virtual column
+     * <tt>aggregates</tt>; Particularly efficient when comparing expensive
+     * aggregates, because aggregates need not be recomputed time and again, as
+     * is the case for comparator based sorts. Essentially, this algorithm makes
+     * expensive comparisons cheap. Normally each element of <tt>aggregates</tt>
+     * is a summary measure of a row. Speedup over comparator based sorting =
+     * <tt>2*log(rows)</tt>, on average. For this operation, quicksort is
+     * usually faster.
+     * <p>
+     * The returned view is backed by this matrix, so changes in the returned
+     * view are reflected in this matrix, and vice-versa. To sort ranges use
+     * sub-ranging views. To sort columns by rows, use dice views. To sort
+     * descending, use flip views ...
+     * <p>
+     * <b>Example:</b> Each aggregate is the sum of a row
+     * <table border="1" * cellspacing="0">
+     * <tr nowrap>
+     * <td valign="top"><tt>4 x 2 matrix: <br>
+     1, 1<br>
+     5, 4<br>
+     3, 0<br>
+     4, 4 <br>
+     </tt></td>
+     * <td align="left" valign="top"> <tt>aggregates=<br>
+     2<br>
+     9<br>
+     3<br>
+     8<br>
+     ==></tt></td>
+     * <td valign="top">
+     * <p>
+     * <tt>4 x 2 matrix:<br>
+     1, 1<br>
+     3, 0<br>
+     4, 4<br>
+     5, 4</tt><br>
+     * The matrix IS NOT SORTED.<br>
+     * The new VIEW IS SORTED.
+     * </p>
+     * </td>
+     * </tr>
+     * </table>
+     * 
+     * <table>
+     * <td class="PRE">
+     * 
+     * <pre>
+     * // sort 10000 x 1000 matrix by sum of logarithms in a row (i.e. by geometric mean)
+     * DoubleMatrix2D matrix = new DenseDoubleMatrix2D(10000, 1000);
+     * matrix.assign(new cern.jet.random.engine.MersenneTwister()); // initialized randomly
+     * cern.jet.math.Functions F = cern.jet.math.Functions.functions; // alias for convenience
+     * 
+     * // THE QUICK VERSION (takes some 3 secs)
+     * // aggregates[i] = Sum(log(row));
+     * double[] aggregates = new double[matrix.rows()];
+     * for (int i = matrix.rows(); --i &gt;= 0;)
+     *     aggregates[i] = matrix.viewRow(i).aggregate(F.plus, F.log);
+     * DoubleMatrix2D sorted = quickSort(matrix, aggregates);
+     * 
+     * // THE SLOW VERSION (takes some 90 secs)
+     * DoubleMatrix1DComparator comparator = new DoubleMatrix1DComparator() {
+     *     public int compare(DoubleMatrix1D x, DoubleMatrix1D y) {
+     *         double a = x.aggregate(F.plus, F.log);
+     *         double b = y.aggregate(F.plus, F.log);
+     *         return a &lt; b ? -1 : a == b ? 0 : 1;
+     *     }
+     * };
+     * DoubleMatrix2D sorted = quickSort(matrix, comparator);
+     * </pre>
+     * 
+     * </td>
+     * </table>
+     * 
+     * @param matrix
+     *            the matrix to be sorted.
+     * @param aggregates
+     *            the values to sort on. (As a side effect, this array will also
+     *            get sorted).
+     * @return a new matrix view having rows sorted. <b>Note that the original
+     *         matrix is left unaffected.</b>
+     * @throws IndexOutOfBoundsException
+     *             if <tt>aggregates.length != matrix.rows()</tt>.
+     */

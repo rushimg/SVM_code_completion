@@ -39,6 +39,8 @@ class aligner:
 		#	print "1 " + methods_1[1].getEncapsulatedCode()
 		#	print "0 " + methods_1[0].getEncapsulatedCode()
 		#	cost += 100
+		#print methods_1
+		#print methods_2
 		if (methods_1[0].getOutput() !=  methods_2[0].getOutput()):
 			cost += 5
 
@@ -52,8 +54,8 @@ class aligner:
                 for in_type in methods_2[0].getInputTypes():
                         method_dict_2[str(counter)] = in_type
          		counter += 1
-		print method_dict_1
-		print method_dict_2
+		#print method_dict_1
+		#print method_dict_2
 		cost += 5*(1-self.measure_difference(method_dict_1,method_dict_2))
 		
 		return cost

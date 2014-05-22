@@ -312,9 +312,11 @@ def run_svm():
 	classify_cmd = '../svm_light/svm_classify ' + TMP_DIR+'test.dat ' + TMP_DIR+'model ' + TMP_DIR+'predictions '
         os.system(classify_cmd)
 
- 	#map_cmd = 'bash ../train_test/map_tests_pred.sh ' + in_dir
-	#os.system(map_cmd)
+ 	map_cmd = 'bash ../tt_live/map_tests_pred.sh ' + TMP_DIR
+	os.system(map_cmd)
 
+	rank_cmd = 'python ../alignment/python_scripts/run_ranker_live.py '+ TMP_DIR
+	os.system(rank_cmd)
 	print "Done running SVM Classfier"
 
 def return_results():
@@ -353,7 +355,7 @@ if __name__=='__main__':
 		tmp_dir += elem +'/'
 	global TMP_DIR
 	TMP_DIR = tmp_dir
-        #print TMP_DIR
+        print TMP_DIR
 
 	global CORPUS 
 	CORPUS = sys.argv[2]

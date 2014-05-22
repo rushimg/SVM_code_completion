@@ -36,6 +36,7 @@ class methodObj:
 		counter = 0
 		raw_list = list()
 		for space in inputs.split(' '):
+			#print space
 			if counter % 2 == 0:
 				if (space != '') and (space != ' '):
 					raw_list.append(space)

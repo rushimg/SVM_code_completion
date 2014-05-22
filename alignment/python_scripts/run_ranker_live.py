@@ -43,18 +43,27 @@ def read_test_data(in_dir):
 		slash = line.split('../')
 		rank = float(slash[0].strip())
 		if rank > .85:
-			f = '../../'+(slash[1].strip())
+			f = '../'+(slash[1].strip())
+			#f = '../../'+(slash[1].strip())
+			f = f.replace('regular/aws','regular_code')
+			f = f +'_code'
+			#print f
 			#svm_positive.append('../'+(slash[1].strip()))
 			cost_list[f] = calculate_cost(f,f_query)					
 	sorted_cost_list = sorted(cost_list, key=cost_list.get)
-	for elem in sorted_cost_listi[0:10]:
+	for elem in sorted_cost_list[1:10]:
 		print elem + ' : ' + str(cost_list[elem])
 	
 def calculate_cost(f_test,f_query):
 	#print f_test
 	#print f_query	
-	t = aligner(f_test,f_query)
-	cost = t.methodSignature()
+	cost = 1000000
+	try:
+		t = aligner(f_test,f_query)
+		cost = t.methodSignature()
+	except:
+		pass
+
 	#if cost == 0:
 	#print f_test
 	#print cost

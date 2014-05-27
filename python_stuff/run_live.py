@@ -366,4 +366,4 @@ if __name__=='__main__':
 	relevance_feed_back(train_set,feature_vectors_dict)
 	test_data(feature_vectors_dict)
 	run_svm()
-	return_results()
+	#return_results()

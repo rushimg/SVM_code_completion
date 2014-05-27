@@ -47,7 +47,7 @@ def read_test_data(in_dir):
 			#svm_positive.append('../'+(slash[1].strip()))
 			cost_list[f] = calculate_cost(f,f_query)					
 	sorted_cost_list = sorted(cost_list, key=cost_list.get)
-	for elem in sorted_cost_listi[0:10]:
+	for elem in sorted_cost_list[0:10]:
 		print elem + ' : ' + str(cost_list[elem])
 	
 def calculate_cost(f_test,f_query):

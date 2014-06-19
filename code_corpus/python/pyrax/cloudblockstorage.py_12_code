@@ -1,0 +1,29 @@
+    def _create_body(self, name, size=None, volume_type=None, description=None,
+             metadata=None, snapshot_id=None, clone_id=None,
+             availability_zone=None):
+        """
+        Used to create the dict required to create a new volume
+        """
+        if not isinstance(size, (int, long)) or not (
+                MIN_SIZE <= size <= MAX_SIZE):
+            raise exc.InvalidSize("Volume sizes must be integers between "
+                    "%s and %s." % (MIN_SIZE, MAX_SIZE))
+        if volume_type is None:
+            volume_type = "SATA"
+        if description is None:
+            description = ""
+        if metadata is None:
+            metadata = {}
+        body = {"volume": {
+                "size": size,
+                "snapshot_id": snapshot_id,
+                "source_volid": clone_id,
+                "display_name": name,
+                "display_description": description,
+                "volume_type": volume_type,
+                "metadata": metadata,
+                "availability_zone": availability_zone,
+                }}
+        return body
+
+

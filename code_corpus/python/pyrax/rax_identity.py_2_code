@@ -1,0 +1,17 @@
+    def _format_credentials(self):
+        """
+        Returns the current credentials in the format expected by the
+        authentication service. Note that by default Rackspace credentials
+        expect 'api_key' instead of 'password'. However, if authentication
+        fails, return the creds in standard password format, in case they are
+        using a username / password combination.
+        """
+        if self._creds_style == "apikey":
+            return {"auth": {"RAX-KSKEY:apiKeyCredentials":
+                    {"username": "%s" % self.username,
+                    "apiKey": "%s" % self.api_key}}}
+        else:
+            # Return in the default password-style
+            return super(RaxIdentity, self)._format_credentials()
+
+

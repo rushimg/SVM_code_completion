@@ -1,0 +1,39 @@
+    def add_ptr_records(self, device, records):
+        """
+        Adds one or more PTR records to the specified device.
+        """
+        device_type = self._resolve_device_type(device)
+        href, svc_name = self._get_ptr_details(device, device_type)
+        if not isinstance(records, (list, tuple)):
+            records = [records]
+        body = {"recordsList": {
+                    "records": records},
+                "link": {
+                    "content": "",
+                    "href": href,
+                    "rel": svc_name,
+                }}
+        uri = "/rdns"
+        # This is a necessary hack, so here's why: if you attempt to add
+        # PTR records to device, and you don't have rights to either the device
+        # or the IP address, the DNS API will return a 401 - Unauthorized.
+        # Unfortunately, the pyrax client interprets this as a bad auth token,
+        # and there is no way to distinguish this from an actual authentication
+        # failure. The client will attempt to re-authenticate as a result, and
+        # will fail, due to the DNS API not having regional endpoints. The net
+        # result is that an EndpointNotFound exception will be raised, which
+        # we catch here and then raise a more meaningful exception.
+        # The Rackspace DNS team is working on changing this to return a 403
+        # instead; when that happens this kludge can go away.
+        try:
+            resp, resp_body = self._async_call(uri, body=body, method="POST",
+                    error_class=exc.PTRRecordCreationFailed)
+        except exc.EndpointNotFound:
+            raise exc.InvalidPTRRecord("The domain/IP address information is not "
+                    "valid for this device.")
+        return resp_body.get("records")
+        records = [CloudDNSPTRRecord(rec, device)
+                for rec in resp_body.get("records", [])]
+        return records
+
+

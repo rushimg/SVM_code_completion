@@ -1,0 +1,14 @@
+def _parse_marker(body):
+    marker = None
+    links = body.get("links", [])
+    next_links = [link for link in links if link.get("rel") == "next"]
+    try:
+        next_link = next_links[0]["href"]
+    except IndexError:
+        next_link = ""
+    mtch = marker_pat.match(next_link)
+    if mtch:
+        marker = mtch.groups()[0]
+    return marker
+
+

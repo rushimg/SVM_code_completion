@@ -1,0 +1,15 @@
+    def get_object(self, container, obj):
+        """Returns a StorageObject instance for the object in the container."""
+        cname = self._resolve_name(container)
+        oname = self._resolve_name(obj)
+        obj_info = self.connection.head_object(cname, oname)
+        lm_str = obj_info["last-modified"]
+        dtstr = _convert_head_object_last_modified_to_local(lm_str)
+        obj = StorageObject(self, self.get_container(container),
+                name=oname, content_type=obj_info["content-type"],
+                total_bytes=int(obj_info["content-length"]),
+                last_modified=dtstr, etag=obj_info["etag"])
+        return obj
+
+
+    @handle_swiftclient_exception

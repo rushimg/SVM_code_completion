@@ -1,0 +1,14 @@
+    def update_node(self, node, diff=None):
+        """Updates the node's attributes."""
+        lb = node.parent
+        if not lb:
+            raise exc.UnattachedNode("No parent Load Balancer for this node "
+                    "could be determined.")
+        if diff is None:
+            diff = node._diff()
+        req_body = {"node": diff}
+        resp, body = self.api.method_put("/loadbalancers/%s/nodes/%s" %
+                (lb.id, node.id), body=req_body)
+        return resp, body
+
+

@@ -1,0 +1,20 @@
+    def delete(self):
+        """
+        Adds a check to make sure that the snapshot is able to be deleted.
+        """
+        if self.status not in ("available", "error"):
+            raise exc.SnapshotNotAvailable("Snapshot must be in 'available' "
+                    "or 'error' status before deleting. Current status: %s" %
+                    self.status)
+        # When there are more thann one snapshot for a given volume, attempting to
+        # delete them all will throw a 409 exception. This will help by retrying
+        # such an error once after a RETRY_INTERVAL second delay.
+        try:
+            super(CloudBlockStorageSnapshot, self).delete()
+        except exc.ClientException as e:
+            if "Request conflicts with in-progress 'DELETE" in str(e):
+                time.sleep(RETRY_INTERVAL)
+                # Try again; if it fails, oh, well...
+                super(CloudBlockStorageSnapshot, self).delete()
+
+

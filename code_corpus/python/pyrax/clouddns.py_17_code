@@ -1,0 +1,52 @@
+    def _async_call(self, uri, body=None, method="GET", error_class=None,
+            has_response=True, *args, **kwargs):
+        """
+        Handles asynchronous call/responses for the DNS API.
+
+        Returns the response headers and body if the call was successful.
+        If an error status is returned, and the 'error_class' parameter is
+        specified, that class of error will be raised with the details from
+        the response. If no error class is specified, the response headers
+        and body will be returned to the calling method, which will have
+        to handle the result.
+        """
+        api_methods = {
+                "GET": self._retry_get,
+                "POST": self.api.method_post,
+                "PUT": self.api.method_put,
+                "DELETE": self.api.method_delete,
+                }
+        api_method = api_methods[method]
+        if body is None:
+            resp, resp_body = api_method(uri, *args, **kwargs)
+        else:
+            resp, resp_body = api_method(uri, body=body, *args, **kwargs)
+        callbackURL = resp_body["callbackUrl"].split("/status/")[-1]
+        massagedURL = "/status/%s?showDetails=true" % callbackURL
+        start = time.time()
+        timed_out = False
+        while (resp_body["status"] == "RUNNING") and not timed_out:
+            resp_body = None
+            while resp_body is None and not timed_out:
+                resp, resp_body = self._retry_get(massagedURL)
+                if self._timeout:
+                    timed_out = ((time.time() - start) > self._timeout)
+                    time.sleep(self._delay)
+
+        if timed_out:
+            raise exc.DNSCallTimedOut("The API call to '%s' did not complete "
+                    "after %s seconds." % (uri, self._timeout))
+        if error_class and (resp_body["status"] == "ERROR"):
+            # This call will handle raising the error.
+            self._process_async_error(resp_body, error_class)
+        if has_response:
+            ret = resp, resp_body["response"]
+        else:
+            ret = resp, resp_body
+        try:
+            resp_body = json.loads(resp_body)
+        except Exception:
+            pass
+        return ret
+
+

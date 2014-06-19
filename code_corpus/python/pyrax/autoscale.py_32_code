@@ -1,0 +1,31 @@
+    def _create_body(self, name, cooldown, min_entities, max_entities,
+            launch_config_type, server_name, image, flavor, disk_config=None,
+            metadata=None, personality=None, networks=None,
+            load_balancers=None, scaling_policies=None, group_metadata=None,
+            key_name=None):
+        """
+        Used to create the dict required to create any of the following:
+            A Scaling Group
+        """
+#        if disk_config is None:
+#            disk_config = "AUTO"
+        if metadata is None:
+            metadata = {}
+        if personality is None:
+            personality = []
+        if scaling_policies is None:
+            scaling_policies = []
+        group_config = self._create_group_config_body(name, cooldown,
+                min_entities, max_entities, metadata=group_metadata)
+        launch_config = self._create_launch_config_body(launch_config_type,
+                server_name, image, flavor, disk_config=disk_config,
+                metadata=metadata, personality=personality, networks=networks,
+                load_balancers=load_balancers, key_name=key_name)
+        body = {
+                "groupConfiguration": group_config,
+                "launchConfiguration": launch_config,
+                "scalingPolicies": scaling_policies,
+                }
+        return body
+
+

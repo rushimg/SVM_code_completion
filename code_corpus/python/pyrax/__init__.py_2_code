@@ -1,0 +1,26 @@
+    def get(self, key, env=None):
+        """
+        Returns the config setting for the specified environment. If no
+        environment is specified, the value for the current environment is
+        returned. If an unknown key or environment is passed, None is returned.
+        """
+        if env is None:
+            env = self.environment
+        try:
+            return self._settings[env][key]
+        except KeyError:
+            # See if it's set in the environment
+            if key == "identity_class":
+                # This is defined via the identity_type
+                env_var = self.env_dct.get("identity_type")
+                ityp = os.environ.get(env_var)
+                if ityp:
+                    return _import_identity(ityp)
+            else:
+                env_var = self.env_dct.get(key)
+            try:
+                return os.environ[env_var]
+            except KeyError:
+                return None
+
+

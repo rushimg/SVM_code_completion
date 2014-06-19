@@ -1,0 +1,14 @@
+    def check_token(self, token=None):
+        """
+        ADMIN ONLY. Returns True or False, depending on whether the current
+        token is valid.
+        """
+        if token is None:
+            token = self.token
+        resp, resp_body = self.method_head("tokens/%s" % token, admin=True)
+        if resp.status_code in (401, 403):
+            raise exc.AuthorizationFailure("You must be an admin to make this "
+                    "call.")
+        return 200 <= resp.status_code < 300
+
+

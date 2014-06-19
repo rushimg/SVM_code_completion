@@ -1,0 +1,14 @@
+    def _delete_objects_not_in_list(self, cont, object_prefix=""):
+        """
+        Finds all the objects in the specified container that are not present
+        in the self._local_files list, and deletes them.
+        """
+        objnames = set(cont.get_object_names(prefix=object_prefix,
+                full_listing=True))
+        localnames = set(self._local_files)
+        to_delete = list(objnames.difference(localnames))
+        # We don't need to wait around for this to complete. Store the thread
+        # reference in case it is needed at some point.
+        self._thread = self.bulk_delete(cont, to_delete, async=True)
+
+

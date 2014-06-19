@@ -1,0 +1,29 @@
+    def get_client(self, service, region, public=True, cached=True,
+            client_class=None):
+        """
+        Returns the client object for the specified service and region.
+
+        By default the public endpoint is used. If you wish to work with a
+        services internal endpoints, specify `public=False`.
+
+        By default, if a client has already been created for the given service,
+        region, and public values, that will be returned. To force a new client
+        to be created, pass 'cached=False'.
+        """
+        if not self.authenticated:
+            raise exc.NotAuthenticated("You must authenticate before trying "
+                    "to create clients.")
+        clt = ep = None
+        mapped_service = self.service_mapping.get(service) or service
+        svc = self.services.get(mapped_service)
+        if svc:
+            ep = svc.endpoints.get(region)
+        if ep:
+            clt = ep._get_client(public=public, cached=cached,
+                    client_class=client_class)
+        if not clt:
+            raise exc.NoSuchClient("There is no client available for the "
+                    "service '%s' in the region '%s'." % (service, region))
+        return clt
+
+

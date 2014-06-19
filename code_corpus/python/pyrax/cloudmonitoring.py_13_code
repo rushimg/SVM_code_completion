@@ -1,0 +1,33 @@
+    def update_check(self, check, label=None, name=None, disabled=None,
+            metadata=None, monitoring_zones_poll=None, timeout=None,
+            period=None, target_alias=None, target_hostname=None,
+            target_receiver=None):
+        if monitoring_zones_poll:
+            monitoring_zones_poll = utils.coerce_string_to_list(
+                    monitoring_zones_poll)
+            monitoring_zones_poll = [utils.get_id(mzp)
+                    for mzp in monitoring_zones_poll]
+        body = {}
+        local_dict = locals()
+        label = label or name
+        params = ("label", "disabled", "metadata", "monitoring_zones_poll",
+                "timeout", "period", "target_alias", "target_hostname",
+                "target_receiver")
+        body = _params_to_dict(params, body, locals())
+        entity = check.entity
+        uri = "/%s/%s/checks/%s" % (self.uri_base, utils.get_id(entity),
+                utils.get_id(check))
+        try:
+            resp, resp_body = self.api.method_put(uri, body=body)
+        except exc.BadRequest as e:
+            msg = e.message
+            dtls = e.details
+            if msg.startswith("Validation error"):
+                raise exc.InvalidMonitoringCheckUpdate("The update failed "
+                        "validation: %s: %s" % (msg, dtls))
+            else:
+                # Some other issue.
+                raise
+        return resp_body
+
+

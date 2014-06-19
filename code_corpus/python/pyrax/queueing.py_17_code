@@ -1,0 +1,12 @@
+    def create(self, name):
+        uri = "/%s/%s" % (self.uri_base, name)
+        resp, resp_body = self.api.method_put(uri)
+        if resp.status_code == 201:
+            return Queue(self, {"name": name})
+        elif resp.status_code == 400:
+            # Most likely an invalid name
+            raise exc.InvalidQueueName("Queue names must not exceed 64 bytes "
+                    "in length, and are limited to US-ASCII letters, digits, "
+                    "underscores, and hyphens. Submitted: '%s'." % name)
+
+

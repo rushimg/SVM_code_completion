@@ -1,0 +1,15 @@
+    def import_domain(self, domain_data):
+        """
+        Takes a string in the BIND 9 format and creates a new domain. See the
+        'export_domain()' method for a description of the format.
+        """
+        uri = "/domains/import"
+        body = {"domains": [{
+                "contentType": "BIND_9",
+                "contents": domain_data,
+                }]}
+        resp, resp_body = self._async_call(uri, method="POST", body=body,
+                error_class=exc.DomainCreationFailed)
+        return resp_body
+
+

@@ -1,0 +1,12 @@
+    def get_token_endpoints(self):
+        """
+        ADMIN ONLY. Returns a list of all endpoints for the current auth token.
+        """
+        resp, resp_body = self.method_get("tokens/%s/endpoints" % self.token,
+                admin=True)
+        if resp.status_code in (401, 403, 404):
+            raise exc.AuthorizationFailure("You are not authorized to list "
+                    "token endpoints.")
+        return resp_body.get("access", {}).get("endpoints")
+
+

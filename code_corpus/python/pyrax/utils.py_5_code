@@ -1,0 +1,30 @@
+    def safe_update(txt):
+        try:
+            md.update(txt)
+        except UnicodeEncodeError:
+            md.update(txt.encode(encoding))
+
+    try:
+        isfile = os.path.isfile(content)
+    except TypeError:
+        # Will happen with binary content.
+        isfile = False
+    if isfile:
+        with open(content, "rb") as ff:
+            txt = ff.read(block_size)
+            while txt:
+                safe_update(txt)
+                txt = ff.read(block_size)
+    elif hasattr(content, "read"):
+        pos = content.tell()
+        content.seek(0)
+        txt = content.read(block_size)
+        while txt:
+            safe_update(txt)
+            txt = content.read(block_size)
+        content.seek(pos)
+    else:
+        safe_update(content)
+    return md.hexdigest()
+
+

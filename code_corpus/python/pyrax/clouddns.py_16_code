@@ -1,0 +1,13 @@
+    def _get(self, uri):
+        """
+        Handles the communication with the API when getting
+        a specific resource managed by this class.
+
+        Because DNS returns a different format for the body,
+        the BaseManager method must be overridden here.
+        """
+        uri = "%s?showRecords=false&showSubdomains=false" % uri
+        resp, body = self._retry_get(uri)
+        body["records"] = []
+        return self.resource_class(self, body, loaded=True)
+

@@ -1,0 +1,14 @@
+    def attach_to_instance(self, instance, mountpoint):
+        """
+        Attaches this volume to the cloud server instance at the
+        specified mountpoint. This requires a call to the cloud servers
+        API; it cannot be done directly.
+        """
+        instance_id = _resolve_id(instance)
+        try:
+            resp = self._nova_volumes.create_server_volume(instance_id,
+                    self.id, mountpoint)
+        except Exception as e:
+            raise exc.VolumeAttachmentFailed("%s" % e)
+
+

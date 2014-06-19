@@ -1,0 +1,22 @@
+    def list_roles(self, service_id=None, limit=None, marker=None):
+        """
+        Returns a list of all global roles for users, optionally limited by
+        service. Pagination can be handled through the standard 'limit' and
+        'marker' parameters.
+        """
+        uri = "OS-KSADM/roles"
+        pagination_items = []
+        if service_id is not None:
+            pagination_items.append("serviceId=%s" % service_id)
+        if limit is not None:
+            pagination_items.append("limit=%s" % limit)
+        if marker is not None:
+            pagination_items.append("marker=%s" % marker)
+        pagination = "&".join(pagination_items)
+        if pagination:
+            uri = "%s?%s" % (uri, pagination)
+        resp, resp_body = self.method_get(uri)
+        roles = resp_body.get("roles", [])
+        return [Role(self, role) for role in roles]
+
+

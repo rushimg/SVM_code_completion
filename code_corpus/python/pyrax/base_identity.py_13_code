@@ -1,0 +1,31 @@
+    def _call_token_auth(self, token, tenant_id, tenant_name):
+        key = val = None
+        if tenant_id:
+            key = "tenantId"
+            val = tenant_id
+        elif tenant_name:
+            key = "tenantName"
+            val = tenant_name
+
+        body = {"auth": {
+                "token": {"id": token},
+                }}
+
+        if(key and val):
+            body["auth"][key] = val
+
+        headers = {"Content-Type": "application/json",
+                "Accept": "application/json",
+                }
+        resp, resp_body = self.method_post("tokens", data=body, headers=headers,
+                std_headers=False)
+        if resp.status_code == 401:
+            # Invalid authorization
+            raise exc.AuthenticationFailed("Incorrect/unauthorized "
+                    "credentials received")
+        elif resp.status_code > 299:
+            msg = resp_body[resp_body.keys()[0]]["message"]
+            raise exc.AuthenticationFailed("%s - %s." % (resp.reason, msg))
+        return resp, resp_body
+
+

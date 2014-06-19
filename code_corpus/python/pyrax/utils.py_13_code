@@ -1,0 +1,18 @@
+def rfc2822_format(val):
+    """
+    Takes either a date, a datetime, or a string, and returns a string that
+    represents the value in RFC 2822 format. If a string is passed it is
+    returned unchanged.
+    """
+    if isinstance(val, six.string_types):
+        return val
+    elif isinstance(val, (datetime.datetime, datetime.date)):
+        # Convert to a timestamp
+        val = time.mktime(val.timetuple())
+    if isinstance(val, numbers.Number):
+        return email.utils.formatdate(val)
+    else:
+        # Bail
+        return val
+
+

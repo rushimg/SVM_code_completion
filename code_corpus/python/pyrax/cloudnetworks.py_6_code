@@ -1,0 +1,22 @@
+    def create(self, label=None, name=None, cidr=None):
+        """
+        Wraps the basic create() call to handle specific failures.
+        """
+        try:
+            return super(CloudNetworkClient, self).create(label=label,
+                    name=name, cidr=cidr)
+        except exc.BadRequest as e:
+            msg = e.message
+            if "too many networks" in msg:
+                raise exc.NetworkCountExceeded("Cannot create network; the "
+                        "maximum number of isolated networks already exist.")
+            elif "does not contain enough" in msg:
+                raise exc.NetworkCIDRInvalid("Networks must contain two or "
+                        "more hosts; the CIDR '%s' is too restrictive." % cidr)
+            elif "CIDR is malformed" in msg:
+                raise exc.NetworkCIDRMalformed("The CIDR '%s' is not valid." % cidr)
+            else:
+                # Something unexpected
+                raise
+
+

@@ -1,0 +1,16 @@
+    def _make_connections(self, auth_endpoint, username, api_key, password,
+            tenant_name=None, preauthurl=None, preauthtoken=None,
+            auth_version="2", os_options=None, verify_ssl=True,
+            http_log_debug=None):
+        cdn_url = os_options.pop("object_cdn_url", None)
+        pw_key = api_key or password
+        insecure = not verify_ssl
+        self.connection = Connection(authurl=auth_endpoint, user=username,
+                key=pw_key, tenant_name=tenant_name, preauthurl=preauthurl,
+                preauthtoken=preauthtoken, auth_version=auth_version,
+                os_options=os_options, insecure=insecure,
+                http_log_debug=http_log_debug)
+        if cdn_url:
+            self.connection._make_cdn_connection(cdn_url)
+
+

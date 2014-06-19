@@ -1,0 +1,24 @@
+    def _resolve_device_type(self, device):
+        """
+        Given a device, determines if it is a CloudServer, a CloudLoadBalancer,
+        or an invalid device.
+        """
+        try:
+            from tests.unit import fakes
+            server_types = (pyrax.CloudServer, fakes.FakeServer)
+            lb_types = (CloudLoadBalancer, fakes.FakeLoadBalancer,
+                    fakes.FakeDNSDevice)
+        except ImportError:
+            # Not running with tests
+            server_types = (pyrax.CloudServer, )
+            lb_types = (CloudLoadBalancer, )
+        if isinstance(device, server_types):
+            device_type = "server"
+        elif isinstance(device, lb_types):
+            device_type = "loadbalancer"
+        else:
+            raise exc.InvalidDeviceType("The device '%s' must be a CloudServer "
+                    "or a CloudLoadBalancer." % device)
+        return device_type
+
+

@@ -1,0 +1,17 @@
+    def copy_object(self, container, obj, new_container, new_obj_name=None,
+            extra_info=None):
+        """
+        Copies the object to the new container, optionally giving it a new name.
+        If you copy to the same container, you must supply a different name.
+        """
+        cont = self.get_container(container)
+        obj = self.get_object(cont, obj)
+        new_cont = self.get_container(new_container)
+        if new_obj_name is None:
+            new_obj_name = obj.name
+        hdrs = {"X-Copy-From": "/%s/%s" % (cont.name, obj.name)}
+        return self.connection.put_object(new_cont.name, new_obj_name,
+                contents=None, headers=hdrs, response_dict=extra_info)
+
+
+    @handle_swiftclient_exception

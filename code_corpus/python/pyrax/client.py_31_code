@@ -1,0 +1,27 @@
+    def download_object(self, container, obj, directory, structure=True):
+        """
+        Fetches the object from storage, and writes it to the specified
+        directory. The directory must exist before calling this method.
+
+        If the object name represents a nested folder structure, such as
+        "foo/bar/baz.txt", that folder structure will be created in the target
+        directory by default. If you do not want the nested folders to be
+        created, pass `structure=False` in the parameters.
+        """
+        if not os.path.isdir(directory):
+            raise exc.FolderNotFound("The directory '%s' does not exist." %
+                    directory)
+        obj_name = self._resolve_name(obj)
+        path, fname = os.path.split(obj_name)
+        if structure:
+            fullpath = os.path.join(directory, path)
+            if not os.path.exists(fullpath):
+                os.makedirs(fullpath)
+            target = os.path.join(fullpath, fname)
+        else:
+            target = os.path.join(directory, fname)
+        with open(target, "wb") as dl:
+            dl.write(self.fetch_object(container, obj))
+
+
+    @handle_swiftclient_exception

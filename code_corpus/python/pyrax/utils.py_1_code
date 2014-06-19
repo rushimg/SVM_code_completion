@@ -1,0 +1,36 @@
+def runproc(cmd):
+    """
+    Convenience method for executing operating system commands.
+
+    Accepts a single string that would be the command as executed on the
+    command line.
+
+    Returns a 2-tuple consisting of the output of (STDOUT, STDERR). In your
+    code you should check for an empty STDERR output to determine if your
+    command completed successfully.
+    """
+    proc = Popen([cmd], shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE,
+            close_fds=True)
+    stdoutdata, stderrdata = proc.communicate()
+    return (stdoutdata, stderrdata)
+
+
+class SelfDeletingTempfile(object):
+    """
+    Convenience class for dealing with temporary files.
+
+    The temp file is created in a secure fashion, and is
+    automatically deleted when the context manager exits.
+
+    Usage:
+
+    \code
+    with SelfDeletingTempfile() as tmp:
+        tmp.write( ... )
+        some_func(tmp)
+    # More code
+    # At this point, the tempfile has been erased.
+    \endcode
+    """
+    name = None
+

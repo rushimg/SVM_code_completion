@@ -1,0 +1,15 @@
+    def get_container_cdn_metadata(self, container):
+        """
+        Returns a dictionary containing the CDN metadata for the container.
+        """
+        cname = self._resolve_name(container)
+        response = self.connection.cdn_request("HEAD", [cname])
+        headers = response.getheaders()
+        # Read the response to force it to close for the next request.
+        response.read()
+        # headers is a list of 2-tuples instead of a dict.
+        return dict(headers)
+
+
+    @ensure_cdn
+    @handle_swiftclient_exception

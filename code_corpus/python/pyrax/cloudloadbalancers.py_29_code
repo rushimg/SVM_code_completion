@@ -1,0 +1,35 @@
+    def add_health_monitor(self, loadbalancer, type, delay=10, timeout=10,
+            attemptsBeforeDeactivation=3, path="/", statusRegex=None,
+            bodyRegex=None, hostHeader=None):
+        """
+        Adds a health monitor to the load balancer. If a monitor already
+        exists, it is updated with the supplied settings.
+        """
+        uri = "/loadbalancers/%s/healthmonitor" % utils.get_id(loadbalancer)
+        req_body = {"healthMonitor": {
+                "type": type,
+                "delay": delay,
+                "timeout": timeout,
+                "attemptsBeforeDeactivation": attemptsBeforeDeactivation,
+                }}
+        uptype = type.upper()
+        if uptype.startswith("HTTP"):
+            lb = self._get_lb(loadbalancer)
+            if uptype != lb.protocol:
+                raise exc.ProtocolMismatch("Cannot set the Health Monitor type "
+                        "to '%s' when the Load Balancer's protocol is '%s'." %
+                        (type, lb.protocol))
+            if not all((path, statusRegex, bodyRegex)):
+                raise exc.MissingHealthMonitorSettings("When creating an HTTP(S) "
+                        "monitor, you must provide the 'path', 'statusRegex' and "
+                        "'bodyRegex' parameters.")
+            body_hm = req_body["healthMonitor"]
+            body_hm["path"] = path
+            body_hm["statusRegex"] = statusRegex
+            body_hm["bodyRegex"] = bodyRegex
+            if hostHeader:
+                body_hm["hostHeader"] = hostHeader
+        resp, body = self.api.method_put(uri, body=req_body)
+        return body
+
+

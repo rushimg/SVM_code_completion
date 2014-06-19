@@ -1,0 +1,19 @@
+    def purge_cdn_object(self, container, name, email_addresses=None):
+        ct = self.get_container(container)
+        oname = self._resolve_name(name)
+        if not ct.cdn_enabled:
+            raise exc.NotCDNEnabled("The object '%s' is not in a "
+                    "CDN-enabled container." % oname)
+        hdrs = {}
+        if email_addresses:
+            if not isinstance(email_addresses, (list, tuple)):
+                email_addresses = [email_addresses]
+            emls = ", ".join(email_addresses)
+            hdrs = {"X-Purge-Email": emls}
+        response = self.connection.cdn_request("DELETE", [ct.name, oname],
+                hdrs=hdrs)
+        # Read the response to force it to close for the next request.
+        response.read()
+        return True
+
+

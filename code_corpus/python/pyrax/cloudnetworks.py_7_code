@@ -1,0 +1,19 @@
+    def find_network_by_label(self, label):
+        """
+        This is inefficient; it gets all the networks and then filters on
+        the client side to find the matching name.
+        """
+        networks = self.list()
+        match = [network for network in networks
+                if network.label == label]
+        if not match:
+            raise exc.NetworkNotFound("No network with the label '%s' exists" %
+                    label)
+        elif len(match) > 1:
+            raise exc.NetworkLabelNotUnique("There were %s matches for the label "
+                    "'%s'." % (len(match), label))
+        return match[0]
+    # Create an alias using 'name'
+    find_network_by_name = find_network_by_label
+
+

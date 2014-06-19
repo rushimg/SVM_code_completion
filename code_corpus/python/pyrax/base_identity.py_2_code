@@ -1,0 +1,21 @@
+    def _ep_for_region(self, region):
+        """
+        Given a region, returns the Endpoint for that region, or the Endpoint
+        for the ALL region if no match is found. If no match is found, None
+        is returned, and it is up to the calling method to handle it
+        appropriately.
+        """
+        rgn = region.upper()
+        try:
+            rgn_ep = [ep for ep in list(self.endpoints.values())
+                    if ep.region.upper() == rgn][0]
+        except IndexError:
+            # See if there is an 'ALL' region.
+            try:
+                rgn_ep = [ep for ep in list(self.endpoints.values())
+                        if ep.region.upper() == "ALL"][0]
+            except IndexError:
+                rgn_ep = None
+        return rgn_ep
+
+

@@ -1,0 +1,29 @@
+    def _create_client(self, clt_class, url, public=True, special=False):
+        """
+        Creates a client instance for the service.
+        """
+        verify_ssl = pyrax.get_setting("verify_ssl")
+        if not special and self.service == "object_store":
+            # Swiftclient requires different parameters.
+            client = pyrax.connect_to_cloudfiles(region=self.region,
+                    public=public, context=self.identity)
+            client.identity = self.identity
+        elif not special and self.service == "compute":
+            # Novaclient also requires special handling.
+            client = pyrax.connect_to_cloudservers(region=self.region,
+                    context=self.identity)
+            client.identity = self.identity
+        else:
+            client = clt_class(self.identity, region_name=self.region,
+                    management_url=url, verify_ssl=verify_ssl)
+        return client
+
+
+
+class BaseIdentity(object):
+    """
+    This class handles all of the basic authentication requirements for working
+    with an OpenStack Cloud system.
+    """
+    _creds_style = "password"
+

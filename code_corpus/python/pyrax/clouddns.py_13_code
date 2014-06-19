@@ -1,0 +1,29 @@
+    def _reset_paging(self, service, body=None):
+        """
+        Resets the internal attributes when there is no current paging request.
+        """
+        if service == "all":
+            for svc in self._paging.keys():
+                svc_dct = self._paging[svc]
+                svc_dct["next_uri"] = svc_dct["prev_uri"] = None
+                svc_dct["total_entries"] = None
+            return
+        svc_dct = self._paging[service]
+        svc_dct["next_uri"] = svc_dct["prev_uri"] = None
+        svc_dct["total_entries"] = None
+        if not body:
+            return
+        svc_dct["total_entries"] = body.get("totalEntries")
+        links = body.get("links")
+        uri_base = self.uri_base
+        if links:
+            for link in links:
+                href = link["href"]
+                pos = href.index(uri_base)
+                page_uri = href[pos - 1:]
+                if link["rel"] == "next":
+                    svc_dct["next_uri"] = page_uri
+                elif link["rel"] == "previous":
+                    svc_dct["prev_uri"] = page_uri
+
+

@@ -1,0 +1,18 @@
+    def create(self, name, *args, **kwargs):
+        """
+        Need to wrap the default call to handle exceptions.
+        """
+        try:
+            return super(ImageMemberManager, self).create(name, *args, **kwargs)
+        except Exception as e:
+            if e.http_status == 403:
+                raise exc.UnsharableImage("You cannot share a public image.")
+            else:
+                raise
+
+
+
+class ImageTagManager(BaseManager):
+    """
+    Manager class for Image tags.
+    """

@@ -1,0 +1,13 @@
+    def delete(self, domain, delete_subdomains=False):
+        """
+        Deletes the specified domain and all of its resource records. If the
+        domain has subdomains, each subdomain will now become a root domain. If
+        you wish to also delete any subdomains, pass True to 'delete_subdomains'.
+        """
+        uri = "/%s/%s" % (self.uri_base, utils.get_id(domain))
+        if delete_subdomains:
+            uri = "%s?deleteSubdomains=true" % uri
+        resp, resp_body = self._async_call(uri, method="DELETE",
+                error_class=exc.DomainDeletionFailed, has_response=False)
+
+

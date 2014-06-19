@@ -1,0 +1,14 @@
+    def add_webhook(self, scaling_group, policy, name, metadata=None):
+        """
+        Adds a webhook to the specified policy.
+        """
+        uri = "/%s/%s/policies/%s/webhooks" % (self.uri_base,
+                utils.get_id(scaling_group), utils.get_id(policy))
+        body = self._create_webhook_body(name, metadata=metadata)
+        # "body" needs to be a list
+        body = [body]
+        resp, resp_body = self.api.method_post(uri, body=body)
+        data = resp_body.get("webhooks")[0]
+        return AutoScaleWebhook(self, data, policy, scaling_group)
+
+

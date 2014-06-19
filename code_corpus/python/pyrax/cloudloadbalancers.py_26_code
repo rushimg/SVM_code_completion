@@ -1,0 +1,11 @@
+    def delete_virtualip(self, loadbalancer, vip):
+        """Deletes the VirtualIP from its load balancer."""
+        lb = vip.parent
+        if not lb:
+            raise exc.UnattachedVirtualIP("No parent Load Balancer for this "
+                    "VirtualIP could be determined.")
+        resp, body = self.api.method_delete("/loadbalancers/%s/virtualips/%s" %
+                (lb.id, vip.id))
+        return resp, body
+
+

@@ -1,0 +1,31 @@
+    def get_usage(self, loadbalancer=None, start=None, end=None):
+        """
+        Return the load balancer usage records for this account. If 'loadbalancer'
+        is None, records for all load balancers are returned. You may optionally
+        include a start datetime or an end datetime, or both, which will limit
+        the records to those on or after the start time, and those before or on the
+        end time. These times should be Python datetime.datetime objects, Python
+        datetime.date objects, or strings in the format: "YYYY-MM-DD HH:MM:SS" or
+        "YYYY-MM-DD".
+        """
+        if start is end is None:
+            period = None
+        else:
+            parts = []
+            startStr = utils.iso_time_string(start)
+            if startStr:
+                parts.append("startTime=%s" % startStr)
+            endStr = utils.iso_time_string(end)
+            if endStr:
+                parts.append("endTime=%s" % endStr)
+            period = "&".join(parts).strip("&")
+        if loadbalancer is None:
+            uri = "/loadbalancers/usage"
+        else:
+            uri = "/loadbalancers/%s/usage" % utils.get_id(loadbalancer)
+        if period:
+            uri = "%s?%s" % (uri, period)
+        resp, body = self.api.method_get(uri)
+        return body
+
+

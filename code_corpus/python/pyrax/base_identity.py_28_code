@@ -1,0 +1,16 @@
+    def delete_user(self, user):
+        """
+        ADMIN ONLY. Removes the user from the system. There is no 'undo'
+        available, so you should be certain that the user specified is the user
+        you wish to delete.
+        """
+        user_id = utils.get_id(user)
+        uri = "users/%s" % user_id
+        resp, resp_body = self.method_delete(uri)
+        if resp.status_code == 404:
+            raise exc.UserNotFound("User '%s' does not exist." % user)
+        elif resp.status_code in (401, 403):
+            raise exc.AuthorizationFailure("You are not authorized to delete "
+                    "users.")
+
+

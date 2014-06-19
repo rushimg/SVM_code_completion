@@ -1,0 +1,50 @@
+    def authenticate(self, username=None, password=None, api_key=None,
+            tenant_id=None):
+        """
+        Using the supplied credentials, connects to the specified
+        authentication endpoint and attempts to log in.
+
+        Credentials can either be passed directly to this method, or
+        previously-stored credentials can be used. If authentication is
+        successful, the token and service catalog information is stored, and
+        clients for each service and region are created.
+        """
+        self.username = username or self.username or pyrax.get_setting(
+                "username")
+        # Different identity systems may pass these under inconsistent names.
+        self.password = password or self.password or api_key or self.api_key
+        self.api_key = api_key or self.api_key or self.password
+        self.tenant_id = tenant_id or self.tenant_id or pyrax.get_setting(
+                "tenant_id")
+        creds = self._format_credentials()
+        headers = {"Content-Type": "application/json",
+                "Accept": "application/json",
+                }
+        resp, resp_body = self.method_post("tokens", data=creds,
+                headers=headers, std_headers=False)
+
+        if resp.status_code == 401:
+            # Invalid authorization
+            raise exc.AuthenticationFailed("Incorrect/unauthorized "
+                    "credentials received")
+        elif 500 <= resp.status_code < 600:
+            # Internal Server Error
+            try:
+                error_msg = resp_body[list(resp_body.keys())[0]]["message"]
+            except KeyError:
+                error_msg = "Service Currently Unavailable"
+            raise exc.InternalServerError(error_msg)
+        elif resp.status_code > 299:
+            try:
+                msg = resp_body[list(resp_body.keys())[0]]["message"]
+            except KeyError:
+                msg = None
+            if msg:
+                err = "%s - %s." % (resp.reason, msg)
+            else:
+                err = "%s." % resp.reason
+            raise exc.AuthenticationFailed(err)
+        self._parse_response(resp_body)
+        self.authenticated = True
+
+

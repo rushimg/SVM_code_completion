@@ -1,0 +1,16 @@
+    def update_tenant(self, tenant, name=None, description=None, enabled=True):
+        """
+        ADMIN ONLY. Updates an existing tenant.
+        """
+        tenant_id = utils.get_id(tenant)
+        data = {"tenant": {
+                "enabled": enabled,
+                }}
+        if name:
+            data["tenant"]["name"] = name
+        if description:
+            data["tenant"]["description"] = description
+        resp, resp_body = self.method_put("tenants/%s" % tenant_id, data=data)
+        return Tenant(self, resp_body)
+
+

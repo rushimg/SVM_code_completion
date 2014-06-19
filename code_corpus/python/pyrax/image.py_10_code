@@ -1,0 +1,34 @@
+    def update_image_member(self, img_id, status):
+        """
+        Updates the image whose ID is given with the status specified. This
+        must be called by the user whose project_id is in the members for the
+        image. If called by the owner of the image, an InvalidImageMember
+        exception will be raised.
+
+        Valid values for 'status' include:
+            pending
+            accepted
+            rejected
+        Any other value will result in an InvalidImageMemberStatus exception
+        being raised.
+        """
+        if status not in ("pending", "accepted", "rejected"):
+            raise exc.InvalidImageMemberStatus("The status value must be one "
+                    "of 'accepted', 'rejected', or 'pending'. Received: '%s'" %
+                    status)
+        api = self.api
+        project_id = api.identity.tenant_id
+        uri = "/%s/%s/members/%s" % (self.uri_base, img_id, project_id)
+        body = {"status": status}
+        try:
+            resp, resp_body = self.api.method_put(uri, body=body)
+        except exc.NotFound as e:
+            raise exc.InvalidImageMember("The update member request could not "
+                    "be completed. No member request for that image was found.")
+
+
+
+class ImageMemberManager(BaseManager):
+    """
+    Manager class for members (users) of an Image.
+    """

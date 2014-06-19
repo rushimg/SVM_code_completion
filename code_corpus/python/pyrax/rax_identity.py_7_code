@@ -1,0 +1,24 @@
+    def update_user(self, user, email=None, username=None,
+            uid=None, defaultRegion=None, enabled=None):
+        """
+        Allows you to update settings for a given user.
+        """
+        user_id = utils.get_id(user)
+        uri = "users/%s" % user_id
+        upd = {"id": user_id}
+        if email is not None:
+            upd["email"] = email
+        if defaultRegion is not None:
+            upd["RAX-AUTH:defaultRegion"] = defaultRegion
+        if username is not None:
+            upd["username"] = username
+        if enabled is not None:
+            upd["enabled"] = enabled
+        data = {"user": upd}
+        resp, resp_body = self.method_put(uri, data=data)
+        if resp.status_code in (401, 403, 404):
+            raise exc.AuthorizationFailure("You are not authorized to update "
+                    "users.")
+        return User(self, resp_body)
+
+

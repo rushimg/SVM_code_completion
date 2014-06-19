@@ -1,0 +1,13 @@
+    def method_get(self, uri, **kwargs):
+        """
+        Overload the method_get function in order to retry on empty body
+        responses from the Cloud DNS API
+        """
+        for i in six.moves.range(3):
+            resp, body = super(CloudDNSClient, self).method_get(uri, **kwargs)
+            if body:
+                return resp, body
+        raise exc.ServiceResponseFailure("The Cloud DNS service failed to "
+                "respond to the request.")
+
+

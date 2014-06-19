@@ -1,0 +1,21 @@
+    def update_alarm(self, entity, alarm, criteria=None, disabled=False,
+            label=None, name=None, metadata=None):
+        """
+        Updates an existing alarm on the given entity. See the comments on the
+        'create_alarm()' regarding the criteria parameter.
+        """
+        uri = "/%s/%s/alarms/%s" % (self.uri_base, utils.get_id(entity),
+                utils.get_id(alarm))
+        body = {}
+        if criteria:
+            body["criteria"] = criteria
+        if disabled is not None:
+            body["disabled"] = disabled
+        label_name = label or name
+        if label_name:
+            body["label"] = label_name
+        if metadata:
+            body["metadata"] = metadata
+        resp, resp_body = self.api.method_put(uri, body=body)
+
+

@@ -1,0 +1,53 @@
+    def sync_folder_to_container(self, folder_path, container, delete=False,
+            include_hidden=False, ignore=None, ignore_timestamps=False,
+            object_prefix="", verbose=False):
+        """
+        Compares the contents of the specified folder, and checks to make sure
+        that the corresponding object is present in the specified container. If
+        there is no remote object matching the local file, it is created. If a
+        matching object exists, the etag is examined to determine if the object
+        in the container matches the local file; if they differ, the container
+        is updated with the local file if the local file is newer when
+        `ignore_timestamps' is False (default). If `ignore_timestamps` is True,
+        the object is overwritten with the local file contents whenever the
+        etags differ. NOTE: the timestamp of a remote object is the time it was
+        uploaded, not the original modification time of the file stored in that
+        object.  Unless 'include_hidden' is True, files beginning with an
+        initial period are ignored.
+
+        If the 'delete' option is True, any objects in the container that do
+        not have corresponding files in the local folder are deleted.
+
+        You can selectively ignore files by passing either a single pattern or
+        a list of patterns; these will be applied to the individual folder and
+        file names, and any names that match any of the 'ignore' patterns will
+        not be uploaded. The patterns should be standard *nix-style shell
+        patterns; e.g., '*pyc' will ignore all files ending in 'pyc', such as
+        'program.pyc' and 'abcpyc'.
+
+        If `object_prefix` is set it will be appended to the object name when
+        it is checked and uploaded to the container. For example, if you use
+        sync_folder_to_container("folderToSync/", myContainer,
+            object_prefix="imgFolder") it will upload the files to the
+        container/imgFolder/... instead of just container/...
+
+        Set `verbose` to True to make it print what is going on. It will
+        show which files are being uploaded and which ones are not and why.
+        """
+        cont = self.get_container(container)
+        self._local_files = []
+        # Load a list of all the remote objects so we don't have to keep
+        # hitting the service
+        if verbose:
+            log = logging.getLogger("pyrax")
+            log.info("Loading remote object list (prefix=%s)", object_prefix)
+        data = cont.get_objects(prefix=object_prefix, full_listing=True)
+        self._remote_files = dict((d.name, d) for d in data)
+        self._sync_folder_to_container(folder_path, cont, prefix="",
+                delete=delete, include_hidden=include_hidden, ignore=ignore,
+                ignore_timestamps=ignore_timestamps,
+                object_prefix=object_prefix, verbose=verbose)
+        # Unset the _remote_files
+        self._remote_files = None
+
+

@@ -1,0 +1,21 @@
+    def delete_container(self, container, del_objects=False, extra_info=None):
+        """
+        Deletes the specified container. This will fail if the container
+        still has objects stored in it; if that's the case and you want
+        to delete the container anyway, set del_objects to True, and
+        the container's objects will be deleted before the container is
+        deleted.
+
+        'extra_info' is an optional dictionary which will be
+        populated with 'status', 'reason', and 'headers' keys from the
+        underlying swiftclient call.
+        """
+        self.remove_container_from_cache(container)
+        cname = self._resolve_name(container)
+        if del_objects:
+            nms = self.get_container_object_names(cname, full_listing=True)
+            self.bulk_delete(cname, nms, async=False)
+        self.connection.delete_container(cname, response_dict=extra_info)
+        return True
+
+

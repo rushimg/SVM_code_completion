@@ -1,0 +1,37 @@
+    def update_policy(self, scaling_group, policy, name=None, policy_type=None,
+            cooldown=None, change=None, is_percent=False,
+            desired_capacity=None, args=None):
+        """
+        Updates the specified policy. One or more of the parameters may be
+        specified.
+        """
+        uri = "/%s/%s/policies/%s" % (self.uri_base,
+                utils.get_id(scaling_group), utils.get_id(policy))
+        if not isinstance(policy, AutoScalePolicy):
+            # Received an ID
+            policy = self.get_policy(scaling_group, policy)
+        body = {"name": name or policy.name,
+                "type": policy_type or policy.type,
+                "cooldown": cooldown or policy.cooldown,
+                }
+        if desired_capacity is not None:
+            body["desiredCapacity"] = desired_capacity
+        elif change is not None:
+            if is_percent:
+                body["changePercent"] = change
+            else:
+                body["change"] = change
+        else:
+            if getattr(policy, "changePercent", None) is not None:
+                body["changePercent"] = policy.changePercent
+            elif getattr(policy, "change", None) is not None:
+                body["change"] = policy.change
+            elif getattr(policy, "desiredCapacity", None) is not None:
+                body["desiredCapacity"] = policy.desiredCapacity
+        args = args or getattr(policy, "args", None)
+        if args is not None:
+            body["args"] = args
+        resp, resp_body = self.api.method_put(uri, body=body)
+        return None
+
+

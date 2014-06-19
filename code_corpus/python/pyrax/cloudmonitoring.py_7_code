@@ -1,0 +1,13 @@
+    def create(self, notification_type, label=None, name=None, details=None):
+        """
+        Defines a notification for handling an alarm.
+        """
+        uri = "/%s" % self.uri_base
+        body = {"label": label or name,
+                "type": utils.get_id(notification_type),
+                "details": details,
+                }
+        resp, resp_body = self.api.method_post(uri, body=body)
+        return self.get(resp.headers["x-object-id"])
+
+

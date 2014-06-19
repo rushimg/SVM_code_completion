@@ -1,0 +1,37 @@
+    def claim(self, ttl, grace, count=None):
+        """
+        Claims up to `count` unclaimed messages from this queue. If count is
+        not specified, the default is to claim 10 messages.
+
+        The `ttl` parameter specifies how long the server should wait before
+        releasing the claim. The ttl value MUST be between 60 and 43200 seconds.
+
+        The `grace` parameter is the message grace period in seconds. The value
+        of grace MUST be between 60 and 43200 seconds. The server extends the
+        lifetime of claimed messages to be at least as long as the lifetime of
+        the claim itself, plus a specified grace period to deal with crashed
+        workers (up to 1209600 or 14 days including claim lifetime). If a
+        claimed message would normally live longer than the grace period, its
+        expiration will not be adjusted.
+
+        bReturns a QueueClaim object, whose 'messages' attribute contains the
+        list of QueueMessage objects representing the claimed messages.
+        """
+        if count is None:
+            qs = ""
+        else:
+            qs = "?limit=%s" % count
+        uri = "/%s%s" % (self.uri_base, qs)
+        body = {"ttl": ttl,
+                "grace": grace,
+                }
+        resp, resp_body = self.api.method_post(uri, body=body)
+        if resp.status_code == 204:
+            # Nothing available to claim
+            return None
+        # Get the claim ID from the first message in the list.
+        href = resp_body[0]["href"]
+        claim_id = href.split("claim_id=")[-1]
+        return self.get(claim_id)
+
+

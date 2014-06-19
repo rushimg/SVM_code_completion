@@ -1,0 +1,37 @@
+    def create_user(self, name, email, password=None, enabled=True):
+        """
+        ADMIN ONLY. Creates a new user for this tenant (account). The username
+        and email address must be supplied. You may optionally supply the
+        password for this user; if not, the API server generates a password and
+        return it in the 'password' attribute of the resulting User object.
+        NOTE: this is the ONLY time the password is returned; after the initial
+        user creation, there is NO WAY to retrieve the user's password.
+
+        You may also specify that the user should be created but not active by
+        passing False to the enabled parameter.
+        """
+        # NOTE: the OpenStack docs say that the name key in the following dict
+        # is supposed to be 'username', but the service actually expects 'name'.
+        data = {"user": {
+                "username": name,
+                "email": email,
+                "enabled": enabled,
+                }}
+        if password:
+            data["user"]["OS-KSADM:password"] = password
+        resp, resp_body = self.method_post("users", data=data, admin=True)
+        if resp.status_code == 201:
+            return User(self, resp_body.get("user", resp_body))
+        elif resp.status_code in (401, 403, 404):
+            raise exc.AuthorizationFailure("You are not authorized to create "
+                    "users.")
+        elif resp.status_code == 409:
+            raise exc.DuplicateUser("User '%s' already exists." % name)
+        elif resp.status_code == 400:
+            message = resp_body["badRequest"]["message"]
+            if "Expecting valid email address" in message:
+                raise exc.InvalidEmail("%s is not valid" % email)
+            else:
+                raise exc.BadRequest(message)
+
+

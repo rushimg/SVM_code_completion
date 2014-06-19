@@ -1,0 +1,17 @@
+    def delete_object(self, container, name, extra_info=None):
+        """
+        Deletes the specified object from the container.
+
+        'extra_info' is an optional dictionary which will be
+        populated with 'status', 'reason', and 'headers' keys from the
+        underlying swiftclient call.
+        """
+        ct = self.get_container(container)
+        ct.remove_from_cache(name)
+        oname = self._resolve_name(name)
+        self.connection.delete_object(ct.name, oname,
+                response_dict=extra_info)
+        return True
+
+
+    @handle_swiftclient_exception

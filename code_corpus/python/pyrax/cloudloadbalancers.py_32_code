@@ -1,0 +1,19 @@
+    def add_ssl_termination(self, loadbalancer, securePort, privatekey, certificate,
+            intermediateCertificate, enabled=True, secureTrafficOnly=False):
+        """
+        Adds SSL termination information to the load balancer. If SSL termination
+        has already been configured, it is updated with the supplied settings.
+        """
+        uri = "/loadbalancers/%s/ssltermination" % utils.get_id(loadbalancer)
+        req_body = {"sslTermination": {
+                "certificate": certificate,
+                "enabled": enabled,
+                "secureTrafficOnly": secureTrafficOnly,
+                "privatekey": privatekey,
+                "intermediateCertificate": intermediateCertificate,
+                "securePort": securePort,
+                }}
+        resp, body = self.api.method_put(uri, body=req_body)
+        return body
+
+

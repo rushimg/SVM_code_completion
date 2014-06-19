@@ -1,0 +1,21 @@
+    def create(self, name, *args, **kwargs):
+        """
+        Standard task creation, but first check for the existence of the
+        containers, and raise an exception if they don't exist.
+        """
+        cont = kwargs.get("cont")
+        if cont:
+            # Verify that it exists. If it doesn't, a NoSuchContainer exception
+            # will be raised.
+            api = self.api
+            rgn = api.region_name
+            cf = api.identity.object_store[rgn].client
+            cf.get_container(cont)
+        return super(ImageTasksManager, self).create(name, *args, **kwargs)
+
+
+
+class JSONSchemaManager(BaseManager):
+    """
+    Manager class for retrieving JSON schemas.
+    """

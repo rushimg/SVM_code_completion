@@ -1,0 +1,10 @@
+    def list_public_containers(self):
+        """Returns a list of all CDN-enabled containers."""
+        response = self.connection.cdn_request("GET", [""])
+        status = response.status
+        if not 200 <= status < 300:
+            raise exc.CDNFailed("Bad response: (%s) %s" % (status,
+                    response.reason))
+        return response.read().splitlines()
+
+

@@ -1,0 +1,29 @@
+    def _create_launch_config_body(self, launch_config_type,
+            server_name, image, flavor, disk_config=None, metadata=None,
+            personality=None, networks=None, load_balancers=None,
+            key_name=None):
+        server_args = {
+                "flavorRef": "%s" % flavor,
+                "name": server_name,
+                "imageRef": utils.get_id(image),
+                }
+        if metadata is not None:
+            server_args["metadata"] = metadata
+        if personality is not None:
+            server_args["personality"] = personality
+        if networks is not None:
+            server_args["networks"] = networks
+        if disk_config is not None:
+            server_args["OS-DCF:diskConfig"] = disk_config
+        if key_name is not None:
+            server_args["key_name"] = key_name
+        if load_balancers is None:
+            load_balancers = []
+        load_balancer_args = self._resolve_lbs(load_balancers)
+        return {"type": launch_config_type,
+                "args": {"server": server_args,
+                         "loadBalancers": load_balancer_args}}
+
+
+
+class AutoScalePolicy(BaseResource):

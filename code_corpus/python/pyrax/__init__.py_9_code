@@ -1,0 +1,26 @@
+def _create_identity(id_type=None, username=None, password=None, tenant_id=None,
+            tenant_name=None, api_key=None, verify_ssl=None,
+            return_context=False):
+    """
+    Creates an instance of the current identity_class and assigns it to the
+    module-level name 'identity' by default. If 'return_context' is True, the
+    module-level 'identity' is untouched, and instead the instance is returned.
+    """
+    if id_type:
+        cls = _import_identity(id_type)
+    else:
+        cls = settings.get("identity_class")
+    if not cls:
+        raise exc.IdentityClassNotDefined("No identity class has "
+                "been defined for the current environment.")
+    if verify_ssl is None:
+        verify_ssl = get_setting("verify_ssl")
+    context = cls(username=username, password=password, tenant_id=tenant_id,
+            tenant_name=tenant_name, api_key=api_key, verify_ssl=verify_ssl)
+    if return_context:
+        return context
+    else:
+        global identity
+        identity = context
+
+

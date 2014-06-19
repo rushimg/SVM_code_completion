@@ -1,0 +1,14 @@
+    def list_subdomains(self, domain, limit=None, offset=None):
+        """
+        Returns a list of all subdomains of the specified domain.
+        """
+        # The commented-out uri is the official API, but it is
+        # horribly slow.
+#        uri = "/domains/%s/subdomains" % utils.get_id(domain)
+        uri = "/domains?name=%s" % domain.name
+        page_qs = self._get_pagination_qs(limit, offset)
+        if page_qs:
+            uri = "%s&%s" % (uri, page_qs[1:])
+        return self._list_subdomains(uri, domain.id)
+
+

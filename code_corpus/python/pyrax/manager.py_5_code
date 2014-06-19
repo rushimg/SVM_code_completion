@@ -1,0 +1,19 @@
+    def _list(self, uri, obj_class=None, body=None, return_raw=False):
+        """
+        Handles the communication with the API when getting
+        a full listing of the resources managed by this class.
+        """
+        if body:
+            resp, resp_body = self.api.method_post(uri, body=body)
+        else:
+            resp, resp_body = self.api.method_get(uri)
+        if return_raw:
+            return (resp, resp_body)
+        if obj_class is None:
+            obj_class = self.resource_class
+
+        data = self._data_from_response(resp_body)
+        return [obj_class(self, res, loaded=False)
+                for res in data if res]
+
+

@@ -1,0 +1,17 @@
+    def get_state(self, scaling_group):
+        """
+        Returns the current state of the specified scaling group as a
+        dictionary.
+        """
+        uri = "/%s/%s/state" % (self.uri_base, utils.get_id(scaling_group))
+        resp, resp_body = self.api.method_get(uri)
+        data = resp_body["group"]
+        ret = {}
+        ret["active"] = [itm["id"] for itm in data["active"]]
+        ret["active_capacity"] = data["activeCapacity"]
+        ret["desired_capacity"] = data["desiredCapacity"]
+        ret["pending_capacity"] = data["pendingCapacity"]
+        ret["paused"] = data["paused"]
+        return ret
+
+

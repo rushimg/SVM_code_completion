@@ -1,0 +1,24 @@
+    def _create_body(self, name, flavor=None, volume=None, databases=None,
+            users=None):
+        """
+        Used to create the dict required to create a Cloud Database instance.
+        """
+        if flavor is None:
+            flavor = 1
+        flavor_ref = self.api._get_flavor_ref(flavor)
+        if volume is None:
+            volume = 1
+        if databases is None:
+            databases = []
+        if users is None:
+            users = []
+        body = {"instance": {
+                "name": name,
+                "flavorRef": flavor_ref,
+                "volume": {"size": volume},
+                "databases": databases,
+                "users": users,
+                }}
+        return body
+
+

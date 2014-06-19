@@ -1,0 +1,19 @@
+    def list_by_ids(self, ids):
+        """
+        If you wish to retrieve a list of messages from this queue and know the
+        IDs of those messages, you can pass in a list of those IDs, and only
+        the matching messages will be returned. This avoids pulling down all
+        the messages in a queue and filtering on the client side.
+        """
+        ids = utils.coerce_string_to_list(ids)
+        uri = "/%s?ids=%s" % (self.uri_base, ",".join(ids))
+        # The API is not consistent in how it returns message lists, so this
+        # workaround is needed.
+        curr_prkey = self.plural_response_key
+        self.plural_response_key = ""
+        # BROKEN: API returns a list, not a dict.
+        ret = self._list(uri)
+        self.plural_response_key = curr_prkey
+        return ret
+
+

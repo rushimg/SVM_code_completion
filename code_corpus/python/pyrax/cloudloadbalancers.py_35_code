@@ -1,0 +1,25 @@
+    def delete_metadata(self, loadbalancer, keys=None, node=None):
+        """
+        Deletes metadata items specified by the 'keys' parameter. If no value
+        for 'keys' is provided, all metadata is deleted. If 'node' is supplied,
+        the metadata for that node is deleted instead of the load balancer.
+        """
+        if keys and not isinstance(keys, (list, tuple)):
+            keys = [keys]
+        md = self.get_metadata(loadbalancer, node=node, raw=True)
+        if keys:
+            md = [dct for dct in md if dct["key"] in keys]
+        if not md:
+            # Nothing to do; log it? Raise an error?
+            return
+        id_list = "&".join(["id=%s" % itm["id"] for itm in md])
+        if node:
+            uri = "/loadbalancers/%s/nodes/%s/metadata?%s" % (
+                    utils.get_id(loadbalancer), utils.get_id(node), id_list)
+        else:
+            uri = "/loadbalancers/%s/metadata?%s" % (
+                    utils.get_id(loadbalancer), id_list)
+        resp, body = self.api.method_delete(uri)
+        return body
+
+

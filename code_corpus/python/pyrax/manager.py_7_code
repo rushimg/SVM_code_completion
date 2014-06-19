@@ -1,0 +1,21 @@
+    def _create(self, uri, body, return_none=False, return_raw=False,
+            return_response=None, **kwargs):
+        """
+        Handles the communication with the API when creating a new
+        resource managed by this class.
+        """
+        self.run_hooks("modify_body_for_create", body, **kwargs)
+        resp, resp_body = self.api.method_post(uri, body=body)
+        if return_none:
+            # No response body
+            return
+        elif return_response:
+            return resp
+        elif return_raw:
+            if self.response_key:
+                return resp_body[self.response_key]
+            else:
+                return resp_body
+        return self.resource_class(self, resp_body, self.response_key)
+
+

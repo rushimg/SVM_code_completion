@@ -1,0 +1,17 @@
+    def get_device(self):
+        """
+        Returns a reference to the device that is represented by this node.
+        Returns None if no such device can be determined.
+        """
+        addr = self.address
+        servers = [server for server in pyrax.cloudservers.list()
+                if addr in server.networks.get("private", "")]
+        try:
+            return servers[0]
+        except IndexError:
+            return None
+
+
+
+class VirtualIP(object):
+    """Represents a Virtual IP for a Load Balancer."""

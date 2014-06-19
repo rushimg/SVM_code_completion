@@ -1,0 +1,13 @@
+    def set_error_page(self, loadbalancer, html):
+        """
+        A single custom error page may be added per account load balancer
+        with an HTTP protocol. Page updates will override existing content.
+        If a custom error page is deleted, or the load balancer is changed
+        to a non-HTTP protocol, the default error page will be restored.
+        """
+        uri = "/loadbalancers/%s/errorpage" % utils.get_id(loadbalancer)
+        req_body = {"errorpage": {"content": html}}
+        resp, body = self.api.method_put(uri, body=req_body)
+        return body
+
+

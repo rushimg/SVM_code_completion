@@ -1,0 +1,15 @@
+    def list_credentials(self, user=None):
+        """
+        Returns a user's non-password credentials. If no user is specified, the
+        credentials for the currently authenticated user are returned.
+
+        You cannot retrieve passwords by this or any other means.
+        """
+        if not user:
+            user = self.user
+        user_id = utils.get_id(user)
+        uri = "users/%s/OS-KSADM/credentials" % user_id
+        resp, resp_body = self.method_get(uri)
+        return resp_body.get("credentials")
+
+

@@ -1,0 +1,12 @@
+    def get_record(self, domain, record):
+        """
+        Gets the full information for an existing record for this domain.
+        """
+        rec_id = utils.get_id(record)
+        domain_id = utils.get_id(domain)
+        uri = "/domains/%s/records/%s" % (domain_id, rec_id)
+        resp, resp_body = self._retry_get(uri)
+        resp_body['domain_id'] = domain_id
+        return CloudDNSRecord(self, resp_body, loaded=False)
+
+

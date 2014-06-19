@@ -1,0 +1,76 @@
+    def create_check(self, entity, label=None, name=None, check_type=None,
+            details=None, disabled=False, metadata=None,
+            monitoring_zones_poll=None, timeout=None, period=None,
+            target_alias=None, target_hostname=None, target_receiver=None,
+            test_only=False, include_debug=False):
+        """
+        Creates a check on the entity with the specified attributes. The
+        'details' parameter should be a dict with the keys as the option name,
+        and the value as the desired setting.
+
+        If the 'test_only' parameter is True, then the check is not created;
+        instead, the check is run and the results of the test run returned. If
+        'include_debug' is True, additional debug information is returned.
+        According to the current Cloud Monitoring docs:
+            "Currently debug information is only available for the
+            remote.http check and includes the response body."
+        """
+        if details is None:
+            raise exc.MissingMonitoringCheckDetails("The required 'details' "
+                    "parameter was not passed to the create_check() method.")
+        if not (target_alias or target_hostname):
+            raise exc.MonitoringCheckTargetNotSpecified("You must specify "
+                    "either the 'target_alias' or 'target_hostname' when "
+                    "creating a check.")
+        ctype = utils.get_id(check_type)
+        is_remote = ctype.startswith("remote")
+        monitoring_zones_poll = utils.coerce_string_to_list(
+                monitoring_zones_poll)
+        monitoring_zones_poll = [utils.get_id(mzp)
+                for mzp in monitoring_zones_poll]
+        if is_remote and not monitoring_zones_poll:
+            raise exc.MonitoringZonesPollMissing("You must specify the "
+                    "'monitoring_zones_poll' parameter for remote checks.")
+        body = {"label": label or name,
+                "details": details,
+                "disabled": disabled,
+                "type": utils.get_id(check_type),
+                }
+        params = ("monitoring_zones_poll", "timeout", "period",
+                "target_alias", "target_hostname", "target_receiver")
+        body = _params_to_dict(params, body, locals())
+        if test_only:
+            uri = "/%s/%s/test-check" % (self.uri_base, entity.id)
+            if include_debug:
+                uri = "%s?debug=true" % uri
+        else:
+            uri = "/%s/%s/checks" % (self.uri_base, entity.id)
+        try:
+            resp, resp_body = self.api.method_post(uri, body=body)
+        except exc.BadRequest as e:
+            msg = e.message
+            dtls = e.details
+            match = _invalid_key_pat.match(msg)
+            if match:
+                missing = match.groups()[0].replace("details.", "")
+                if missing in details:
+                    errcls = exc.InvalidMonitoringCheckDetails
+                    errmsg = "".join(["The value passed for '%s' in the ",
+                            "details parameter is not valid."]) % missing
+                else:
+                    errmsg = "".join(["The required value for the '%s' ",
+                            "setting is missing from the 'details' ",
+                            "parameter."]) % missing
+                    utils.update_exc(e, errmsg)
+                raise e
+            else:
+                if msg == "Validation error":
+                    # Info is in the 'details'
+                    raise exc.InvalidMonitoringCheckDetails("Validation "
+                            "failed. Error: '%s'." % dtls)
+        else:
+            if resp.status_code == 201:
+                check_id = resp.headers["x-object-id"]
+                return self.get_check(entity, check_id)
+
+

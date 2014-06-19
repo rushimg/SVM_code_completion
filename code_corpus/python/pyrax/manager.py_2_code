@@ -1,0 +1,22 @@
+    def list(self, limit=None, marker=None, return_raw=False):
+        """
+        Returns a list of resource objects. Pagination is supported through the
+        optional 'marker' and 'limit' parameters.
+
+        Some APIs do not follow the typical pattern in their responses, and the
+        BaseManager subclasses will have to parse the raw response to get the
+        desired information. For those cases, pass 'return_raw=True', and the
+        response and response_body will be returned unprocessed.
+        """
+        uri = "/%s" % self.uri_base
+        pagination_items = []
+        if limit is not None:
+            pagination_items.append("limit=%s" % limit)
+        if marker is not None:
+            pagination_items.append("marker=%s" % marker)
+        pagination = "&".join(pagination_items)
+        if pagination:
+            uri = "%s?%s" % (uri, pagination)
+        return self._list(uri, return_raw=return_raw)
+
+

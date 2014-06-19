@@ -1,0 +1,23 @@
+    def delete_ptr_records(self, device, ip_address=None):
+        """
+        Deletes the PTR records for the specified device. If 'ip_address' is
+        supplied, only the PTR records with that IP address will be deleted.
+        """
+        device_type = self._resolve_device_type(device)
+        href, svc_name = self._get_ptr_details(device, device_type)
+        uri = "/rdns/%s?href=%s" % (svc_name, href)
+        if ip_address:
+            uri = "%s&ip=%s" % (uri, ip_address)
+        resp, resp_body = self._async_call(uri, method="DELETE",
+                has_response=False,
+                error_class=exc.PTRRecordDeletionFailed)
+        return resp_body.get("status") == "COMPLETED"
+
+
+
+class CloudDNSClient(BaseClient):
+    """
+    This is the primary class for interacting with Cloud DNS.
+    """
+    name = "Cloud DNS"
+

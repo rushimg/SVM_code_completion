@@ -1,0 +1,11 @@
+        def wrapped(self, upload_key, *args, **kwargs):
+            try:
+                self.folder_upload_status[upload_key]
+            except KeyError:
+                raise exc.InvalidUploadID("There is no folder upload with the "
+                        "key '%s'." % upload_key)
+            return fnc(self, upload_key, *args, **kwargs)
+        return wrapped
+
+
+    @_valid_upload_key

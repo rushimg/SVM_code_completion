@@ -1,0 +1,33 @@
+    def _iterate_list(self, include_claimed, echo, marker, limit):
+        """
+        Recursive method to work around the hard limit of 10 items per call.
+        """
+        ret = []
+        if limit is None:
+            this_limit = MSG_LIMIT
+        else:
+            this_limit = min(MSG_LIMIT, limit)
+            limit = limit - this_limit
+        uri = "/%s?include_claimed=%s&echo=%s" % (self.uri_base,
+                json.dumps(include_claimed), json.dumps(echo))
+        qs_parts = []
+        if marker is not None:
+            qs_parts.append("marker=%s" % marker)
+        if this_limit is not None:
+            qs_parts.append("limit=%s" % this_limit)
+        if qs_parts:
+            uri = "%s&%s" % (uri, "&".join(qs_parts))
+        resp, resp_body = self._list(uri, return_raw=True)
+        if not resp_body:
+            return ret
+        messages = resp_body.get(self.plural_response_key, [])
+        ret = [QueueMessage(manager=self, info=item) for item in messages]
+        marker = _parse_marker(resp_body)
+
+        loop = 0
+        if ((limit is None) or limit > 0) and marker:
+            loop += 1
+            ret.extend(self._iterate_list(include_claimed, echo, marker, limit))
+        return ret
+
+

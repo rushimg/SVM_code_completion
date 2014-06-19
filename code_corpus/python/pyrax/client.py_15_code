@@ -1,0 +1,16 @@
+    def get_object_metadata(self, container, obj, prefix=None):
+        """Retrieves any metadata for the specified object."""
+        if prefix is None:
+            prefix = self.object_meta_prefix
+        cname = self._resolve_name(container)
+        oname = self._resolve_name(obj)
+        headers = self.connection.head_object(cname, oname)
+        prefix = prefix.lower()
+        ret = {}
+        for hkey, hval in headers.iteritems():
+            if hkey.lower().startswith(prefix):
+                ret[hkey] = hval
+        return ret
+
+
+    @handle_swiftclient_exception

@@ -1,0 +1,16 @@
+    def _list_tenants(self, admin):
+        """
+        Returns either a list of all tenants (admin=True), or the tenant for
+        the currently-authenticated user (admin=False).
+        """
+        resp, resp_body = self.method_get("tenants", admin=admin)
+        if 200 <= resp.status_code < 300:
+            tenants = resp_body.get("tenants", [])
+            return [Tenant(self, tenant) for tenant in tenants]
+        elif resp.status_code in (401, 403):
+            raise exc.AuthorizationFailure("You are not authorized to list "
+                    "tenants.")
+        else:
+            raise exc.TenantNotFound("Could not get a list of tenants.")
+
+

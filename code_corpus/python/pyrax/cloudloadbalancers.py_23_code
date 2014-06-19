@@ -1,0 +1,45 @@
+    def update(self, lb, name=None, algorithm=None, protocol=None,
+            halfClosed=None, port=None, timeout=None, httpsRedirect=None):
+        """
+        Provides a way to modify the following attributes of a load balancer:
+            - name
+            - algorithm
+            - protocol
+            - halfClosed
+            - port
+            - timeout
+            - httpsRedirect
+        """
+        body = {}
+        if name is not None:
+            body["name"] = name
+        if algorithm is not None:
+            body["algorithm"] = algorithm
+        if protocol is not None:
+            body["protocol"] = protocol
+        if halfClosed is not None:
+            body["halfClosed"] = halfClosed
+        if port is not None:
+            body["port"] = port
+        if timeout is not None:
+            body["timeout"] = timeout
+        if httpsRedirect is not None:
+            body["httpsRedirect"] = httpsRedirect
+        if not body:
+            # Nothing passed
+            return
+        body = {"loadBalancer": body}
+        uri = "/loadbalancers/%s" % utils.get_id(lb)
+        try:
+            resp, resp_body = self.api.method_put(uri, body=body)
+        except exc.ClientException as e:
+            message = e.message
+            details = e.details
+            if message and details:
+                errmsg = "%s - %s" % (message, details)
+            else:
+                errmsg = message
+            raise exc.InvalidLoadBalancerParameters(errmsg)
+        return resp, resp_body
+
+

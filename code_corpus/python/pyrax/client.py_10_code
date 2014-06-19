@@ -1,0 +1,32 @@
+    def set_account_metadata(self, metadata, clear=False,
+            extra_info=None, prefix=None):
+        """
+        Accepts a dictionary of metadata key/value pairs and updates the
+        specified account metadata with them.
+
+        If 'clear' is True, any existing metadata is deleted and only the
+        passed metadata is retained. Otherwise, the values passed here update
+        the account's metadata.
+
+        'extra_info' is an optional dictionary which will be populated with
+        'status', 'reason', and 'headers' keys from the underlying swiftclient
+        call.
+
+        By default, the standard account metadata prefix ('X-Account-Meta-') is
+        prepended to the header name if it isn't present. For non-standard
+        headers, you must include a non-None prefix, such as an empty string.
+        """
+        # Add the metadata prefix, if needed.
+        if prefix is None:
+            prefix = self.account_meta_prefix
+        massaged = self._massage_metakeys(metadata, prefix)
+        new_meta = {}
+        if clear:
+            curr_meta = self.get_account_metadata()
+            for ckey in curr_meta:
+                new_meta[ckey] = ""
+        utils.case_insensitive_update(new_meta, massaged)
+        self.connection.post_account(new_meta, response_dict=extra_info)
+
+
+    @handle_swiftclient_exception

@@ -1,0 +1,17 @@
+def _parse_datetime_string(val):
+    """
+    Attempts to parse a string representation of a date or datetime value, and
+    returns a datetime if successful. If not, a InvalidDateTimeString exception
+    will be raised.
+    """
+    dt = None
+    lenval = len(val)
+    fmt = {19: "%Y-%m-%d %H:%M:%S", 10: "%Y-%m-%d"}.get(lenval)
+    if fmt is None:
+        # Invalid date
+        raise exc.InvalidDateTimeString("The supplied value '%s' does not "
+              "match either of the formats 'YYYY-MM-DD HH:MM:SS' or "
+              "'YYYY-MM-DD'." % val)
+    return datetime.datetime.strptime(val, fmt)
+
+

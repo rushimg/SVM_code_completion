@@ -1,0 +1,16 @@
+    def __init__(self, manager, info, key=None, loaded=False):
+        # Queues are often returned with no info
+        info = info or {"queue": {}}
+        super(Queue, self).__init__(manager, info, key=key, loaded=loaded)
+        self._repr_properties = ["id"]
+        self._message_manager = QueueMessageManager(self.manager.api,
+                resource_class=QueueMessage, response_key="",
+                plural_response_key="messages",
+                uri_base="queues/%s/messages" % self.id)
+        self._claim_manager = QueueClaimManager(self.manager.api,
+                resource_class=QueueClaim, response_key="",
+                plural_response_key="claims",
+                uri_base="queues/%s/claims" % self.id)
+        self._claim_manager._message_manager = self._message_manager
+
+

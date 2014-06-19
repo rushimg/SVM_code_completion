@@ -1,0 +1,33 @@
+    def create(self, name, volume, description=None, force=False):
+        """
+        Adds exception handling to the default create() call.
+        """
+        try:
+            snap = super(CloudBlockStorageSnapshotManager, self).create(
+                    name=name, volume=volume, description=description,
+                    force=force)
+        except exc.BadRequest as e:
+            msg = str(e)
+            if "Invalid volume: must be available" in msg:
+                # The volume for the snapshot was attached.
+                raise exc.VolumeNotAvailable("Cannot create a snapshot from an "
+                        "attached volume. Detach the volume before trying "
+                        "again, or pass 'force=True' to the create_snapshot() "
+                        "call.")
+            else:
+                # Some other error
+                raise
+        except exc.ClientException as e:
+            if e.code == 409:
+                if "Request conflicts with in-progress" in str(e):
+                    txt = ("The volume is current creating a snapshot. You "
+                            "must wait until that completes before attempting "
+                            "to create an additional snapshot.")
+                    raise exc.VolumeNotAvailable(txt)
+                else:
+                    raise
+            else:
+                raise
+        return snap
+
+

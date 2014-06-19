@@ -1,0 +1,22 @@
+    def claim_messages(self, ttl, grace, count=None):
+        """
+        Claims up to `count` unclaimed messages from this queue. If count is
+        not specified, the default is to claim 10 messages.
+
+        The `ttl` parameter specifies how long the server should wait before
+        releasing the claim. The ttl value MUST be between 60 and 43200 seconds.
+
+        The `grace` parameter is the message grace period in seconds. The value
+        of grace MUST be between 60 and 43200 seconds. The server extends the
+        lifetime of claimed messages to be at least as long as the lifetime of
+        the claim itself, plus a specified grace period to deal with crashed
+        workers (up to 1209600 or 14 days including claim lifetime). If a
+        claimed message would normally live longer than the grace period, its
+        expiration will not be adjusted.
+
+        Returns a QueueClaim object, whose 'messages' attribute contains the
+        list of QueueMessage objects representing the claimed messages.
+        """
+        return self._claim_manager.claim(ttl, grace, count=count)
+
+

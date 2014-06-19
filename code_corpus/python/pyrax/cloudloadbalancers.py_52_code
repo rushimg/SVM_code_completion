@@ -1,0 +1,21 @@
+    def allowed_domains(self):
+        """
+        This property lists the allowed domains for a load balancer.
+
+        The allowed domains are restrictions set for the allowed domain names
+        used for adding load balancer nodes. In order to submit a domain name
+        as an address for the load balancer node to add, the user must verify
+        that the domain is valid by using the List Allowed Domains call. Once
+        verified, simply supply the domain name in place of the node's address
+        in the add_nodes() call.
+        """
+        if self._allowed_domains is None:
+            uri = "/loadbalancers/alloweddomains"
+            resp, body = self.method_get(uri)
+            dom_list = body["allowedDomains"]
+            self._allowed_domains = [itm["allowedDomain"]["name"]
+                    for itm in dom_list]
+        return self._allowed_domains
+
+
+    @property

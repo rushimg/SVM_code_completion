@@ -1,0 +1,19 @@
+def _get_service_endpoint(context, svc, region=None, public=True):
+    """
+    Parses the services dict to get the proper endpoint for the given service.
+    """
+    region = _safe_region(region)
+    # If a specific context is passed, use that. Otherwise, use the global
+    # identity reference.
+    context = context or identity
+    url_type = {True: "public", False: "private"}[public]
+    svc_obj = context.services.get(svc)
+    if not svc_obj:
+        return None
+    ep = svc_obj.endpoints.get(region, {}).get(url_type)
+    if not ep:
+        # Try the "ALL" region, and substitute the actual region
+        ep = svc_obj.endpoints.get("ALL", {}).get(url_type)
+    return ep
+
+

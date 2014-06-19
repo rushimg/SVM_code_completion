@@ -1,0 +1,30 @@
+def _quote(val):
+    if isinstance(val, six.text_type):
+        val = val.encode("utf-8")
+    return urllib.quote(val)
+
+
+
+class CFClient(object):
+    """
+    Wraps the calls to swiftclient with objects representing Containers
+    and StorageObjects.
+
+    These classes allow a developer to work with regular Python objects
+    instead of calling functions that return primitive types.
+    """
+    # Defaults for CDN
+    cdn_enabled = False
+    default_cdn_ttl = 86400
+    _container_cache = {}
+    _cached_temp_url_key = ""
+    # Upload size limit
+    max_file_size = 5368709119  # 5GB - 1
+    # Folder upload status dict. Each upload will generate its own UUID key.
+    # The app can use that key query the status of the upload. This dict
+    # will also be used to hold the flag to interrupt uploads in progress.
+    folder_upload_status = {}
+    # Interval in seconds between checks for completion of bulk deletes.
+    bulk_delete_interval = 1
+
+

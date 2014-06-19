@@ -1,0 +1,35 @@
+    def set_container_metadata(self, container, metadata, clear=False,
+            extra_info=None, prefix=None):
+        """
+        Accepts a dictionary of metadata key/value pairs and updates the
+        specified container metadata with them.
+
+        If 'clear' is True, any existing metadata is deleted and only the
+        passed metadata is retained. Otherwise, the values passed here update
+        the container's metadata.
+
+        'extra_info' is an optional dictionary which will be populated with
+        'status', 'reason', and 'headers' keys from the underlying swiftclient
+        call.
+
+        By default, the standard container metadata prefix
+        ('X-Container-Meta-') is prepended to the header name if it isn't
+        present. For non-standard headers, you must include a non-None prefix,
+        such as an empty string.
+        """
+        # Add the metadata prefix, if needed.
+        if prefix is None:
+            prefix = self.container_meta_prefix
+        massaged = self._massage_metakeys(metadata, prefix)
+        cname = self._resolve_name(container)
+        new_meta = {}
+        if clear:
+            curr_meta = self.get_container_metadata(cname)
+            for ckey in curr_meta:
+                new_meta[ckey] = ""
+        utils.case_insensitive_update(new_meta, massaged)
+        self.connection.post_container(cname, new_meta,
+                response_dict=extra_info)
+
+
+    @handle_swiftclient_exception

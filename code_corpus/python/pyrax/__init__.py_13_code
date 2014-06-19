@@ -1,0 +1,29 @@
+def set_credential_file(cred_file, region=None, authenticate=True):
+    """
+    Read in the credentials from the supplied file path, and then try to
+    authenticate. The file should be a standard config file in one of the
+    following formats:
+
+    For Keystone authentication:
+        [keystone]
+        username = myusername
+        password = 1234567890abcdef
+        tenant_id = abcdef1234567890
+
+    For Rackspace authentication:
+        [rackspace_cloud]
+        username = myusername
+        api_key = 1234567890abcdef
+
+    If the region is passed, it will authenticate against the proper endpoint
+    for that region, and set the default region for connections.
+    """
+    global regions, services
+    region = _safe_region(region)
+    identity.set_credential_file(cred_file, region=region,
+            authenticate=authenticate)
+    regions = tuple(identity.regions)
+    services = tuple(identity.services.keys())
+    connect_to_services(region=region)
+
+

@@ -1,0 +1,20 @@
+    def _parse_service_catalog(self):
+        self.services = utils.DotDict()
+        self.regions = set()
+        for svc in self.service_catalog:
+            service = Service(self, svc)
+            if not hasattr(service, "endpoints"):
+                # Not an OpenStack service
+                continue
+            setattr(self.services, service.service_type, service)
+            self.regions.update(list(service.endpoints.keys()))
+        # Update the 'ALL' services to include all available regions.
+        self.regions.discard("ALL")
+        for nm, svc in list(self.services.items()):
+            eps = svc.endpoints
+            ep = eps.pop("ALL", None)
+            if ep:
+                for rgn in self.regions:
+                    eps[rgn] = ep
+
+

@@ -1,0 +1,30 @@
+    def __exit__(self, type, value, traceback):
+        os.unlink(self.name)
+
+
+class SelfDeletingTempDirectory(object):
+    """
+    Convenience class for dealing with temporary folders and the
+    files within them.
+
+    The temp folder is created in a secure fashion, and is
+    automatically deleted when the context manager exits, along
+    with any files that may be contained within. When you
+    instantiate this class, you receive the full path to the
+    temporary directory.
+
+    Usage:
+
+    \code
+    with SelfDeletingTempDirectory() as tmpdir:
+        f1 = open(os.path.join(tmpdir, "my_file.txt", "w")
+        f1.write("blah...")
+        f1.close()
+        some_func(tmpdir)
+    # More code
+    # At this point, the directory 'tmpdir' has been deleted,
+    # as well as the file 'f1' within it.
+    \endcode
+    """
+    name = None
+

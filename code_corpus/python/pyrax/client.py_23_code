@@ -1,0 +1,53 @@
+    def upload_folder(self, folder_path, container=None, ignore=None, ttl=None):
+        """
+        Convenience method for uploading an entire folder, including any
+        sub-folders, to Cloud Files.
+
+        All files will be uploaded to objects with the same name as the file.
+        In the case of nested folders, files will be named with the full path
+        relative to the base folder. E.g., if the folder you specify contains a
+        folder named 'docs', and 'docs' contains a file named 'install.html',
+        that file will be uploaded to an object named 'docs/install.html'.
+
+        If 'container' is specified, the folder's contents will be uploaded to
+        that container. If it is not specified, a new container with the same
+        name as the specified folder will be created, and the files uploaded to
+        this new container.
+
+        You can selectively ignore files by passing either a single pattern or
+        a list of patterns; these will be applied to the individual folder and
+        file names, and any names that match any of the 'ignore' patterns will
+        not be uploaded. The patterns should be standard *nix-style shell
+        patterns; e.g., '*pyc' will ignore all files ending in 'pyc', such as
+        'program.pyc' and 'abcpyc'.
+
+        The upload will happen asynchronously; in other words, the call to
+        upload_folder() will generate a UUID and return a 2-tuple of (UUID,
+        total_bytes) immediately. Uploading will happen in the background; your
+        app can call get_uploaded(uuid) to get the current status of the
+        upload. When the upload is complete, the value returned by
+        get_uploaded(uuid) will match the total_bytes for the upload.
+
+        If you start an upload and need to cancel it, call
+        cancel_folder_upload(uuid), passing the uuid returned by the initial
+        call.  It will then be up to you to either keep or delete the
+        partially-uploaded content.
+
+        If you specify a `ttl` parameter, the uploaded files will be deleted
+        after that number of seconds.
+        """
+        if not os.path.isdir(folder_path):
+            raise exc.FolderNotFound("No such folder: '%s'" % folder_path)
+
+        ignore = utils.coerce_string_to_list(ignore)
+        total_bytes = utils.folder_size(folder_path, ignore)
+        upload_key = str(uuid.uuid4())
+        self.folder_upload_status[upload_key] = {"continue": True,
+                "total_bytes": total_bytes,
+                "uploaded": 0,
+                }
+        self._upload_folder_in_background(folder_path, container, ignore,
+                upload_key, ttl)
+        return (upload_key, total_bytes)
+
+

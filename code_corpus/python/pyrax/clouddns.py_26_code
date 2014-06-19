@@ -1,0 +1,29 @@
+    def search_records(self, domain, record_type, name=None, data=None):
+        """
+        Returns a list of all records configured for the specified domain that
+        match the supplied search criteria.
+        """
+        search_params = []
+        if name:
+            search_params.append("name=%s" % name)
+        if data:
+            search_params.append("data=%s" % data)
+        query_string = "&".join(search_params)
+        dom_id = utils.get_id(domain)
+        uri = "/domains/%s/records?type=%s" % (dom_id, record_type)
+        if query_string:
+            uri = "%s&%s" % (uri, query_string)
+        resp, body = self._retry_get(uri)
+        records = body.get("records", [])
+        self._reset_paging("record", body)
+        rec_paging = self._paging.get("record", {})
+        while rec_paging.get("next_uri"):
+            resp, body = self._retry_get(rec_paging.get("next_uri"))
+            self._reset_paging("record", body)
+            records.extend(body.get("records", []))
+        for record in records:
+            record["domain_id"] = dom_id
+        return [CloudDNSRecord(self, record, loaded=False)
+                for record in records if record]
+
+

@@ -1,0 +1,20 @@
+    def create_user(self, name, password, database_names, host=None):
+        """
+        Creates a user with the specified name and password, and gives that
+        user access to the specified database(s).
+
+        If a user with that name already exists, a BadRequest (400) exception
+        will be raised.
+        """
+        if not isinstance(database_names, (list, tuple)):
+            database_names = [database_names]
+        # The API only accepts names, not DB objects
+        database_names = [db if isinstance(db, six.string_types) else db.name
+                for db in database_names]
+        self._user_manager.create(name=name, password=password,
+                database_names=database_names, host=host, return_none=True)
+        # Since the API doesn't return the info for creating the user object,
+        # we have to do it manually.
+        return self._user_manager.find(name=name)
+
+

@@ -1,0 +1,18 @@
+    def restore_backup(self, backup, name, flavor, volume):
+        """
+        Restores a backup to a new database instance. You must supply a backup
+        (either the ID or a CloudDatabaseBackup object), a name for the new
+        instance, as well as a flavor and volume size (in GB) for the instance.
+        """
+        flavor_ref = self.api._get_flavor_ref(flavor)
+        body = {"instance": {
+                "name": name,
+                "flavorRef": flavor_ref,
+                "volume": {"size": volume},
+                "restorePoint": {"backupRef": utils.get_id(backup)},
+                }}
+        uri = "/%s" % self.uri_base
+        resp, resp_body = self.api.method_post(uri, body=body)
+        return CloudDatabaseInstance(self, resp_body.get("instance", {}))
+
+

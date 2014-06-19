@@ -1,0 +1,15 @@
+    def list_user_access(self, user):
+        """
+        Returns a list of all database names for which the specified user
+        has access rights.
+        """
+        user = utils.get_name(user)
+        uri = "/%s/%s/databases" % (self.uri_base, user)
+        try:
+            resp, resp_body = self.api.method_get(uri)
+        except exc.NotFound as e:
+            raise exc.NoSuchDatabaseUser("User '%s' does not exist." % user)
+        dbs = resp_body.get("databases", {})
+        return [CloudDatabaseDatabase(self, db) for db in dbs]
+
+

@@ -1,0 +1,18 @@
+    def update(self, volume, display_name=None, display_description=None):
+        """
+        Update the specified values on the specified volume. You may specify
+        one or more values to update.
+        """
+        uri = "/%s/%s" % (self.uri_base, utils.get_id(volume))
+        param_dict = {}
+        if display_name:
+            param_dict["display_name"] = display_name
+        if display_description:
+            param_dict["display_description"] = display_description
+        if not param_dict:
+            # Nothing to do!
+            return
+        body = {"volume": param_dict}
+        resp, resp_body = self.api.method_put(uri, body=body)
+
+

@@ -1,0 +1,20 @@
+    def revoke_user_access(self, user, db_names, strict=True):
+        """
+        Revokes access to the databases listed in `db_names` for the user.
+
+        If any of the databases do not exist, a NoSuchDatabase exception will
+        be raised, unless you specify `strict=False` in the call.
+        """
+        user = utils.get_name(user)
+        db_names = self._get_db_names(db_names, strict=strict)
+        bad_names = []
+        for db_name in db_names:
+            uri = "/%s/%s/databases/%s" % (self.uri_base, user, db_name)
+            resp, resp_body = self.api.method_delete(uri)
+
+
+
+class CloudDatabaseBackupManager(BaseManager):
+    """
+    This class handles operations on backups for a Cloud Database instance.
+    """

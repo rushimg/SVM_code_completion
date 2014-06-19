@@ -1,0 +1,44 @@
+def _wait_until(obj, att, desired, callback, interval, attempts, verbose,
+        verbose_atts):
+    """
+    Loops until either the desired value of the attribute is reached, or the
+    number of attempts is exceeded.
+    """
+    if not isinstance(desired, (list, tuple)):
+        desired = [desired]
+    if verbose_atts is None:
+        verbose_atts = []
+    if not isinstance(verbose_atts, (list, tuple)):
+        verbose_atts = [verbose_atts]
+    infinite = (attempts == 0)
+    attempt = 0
+    start = time.time()
+    while infinite or (attempt < attempts):
+        try:
+            # For servers:
+            obj.get()
+        except AttributeError:
+            try:
+                # For other objects that don't support .get()
+                obj = obj.manager.get(obj.id)
+            except AttributeError:
+                # punt
+                raise exc.NoReloadError("The 'wait_until' method is not "
+                        "supported for '%s' objects." % obj.__class__)
+        attval = getattr(obj, att)
+        if verbose:
+            elapsed = time.time() - start
+            msgs = ["Current value of %s: %s (elapsed: %4.1f seconds)" % (
+                    att, attval, elapsed)]
+            for vatt in verbose_atts:
+                vattval = getattr(obj, vatt, None)
+                msgs.append("%s=%s" % (vatt, vattval))
+            print(" ".join(msgs))
+        if attval in desired:
+            return obj
+        time.sleep(interval)
+        attempt += 1
+    return obj
+
+
+

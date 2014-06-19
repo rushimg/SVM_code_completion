@@ -1,0 +1,14 @@
+    def _wrapped(self, queue, *args, **kwargs):
+        if not isinstance(queue, Queue):
+            # Must be the ID
+            queue = self._manager.get(queue)
+        return fnc(self, queue, *args, **kwargs)
+    return _wrapped
+
+
+
+class BaseQueueManager(BaseManager):
+    """
+    This class attempts to add in all the common deviations from the API
+    standards that the regular base classes are based on.
+    """

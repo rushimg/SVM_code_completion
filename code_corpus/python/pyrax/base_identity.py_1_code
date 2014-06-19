@@ -1,0 +1,27 @@
+    def __init__(self, identity, catalog):
+        """
+        Parse the catalog entry for a particular service.
+        """
+        self.identity = identity
+        self.name = catalog.get("name")
+        # Replace any dashes with underscores.
+        fulltype = catalog["type"].replace("-", "_")
+        # Some provider-specific services are prefixed with that info.
+        try:
+            self.prefix, self.service_type = fulltype.split(":")
+        except ValueError:
+            self.prefix = ""
+            self.service_type = fulltype
+        if self.service_type == "compute":
+            if self.name.lower() == "cloudservers":
+                # First-generation Rackspace cloud servers
+                return
+        self.clients = {}
+        self.endpoints = utils.DotDict()
+        eps = catalog.get("endpoints", [])
+        for ep in eps:
+            rgn = ep.get("region", "ALL")
+            self.endpoints[rgn] = Endpoint(ep, self.service_type, rgn, identity)
+        return
+
+

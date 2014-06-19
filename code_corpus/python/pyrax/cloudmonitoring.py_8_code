@@ -1,0 +1,18 @@
+    def update_notification(self, notification, details):
+        """
+        Updates the specified notification with the supplied details.
+        """
+        if isinstance(notification, CloudMonitorNotification):
+            nid = notification.id
+            ntyp = notification.type
+        else:
+            # Supplied an ID
+            nfcn = self.get(notification)
+            nid = notification
+            ntyp = nfcn.type
+        uri = "/%s/%s" % (self.uri_base, nid)
+        body = {"type": ntyp,
+                "details": details}
+        resp, resp_body = self.api.method_put(uri, body=body)
+
+

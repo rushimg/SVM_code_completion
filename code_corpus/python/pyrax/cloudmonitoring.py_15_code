@@ -1,0 +1,67 @@
+    def get_metric_data_points(self, entity, check, metric, start, end,
+            points=None, resolution=None, stats=None):
+        """
+        Returns the data points for a given metric for the given period. The
+        'start' and 'end' times must be specified; they can be be either Python
+        date/datetime values, a string representing a date/datetime in either
+        of 'YYYY-MM-DD HH:MM:SS' or 'YYYY-MM-DD' formats, or a Unix timestamp:
+
+        The 'points' parameter represents the number of points to return. The
+        'resolution' parameter represents the granularity of the data. You must
+        specify either 'points' or 'resolution', but not both. The allowed
+        values for resolution are: 'FULL', 'MIN5', 'MIN20', 'MIN60', 'MIN240',
+        and 'MIN1440'.
+
+        Finally, the 'stats' parameter specifies the stats you want returned.
+        By default only the 'average' is returned. You omit this parameter,
+        pass in a single value, or pass in a list of values. The allowed values
+        are: 'average', 'variance', 'min', and 'max'
+        """
+        allowed_resolutions = ("FULL", "MIN5", "MIN20", "MIN60", "MIN240",
+                "MIN1440")
+        if not (points or resolution):
+            raise exc.MissingMonitoringCheckGranularity("You must specify "
+                    "either the 'points' or 'resolution' parameter when "
+                    "fetching metrics.")
+        if resolution:
+            if resolution.upper() not in allowed_resolutions:
+                raise exc.InvalidMonitoringMetricsResolution("The specified "
+                        "resolution '%s' is not valid. The valid values are: "
+                        "%s." % (resolution, str(allowed_resolutions)))
+        start_tm = utils.to_timestamp(start)
+        end_tm = utils.to_timestamp(end)
+        # NOTE: For some odd reason, the timestamps required for this must be
+        # in milliseconds, instead of the UNIX standard for timestamps, which
+        # is in seconds. So the values here are multiplied by 1000 to make it
+        # work. If the API is ever corrected, the next two lines should be
+        # removed. GitHub #176.
+        start_tm *= 1000
+        end_tm *= 1000
+        qparms = []
+        # Timestamps with fractional seconds currently cause a 408 (timeout)
+        qparms.append("from=%s" % int(start_tm))
+        qparms.append("to=%s" % int(end_tm))
+        if points:
+            qparms.append("points=%s" % points)
+        if resolution:
+            qparms.append("resolution=%s" % resolution.upper())
+        if stats:
+            stats = utils.coerce_string_to_list(stats)
+            for stat in stats:
+                qparms.append("select=%s" % stat)
+        qparm = "&".join(qparms)
+        uri = "/%s/%s/checks/%s/metrics/%s/plot?%s" % (self.uri_base,
+                utils.get_id(entity), utils.get_id(check), metric, qparm)
+        try:
+            resp, resp_body = self.api.method_get(uri)
+        except exc.BadRequest as e:
+            msg = e.message
+            dtls = e.details
+            if msg.startswith("Validation error"):
+                raise exc.InvalidMonitoringMetricsRequest("Your request was "
+                        "invalid: '%s'" % dtls)
+            else:
+                raise
+        return resp_body["values"]
+
+

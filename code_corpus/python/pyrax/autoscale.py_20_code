@@ -1,0 +1,14 @@
+    def replace(self, scaling_group, name, cooldown, min_entities,
+            max_entities, metadata=None):
+        """
+        Replace an existing ScalingGroup configuration. All of the attributes
+        must be specified If you wish to delete any of the optional attributes,
+        pass them in as None.
+        """
+        body = self._create_group_config_body(name, cooldown, min_entities,
+                max_entities, metadata=metadata)
+        group_id = utils.get_id(scaling_group)
+        uri = "/%s/%s/config" % (self.uri_base, group_id)
+        resp, resp_body = self.api.method_put(uri, body=body)
+
+

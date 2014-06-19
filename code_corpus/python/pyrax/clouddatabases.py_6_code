@@ -1,0 +1,17 @@
+    def _list_backups_for_instance(self, instance):
+        """
+        Instance-specific backups are handled through the instance manager,
+        not the backup manager.
+        """
+        uri = "/%s/%s/backups" % (self.uri_base, utils.get_id(instance))
+        resp, resp_body = self.api.method_get(uri)
+        mgr = self.api._backup_manager
+        return [CloudDatabaseBackup(mgr, backup)
+                for backup in resp_body.get("backups")]
+
+
+
+class CloudDatabaseDatabaseManager(BaseManager):
+    """
+    This class manages communication with databases on Cloud Database instances.
+    """

@@ -1,0 +1,13 @@
+    def __repr__(self):
+        if self.target is None:
+            return "<BucketLoggingStatus: Disabled>"
+        grants = []
+        for g in self.grants:
+            if g.type == 'CanonicalUser':
+                u = g.display_name
+            elif g.type == 'Group':
+                u = g.uri
+            else:
+                u = g.email_address
+            grants.append("%s = %s" % (u, g.permission))
+        return "<BucketLoggingStatus: %s/%s (%s)>" % (self.target, self.prefix, ", ".join(grants))

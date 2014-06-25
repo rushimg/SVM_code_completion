@@ -1,0 +1,12 @@
+    def add_object(self, name, content, headers=None, replace=True):
+        
+        if self.config.origin.origin_access_identity:
+            policy = 'private'
+        else:
+            policy = 'public-read'
+        bucket = self._get_bucket()
+        object = bucket.new_key(name)
+        object.set_contents_from_file(content, headers=headers, policy=policy)
+        if self.config.origin.origin_access_identity:
+            self.set_permissions(object, replace)
+        return object

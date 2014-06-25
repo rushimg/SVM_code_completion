@@ -1,0 +1,9 @@
+    def canonical_request(self, http_request):
+        cr = [http_request.method.upper()]
+        cr.append(self.canonical_uri(http_request))
+        cr.append(self.canonical_query_string(http_request))
+        headers_to_sign = self.headers_to_sign(http_request)
+        cr.append(self.canonical_headers(headers_to_sign) + '\n')
+        cr.append(self.signed_headers(headers_to_sign))
+        cr.append(self.payload(http_request))
+        return '\n'.join(cr)

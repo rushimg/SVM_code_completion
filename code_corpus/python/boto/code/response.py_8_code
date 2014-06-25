@@ -1,0 +1,8 @@
+    def startElement(self, name, attrs, connection):
+        if name == 'ResponseMetadata':
+            setattr(self, name, ResponseElement(name=name))
+        elif name == self._action + 'Result':
+            setattr(self, name, self._Result(name=name))
+        else:
+            return super(Response, self).startElement(name, attrs, connection)
+        return getattr(self, name)

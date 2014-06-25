@@ -1,0 +1,35 @@
+    def query_2(self, limit=None, index=None, reverse=False,
+                consistent=False, attributes=None, max_page_size=None,
+                query_filter=None, conditional_operator=None,
+                **filter_kwargs):
+        
+        if self.schema:
+            if len(self.schema) == 1:
+                if len(filter_kwargs) <= 1:
+                    if not self.global_indexes or not len(self.global_indexes):
+                        # If the schema only has one field, there's <= 1 filter
+                        # param & no Global Secondary Indexes, this is user
+                        # error. Bail early.
+                        raise exceptions.QueryError(
+                            "You must specify more than one key to filter on."
+                        )
+        if attributes is not None:
+            select = 'SPECIFIC_ATTRIBUTES'
+        else:
+            select = None
+        results = ResultSet(
+            max_page_size=max_page_size
+        )
+        kwargs = filter_kwargs.copy()
+        kwargs.update({
+            'limit': limit,
+            'index': index,
+            'reverse': reverse,
+            'consistent': consistent,
+            'select': select,
+            'attributes_to_get': attributes,
+            'query_filter': query_filter,
+            'conditional_operator': conditional_operator,
+        })
+        results.to_call(self._query, **kwargs)
+        return results

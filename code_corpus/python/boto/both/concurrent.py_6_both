@@ -1,0 +1,44 @@
+    def upload(self, filename, description=None):
+        """Concurrently create an archive.
+        The part_size value specified when the class was constructed
+        will be used *unless* it is smaller than the minimum required
+        part size needed for the size of the given file.  In that case,
+        the part size used will be the minimum part size required
+        to properly upload the given file.
+        :type file: str
+        :param file: The filename to upload
+        :type description: str
+        :param description: The description of the archive.
+        :rtype: str
+        :return: The archive id of the newly created archive.
+        """
+        total_size = os.stat(filename).st_size
+        total_parts, part_size = self._calculate_required_part_size(total_size)
+        hash_chunks = [None] * total_parts
+        worker_queue = Queue()
+        result_queue = Queue()
+        response = self._api.initiate_multipart_upload(self._vault_name,
+                                                       part_size,
+                                                       description)
+        upload_id = response['UploadId']
+        # The basic idea is to add the chunks (the offsets not the actual
+        # contents) to a work queue, start up a thread pool, let the crank
+        # through the items in the work queue, and then place their results
+        # in a result queue which we use to complete the multipart upload.
+        self._add_work_items_to_queue(total_parts, worker_queue, part_size)
+        self._start_upload_threads(result_queue, upload_id,
+                                   worker_queue, filename)
+        try:
+            self._wait_for_upload_threads(hash_chunks, result_queue,
+                                          total_parts)
+        except UploadArchiveError, e:
+            log.debug("An error occurred while uploading an archive, "
+                      "aborting multipart upload.")
+            self._api.abort_multipart_upload(self._vault_name, upload_id)
+            raise e
+        log.debug("Completing upload.")
+        response = self._api.complete_multipart_upload(
+            self._vault_name, upload_id, bytes_to_hex(tree_hash(hash_chunks)),
+            total_size)
+        log.debug("Upload finished.")
+        return response['ArchiveId']

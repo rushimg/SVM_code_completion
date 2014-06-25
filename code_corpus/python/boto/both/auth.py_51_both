@@ -1,0 +1,8 @@
+    def add_auth(self, req, **kwargs):
+        if not 'x-amz-content-sha256' in req.headers:
+            if '_sha256' in req.headers:
+                req.headers['x-amz-content-sha256'] = req.headers.pop('_sha256')
+            else:
+                req.headers['x-amz-content-sha256'] = self.payload(req)
+        req = self.mangle_path_and_params(req)
+        return super(S3HmacAuthV4Handler, self).add_auth(req, **kwargs)

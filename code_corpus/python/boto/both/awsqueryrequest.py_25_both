@@ -1,0 +1,22 @@
+    def send(self, verb='GET', **args):
+        self.process_args(**args)
+        self.process_filters()
+        conn = self.get_connection(**self.connection_args)
+        self.http_response = conn.make_request(self.name(),
+                                               self.request_params,
+                                               verb=verb)
+        self.body = self.http_response.read()
+        boto.log.debug(self.body)
+        if self.http_response.status == 200:
+            self.aws_response = boto.jsonresponse.Element(list_marker=self.list_markers,
+                                                          item_marker=self.item_markers)
+            h = boto.jsonresponse.XmlHandler(self.aws_response, self)
+            h.parse(self.body)
+            return self.aws_response
+        else:
+            boto.log.error('%s %s' % (self.http_response.status,
+                                      self.http_response.reason))
+            boto.log.error('%s' % self.body)
+            raise conn.ResponseError(self.http_response.status,
+                                     self.http_response.reason,
+                                     self.body)

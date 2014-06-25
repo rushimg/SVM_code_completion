@@ -1,0 +1,10 @@
+    def set_request_payment(self, payer='BucketOwner', headers=None):
+        body = self.BucketPaymentBody % payer
+        response = self.connection.make_request('PUT', self.name, data=body,
+                query_args='requestPayment', headers=headers)
+        body = response.read()
+        if response.status == 200:
+            return True
+        else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)

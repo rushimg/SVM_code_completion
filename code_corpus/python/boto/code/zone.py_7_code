@@ -1,0 +1,9 @@
+    def delete_record(self, record, comment=""):
+        
+        changes = ResourceRecordSets(self.route53connection, self.id, comment)
+        if type(record) in [list, tuple, set]:
+            for r in record:
+                changes.add_change_record("DELETE", r)
+        else:
+            changes.add_change_record("DELETE", record)
+        return Status(self.route53connection, self._commit(changes))

@@ -1,0 +1,19 @@
+    def get_object_from_doc(self, cls, id, doc):
+        obj_node = doc.getElementsByTagName('object')[0]
+        if not cls:
+            class_name = obj_node.getAttribute('class')
+            cls = find_class(class_name)
+        if not id:
+            id = obj_node.getAttribute('id')
+        obj = cls(id)
+        for prop_node in obj_node.getElementsByTagName('property'):
+            prop_name = prop_node.getAttribute('name')
+            prop = obj.find_property(prop_name)
+            value = self.decode_value(prop, prop_node)
+            value = prop.make_value_from_datastore(value)
+            if value is not None:
+                try:
+                    setattr(obj, prop.name, value)
+                except:
+                    pass
+        return obj

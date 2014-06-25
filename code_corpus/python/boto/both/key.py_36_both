@@ -1,0 +1,12 @@
+    def get_redirect(self):
+        """Return the redirect location configured for this key.
+        If no redirect is configured (via set_redirect), then None
+        will be returned.
+        """
+        response = self.bucket.connection.make_request(
+            'HEAD', self.bucket.name, self.name)
+        if response.status == 200:
+            return response.getheader('x-amz-website-redirect-location')
+        else:
+            raise self.provider.storage_response_error(
+                response.status, response.reason, response.read())

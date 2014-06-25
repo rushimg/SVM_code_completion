@@ -1,0 +1,11 @@
+    def set_as_logging_target(self, headers=None):
+        """
+        Setup the current bucket as a logging target by granting the necessary
+        permissions to the LogDelivery group to write log files to this bucket.
+        """
+        policy = self.get_acl(headers=headers)
+        g1 = Grant(permission='WRITE', type='Group', uri=self.LoggingGroup)
+        g2 = Grant(permission='READ_ACP', type='Group', uri=self.LoggingGroup)
+        policy.acl.add_grant(g1)
+        policy.acl.add_grant(g2)
+        self.set_acl(policy, headers=headers)

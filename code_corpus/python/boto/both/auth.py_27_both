@@ -1,0 +1,8 @@
+    def query_string(self, http_request):
+        parameter_names = sorted(http_request.params.keys())
+        pairs = []
+        for pname in parameter_names:
+            pval = boto.utils.get_utf8_value(http_request.params[pname])
+            pairs.append(urllib.quote(pname, safe='') + '=' +
+                         urllib.quote(pval, safe='-_~'))
+        return '&'.join(pairs)

@@ -1,0 +1,9 @@
+    def encode(self, attr):
+        
+        dynamodb_type = self._get_dynamodb_type(attr)
+        try:
+            encoder = getattr(self, '_encode_%s' % dynamodb_type.lower())
+        except AttributeError:
+            raise ValueError("Unable to encode dynamodb type: %s" %
+                             dynamodb_type)
+        return {dynamodb_type: encoder(attr)}

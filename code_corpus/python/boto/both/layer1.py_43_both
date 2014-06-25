@@ -1,0 +1,33 @@
+    def enable_snapshot_copy(self, cluster_identifier, destination_region,
+                             retention_period=None):
+        """
+        Enables the automatic copy of snapshots from one region to
+        another region for a specified cluster.
+        :type cluster_identifier: string
+        :param cluster_identifier: The unique identifier of the source cluster
+            to copy snapshots from.
+        Constraints: Must be the valid name of an existing cluster that does
+            not already have cross-region snapshot copy enabled.
+        :type destination_region: string
+        :param destination_region: The destination region that you want to copy
+            snapshots to.
+        Constraints: Must be the name of a valid region. For more information,
+            see `Regions and Endpoints`_ in the Amazon Web Services General
+            Reference.
+        :type retention_period: integer
+        :param retention_period: The number of days to retain automated
+            snapshots in the destination region after they are copied from the
+            source region.
+        Default: 7.
+        Constraints: Must be at least 1 and no more than 35.
+        """
+        params = {
+            'ClusterIdentifier': cluster_identifier,
+            'DestinationRegion': destination_region,
+        }
+        if retention_period is not None:
+            params['RetentionPeriod'] = retention_period
+        return self._make_request(
+            action='EnableSnapshotCopy',
+            verb='POST',
+            path='/', params=params)

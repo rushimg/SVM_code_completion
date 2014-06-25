@@ -1,0 +1,24 @@
+    def startElement(self, name, attrs, connection):
+        
+        if name == CORS_CONFIG:
+            self.validateParseLevel(name, 0)
+            self.parse_level += 1;
+        elif name == CORS:
+            self.validateParseLevel(name, 1)
+            self.parse_level += 1;
+        elif name in self.legal_collections:
+            self.validateParseLevel(name, 2)
+            self.parse_level += 1;
+            self.collection = name
+        elif name in self.legal_elements:
+            self.validateParseLevel(name, 3)
+            # Make sure this tag is found inside a collection tag.
+            if self.collection is None:
+                raise InvalidCorsError('Tag %s found outside collection' % name)
+            # Make sure this tag is allowed for the current collection tag.
+            if name not in self.legal_collections[self.collection]:
+                raise InvalidCorsError('Tag %s not allowed in %s collection' %
+                                       (name, self.collection))
+            self.element = name
+        else:
+            raise InvalidCorsError('Unsupported tag ' + name)

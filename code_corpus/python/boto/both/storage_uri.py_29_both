@@ -1,0 +1,14 @@
+    def get_acl(self, validate=False, headers=None, version_id=None):
+        """returns a bucket's acl"""
+        self._check_bucket_uri('get_acl')
+        bucket = self.get_bucket(validate, headers)
+        # This works for both bucket- and object- level ACLs (former passes
+        # key_name=None):
+        key_name = self.object_name or ''
+        if self.get_provider().name == 'aws':
+            version_id = version_id or self.version_id
+            acl = bucket.get_acl(key_name, headers, version_id)
+        else:
+            acl = bucket.get_acl(key_name, headers, generation=self.generation)
+        self.check_response(acl, 'acl', self.uri)
+        return acl

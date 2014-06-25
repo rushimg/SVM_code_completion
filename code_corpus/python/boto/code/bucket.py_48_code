@@ -1,0 +1,25 @@
+    def configure_versioning(self, versioning, mfa_delete=False,
+                             mfa_token=None, headers=None):
+        
+        if versioning:
+            ver = 'Enabled'
+        else:
+            ver = 'Suspended'
+        if mfa_delete:
+            mfa = 'Enabled'
+        else:
+            mfa = 'Disabled'
+        body = self.VersioningBody % (ver, mfa)
+        if mfa_token:
+            if not headers:
+                headers = {}
+            provider = self.connection.provider
+            headers[provider.mfa_header] = ' '.join(mfa_token)
+        response = self.connection.make_request('PUT', self.name, data=body,
+                query_args='versioning', headers=headers)
+        body = response.read()
+        if response.status == 200:
+            return True
+        else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)

@@ -1,0 +1,31 @@
+    def startElement(self, name, attrs, connection):
+        if name == 'Endpoint':
+            self._in_endpoint = True
+        elif name == 'DBParameterGroups':
+            self.parameter_groups = ResultSet([('DBParameterGroup',
+                                                ParameterGroup)])
+            return self.parameter_groups
+        elif name == 'DBSecurityGroups':
+            self.security_groups = ResultSet([('DBSecurityGroup',
+                                               DBSecurityGroup)])
+            return self.security_groups
+        elif name == 'VpcSecurityGroups':
+            self.vpc_security_groups = ResultSet([('VpcSecurityGroupMembership',
+                                               VPCSecurityGroupMembership)])
+            return self.vpc_security_groups
+        elif name == 'PendingModifiedValues':
+            self.pending_modified_values = PendingModifiedValues()
+            return self.pending_modified_values
+        elif name == 'ReadReplicaDBInstanceIdentifiers':
+            self.read_replica_dbinstance_identifiers = \
+                    ReadReplicaDBInstanceIdentifiers()
+            return self.read_replica_dbinstance_identifiers
+        elif name == 'StatusInfos':
+            self.status_infos = ResultSet([
+                ('DBInstanceStatusInfo', StatusInfo)
+            ])
+            return self.status_infos
+        elif name == 'DBSubnetGroup':
+            self.subnet_group = DBSubnetGroup()
+            return self.subnet_group
+        return None

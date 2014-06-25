@@ -1,0 +1,28 @@
+    def marshal_object(self, obj, doc=None):
+        if not doc:
+            doc = self.new_doc()
+        if not doc:
+            doc = self.doc
+        obj_node = doc.createElement('object')
+        if obj.id:
+            obj_node.setAttribute('id', obj.id)
+        obj_node.setAttribute('class', '%s.%s' % (obj.__class__.__module__,
+                                                  obj.__class__.__name__))
+        root = doc.documentElement
+        root.appendChild(obj_node)
+        for property in obj.properties(hidden=False):
+            prop_node = doc.createElement('property')
+            prop_node.setAttribute('name', property.name)
+            prop_node.setAttribute('type', property.type_name)
+            value = property.get_value_for_datastore(obj)
+            if value is not None:
+                value = self.encode_value(property, value)
+                if isinstance(value, list):
+                    self.save_list(doc, value, prop_node)
+                elif isinstance(value, Node):
+                    prop_node.appendChild(value)
+                else:
+                    text_node = doc.createTextNode(unicode(value).encode("ascii", "ignore"))
+                    prop_node.appendChild(text_node)
+            obj_node.appendChild(prop_node)
+        return doc

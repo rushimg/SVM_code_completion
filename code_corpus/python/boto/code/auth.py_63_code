@@ -1,0 +1,14 @@
+    def _wrapper(self):
+        if os.environ.get('EC2_USE_SIGV4', False):
+            return ['hmac-v4']
+        if boto.config.get('ec2', 'use-sigv4', False):
+            return ['hmac-v4']
+        if hasattr(self, 'region'):
+            # If you're making changes here, you should also check
+            # ``boto/iam/connection.py``, as several things there are also
+            # endpoint-related.
+            if getattr(self.region, 'endpoint', ''):
+                if '.cn-' in self.region.endpoint:
+                    return ['hmac-v4']
+        return func(self)
+    return _wrapper

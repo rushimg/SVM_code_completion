@@ -1,0 +1,15 @@
+    def purchase_reserved_instance_offering(self,
+                                            reserved_instances_offering_id,
+                                            instance_count=1, limit_price=None,
+                                            dry_run=False):
+        
+        params = {
+            'ReservedInstancesOfferingId': reserved_instances_offering_id,
+            'InstanceCount': instance_count}
+        if limit_price is not None:
+            params['LimitPrice.Amount'] = str(limit_price[0])
+            params['LimitPrice.CurrencyCode'] = str(limit_price[1])
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_object('PurchaseReservedInstancesOffering', params,
+                               ReservedInstance, verb='POST')

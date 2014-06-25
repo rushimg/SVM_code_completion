@@ -1,0 +1,15 @@
+    def _create_object(self, config, resource, dist_class):
+        response = self.make_request('POST', '/%s/%s' % (self.Version,
+                                                         resource),
+                                     {'Content-Type': 'text/xml'},
+                                     data=config.to_xml())
+        body = response.read()
+        boto.log.debug(body)
+        if response.status == 201:
+            d = dist_class(connection=self)
+            h = handler.XmlHandler(d, self)
+            xml.sax.parseString(body, h)
+            d.etag = self.get_etag(response)
+            return d
+        else:
+            raise CloudFrontServerError(response.status, response.reason, body)

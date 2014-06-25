@@ -1,0 +1,16 @@
+    def run(self, command):
+        
+        boto.log.debug('running:%s on %s' % (command, self.server.instance_id))
+        status = 0
+        try:
+            t = self._ssh_client.exec_command(command)
+        except paramiko.SSHException:
+            status = 1
+        std_out = t[1].read()
+        std_err = t[2].read()
+        t[0].close()
+        t[1].close()
+        t[2].close()
+        boto.log.debug('stdout: %s' % std_out)
+        boto.log.debug('stderr: %s' % std_err)
+        return (status, std_out, std_err)

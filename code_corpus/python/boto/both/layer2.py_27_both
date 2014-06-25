@@ -1,0 +1,36 @@
+    def get_item(self, table, hash_key, range_key=None,
+                 attributes_to_get=None, consistent_read=False,
+                 item_class=Item):
+        """
+        Retrieve an existing item from the table.
+        :type table: :class:`boto.dynamodb.table.Table`
+        :param table: The Table object from which the item is retrieved.
+        :type hash_key: int|long|float|str|unicode|Binary
+        :param hash_key: The HashKey of the requested item.  The
+            type of the value must match the type defined in the
+            schema for the table.
+        :type range_key: int|long|float|str|unicode|Binary
+        :param range_key: The optional RangeKey of the requested item.
+            The type of the value must match the type defined in the
+            schema for the table.
+        :type attributes_to_get: list
+        :param attributes_to_get: A list of attribute names.
+            If supplied, only the specified attribute names will
+            be returned.  Otherwise, all attributes will be returned.
+        :type consistent_read: bool
+        :param consistent_read: If True, a consistent read
+            request is issued.  Otherwise, an eventually consistent
+            request is issued.
+        :type item_class: Class
+        :param item_class: Allows you to override the class used
+            to generate the items. This should be a subclass of
+            :class:`boto.dynamodb.item.Item`
+        """
+        key = self.build_key_from_values(table.schema, hash_key, range_key)
+        response = self.layer1.get_item(table.name, key,
+                                        attributes_to_get, consistent_read,
+                                        object_hook=self.dynamizer.decode)
+        item = item_class(table, hash_key, range_key, response['Item'])
+        if 'ConsumedCapacityUnits' in response:
+            item.consumed_units = response['ConsumedCapacityUnits']
+        return item

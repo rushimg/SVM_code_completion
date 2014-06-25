@@ -1,0 +1,44 @@
+    def authorize_security_group(self, group_name=None,
+                                 src_security_group_name=None,
+                                 src_security_group_owner_id=None,
+                                 ip_protocol=None,
+                                 from_port=None, to_port=None,
+                                 cidr_ip=None, group_id=None,
+                                 src_security_group_group_id=None,
+                                 dry_run=False):
+        
+        if src_security_group_name:
+            if from_port is None and to_port is None and ip_protocol is None:
+                return self.authorize_security_group_deprecated(
+                    group_name, src_security_group_name,
+                    src_security_group_owner_id)
+        params = {}
+        if group_name:
+            params['GroupName'] = group_name
+        if group_id:
+            params['GroupId'] = group_id
+        if src_security_group_name:
+            param_name = 'IpPermissions.1.Groups.1.GroupName'
+            params[param_name] = src_security_group_name
+        if src_security_group_owner_id:
+            param_name = 'IpPermissions.1.Groups.1.UserId'
+            params[param_name] = src_security_group_owner_id
+        if src_security_group_group_id:
+            param_name = 'IpPermissions.1.Groups.1.GroupId'
+            params[param_name] = src_security_group_group_id
+        if ip_protocol:
+            params['IpPermissions.1.IpProtocol'] = ip_protocol
+        if from_port is not None:
+            params['IpPermissions.1.FromPort'] = from_port
+        if to_port is not None:
+            params['IpPermissions.1.ToPort'] = to_port
+        if cidr_ip:
+            if not isinstance(cidr_ip, list):
+                cidr_ip = [cidr_ip]
+            for i, single_cidr_ip in enumerate(cidr_ip):
+                params['IpPermissions.1.IpRanges.%d.CidrIp' % (i+1)] = \
+                    single_cidr_ip
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_status('AuthorizeSecurityGroupIngress',
+                               params, verb='POST')

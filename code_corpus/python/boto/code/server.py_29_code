@@ -1,0 +1,14 @@
+    def upload_bundle(self, bucket, prefix):
+        print 'uploading bundle...'
+        command = 'ec2-upload-bundle '
+        command += '-m /mnt/%s.manifest.xml ' % prefix
+        command += '-b %s ' % bucket
+        command += '-a %s ' % self.ec2.aws_access_key_id
+        command += '-s %s ' % self.ec2.aws_secret_access_key
+        print '\t%s' % command
+        ssh_client = self.get_ssh_client()
+        t = ssh_client.exec_command(command)
+        response = t[1].read()
+        print '\t%s' % response
+        print '\t%s' % t[2].read()
+        print '...complete!'

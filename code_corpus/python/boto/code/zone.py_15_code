@@ -1,0 +1,11 @@
+    def update_cname(self, name, value, ttl=None, identifier=None, comment=""):
+        
+        name = self.route53connection._make_qualified(name)
+        value = self.route53connection._make_qualified(value)
+        old_record = self.get_cname(name)
+        ttl = ttl or old_record.ttl
+        return self.update_record(old_record,
+                                  new_value=value,
+                                  new_ttl=ttl,
+                                  new_identifier=identifier,
+                                  comment=comment)

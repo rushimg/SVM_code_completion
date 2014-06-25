@@ -1,0 +1,13 @@
+    def _set_config(self, distribution_id, etag, config):
+        if isinstance(config, StreamingDistributionConfig):
+            resource = 'streaming-distribution'
+        else:
+            resource = 'distribution'
+        uri = '/%s/%s/%s/config' % (self.Version, resource, distribution_id)
+        headers = {'If-Match': etag, 'Content-Type': 'text/xml'}
+        response = self.make_request('PUT', uri, headers, config.to_xml())
+        body = response.read()
+        boto.log.debug(body)
+        if response.status != 200:
+            raise CloudFrontServerError(response.status, response.reason, body)
+        return self.get_etag(response)

@@ -1,0 +1,16 @@
+    def save(self, replace=True):
+        """
+        Saves this item to SDB.
+        
+        :param bool replace: If ``True``, delete any attributes on the remote
+            SDB item that have a ``None`` value on this object.
+        """
+        self.domain.put_attributes(self.name, self, replace)
+        # Delete any attributes set to "None"
+        if replace:
+            del_attrs = []
+            for name in self:
+                if self[name] is None:
+                    del_attrs.append(name)
+            if len(del_attrs) > 0:
+                self.domain.delete_attributes(self.name, del_attrs)

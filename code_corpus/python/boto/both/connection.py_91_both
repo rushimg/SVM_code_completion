@@ -1,0 +1,32 @@
+    def bundle_instance(self, instance_id,
+                        s3_bucket,
+                        s3_prefix,
+                        s3_upload_policy, dry_run=False):
+        """
+        Bundle Windows instance.
+        :type instance_id: string
+        :param instance_id: The instance id
+        :type s3_bucket: string
+        :param s3_bucket: The bucket in which the AMI should be stored.
+        :type s3_prefix: string
+        :param s3_prefix: The beginning of the file name for the AMI.
+        :type s3_upload_policy: string
+        :param s3_upload_policy: Base64 encoded policy that specifies condition
+                                 and permissions for Amazon EC2 to upload the
+                                 user's image into Amazon S3.
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+        """
+        params = {'InstanceId': instance_id,
+                  'Storage.S3.Bucket': s3_bucket,
+                  'Storage.S3.Prefix': s3_prefix,
+                  'Storage.S3.UploadPolicy': s3_upload_policy}
+        s3auth = boto.auth.get_auth_handler(None, boto.config,
+                                            self.provider, ['s3'])
+        params['Storage.S3.AWSAccessKeyId'] = self.aws_access_key_id
+        signature = s3auth.sign_string(s3_upload_policy)
+        params['Storage.S3.UploadPolicySignature'] = signature
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_object('BundleInstance', params,
+                               BundleInstanceTask, verb='POST')

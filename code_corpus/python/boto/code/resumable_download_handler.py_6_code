@@ -1,0 +1,19 @@
+    def _save_tracker_info(self, key):
+        self.etag_value_for_current_download = key.etag.strip('"\'')
+        if not self.tracker_file_name:
+            return
+        f = None
+        try:
+            f = open(self.tracker_file_name, 'w')
+            f.write('%s\n' % self.etag_value_for_current_download)
+        except IOError, e:
+            raise ResumableDownloadException(
+                'Couldn\'t write tracker file (%s): %s.\nThis can happen'
+                'if you\'re using an incorrectly configured download tool\n'
+                '(e.g., gsutil configured to save tracker files to an '
+                'unwritable directory)' %
+                (self.tracker_file_name, e.strerror),
+                ResumableTransferDisposition.ABORT)
+        finally:
+            if f:
+                f.close()

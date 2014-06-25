@@ -1,0 +1,12 @@
+    def decode_map_element(self, item_type, value):
+        
+        import urllib
+        key = value
+        if ":" in value:
+            key, value = value.split(':', 1)
+            key = urllib.unquote(key)
+        if self.model_class in item_type.mro():
+            value = item_type(id=value)
+        else:
+            value = self.decode(item_type, value)
+        return (key, value)

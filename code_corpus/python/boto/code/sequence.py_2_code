@@ -1,0 +1,13 @@
+    def __call__(self, val, last=None):
+        
+        # If they pass us in a string that's not at least
+        # the lenght of our sequence, then return the
+        # first element in our sequence
+        if val is None or len(val) < self.sequence_length:
+            return self.sequence_string[0]
+        last_value = val[-self.sequence_length:]
+        if (not self.rollover) and (last_value == self.last_item):
+            val = "%s%s" % (self(val[:-self.sequence_length]), self._inc(last_value))
+        else:
+            val = "%s%s" % (val[:-self.sequence_length], self._inc(last_value))
+        return val

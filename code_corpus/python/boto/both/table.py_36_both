@@ -1,0 +1,9 @@
+    def handle_unprocessed(self, resp):
+        if len(resp.get('UnprocessedItems', [])):
+            table_name = self.table.table_name
+            unprocessed = resp['UnprocessedItems'].get(table_name, [])
+            # Some items have not been processed. Stow them for now &
+            # re-attempt processing on ``__exit__``.
+            msg = "%s items were unprocessed. Storing for later."
+            boto.log.info(msg % len(unprocessed))
+            self._unprocessed.extend(unprocessed)

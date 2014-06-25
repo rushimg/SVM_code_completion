@@ -1,0 +1,42 @@
+    def build_expects(self, fields=None):
+        """
+        Builds up a list of expecations to hand off to DynamoDB on save.
+        Largely internal.
+        """
+        expects = {}
+        if fields is None:
+            fields = self._data.keys() + self._orig_data.keys()
+        # Only uniques.
+        fields = set(fields)
+        for key in fields:
+            expects[key] = {
+                'Exists': True,
+            }
+            value = None
+            # Check for invalid keys.
+            if not key in self._orig_data and not key in self._data:
+                raise ValueError("Unknown key %s provided." % key)
+            # States:
+            # * New field (only in _data)
+            # * Unchanged field (in both _data & _orig_data, same data)
+            # * Modified field (in both _data & _orig_data, different data)
+            # * Deleted field (only in _orig_data)
+            orig_value = self._orig_data.get(key, NEWVALUE)
+            current_value = self._data.get(key, NEWVALUE)
+            if orig_value == current_value:
+                # Existing field unchanged.
+                value = current_value
+            else:
+                if key in self._data:
+                    if not key in self._orig_data:
+                        # New field.
+                        expects[key]['Exists'] = False
+                    else:
+                        # Existing field modified.
+                        value = orig_value
+                else:
+                   # Existing field deleted.
+                    value = orig_value
+            if value is not None:
+                expects[key]['Value'] = self._dynamizer.encode(value)
+        return expects

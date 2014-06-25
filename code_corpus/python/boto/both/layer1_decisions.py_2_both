@@ -1,0 +1,54 @@
+    def schedule_activity_task(self,
+                               activity_id,
+                               activity_type_name,
+                               activity_type_version,
+                               task_list=None,
+                               control=None,
+                               heartbeat_timeout=None,
+                               schedule_to_close_timeout=None,
+                               schedule_to_start_timeout=None,
+                               start_to_close_timeout=None,
+                               input=None):
+        """
+        Schedules an activity task.
+        :type activity_id: string
+        :param activity_id: The activityId of the type of the activity
+            being scheduled.
+        :type activity_type_name: string
+        :param activity_type_name: The name of the type of the activity
+            being scheduled.
+        :type activity_type_version: string
+        :param activity_type_version: The version of the type of the
+            activity being scheduled.
+        :type task_list: string
+        :param task_list: If set, specifies the name of the task list in
+            which to schedule the activity task. If not specified, the
+            defaultTaskList registered with the activity type will be used.
+            Note: a task list for this activity task must be specified either
+            as a default for the activity type or through this field. If
+            neither this field is set nor a default task list was specified
+            at registration time then a fault will be returned.
+        """
+        o = {}
+        o['decisionType'] = 'ScheduleActivityTask'
+        attrs = o['scheduleActivityTaskDecisionAttributes'] = {}
+        attrs['activityId'] = activity_id
+        attrs['activityType'] = {
+            'name': activity_type_name,
+            'version': activity_type_version,
+        }
+        if task_list is not None:
+            attrs['taskList'] = {'name': task_list}
+        if control is not None:
+            attrs['control'] = control
+        if heartbeat_timeout is not None:
+            attrs['heartbeatTimeout'] = heartbeat_timeout
+        if schedule_to_close_timeout is not None:
+            attrs['scheduleToCloseTimeout'] = schedule_to_close_timeout
+        if schedule_to_start_timeout is not None:
+            attrs['scheduleToStartTimeout'] = schedule_to_start_timeout
+        if start_to_close_timeout is not None:
+            attrs['startToCloseTimeout'] = start_to_close_timeout
+        if input is not None:
+            attrs['input'] = input
+        self._data.append(o)

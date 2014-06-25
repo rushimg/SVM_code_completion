@@ -1,0 +1,15 @@
+    def _get_info(self, id, resource, dist_class):
+        uri = '/%s/%s/%s' % (self.Version, resource, id)
+        response = self.make_request('GET', uri)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status >= 300:
+            raise CloudFrontServerError(response.status, response.reason, body)
+        d = dist_class(connection=self)
+        response_headers = response.msg
+        for key in response_headers.keys():
+            if key.lower() == 'etag':
+                d.etag = response_headers[key]
+        h = handler.XmlHandler(d, self)
+        xml.sax.parseString(body, h)
+        return d

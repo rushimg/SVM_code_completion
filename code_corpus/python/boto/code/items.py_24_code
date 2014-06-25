@@ -1,0 +1,13 @@
+    def save(self, overwrite=False):
+        
+        if not self.needs_save() and not overwrite:
+            return False
+        final_data = self.prepare_full()
+        expects = None
+        if overwrite is False:
+            # Build expectations about *all* of the data.
+            expects = self.build_expects()
+        returned = self.table._put_item(final_data, expects=expects)
+        # Mark the object as clean.
+        self.mark_clean()
+        return returned

@@ -1,0 +1,14 @@
+    def set_def_acl(self, acl_or_str, headers=None):
+        """Sets or changes a bucket's default ACL.
+        :type acl_or_str: string or :class:`boto.gs.acl.ACL`
+        :param acl_or_str: A canned ACL string (see
+            :data:`~.gs.acl.CannedACLStrings`) or an ACL object.
+        :type headers: dict
+        :param headers: Additional headers to set during the request.
+        """
+        if isinstance(acl_or_str, Policy):
+            raise InvalidAclError('Attempt to set S3 Policy on GS ACL')
+        elif isinstance(acl_or_str, ACL):
+            self.set_def_xml_acl(acl_or_str.to_xml(), headers=headers)
+        else:
+            self.set_def_canned_acl(acl_or_str, headers=headers)

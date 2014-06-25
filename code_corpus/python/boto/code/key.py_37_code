@@ -1,0 +1,14 @@
+    def set_redirect(self, redirect_location, headers=None):
+        
+        if headers is None:
+            headers = {}
+        else:
+            headers = headers.copy()
+        headers['x-amz-website-redirect-location'] = redirect_location
+        response = self.bucket.connection.make_request('PUT', self.bucket.name,
+                                                       self.name, headers)
+        if response.status == 200:
+            return True
+        else:
+            raise self.provider.storage_response_error(
+                response.status, response.reason, response.read())

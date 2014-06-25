@@ -1,0 +1,26 @@
+    def retrieve_archive(self, archive_id, sns_topic=None,
+                         description=None):
+        """
+        Initiate a archive retrieval job to download the data from an
+        archive. You will need to wait for the notification from
+        Amazon (via SNS) before you can actually download the data,
+        this takes around 4 hours.
+        :type archive_id: str
+        :param archive_id: The id of the archive
+        :type description: str
+        :param description: An optional description for the job.
+        :type sns_topic: str
+        :param sns_topic: The Amazon SNS topic ARN where Amazon Glacier
+            sends notification when the job is completed and the output
+            is ready for you to download.
+        :rtype: :class:`boto.glacier.job.Job`
+        :return: A Job object representing the retrieval job.
+        """
+        job_data = {'Type': 'archive-retrieval',
+                    'ArchiveId': archive_id}
+        if sns_topic is not None:
+            job_data['SNSTopic'] = sns_topic
+        if description is not None:
+            job_data['Description'] = description
+        response = self.layer1.initiate_job(self.name, job_data)
+        return self.get_job(response['JobId'])

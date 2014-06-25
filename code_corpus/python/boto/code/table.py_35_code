@@ -1,0 +1,24 @@
+    def flush(self):
+        batch_data = {
+            self.table.table_name: [
+                # We'll insert data here shortly.
+            ],
+        }
+        for put in self._to_put:
+            item = Item(self.table, data=put)
+            batch_data[self.table.table_name].append({
+                'PutRequest': {
+                    'Item': item.prepare_full(),
+                }
+            })
+        for delete in self._to_delete:
+            batch_data[self.table.table_name].append({
+                'DeleteRequest': {
+                    'Key': self.table._encode_keys(delete),
+                }
+            })
+        resp = self.table.connection.batch_write_item(batch_data)
+        self.handle_unprocessed(resp)
+        self._to_put = []
+        self._to_delete = []
+        return True

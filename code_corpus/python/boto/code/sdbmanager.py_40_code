@@ -1,0 +1,20 @@
+    def get_object(self, cls, id, a=None):
+        obj = None
+        if not a:
+            a = self.domain.get_attributes(id, consistent_read=self.consistent)
+        if '__type__' in a:
+            if not cls or a['__type__'] != cls.__name__:
+                cls = find_class(a['__module__'], a['__type__'])
+            if cls:
+                params = {}
+                for prop in cls.properties(hidden=False):
+                    if prop.name in a:
+                        value = self.decode_value(prop, a[prop.name])
+                        value = prop.make_value_from_datastore(value)
+                        params[prop.name] = value
+                obj = cls(id, **params)
+                obj._loaded = True
+            else:
+                s = '(%s) class %s.%s not found' % (id, a['__module__'], a['__type__'])
+                boto.log.info('sdbmanager: %s' % s)
+        return obj

@@ -1,0 +1,14 @@
+    def get_change(self, change_id):
+        
+        uri = '/%s/change/%s' % (self.Version, change_id)
+        response = self.make_request('GET', uri)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status >= 300:
+            raise exception.DNSServerError(response.status,
+                                           response.reason,
+                                           body)
+        e = boto.jsonresponse.Element()
+        h = boto.jsonresponse.XmlHandler(e, None)
+        h.parse(body)
+        return e

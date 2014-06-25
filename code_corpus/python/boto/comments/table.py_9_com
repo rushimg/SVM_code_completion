@@ -1,0 +1,33 @@
+"""
+        Fetches an item (record) from a table in DynamoDB.
+        To specify the key of the item you'd like to get, you can specify the
+        key attributes as kwargs.
+        Optionally accepts a ``consistent`` parameter, which should be a
+        boolean. If you provide ``True``, it will perform
+        a consistent (but more expensive) read from DynamoDB.
+        (Default: ``False``)
+        Optionally accepts an ``attributes`` parameter, which should be a
+        list of fieldname to fetch. (Default: ``None``, which means all fields
+        should be fetched)
+        Returns an ``Item`` instance containing all the data for that record.
+        Example::
+            # A simple hash key.
+            >>> john = users.get_item(username='johndoe')
+            >>> john['first_name']
+            'John'
+            # A complex hash+range key.
+            >>> john = users.get_item(username='johndoe', last_name='Doe')
+            >>> john['first_name']
+            'John'
+            # A consistent read (assuming the data might have just changed).
+            >>> john = users.get_item(username='johndoe', consistent=True)
+            >>> john['first_name']
+            'Johann'
+            # With a key that is an invalid variable name in Python.
+            # Also, assumes a different schema than previous examples.
+            >>> john = users.get_item(**{
+            ...     'date-joined': 127549192,
+            ... })
+            >>> john['first_name']
+            'John'
+        """

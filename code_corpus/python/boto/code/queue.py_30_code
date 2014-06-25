@@ -1,0 +1,11 @@
+    def save_to_s3(self, bucket):
+        
+        n = 0
+        m = self.read()
+        while m:
+            n += 1
+            key = bucket.new_key('%s/%s' % (self.id, m.id))
+            key.set_contents_from_string(m.get_body())
+            self.delete_message(m)
+            m = self.read()
+        return n

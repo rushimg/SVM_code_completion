@@ -1,0 +1,41 @@
+    def process_args(self, **args):
+        
+        self.args.update(args)
+        self.connection_args = copy.copy(self.args)
+        if 'debug' in self.args and self.args['debug'] >= 2:
+            boto.set_stream_logger(self.name())
+        required = [p.name for p in self.Params+self.Args if not p.optional]
+        for param in self.Params+self.Args:
+            if param.long_name:
+                python_name = param.long_name.replace('-', '_')
+            else:
+                python_name = boto.utils.pythonize_name(param.name, '_')
+            value = None
+            if python_name in self.args:
+                value = self.args[python_name]
+            if value is None:
+                value = param.default
+            if value is not None:
+                if param.name in required:
+                    required.remove(param.name)
+                if param.request_param:
+                    if param.encoder:
+                        param.encoder(param, self.request_params, value)
+                    else:
+                        Encoder.encode(param, self.request_params, value)
+            if python_name in self.args:
+                del self.connection_args[python_name]
+        if required:
+            l = []
+            for p in self.Params+self.Args:
+                if p.name in required:
+                    if p.short_name and p.long_name:
+                        l.append('(%s, %s)' % (p.optparse_short_name,
+                                               p.optparse_long_name))
+                    elif p.short_name:
+                        l.append('(%s)' % p.optparse_short_name)
+                    else:
+                        l.append('(%s)' % p.optparse_long_name)
+            raise RequiredParamError(','.join(l))
+        boto.log.debug('request_params: %s' % self.request_params)
+        self.process_markers(self.Response)

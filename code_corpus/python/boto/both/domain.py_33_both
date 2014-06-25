@@ -1,0 +1,53 @@
+    def create_rank_expression(self, name, expression):
+        """
+        Create a new rank expression.
+        
+        :type rank_name: string
+        :param rank_name: The name of an expression computed for ranking
+            while processing a search request.
+        :type rank_expression: string
+        :param rank_expression: The expression to evaluate for ranking
+            or thresholding while processing a search request. The
+            RankExpression syntax is based on JavaScript expressions
+            and supports:
+            * Integer, floating point, hex and octal literals
+            * Shortcut evaluation of logical operators such that an
+                expression a || b evaluates to the value a if a is
+                true without evaluting b at all
+            * JavaScript order of precedence for operators
+            * Arithmetic operators: + - * / %
+            * Boolean operators (including the ternary operator)
+            * Bitwise operators
+            * Comparison operators
+            * Common mathematic functions: abs ceil erf exp floor
+                lgamma ln log2 log10 max min sqrt pow
+            * Trigonometric library functions: acosh acos asinh asin
+                atanh atan cosh cos sinh sin tanh tan
+            * Random generation of a number between 0 and 1: rand
+            * Current time in epoch: time
+            * The min max functions that operate on a variable argument list
+            Intermediate results are calculated as double precision
+            floating point values. The final return value of a
+            RankExpression is automatically converted from floating
+            point to a 32-bit unsigned integer by rounding to the
+            nearest integer, with a natural floor of 0 and a ceiling
+            of max(uint32_t), 4294967295. Mathematical errors such as
+            dividing by 0 will fail during evaluation and return a
+            value of 0.
+            The source data for a RankExpression can be the name of an
+            IndexField of type uint, another RankExpression or the
+            reserved name text_relevance. The text_relevance source is
+            defined to return an integer from 0 to 1000 (inclusive) to
+            indicate how relevant a document is to the search request,
+            taking into account repetition of search terms in the
+            document and proximity of search terms to each other in
+            each matching IndexField in the document.
+            For more information about using rank expressions to
+            customize ranking, see the Amazon CloudSearch Developer
+            Guide.
+        :raises: BaseException, InternalException, LimitExceededException,
+            InvalidTypeException, ResourceNotFoundException
+        """
+        data = self.layer1.define_rank_expression(self.name, name, expression)
+        return RankExpressionStatus(self, data,
+                                    self.layer1.describe_rank_expressions)

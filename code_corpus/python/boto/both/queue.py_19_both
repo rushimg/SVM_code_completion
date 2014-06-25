@@ -1,0 +1,33 @@
+    def get_messages(self, num_messages=1, visibility_timeout=None,
+                     attributes=None, wait_time_seconds=None,
+                     message_attributes=None):
+        """
+        Get a variable number of messages.
+        :type num_messages: int
+        :param num_messages: The maximum number of messages to read from
+            the queue.
+        :type visibility_timeout: int
+        :param visibility_timeout: The VisibilityTimeout for the messages read.
+        :type attributes: str
+        :param attributes: The name of additional attribute to return
+            with response or All if you want all attributes.  The
+            default is to return no additional attributes.  Valid
+            values: All SenderId SentTimestamp ApproximateReceiveCount
+            ApproximateFirstReceiveTimestamp
+        :type wait_time_seconds: int
+        :param wait_time_seconds: The duration (in seconds) for which the call
+            will wait for a message to arrive in the queue before returning.
+            If a message is available, the call will return sooner than
+            wait_time_seconds.
+        :type message_attributes: list
+        :param message_attributes: The name(s) of additional message
+            attributes to return. The default is to return no additional
+            message attributes. Use ``['All']`` or ``['.*']`` to return all.
+        :rtype: list
+        :return: A list of :class:`boto.sqs.message.Message` objects.
+        """
+        return self.connection.receive_message(
+            self, number_messages=num_messages,
+            visibility_timeout=visibility_timeout, attributes=attributes,
+            wait_time_seconds=wait_time_seconds,
+            message_attributes=message_attributes)

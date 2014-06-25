@@ -1,0 +1,15 @@
+    def __iter__(self):
+        
+        conn = self.connection
+        distribution_id = self.distribution_id
+        result_set = self
+        for inval in result_set._inval_cache:
+            yield inval
+        if not self.auto_paginate:
+            return
+        while result_set.is_truncated:
+            result_set = conn.get_invalidation_requests(distribution_id,
+                                                        marker=result_set.next_marker,
+                                                        max_items=result_set.max_items)
+            for i in result_set._inval_cache:
+                yield i

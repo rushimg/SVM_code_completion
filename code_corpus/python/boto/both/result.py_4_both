@@ -1,0 +1,16 @@
+    def process_record(self, record, path, get_file=True):
+        self.log_message(record, path)
+        self.calculate_stats(record)
+        outputs = record['OutputKey'].split(',')
+        if 'OutputBucket' in record:
+            bucket = boto.lookup('s3', record['OutputBucket'])
+        else:
+            bucket = boto.lookup('s3', record['Bucket'])
+        for output in outputs:
+            if get_file:
+                key_name = output.split(';')[0]
+                key = bucket.lookup(key_name)
+                file_name = os.path.join(path, key_name)
+                print 'retrieving file: %s to %s' % (key_name, file_name)
+                key.get_contents_to_filename(file_name)
+            self.num_files += 1

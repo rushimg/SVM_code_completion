@@ -1,0 +1,10 @@
+    def get_website_configuration_xml(self, headers=None):
+        """Get raw website configuration xml"""
+        response = self.connection.make_request('GET', self.name,
+                query_args='website', headers=headers)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status != 200:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
+        return body

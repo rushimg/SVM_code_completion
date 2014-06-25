@@ -1,0 +1,12 @@
+    def compute_hash(self, fp, algorithm, size=None):
+        
+        hex_digest, b64_digest, data_size = compute_hash(
+            fp, size=size, hash_algorithm=algorithm)
+        # The internal implementation of compute_hash() needs to return the
+        # data size, but we don't want to return that value to the external
+        # caller because it changes the class interface (i.e. it might
+        # break some code), so we consume the third tuple value here and
+        # return the remainder of the tuple to the caller, thereby preserving
+        # the existing interface.
+        self.size = data_size
+        return (hex_digest, b64_digest)

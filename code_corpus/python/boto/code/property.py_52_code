@@ -1,0 +1,12 @@
+    def __get__(self, obj, objtype):
+        if obj:
+            value = getattr(obj, self.slot_name)
+            if value == self.default_value():
+                return value
+            # If the value is still the UUID for the referenced object, we need to create
+            # the object now that is the attribute has actually been accessed.  This lazy
+            # instantiation saves unnecessary roundtrips to SimpleDB
+            if isinstance(value, basestring):
+                value = self.reference_class(value)
+                setattr(obj, self.name, value)
+            return value

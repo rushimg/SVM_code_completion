@@ -1,0 +1,12 @@
+    def get_item(self, table, hash_key, range_key=None,
+                 attributes_to_get=None, consistent_read=False,
+                 item_class=Item):
+        
+        key = self.build_key_from_values(table.schema, hash_key, range_key)
+        response = self.layer1.get_item(table.name, key,
+                                        attributes_to_get, consistent_read,
+                                        object_hook=self.dynamizer.decode)
+        item = item_class(table, hash_key, range_key, response['Item'])
+        if 'ConsumedCapacityUnits' in response:
+            item.consumed_units = response['ConsumedCapacityUnits']
+        return item

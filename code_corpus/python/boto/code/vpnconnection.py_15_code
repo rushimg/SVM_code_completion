@@ -1,0 +1,14 @@
+    def startElement(self, name, attrs, connection):
+        retval = super(VpnConnection, self).startElement(name, attrs, connection)
+        if retval is not None:
+            return retval
+        if name == 'vgwTelemetry':
+            self.tunnels = ResultSet([('item', VpnTunnel)])
+            return self.tunnels
+        elif name == 'routes':
+            self.static_routes = ResultSet([('item', VpnStaticRoute)])
+            return self.static_routes
+        elif name == 'options':
+            self.options = VpnConnectionOptions()
+            return self.options
+        return None

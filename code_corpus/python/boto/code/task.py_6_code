@@ -1,0 +1,16 @@
+    def run(self, msg, vtimeout=60):
+        delay = self.check()
+        boto.log.info('Task[%s] - delay=%s seconds' % (self.name, delay))
+        if delay == 0:
+            self._run(msg, vtimeout)
+            queue = msg.queue
+            new_msg = queue.new_message(self.id)
+            new_msg = queue.write(new_msg)
+            self.message_id = new_msg.id
+            self.put()
+            boto.log.info('Task[%s] - new message id=%s' % (self.name, new_msg.id))
+            msg.delete()
+            boto.log.info('Task[%s] - deleted message %s' % (self.name, msg.id))
+        else:
+            boto.log.info('new_vtimeout: %d' % delay)
+            msg.change_visibility(delay)

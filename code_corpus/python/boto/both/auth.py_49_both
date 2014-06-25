@@ -1,0 +1,29 @@
+    def mangle_path_and_params(self, req):
+        """
+        Returns a copy of the request object with fixed ``auth_path/params``
+        attributes from the original.
+        """
+        modified_req = copy.copy(req)
+        # Unlike the most other services, in S3, ``req.params`` isn't the only
+        # source of query string parameters.
+        # Because of the ``query_args``, we may already have a query string
+        # **ON** the ``path/auth_path``.
+        # Rip them apart, so the ``auth_path/params`` can be signed
+        # appropriately.
+        parsed_path = urlparse.urlparse(modified_req.auth_path)
+        modified_req.auth_path = parsed_path.path
+        if modified_req.params is None:
+            modified_req.params = {}
+        raw_qs = parsed_path.query
+        existing_qs = urlparse.parse_qs(
+            raw_qs,
+            keep_blank_values=True
+        )
+        # ``parse_qs`` will return lists. Don't do that unless there's a real,
+        # live list provided.
+        for key, value in existing_qs.items():
+            if isinstance(value, (list, tuple)):
+                if len(value) == 1:
+                    existing_qs[key] = value[0]
+        modified_req.params.update(existing_qs)
+        return modified_req

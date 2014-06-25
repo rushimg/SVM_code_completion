@@ -1,0 +1,83 @@
+"""
+        Queries for a set of matching items in a DynamoDB table.
+        Queries can be performed against a hash key, a hash+range key or
+        against any data stored in your local secondary indexes. Query filters
+        can be used to filter on arbitrary fields.
+        **Note** - You can not query against arbitrary fields within the data
+        stored in DynamoDB unless you specify ``query_filter`` values.
+        To specify the filters of the items you'd like to get, you can specify
+        the filters as kwargs. Each filter kwarg should follow the pattern
+        ``<fieldname>__<filter_operation>=<value_to_look_for>``. Query filters
+        are specified in the same way.
+        Optionally accepts a ``limit`` parameter, which should be an integer
+        count of the total number of items to return. (Default: ``None`` -
+        all results)
+        Optionally accepts an ``index`` parameter, which should be a string of
+        name of the local secondary index you want to query against.
+        (Default: ``None``)
+        Optionally accepts a ``reverse`` parameter, which will present the
+        results in reverse order. (Default: ``False`` - normal order)
+        Optionally accepts a ``consistent`` parameter, which should be a
+        boolean. If you provide ``True``, it will force a consistent read of
+        the data (more expensive). (Default: ``False`` - use eventually
+        consistent reads)
+        Optionally accepts a ``attributes`` parameter, which should be a
+        tuple. If you provide any attributes only these will be fetched
+        from DynamoDB. This uses the ``AttributesToGet`` and set's
+        ``Select`` to ``SPECIFIC_ATTRIBUTES`` API.
+        Optionally accepts a ``max_page_size`` parameter, which should be an
+        integer count of the maximum number of items to retrieve
+        **per-request**. This is useful in making faster requests & prevent
+        the scan from drowning out other queries. (Default: ``None`` -
+        fetch as many as DynamoDB will return)
+        Optionally accepts a ``query_filter`` which is a dictionary of filter
+        conditions against any arbitrary field in the returned data.
+        Optionally accepts a ``conditional_operator`` which applies to the
+        query filter conditions:
+        + `AND` - True if all filter conditions evaluate to true (default)
+        + `OR` - True if at least one filter condition evaluates to true
+        Returns a ``ResultSet``, which transparently handles the pagination of
+        results you get back.
+        Example::
+            # Look for last names equal to "Doe".
+            >>> results = users.query(last_name__eq='Doe')
+            >>> for res in results:
+            ...     print res['first_name']
+            'John'
+            'Jane'
+            # Look for last names beginning with "D", in reverse order, limit 3.
+            >>> results = users.query(
+            ...     last_name__beginswith='D',
+            ...     reverse=True,
+            ...     limit=3
+            ... )
+            >>> for res in results:
+            ...     print res['first_name']
+            'Alice'
+            'Jane'
+            'John'
+            # Use an LSI & a consistent read.
+            >>> results = users.query(
+            ...     date_joined__gte=1236451000,
+            ...     owner__eq=1,
+            ...     index='DateJoinedIndex',
+            ...     consistent=True
+            ... )
+            >>> for res in results:
+            ...     print res['first_name']
+            'Alice'
+            'Bob'
+            'John'
+            'Fred'
+            # Filter by non-indexed field(s)
+            >>> results = users.query(
+            ...     last_name__eq='Doe',
+            ...     reverse=True,
+            ...     query_filter={
+            ...         'first_name__beginswith': 'A'
+            ...     }
+            ... )
+            >>> for res in results:
+            ...     print res['first_name'] + ' ' + res['last_name']
+            'Alice Doe'
+        """

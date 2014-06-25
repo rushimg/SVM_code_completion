@@ -1,0 +1,19 @@
+    def __init__(self, api, vault_name, part_size=DEFAULT_PART_SIZE,
+                 num_threads=10):
+        """
+        :type api: :class:`boto.glacier.layer1.Layer1`
+        :param api: A layer1 glacier object.
+        :type vault_name: str
+        :param vault_name: The name of the vault.
+        :type part_size: int
+        :param part_size: The size, in bytes, of the chunks to use when uploading
+            the archive parts.  The part size must be a megabyte multiplied by
+            a power of two.
+        :type num_threads: int
+        :param num_threads: The number of threads to spawn for the thread pool.
+            The number of threads will control how much parts are being
+            concurrently uploaded.
+        """
+        super(ConcurrentUploader, self).__init__(part_size, num_threads)
+        self._api = api
+        self._vault_name = vault_name

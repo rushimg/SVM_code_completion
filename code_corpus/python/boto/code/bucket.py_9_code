@@ -1,0 +1,15 @@
+    def set_acl(self, acl_or_str, key_name='', headers=None, version_id=None,
+                generation=None, if_generation=None, if_metageneration=None):
+        
+        if isinstance(acl_or_str, Policy):
+            raise InvalidAclError('Attempt to set S3 Policy on GS ACL')
+        elif isinstance(acl_or_str, ACL):
+            self.set_xml_acl(acl_or_str.to_xml(), key_name, headers=headers,
+                             generation=generation,
+                             if_generation=if_generation,
+                             if_metageneration=if_metageneration)
+        else:
+            self.set_canned_acl(acl_or_str, key_name, headers=headers,
+                                generation=generation,
+                                if_generation=if_generation,
+                                if_metageneration=if_metageneration)

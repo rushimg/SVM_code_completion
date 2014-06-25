@@ -1,0 +1,16 @@
+    def decode_list(self, prop, value):
+        if not isinstance(value, list):
+            value = [value]
+        if hasattr(prop, 'item_type'):
+            item_type = getattr(prop, "item_type")
+            dec_val = {}
+            for val in value:
+                if val is not None:
+                    k, v = self.decode_map_element(item_type, val)
+                    try:
+                        k = int(k)
+                    except:
+                        k = v
+                    dec_val[k] = v
+            value = dec_val.values()
+        return value

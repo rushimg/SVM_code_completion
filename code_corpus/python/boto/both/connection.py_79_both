@@ -1,0 +1,104 @@
+    def get_all_reserved_instances_offerings(self,
+                                             reserved_instances_offering_ids=None,
+                                             instance_type=None,
+                                             availability_zone=None,
+                                             product_description=None,
+                                             filters=None,
+                                             instance_tenancy=None,
+                                             offering_type=None,
+                                             include_marketplace=None,
+                                             min_duration=None,
+                                             max_duration=None,
+                                             max_instance_count=None,
+                                             next_token=None,
+                                             max_results=None,
+                                             dry_run=False):
+        """
+        Describes Reserved Instance offerings that are available for purchase.
+        :type reserved_instances_offering_ids: list
+        :param reserved_instances_id: One or more Reserved Instances
+            offering IDs.
+        :type instance_type: str
+        :param instance_type: Displays Reserved Instances of the specified
+                              instance type.
+        :type availability_zone: str
+        :param availability_zone: Displays Reserved Instances within the
+                                  specified Availability Zone.
+        :type product_description: str
+        :param product_description: Displays Reserved Instances with the
+                                    specified product description.
+        :type filters: dict
+        :param filters: Optional filters that can be used to limit
+                        the results returned.  Filters are provided
+                        in the form of a dictionary consisting of
+                        filter names as the key and filter values
+                        as the value.  The set of allowable filter
+                        names/values is dependent on the request
+                        being performed.  Check the EC2 API guide
+                        for details.
+        :type instance_tenancy: string
+        :param instance_tenancy: The tenancy of the Reserved Instance offering.
+            A Reserved Instance with tenancy of dedicated will run on
+            single-tenant hardware and can only be launched within a VPC.
+        :type offering_type: string
+        :param offering_type: The Reserved Instance offering type.  Valid
+            Values: `"Heavy Utilization" | "Medium Utilization" | "Light
+            Utilization"`
+        :type include_marketplace: bool
+        :param include_marketplace: Include Marketplace offerings in the
+            response.
+        :type min_duration: int :param min_duration: Minimum duration (in
+            seconds) to filter when searching for offerings.
+        :type max_duration: int
+        :param max_duration: Maximum duration (in seconds) to filter when
+            searching for offerings.
+        :type max_instance_count: int
+        :param max_instance_count: Maximum number of instances to filter when
+            searching for offerings.
+        :type next_token: string
+        :param next_token: Token to use when requesting the next paginated set
+            of offerings.
+        :type max_results: int
+        :param max_results: Maximum number of offerings to return per call.
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+        :rtype: list
+        :return: A list of
+            :class:`boto.ec2.reservedinstance.ReservedInstancesOffering`.
+        """
+        params = {}
+        if reserved_instances_offering_ids is not None:
+            self.build_list_params(params, reserved_instances_offering_ids,
+                                   'ReservedInstancesOfferingId')
+        if instance_type:
+            params['InstanceType'] = instance_type
+        if availability_zone:
+            params['AvailabilityZone'] = availability_zone
+        if product_description:
+            params['ProductDescription'] = product_description
+        if filters:
+            self.build_filter_params(params, filters)
+        if instance_tenancy is not None:
+            params['InstanceTenancy'] = instance_tenancy
+        if offering_type is not None:
+            params['OfferingType'] = offering_type
+        if include_marketplace is not None:
+            if include_marketplace:
+                params['IncludeMarketplace'] = 'true'
+            else:
+                params['IncludeMarketplace'] = 'false'
+        if min_duration is not None:
+            params['MinDuration'] = str(min_duration)
+        if max_duration is not None:
+            params['MaxDuration'] = str(max_duration)
+        if max_instance_count is not None:
+            params['MaxInstanceCount'] = str(max_instance_count)
+        if next_token is not None:
+            params['NextToken'] = next_token
+        if max_results is not None:
+            params['MaxResults'] = str(max_results)
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_list('DescribeReservedInstancesOfferings',
+                             params, [('item', ReservedInstancesOffering)],
+                             verb='POST')

@@ -1,0 +1,10 @@
+    def to_xml(self):
+        """Get this batch as XML"""
+        assert self.connection is not None
+        s = '<?xml version="1.0" encoding="UTF-8"?>\n'
+        s += '<InvalidationBatch xmlns="http://cloudfront.amazonaws.com/doc/%s/">\n' % self.connection.Version
+        for p in self.paths:
+            s += '    <Path>%s</Path>\n' % self.escape(p)
+        s += '    <CallerReference>%s</CallerReference>\n' % self.caller_reference
+        s += '</InvalidationBatch>\n'
+        return s

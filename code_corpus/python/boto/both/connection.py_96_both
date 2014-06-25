@@ -1,0 +1,20 @@
+    def create_placement_group(self, name, strategy='cluster', dry_run=False):
+        """
+        Create a new placement group for your account.
+        This will create the placement group within the region you
+        are currently connected to.
+        :type name: string
+        :param name: The name of the new placement group
+        :type strategy: string
+        :param strategy: The placement strategy of the new placement group.
+                         Currently, the only acceptable value is "cluster".
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+        :rtype: bool
+        :return: True if successful
+        """
+        params = {'GroupName':name, 'Strategy':strategy}
+        if dry_run:
+            params['DryRun'] = 'true'
+        group = self.get_status('CreatePlacementGroup', params, verb='POST')
+        return group

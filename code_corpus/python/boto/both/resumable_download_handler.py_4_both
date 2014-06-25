@@ -1,0 +1,25 @@
+    def __init__(self, tracker_file_name=None, num_retries=None):
+        """
+        Constructor. Instantiate once for each downloaded file.
+        :type tracker_file_name: string
+        :param tracker_file_name: optional file name to save tracking info
+            about this download. If supplied and the current process fails
+            the download, it can be retried in a new process. If called
+            with an existing file containing an unexpired timestamp,
+            we'll resume the transfer for this file; else we'll start a
+            new resumable download.
+        :type num_retries: int
+        :param num_retries: the number of times we'll re-try a resumable
+            download making no progress. (Count resets every time we get
+            progress, so download can span many more than this number of
+            retries.)
+        """
+        self.tracker_file_name = tracker_file_name
+        self.num_retries = num_retries
+        self.etag_value_for_current_download = None
+        if tracker_file_name:
+            self._load_tracker_file_etag()
+        # Save download_start_point in instance state so caller can
+        # find how much was transferred by this ResumableDownloadHandler
+        # (across retries).
+        self.download_start_point = None

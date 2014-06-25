@@ -1,0 +1,13 @@
+    def headers_to_sign(self, http_request):
+        
+        host_header_value = self.host_header(self.host, http_request)
+        headers_to_sign = {}
+        headers_to_sign = {'Host': host_header_value}
+        for name, value in http_request.headers.items():
+            lname = name.lower()
+            # Hooray for the only difference! The main SigV4 signer only does
+            # ``Host`` + ``x-amz-*``. But S3 wants pretty much everything
+            # signed, except for authorization itself.
+            if not lname in ['authorization']:
+                headers_to_sign[name] = value
+        return headers_to_sign

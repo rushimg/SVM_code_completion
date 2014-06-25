@@ -1,0 +1,11 @@
+    def delete_a(self, name, identifier=None, all=False):
+        """
+        Delete an A record matching name and identifier from this
+        Zone.  Returns a Status object.
+        If there is more than one match delete all matching records if
+        all is True, otherwise throws TooManyRecordsException.
+        """
+        name = self.route53connection._make_qualified(name)
+        record = self.find_records(name, 'A', identifier=identifier,
+                                   all=all)
+        return self.delete_record(record)

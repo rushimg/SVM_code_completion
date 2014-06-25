@@ -19,7 +19,7 @@ def pre_proc_code(run_pre_proc):
 		matches = []
 		words_per_file = dict()
 		for root, dirnames, filenames in os.walk(CORPUS):
-         	       for filename in fnmatch.filter(filenames, "*.java_*"):
+         	       for filename in fnmatch.filter(filenames, "*.*"):
                 	        matches.append(os.path.join(root, filename))
 		words = set()
 		for match in matches:
@@ -205,7 +205,9 @@ def retrieve_initial_set(input_feature_vec, feature_vecs):
 	# return a set of documents to be used as testing data
 	input_dict = convert_to_dict(input_feature_vec)
 	ranking_dict = dict()
+	#print feature_vecs
 	for key in feature_vecs:
+		print key
 		ranking_dict[key] = cosine_sim(convert_to_dict(feature_vecs[key]),input_dict)
 		#if key == "../code_corpus/regular/facebook/DefaultFacebookClient.java_22":
 		#	print sorted(convert_to_dict(feature_vecs[key]).keys())
@@ -221,6 +223,8 @@ def retrieve_initial_set(input_feature_vec, feature_vecs):
 	return return_set
 
 def convert_to_dict(feature_vec):
+	#print 'vec' + feature_vec
+	#print 'vec0' +feature_vec[0]
 	if feature_vec[0] == ' ':
                 feature_vec = feature_vec[1:]
         eval_string= '{' + feature_vec.replace(' ',',') + '}'
@@ -362,8 +366,10 @@ if __name__=='__main__':
 
 	feature_vectors_dict, idfs = pre_proc_code(run_process)
 	input_feature_vec = initial_query(sys.argv[1], idfs)
+	#print feature_vectors_dict
+	#print input_feature_vec
 	train_set = retrieve_initial_set(input_feature_vec, feature_vectors_dict)
 	relevance_feed_back(train_set,feature_vectors_dict)
 	test_data(feature_vectors_dict)
 	run_svm()
-	#return_results()
+	return_results()

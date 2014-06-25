@@ -1,0 +1,18 @@
+    def set_contents_from_string(self, s, headers=None, replace=True,
+                                 cb=None, num_cb=10, policy=None, md5=None,
+                                 reduced_redundancy=False):
+        self._check_object_uri('set_contents_from_string')
+        key = self.new_key(headers=headers)
+        if self.scheme == 'gs':
+            if reduced_redundancy:
+                sys.stderr.write('Warning: GCS does not support '
+                                 'reduced_redundancy; argument ignored by '
+                                 'set_contents_from_string')
+            result = key.set_contents_from_string(
+                s, headers, replace, cb, num_cb, policy, md5)
+        else:
+            result = key.set_contents_from_string(
+                s, headers, replace, cb, num_cb, policy, md5,
+                reduced_redundancy)
+        self._update_from_key(key)
+        return result

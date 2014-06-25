@@ -1,0 +1,21 @@
+    def _generic_cli_formatter(self, fmt, data, label=''):
+        if fmt['type'] == 'object':
+            for prop in fmt['properties']:
+                if 'name' in fmt:
+                    if fmt['name'] in data:
+                        data = data[fmt['name']]
+                    if fmt['name'] in self.list_markers:
+                        label = fmt['name']
+                        if label[-1] == 's':
+                            label = label[0:-1]
+                        label = label.upper()
+                self._generic_cli_formatter(prop, data, label)
+        elif fmt['type'] == 'array':
+            for item in data:
+                line = Line(fmt, item, label)
+                if isinstance(item, dict):
+                    for field_name in item:
+                        line.append(item[field_name])
+                elif isinstance(item, basestring):
+                    line.append(item)
+                line.print_it()

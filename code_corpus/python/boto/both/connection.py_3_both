@@ -1,0 +1,12 @@
+    def make_request(self, action, path, headers=None, data='', params=None):
+        if params:
+            pairs = []
+            for key, val in params.iteritems():
+                if val is None:
+                    continue
+                pairs.append(key + '=' + urllib.quote(str(val)))
+            path += '?' + '&'.join(pairs)
+        return super(Route53Connection, self).make_request(action, path,
+                                              headers, data,
+                                              retry_handler=self._retry_handler)
+    # Hosted Zones

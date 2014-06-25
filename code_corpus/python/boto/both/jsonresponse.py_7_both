@@ -1,0 +1,11 @@
+    def __getattr__(self, key):
+        if key in self:
+            return self[key]
+        for k in self:
+            e = self[k]
+            if isinstance(e, Element):
+                try:
+                    return getattr(e, key)
+                except AttributeError:
+                    pass
+        raise AttributeError

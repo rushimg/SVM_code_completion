@@ -1,0 +1,30 @@
+    def startElement(self, name, attrs, connection):
+        if name == ACTION:
+            self.validateStartTag(name, RULE)
+        elif name in LEGAL_ACTIONS:
+            self.validateStartTag(name, ACTION)
+            # Verify there is only one action tag in the rule.
+            if self.action is not None:
+                raise InvalidLifecycleConfigError(
+                    'Only one action tag is allowed in each rule')
+            self.action = name
+        elif name in LEGAL_ACTION_PARAMS:
+            # Make sure this tag is found in an action tag.
+            if self.current_tag not in LEGAL_ACTIONS:
+                raise InvalidLifecycleConfigError(
+                    'Tag %s found outside of action' % name)
+            # Make sure this tag is allowed for the current action tag.
+            if name not in LEGAL_ACTION_ACTION_PARAMS[self.action]:
+                raise InvalidLifecycleConfigError(
+                    'Tag %s not allowed in action %s' % (name, self.action))
+        elif name == CONDITION:
+            self.validateStartTag(name, RULE)
+        elif name in LEGAL_CONDITIONS:
+            self.validateStartTag(name, CONDITION)
+            # Verify there is no duplicate conditions.
+            if name in self.conditions:
+                raise InvalidLifecycleConfigError(
+                    'Found duplicate conditions %s' % name)
+        else:
+            raise InvalidLifecycleConfigError('Unsupported tag ' + name)
+        self.current_tag = name

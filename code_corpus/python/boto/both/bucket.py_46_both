@@ -1,0 +1,9 @@
+    def get_request_payment(self, headers=None):
+        response = self.connection.make_request('GET', self.name,
+                query_args='requestPayment', headers=headers)
+        body = response.read()
+        if response.status == 200:
+            return body
+        else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)

@@ -1,0 +1,51 @@
+    def endElement(self, name, value, connection):
+        if name == 'DBInstanceIdentifier':
+            self.id = value
+        elif name == 'DBInstanceStatus':
+            self.status = value
+        elif name == 'InstanceCreateTime':
+            self.create_time = value
+        elif name == 'Engine':
+            self.engine = value
+        elif name == 'DBInstanceStatus':
+            self.status = value
+        elif name == 'AllocatedStorage':
+            self.allocated_storage = int(value)
+        elif name == 'AutoMinorVersionUpgrade':
+            self.auto_minor_version_upgrade = value.lower() == 'true'
+        elif name == 'DBInstanceClass':
+            self.instance_class = value
+        elif name == 'MasterUsername':
+            self.master_username = value
+        elif name == 'Port':
+            if self._in_endpoint:
+                self._port = int(value)
+        elif name == 'Address':
+            if self._in_endpoint:
+                self._address = value
+        elif name == 'Endpoint':
+            self.endpoint = (self._address, self._port)
+            self._in_endpoint = False
+        elif name == 'AvailabilityZone':
+            self.availability_zone = value
+        elif name == 'BackupRetentionPeriod':
+            self.backup_retention_period = int(value)
+        elif name == 'LatestRestorableTime':
+            self.latest_restorable_time = value
+        elif name == 'PreferredMaintenanceWindow':
+            self.preferred_maintenance_window = value
+        elif name == 'PreferredBackupWindow':
+            self.preferred_backup_window = value
+        elif name == 'MultiAZ':
+            if value.lower() == 'true':
+                self.multi_az = True
+        elif name == 'Iops':
+            self.iops = int(value)
+        elif name == 'CharacterSetName':
+            self.character_set_name = value
+        elif name == 'EngineVersion':
+            self.engine_version = value
+        elif name == 'LicenseModel':
+            self.license_model = value        
+        else:
+            setattr(self, name, value)

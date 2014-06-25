@@ -1,0 +1,25 @@
+    def delete_tags(self, resource_ids, tags, dry_run=False):
+        """
+        Delete metadata tags for the specified resource ids.
+        :type resource_ids: list
+        :param resource_ids: List of strings
+        :type tags: dict or list
+        :param tags: Either a dictionary containing name/value pairs
+                     or a list containing just tag names.
+                     If you pass in a dictionary, the values must
+                     match the actual tag values or the tag will
+                     not be deleted.  If you pass in a value of None
+                     for the tag value, all tags with that name will
+                     be deleted.
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+        """
+        if isinstance(tags, list):
+            tags = {}.fromkeys(tags, None)
+        params = {}
+        self.build_list_params(params, resource_ids, 'ResourceId')
+        self.build_tag_param_list(params, tags)
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_status('DeleteTags', params, verb='POST')
+    # Network Interface methods

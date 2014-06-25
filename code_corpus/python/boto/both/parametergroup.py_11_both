@@ -1,0 +1,25 @@
+    def endElement(self, name, value, connection):
+        if name == 'ParameterName':
+            self.name = value
+        elif name == 'ParameterValue':
+            self._value = value
+        elif name == 'DataType':
+            if value in self.ValidTypes:
+                self.type = value
+        elif name == 'Source':
+            if value in self.ValidSources:
+                self.source = value
+        elif name == 'IsModifiable':
+            if value.lower() == 'true':
+                self.is_modifiable = True
+            else:
+                self.is_modifiable = False
+        elif name == 'Description':
+            self.description = value
+        elif name == 'ApplyType':
+            if value in self.ValidApplyTypes:
+                self.apply_type = value
+        elif name == 'AllowedValues':
+            self.allowed_values = value
+        else:
+            setattr(self, name, value)

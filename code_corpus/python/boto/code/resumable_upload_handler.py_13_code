@@ -1,0 +1,81 @@
+    def _attempt_resumable_upload(self, key, fp, file_length, headers, cb,
+                                  num_cb):
+        
+        (server_start, server_end) = self.SERVER_HAS_NOTHING
+        conn = key.bucket.connection
+        if self.tracker_uri:
+            # Try to resume existing resumable upload.
+            try:
+                (server_start, server_end) = (
+                    self._query_server_pos(conn, file_length))
+                self.server_has_bytes = server_start
+                if server_end:
+                  # If the server already has some of the content, we need to
+                  # update the digesters with the bytes that have already been
+                  # uploaded to ensure we get a complete hash in the end.
+                  print 'Catching up hash digest(s) for resumed upload'
+                  fp.seek(0)
+                  # Read local file's bytes through position server has. For
+                  # example, if server has (0, 3) we want to read 3-0+1=4 bytes.
+                  bytes_to_go = server_end + 1
+                  while bytes_to_go:
+                      chunk = fp.read(min(key.BufferSize, bytes_to_go))
+                      if not chunk:
+                          raise ResumableUploadException(
+                              'Hit end of file during resumable upload hash '
+                              'catchup. This should not happen under\n'
+                              'normal circumstances, as it indicates the '
+                              'server has more bytes of this transfer\nthan'
+                              ' the current file size. Restarting upload.',
+                              ResumableTransferDisposition.START_OVER)
+                      for alg in self.digesters:
+                          self.digesters[alg].update(chunk)
+                      bytes_to_go -= len(chunk)
+                if conn.debug >= 1:
+                    print 'Resuming transfer.'
+            except ResumableUploadException, e:
+                if conn.debug >= 1:
+                    print 'Unable to resume transfer (%s).' % e.message
+                self._start_new_resumable_upload(key, headers)
+        else:
+            self._start_new_resumable_upload(key, headers)
+        # upload_start_point allows the code that instantiated the
+        # ResumableUploadHandler to find out the point from which it started
+        # uploading (e.g., so it can correctly compute throughput).
+        if self.upload_start_point is None:
+            self.upload_start_point = server_end
+        total_bytes_uploaded = server_end + 1
+        # Corner case: Don't attempt to seek if we've already uploaded the
+        # entire file, because if the file is a stream (e.g., the KeyFile
+        # wrapper around input key when copying between providers), attempting
+        # to seek to the end of file would result in an InvalidRange error.
+        if file_length < total_bytes_uploaded:
+          fp.seek(total_bytes_uploaded)
+        conn = key.bucket.connection
+        # Get a new HTTP connection (vs conn.get_http_connection(), which reuses
+        # pool connections) because httplib requires a new HTTP connection per
+        # transaction. (Without this, calling http_conn.getresponse() would get
+        # "ResponseNotReady".)
+        http_conn = conn.new_http_connection(self.tracker_uri_host, conn.port,
+                                             conn.is_secure)
+        http_conn.set_debuglevel(conn.debug)
+        # Make sure to close http_conn at end so if a local file read
+        # failure occurs partway through server will terminate current upload
+        # and can report that progress on next attempt.
+        try:
+            return self._upload_file_bytes(conn, http_conn, fp, file_length,
+                                           total_bytes_uploaded, cb, num_cb,
+                                           headers)
+        except (ResumableUploadException, socket.error):
+            resp = self._query_server_state(conn, file_length)
+            if resp.status == 400:
+                raise ResumableUploadException('Got 400 response from server '
+                    'state query after failed resumable upload attempt. This '
+                    'can happen for various reasons, including specifying an '
+                    'invalid request (e.g., an invalid canned ACL) or if the '
+                    'file size changed between upload attempts',
+                    ResumableTransferDisposition.ABORT)
+            else:
+                raise
+        finally:
+            http_conn.close()

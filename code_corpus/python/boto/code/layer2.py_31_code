@@ -1,0 +1,14 @@
+    def update_item(self, item, expected_value=None, return_values=None):
+        
+        expected_value = self.dynamize_expected_value(expected_value)
+        key = self.build_key_from_values(item.table.schema,
+                                         item.hash_key, item.range_key)
+        attr_updates = self.dynamize_attribute_updates(item._updates)
+        response = self.layer1.update_item(item.table.name, key,
+                                           attr_updates,
+                                           expected_value, return_values,
+                                           object_hook=self.dynamizer.decode)
+        item._updates.clear()
+        if 'ConsumedCapacityUnits' in response:
+            item.consumed_units = response['ConsumedCapacityUnits']
+        return response

@@ -1,0 +1,21 @@
+    def to_dict(self):
+        
+        batch_dict = {}
+        key_list = []
+        for key in self.keys:
+            if isinstance(key, tuple):
+                hash_key, range_key = key
+            else:
+                hash_key = key
+                range_key = None
+            k = self.table.layer2.build_key_from_values(self.table.schema,
+                                                        hash_key, range_key)
+            key_list.append(k)
+        batch_dict['Keys'] = key_list
+        if self.attributes_to_get:
+            batch_dict['AttributesToGet'] = self.attributes_to_get
+        if self.consistent_read:
+            batch_dict['ConsistentRead'] = True
+        else:
+            batch_dict['ConsistentRead'] = False
+        return batch_dict

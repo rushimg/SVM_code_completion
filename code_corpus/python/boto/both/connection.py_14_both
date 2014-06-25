@@ -1,0 +1,22 @@
+    def get_change(self, change_id):
+        """
+        Get information about a proposed set of changes, as submitted
+        by the change_rrsets method.
+        Returns a Python data structure with status information about the
+        changes.
+        :type change_id: str
+        :param change_id: The unique identifier for the set of changes.
+            This ID is returned in the response to the change_rrsets method.
+        """
+        uri = '/%s/change/%s' % (self.Version, change_id)
+        response = self.make_request('GET', uri)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status >= 300:
+            raise exception.DNSServerError(response.status,
+                                           response.reason,
+                                           body)
+        e = boto.jsonresponse.Element()
+        h = boto.jsonresponse.XmlHandler(e, None)
+        h.parse(body)
+        return e

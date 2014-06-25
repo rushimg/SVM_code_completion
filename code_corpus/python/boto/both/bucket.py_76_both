@@ -1,0 +1,15 @@
+    def set_xml_tags(self, tag_str, headers=None, query_args='tagging'):
+        if headers is None:
+            headers = {}
+        md5 = boto.utils.compute_md5(StringIO.StringIO(tag_str))
+        headers['Content-MD5'] = md5[1]
+        headers['Content-Type'] = 'text/xml'
+        response = self.connection.make_request('PUT', self.name,
+                                                data=tag_str.encode('utf-8'),
+                                                query_args=query_args,
+                                                headers=headers)
+        body = response.read()
+        if response.status != 204:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
+        return True

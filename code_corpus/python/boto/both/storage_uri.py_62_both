@@ -1,0 +1,20 @@
+    def set_contents_from_file(self, fp, headers=None, replace=True, cb=None,
+                               num_cb=10, policy=None, md5=None, size=None,
+                               rewind=False, res_upload_handler=None):
+        self._check_object_uri('set_contents_from_file')
+        key = self.new_key(headers=headers)
+        if self.scheme == 'gs':
+            result = key.set_contents_from_file(
+                fp, headers, replace, cb, num_cb, policy, md5, size=size,
+                rewind=rewind, res_upload_handler=res_upload_handler)
+            if res_upload_handler:
+                self._update_from_values(None, res_upload_handler.generation,
+                                         None, md5)
+        else:
+            self._warn_about_args('set_contents_from_file',
+                                  res_upload_handler=res_upload_handler)
+            result = key.set_contents_from_file(
+                fp, headers, replace, cb, num_cb, policy, md5, size=size,
+                rewind=rewind)
+        self._update_from_key(key)
+        return result

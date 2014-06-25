@@ -1,0 +1,21 @@
+    def cancel_reserved_instances_listing(self,
+                                          reserved_instances_listing_ids=None,
+                                          dry_run=False):
+        """Cancels the specified Reserved Instance listing.
+        :type reserved_instances_listing_ids: List of strings
+        :param reserved_instances_listing_ids: The ID of the
+            Reserved Instance listing to be cancelled.
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+        :rtype: list
+        :return: A list of
+            :class:`boto.ec2.reservedinstance.ReservedInstanceListing`
+        """
+        params = {}
+        if reserved_instances_listing_ids is not None:
+            self.build_list_params(params, reserved_instances_listing_ids,
+                                   'ReservedInstancesListingId')
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_list('CancelReservedInstancesListing',
+                             params, [('item', ReservedInstanceListing)], verb='POST')

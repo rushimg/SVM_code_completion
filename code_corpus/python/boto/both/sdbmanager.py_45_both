@@ -1,0 +1,70 @@
+    def _build_filter_part(self, cls, filters, order_by=None, select=None):
+        """
+        Build the filter part
+        """
+        import types
+        query_parts = []
+        order_by_filtered = False
+        if order_by:
+            if order_by[0] == "-":
+                order_by_method = "DESC"
+                order_by = order_by[1:]
+            else:
+                order_by_method = "ASC"
+        if select:
+            if order_by and order_by in select:
+                order_by_filtered = True
+            query_parts.append("(%s)" % select)
+        if isinstance(filters, basestring):
+            query = "WHERE %s AND `__type__` = '%s'" % (filters, cls.__name__)
+            if order_by in ["__id__", "itemName()"]:
+                query += " ORDER BY itemName() %s" % order_by_method
+            elif order_by is not None:
+                query += " ORDER BY `%s` %s" % (order_by, order_by_method)
+            return query
+        for filter in filters:
+            filter_parts = []
+            filter_props = filter[0]
+            if not isinstance(filter_props, list):
+                filter_props = [filter_props]
+            for filter_prop in filter_props:
+                (name, op) = filter_prop.strip().split(" ", 1)
+                value = filter[1]
+                property = cls.find_property(name)
+                if name == order_by:
+                    order_by_filtered = True
+                if types.TypeType(value) == types.ListType:
+                    filter_parts_sub = []
+                    for val in value:
+                        val = self.encode_value(property, val)
+                        if isinstance(val, list):
+                            for v in val:
+                                filter_parts_sub.append(self._build_filter(property, name, op, v))
+                        else:
+                            filter_parts_sub.append(self._build_filter(property, name, op, val))
+                    filter_parts.append("(%s)" % (" OR ".join(filter_parts_sub)))
+                else:
+                    val = self.encode_value(property, value)
+                    if isinstance(val, list):
+                        for v in val:
+                            filter_parts.append(self._build_filter(property, name, op, v))
+                    else:
+                        filter_parts.append(self._build_filter(property, name, op, val))
+            query_parts.append("(%s)" % (" or ".join(filter_parts)))
+        type_query = "(`__type__` = '%s'" % cls.__name__
+        for subclass in self._get_all_decendents(cls).keys():
+            type_query += " or `__type__` = '%s'" % subclass
+        type_query += ")"
+        query_parts.append(type_query)
+        order_by_query = ""
+        if order_by:
+            if not order_by_filtered:
+                query_parts.append("`%s` LIKE '%%'" % order_by)
+            if order_by in ["__id__", "itemName()"]:
+                order_by_query = " ORDER BY itemName() %s" % order_by_method
+            else:
+                order_by_query = " ORDER BY `%s` %s" % (order_by, order_by_method)
+        if len(query_parts) > 0:
+            return "WHERE %s %s" % (" AND ".join(query_parts), order_by_query)
+        else:
+            return ""

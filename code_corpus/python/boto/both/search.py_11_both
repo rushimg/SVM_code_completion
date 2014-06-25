@@ -1,0 +1,34 @@
+    def __call__(self, query):
+        """Make a call to CloudSearch
+        :type query: :class:`boto.cloudsearch.search.Query`
+        :param query: A group of search criteria
+        :rtype: :class:`boto.cloudsearch.search.SearchResults`
+        :return: search results
+        """
+        url = "http://%s/2011-02-01/search" % (self.endpoint)
+        params = query.to_params()
+        r = requests.get(url, params=params)
+        try:
+            data = json.loads(r.content)
+        except ValueError, e:
+            if r.status_code == 403:
+                msg = ''
+                import re
+                g = re.search('<html><body><h1>403 Forbidden</h1>([^<]+)<', r.content)
+                try:
+                    msg = ': %s' % (g.groups()[0].strip())
+                except AttributeError:
+                    pass
+                raise SearchServiceException('Authentication error from Amazon%s' % msg)
+            raise SearchServiceException("Got non-json response from Amazon. %s" % r.content, query)
+        if 'messages' in data and 'error' in data:
+            for m in data['messages']:
+                if m['severity'] == 'fatal':
+                    raise SearchServiceException("Error processing search %s "
+                        "=> %s" % (params, m['message']), query)
+        elif 'error' in data:
+            raise SearchServiceException("Unknown error processing search %s"
+                % json.dumps(data), query)
+        data['query'] = query
+        data['search_service'] = self
+        return SearchResults(**data)

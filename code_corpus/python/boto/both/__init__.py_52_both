@@ -1,0 +1,24 @@
+    def create_vpn_connection_route(self, destination_cidr_block,
+                                    vpn_connection_id, dry_run=False):
+        """
+        Creates a new static route associated with a VPN connection between an
+        existing virtual private gateway and a VPN customer gateway. The static
+        route allows traffic to be routed from the virtual private gateway to
+        the VPN customer gateway.
+        :type destination_cidr_block: str
+        :param destination_cidr_block: The CIDR block associated with the local
+            subnet of the customer data center.
+        :type vpn_connection_id: str
+        :param vpn_connection_id: The ID of the VPN connection.
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+        :rtype: bool
+        :return: True if successful
+        """
+        params = {
+            'DestinationCidrBlock': destination_cidr_block,
+            'VpnConnectionId': vpn_connection_id,
+        }
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_status('CreateVpnConnectionRoute', params)

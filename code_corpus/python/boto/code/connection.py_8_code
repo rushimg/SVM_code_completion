@@ -1,0 +1,23 @@
+    def delete_hosted_zone(self, hosted_zone_id):
+        """
+        Delete the hosted zone specified by the given id.
+        :type hosted_zone_id: str
+        :param hosted_zone_id: The hosted zone's id
+        """
+        uri = '/%s/hostedzone/%s' % (self.Version, hosted_zone_id)
+        response = self.make_request('DELETE', uri)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status not in (200, 204):
+            raise exception.DNSServerError(response.status,
+                                           response.reason,
+                                           body)
+        e = boto.jsonresponse.Element()
+        h = boto.jsonresponse.XmlHandler(e, None)
+        h.parse(body)
+        return e
+    # Health checks
+    POSTHCXMLBody = """<CreateHealthCheckRequest xmlns="%(xmlns)s">
+    <CallerReference>%(caller_ref)s</CallerReference>
+    %(health_check)s
+    </CreateHealthCheckRequest>"""

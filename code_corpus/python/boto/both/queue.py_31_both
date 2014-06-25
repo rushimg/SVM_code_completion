@@ -1,0 +1,15 @@
+    def load_from_s3(self, bucket, prefix=None):
+        """
+        Load messages previously saved to S3.
+        """
+        n = 0
+        if prefix:
+            prefix = '%s/' % prefix
+        else:
+            prefix = '%s/' % self.id[1:]
+        rs = bucket.list(prefix=prefix)
+        for key in rs:
+            n += 1
+            m = self.new_message(key.get_contents_as_string())
+            self.write(m)
+        return n

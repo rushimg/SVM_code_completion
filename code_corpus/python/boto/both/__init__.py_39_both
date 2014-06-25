@@ -1,0 +1,31 @@
+    def get_all_subnets(self, subnet_ids=None, filters=None, dry_run=False):
+        """
+        Retrieve information about your Subnets.  You can filter results to
+        return information only about those Subnets that match your search
+        parameters.  Otherwise, all Subnets associated with your account
+        are returned.
+        :type subnet_ids: list
+        :param subnet_ids: A list of strings with the desired Subnet ID's
+        :type filters: list of tuples
+        :param filters: A list of tuples containing filters.  Each tuple
+                        consists of a filter key and a filter value.
+                        Possible filter keys are:
+                        - *state*, a list of states of the Subnet
+                          (pending,available)
+                        - *vpcId*, a list of IDs of the VPC that the subnet is in.
+                        - *cidrBlock*, a list of CIDR blocks of the subnet
+                        - *availabilityZone*, list of the Availability Zones
+                          the subnet is in.
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+        :rtype: list
+        :return: A list of :class:`boto.vpc.subnet.Subnet`
+        """
+        params = {}
+        if subnet_ids:
+            self.build_list_params(params, subnet_ids, 'SubnetId')
+        if filters:
+            self.build_filter_params(params, dict(filters))
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_list('DescribeSubnets', params, [('item', Subnet)])

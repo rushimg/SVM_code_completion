@@ -1,0 +1,27 @@
+    def modify_event_subscription(self, subscription_name,
+                                  sns_topic_arn=None, source_type=None,
+                                  source_ids=None, event_categories=None,
+                                  severity=None, enabled=None):
+        
+        params = {'SubscriptionName': subscription_name, }
+        if sns_topic_arn is not None:
+            params['SnsTopicArn'] = sns_topic_arn
+        if source_type is not None:
+            params['SourceType'] = source_type
+        if source_ids is not None:
+            self.build_list_params(params,
+                                   source_ids,
+                                   'SourceIds.member')
+        if event_categories is not None:
+            self.build_list_params(params,
+                                   event_categories,
+                                   'EventCategories.member')
+        if severity is not None:
+            params['Severity'] = severity
+        if enabled is not None:
+            params['Enabled'] = str(
+                enabled).lower()
+        return self._make_request(
+            action='ModifyEventSubscription',
+            verb='POST',
+            path='/', params=params)

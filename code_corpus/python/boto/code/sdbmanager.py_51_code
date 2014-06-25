@@ -1,0 +1,9 @@
+    def get_property(self, prop, obj, name):
+        a = self.domain.get_attributes(obj.id, consistent_read=self.consistent)
+        # try to get the attribute value from SDB
+        if name in a:
+            value = self.decode_value(prop, a[name])
+            value = prop.make_value_from_datastore(value)
+            setattr(obj, prop.name, value)
+            return value
+        raise AttributeError('%s not found' % name)

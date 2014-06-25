@@ -1,0 +1,29 @@
+    def startElement(self, name, attrs, connection):
+        if name == 'HealthCheck':
+            self.health_check = HealthCheck(self)
+            return self.health_check
+        elif name == 'ListenerDescriptions':
+            self.listeners = ResultSet([('member', Listener)])
+            return self.listeners
+        elif name == 'AvailabilityZones':
+            return self.availability_zones
+        elif name == 'Instances':
+            self.instances = ResultSet([('member', InstanceInfo)])
+            return self.instances
+        elif name == 'Policies':
+            self.policies = Policies(self)
+            return self.policies
+        elif name == 'SourceSecurityGroup':
+            self.source_security_group = SecurityGroup()
+            return self.source_security_group
+        elif name == 'Subnets':
+            return self.subnets
+        elif name == 'SecurityGroups':
+            return self.security_groups
+        elif name == 'VPCId':
+            pass
+        elif name == "BackendServerDescriptions":
+            self.backends = ResultSet([('member', Backend)])
+            return self.backends
+        else:
+            return None

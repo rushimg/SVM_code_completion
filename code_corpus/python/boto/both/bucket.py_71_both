@@ -1,0 +1,36 @@
+    def complete_multipart_upload(self, key_name, upload_id,
+                                  xml_body, headers=None):
+        """
+        Complete a multipart upload operation.
+        """
+        query_args = 'uploadId=%s' % upload_id
+        if headers is None:
+            headers = {}
+        headers['Content-Type'] = 'text/xml'
+        response = self.connection.make_request('POST', self.name, key_name,
+                                                query_args=query_args,
+                                                headers=headers, data=xml_body)
+        contains_error = False
+        body = response.read()
+        # Some errors will be reported in the body of the response
+        # even though the HTTP response code is 200.  This check
+        # does a quick and dirty peek in the body for an error element.
+        if body.find('<Error>') > 0:
+            contains_error = True
+        boto.log.debug(body)
+        if response.status == 200 and not contains_error:
+            resp = CompleteMultiPartUpload(self)
+            h = handler.XmlHandler(resp, self)
+            xml.sax.parseString(body, h)
+            # Use a dummy key to parse various response headers
+            # for versioning, encryption info and then explicitly
+            # set the completed MPU object values from key.
+            k = self.key_class(self)
+            k.handle_version_headers(response)
+            k.handle_encryption_headers(response)
+            resp.version_id = k.version_id
+            resp.encrypted = k.encrypted
+            return resp
+        else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)

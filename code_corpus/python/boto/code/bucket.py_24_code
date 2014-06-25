@@ -1,0 +1,14 @@
+    def add_email_grant(self, permission, email_address,
+                        recursive=False, headers=None):
+        
+        if permission not in GSPermissions:
+            raise self.connection.provider.storage_permissions_error(
+                'Unknown Permission: %s' % permission)
+        acl = self.get_acl(headers=headers)
+        acl.add_email_grant(permission, email_address)
+        self.set_acl(acl, headers=headers)
+        if recursive:
+            for key in self:
+                key.add_email_grant(permission, email_address, headers=headers)
+    # Method with same signature as boto.s3.bucket.Bucket.add_user_grant(),
+    # to allow polymorphic treatment at application layer.

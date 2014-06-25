@@ -1,0 +1,11 @@
+    def update(self, validate=False, dry_run=False):
+        
+        rs = self.connection.get_all_network_interfaces(
+            [self.id],
+            dry_run=dry_run
+        )
+        if len(rs) > 0:
+            self._update(rs[0])
+        elif validate:
+            raise ValueError('%s is not a valid ENI ID' % self.id)
+        return self.status

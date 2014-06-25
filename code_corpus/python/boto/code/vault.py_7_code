@@ -1,0 +1,24 @@
+    def create_archive_from_file(self, filename=None, file_obj=None,
+                                 description=None, upload_id_callback=None):
+        
+        part_size = self.DefaultPartSize
+        if not file_obj:
+            file_size = os.path.getsize(filename)
+            try:
+                part_size = minimum_part_size(file_size, part_size)
+            except ValueError:
+                raise UploadArchiveError("File size of %s bytes exceeds "
+                                         "40,000 GB archive limit of Glacier.")
+            file_obj = open(filename, "rb")
+        writer = self.create_archive_writer(
+            description=description,
+            part_size=part_size)
+        if upload_id_callback:
+            upload_id_callback(writer.upload_id)
+        while True:
+            data = file_obj.read(part_size)
+            if not data:
+                break
+            writer.write(data)
+        writer.close()
+        return writer.get_archive_id()

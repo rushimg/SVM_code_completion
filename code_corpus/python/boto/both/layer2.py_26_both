@@ -1,0 +1,26 @@
+    def create_schema(self, hash_key_name, hash_key_proto_value,
+                      range_key_name=None, range_key_proto_value=None):
+        """
+        Create a Schema object used when creating a Table.
+        :type hash_key_name: str
+        :param hash_key_name: The name of the HashKey for the schema.
+        :type hash_key_proto_value: int|long|float|str|unicode|Binary
+        :param hash_key_proto_value: A sample or prototype of the type
+            of value you want to use for the HashKey.  Alternatively,
+            you can also just pass in the Python type (e.g. int, float, etc.).
+        :type range_key_name: str
+        :param range_key_name: The name of the RangeKey for the schema.
+            This parameter is optional.
+        :type range_key_proto_value: int|long|float|str|unicode|Binary
+        :param range_key_proto_value: A sample or prototype of the type
+            of value you want to use for the RangeKey.  Alternatively,
+            you can also pass in the Python type (e.g. int, float, etc.)
+            This parameter is optional.
+        """
+        hash_key = (hash_key_name, get_dynamodb_type(hash_key_proto_value))
+        if range_key_name and range_key_proto_value is not None:
+            range_key = (range_key_name,
+                         get_dynamodb_type(range_key_proto_value))
+        else:
+            range_key = None
+        return Schema.create(hash_key, range_key)

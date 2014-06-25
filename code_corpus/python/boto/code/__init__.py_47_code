@@ -1,0 +1,13 @@
+    def get_all_vpn_connections(self, vpn_connection_ids=None, filters=None,
+                                dry_run=False):
+        
+        params = {}
+        if vpn_connection_ids:
+            self.build_list_params(params, vpn_connection_ids,
+                                   'VpnConnectionId')
+        if filters:
+            self.build_filter_params(params, dict(filters))
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_list('DescribeVpnConnections', params,
+                             [('item', VpnConnection)])

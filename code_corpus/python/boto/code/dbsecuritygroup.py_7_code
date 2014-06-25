@@ -1,0 +1,12 @@
+    def revoke(self, cidr_ip=None, ec2_group=None):
+        
+        if isinstance(ec2_group, SecurityGroup):
+            group_name = ec2_group.name
+            group_owner_id = ec2_group.owner_id
+            return self.connection.revoke_dbsecurity_group(
+                self.name,
+                ec2_security_group_name=group_name,
+                ec2_security_group_owner_id=group_owner_id)
+        # Revoking by CIDR IP range
+        return self.connection.revoke_dbsecurity_group(
+            self.name, cidr_ip=cidr_ip)

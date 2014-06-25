@@ -1,0 +1,22 @@
+    def do_reset(self):
+        iq = self.sd.get_obj('input_queue')
+        if iq:
+            print 'clearing out input queue'
+            i = 0
+            m = iq.read()
+            while m:
+                i += 1
+                iq.delete_message(m)
+                m = iq.read()
+            print 'deleted %d messages' % i
+        ob = self.sd.get_obj('output_bucket')
+        ib = self.sd.get_obj('input_bucket')
+        if ob:
+            if ib and ob.name == ib.name:
+                return
+            print 'delete generated files in output bucket'
+            i = 0
+            for k in ob:
+                i += 1
+                k.delete()
+            print 'deleted %d keys' % i

@@ -1,0 +1,51 @@
+    def _query(self, limit=None, index=None, reverse=False, consistent=False,
+               exclusive_start_key=None, select=None, attributes_to_get=None,
+               query_filter=None, conditional_operator=None, **filter_kwargs):
+        """
+        The internal method that performs the actual queries. Used extensively
+        by ``ResultSet`` to perform each (paginated) request.
+        """
+        kwargs = {
+            'limit': limit,
+            'index_name': index,
+            'consistent_read': consistent,
+            'select': select,
+            'attributes_to_get': attributes_to_get,
+            'conditional_operator': conditional_operator,
+        }
+        if reverse:
+            kwargs['scan_index_forward'] = False
+        if exclusive_start_key:
+            kwargs['exclusive_start_key'] = {}
+            for key, value in exclusive_start_key.items():
+                kwargs['exclusive_start_key'][key] = \
+                    self._dynamizer.encode(value)
+        # Convert the filters into something we can actually use.
+        kwargs['key_conditions'] = self._build_filters(
+            filter_kwargs,
+            using=QUERY_OPERATORS
+        )
+        kwargs['query_filter'] = self._build_filters(
+            query_filter,
+            using=FILTER_OPERATORS
+        )
+        raw_results = self.connection.query(
+            self.table_name,
+            **kwargs
+        )
+        results = []
+        last_key = None
+        for raw_item in raw_results.get('Items', []):
+            item = Item(self)
+            item.load({
+                'Item': raw_item,
+            })
+            results.append(item)
+        if raw_results.get('LastEvaluatedKey', None):
+            last_key = {}
+            for key, value in raw_results['LastEvaluatedKey'].items():
+                last_key[key] = self._dynamizer.decode(value)
+        return {
+            'results': results,
+            'last_key': last_key,
+        }

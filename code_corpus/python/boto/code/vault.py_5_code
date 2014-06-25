@@ -1,0 +1,9 @@
+    def _upload_archive_single_operation(self, filename, description):
+        
+        with open(filename, 'rb') as fileobj:
+            linear_hash, tree_hash = compute_hashes_from_fileobj(fileobj)
+            fileobj.seek(0)
+            response = self.layer1.upload_archive(self.name, fileobj,
+                                                  linear_hash, tree_hash,
+                                                  description)
+        return response['ArchiveId']

@@ -1,0 +1,15 @@
+    def get_cors(self, headers=None):
+        
+        response = self.connection.make_request('GET', self.name,
+                                                query_args=CORS_ARG,
+                                                headers=headers)
+        body = response.read()
+        if response.status == 200:
+            # Success - parse XML and return Cors object.
+            cors = Cors()
+            h = handler.XmlHandler(cors, self)
+            xml.sax.parseString(body, h)
+            return cors
+        else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)

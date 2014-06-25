@@ -1,0 +1,21 @@
+"""
+        Saves all data to DynamoDB.
+        By default, this attempts to ensure that none of the underlying
+        data has changed. If any fields have changed in between when the
+        ``Item`` was constructed & when it is saved, this call will fail so
+        as not to cause any data loss.
+        If you're sure possibly overwriting data is acceptable, you can pass
+        an ``overwrite=True``. If that's not acceptable, you may be able to use
+        ``Item.partial_save`` to only write the changed field data.
+        Optionally accepts an ``overwrite`` parameter, which should be a
+        boolean. If you provide ``True``, the item will be forcibly overwritten
+        within DynamoDB, even if another process changed the data in the
+        meantime. (Default: ``False``)
+        Returns ``True`` on success, ``False`` if no save was performed.
+        Example::
+            >>> user['last_name'] = 'Doh!'
+            # All data on the Item is sent to DynamoDB.
+            >>> user.save()
+            # If it fails, you can overwrite.
+            >>> user.save(overwrite=True)
+        """

@@ -1,0 +1,18 @@
+    def _credentials_need_refresh(self):
+        if self._credential_expiry_time is None:
+            return False
+        else:
+            # The credentials should be refreshed if they're going to expire
+            # in less than 5 minutes.
+            delta = self._credential_expiry_time - datetime.utcnow()
+            # python2.6 does not have timedelta.total_seconds() so we have
+            # to calculate this ourselves.  This is straight from the
+            # datetime docs.
+            seconds_left = (
+                (delta.microseconds + (delta.seconds + delta.days * 24 * 3600)
+                 * 10**6) / 10**6)
+            if seconds_left < (5 * 60):
+                boto.log.debug("Credentials need to be refreshed.")
+                return True
+            else:
+                return False

@@ -1,0 +1,19 @@
+    def __init__(self, id=None, **kw):
+        self._loaded = False
+        # first try to initialize all properties to their default values
+        for prop in self.properties(hidden=False):
+            try:
+                setattr(self, prop.name, prop.default_value())
+            except ValueError:
+                pass
+        if 'manager' in kw:
+            self._manager = kw['manager']
+        self.id = id
+        for key in kw:
+            if key != 'manager':
+                # We don't want any errors populating up when loading an object,
+                # so if it fails we just revert to it's default value
+                try:
+                    setattr(self, key, kw[key])
+                except Exception, e:
+                    boto.log.exception(e)

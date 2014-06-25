@@ -1,0 +1,9 @@
+    def wait(self):
+        if self.server is None:
+            raise ValueError('server attribute must be set to run this command')
+        with closing(self.server.get_cmdshell()) as cmd:
+            # wait for the volume device to appear
+            cmd = self.server.get_cmdshell()
+            while not cmd.exists(self.device):
+                boto.log.info('%s still does not exist, waiting 10 seconds' % self.device)
+                time.sleep(10)

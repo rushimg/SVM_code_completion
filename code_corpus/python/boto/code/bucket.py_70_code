@@ -1,0 +1,35 @@
+    def initiate_multipart_upload(self, key_name, headers=None,
+                                  reduced_redundancy=False,
+                                  metadata=None, encrypt_key=False,
+                                  policy=None):
+        
+        query_args = 'uploads'
+        provider = self.connection.provider
+        headers = headers or {}
+        if policy:
+            headers[provider.acl_header] = policy
+        if reduced_redundancy:
+            storage_class_header = provider.storage_class_header
+            if storage_class_header:
+                headers[storage_class_header] = 'REDUCED_REDUNDANCY'
+            # TODO: what if the provider doesn't support reduced redundancy?
+            # (see boto.s3.key.Key.set_contents_from_file)
+        if encrypt_key:
+            headers[provider.server_side_encryption_header] = 'AES256'
+        if metadata is None:
+            metadata = {}
+        headers = boto.utils.merge_meta(headers, metadata,
+                self.connection.provider)
+        response = self.connection.make_request('POST', self.name, key_name,
+                                                query_args=query_args,
+                                                headers=headers)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status == 200:
+            resp = MultiPartUpload(self)
+            h = handler.XmlHandler(resp, self)
+            xml.sax.parseString(body, h)
+            return resp
+        else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)

@@ -1,0 +1,20 @@
+    def create_invalidation_request(self, distribution_id, paths,
+                                    caller_reference=None):
+        
+        # We allow you to pass in either an array or
+        # an InvalidationBatch object
+        if not isinstance(paths, InvalidationBatch):
+            paths = InvalidationBatch(paths)
+        paths.connection = self
+        uri = '/%s/distribution/%s/invalidation' % (self.Version,
+                                                    distribution_id)
+        response = self.make_request('POST', uri,
+                                     {'Content-Type': 'text/xml'},
+                                     data=paths.to_xml())
+        body = response.read()
+        if response.status == 201:
+            h = handler.XmlHandler(paths, self)
+            xml.sax.parseString(body, h)
+            return paths
+        else:
+            raise CloudFrontServerError(response.status, response.reason, body)

@@ -1,0 +1,11 @@
+    def add_email_grant(self, permission, email_address, recursive=False,
+                        validate=False, headers=None):
+        self._check_bucket_uri('add_email_grant')
+        if not self.object_name:
+            bucket = self.get_bucket(validate, headers)
+            bucket.add_email_grant(permission, email_address, recursive,
+                                   headers)
+        else:
+            key = self.get_key(validate, headers)
+            self.check_response(key, 'key', self.uri)
+            key.add_email_grant(permission, email_address)

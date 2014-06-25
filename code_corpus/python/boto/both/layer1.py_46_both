@@ -1,0 +1,28 @@
+    def modify_cluster_subnet_group(self, cluster_subnet_group_name,
+                                    subnet_ids, description=None):
+        """
+        Modifies a cluster subnet group to include the specified list
+        of VPC subnets. The operation replaces the existing list of
+        subnets with the new list of subnets.
+        :type cluster_subnet_group_name: string
+        :param cluster_subnet_group_name: The name of the subnet group to be
+            modified.
+        :type description: string
+        :param description: A text description of the subnet group to be
+            modified.
+        :type subnet_ids: list
+        :param subnet_ids: An array of VPC subnet IDs. A maximum of 20 subnets
+            can be modified in a single request.
+        """
+        params = {
+            'ClusterSubnetGroupName': cluster_subnet_group_name,
+        }
+        self.build_list_params(params,
+                               subnet_ids,
+                               'SubnetIds.member')
+        if description is not None:
+            params['Description'] = description
+        return self._make_request(
+            action='ModifyClusterSubnetGroup',
+            verb='POST',
+            path='/', params=params)

@@ -1,0 +1,15 @@
+    def update_record(self, old_record, new_value, new_ttl=None,
+                      new_identifier=None, comment=""):
+        """
+        Update an existing record in this Zone.  Returns a Status object.
+        :type old_record: ResourceRecord
+        :param old_record: A ResourceRecord (e.g. returned by find_records)
+        See _new_record for additional parameter documentation.
+        """
+        new_ttl = new_ttl or default_ttl
+        record = copy.copy(old_record)
+        changes = ResourceRecordSets(self.route53connection, self.id, comment)
+        changes.add_change_record("DELETE", record)
+        self._new_record(changes, record.type, record.name,
+                         new_value, new_ttl, new_identifier, comment)
+        return Status(self.route53connection, self._commit(changes))

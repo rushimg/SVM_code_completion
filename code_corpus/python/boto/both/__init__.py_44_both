@@ -1,0 +1,29 @@
+        def insert_option(params, name, value):
+            params['DhcpConfiguration.%d.Key' % (key_counter,)] = name
+            if isinstance(value, (list, tuple)):
+                for idx, value in enumerate(value, 1):
+                    key_name = 'DhcpConfiguration.%d.Value.%d' % (
+                        key_counter, idx)
+                    params[key_name] = value
+            else:
+                key_name = 'DhcpConfiguration.%d.Value.1' % (key_counter,)
+                params[key_name] = value
+            return key_counter + 1
+        if domain_name:
+            key_counter = insert_option(params,
+                                        'domain-name', domain_name)
+        if domain_name_servers:
+            key_counter = insert_option(params,
+                                        'domain-name-servers', domain_name_servers)
+        if ntp_servers:
+            key_counter = insert_option(params,
+                                        'ntp-servers', ntp_servers)
+        if netbios_name_servers:
+            key_counter = insert_option(params,
+                                        'netbios-name-servers', netbios_name_servers)
+        if netbios_node_type:
+            key_counter = insert_option(params,
+                                        'netbios-node-type', netbios_node_type)
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_object('CreateDhcpOptions', params, DhcpOptions)

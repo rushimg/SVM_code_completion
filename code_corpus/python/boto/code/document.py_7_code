@@ -1,0 +1,20 @@
+    def commit(self):
+        
+        sdf = self.get_sdf()
+        if ': null' in sdf:
+            boto.log.error('null value in sdf detected.  This will probably raise '
+                '500 error.')
+            index = sdf.index(': null')
+            boto.log.error(sdf[index - 100:index + 100])
+        url = "http://%s/2011-02-01/documents/batch" % (self.endpoint)
+        # Keep-alive is automatic in a post-1.0 requests world.
+        session = requests.Session()
+        adapter = requests.adapters.HTTPAdapter(
+            pool_connections=20,
+            pool_maxsize=50,
+            max_retries=5
+        )
+        session.mount('http://', adapter)
+        session.mount('https://', adapter)
+        r = session.post(url, data=sdf, headers={'Content-Type': 'application/json'})
+        return CommitResponse(r, self, sdf)

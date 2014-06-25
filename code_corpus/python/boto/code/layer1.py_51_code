@@ -1,0 +1,17 @@
+    def reset_cluster_parameter_group(self, parameter_group_name,
+                                      reset_all_parameters=None,
+                                      parameters=None):
+        
+        params = {'ParameterGroupName': parameter_group_name, }
+        if reset_all_parameters is not None:
+            params['ResetAllParameters'] = str(
+                reset_all_parameters).lower()
+        if parameters is not None:
+            self.build_complex_list_params(
+                params, parameters,
+                'Parameters.member',
+                ('ParameterName', 'ParameterValue', 'Description', 'Source', 'DataType', 'AllowedValues', 'IsModifiable', 'MinimumEngineVersion'))
+        return self._make_request(
+            action='ResetClusterParameterGroup',
+            verb='POST',
+            path='/', params=params)

@@ -1,0 +1,29 @@
+    def build_cli_parser(self):
+        self.parser = optparse.OptionParser(description=self.Description,
+                                            usage=self.get_usage())
+        self.add_standard_options()
+        for param in self.Params:
+            ptype = action = choices = None
+            if param.ptype in self.CLITypeMap:
+                ptype = self.CLITypeMap[param.ptype]
+                action = 'store'
+            if param.ptype == 'boolean':
+                action = 'store_true'
+            elif param.ptype == 'array':
+                if len(param.items) == 1:
+                    ptype = param.items[0]['type']
+                    action = 'append'
+            elif param.cardinality != 1:
+                action = 'append'
+            if ptype or action == 'store_true':
+                if param.short_name:
+                    self.parser.add_option(param.optparse_short_name,
+                                           param.optparse_long_name,
+                                           action=action, type=ptype,
+                                           choices=param.choices,
+                                           help=param.doc)
+                elif param.long_name:
+                    self.parser.add_option(param.optparse_long_name,
+                                           action=action, type=ptype,
+                                           choices=param.choices,
+                                           help=param.doc)

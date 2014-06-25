@@ -1,0 +1,51 @@
+    def endElement(self, name, value, connection):
+        if name == 'IsTruncated':
+            self.is_truncated = self.to_boolean(value)
+        elif name == 'Marker':
+            self.marker = value
+        elif name == 'KeyMarker':
+            self.key_marker = value
+        elif name == 'NextMarker':
+            self.next_marker = value
+        elif name == 'NextKeyMarker':
+            self.next_key_marker = value
+        elif name == 'VersionIdMarker':
+            self.version_id_marker = value
+        elif name == 'NextVersionIdMarker':
+            self.next_version_id_marker = value
+        elif name == 'NextGenerationMarker':
+            self.next_generation_marker = value
+        elif name == 'UploadIdMarker':
+            self.upload_id_marker = value
+        elif name == 'NextUploadIdMarker':
+            self.next_upload_id_marker = value
+        elif name == 'Bucket':
+            self.bucket = value
+        elif name == 'MaxUploads':
+            self.max_uploads = int(value)
+        elif name == 'MaxItems':
+            self.max_items = int(value)
+        elif name == 'Prefix':
+            self.prefix = value
+        elif name == 'return':
+            self.status = self.to_boolean(value)
+        elif name == 'StatusCode':
+            self.status = self.to_boolean(value, 'Success')
+        elif name == 'ItemName':
+            self.append(value)
+        elif name == 'NextToken':
+            self.next_token = value
+        elif name == 'nextToken':
+            self.next_token = value
+            # Code exists which expects nextToken to be available, so we
+            # set it here to remain backwards-compatibile.
+            self.nextToken = value
+        elif name == 'BoxUsage':
+            try:
+                connection.box_usage += float(value)
+            except:
+                pass
+        elif name == 'IsValid':
+            self.status = self.to_boolean(value, 'True')
+        else:
+            setattr(self, name, value)

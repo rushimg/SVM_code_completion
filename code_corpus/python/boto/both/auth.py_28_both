@@ -1,0 +1,11 @@
+    def canonical_query_string(self, http_request):
+        # POST requests pass parameters in through the
+        # http_request.body field.
+        if http_request.method == 'POST':
+            return ""
+        l = []
+        for param in sorted(http_request.params):
+            value = boto.utils.get_utf8_value(http_request.params[param])
+            l.append('%s=%s' % (urllib.quote(param, safe='-_.~'),
+                                urllib.quote(value, safe='-_.~')))
+        return '&'.join(l)

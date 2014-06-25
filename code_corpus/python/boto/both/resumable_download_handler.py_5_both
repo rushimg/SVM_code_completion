@@ -1,0 +1,23 @@
+    def _load_tracker_file_etag(self):
+        f = None
+        try:
+            f = open(self.tracker_file_name, 'r')
+            self.etag_value_for_current_download = f.readline().rstrip('\n')
+            # We used to match an MD5-based regex to ensure that the etag was
+            # read correctly. Since ETags need not be MD5s, we now do a simple
+            # length sanity check instead.
+            if len(self.etag_value_for_current_download) < self.MIN_ETAG_LEN:
+                print('Couldn\'t read etag in tracker file (%s). Restarting '
+                      'download from scratch.' % self.tracker_file_name)
+        except IOError, e:
+            # Ignore non-existent file (happens first time a download
+            # is attempted on an object), but warn user for other errors.
+            if e.errno != errno.ENOENT:
+                # Will restart because
+                # self.etag_value_for_current_download is None.
+                print('Couldn\'t read URI tracker file (%s): %s. Restarting '
+                      'download from scratch.' %
+                      (self.tracker_file_name, e.strerror))
+        finally:
+            if f:
+                f.close()

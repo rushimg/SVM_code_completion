@@ -1,0 +1,24 @@
+    def concurrent_create_archive_from_file(self, filename, description,
+                                            **kwargs):
+        """
+        Create a new archive from a file and upload the given
+        file.
+        This is a convenience method around the
+        :class:`boto.glacier.concurrent.ConcurrentUploader`
+        class.  This method will perform a multipart upload
+        and upload the parts of the file concurrently.
+        :type filename: str
+        :param filename: A filename to upload
+        :param kwargs: Additional kwargs to pass through to
+            :py:class:`boto.glacier.concurrent.ConcurrentUploader`.
+            You can pass any argument besides the ``api`` and
+            ``vault_name`` param (these arguments are already
+            passed to the ``ConcurrentUploader`` for you).
+        :raises: `boto.glacier.exception.UploadArchiveError` is an error
+            occurs during the upload process.
+        :rtype: str
+        :return: The archive id of the newly created archive
+        """
+        uploader = ConcurrentUploader(self.layer1, self.name, **kwargs)
+        archive_id = uploader.upload(filename, description)
+        return archive_id

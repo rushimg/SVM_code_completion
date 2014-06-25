@@ -1,0 +1,73 @@
+    def query_count(self, index=None, consistent=False, conditional_operator=None,
+                    query_filter=None, scan_index_forward=True, limit=None,
+                    **filter_kwargs):
+        """
+        Queries the exact count of matching items in a DynamoDB table.
+        Queries can be performed against a hash key, a hash+range key or
+        against any data stored in your local secondary indexes. Query filters
+        can be used to filter on arbitrary fields.
+        To specify the filters of the items you'd like to get, you can specify
+        the filters as kwargs. Each filter kwarg should follow the pattern
+        ``<fieldname>__<filter_operation>=<value_to_look_for>``. Query filters
+        are specified in the same way.
+        Optionally accepts an ``index`` parameter, which should be a string of
+        name of the local secondary index you want to query against.
+        (Default: ``None``)
+        Optionally accepts a ``consistent`` parameter, which should be a
+        boolean. If you provide ``True``, it will force a consistent read of
+        the data (more expensive). (Default: ``False`` - use eventually
+        consistent reads)
+        Optionally accepts a ``query_filter`` which is a dictionary of filter
+        conditions against any arbitrary field in the returned data.
+        Optionally accepts a ``conditional_operator`` which applies to the
+        query filter conditions:
+        + `AND` - True if all filter conditions evaluate to true (default)
+        + `OR` - True if at least one filter condition evaluates to true
+        Returns an integer which represents the exact amount of matched
+        items.
+        :type scan_index_forward: boolean
+        :param scan_index_forward: Specifies ascending (true) or descending
+            (false) traversal of the index. DynamoDB returns results reflecting
+            the requested order determined by the range key. If the data type
+            is Number, the results are returned in numeric order. For String,
+            the results are returned in order of ASCII character code values.
+            For Binary, DynamoDB treats each byte of the binary data as
+            unsigned when it compares binary values.
+        If ScanIndexForward is not specified, the results are returned in
+            ascending order.
+        :type limit: integer
+        :param limit: The maximum number of items to evaluate (not necessarily
+            the number of matching items).
+        Example::
+            # Look for last names equal to "Doe".
+            >>> users.query_count(last_name__eq='Doe')
+            5
+            # Use an LSI & a consistent read.
+            >>> users.query_count(
+            ...     date_joined__gte=1236451000,
+            ...     owner__eq=1,
+            ...     index='DateJoinedIndex',
+            ...     consistent=True
+            ... )
+            2
+        """
+        key_conditions = self._build_filters(
+            filter_kwargs,
+            using=QUERY_OPERATORS
+        )
+        built_query_filter = self._build_filters(
+            query_filter,
+            using=FILTER_OPERATORS
+        )
+        raw_results = self.connection.query(
+            self.table_name,
+            index_name=index,
+            consistent_read=consistent,
+            select='COUNT',
+            key_conditions=key_conditions,
+            query_filter=built_query_filter,
+            conditional_operator=conditional_operator,
+            limit=limit,
+            scan_index_forward=scan_index_forward,
+        )
+        return int(raw_results.get('Count', 0))

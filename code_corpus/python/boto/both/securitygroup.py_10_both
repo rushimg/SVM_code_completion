@@ -1,0 +1,36 @@
+    def copy_to_region(self, region, name=None, dry_run=False):
+        """
+        Create a copy of this security group in another region.
+        Note that the new security group will be a separate entity
+        and will not stay in sync automatically after the copy
+        operation.
+        :type region: :class:`boto.ec2.regioninfo.RegionInfo`
+        :param region: The region to which this security group will be copied.
+        :type name: string
+        :param name: The name of the copy.  If not supplied, the copy
+                     will have the same name as this security group.
+        :rtype: :class:`boto.ec2.securitygroup.SecurityGroup`
+        :return: The new security group.
+        """
+        if region.name == self.region:
+            raise BotoClientError('Unable to copy to the same Region')
+        conn_params = self.connection.get_params()
+        rconn = region.connect(**conn_params)
+        sg = rconn.create_security_group(
+            name or self.name,
+            self.description,
+            dry_run=dry_run
+        )
+        source_groups = []
+        for rule in self.rules:
+            for grant in rule.grants:
+                grant_nom = grant.name or grant.group_id
+                if grant_nom:
+                    if grant_nom not in source_groups:
+                        source_groups.append(grant_nom)
+                        sg.authorize(None, None, None, None, grant,
+                                     dry_run=dry_run)
+                else:
+                    sg.authorize(rule.ip_protocol, rule.from_port, rule.to_port,
+                                 grant.cidr_ip, dry_run=dry_run)
+        return sg

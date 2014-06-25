@@ -1,0 +1,27 @@
+    def query(self, table, hash_key, range_key_condition=None,
+              attributes_to_get=None, request_limit=None,
+              max_results=None, consistent_read=False,
+              scan_index_forward=True, exclusive_start_key=None,
+              item_class=Item, count=False):
+        
+        if range_key_condition:
+            rkc = self.dynamize_range_key_condition(range_key_condition)
+        else:
+            rkc = None
+        if exclusive_start_key:
+            esk = self.build_key_from_values(table.schema,
+                                             *exclusive_start_key)
+        else:
+            esk = None
+        kwargs = {'table_name': table.name,
+                  'hash_key_value': self.dynamizer.encode(hash_key),
+                  'range_key_conditions': rkc,
+                  'attributes_to_get': attributes_to_get,
+                  'limit': request_limit,
+                  'count': count,
+                  'consistent_read': consistent_read,
+                  'scan_index_forward': scan_index_forward,
+                  'exclusive_start_key': esk,
+                  'object_hook': self.dynamizer.decode}
+        return TableGenerator(table, self.layer1.query,
+                              max_results, item_class, kwargs)

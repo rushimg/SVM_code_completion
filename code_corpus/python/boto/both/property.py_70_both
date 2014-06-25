@@ -1,0 +1,13 @@
+    def __set__(self, obj, value):
+        """Override the set method to allow them to set the property to an instance of the item_type instead of requiring a list to be passed in"""
+        if self.item_type in (int, long):
+            item_type = (int, long)
+        elif self.item_type in (str, unicode):
+            item_type = (str, unicode)
+        else:
+            item_type = self.item_type
+        if isinstance(value, item_type):
+            value = [value]
+        elif value is None:  # Override to allow them to set this to "None" to remove everything
+            value = []
+        return super(ListProperty, self).__set__(obj, value)

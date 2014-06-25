@@ -1,0 +1,27 @@
+    def update_stemming_options(self, domain_name, stems):
+        """
+        Updates stemming options used by indexing for the search domain.
+        :type domain_name: string
+        :param domain_name: A string that represents the name of a
+            domain. Domain names must be unique across the domains
+            owned by an account within an AWS region. Domain names
+            must start with a letter or number and can contain the
+            following characters: a-z (lowercase), 0-9, and -
+            (hyphen). Uppercase letters and underscores are not
+            allowed.
+        :type stems: string
+        :param stems: Maps terms to their stems.  The JSON object
+            has a single key called "stems" whose value is a
+            dict mapping terms to their stems. The maximum size
+            of a stemming document is 500KB.
+            Example: {"stems":{"people": "person", "walking":"walk"}}
+        :raises: BaseException, InternalException, InvalidTypeException,
+            LimitExceededException, ResourceNotFoundException
+        """
+        doc_path = ('update_stemming_options_response',
+                    'update_stemming_options_result',
+                    'stems')
+        params = {'DomainName': domain_name,
+                 'Stems': stems}
+        return self.get_response(doc_path, 'UpdateStemmingOptions',
+                                 params, verb='POST')

@@ -1,0 +1,49 @@
+    def _query_server_pos(self, conn, file_length):
+        """
+        Queries server to find out what bytes it currently has.
+        Returns (server_start, server_end), where the values are inclusive.
+        For example, (0, 2) would mean that the server has bytes 0, 1, *and* 2.
+        Raises ResumableUploadException if problem querying server.
+        """
+        resp = self._query_server_state(conn, file_length)
+        if resp.status == 200:
+            # To handle the boundary condition where the server has the complete
+            # file, we return (server_start, file_length-1). That way the
+            # calling code can always simply read up through server_end. (If we
+            # didn't handle this boundary condition here, the caller would have
+            # to check whether server_end == file_length and read one fewer byte
+            # in that case.)
+            return (0, file_length - 1)  # Completed upload.
+        if resp.status != 308:
+            # This means the server didn't have any state for the given
+            # upload ID, which can happen (for example) if the caller saved
+            # the tracker URI to a file and then tried to restart the transfer
+            # after that upload ID has gone stale. In that case we need to
+            # start a new transfer (and the caller will then save the new
+            # tracker URI to the tracker file).
+            raise ResumableUploadException(
+                'Got non-308 response (%s) from server state query' %
+                resp.status, ResumableTransferDisposition.START_OVER)
+        got_valid_response = False
+        range_spec = resp.getheader('range')
+        if range_spec:
+            # Parse 'bytes=<from>-<to>' range_spec.
+            m = re.search('bytes=(\d+)-(\d+)', range_spec)
+            if m:
+                server_start = long(m.group(1))
+                server_end = long(m.group(2))
+                got_valid_response = True
+        else:
+            # No Range header, which means the server does not yet have
+            # any bytes. Note that the Range header uses inclusive 'from'
+            # and 'to' values. Since Range 0-0 would mean that the server
+            # has byte 0, omitting the Range header is used to indicate that
+            # the server doesn't have any bytes.
+            return self.SERVER_HAS_NOTHING
+        if not got_valid_response:
+            raise ResumableUploadException(
+                'Couldn\'t parse upload server state query response (%s)' %
+                str(resp.getheaders()), ResumableTransferDisposition.START_OVER)
+        if conn.debug >= 1:
+            print 'Server has: Range: %d - %d.' % (server_start, server_end)
+        return (server_start, server_end)

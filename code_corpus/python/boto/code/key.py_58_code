@@ -1,0 +1,17 @@
+    def _get_remote_metadata(self, headers=None):
+        
+        metadata = {}
+        for underscore_name in self._underscore_base_user_settable_fields:
+            if hasattr(self, underscore_name):
+                value = getattr(self, underscore_name)
+                if value:
+                    # Generate HTTP field name corresponding to "_" named field.
+                    field_name = underscore_name.replace('_', '-')
+                    metadata[field_name.lower()] = value
+        # self.metadata contains custom metadata, which are all user-settable.
+        prefix = self.provider.metadata_prefix
+        for underscore_name in self.metadata:
+            field_name = underscore_name.replace('_', '-')
+            metadata['%s%s' % (prefix, field_name.lower())] = (
+                self.metadata[underscore_name])
+        return metadata

@@ -4,7 +4,7 @@ import xml.etree.ElementTree as ET
 
 MATCH = "*_both"
 #DIR_NAME = "../../../sdks/pyrax/pyrax"
-OUT_DIR_NAME = "../../code_corpus/python/pyrax/"
+OUT_DIR_NAME = "../../code_corpus/python/boto/"
 DIR_NAME = OUT_DIR_NAME
 '''
 Split already parsed python methods

@@ -1,0 +1,14 @@
+    def get_lifecycle_config(self, headers=None):
+        
+        response = self.connection.make_request('GET', self.name,
+                query_args=LIFECYCLE_ARG, headers=headers)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status == 200:
+            lifecycle_config = LifecycleConfig()
+            h = handler.XmlHandler(lifecycle_config, self)
+            xml.sax.parseString(body, h)
+            return lifecycle_config
+        else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)

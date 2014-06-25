@@ -1,0 +1,13 @@
+    def add_env(self, key, value):
+        """
+        Add an environemnt variable
+        For Ubuntu, the best place is /etc/environment.  Values placed here do
+        not need to be exported.
+        """
+        boto.log.info('Adding env variable: %s=%s' % (key, value))
+        if not os.path.exists("/etc/environment.orig"):
+            self.run('cp /etc/environment /etc/environment.orig', notify=False, exit_on_error=False)
+        fp = open('/etc/environment', 'a')
+        fp.write('\n%s="%s"' % (key, value))
+        fp.close()
+        os.environ[key] = value

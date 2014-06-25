@@ -1,0 +1,13 @@
+    def startElement(self, name, attrs, connection):
+        result = super(RouteTable, self).startElement(name, attrs, connection)
+        if result is not None:
+            # Parent found an interested element, just return it
+            return result
+        if name == 'routeSet':
+            self.routes = ResultSet([('item', Route)])
+            return self.routes
+        elif name == 'associationSet':
+            self.associations = ResultSet([('item', RouteAssociation)])
+            return self.associations
+        else:
+            return None

@@ -1,0 +1,32 @@
+    def endElement(self, name, value, connection):
+        if name == 'ItemName':
+            self.name = self.decode_value(value)
+        elif name == 'Name':
+            if self.in_attribute:
+                self.last_key = self.decode_value(value)
+            else:
+                self.name = self.decode_value(value)
+        elif name == 'Value':
+            if self.last_key in self:
+                if not isinstance(self[self.last_key], list):
+                    self[self.last_key] = [self[self.last_key]]
+                value = self.decode_value(value)
+                if self.converter:
+                    value = self.converter.decode(value)
+                self[self.last_key].append(value)
+            else:
+                value = self.decode_value(value)
+                if self.converter:
+                    value = self.converter.decode(value)
+                self[self.last_key] = value
+        elif name == 'BoxUsage':
+            try:
+                connection.box_usage += float(value)
+            except:
+                pass
+        elif name == 'RequestId':
+            self.request_id = value
+        elif name == 'Attribute':
+            self.in_attribute = False
+        else:
+            setattr(self, name, value)

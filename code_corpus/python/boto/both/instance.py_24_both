@@ -1,0 +1,70 @@
+    def endElement(self, name, value, connection):
+        if name == 'instanceId':
+            self.id = value
+        elif name == 'imageId':
+            self.image_id = value
+        elif name == 'dnsName' or name == 'publicDnsName':
+            self.dns_name = value           # backwards compatibility
+            self.public_dns_name = value
+        elif name == 'privateDnsName':
+            self.private_dns_name = value
+        elif name == 'keyName':
+            self.key_name = value
+        elif name == 'amiLaunchIndex':
+            self.ami_launch_index = value
+        elif name == 'previousState':
+            self.previous_state = value
+        elif name == 'instanceType':
+            self.instance_type = value
+        elif name == 'rootDeviceName':
+            self.root_device_name = value
+        elif name == 'rootDeviceType':
+            self.root_device_type = value
+        elif name == 'launchTime':
+            self.launch_time = value
+        elif name == 'platform':
+            self.platform = value
+        elif name == 'kernelId':
+            self.kernel = value
+        elif name == 'ramdiskId':
+            self.ramdisk = value
+        elif name == 'state':
+            if self._in_monitoring_element:
+                self.monitoring_state = value
+                if value == 'enabled':
+                    self.monitored = True
+                self._in_monitoring_element = False
+        elif name == 'spotInstanceRequestId':
+            self.spot_instance_request_id = value
+        elif name == 'subnetId':
+            self.subnet_id = value
+        elif name == 'vpcId':
+            self.vpc_id = value
+        elif name == 'privateIpAddress':
+            self.private_ip_address = value
+        elif name == 'ipAddress':
+            self.ip_address = value
+        elif name == 'requesterId':
+            self.requester_id = value
+        elif name == 'persistent':
+            if value == 'true':
+                self.persistent = True
+            else:
+                self.persistent = False
+        elif name == 'groupName':
+            if self._in_monitoring_element:
+                self.group_name = value
+        elif name == 'clientToken':
+            self.client_token = value
+        elif name == "eventsSet":
+            self.events = value
+        elif name == 'hypervisor':
+            self.hypervisor = value
+        elif name == 'virtualizationType':
+            self.virtualization_type = value
+        elif name == 'architecture':
+            self.architecture = value
+        elif name == 'ebsOptimized':
+            self.ebs_optimized = (value == 'true')
+        else:
+            setattr(self, name, value)

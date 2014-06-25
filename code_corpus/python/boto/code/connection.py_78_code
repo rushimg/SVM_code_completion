@@ -1,0 +1,17 @@
+    def get_all_regions(self, region_names=None, filters=None, dry_run=False):
+        
+        params = {}
+        if region_names:
+            self.build_list_params(params, region_names, 'RegionName')
+        if filters:
+            self.build_filter_params(params, filters)
+        if dry_run:
+            params['DryRun'] = 'true'
+        regions = self.get_list('DescribeRegions', params,
+                                 [('item', RegionInfo)], verb='POST')
+        for region in regions:
+            region.connection_cls = EC2Connection
+        return regions
+    #
+    # Reservation methods
+    #

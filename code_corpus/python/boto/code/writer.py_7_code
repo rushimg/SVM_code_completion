@@ -1,0 +1,19 @@
+    def upload_part(self, part_index, part_data):
+        
+        if self.closed:
+            raise ValueError("I/O operation on closed file")
+        # Create a request and sign it
+        part_tree_hash = tree_hash(chunk_hashes(part_data, self.chunk_size))
+        self._insert_tree_hash(part_index, part_tree_hash)
+        hex_tree_hash = bytes_to_hex(part_tree_hash)
+        linear_hash = hashlib.sha256(part_data).hexdigest()
+        start = self.part_size * part_index
+        content_range = (start,
+                         (start + len(part_data)) - 1)
+        response = self.vault.layer1.upload_part(self.vault.name,
+                                                 self.upload_id,
+                                                 linear_hash,
+                                                 hex_tree_hash,
+                                                 content_range, part_data)
+        response.read()
+        self._uploaded_size += len(part_data)

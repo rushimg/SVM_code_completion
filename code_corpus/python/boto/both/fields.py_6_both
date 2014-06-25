@@ -1,0 +1,28 @@
+    def schema(self):
+        """
+        Returns the schema structure DynamoDB expects.
+        Example::
+            >>> index.schema()
+            {
+                'IndexName': 'LastNameIndex',
+                'KeySchema': [
+                    {
+                        'AttributeName': 'username',
+                        'KeyType': 'HASH',
+                    },
+                ],
+                'Projection': {
+                    'ProjectionType': 'KEYS_ONLY',
+                }
+            }
+        """
+        key_schema = []
+        for part in self.parts:
+            key_schema.append(part.schema())
+        return {
+            'IndexName': self.name,
+            'KeySchema': key_schema,
+            'Projection': {
+                'ProjectionType': self.projection_type,
+            }
+        }

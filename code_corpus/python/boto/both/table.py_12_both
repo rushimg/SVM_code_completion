@@ -1,0 +1,11 @@
+    def new_item(self, *args):
+        """
+        Returns a new, blank item
+        This is mostly for consistency with boto.dynamodb
+        """
+        if not self.schema:
+            self.describe()
+        data = {}
+        for x, arg in enumerate(args):
+            data[self.schema[x].name] = arg
+        return Item(self, data=data)

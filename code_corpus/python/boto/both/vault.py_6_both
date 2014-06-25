@@ -1,0 +1,20 @@
+    def create_archive_writer(self, part_size=DefaultPartSize,
+                              description=None):
+        """
+        Create a new archive and begin a multi-part upload to it.
+        Returns a file-like object to which the data for the archive
+        can be written. Once all the data is written the file-like
+        object should be closed, you can then call the get_archive_id
+        method on it to get the ID of the created archive.
+        :type part_size: int
+        :param part_size: The part size for the multipart upload.
+        :type description: str
+        :param description: An optional description for the archive.
+        :rtype: :class:`boto.glacier.writer.Writer`
+        :return: A Writer object that to which the archive data
+            should be written.
+        """
+        response = self.layer1.initiate_multipart_upload(self.name,
+                                                         part_size,
+                                                         description)
+        return Writer(self, response['UploadId'], part_size=part_size)

@@ -1,0 +1,34 @@
+    def check_for_env_url(self):
+        """
+        First checks to see if a url argument was explicitly passed
+        in.  If so, that will be used.  If not, it checks for the
+        existence of the environment variable specified in ENV_URL.
+        If this is set, it should contain a fully qualified URL to the
+        service you want to use.
+        Note that any values passed explicitly to the class constructor
+        will take precedence.
+        """
+        url = self.args.get('url', None)
+        if url:
+            del self.args['url']
+        if not url and self.EnvURL in os.environ:
+            url = os.environ[self.EnvURL]
+        if url:
+            rslt = urlparse.urlparse(url)
+            if 'is_secure' not in self.args:
+                if rslt.scheme == 'https':
+                    self.args['is_secure'] = True
+                else:
+                    self.args['is_secure'] = False
+            host = rslt.netloc
+            port = None
+            l = host.split(':')
+            if len(l) > 1:
+                host = l[0]
+                port = int(l[1])
+            if 'host' not in self.args:
+                self.args['host'] = host
+            if port and 'port' not in self.args:
+                self.args['port'] = port
+            if rslt.path and 'path' not in self.args:
+                self.args['path'] = rslt.path

@@ -1,0 +1,57 @@
+    def set_contents_from_string(self, string_data, headers=None, replace=True,
+                                 cb=None, num_cb=10, policy=None, md5=None,
+                                 reduced_redundancy=False,
+                                 encrypt_key=False):
+        """
+        Store an object in S3 using the name of the Key object as the
+        key in S3 and the string 's' as the contents.
+        See set_contents_from_file method for details about the
+        parameters.
+        :type headers: dict
+        :param headers: Additional headers to pass along with the
+            request to AWS.
+        :type replace: bool
+        :param replace: If True, replaces the contents of the file if
+            it already exists.
+        :type cb: function
+        :param cb: a callback function that will be called to report
+            progress on the upload.  The callback should accept two
+            integer parameters, the first representing the number of
+            bytes that have been successfully transmitted to S3 and
+            the second representing the size of the to be transmitted
+            object.
+        :type cb: int
+        :param num_cb: (optional) If a callback is specified with the
+            cb parameter this parameter determines the granularity of
+            the callback by defining the maximum number of times the
+            callback will be called during the file transfer.
+        :type policy: :class:`boto.s3.acl.CannedACLStrings`
+        :param policy: A canned ACL policy that will be applied to the
+            new key in S3.
+        :type md5: A tuple containing the hexdigest version of the MD5
+            checksum of the file as the first element and the
+            Base64-encoded version of the plain checksum as the second
+            element.  This is the same format returned by the
+            compute_md5 method.
+        :param md5: If you need to compute the MD5 for any reason
+            prior to upload, it's silly to have to do it twice so this
+            param, if present, will be used as the MD5 values of the
+            file.  Otherwise, the checksum will be computed.
+        :type reduced_redundancy: bool
+        :param reduced_redundancy: If True, this will set the storage
+            class of the new Key to be REDUCED_REDUNDANCY. The Reduced
+            Redundancy Storage (RRS) feature of S3, provides lower
+            redundancy at lower storage cost.
+        :type encrypt_key: bool
+        :param encrypt_key: If True, the new copy of the object will
+            be encrypted on the server-side by S3 and will be stored
+            in an encrypted form while at rest in S3.
+        """
+        if isinstance(string_data, unicode):
+            string_data = string_data.encode("utf-8")
+        fp = StringIO.StringIO(string_data)
+        r = self.set_contents_from_file(fp, headers, replace, cb, num_cb,
+                                        policy, md5, reduced_redundancy,
+                                        encrypt_key=encrypt_key)
+        fp.close()
+        return r

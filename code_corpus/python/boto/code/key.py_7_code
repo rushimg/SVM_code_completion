@@ -1,0 +1,12 @@
+    def open_read(self, headers=None, query_args='',
+                  override_num_retries=None, response_headers=None):
+        
+        # For GCS we need to include the object generation in the query args.
+        # The rest of the processing is handled in the parent class.
+        if self.generation:
+            if query_args:
+                query_args += '&'
+            query_args += 'generation=%s' % self.generation
+        super(Key, self).open_read(headers=headers, query_args=query_args,
+                                   override_num_retries=override_num_retries,
+                                   response_headers=response_headers)

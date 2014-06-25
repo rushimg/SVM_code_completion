@@ -1,0 +1,34 @@
+    def get_all_regions(self, region_names=None, filters=None, dry_run=False):
+        """
+        Get all available regions for the EC2 service.
+        :type region_names: list of str
+        :param region_names: Names of regions to limit output
+        :type filters: dict
+        :param filters: Optional filters that can be used to limit
+                        the results returned.  Filters are provided
+                        in the form of a dictionary consisting of
+                        filter names as the key and filter values
+                        as the value.  The set of allowable filter
+                        names/values is dependent on the request
+                        being performed.  Check the EC2 API guide
+                        for details.
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+        :rtype: list
+        :return: A list of :class:`boto.ec2.regioninfo.RegionInfo`
+        """
+        params = {}
+        if region_names:
+            self.build_list_params(params, region_names, 'RegionName')
+        if filters:
+            self.build_filter_params(params, filters)
+        if dry_run:
+            params['DryRun'] = 'true'
+        regions = self.get_list('DescribeRegions', params,
+                                 [('item', RegionInfo)], verb='POST')
+        for region in regions:
+            region.connection_cls = EC2Connection
+        return regions
+    #
+    # Reservation methods
+    #

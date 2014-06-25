@@ -1,0 +1,18 @@
+    def add_auth(self, req, **kwargs):
+        
+        # This could be a retry.  Make sure the previous
+        # authorization header is removed first.
+        if 'X-Amzn-Authorization' in req.headers:
+            del req.headers['X-Amzn-Authorization']
+        req.headers['X-Amz-Date'] = formatdate(usegmt=True)
+        if self._provider.security_token:
+            req.headers['X-Amz-Security-Token'] = self._provider.security_token
+        string_to_sign, headers_to_sign = self.string_to_sign(req)
+        boto.log.debug('StringToSign:\n%s' % string_to_sign)
+        hash_value = sha256(string_to_sign).digest()
+        b64_hmac = self.sign_string(hash_value)
+        s = "AWS3 AWSAccessKeyId=%s," % self._provider.access_key
+        s += "Algorithm=%s," % self.algorithm()
+        s += "SignedHeaders=%s," % ';'.join(headers_to_sign)
+        s += "Signature=%s" % b64_hmac
+        req.headers['X-Amzn-Authorization'] = s

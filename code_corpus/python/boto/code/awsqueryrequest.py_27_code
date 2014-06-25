@@ -1,0 +1,22 @@
+    def process_standard_options(self, options, args, d):
+        if hasattr(options, 'help_filters') and options.help_filters:
+            print 'Available filters:'
+            for filter in self.Filters:
+                print '%s\t%s' % (filter.name, filter.doc)
+            sys.exit(0)
+        if options.debug:
+            self.args['debug'] = 2
+        if options.url:
+            self.args['url'] = options.url
+        if options.region:
+            self.args['region'] = options.region
+        if options.access_key_id:
+            self.args['aws_access_key_id'] = options.access_key_id
+        if options.secret_key:
+            self.args['aws_secret_access_key'] = options.secret_key
+        if options.version:
+            # TODO - Where should the version # come from?
+            print 'version x.xx'
+            exit(0)
+        sys.excepthook = boto_except_hook(options.debugger,
+                                          options.debug)

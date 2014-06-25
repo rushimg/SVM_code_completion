@@ -1,0 +1,24 @@
+    def next_response(self):
+        
+        # preserve any existing limit in case the user alters self.remaining
+        limit = self.kwargs.get('limit')
+        if (self.remaining > 0 and (limit is None or limit > self.remaining)):
+            self.kwargs['limit'] = self.remaining
+        self._response = self.callable(**self.kwargs)
+        self.kwargs['limit'] = limit
+        self._consumed_units += self._response.get('ConsumedCapacityUnits', 0.0)
+        self._count += self._response.get('Count', 0)
+        self._scanned_count += self._response.get('ScannedCount', 0)
+        # at the expense of a possibly gratuitous dynamize, ensure that
+        # early generator termination won't result in bad LEK values
+        if 'LastEvaluatedKey' in self._response:
+            lek = self._response['LastEvaluatedKey']
+            esk = self.table.layer2.dynamize_last_evaluated_key(lek)
+            self.kwargs['exclusive_start_key'] = esk
+            lektuple = (lek['HashKeyElement'],)
+            if 'RangeKeyElement' in lek:
+                lektuple += (lek['RangeKeyElement'],)
+            self.last_evaluated_key = lektuple
+        else:
+            self.last_evaluated_key = None
+        return self._response

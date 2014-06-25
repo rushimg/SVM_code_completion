@@ -1,0 +1,20 @@
+    def add_rule(self, ip_protocol, from_port, to_port,
+                 src_group_name, src_group_owner_id, cidr_ip,
+                 src_group_group_id, dry_run=False):
+        """
+        Add a rule to the SecurityGroup object.  Note that this method
+        only changes the local version of the object.  No information
+        is sent to EC2.
+        """
+        rule = IPPermissions(self)
+        rule.ip_protocol = ip_protocol
+        rule.from_port = from_port
+        rule.to_port = to_port
+        self.rules.append(rule)
+        rule.add_grant(
+            src_group_name,
+            src_group_owner_id,
+            cidr_ip,
+            src_group_group_id,
+            dry_run=dry_run
+        )

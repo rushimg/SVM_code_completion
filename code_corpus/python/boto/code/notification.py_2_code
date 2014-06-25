@@ -1,0 +1,9 @@
+    def verify(self, secret_key):
+        
+        verification_input = NotificationMessage.SERVICE_NAME
+        verification_input += NotificationMessage.OPERATION_NAME
+        verification_input += self.timestamp
+        h = hmac.new(key=secret_key, digestmod=sha)
+        h.update(verification_input)
+        signature_calc = base64.b64encode(h.digest())
+        return self.signature == signature_calc

@@ -1,0 +1,44 @@
+    def _scan(self, limit=None, exclusive_start_key=None, segment=None,
+              total_segments=None, attributes=None, conditional_operator=None,
+              **filter_kwargs):
+        """
+        The internal method that performs the actual scan. Used extensively
+        by ``ResultSet`` to perform each (paginated) request.
+        """
+        kwargs = {
+            'limit': limit,
+            'segment': segment,
+            'total_segments': total_segments,
+            'attributes_to_get': attributes,
+            'conditional_operator': conditional_operator,
+        }
+        if exclusive_start_key:
+            kwargs['exclusive_start_key'] = {}
+            for key, value in exclusive_start_key.items():
+                kwargs['exclusive_start_key'][key] = \
+                    self._dynamizer.encode(value)
+        # Convert the filters into something we can actually use.
+        kwargs['scan_filter'] = self._build_filters(
+            filter_kwargs,
+            using=FILTER_OPERATORS
+        )
+        raw_results = self.connection.scan(
+            self.table_name,
+            **kwargs
+        )
+        results = []
+        last_key = None
+        for raw_item in raw_results.get('Items', []):
+            item = Item(self)
+            item.load({
+                'Item': raw_item,
+            })
+            results.append(item)
+        if raw_results.get('LastEvaluatedKey', None):
+            last_key = {}
+            for key, value in raw_results['LastEvaluatedKey'].items():
+                last_key[key] = self._dynamizer.decode(value)
+        return {
+            'results': results,
+            'last_key': last_key,
+        }

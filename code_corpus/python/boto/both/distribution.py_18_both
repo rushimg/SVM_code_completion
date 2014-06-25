@@ -1,0 +1,34 @@
+    def update(self, enabled=None, cnames=None, comment=None):
+        """
+        Update the configuration of the Distribution.  The only values
+        of the DistributionConfig that can be directly updated are:
+         * CNAMES
+         * Comment
+         * Whether the Distribution is enabled or not
+        Any changes to the ``trusted_signers`` or ``origin`` properties of
+        this distribution's current config object will also be included in
+        the update. Therefore, to set the origin access identity for this
+        distribution, set ``Distribution.config.origin.origin_access_identity``
+        before calling this update method.
+        :type enabled: bool
+        :param enabled: Whether the Distribution is active or not.
+        :type cnames: list of str
+        :param cnames: The DNS CNAME's associated with this
+                        Distribution.  Maximum of 10 values.
+        :type comment: str or unicode
+        :param comment: The comment associated with the Distribution.
+        """
+        new_config = DistributionConfig(self.connection, self.config.origin,
+                                        self.config.enabled, self.config.caller_reference,
+                                        self.config.cnames, self.config.comment,
+                                        self.config.trusted_signers,
+                                        self.config.default_root_object)
+        if enabled is not None:
+            new_config.enabled = enabled
+        if cnames is not None:
+            new_config.cnames = cnames
+        if comment is not None:
+            new_config.comment = comment
+        self.etag = self.connection.set_distribution_config(self.id, self.etag, new_config)
+        self.config = new_config
+        self._object_class = Object

@@ -1,0 +1,6 @@
+    def __set__(self, obj, value):
+        """Don't allow this object to be associated to itself
+        This causes bad things to happen"""
+        if value is not None and (obj.id == value or (hasattr(value, "id") and obj.id == value.id)):
+            raise ValueError("Can not associate an object with itself!")
+        return super(ReferenceProperty, self).__set__(obj, value)

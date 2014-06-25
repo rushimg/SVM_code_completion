@@ -1,0 +1,16 @@
+    def snapshot(self):
+        # if this volume is attached to a server
+        # we need to freeze the XFS file system
+        try:
+            self.freeze()
+            if self.server is None:
+                snapshot = self.get_ec2_connection().create_snapshot(self.volume_id)
+            else:
+                snapshot = self.server.ec2.create_snapshot(self.volume_id)
+            boto.log.info('Snapshot of Volume %s created: %s' %  (self.name, snapshot))
+        except Exception:
+            boto.log.info('Snapshot error')
+            boto.log.info(traceback.format_exc())
+        finally:
+            status = self.unfreeze()
+            return status

@@ -1,0 +1,18 @@
+    def get_all_paged(self, query, per_page):
+        """Get a generator to iterate over all pages of search results
+        :type query: :class:`boto.cloudsearch.search.Query`
+        :param query: A group of search criteria
+        :type per_page: int
+        :param per_page: Number of docs in each :class:`boto.cloudsearch.search.SearchResults` object.
+        :rtype: generator
+        :return: Generator containing :class:`boto.cloudsearch.search.SearchResults`
+        """
+        query.update_size(per_page)
+        page = 0
+        num_pages_needed = 0
+        while page <= num_pages_needed:
+            results = self(query)
+            num_pages_needed = results.num_pages_needed
+            yield results
+            query.start += query.real_size
+            page += 1

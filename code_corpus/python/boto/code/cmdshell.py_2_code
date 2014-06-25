@@ -1,0 +1,26 @@
+    def connect(self, num_retries=5):
+        retry = 0
+        while retry < num_retries:
+            try:
+                self._ssh_client.connect(self.server.hostname,
+                                         username=self.uname,
+                                         pkey=self._pkey,
+                                         timeout=self._timeout)
+                return
+            except socket.error, (value, message):
+                if value in (51, 61, 111):
+                    print 'SSH Connection refused, will retry in 5 seconds'
+                    time.sleep(5)
+                    retry += 1
+                else:
+                    raise
+            except paramiko.BadHostKeyException:
+                print "%s has an entry in ~/.ssh/known_hosts and it doesn't match" % self.server.hostname
+                print 'Edit that file to remove the entry and then hit return to try again'
+                raw_input('Hit Enter when ready')
+                retry += 1
+            except EOFError:
+                print 'Unexpected Error from SSH Connection, retry in 5 seconds'
+                time.sleep(5)
+                retry += 1
+        print 'Could not establish SSH connection'

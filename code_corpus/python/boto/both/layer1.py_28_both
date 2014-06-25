@@ -1,0 +1,115 @@
+    def modify_replication_group(self, replication_group_id,
+                                 replication_group_description=None,
+                                 cache_security_group_names=None,
+                                 security_group_ids=None,
+                                 preferred_maintenance_window=None,
+                                 notification_topic_arn=None,
+                                 cache_parameter_group_name=None,
+                                 notification_topic_status=None,
+                                 apply_immediately=None, engine_version=None,
+                                 auto_minor_version_upgrade=None,
+                                 primary_cluster_id=None):
+        """
+        The ModifyReplicationGroup operation modifies the settings for
+        a replication group.
+        :type replication_group_id: string
+        :param replication_group_id: The identifier of the replication group to
+            modify.
+        :type replication_group_description: string
+        :param replication_group_description: A description for the replication
+            group. Maximum length is 255 characters.
+        :type cache_security_group_names: list
+        :param cache_security_group_names: A list of cache security group names
+            to authorize for the clusters in this replication group. This
+            change is asynchronously applied as soon as possible.
+        This parameter can be used only with replication groups containing
+            cache clusters running outside of an Amazon Virtual Private Cloud
+            (VPC).
+        Constraints: Must contain no more than 255 alphanumeric characters.
+            Must not be "Default".
+        :type security_group_ids: list
+        :param security_group_ids: Specifies the VPC Security Groups associated
+            with the cache clusters in the replication group.
+        This parameter can be used only with replication groups containing
+            cache clusters running in an Amazon Virtual Private Cloud (VPC).
+        :type preferred_maintenance_window: string
+        :param preferred_maintenance_window: The weekly time range (in UTC)
+            during which replication group system maintenance can occur. Note
+            that system maintenance may result in an outage. This change is
+            made immediately. If you are moving this window to the current
+            time, there must be at least 120 minutes between the current time
+            and end of the window to ensure that pending changes are applied.
+        :type notification_topic_arn: string
+        :param notification_topic_arn:
+        The Amazon Resource Name (ARN) of the SNS topic to which notifications
+            will be sent.
+        The SNS topic owner must be same as the replication group owner.
+        :type cache_parameter_group_name: string
+        :param cache_parameter_group_name: The name of the cache parameter
+            group to apply to all of the cache nodes in this replication group.
+            This change is asynchronously applied as soon as possible for
+            parameters when the ApplyImmediately parameter is specified as true
+            for this request.
+        :type notification_topic_status: string
+        :param notification_topic_status: The status of the Amazon SNS
+            notification topic for the replication group. Notifications are
+            sent only if the status is active .
+        Valid values: `active` | `inactive`
+        :type apply_immediately: boolean
+        :param apply_immediately: If `True`, this parameter causes the
+            modifications in this request and any pending modifications to be
+            applied, asynchronously and as soon as possible, regardless of the
+            PreferredMaintenanceWindow setting for the replication group.
+        If `False`, then changes to the nodes in the replication group are
+            applied on the next maintenance reboot, or the next failure reboot,
+            whichever occurs first.
+        Valid values: `True` | `False`
+        Default: `False`
+        :type engine_version: string
+        :param engine_version: The upgraded version of the cache engine to be
+            run on the nodes in the replication group..
+        :type auto_minor_version_upgrade: boolean
+        :param auto_minor_version_upgrade: Determines whether minor engine
+            upgrades will be applied automatically to all of the cache nodes in
+            the replication group during the maintenance window. A value of
+            `True` allows these upgrades to occur; `False` disables automatic
+            upgrades.
+        :type primary_cluster_id: string
+        :param primary_cluster_id: If this parameter is specified, ElastiCache
+            will promote each of the nodes in the specified cache cluster to
+            the primary role. The nodes of all other clusters in the
+            replication group will be read replicas.
+        """
+        params = {'ReplicationGroupId': replication_group_id, }
+        if replication_group_description is not None:
+            params['ReplicationGroupDescription'] = replication_group_description
+        if cache_security_group_names is not None:
+            self.build_list_params(params,
+                                   cache_security_group_names,
+                                   'CacheSecurityGroupNames.member')
+        if security_group_ids is not None:
+            self.build_list_params(params,
+                                   security_group_ids,
+                                   'SecurityGroupIds.member')
+        if preferred_maintenance_window is not None:
+            params['PreferredMaintenanceWindow'] = preferred_maintenance_window
+        if notification_topic_arn is not None:
+            params['NotificationTopicArn'] = notification_topic_arn
+        if cache_parameter_group_name is not None:
+            params['CacheParameterGroupName'] = cache_parameter_group_name
+        if notification_topic_status is not None:
+            params['NotificationTopicStatus'] = notification_topic_status
+        if apply_immediately is not None:
+            params['ApplyImmediately'] = str(
+                apply_immediately).lower()
+        if engine_version is not None:
+            params['EngineVersion'] = engine_version
+        if auto_minor_version_upgrade is not None:
+            params['AutoMinorVersionUpgrade'] = str(
+                auto_minor_version_upgrade).lower()
+        if primary_cluster_id is not None:
+            params['PrimaryClusterId'] = primary_cluster_id
+        return self._make_request(
+            action='ModifyReplicationGroup',
+            verb='POST',
+            path='/', params=params)

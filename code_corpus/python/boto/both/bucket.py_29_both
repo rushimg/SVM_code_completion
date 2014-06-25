@@ -1,0 +1,18 @@
+    def enable_logging(self, target_bucket, target_prefix=None, headers=None):
+        """Enable logging on a bucket.
+        :type target_bucket: bucket or string
+        :param target_bucket: The bucket to log to.
+        :type target_prefix: string
+        :param target_prefix: The prefix which should be prepended to the
+            generated log files written to the target_bucket.
+        :param dict headers: Additional headers to send with the request.
+        """
+        if isinstance(target_bucket, Bucket):
+            target_bucket = target_bucket.name
+        xml_str = '<?xml version="1.0" encoding="UTF-8"?><Logging>'
+        xml_str = (xml_str + '<LogBucket>%s</LogBucket>' % target_bucket)
+        if target_prefix:
+            xml_str = (xml_str +
+                       '<LogObjectPrefix>%s</LogObjectPrefix>' % target_prefix)
+        xml_str = xml_str + '</Logging>'
+        self.set_subresource('logging', xml_str, headers=headers)

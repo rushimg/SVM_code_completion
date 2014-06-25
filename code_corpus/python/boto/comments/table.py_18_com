@@ -1,0 +1,34 @@
+"""
+        Allows the batching of writes to DynamoDB.
+        Since each write/delete call to DynamoDB has a cost associated with it,
+        when loading lots of data, it makes sense to batch them, creating as
+        few calls as possible.
+        This returns a context manager that will transparently handle creating
+        these batches. The object you get back lightly-resembles a ``Table``
+        object, sharing just the ``put_item`` & ``delete_item`` methods
+        (which are all that DynamoDB can batch in terms of writing data).
+        DynamoDB's maximum batch size is 25 items per request. If you attempt
+        to put/delete more than that, the context manager will batch as many
+        as it can up to that number, then flush them to DynamoDB & continue
+        batching as more calls come in.
+        Example::
+            # Assuming a table with one record...
+            >>> with users.batch_write() as batch:
+            ...     batch.put_item(data={
+            ...         'username': 'johndoe',
+            ...         'first_name': 'John',
+            ...         'last_name': 'Doe',
+            ...         'owner': 1,
+            ...     })
+            ...     # Nothing across the wire yet.
+            ...     batch.delete_item(username='bob')
+            ...     # Still no requests sent.
+            ...     batch.put_item(data={
+            ...         'username': 'jane',
+            ...         'first_name': 'Jane',
+            ...         'last_name': 'Doe',
+            ...         'date_joined': 127436192,
+            ...     })
+            ...     # Nothing yet, but once we leave the context, the
+            ...     # put/deletes will be sent.
+        """

@@ -1,0 +1,17 @@
+    def create_reserved_instances_listing(self, reserved_instances_id,
+                                          instance_count, price_schedules,
+                                          client_token, dry_run=False):
+        
+        params = {
+            'ReservedInstancesId': reserved_instances_id,
+            'InstanceCount': str(instance_count),
+            'ClientToken': client_token,
+        }
+        for i, schedule in enumerate(price_schedules):
+            price, term = schedule
+            params['PriceSchedules.%s.Price' % i] = str(price)
+            params['PriceSchedules.%s.Term' % i] = str(term)
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_list('CreateReservedInstancesListing',
+                             params, [('item', ReservedInstanceListing)], verb='POST')

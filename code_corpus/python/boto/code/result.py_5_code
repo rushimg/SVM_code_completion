@@ -1,0 +1,8 @@
+    def get_results_from_queue(self, path, get_file=True, delete_msg=True):
+        m = self.queue.read()
+        while m:
+            if 'Batch' in m and m['Batch'] == self.batch:
+                self.process_record(m, path, get_file)
+                if delete_msg:
+                    self.queue.delete_message(m)
+            m = self.queue.read()

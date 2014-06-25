@@ -1,0 +1,30 @@
+    def add_communication_to_case(self, communication_body, case_id=None,
+                                  cc_email_addresses=None):
+        """
+        Adds additional customer communication to an AWS Support case.
+        You use the `CaseId` value to identify the case to add
+        communication to. You can list a set of email addresses to
+        copy on the communication using the `CcEmailAddresses` value.
+        The `CommunicationBody` value contains the text of the
+        communication.
+        The response indicates the success or failure of the request.
+        This operation implements a subset of the behavior on the AWS
+        Support `Your Support Cases`_ web form.
+        :type case_id: string
+        :param case_id: The AWS Support case ID requested or returned in the
+            call. The case ID is an alphanumeric string formatted as shown in
+            this example: case- 12345678910-2013-c4c1d2bf33c5cf47
+        :type communication_body: string
+        :param communication_body: The body of an email communication to add to
+            the support case.
+        :type cc_email_addresses: list
+        :param cc_email_addresses: The email addresses in the CC line of an
+            email to be added to the support case.
+        """
+        params = {'communicationBody': communication_body, }
+        if case_id is not None:
+            params['caseId'] = case_id
+        if cc_email_addresses is not None:
+            params['ccEmailAddresses'] = cc_email_addresses
+        return self.make_request(action='AddCommunicationToCase',
+                                 body=json.dumps(params))

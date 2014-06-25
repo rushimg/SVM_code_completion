@@ -1,0 +1,8 @@
+    def signature(self, http_request, string_to_sign):
+        key = self._provider.secret_key
+        k_date = self._sign(('AWS4' + key).encode('utf-8'),
+                              http_request.timestamp)
+        k_region = self._sign(k_date, http_request.region_name)
+        k_service = self._sign(k_region, http_request.service_name)
+        k_signing = self._sign(k_service, 'aws4_request')
+        return self._sign(k_signing, string_to_sign, hex=True)

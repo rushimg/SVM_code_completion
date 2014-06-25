@@ -1,0 +1,19 @@
+    def describe(self):
+        
+        result = self.connection.describe_table(self.table_name)
+        # Blindly update throughput, since what's on DynamoDB's end is likely
+        # more correct.
+        raw_throughput = result['Table']['ProvisionedThroughput']
+        self.throughput['read'] = int(raw_throughput['ReadCapacityUnits'])
+        self.throughput['write'] = int(raw_throughput['WriteCapacityUnits'])
+        if not self.schema:
+            # Since we have the data, build the schema.
+            raw_schema = result['Table'].get('KeySchema', [])
+            raw_attributes = result['Table'].get('AttributeDefinitions', [])
+            self.schema = self._introspect_schema(raw_schema, raw_attributes)
+        if not self.indexes:
+            # Build the index information as well.
+            raw_indexes = result['Table'].get('LocalSecondaryIndexes', [])
+            self.indexes = self._introspect_indexes(raw_indexes)
+        # This is leaky.
+        return result

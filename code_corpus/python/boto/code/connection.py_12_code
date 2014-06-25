@@ -1,0 +1,17 @@
+    def get_all_rrsets(self, hosted_zone_id, type=None,
+                       name=None, identifier=None, maxitems=None):
+        
+        params = {'type': type, 'name': name,
+                  'Identifier': identifier, 'maxitems': maxitems}
+        uri = '/%s/hostedzone/%s/rrset' % (self.Version, hosted_zone_id)
+        response = self.make_request('GET', uri, params=params)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status >= 300:
+            raise exception.DNSServerError(response.status,
+                                           response.reason,
+                                           body)
+        rs = ResourceRecordSets(connection=self, hosted_zone_id=hosted_zone_id)
+        h = handler.XmlHandler(rs, self)
+        xml.sax.parseString(body, h)
+        return rs

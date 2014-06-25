@@ -1,0 +1,44 @@
+    def request(
+            self, path, args=None, post_args=None, files=None, method=None):
+        """Fetches the given path in the Graph API.
+        We translate args to a valid query string. If post_args is
+        given, we send a POST request to the given path with the given
+        arguments.
+        """
+        args = args or {}
+        if self.access_token:
+            if post_args is not None:
+                post_args["access_token"] = self.access_token
+            else:
+                args["access_token"] = self.access_token
+        try:
+            response = requests.request(method or "GET",
+                                        "https://graph.facebook.com/" + path,
+                                        timeout=self.timeout,
+                                        params=args,
+                                        data=post_args,
+                                        files=files)
+        except requests.HTTPError as e:
+            response = json.loads(e.read())
+            raise GraphAPIError(response)
+        headers = response.headers
+        if 'json' in headers['content-type']:
+            result = response.json()
+        elif 'image/' in headers['content-type']:
+            mimetype = headers['content-type']
+            result = {"data": response.content,
+                      "mime-type": mimetype,
+                      "url": response.url}
+        elif "access_token" in parse_qs(response.text):
+            query_str = parse_qs(response.text)
+            if "access_token" in query_str:
+                result = {"access_token": query_str["access_token"][0]}
+                if "expires" in query_str:
+                    result["expires"] = query_str["expires"][0]
+            else:
+                raise GraphAPIError(response.json())
+        else:
+            raise GraphAPIError('Maintype was not text, image, or querystring')
+        if result and isinstance(result, dict) and result.get("error"):
+            raise GraphAPIError(result)
+        return result

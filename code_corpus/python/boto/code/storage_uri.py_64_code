@@ -1,0 +1,20 @@
+    def copy_key(self, src_bucket_name, src_key_name, metadata=None,
+                 src_version_id=None, storage_class='STANDARD',
+                 preserve_acl=False, encrypt_key=False, headers=None,
+                 query_args=None, src_generation=None):
+        
+        self._check_object_uri('copy_key')
+        dst_bucket = self.get_bucket(validate=False, headers=headers)
+        if src_generation:
+            return dst_bucket.copy_key(new_key_name=self.object_name,
+                src_bucket_name=src_bucket_name,
+                src_key_name=src_key_name, metadata=metadata,
+                storage_class=storage_class, preserve_acl=preserve_acl,
+                encrypt_key=encrypt_key, headers=headers, query_args=query_args,
+                src_generation=src_generation)
+        else:
+            return dst_bucket.copy_key(new_key_name=self.object_name,
+                src_bucket_name=src_bucket_name, src_key_name=src_key_name,
+                metadata=metadata, src_version_id=src_version_id,
+                storage_class=storage_class, preserve_acl=preserve_acl,
+                encrypt_key=encrypt_key, headers=headers, query_args=query_args)

@@ -1,0 +1,22 @@
+    def save_object(self, obj, expected_value=None):
+        """
+        Marshal the object and do a PUT
+        """
+        doc = self.marshal_object(obj)
+        if obj.id:
+            url = "/%s/%s" % (self.db_name, obj.id)
+        else:
+            url = "/%s" % (self.db_name)
+        resp = self._make_request("PUT", url, body=doc.toxml())
+        new_obj = self.get_object_from_doc(obj.__class__, None, parse(resp))
+        obj.id = new_obj.id
+        for prop in obj.properties():
+            try:
+                propname = prop.name
+            except AttributeError:
+                propname = None
+            if propname:
+                value = getattr(new_obj, prop.name)
+                if value:
+                    setattr(obj, prop.name, value)
+        return obj

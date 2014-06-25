@@ -1,0 +1,17 @@
+    def startElement(self, name, attrs, connection):
+        self.stack.append(name)
+        for lm in self.list_marker:
+            if name.endswith(lm):
+                l = ListElement(self.connection, name, self.list_marker,
+                                self.item_marker, self.pythonize_name)
+                self[self.get_name(name)] = l
+                return l
+        if len(self.stack) > 0:
+            element_name = self.stack[-1]
+            e = Element(self.connection, element_name, self.stack, self,
+                        self.list_marker, self.item_marker,
+                        self.pythonize_name)
+            self[self.get_name(element_name)] = e
+            return (element_name, e)
+        else:
+            return None

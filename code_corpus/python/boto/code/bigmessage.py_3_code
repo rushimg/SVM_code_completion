@@ -1,0 +1,12 @@
+    def encode(self, value):
+        
+        bucket_name, key_name = self._get_bucket_key(self.s3_url)
+        if bucket_name and key_name:
+            return self.s3_url
+        key_name = uuid.uuid4()
+        s3_conn = boto.connect_s3()
+        s3_bucket = s3_conn.get_bucket(bucket_name)
+        key = s3_bucket.new_key(key_name)
+        key.set_contents_from_file(value)
+        self.s3_url = 's3://%s/%s' % (bucket_name, key_name)
+        return self.s3_url

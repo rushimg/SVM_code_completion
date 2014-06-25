@@ -1,0 +1,35 @@
+    def add_auth(self, req, **kwargs):
+        
+        # This could be a retry.  Make sure the previous
+        # authorization header is removed first.
+        if 'X-Amzn-Authorization' in req.headers:
+            del req.headers['X-Amzn-Authorization']
+        now = datetime.datetime.utcnow()
+        req.headers['X-Amz-Date'] = now.strftime('%Y%m%dT%H%M%SZ')
+        if self._provider.security_token:
+            req.headers['X-Amz-Security-Token'] = self._provider.security_token
+        qs = self.query_string(req)
+        if qs and req.method == 'POST':
+            # Stash request parameters into post body
+            # before we generate the signature.
+            req.body = qs
+            req.headers['Content-Type'] = 'application/x-www-form-urlencoded; charset=UTF-8'
+            req.headers['Content-Length'] = str(len(req.body))
+        else:
+            # Safe to modify req.path here since
+            # the signature will use req.auth_path.
+            req.path = req.path.split('?')[0]
+            if qs:
+                # Don't insert the '?' unless there's actually a query string
+                req.path = req.path + '?' + qs
+        canonical_request = self.canonical_request(req)
+        boto.log.debug('CanonicalRequest:\n%s' % canonical_request)
+        string_to_sign = self.string_to_sign(req, canonical_request)
+        boto.log.debug('StringToSign:\n%s' % string_to_sign)
+        signature = self.signature(req, string_to_sign)
+        boto.log.debug('Signature:\n%s' % signature)
+        headers_to_sign = self.headers_to_sign(req)
+        l = ['AWS4-HMAC-SHA256 Credential=%s' % self.scope(req)]
+        l.append('SignedHeaders=%s' % self.signed_headers(headers_to_sign))
+        l.append('Signature=%s' % signature)
+        req.headers['Authorization'] = ','.join(l)

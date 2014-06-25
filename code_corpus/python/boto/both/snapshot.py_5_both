@@ -1,0 +1,16 @@
+    def update(self, validate=False, dry_run=False):
+        """
+        Update the data associated with this snapshot by querying EC2.
+        :type validate: bool
+        :param validate: By default, if EC2 returns no data about the
+                         snapshot the update method returns quietly.  If
+                         the validate param is True, however, it will
+                         raise a ValueError exception if no data is
+                         returned from EC2.
+        """
+        rs = self.connection.get_all_snapshots([self.id], dry_run=dry_run)
+        if len(rs) > 0:
+            self._update(rs[0])
+        elif validate:
+            raise ValueError('%s is not a valid Snapshot ID' % self.id)
+        return self.progress

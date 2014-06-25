@@ -1,0 +1,18 @@
+    def modify_reserved_instances(self, client_token, reserved_instance_ids,
+                                  target_configurations):
+        
+        params = {
+            'ClientToken': client_token,
+        }
+        if reserved_instance_ids is not None:
+            self.build_list_params(params, reserved_instance_ids,
+                                   'ReservedInstancesId')
+        if target_configurations is not None:
+            self.build_configurations_param_list(params, target_configurations)
+        mrir = self.get_object(
+            'ModifyReservedInstances',
+            params,
+            ModifyReservedInstancesResult,
+            verb='POST'
+        )
+        return mrir.modification_id

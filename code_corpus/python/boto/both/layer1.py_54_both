@@ -1,0 +1,32 @@
+    def revoke_snapshot_access(self, snapshot_identifier,
+                               account_with_restore_access,
+                               snapshot_cluster_identifier=None):
+        """
+        Removes the ability of the specified AWS customer account to
+        restore the specified snapshot. If the account is currently
+        restoring the snapshot, the restore will run to completion.
+        For more information about working with snapshots, go to
+        `Amazon Redshift Snapshots`_ in the Amazon Redshift Management
+        Guide .
+        :type snapshot_identifier: string
+        :param snapshot_identifier: The identifier of the snapshot that the
+            account can no longer access.
+        :type snapshot_cluster_identifier: string
+        :param snapshot_cluster_identifier: The identifier of the cluster the
+            snapshot was created from. This parameter is required if your IAM
+            user has a policy containing a snapshot resource element that
+            specifies anything other than * for the cluster name.
+        :type account_with_restore_access: string
+        :param account_with_restore_access: The identifier of the AWS customer
+            account that can no longer restore the specified snapshot.
+        """
+        params = {
+            'SnapshotIdentifier': snapshot_identifier,
+            'AccountWithRestoreAccess': account_with_restore_access,
+        }
+        if snapshot_cluster_identifier is not None:
+            params['SnapshotClusterIdentifier'] = snapshot_cluster_identifier
+        return self._make_request(
+            action='RevokeSnapshotAccess',
+            verb='POST',
+            path='/', params=params)

@@ -1,0 +1,36 @@
+    def _wait_for_download_threads(self, filename, result_queue, total_parts):
+        """
+        Waits until the result_queue is filled with all the downloaded parts
+        This indicates that all part downloads have completed
+        Saves downloaded parts into filename
+        :param filename:
+        :param result_queue:
+        :param total_parts:
+        """
+        hash_chunks = [None] * total_parts
+        with open(filename, "wb") as f:
+            for _ in xrange(total_parts):
+                result = result_queue.get()
+                if isinstance(result, Exception):
+                    log.debug("An error was found in the result queue, "
+                              "terminating threads: %s", result)
+                    self._shutdown_threads()
+                    raise DownloadArchiveError(
+                        "An error occurred while uploading "
+                        "an archive: %s" % result)
+                part_number, part_size, actual_hash, data = result
+                hash_chunks[part_number] = actual_hash
+                start_byte = part_number * part_size
+                f.seek(start_byte)
+                f.write(data)
+                f.flush()
+        final_hash = bytes_to_hex(tree_hash(hash_chunks))
+        log.debug("Verifying final tree hash of archive, expecting: %s, "
+                  "actual: %s", self._job.sha256_treehash, final_hash)
+        if self._job.sha256_treehash != final_hash:
+            self._shutdown_threads()
+            raise TreeHashDoesNotMatchError(
+                "Tree hash for entire archive does not match, "
+                "expected: %s, got: %s" % (self._job.sha256_treehash,
+                                           final_hash))
+        self._shutdown_threads()

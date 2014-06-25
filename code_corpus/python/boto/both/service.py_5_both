@@ -1,0 +1,10 @@
+    def get_file(self, message):
+        bucket_name = message['Bucket']
+        key_name = message['InputKey']
+        file_name = os.path.join(self.working_dir, message.get('OriginalFileName', 'in_file'))
+        boto.log.info('get_file: %s/%s to %s' % (bucket_name, key_name, file_name))
+        bucket = boto.lookup('s3', bucket_name)
+        key = bucket.new_key(key_name)
+        key.get_contents_to_filename(os.path.join(self.working_dir, file_name))
+        return file_name
+    # process source file, return list of output files

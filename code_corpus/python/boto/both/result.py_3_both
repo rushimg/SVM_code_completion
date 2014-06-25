@@ -1,0 +1,14 @@
+    def log_message(self, msg, path):
+        keys = sorted(msg.keys())
+        if not self.log_fp:
+            self.log_fp = open(os.path.join(path, self.LogFileName), 'a')
+            line = ','.join(keys)
+            self.log_fp.write(line+'\n')
+        values = []
+        for key in keys:
+            value = msg[key]
+            if value.find(',') > 0:
+                value = '"%s"' % value
+            values.append(value)
+        line = ','.join(values)
+        self.log_fp.write(line+'\n')

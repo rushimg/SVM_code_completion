@@ -3,8 +3,8 @@ import fnmatch
 import xml.etree.ElementTree as ET
 
 MATCH = "*.py"
-DIR_NAME = "../../../sdks/pyrax/pyrax"
-OUT_DIR_NAME = "../../code_corpus/python/pyrax/"
+DIR_NAME = "../../../sdks/facebook-sdk/facebook"
+OUT_DIR_NAME = "../../code_corpus/python/facebook/"
 #TABS = 4
 '''
 Split python sdk code and comments by method

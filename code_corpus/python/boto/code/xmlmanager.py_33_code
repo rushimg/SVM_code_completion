@@ -1,0 +1,17 @@
+    def query(self, cls, filters, limit=None, order_by=None):
+        if not self.connection:
+            self._connect()
+        if not self.connection:
+            raise NotImplementedError("Can't query without a database connection")
+        from urllib import urlencode
+        query = str(self._build_query(cls, filters, limit, order_by))
+        if query:
+            url = "/%s?%s" % (self.db_name, urlencode({"query": query}))
+        else:
+            url = "/%s" % self.db_name
+        resp = self._make_request('GET', url)
+        if resp.status == 200:
+            doc = parse(resp)
+        else:
+            raise Exception("Error: %s" % resp.status)
+        return self._object_lister(cls, doc)

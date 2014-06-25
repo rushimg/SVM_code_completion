@@ -1,0 +1,34 @@
+    def purchase_reserved_instance_offering(self,
+                                            reserved_instances_offering_id,
+                                            instance_count=1, limit_price=None,
+                                            dry_run=False):
+        """
+        Purchase a Reserved Instance for use with your account.
+        ** CAUTION **
+        This request can result in large amounts of money being charged to your
+        AWS account.  Use with caution!
+        :type reserved_instances_offering_id: string
+        :param reserved_instances_offering_id: The offering ID of the Reserved
+            Instance to purchase
+        :type instance_count: int
+        :param instance_count: The number of Reserved Instances to purchase.
+            Default value is 1.
+        :type limit_price: tuple
+        :param instance_count: Limit the price on the total order.
+            Must be a tuple of (amount, currency_code), for example:
+            (100.0, 'USD').
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+        :rtype: :class:`boto.ec2.reservedinstance.ReservedInstance`
+        :return: The newly created Reserved Instance
+        """
+        params = {
+            'ReservedInstancesOfferingId': reserved_instances_offering_id,
+            'InstanceCount': instance_count}
+        if limit_price is not None:
+            params['LimitPrice.Amount'] = str(limit_price[0])
+            params['LimitPrice.CurrencyCode'] = str(limit_price[1])
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_object('PurchaseReservedInstancesOffering', params,
+                               ReservedInstance, verb='POST')

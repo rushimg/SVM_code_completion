@@ -1,0 +1,24 @@
+    def set_remote_metadata(self, metadata_plus, metadata_minus, preserve_acl,
+                            headers=None):
+        metadata_plus = self._normalize_metadata(metadata_plus)
+        metadata_minus = self._normalize_metadata(metadata_minus)
+        metadata = self._get_remote_metadata()
+        metadata.update(metadata_plus)
+        for h in metadata_minus:
+            if h in metadata:
+                del metadata[h]
+        src_bucket = self.bucket
+        # Boto prepends the meta prefix when adding headers, so strip prefix in
+        # metadata before sending back in to copy_key() call.
+        rewritten_metadata = {}
+        for h in metadata:
+            if (h.startswith('x-goog-meta-') or h.startswith('x-amz-meta-')):
+                rewritten_h = (h.replace('x-goog-meta-', '')
+                               .replace('x-amz-meta-', ''))
+            else:
+                rewritten_h = h
+            rewritten_metadata[rewritten_h] = metadata[h]
+        metadata = rewritten_metadata
+        src_bucket.copy_key(self.name, self.bucket.name, self.name,
+                            metadata=metadata, preserve_acl=preserve_acl,
+                            headers=headers)

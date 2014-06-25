@@ -1,0 +1,28 @@
+    def snapshots(self, owner=None, restorable_by=None, dry_run=False):
+        """
+        Get all snapshots related to this volume.  Note that this requires
+        that all available snapshots for the account be retrieved from EC2
+        first and then the list is filtered client-side to contain only
+        those for this volume.
+        :type owner: str
+        :param owner: If present, only the snapshots owned by the
+            specified user will be returned.  Valid values are:
+            * self
+            * amazon
+            * AWS Account ID
+        :type restorable_by: str
+        :param restorable_by: If present, only the snapshots that
+            are restorable by the specified account id will be returned.
+        :rtype: list of L{boto.ec2.snapshot.Snapshot}
+        :return: The requested Snapshot objects
+        """
+        rs = self.connection.get_all_snapshots(
+            owner=owner,
+            restorable_by=restorable_by,
+            dry_run=dry_run
+        )
+        mine = []
+        for snap in rs:
+            if snap.volume_id == self.id:
+                mine.append(snap)
+        return mine

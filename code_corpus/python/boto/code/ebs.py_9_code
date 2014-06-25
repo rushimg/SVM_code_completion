@@ -1,0 +1,28 @@
+    def install(self):
+        # First, find and attach the volume
+        self.attach()
+        # Install the xfs tools
+        self.run('apt-get -y install xfsprogs xfsdump')
+        # Check to see if the filesystem was created or not
+        self.make_fs()
+        # create the /ebs directory for mounting
+        self.handle_mount_point()
+        # create the backup script
+        self.create_backup_script()
+        # Set up the backup script
+        minute = boto.config.get('EBS', 'backup_cron_minute', '0')
+        hour = boto.config.get('EBS', 'backup_cron_hour', '4,16')
+        self.add_cron("ebs_backup", "/usr/local/bin/ebs_backup", minute=minute, hour=hour)
+        # Set up the backup cleanup script
+        minute = boto.config.get('EBS', 'backup_cleanup_cron_minute')
+        hour = boto.config.get('EBS', 'backup_cleanup_cron_hour')
+        if (minute is not None) and (hour is not None):
+            # Snapshot clean up can either be done via the manage module, or via the new tag based
+            # snapshot code, if the snapshots have been tagged with the name of the associated
+            # volume. Check for the presence of the new configuration flag, and use the appropriate
+            # cleanup method / script:
+            use_tag_based_cleanup = boto.config.has_option('EBS', 'use_tag_based_snapshot_cleanup')
+            self.create_backup_cleanup_script(use_tag_based_cleanup);
+            self.add_cron("ebs_backup_cleanup", "/usr/local/bin/ebs_backup_cleanup", minute=minute, hour=hour)
+        # Set up the fstab
+        self.update_fstab()

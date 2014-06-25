@@ -1,0 +1,21 @@
+    def configure_website(self, main_page_suffix=None, error_key=None,
+                          headers=None):
+        
+        if main_page_suffix:
+            main_page_frag = self.WebsiteMainPageFragment % main_page_suffix
+        else:
+            main_page_frag = ''
+        if error_key:
+            error_frag = self.WebsiteErrorFragment % error_key
+        else:
+            error_frag = ''
+        body = self.WebsiteBody % (main_page_frag, error_frag)
+        response = self.connection.make_request(
+            'PUT', get_utf8_value(self.name), data=get_utf8_value(body),
+            query_args='websiteConfig', headers=headers)
+        body = response.read()
+        if response.status == 200:
+            return True
+        else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)

@@ -1,0 +1,39 @@
+    def create_network_interface(self, subnet_id, private_ip_address=None,
+                                 description=None, groups=None, dry_run=False):
+        """
+        Creates a network interface in the specified subnet.
+        :type subnet_id: str
+        :param subnet_id: The ID of the subnet to associate with the
+            network interface.
+        :type private_ip_address: str
+        :param private_ip_address: The private IP address of the
+            network interface.  If not supplied, one will be chosen
+            for you.
+        :type description: str
+        :param description: The description of the network interface.
+        :type groups: list
+        :param groups: Lists the groups for use by the network interface.
+            This can be either a list of group ID's or a list of
+            :class:`boto.ec2.securitygroup.SecurityGroup` objects.
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+        :rtype: :class:`boto.ec2.networkinterface.NetworkInterface`
+        :return: The newly created network interface.
+        """
+        params = {'SubnetId': subnet_id}
+        if private_ip_address:
+            params['PrivateIpAddress'] = private_ip_address
+        if description:
+            params['Description'] = description
+        if groups:
+            ids = []
+            for group in groups:
+                if isinstance(group, SecurityGroup):
+                    ids.append(group.id)
+                else:
+                    ids.append(group)
+            self.build_list_params(params, ids, 'SecurityGroupId')
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_object('CreateNetworkInterface', params,
+                               NetworkInterface, verb='POST')

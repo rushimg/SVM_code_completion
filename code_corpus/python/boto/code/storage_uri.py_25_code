@@ -1,0 +1,11 @@
+    def get_key(self, validate=False, headers=None, version_id=None):
+        self._check_object_uri('get_key')
+        bucket = self.get_bucket(validate, headers)
+        if self.get_provider().name == 'aws':
+            key = bucket.get_key(self.object_name, headers,
+                                 version_id=(version_id or self.version_id))
+        elif self.get_provider().name == 'google':
+            key = bucket.get_key(self.object_name, headers,
+                                 generation=self.generation)
+        self.check_response(key, 'key', self.uri)
+        return key

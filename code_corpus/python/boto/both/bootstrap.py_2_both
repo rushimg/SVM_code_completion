@@ -1,0 +1,16 @@
+    def write_metadata(self):
+        fp = open(os.path.expanduser(BotoConfigPath), 'w')
+        fp.write('[Instance]\n')
+        inst_data = get_instance_metadata()
+        for key in inst_data:
+            fp.write('%s = %s\n' % (key, inst_data[key]))
+        user_data = get_instance_userdata()
+        fp.write('\n%s\n' % user_data)
+        fp.write('[Pyami]\n')
+        fp.write('working_dir = %s\n' % self.working_dir)
+        fp.close()
+        # This file has the AWS credentials, should we lock it down?
+        # os.chmod(BotoConfigPath, stat.S_IREAD | stat.S_IWRITE)
+        # now that we have written the file, read it into a pyami Config object
+        boto.config = Config()
+        boto.init_logging()

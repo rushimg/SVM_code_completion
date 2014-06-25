@@ -1,0 +1,12 @@
+    def batch_write_item(self, batch_list):
+        """
+        Performs multiple Puts and Deletes in one batch.
+        :type batch_list: :class:`boto.dynamodb.batch.BatchWriteList`
+        :param batch_list: A BatchWriteList object which consists of a
+            list of :class:`boto.dynamoddb.batch.BatchWrite` objects.
+            Each Batch object contains the information about one
+            batch of objects that you wish to put or delete.
+        """
+        request_items = batch_list.to_dict()
+        return self.layer1.batch_write_item(request_items,
+                                            object_hook=self.dynamizer.decode)

@@ -1,0 +1,10 @@
+    def add_user_grant(self, permission, user_id, recursive=False,
+                       validate=False, headers=None):
+        self._check_bucket_uri('add_user_grant')
+        if not self.object_name:
+            bucket = self.get_bucket(validate, headers)
+            bucket.add_user_grant(permission, user_id, recursive, headers)
+        else:
+            key = self.get_key(validate, headers)
+            self.check_response(key, 'key', self.uri)
+            key.add_user_grant(permission, user_id)

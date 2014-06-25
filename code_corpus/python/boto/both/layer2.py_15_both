@@ -1,0 +1,13 @@
+    def dynamize_last_evaluated_key(self, last_evaluated_key):
+        """
+        Convert a last_evaluated_key parameter into the data structure
+        required for Layer1.
+        """
+        d = None
+        if last_evaluated_key:
+            hash_key = last_evaluated_key['HashKeyElement']
+            d = {'HashKeyElement': self.dynamizer.encode(hash_key)}
+            if 'RangeKeyElement' in last_evaluated_key:
+                range_key = last_evaluated_key['RangeKeyElement']
+                d['RangeKeyElement'] = self.dynamizer.encode(range_key)
+        return d

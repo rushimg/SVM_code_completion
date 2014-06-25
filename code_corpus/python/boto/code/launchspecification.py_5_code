@@ -1,0 +1,14 @@
+    def startElement(self, name, attrs, connection):
+        if name == 'groupSet':
+            self.groups = ResultSet([('item', Group)])
+            return self.groups
+        elif name == 'monitoring':
+            self._in_monitoring_element = True
+        elif name == 'blockDeviceMapping':
+            self.block_device_mapping = BlockDeviceMapping()
+            return self.block_device_mapping
+        elif name == 'iamInstanceProfile':
+            self.instance_profile = SubParse('iamInstanceProfile')
+            return self.instance_profile
+        else:
+            return None

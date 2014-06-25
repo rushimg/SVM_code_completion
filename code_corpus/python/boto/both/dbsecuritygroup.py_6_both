@@ -1,0 +1,22 @@
+    def authorize(self, cidr_ip=None, ec2_group=None):
+        """
+        Add a new rule to this DBSecurity group.
+        You need to pass in either a CIDR block to authorize or
+        and EC2 SecurityGroup.
+        :type cidr_ip: string
+        :param cidr_ip: A valid CIDR IP range to authorize
+        :type ec2_group: :class:`boto.ec2.securitygroup.SecurityGroup`
+        :param ec2_group: An EC2 security group to authorize
+        :rtype: bool
+        :return: True if successful.
+        """
+        if isinstance(ec2_group, SecurityGroup):
+            group_name = ec2_group.name
+            group_owner_id = ec2_group.owner_id
+        else:
+            group_name = None
+            group_owner_id = None
+        return self.connection.authorize_dbsecurity_group(self.name,
+                                                          cidr_ip,
+                                                          group_name,
+                                                          group_owner_id)

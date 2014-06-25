@@ -1,0 +1,28 @@
+    def upload_part_from_file(self, fp, part_num, headers=None, replace=True,
+                              cb=None, num_cb=10, md5=None, size=None):
+        """
+        Upload another part of this MultiPart Upload.
+        .. note::
+            After you initiate multipart upload and upload one or more parts,
+            you must either complete or abort multipart upload in order to stop
+            getting charged for storage of the uploaded parts. Only after you
+            either complete or abort multipart upload, Amazon S3 frees up the
+            parts storage and stops charging you for the parts storage.
+        :type fp: file
+        :param fp: The file object you want to upload.
+        :type part_num: int
+        :param part_num: The number of this part.
+        The other parameters are exactly as defined for the
+        :class:`boto.s3.key.Key` set_contents_from_file method.
+        :rtype: :class:`boto.s3.key.Key` or subclass
+        :returns: The uploaded part containing the etag.
+        """
+        if part_num < 1:
+            raise ValueError('Part numbers must be greater than zero')
+        query_args = 'uploadId=%s&partNumber=%d' % (self.id, part_num)
+        key = self.bucket.new_key(self.key_name)
+        key.set_contents_from_file(fp, headers=headers, replace=replace,
+                                   cb=cb, num_cb=num_cb, md5=md5,
+                                   reduced_redundancy=False,
+                                   query_args=query_args, size=size)
+        return key

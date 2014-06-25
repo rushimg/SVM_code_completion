@@ -1,0 +1,30 @@
+    def configure_website(self, suffix=None, error_key=None,
+                          redirect_all_requests_to=None,
+                          routing_rules=None,
+                          headers=None):
+        """
+        Configure this bucket to act as a website
+        :type suffix: str
+        :param suffix: Suffix that is appended to a request that is for a
+            "directory" on the website endpoint (e.g. if the suffix is
+            index.html and you make a request to samplebucket/images/
+            the data that is returned will be for the object with the
+            key name images/index.html).  The suffix must not be empty
+            and must not include a slash character.
+        :type error_key: str
+        :param error_key: The object key name to use when a 4XX class
+            error occurs.  This is optional.
+        :type redirect_all_requests_to: :class:`boto.s3.website.RedirectLocation`
+        :param redirect_all_requests_to: Describes the redirect behavior for
+            every request to this bucket's website endpoint. If this value is
+            non None, no other values are considered when configuring the
+            website configuration for the bucket. This is an instance of
+            ``RedirectLocation``.
+        :type routing_rules: :class:`boto.s3.website.RoutingRules`
+        :param routing_rules: Object which specifies conditions
+            and redirects that apply when the conditions are met.
+        """
+        config = website.WebsiteConfiguration(
+                suffix, error_key, redirect_all_requests_to,
+                routing_rules)
+        return self.set_website_configuration(config, headers=headers)

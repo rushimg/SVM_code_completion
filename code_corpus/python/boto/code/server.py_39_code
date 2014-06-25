@@ -1,0 +1,11 @@
+    def get_ssh_key_file(self):
+        if not self.ssh_key_file:
+            ssh_dir = os.path.expanduser('~/.ssh')
+            if os.path.isdir(ssh_dir):
+                ssh_file = os.path.join(ssh_dir, '%s.pem' % self.key_name)
+                if os.path.isfile(ssh_file):
+                    self.ssh_key_file = ssh_file
+            if not self.ssh_key_file:
+                iobject = IObject()
+                self.ssh_key_file = iobject.get_filename('Path to OpenSSH Key file')
+        return self.ssh_key_file

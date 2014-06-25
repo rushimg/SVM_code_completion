@@ -1,0 +1,14 @@
+    def download(self, filename):
+        
+        total_size = self._job.archive_size
+        total_parts, part_size = self._calculate_required_part_size(total_size)
+        worker_queue = Queue()
+        result_queue = Queue()
+        self._add_work_items_to_queue(total_parts, worker_queue, part_size)
+        self._start_download_threads(result_queue, worker_queue)
+        try:
+            self._wait_for_download_threads(filename, result_queue, total_parts)
+        except DownloadArchiveError, e:
+            log.debug("An error occurred while downloading an archive: %s", e)
+            raise e
+        log.debug("Download completed.")

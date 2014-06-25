@@ -1,0 +1,46 @@
+    def endElement(self, name, value, connection):
+        """SAX XML logic for parsing new element found."""
+        if name == CORS_CONFIG:
+            self.validateParseLevel(name, 1)
+            self.parse_level -= 1;
+        elif name == CORS:
+            self.validateParseLevel(name, 2)
+            self.parse_level -= 1;
+            # Terminating a CORS element, save any collections we found
+            # and re-initialize collections list.
+            self.cors.append(self.collections)
+            self.collections = []
+        elif name in self.legal_collections:
+            self.validateParseLevel(name, 3)
+            if name != self.collection:
+              raise InvalidCorsError('Mismatched start and end tags (%s/%s)' %
+                                     (self.collection, name))
+            self.parse_level -= 1;
+            if not self.legal_collections[name]:
+              # If this collection doesn't contain any sub-elements, store
+              # a tuple of name and this tag's element value.
+              self.collections.append((name, value.strip()))
+            else:
+              # Otherwise, we're terminating a collection of sub-elements,
+              # so store a tuple of name and list of contained elements.
+              self.collections.append((name, self.elements))
+            self.elements = []
+            self.collection = None
+        elif name in self.legal_elements:
+            self.validateParseLevel(name, 3)
+            # Make sure this tag is found inside a collection tag.
+            if self.collection is None:
+                raise InvalidCorsError('Tag %s found outside collection' % name)
+            # Make sure this end tag is allowed for the current collection tag.
+            if name not in self.legal_collections[self.collection]:
+                raise InvalidCorsError('Tag %s not allowed in %s collection' %
+                                       (name, self.collection))
+            if name != self.element:
+              raise InvalidCorsError('Mismatched start and end tags (%s/%s)' %
+                                     (self.element, name))
+            # Terminating an element tag, add it to the list of elements
+            # for the current collection.
+            self.elements.append((name, value.strip()))
+            self.element = None
+        else:
+            raise InvalidCorsError('Unsupported end tag ' + name)

@@ -1,0 +1,20 @@
+    def resubmit(self):
+        
+        del self[:]
+        if not self.unprocessed:
+            return None
+        for table_name, table_req in self.unprocessed.iteritems():
+            table_keys = table_req['Keys']
+            table = self.layer2.get_table(table_name)
+            keys = []
+            for key in table_keys:
+                h = key['HashKeyElement']
+                r = None
+                if 'RangeKeyElement' in key:
+                    r = key['RangeKeyElement']
+                keys.append((h, r))
+            attributes_to_get = None
+            if 'AttributesToGet' in table_req:
+                attributes_to_get = table_req['AttributesToGet']
+            self.add_batch(table, keys, attributes_to_get=attributes_to_get)
+        return self.submit()

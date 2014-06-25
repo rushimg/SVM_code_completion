@@ -1,0 +1,14 @@
+    def _disallow_ip(self, arn, ip):
+        if 'Statement' not in self:
+            return
+        need_update = False
+        for statement in self['Statement']:
+            if statement['Resource'] == arn:
+                for condition_name in statement['Condition']:
+                    if condition_name == 'IpAddress':
+                        condition = statement['Condition'][condition_name]
+                        if ip in condition['aws:SourceIp']:
+                            condition['aws:SourceIp'].remove(ip)
+                            need_update = True
+        if need_update:
+            self.save()

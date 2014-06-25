@@ -1,0 +1,10 @@
+    def add_record(self, resource_type, name, value, ttl=60, identifier=None,
+                   comment=""):
+        """
+        Add a new record to this Zone.  See _new_record for parameter
+        documentation.  Returns a Status object.
+        """
+        changes = ResourceRecordSets(self.route53connection, self.id, comment)
+        self._new_record(changes, resource_type, name, value, ttl, identifier,
+                         comment)
+        return Status(self.route53connection, self._commit(changes))

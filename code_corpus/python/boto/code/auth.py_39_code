@@ -1,0 +1,7 @@
+    def string_to_sign(self, http_request, canonical_request):
+        
+        sts = ['AWS4-HMAC-SHA256']
+        sts.append(http_request.headers['X-Amz-Date'])
+        sts.append(self.credential_scope(http_request))
+        sts.append(sha256(canonical_request).hexdigest())
+        return '\n'.join(sts)

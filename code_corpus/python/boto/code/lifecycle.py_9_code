@@ -1,0 +1,14 @@
+    def startElement(self, name, attrs, connection):
+        if name == LIFECYCLE_CONFIG:
+            if self.has_root_tag:
+                raise InvalidLifecycleConfigError(
+                    'Only one root tag is allowed in the XML')
+            self.has_root_tag = True
+        elif name == RULE:
+            if not self.has_root_tag:
+                raise InvalidLifecycleConfigError('Invalid root tag ' + name)
+            rule = Rule()
+            self.append(rule)
+            return rule
+        else:
+            raise InvalidLifecycleConfigError('Unsupported tag ' + name)

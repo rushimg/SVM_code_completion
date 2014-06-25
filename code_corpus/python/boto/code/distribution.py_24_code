@@ -1,0 +1,13 @@
+    def set_permissions(self, object, replace=False):
+        
+        if isinstance(self.config.origin, S3Origin):
+            if self.config.origin.origin_access_identity:
+                id = self.config.origin.origin_access_identity.split('/')[-1]
+                oai = self.connection.get_origin_access_identity_info(id)
+                policy = object.get_acl()
+                if replace:
+                    policy.acl = ACL()
+                policy.acl.add_user_grant('READ', oai.s3_user_id)
+                object.set_acl(policy)
+            else:
+                object.set_canned_acl('public-read')

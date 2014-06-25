@@ -1,0 +1,18 @@
+    def __iter__(self):
+        while self.remaining != 0:
+            response = self.response
+            for item in response.get('Items', []):
+                self.remaining -= 1
+                yield self.item_class(self.table, attrs=item)
+                if self.remaining == 0:
+                    break
+                if response is not self._response:
+                    break
+            else:
+                if self.last_evaluated_key is not None:
+                    self.next_response()
+                    continue
+                break
+            if response is not self._response:
+                continue
+            break

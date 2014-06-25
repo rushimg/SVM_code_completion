@@ -1,0 +1,31 @@
+    def build_key_from_values(self, schema, hash_key, range_key=None):
+        """
+        Build a Key structure to be used for accessing items
+        in Amazon DynamoDB.  This method takes the supplied hash_key
+        and optional range_key and validates them against the
+        schema.  If there is a mismatch, a TypeError is raised.
+        Otherwise, a Python dict version of a Amazon DynamoDB Key
+        data structure is returned.
+        :type hash_key: int|float|str|unicode|Binary
+        :param hash_key: The hash key of the item you are looking for.
+            The type of the hash key should match the type defined in
+            the schema.
+        :type range_key: int|float|str|unicode|Binary
+        :param range_key: The range key of the item your are looking for.
+            This should be supplied only if the schema requires a
+            range key.  The type of the range key should match the
+            type defined in the schema.
+        """
+        dynamodb_key = {}
+        dynamodb_value = self.dynamizer.encode(hash_key)
+        if dynamodb_value.keys()[0] != schema.hash_key_type:
+            msg = 'Hashkey must be of type: %s' % schema.hash_key_type
+            raise TypeError(msg)
+        dynamodb_key['HashKeyElement'] = dynamodb_value
+        if range_key is not None:
+            dynamodb_value = self.dynamizer.encode(range_key)
+            if dynamodb_value.keys()[0] != schema.range_key_type:
+                msg = 'RangeKey must be of type: %s' % schema.range_key_type
+                raise TypeError(msg)
+            dynamodb_key['RangeKeyElement'] = dynamodb_value
+        return dynamodb_key

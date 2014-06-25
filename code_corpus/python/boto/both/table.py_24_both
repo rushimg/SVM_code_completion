@@ -1,0 +1,64 @@
+    def scan(self, limit=None, segment=None, total_segments=None,
+             max_page_size=None, attributes=None, conditional_operator=None,
+             **filter_kwargs):
+        """
+        Scans across all items within a DynamoDB table.
+        Scans can be performed against a hash key or a hash+range key. You can
+        additionally filter the results after the table has been read but
+        before the response is returned by using query filters.
+        To specify the filters of the items you'd like to get, you can specify
+        the filters as kwargs. Each filter kwarg should follow the pattern
+        ``<fieldname>__<filter_operation>=<value_to_look_for>``.
+        Optionally accepts a ``limit`` parameter, which should be an integer
+        count of the total number of items to return. (Default: ``None`` -
+        all results)
+        Optionally accepts a ``segment`` parameter, which should be an integer
+        of the segment to retrieve on. Please see the documentation about
+        Parallel Scans (Default: ``None`` - no segments)
+        Optionally accepts a ``total_segments`` parameter, which should be an
+        integer count of number of segments to divide the table into.
+        Please see the documentation about Parallel Scans (Default: ``None`` -
+        no segments)
+        Optionally accepts a ``max_page_size`` parameter, which should be an
+        integer count of the maximum number of items to retrieve
+        **per-request**. This is useful in making faster requests & prevent
+        the scan from drowning out other queries. (Default: ``None`` -
+        fetch as many as DynamoDB will return)
+        Optionally accepts an ``attributes`` parameter, which should be a
+        tuple. If you provide any attributes only these will be fetched
+        from DynamoDB. This uses the ``AttributesToGet`` and set's
+        ``Select`` to ``SPECIFIC_ATTRIBUTES`` API.
+        Returns a ``ResultSet``, which transparently handles the pagination of
+        results you get back.
+        Example::
+            # All results.
+            >>> everything = users.scan()
+            # Look for last names beginning with "D".
+            >>> results = users.scan(last_name__beginswith='D')
+            >>> for res in results:
+            ...     print res['first_name']
+            'Alice'
+            'John'
+            'Jane'
+            # Use an ``IN`` filter & limit.
+            >>> results = users.scan(
+            ...     age__in=[25, 26, 27, 28, 29],
+            ...     limit=1
+            ... )
+            >>> for res in results:
+            ...     print res['first_name']
+            'Alice'
+        """
+        results = ResultSet(
+            max_page_size=max_page_size
+        )
+        kwargs = filter_kwargs.copy()
+        kwargs.update({
+            'limit': limit,
+            'segment': segment,
+            'total_segments': total_segments,
+            'attributes': attributes,
+            'conditional_operator': conditional_operator,
+        })
+        results.to_call(self._scan, **kwargs)
+        return results

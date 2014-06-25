@@ -1,0 +1,25 @@
+    def authorize_security_group_egress(self,
+                                        group_id,
+                                        ip_protocol,
+                                        from_port=None,
+                                        to_port=None,
+                                        src_group_id=None,
+                                        cidr_ip=None,
+                                        dry_run=False):
+        
+        params = {
+            'GroupId': group_id,
+            'IpPermissions.1.IpProtocol': ip_protocol
+        }
+        if from_port is not None:
+            params['IpPermissions.1.FromPort'] = from_port
+        if to_port is not None:
+            params['IpPermissions.1.ToPort'] = to_port
+        if src_group_id is not None:
+            params['IpPermissions.1.Groups.1.GroupId'] = src_group_id
+        if cidr_ip is not None:
+            params['IpPermissions.1.IpRanges.1.CidrIp'] = cidr_ip
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_status('AuthorizeSecurityGroupEgress',
+                               params, verb='POST')

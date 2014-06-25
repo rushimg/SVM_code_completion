@@ -1,0 +1,16 @@
+    def create_alarm(self, name, comparison, threshold,
+                     period, evaluation_periods,
+                     statistic, enabled=True, description=None,
+                     dimensions=None, alarm_actions=None, ok_actions=None,
+                     insufficient_data_actions=None, unit=None):
+        
+        if not dimensions:
+            dimensions = self.dimensions
+        alarm = MetricAlarm(self.connection, name, self.name,
+                            self.namespace, statistic, comparison,
+                            threshold, period, evaluation_periods,
+                            unit, description, dimensions,
+                            alarm_actions, insufficient_data_actions,
+                            ok_actions)
+        if self.connection.put_metric_alarm(alarm):
+            return alarm

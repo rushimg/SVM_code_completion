@@ -1,0 +1,14 @@
+    def delete_cors(self, headers=None):
+        """
+        Removes all CORS configuration from the bucket.
+        """
+        response = self.connection.make_request('DELETE', self.name,
+                                                query_args='cors',
+                                                headers=headers)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status == 204:
+            return True
+        else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)

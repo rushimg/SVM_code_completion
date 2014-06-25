@@ -1,0 +1,14 @@
+    def decode(self, value):
+        try:
+            msg = {}
+            fp = StringIO.StringIO(value)
+            line = fp.readline()
+            while line:
+                delim = line.find(':')
+                key = line[0:delim]
+                value = line[delim+1:].strip()
+                msg[key.strip()] = value.strip()
+                line = fp.readline()
+        except:
+            raise SQSDecodeError('Unable to decode message', self)
+        return msg

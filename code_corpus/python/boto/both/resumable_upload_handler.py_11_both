@@ -1,0 +1,52 @@
+    def _start_new_resumable_upload(self, key, headers=None):
+        """
+        Starts a new resumable upload.
+        Raises ResumableUploadException if any errors occur.
+        """
+        conn = key.bucket.connection
+        if conn.debug >= 1:
+            print 'Starting new resumable upload.'
+        self.server_has_bytes = 0
+        # Start a new resumable upload by sending a POST request with an
+        # empty body and the "X-Goog-Resumable: start" header. Include any
+        # caller-provided headers (e.g., Content-Type) EXCEPT Content-Length
+        # (and raise an exception if they tried to pass one, since it's
+        # a semantic error to specify it at this point, and if we were to
+        # include one now it would cause the server to expect that many
+        # bytes; the POST doesn't include the actual file bytes  We set
+        # the Content-Length in the subsequent PUT, based on the uploaded
+        # file size.
+        post_headers = {}
+        for k in headers:
+            if k.lower() == 'content-length':
+                raise ResumableUploadException(
+                    'Attempt to specify Content-Length header (disallowed)',
+                    ResumableTransferDisposition.ABORT)
+            post_headers[k] = headers[k]
+        post_headers[conn.provider.resumable_upload_header] = 'start'
+        resp = conn.make_request(
+            'POST', key.bucket.name, key.name, post_headers)
+        # Get tracker URI from response 'Location' header.
+        body = resp.read()
+        # Check for various status conditions.
+        if resp.status in [500, 503]:
+            # Retry status 500 and 503 errors after a delay.
+            raise ResumableUploadException(
+                'Got status %d from attempt to start resumable upload. '
+                'Will wait/retry' % resp.status,
+                ResumableTransferDisposition.WAIT_BEFORE_RETRY)
+        elif resp.status != 200 and resp.status != 201:
+            raise ResumableUploadException(
+                'Got status %d from attempt to start resumable upload. '
+                'Aborting' % resp.status,
+                ResumableTransferDisposition.ABORT)
+        # Else we got 200 or 201 response code, indicating the resumable
+        # upload was created.
+        tracker_uri = resp.getheader('Location')
+        if not tracker_uri:
+            raise ResumableUploadException(
+                'No resumable tracker URI found in resumable initiation '
+                'POST response (%s)' % body,
+                ResumableTransferDisposition.WAIT_BEFORE_RETRY)
+        self._set_tracker_uri(tracker_uri)
+        self._save_tracker_uri_to_file()

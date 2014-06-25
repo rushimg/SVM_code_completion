@@ -1,0 +1,24 @@
+    def query_count(self, index=None, consistent=False, conditional_operator=None,
+                    query_filter=None, scan_index_forward=True, limit=None,
+                    **filter_kwargs):
+        
+        key_conditions = self._build_filters(
+            filter_kwargs,
+            using=QUERY_OPERATORS
+        )
+        built_query_filter = self._build_filters(
+            query_filter,
+            using=FILTER_OPERATORS
+        )
+        raw_results = self.connection.query(
+            self.table_name,
+            index_name=index,
+            consistent_read=consistent,
+            select='COUNT',
+            key_conditions=key_conditions,
+            query_filter=built_query_filter,
+            conditional_operator=conditional_operator,
+            limit=limit,
+            scan_index_forward=scan_index_forward,
+        )
+        return int(raw_results.get('Count', 0))

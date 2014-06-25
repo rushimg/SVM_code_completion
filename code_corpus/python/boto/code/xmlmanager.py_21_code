@@ -1,0 +1,15 @@
+    def _make_request(self, method, url, post_data=None, body=None):
+        
+        if not self.connection:
+            self._connect()
+        try:
+            self.connection.close()
+        except:
+            pass
+        self.connection.connect()
+        headers = {}
+        if self.auth_header:
+            headers["Authorization"] = self.auth_header
+        self.connection.request(method, url, body, headers)
+        resp = self.connection.getresponse()
+        return resp

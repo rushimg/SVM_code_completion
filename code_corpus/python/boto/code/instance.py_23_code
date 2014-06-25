@@ -1,0 +1,36 @@
+    def startElement(self, name, attrs, connection):
+        retval = super(Instance, self).startElement(name, attrs, connection)
+        if retval is not None:
+            return retval
+        if name == 'monitoring':
+            self._in_monitoring_element = True
+        elif name == 'blockDeviceMapping':
+            self.block_device_mapping = BlockDeviceMapping()
+            return self.block_device_mapping
+        elif name == 'productCodes':
+            return self.product_codes
+        elif name == 'stateReason':
+            self.state_reason = SubParse('stateReason')
+            return self.state_reason
+        elif name == 'groupSet':
+            self.groups = ResultSet([('item', Group)])
+            return self.groups
+        elif name == "eventsSet":
+            self.eventsSet = SubParse('eventsSet')
+            return self.eventsSet
+        elif name == 'networkInterfaceSet':
+            self.interfaces = ResultSet([('item', NetworkInterface)])
+            return self.interfaces
+        elif name == 'iamInstanceProfile':
+            self.instance_profile = SubParse('iamInstanceProfile')
+            return self.instance_profile
+        elif name == 'currentState':
+            return self._state
+        elif name == 'previousState':
+            self._previous_state = InstanceState()
+            return self._previous_state
+        elif name == 'instanceState':
+            return self._state
+        elif name == 'placement':
+            return self._placement
+        return None

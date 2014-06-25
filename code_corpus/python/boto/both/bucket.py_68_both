@@ -1,0 +1,12 @@
+    def get_cors(self, headers=None):
+        """
+        Returns the current CORS configuration on the bucket.
+        :rtype: :class:`boto.s3.cors.CORSConfiguration`
+        :returns: A CORSConfiguration object that describes all current
+            CORS rules in effect for the bucket.
+        """
+        body = self.get_cors_xml(headers)
+        cors = CORSConfiguration()
+        h = handler.XmlHandler(cors, self)
+        xml.sax.parseString(body, h)
+        return cors

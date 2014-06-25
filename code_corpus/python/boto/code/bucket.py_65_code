@@ -1,0 +1,18 @@
+    def set_cors_xml(self, cors_xml, headers=None):
+        
+        fp = StringIO.StringIO(cors_xml)
+        md5 = boto.utils.compute_md5(fp)
+        if headers is None:
+            headers = {}
+        headers['Content-MD5'] = md5[1]
+        headers['Content-Type'] = 'text/xml'
+        response = self.connection.make_request('PUT', self.name,
+                                                data=fp.getvalue(),
+                                                query_args='cors',
+                                                headers=headers)
+        body = response.read()
+        if response.status == 200:
+            return True
+        else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)

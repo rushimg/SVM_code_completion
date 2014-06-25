@@ -1,0 +1,18 @@
+    def save_to_file(self, fp, sep='\n'):
+        """
+        Read all messages from the queue and persist them to file-like object.
+        Messages are written to the file and the 'sep' string is written
+        in between messages.  Messages are deleted from the queue after
+        being written to the file.
+        Returns the number of messages saved.
+        """
+        n = 0
+        m = self.read()
+        while m:
+            n += 1
+            fp.write(m.get_body())
+            if sep:
+                fp.write(sep)
+            self.delete_message(m)
+            m = self.read()
+        return n

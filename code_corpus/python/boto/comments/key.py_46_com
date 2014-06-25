@@ -1,0 +1,63 @@
+"""
+        Store an object in S3 using the name of the Key object as the
+        key in S3 and the contents of the file pointed to by 'fp' as the
+        contents. The data is read from 'fp' from its current position until
+        'size' bytes have been read or EOF.
+        :type fp: file
+        :param fp: the file whose contents to upload
+        :type headers: dict
+        :param headers: Additional HTTP headers that will be sent with
+            the PUT request.
+        :type replace: bool
+        :param replace: If this parameter is False, the method will
+            first check to see if an object exists in the bucket with
+            the same key.  If it does, it won't overwrite it.  The
+            default value is True which will overwrite the object.
+        :type cb: function
+        :param cb: a callback function that will be called to report
+            progress on the upload.  The callback should accept two
+            integer parameters, the first representing the number of
+            bytes that have been successfully transmitted to S3 and
+            the second representing the size of the to be transmitted
+            object.
+        :type num_cb: int
+        :param num_cb: (optional) If a callback is specified with the
+            cb parameter this parameter determines the granularity of
+            the callback by defining the maximum number of times the
+            callback will be called during the file transfer.
+        :type policy: :class:`boto.s3.acl.CannedACLStrings`
+        :param policy: A canned ACL policy that will be applied to the
+            new key in S3.
+        :type md5: A tuple containing the hexdigest version of the MD5
+            checksum of the file as the first element and the
+            Base64-encoded version of the plain checksum as the second
+            element.  This is the same format returned by the
+            compute_md5 method.
+        :param md5: If you need to compute the MD5 for any reason
+            prior to upload, it's silly to have to do it twice so this
+            param, if present, will be used as the MD5 values of the
+            file.  Otherwise, the checksum will be computed.
+        :type reduced_redundancy: bool
+        :param reduced_redundancy: If True, this will set the storage
+            class of the new Key to be REDUCED_REDUNDANCY. The Reduced
+            Redundancy Storage (RRS) feature of S3, provides lower
+            redundancy at lower storage cost.
+        :type encrypt_key: bool
+        :param encrypt_key: If True, the new copy of the object will
+            be encrypted on the server-side by S3 and will be stored
+            in an encrypted form while at rest in S3.
+        :type size: int
+        :param size: (optional) The Maximum number of bytes to read
+            from the file pointer (fp). This is useful when uploading
+            a file in multiple parts where you are splitting the file
+            up into different ranges to be uploaded. If not specified,
+            the default behaviour is to read all bytes from the file
+            pointer. Less bytes may be available.
+        :type rewind: bool
+        :param rewind: (optional) If True, the file pointer (fp) will
+            be rewound to the start before any bytes are read from
+            it. The default behaviour is False which reads from the
+            current position of the file pointer (fp).
+        :rtype: int
+        :return: The number of bytes written to the key.
+        """

@@ -1,0 +1,12 @@
+    def startElement(self, name, attrs, connection):
+        if name == 'SecurityGroups':
+            return self.security_groups
+        elif name == 'BlockDeviceMappings':
+            if self.use_block_device_types:
+                self.block_device_mappings = BDM()
+            else:
+                self.block_device_mappings = ResultSet([('member', BlockDeviceMapping)])
+            return self.block_device_mappings
+        elif name == 'InstanceMonitoring':
+            self.instance_monitoring = InstanceMonitoring(self)
+            return self.instance_monitoring

@@ -1,0 +1,18 @@
+    def get_xml_acl(self, key_name='', headers=None, version_id=None,
+                    generation=None):
+        """Returns the ACL string of the bucket or an object in the bucket.
+        :param str key_name: The name of the object to get the ACL for. If not
+            specified, the ACL for the bucket will be returned.
+        :param dict headers: Additional headers to set during the request.
+        :type version_id: string
+        :param version_id: Unused in this subclass.
+        :param int generation: If specified, gets the ACL for a specific
+            generation of a versioned object. If not specified, the current
+            version is returned. This parameter is only valid when retrieving
+            the ACL of an object, not a bucket.
+        :rtype: str
+        """
+        query_args = STANDARD_ACL
+        if generation:
+            query_args += '&generation=%s' % generation
+        return self._get_xml_acl_helper(key_name, headers, query_args)

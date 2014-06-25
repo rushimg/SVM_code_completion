@@ -1,0 +1,27 @@
+    def get_versioning_status(self, headers=None):
+        """
+        Returns the current status of versioning on the bucket.
+        :rtype: dict
+        :returns: A dictionary containing a key named 'Versioning'
+            that can have a value of either Enabled, Disabled, or
+            Suspended. Also, if MFADelete has ever been enabled on the
+            bucket, the dictionary will contain a key named
+            'MFADelete' which will have a value of either Enabled or
+            Suspended.
+        """
+        response = self.connection.make_request('GET', self.name,
+                query_args='versioning', headers=headers)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status == 200:
+            d = {}
+            ver = re.search(self.VersionRE, body)
+            if ver:
+                d['Versioning'] = ver.group(1)
+            mfa = re.search(self.MFADeleteRE, body)
+            if mfa:
+                d['MfaDelete'] = mfa.group(1)
+            return d
+        else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)

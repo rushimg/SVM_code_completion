@@ -1,0 +1,20 @@
+    def get_filename(self, prompt):
+        okay = False
+        val = ''
+        while not okay:
+            val = raw_input('%s: %s' % (prompt, val))
+            val = os.path.expanduser(val)
+            if os.path.isfile(val):
+                okay = True
+            elif os.path.isdir(val):
+                path = val
+                val = self.choose_from_list(os.listdir(path))
+                if val:
+                    val = os.path.join(path, val)
+                    okay = True
+                else:
+                    val = ''
+            else:
+                print 'Invalid value: %s' % val
+                val = ''
+        return val

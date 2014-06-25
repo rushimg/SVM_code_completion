@@ -1,0 +1,99 @@
+    def create(cls, table_name, schema, throughput=None, indexes=None,
+               global_indexes=None, connection=None):
+        """
+        Creates a new table in DynamoDB & returns an in-memory ``Table`` object.
+        This will setup a brand new table within DynamoDB. The ``table_name``
+        must be unique for your AWS account. The ``schema`` is also required
+        to define the key structure of the table.
+        **IMPORTANT** - You should consider the usage pattern of your table
+        up-front, as the schema & indexes can **NOT** be modified once the
+        table is created, requiring the creation of a new table & migrating
+        the data should you wish to revise it.
+        **IMPORTANT** - If the table already exists in DynamoDB, additional
+        calls to this method will result in an error. If you just need
+        a ``Table`` object to interact with the existing table, you should
+        just initialize a new ``Table`` object, which requires only the
+        ``table_name``.
+        Requires a ``table_name`` parameter, which should be a simple string
+        of the name of the table.
+        Requires a ``schema`` parameter, which should be a list of
+        ``BaseSchemaField`` subclasses representing the desired schema.
+        Optionally accepts a ``throughput`` parameter, which should be a
+        dictionary. If provided, it should specify a ``read`` & ``write`` key,
+        both of which should have an integer value associated with them.
+        Optionally accepts a ``indexes`` parameter, which should be a list of
+        ``BaseIndexField`` subclasses representing the desired indexes.
+        Optionally accepts a ``global_indexes`` parameter, which should be a
+        list of ``GlobalBaseIndexField`` subclasses representing the desired
+        indexes.
+        Optionally accepts a ``connection`` parameter, which should be a
+        ``DynamoDBConnection`` instance (or subclass). This is primarily useful
+        for specifying alternate connection parameters.
+        Example::
+            >>> users = Table.create('users', schema=[
+            ...     HashKey('username'),
+            ...     RangeKey('date_joined', data_type=NUMBER)
+            ... ], throughput={
+            ...     'read':20,
+            ...     'write': 10,
+            ... }, indexes=[
+            ...     KeysOnlyIndex('MostRecentlyJoined', parts=[
+            ...         RangeKey('date_joined')
+            ... ]), global_indexes=[
+            ...     GlobalAllIndex('UsersByZipcode', parts=[
+            ...         HashKey('zipcode'),
+            ...         RangeKey('username'),
+            ...     ],
+            ...     throughput={
+            ...       'read':10,
+            ...       'write':10,
+            ...     }),
+            ... ])
+        """
+        table = cls(table_name=table_name, connection=connection)
+        table.schema = schema
+        if throughput is not None:
+            table.throughput = throughput
+        if indexes is not None:
+            table.indexes = indexes
+        if global_indexes is not None:
+            table.global_indexes = global_indexes
+        # Prep the schema.
+        raw_schema = []
+        attr_defs = []
+        seen_attrs = set()
+        for field in table.schema:
+            raw_schema.append(field.schema())
+            # Build the attributes off what we know.
+            seen_attrs.add(field.name)
+            attr_defs.append(field.definition())
+        raw_throughput = {
+            'ReadCapacityUnits': int(table.throughput['read']),
+            'WriteCapacityUnits': int(table.throughput['write']),
+        }
+        kwargs = {}
+        kwarg_map = {
+            'indexes': 'local_secondary_indexes',
+            'global_indexes': 'global_secondary_indexes',
+        }
+        for index_attr in ('indexes', 'global_indexes'):
+            table_indexes = getattr(table, index_attr)
+            if table_indexes:
+                raw_indexes = []
+                for index_field in table_indexes:
+                    raw_indexes.append(index_field.schema())
+                    # Make sure all attributes specified in the indexes are
+                    # added to the definition
+                    for field in index_field.parts:
+                        if field.name not in seen_attrs:
+                            seen_attrs.add(field.name)
+                            attr_defs.append(field.definition())
+                kwargs[kwarg_map[index_attr]] = raw_indexes
+        table.connection.create_table(
+            table_name=table.table_name,
+            attribute_definitions=attr_defs,
+            key_schema=raw_schema,
+            provisioned_throughput=raw_throughput,
+            **kwargs
+        )
+        return table

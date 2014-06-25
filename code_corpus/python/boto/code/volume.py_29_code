@@ -1,0 +1,55 @@
+    def trim_snapshots(self, delete=False):
+        
+        snaps = self.get_snapshots()
+        # Always keep the oldest and the newest
+        if len(snaps) <= 2:
+            return snaps
+        snaps = snaps[1:-1]
+        now = datetime.datetime.now(snaps[0].date.tzinfo)
+        midnight = datetime.datetime(year=now.year, month=now.month,
+                                     day=now.day, tzinfo=now.tzinfo)
+        # Keep the first snapshot from each day of the previous week
+        one_week = datetime.timedelta(days=7, seconds=60*60)
+        print midnight-one_week, midnight
+        previous_week = self.get_snapshot_range(snaps, midnight-one_week, midnight)
+        print previous_week
+        if not previous_week:
+            return snaps
+        current_day = None
+        for snap in previous_week:
+            if current_day and current_day == snap.date.day:
+                snap.keep = False
+            else:
+                current_day = snap.date.day
+        # Get ourselves onto the next full week boundary
+        if previous_week:
+            week_boundary = previous_week[0].date
+            if week_boundary.weekday() != 0:
+                delta = datetime.timedelta(days=week_boundary.weekday())
+                week_boundary = week_boundary - delta
+        # Keep one within this partial week
+        partial_week = self.get_snapshot_range(snaps, week_boundary, previous_week[0].date)
+        if len(partial_week) > 1:
+            for snap in partial_week[1:]:
+                snap.keep = False
+        # Keep the first snapshot of each week for the previous 4 weeks
+        for i in range(0, 4):
+            weeks_worth = self.get_snapshot_range(snaps, week_boundary-one_week, week_boundary)
+            if len(weeks_worth) > 1:
+                for snap in weeks_worth[1:]:
+                    snap.keep = False
+            week_boundary = week_boundary - one_week
+        # Now look through all remaining snaps and keep one per month
+        remainder = self.get_snapshot_range(snaps, end_date=week_boundary)
+        current_month = None
+        for snap in remainder:
+            if current_month and current_month == snap.date.month:
+                snap.keep = False
+            else:
+                current_month = snap.date.month
+        if delete:
+            for snap in snaps:
+                if not snap.keep:
+                    boto.log.info('Deleting %s(%s) for %s' % (snap, snap.date, self.name))
+                    snap.delete()
+        return snaps

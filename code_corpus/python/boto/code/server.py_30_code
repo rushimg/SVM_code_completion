@@ -1,0 +1,17 @@
+    def create_image(self, bucket=None, prefix=None, key_file=None, cert_file=None, size=None):
+        iobject = IObject()
+        if not bucket:
+            bucket = iobject.get_string('Name of S3 bucket')
+        if not prefix:
+            prefix = iobject.get_string('Prefix for AMI file')
+        if not key_file:
+            key_file = iobject.get_filename('Path to RSA private key file')
+        if not cert_file:
+            cert_file = iobject.get_filename('Path to RSA public cert file')
+        if not size:
+            size = iobject.get_int('Size (in MB) of bundled image')
+        self.bundle_image(prefix, key_file, cert_file, size)
+        self.upload_bundle(bucket, prefix)
+        print 'registering image...'
+        self.image_id = self.ec2.register_image('%s/%s.manifest.xml' % (bucket, prefix))
+        return self.image_id

@@ -1,0 +1,11 @@
+    def get_cors_xml(self, headers=None):
+        
+        response = self.connection.make_request('GET', self.name,
+                query_args='cors', headers=headers)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status == 200:
+            return body
+        else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)

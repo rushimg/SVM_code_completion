@@ -1,0 +1,13 @@
+    def load_object(self, obj):
+        if not obj._loaded:
+            a = self.domain.get_attributes(obj.id, consistent_read=self.consistent)
+            if '__type__' in a:
+                for prop in obj.properties(hidden=False):
+                    if prop.name in a:
+                        value = self.decode_value(prop, a[prop.name])
+                        value = prop.make_value_from_datastore(value)
+                        try:
+                            setattr(obj, prop.name, value)
+                        except Exception, e:
+                            boto.log.exception(e)
+            obj._loaded = True

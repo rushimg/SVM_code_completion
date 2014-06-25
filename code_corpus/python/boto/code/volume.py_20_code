@@ -1,0 +1,14 @@
+    def checkfs(self, use_cmd=None):
+        if self.server is None:
+            raise ValueError('server attribute must be set to run this command')
+        # detemine state of file system on volume, only works if attached
+        if use_cmd:
+            cmd = use_cmd
+        else:
+            cmd = self.server.get_cmdshell()
+        status = cmd.run('xfs_check %s' % self.device)
+        if not use_cmd:
+            cmd.close()
+        if status[1].startswith('bad superblock magic number 0'):
+            return False
+        return True

@@ -1,0 +1,10 @@
+    def update(self, validate=False, dry_run=False):
+        
+        rs = self.connection.get_all_images([self.id], dry_run=dry_run)
+        if len(rs) > 0:
+            img = rs[0]
+            if img.id == self.id:
+                self._update(img)
+        elif validate:
+            raise ValueError('%s is not a valid Image ID' % self.id)
+        return self.state

@@ -1,0 +1,10 @@
+    def validate(self, value):
+        value = super(S3KeyProperty, self).validate(value)
+        if value == self.default_value() or value == str(self.default_value()):
+            return self.default_value()
+        if isinstance(value, self.data_type):
+            return
+        match = re.match(self.validate_regex, value)
+        if match:
+            return
+        raise TypeError('Validation Error, expecting %s, got %s' % (self.data_type, type(value)))

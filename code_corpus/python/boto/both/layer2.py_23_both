@@ -1,0 +1,19 @@
+    def create_table(self, name, schema, read_units, write_units):
+        """
+        Create a new Amazon DynamoDB table.
+        :type name: str
+        :param name: The name of the desired table.
+        :type schema: :class:`boto.dynamodb.schema.Schema`
+        :param schema: The Schema object that defines the schema used
+            by this table.
+        :type read_units: int
+        :param read_units: The value for ReadCapacityUnits.
+        :type write_units: int
+        :param write_units: The value for WriteCapacityUnits.
+        :rtype: :class:`boto.dynamodb.table.Table`
+        :return: A Table object representing the new Amazon DynamoDB table.
+        """
+        response = self.layer1.create_table(name, schema.dict,
+                                            {'ReadCapacityUnits': read_units,
+                                             'WriteCapacityUnits': write_units})
+        return Table(self,  response)

@@ -1,0 +1,29 @@
+    def get_all_bundle_tasks(self, bundle_ids=None, filters=None,
+                             dry_run=False):
+        """
+        Retrieve current bundling tasks. If no bundle id is specified, all
+        tasks are retrieved.
+        :type bundle_ids: list
+        :param bundle_ids: A list of strings containing identifiers for
+                           previously created bundling tasks.
+        :type filters: dict
+        :param filters: Optional filters that can be used to limit
+                        the results returned.  Filters are provided
+                        in the form of a dictionary consisting of
+                        filter names as the key and filter values
+                        as the value.  The set of allowable filter
+                        names/values is dependent on the request
+                        being performed.  Check the EC2 API guide
+                        for details.
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+        """
+        params = {}
+        if bundle_ids:
+            self.build_list_params(params, bundle_ids, 'BundleId')
+        if filters:
+            self.build_filter_params(params, filters)
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_list('DescribeBundleTasks', params,
+                             [('item', BundleInstanceTask)], verb='POST')

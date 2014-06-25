@@ -1,0 +1,74 @@
+    def __init__(self, connection=None, name=None, image_id=None,
+                 key_name=None, security_groups=None, user_data=None,
+                 instance_type='m1.small', kernel_id=None,
+                 ramdisk_id=None, block_device_mappings=None,
+                 instance_monitoring=False, spot_price=None,
+                 instance_profile_name=None, ebs_optimized=False,
+                 associate_public_ip_address=None, volume_type=None,
+                 delete_on_termination=True, iops=None, use_block_device_types=False):
+        """
+        A launch configuration.
+        :type name: str
+        :param name: Name of the launch configuration to create.
+        :type image_id: str
+        :param image_id: Unique ID of the Amazon Machine Image (AMI) which was
+            assigned during registration.
+        :type key_name: str
+        :param key_name: The name of the EC2 key pair.
+        :type security_groups: list
+        :param security_groups: Names or security group id's of the security
+            groups with which to associate the EC2 instances or VPC instances,
+            respectively.
+        :type user_data: str
+        :param user_data: The user data available to launched EC2 instances.
+        :type instance_type: str
+        :param instance_type: The instance type
+        :type kern_id: str
+        :param kern_id: Kernel id for instance
+        :type ramdisk_id: str
+        :param ramdisk_id: RAM disk id for instance
+        :type block_device_mappings: list
+        :param block_device_mappings: Specifies how block devices are exposed
+            for instances
+        :type instance_monitoring: bool
+        :param instance_monitoring: Whether instances in group are launched
+            with detailed monitoring.
+        :type spot_price: float
+        :param spot_price: The spot price you are bidding.  Only applies
+            if you are building an autoscaling group with spot instances.
+        :type instance_profile_name: string
+        :param instance_profile_name: The name or the Amazon Resource
+            Name (ARN) of the instance profile associated with the IAM
+            role for the instance.
+        :type ebs_optimized: bool
+        :param ebs_optimized: Specifies whether the instance is optimized
+            for EBS I/O (true) or not (false).
+        :type associate_public_ip_address: bool
+        :param associate_public_ip_address: Used for Auto Scaling groups that launch instances into an Amazon Virtual Private Cloud.
+            Specifies whether to assign a public IP address to each instance launched in a Amazon VPC.
+        """
+        self.connection = connection
+        self.name = name
+        self.instance_type = instance_type
+        self.block_device_mappings = block_device_mappings
+        self.key_name = key_name
+        sec_groups = security_groups or []
+        self.security_groups = ListElement(sec_groups)
+        self.image_id = image_id
+        self.ramdisk_id = ramdisk_id
+        self.created_time = None
+        self.kernel_id = kernel_id
+        self.user_data = user_data
+        self.created_time = None
+        self.instance_monitoring = instance_monitoring
+        self.spot_price = spot_price
+        self.instance_profile_name = instance_profile_name
+        self.launch_configuration_arn = None
+        self.ebs_optimized = ebs_optimized
+        self.associate_public_ip_address = associate_public_ip_address
+        self.volume_type = volume_type
+        self.delete_on_termination = delete_on_termination
+        self.iops = iops
+        self.use_block_device_types = use_block_device_types
+        if connection is not None:
+            self.use_block_device_types = connection.use_block_device_types

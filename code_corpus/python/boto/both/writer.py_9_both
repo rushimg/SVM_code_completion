@@ -1,0 +1,12 @@
+    def close(self):
+        if self.closed:
+            return
+        if None in self._tree_hashes:
+            raise RuntimeError("Some parts were not uploaded.")
+        # Complete the multiplart glacier upload
+        hex_tree_hash = bytes_to_hex(tree_hash(self._tree_hashes))
+        response = self.vault.layer1.complete_multipart_upload(
+            self.vault.name, self.upload_id, hex_tree_hash,
+            self._uploaded_size)
+        self.archive_id = response['ArchiveId']
+        self.closed = True

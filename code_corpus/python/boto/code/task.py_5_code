@@ -1,0 +1,23 @@
+    def _run(self, msg, vtimeout):
+        boto.log.info('Task[%s] - running:%s' % (self.name, self.command))
+        log_fp = StringIO.StringIO()
+        process = subprocess.Popen(self.command, shell=True, stdin=subprocess.PIPE,
+                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        nsecs = 5
+        current_timeout = vtimeout
+        while process.poll() is None:
+            boto.log.info('nsecs=%s, timeout=%s' % (nsecs, current_timeout))
+            if nsecs >= current_timeout:
+                current_timeout += vtimeout
+                boto.log.info('Task[%s] - setting timeout to %d seconds' % (self.name, current_timeout))
+                if msg:
+                    msg.change_visibility(current_timeout)
+            time.sleep(5)
+            nsecs += 5
+        t = process.communicate()
+        log_fp.write(t[0])
+        log_fp.write(t[1])
+        boto.log.info('Task[%s] - output: %s' % (self.name, log_fp.getvalue()))
+        self.last_executed = self.now
+        self.last_status = process.returncode
+        self.last_output = log_fp.getvalue()[0:1023]

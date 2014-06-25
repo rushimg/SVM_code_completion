@@ -1,0 +1,12 @@
+    def _put_item(self, item_data, expects=None):
+        """
+        The internal variant of ``put_item`` (full data). This is used by the
+        ``Item`` objects, since that operation is represented at the
+        table-level by the API, but conceptually maps better to telling an
+        individual ``Item`` to save itself.
+        """
+        kwargs = {}
+        if expects is not None:
+            kwargs['expected'] = expects
+        self.connection.put_item(self.table_name, item_data, **kwargs)
+        return True

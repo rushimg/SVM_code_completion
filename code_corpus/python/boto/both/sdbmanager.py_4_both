@@ -1,0 +1,16 @@
+    def encode_list(self, prop, value):
+        if value in (None, []):
+            return []
+        if not isinstance(value, list):
+            # This is a little trick to avoid encoding when it's just a single value,
+            # since that most likely means it's from a query
+            item_type = getattr(prop, "item_type")
+            return self.encode(item_type, value)
+        # Just enumerate(value) won't work here because
+        # we need to add in some zero padding
+        # We support lists up to 1,000 attributes, since
+        # SDB technically only supports 1024 attributes anyway
+        values = {}
+        for k, v in enumerate(value):
+            values["%03d" % k] = v
+        return self.encode_map(prop, values)

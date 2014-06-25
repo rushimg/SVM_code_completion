@@ -1,0 +1,11 @@
+    def cancel_multipart_upload(self, key_name, upload_id, headers=None):
+        
+        query_args = 'uploadId=%s' % upload_id
+        response = self.connection.make_request('DELETE', self.name, key_name,
+                                                query_args=query_args,
+                                                headers=headers)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status != 204:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)

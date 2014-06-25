@@ -1,0 +1,13 @@
+    def _send_part(self):
+        data = ''.join(self._buffer)
+        # Put back any data remaining over the part size into the
+        # buffer
+        if len(data) > self.part_size:
+            self._buffer = [data[self.part_size:]]
+            self._buffer_size = len(self._buffer[0])
+        else:
+            self._buffer = []
+            self._buffer_size = 0
+        # The part we will send
+        part = data[:self.part_size]
+        self.send_fn(part)

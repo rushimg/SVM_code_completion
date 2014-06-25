@@ -1,0 +1,34 @@
+    def fetch_more(self):
+        
+        self._reset()
+        args = self.call_args[:]
+        kwargs = self.call_kwargs.copy()
+        if self._last_key_seen is not None:
+            kwargs[self.first_key] = self._last_key_seen
+        # If the page size is greater than limit set them
+        #   to the same value
+        if self._limit and self._max_page_size > self._limit:
+            self._max_page_size = self._limit
+        # Put in the max page size.
+        if self._max_page_size is not None:
+            kwargs['limit'] = self._max_page_size
+        elif self._limit is not None:
+            # If max_page_size is not set and limit is available
+            #   use it as the page size
+            kwargs['limit'] = self._limit
+        results = self.the_callable(*args, **kwargs)
+        self._fetches += 1
+        new_results = results.get('results', [])
+        self._last_key_seen = results.get('last_key', None)
+        if len(new_results):
+            self._results.extend(results['results'])
+        # Check the limit, if it's present.
+        if self._limit is not None and self._limit >= 0:
+            limit = self._limit
+            limit -= len(results['results'])
+            # If we've exceeded the limit, we don't have any more
+            # results to look for.
+            if limit <= 0:
+                self._results_left = False
+        if self._last_key_seen is None:
+            self._results_left = False

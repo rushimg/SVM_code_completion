@@ -1,0 +1,8 @@
+    def encode(cls, p, rp, v, label=None):
+        if p.name.startswith('_'):
+            return
+        try:
+            mthd = getattr(cls, 'encode_'+p.ptype)
+            mthd(p, rp, v, label)
+        except AttributeError:
+            raise EncoderError('Unknown type: %s' % p.ptype)

@@ -1,0 +1,35 @@
+    def get_all_vpn_connections(self, vpn_connection_ids=None, filters=None,
+                                dry_run=False):
+        """
+        Retrieve information about your VPN_CONNECTIONs.  You can filter results to
+        return information only about those VPN_CONNECTIONs that match your search
+        parameters.  Otherwise, all VPN_CONNECTIONs associated with your account
+        are returned.
+        :type vpn_connection_ids: list
+        :param vpn_connection_ids: A list of strings with the desired VPN_CONNECTION ID's
+        :type filters: list of tuples
+        :param filters: A list of tuples containing filters.  Each tuple
+                        consists of a filter key and a filter value.
+                        Possible filter keys are:
+                        - *state*, a list of states of the VPN_CONNECTION
+                          pending,available,deleting,deleted
+                        - *type*, a list of types of connection, currently 'ipsec.1'
+                        - *customerGatewayId*, a list of IDs of the customer gateway
+                          associated with the VPN
+                        - *vpnGatewayId*, a list of IDs of the VPN gateway associated
+                          with the VPN connection
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+        :rtype: list
+        :return: A list of :class:`boto.vpn_connection.vpnconnection.VpnConnection`
+        """
+        params = {}
+        if vpn_connection_ids:
+            self.build_list_params(params, vpn_connection_ids,
+                                   'VpnConnectionId')
+        if filters:
+            self.build_filter_params(params, dict(filters))
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_list('DescribeVpnConnections', params,
+                             [('item', VpnConnection)])

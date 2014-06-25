@@ -1,0 +1,14 @@
+    def batch_get_item(self, batch_list):
+        """
+        Return a set of attributes for a multiple items in
+        multiple tables using their primary keys.
+        :type batch_list: :class:`boto.dynamodb.batch.BatchList`
+        :param batch_list: A BatchList object which consists of a
+            list of :class:`boto.dynamoddb.batch.Batch` objects.
+            Each Batch object contains the information about one
+            batch of objects that you wish to retrieve in this
+            request.
+        """
+        request_items = batch_list.to_dict()
+        return self.layer1.batch_get_item(request_items,
+                                          object_hook=self.dynamizer.decode)

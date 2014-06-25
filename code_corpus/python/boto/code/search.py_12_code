@@ -1,0 +1,11 @@
+    def get_all_paged(self, query, per_page):
+        
+        query.update_size(per_page)
+        page = 0
+        num_pages_needed = 0
+        while page <= num_pages_needed:
+            results = self(query)
+            num_pages_needed = results.num_pages_needed
+            yield results
+            query.start += query.real_size
+            page += 1

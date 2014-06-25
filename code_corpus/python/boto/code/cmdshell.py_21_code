@@ -1,0 +1,13 @@
+    def run(self):
+        boto.log.info('running:%s' % self.command)
+        log_fp = StringIO.StringIO()
+        process = subprocess.Popen(self.command, shell=True, stdin=subprocess.PIPE,
+                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        while process.poll() is None:
+            time.sleep(1)
+            t = process.communicate()
+            log_fp.write(t[0])
+            log_fp.write(t[1])
+        boto.log.info(log_fp.getvalue())
+        boto.log.info('output: %s' % log_fp.getvalue())
+        return (process.returncode, log_fp.getvalue())

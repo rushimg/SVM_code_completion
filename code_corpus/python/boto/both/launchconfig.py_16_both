@@ -1,0 +1,43 @@
+    def endElement(self, name, value, connection):
+        if name == 'InstanceType':
+            self.instance_type = value
+        elif name == 'LaunchConfigurationName':
+            self.name = value
+        elif name == 'KeyName':
+            self.key_name = value
+        elif name == 'ImageId':
+            self.image_id = value
+        elif name == 'CreatedTime':
+            self.created_time = boto.utils.parse_ts(value)
+        elif name == 'KernelId':
+            self.kernel_id = value
+        elif name == 'RamdiskId':
+            self.ramdisk_id = value
+        elif name == 'UserData':
+            try:
+                self.user_data = base64.b64decode(value)
+            except TypeError:
+                self.user_data = value
+        elif name == 'LaunchConfigurationARN':
+            self.launch_configuration_arn = value
+        elif name == 'InstanceMonitoring':
+            self.instance_monitoring = value
+        elif name == 'SpotPrice':
+            self.spot_price = float(value)
+        elif name == 'IamInstanceProfile':
+            self.instance_profile_name = value
+        elif name == 'EbsOptimized':
+            self.ebs_optimized = True if value.lower() == 'true' else False
+        elif name == 'AssociatePublicIpAddress':
+            self.associate_public_ip_address = True if value.lower() == 'true' else False
+        elif name == 'VolumeType':
+            self.volume_type = value
+        elif name == 'DeleteOnTermination':
+            if value.lower() == 'true':
+                self.delete_on_termination = True
+            else:
+                self.delete_on_termination = False
+        elif name == 'Iops':
+            self.iops = int(value)
+        else:
+            setattr(self, name, value)

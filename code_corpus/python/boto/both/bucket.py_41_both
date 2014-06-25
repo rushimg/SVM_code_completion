@@ -1,0 +1,20 @@
+    def set_xml_logging(self, logging_str, headers=None):
+        """
+        Set logging on a bucket directly to the given xml string.
+        :type logging_str: unicode string
+        :param logging_str: The XML for the bucketloggingstatus which
+            will be set.  The string will be converted to utf-8 before
+            it is sent.  Usually, you will obtain this XML from the
+            BucketLogging object.
+        :rtype: bool
+        :return: True if ok or raises an exception.
+        """
+        body = logging_str.encode('utf-8')
+        response = self.connection.make_request('PUT', self.name, data=body,
+                query_args='logging', headers=headers)
+        body = response.read()
+        if response.status == 200:
+            return True
+        else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)

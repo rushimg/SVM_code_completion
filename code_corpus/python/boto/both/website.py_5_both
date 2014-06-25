@@ -1,0 +1,13 @@
+    def to_xml(self):
+        parts = ['<?xml version="1.0" encoding="UTF-8"?>',
+          '<WebsiteConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">']
+        if self.suffix is not None:
+            parts.append(tag('IndexDocument', tag('Suffix', self.suffix)))
+        if self.error_key is not None:
+            parts.append(tag('ErrorDocument', tag('Key', self.error_key)))
+        if self.redirect_all_requests_to is not None:
+            parts.append(self.redirect_all_requests_to.to_xml())
+        if self.routing_rules:
+            parts.append(self.routing_rules.to_xml())
+        parts.append('</WebsiteConfiguration>')
+        return ''.join(parts)

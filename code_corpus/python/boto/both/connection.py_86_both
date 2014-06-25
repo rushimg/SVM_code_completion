@@ -1,0 +1,36 @@
+    def describe_reserved_instances_modifications(self,
+            reserved_instances_modification_ids=None, next_token=None,
+            filters=None):
+        """
+        A request to describe the modifications made to Reserved Instances in
+        your account.
+        :type reserved_instances_modification_ids: list
+        :param reserved_instances_modification_ids: An optional list of
+            Reserved Instances modification IDs to describe.
+        :type next_token: str
+        :param next_token: A string specifying the next paginated set
+            of results to return.
+        :type filters: dict
+        :param filters: Optional filters that can be used to limit the
+            results returned.  Filters are provided in the form of a
+            dictionary consisting of filter names as the key and
+            filter values as the value.  The set of allowable filter
+            names/values is dependent on the request being performed.
+            Check the EC2 API guide for details.
+        :rtype: list
+        :return: A list of :class:`boto.ec2.reservedinstance.ReservedInstance`
+        """
+        params = {}
+        if reserved_instances_modification_ids:
+            self.build_list_params(params, reserved_instances_modification_ids,
+                                   'ReservedInstancesModificationId')
+        if next_token:
+            params['NextToken'] = next_token
+        if filters:
+            self.build_filter_params(params, filters)
+        return self.get_list('DescribeReservedInstancesModifications',
+                             params, [('item', ReservedInstancesModification)],
+                             verb='POST')
+    #
+    # Monitoring
+    #

@@ -1,0 +1,88 @@
+    def __init__(self, connection=None, name=None,
+                 launch_config=None, availability_zones=None,
+                 load_balancers=None, default_cooldown=None,
+                 health_check_type=None, health_check_period=None,
+                 placement_group=None, vpc_zone_identifier=None,
+                 desired_capacity=None, min_size=None, max_size=None,
+                 tags=None, termination_policies=None, instance_id=None,
+                 **kwargs):
+        """
+        Creates a new AutoScalingGroup with the specified name.
+        You must not have already used up your entire quota of
+        AutoScalingGroups in order for this call to be successful. Once the
+        creation request is completed, the AutoScalingGroup is ready to be
+        used in other calls.
+        :type name: str
+        :param name: Name of autoscaling group (required).
+        :type availability_zones: list
+        :param availability_zones: List of availability zones (required).
+        :type default_cooldown: int
+        :param default_cooldown: Number of seconds after a Scaling Activity
+            completes before any further scaling activities can start.
+        :type desired_capacity: int
+        :param desired_capacity: The desired capacity for the group.
+        :type health_check_period: str
+        :param health_check_period: Length of time in seconds after a new
+            EC2 instance comes into service that Auto Scaling starts
+            checking its health.
+        :type health_check_type: str
+        :param health_check_type: The service you want the health status from,
+            Amazon EC2 or Elastic Load Balancer.
+        :type launch_config: str or LaunchConfiguration
+        :param launch_config: Name of launch configuration (required).
+        :type load_balancers: list
+        :param load_balancers: List of load balancers.
+        :type max_size: int
+        :param max_size: Maximum size of group (required).
+        :type min_size: int
+        :param min_size: Minimum size of group (required).
+        :type placement_group: str
+        :param placement_group: Physical location of your cluster placement
+            group created in Amazon EC2.
+        :type vpc_zone_identifier: str or list
+        :param vpc_zone_identifier: A comma-separated string or python list of
+            the subnet identifiers of the Virtual Private Cloud.
+        :type tags: list
+        :param tags: List of :class:`boto.ec2.autoscale.tag.Tag`s
+        :type termination_policies: list
+        :param termination_policies: A list of termination policies. Valid values
+            are: "OldestInstance", "NewestInstance", "OldestLaunchConfiguration",
+            "ClosestToNextInstanceHour", "Default".  If no value is specified,
+            the "Default" value is used.
+        :type instance_id: str
+        :param instance_id: The ID of the Amazon EC2 instance you want to use
+            to create the Auto Scaling group.
+        :rtype: :class:`boto.ec2.autoscale.group.AutoScalingGroup`
+        :return: An autoscale group.
+        """
+        self.name = name or kwargs.get('group_name')   # backwards compat
+        self.connection = connection
+        self.min_size = int(min_size) if min_size is not None else None
+        self.max_size = int(max_size) if max_size is not None else None
+        self.created_time = None
+        # backwards compatibility
+        default_cooldown = default_cooldown or kwargs.get('cooldown')
+        if default_cooldown is not None:
+            default_cooldown = int(default_cooldown)
+        self.default_cooldown = default_cooldown
+        self.launch_config_name = launch_config
+        if launch_config and isinstance(launch_config, LaunchConfiguration):
+            self.launch_config_name = launch_config.name
+        self.desired_capacity = desired_capacity
+        lbs = load_balancers or []
+        self.load_balancers = ListElement(lbs)
+        zones = availability_zones or []
+        self.availability_zones = ListElement(zones)
+        self.health_check_period = health_check_period
+        self.health_check_type = health_check_type
+        self.placement_group = placement_group
+        self.autoscaling_group_arn = None
+        if type(vpc_zone_identifier) is list:
+            vpc_zone_identifier = ','.join(vpc_zone_identifier)
+        self.vpc_zone_identifier = vpc_zone_identifier
+        self.instances = None
+        self.tags = tags or None
+        termination_policies = termination_policies or []
+        self.termination_policies = ListElement(termination_policies)
+        self.instance_id = instance_id
+    # backwards compatible access to 'cooldown' param

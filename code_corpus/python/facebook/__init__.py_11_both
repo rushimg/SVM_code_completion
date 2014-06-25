@@ -1,0 +1,13 @@
+    def put_photo(self, image, message=None, album_id=None, **kwargs):
+        """Uploads an image using multipart/form-data.
+        image=File like object for the image
+        message=Caption for your image
+        album_id=None posts to /me/photos which uses or creates and uses
+        an album for your application.
+        """
+        object_id = album_id or "me"
+        kwargs.update({"message": message})
+        self.request(object_id,
+                     post_args=kwargs,
+                     files={"file": image},
+                     method="POST")

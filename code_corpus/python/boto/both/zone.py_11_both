@@ -1,0 +1,54 @@
+    def find_records(self, name, type, desired=1, all=False, identifier=None):
+        """
+        Search this Zone for records that match given parameters.
+        Returns None if no results, a ResourceRecord if one result, or
+        a ResourceRecordSets if more than one result.
+        :type name: str
+        :param name: The name of the records should match this parameter
+        :type type: str
+        :param type: The type of the records should match this parameter
+        :type desired: int
+        :param desired: The number of desired results.  If the number of
+           matching records in the Zone exceeds the value of this parameter,
+           throw TooManyRecordsException
+        :type all: Boolean
+        :param all: If true return all records that match name, type, and
+          identifier parameters
+        :type identifier: Tuple
+        :param identifier: A tuple specifying WRR or LBR attributes.  Valid
+           forms are:
+           * (str, int): WRR record [e.g. ('foo',10)]
+           * (str, str): LBR record [e.g. ('foo','us-east-1')
+        """
+        name = self.route53connection._make_qualified(name)
+        returned = self.route53connection.get_all_rrsets(self.id, name=name,
+                                                         type=type)
+        # name/type for get_all_rrsets sets the starting record; they
+        # are not a filter
+        results = [r for r in returned if r.name == name and r.type == type]
+        weight = None
+        region = None
+        if identifier is not None:
+            try:
+                int(identifier[1])
+                weight = identifier[1]
+            except:
+                region = identifier[1]
+        if weight is not None:
+            results = [r for r in results if (r.weight == weight and
+                                              r.identifier == identifier[0])]
+        if region is not None:
+            results = [r for r in results if (r.region == region and
+                                              r.identifier == identifier[0])]
+        if ((not all) and (len(results) > desired)):
+            message = "Search: name %s type %s" % (name, type)
+            message += "\nFound: "
+            message += ", ".join(["%s %s %s" % (r.name, r.type, r.to_print())
+                                  for r in results])
+            raise TooManyRecordsException(message)
+        elif len(results) > 1:
+            return results
+        elif len(results) == 1:
+            return results[0]
+        else:
+            return None

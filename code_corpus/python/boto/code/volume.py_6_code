@@ -1,0 +1,13 @@
+    def update(self, validate=False, dry_run=False):
+        
+        # Check the resultset since Eucalyptus ignores the volumeId param
+        unfiltered_rs = self.connection.get_all_volumes(
+            [self.id],
+            dry_run=dry_run
+        )
+        rs = [x for x in unfiltered_rs if x.id == self.id]
+        if len(rs) > 0:
+            self._update(rs[0])
+        elif validate:
+            raise ValueError('%s is not a valid Volume ID' % self.id)
+        return self.status

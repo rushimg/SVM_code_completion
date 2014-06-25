@@ -1,0 +1,8 @@
+    def __init__(self, status, reason, body=None):
+        self.errors = None
+        self._errorResultSet = []
+        super(EC2ResponseError, self).__init__(status, reason, body)
+        self.errors = [ (e.error_code, e.error_message) \
+                for e in self._errorResultSet ]
+        if len(self.errors):
+            self.error_code, self.error_message = self.errors[0]

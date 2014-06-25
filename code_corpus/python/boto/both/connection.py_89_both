@@ -1,0 +1,16 @@
+    def unmonitor_instances(self, instance_ids, dry_run=False):
+        """
+        Disable CloudWatch monitoring for the supplied instance.
+        :type instance_id: list of string
+        :param instance_id: The instance id
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+        :rtype: list
+        :return: A list of :class:`boto.ec2.instanceinfo.InstanceInfo`
+        """
+        params = {}
+        self.build_list_params(params, instance_ids, 'InstanceId')
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_list('UnmonitorInstances', params,
+                             [('item', InstanceInfo)], verb='POST')

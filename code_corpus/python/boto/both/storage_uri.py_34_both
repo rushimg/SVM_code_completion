@@ -1,0 +1,9 @@
+    def get_storage_class(self, validate=False, headers=None):
+        self._check_bucket_uri('get_storage_class')
+        # StorageClass is defined as a bucket param for GCS, but as a key
+        # param for S3.
+        if self.scheme != 'gs':
+            raise ValueError('get_storage_class() not supported for %s '
+                             'URIs.' % self.scheme)
+        bucket = self.get_bucket(validate, headers)
+        return bucket.get_storage_class()

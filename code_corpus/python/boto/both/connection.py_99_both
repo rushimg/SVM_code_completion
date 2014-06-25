@@ -1,0 +1,29 @@
+    def get_all_tags(self, filters=None, dry_run=False, max_results=None):
+        """
+        Retrieve all the metadata tags associated with your account.
+        :type filters: dict
+        :param filters: Optional filters that can be used to limit
+                        the results returned.  Filters are provided
+                        in the form of a dictionary consisting of
+                        filter names as the key and filter values
+                        as the value.  The set of allowable filter
+                        names/values is dependent on the request
+                        being performed.  Check the EC2 API guide
+                        for details.
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+        :type max_results: int
+        :param max_results: The maximum number of paginated instance
+            items per response.
+        :rtype: list
+        :return: A list of :class:`boto.ec2.tag.Tag` objects
+        """
+        params = {}
+        if filters:
+            self.build_filter_params(params, filters)
+        if dry_run:
+            params['DryRun'] = 'true'
+        if max_results is not None:
+            params['MaxResults'] = max_results
+        return self.get_list('DescribeTags', params,
+                             [('item', Tag)], verb='POST')

@@ -1,0 +1,31 @@
+    def get_all_placement_groups(self, groupnames=None, filters=None,
+                                 dry_run=False):
+        """
+        Get all placement groups associated with your account in a region.
+        :type groupnames: list
+        :param groupnames: A list of the names of placement groups to retrieve.
+                           If not provided, all placement groups will be
+                           returned.
+        :type filters: dict
+        :param filters: Optional filters that can be used to limit
+                        the results returned.  Filters are provided
+                        in the form of a dictionary consisting of
+                        filter names as the key and filter values
+                        as the value.  The set of allowable filter
+                        names/values is dependent on the request
+                        being performed.  Check the EC2 API guide
+                        for details.
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+        :rtype: list
+        :return: A list of :class:`boto.ec2.placementgroup.PlacementGroup`
+        """
+        params = {}
+        if groupnames:
+            self.build_list_params(params, groupnames, 'GroupName')
+        if filters:
+            self.build_filter_params(params, filters)
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_list('DescribePlacementGroups', params,
+                             [('item', PlacementGroup)], verb='POST')

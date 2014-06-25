@@ -1,0 +1,20 @@
+    def __init__(self, **args):
+        self.args = args
+        self.check_for_credential_file()
+        self.check_for_env_url()
+        if 'host' not in self.args:
+            if self.Regions:
+                region_name = self.args.get('region_name',
+                                            self.Regions[0]['name'])
+                for region in self.Regions:
+                    if region['name'] == region_name:
+                        self.args['host'] = region['endpoint']
+        if 'path' not in self.args:
+            self.args['path'] = self.Path
+        if 'port' not in self.args:
+            self.args['port'] = self.Port
+        try:
+            super(AWSQueryService, self).__init__(**self.args)
+            self.aws_response = None
+        except boto.exception.NoAuthHandlerFound:
+            raise NoCredentialsError()

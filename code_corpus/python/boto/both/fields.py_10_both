@@ -1,0 +1,28 @@
+    def schema(self):
+        """
+        Returns the schema structure DynamoDB expects.
+        Example::
+            >>> index.schema()
+            {
+                'IndexName': 'LastNameIndex',
+                'KeySchema': [
+                    {
+                        'AttributeName': 'username',
+                        'KeyType': 'HASH',
+                    },
+                ],
+                'Projection': {
+                    'ProjectionType': 'KEYS_ONLY',
+                },
+                'ProvisionedThroughput': {
+                    'ReadCapacityUnits': 5,
+                    'WriteCapacityUnits': 5
+                }
+            }
+        """
+        schema_data = super(GlobalBaseIndexField, self).schema()
+        schema_data['ProvisionedThroughput'] = {
+            'ReadCapacityUnits': int(self.throughput['read']),
+            'WriteCapacityUnits': int(self.throughput['write']),
+        }
+        return schema_data

@@ -1,0 +1,88 @@
+    def _upload_file_bytes(self, conn, http_conn, fp, file_length,
+                           total_bytes_uploaded, cb, num_cb, headers):
+        """
+        Makes one attempt to upload file bytes, using an existing resumable
+        upload connection.
+        Returns (etag, generation, metageneration) from server upon success.
+        Raises ResumableUploadException if any problems occur.
+        """
+        buf = fp.read(self.BUFFER_SIZE)
+        if cb:
+            # The cb_count represents the number of full buffers to send between
+            # cb executions.
+            if num_cb > 2:
+                cb_count = file_length / self.BUFFER_SIZE / (num_cb-2)
+            elif num_cb < 0:
+                cb_count = -1
+            else:
+                cb_count = 0
+            i = 0
+            cb(total_bytes_uploaded, file_length)
+        # Build resumable upload headers for the transfer. Don't send a
+        # Content-Range header if the file is 0 bytes long, because the
+        # resumable upload protocol uses an *inclusive* end-range (so, sending
+        # 'bytes 0-0/1' would actually mean you're sending a 1-byte file).
+        if not headers:
+          put_headers = {}
+        else:
+          put_headers = headers.copy()
+        if file_length:
+            if total_bytes_uploaded == file_length:
+                range_header = self._build_content_range_header(
+                    '*', file_length)
+            else:
+                range_header = self._build_content_range_header(
+                    '%d-%d' % (total_bytes_uploaded, file_length - 1),
+                    file_length)
+            put_headers['Content-Range'] = range_header
+        # Set Content-Length to the total bytes we'll send with this PUT.
+        put_headers['Content-Length'] = str(file_length - total_bytes_uploaded)
+        http_request = AWSAuthConnection.build_base_http_request(
+            conn, 'PUT', path=self.tracker_uri_path, auth_path=None,
+            headers=put_headers, host=self.tracker_uri_host)
+        http_conn.putrequest('PUT', http_request.path)
+        for k in put_headers:
+            http_conn.putheader(k, put_headers[k])
+        http_conn.endheaders()
+        # Turn off debug on http connection so upload content isn't included
+        # in debug stream.
+        http_conn.set_debuglevel(0)
+        while buf:
+            http_conn.send(buf)
+            for alg in self.digesters:
+                self.digesters[alg].update(buf)
+            total_bytes_uploaded += len(buf)
+            if cb:
+                i += 1
+                if i == cb_count or cb_count == -1:
+                    cb(total_bytes_uploaded, file_length)
+                    i = 0
+            buf = fp.read(self.BUFFER_SIZE)
+        http_conn.set_debuglevel(conn.debug)
+        if cb:
+            cb(total_bytes_uploaded, file_length)
+        if total_bytes_uploaded != file_length:
+            # Abort (and delete the tracker file) so if the user retries
+            # they'll start a new resumable upload rather than potentially
+            # attempting to pick back up later where we left off.
+            raise ResumableUploadException(
+                'File changed during upload: EOF at %d bytes of %d byte file.' %
+                (total_bytes_uploaded, file_length),
+                ResumableTransferDisposition.ABORT)
+        resp = http_conn.getresponse()
+        # Restore http connection debug level.
+        http_conn.set_debuglevel(conn.debug)
+        if resp.status == 200:
+            # Success.
+            return (resp.getheader('etag'),
+                    resp.getheader('x-goog-generation'),
+                    resp.getheader('x-goog-metageneration'))
+        # Retry timeout (408) and status 500 and 503 errors after a delay.
+        elif resp.status in [408, 500, 503]:
+            disposition = ResumableTransferDisposition.WAIT_BEFORE_RETRY
+        else:
+            # Catch all for any other error codes.
+            disposition = ResumableTransferDisposition.ABORT
+        raise ResumableUploadException('Got response code %d while attempting '
+                                       'upload (%s)' %
+                                       (resp.status, resp.reason), disposition)

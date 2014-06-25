@@ -1,0 +1,20 @@
+    def create_network_interface(self, subnet_id, private_ip_address=None,
+                                 description=None, groups=None, dry_run=False):
+        
+        params = {'SubnetId': subnet_id}
+        if private_ip_address:
+            params['PrivateIpAddress'] = private_ip_address
+        if description:
+            params['Description'] = description
+        if groups:
+            ids = []
+            for group in groups:
+                if isinstance(group, SecurityGroup):
+                    ids.append(group.id)
+                else:
+                    ids.append(group)
+            self.build_list_params(params, ids, 'SecurityGroupId')
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_object('CreateNetworkInterface', params,
+                               NetworkInterface, verb='POST')

@@ -1,0 +1,30 @@
+    def _set_acl_helper(self, acl_or_str, key_name, headers, query_args,
+                          generation, if_generation, if_metageneration,
+                          canned=False):
+        
+        headers = headers or {}
+        data = ''
+        if canned:
+            headers[self.connection.provider.acl_header] = acl_or_str
+        else:
+            data = acl_or_str
+        if generation:
+            query_args += '&generation=%s' % generation
+        if if_metageneration is not None and if_generation is None:
+            raise ValueError("Received if_metageneration argument with no "
+                             "if_generation argument. A metageneration has no "
+                             "meaning without a content generation.")
+        if not key_name and (if_generation or if_metageneration):
+            raise ValueError("Received if_generation or if_metageneration "
+                             "parameter while setting the ACL of a bucket.")
+        if if_generation is not None:
+            headers['x-goog-if-generation-match'] = str(if_generation)
+        if if_metageneration is not None:
+            headers['x-goog-if-metageneration-match'] = str(if_metageneration)
+        response = self.connection.make_request(
+            'PUT', get_utf8_value(self.name), get_utf8_value(key_name),
+            data=get_utf8_value(data), headers=headers, query_args=query_args)
+        body = response.read()
+        if response.status != 200:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)

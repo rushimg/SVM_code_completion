@@ -1,0 +1,20 @@
+    def copy_keys(self):
+        boto.log.info('src=%s' % self.src.name)
+        boto.log.info('dst=%s' % self.dst.name)
+        try:
+            for key in self.src:
+                if not self.replace:
+                    exists = self.dst.lookup(key.name)
+                    if exists:
+                        boto.log.info('key=%s already exists in %s, skipping' % (key.name, self.dst.name))
+                        continue
+                boto.log.info('copying %d bytes from key=%s' % (key.size, key.name))
+                prefix, base = os.path.split(key.name)
+                path = os.path.join(self.wdir, base)
+                key.get_contents_to_filename(path)
+                new_key = self.dst.new_key(key.name)
+                new_key.set_contents_from_filename(path)
+                self.copy_key_acl(key, new_key)
+                os.unlink(path)
+        except:
+            boto.log.exception('Error copying key: %s' % key.name)

@@ -1,0 +1,40 @@
+    def __init__(self, connection=None, name=None,
+                 launch_config=None, availability_zones=None,
+                 load_balancers=None, default_cooldown=None,
+                 health_check_type=None, health_check_period=None,
+                 placement_group=None, vpc_zone_identifier=None,
+                 desired_capacity=None, min_size=None, max_size=None,
+                 tags=None, termination_policies=None, instance_id=None,
+                 **kwargs):
+        
+        self.name = name or kwargs.get('group_name')   # backwards compat
+        self.connection = connection
+        self.min_size = int(min_size) if min_size is not None else None
+        self.max_size = int(max_size) if max_size is not None else None
+        self.created_time = None
+        # backwards compatibility
+        default_cooldown = default_cooldown or kwargs.get('cooldown')
+        if default_cooldown is not None:
+            default_cooldown = int(default_cooldown)
+        self.default_cooldown = default_cooldown
+        self.launch_config_name = launch_config
+        if launch_config and isinstance(launch_config, LaunchConfiguration):
+            self.launch_config_name = launch_config.name
+        self.desired_capacity = desired_capacity
+        lbs = load_balancers or []
+        self.load_balancers = ListElement(lbs)
+        zones = availability_zones or []
+        self.availability_zones = ListElement(zones)
+        self.health_check_period = health_check_period
+        self.health_check_type = health_check_type
+        self.placement_group = placement_group
+        self.autoscaling_group_arn = None
+        if type(vpc_zone_identifier) is list:
+            vpc_zone_identifier = ','.join(vpc_zone_identifier)
+        self.vpc_zone_identifier = vpc_zone_identifier
+        self.instances = None
+        self.tags = tags or None
+        termination_policies = termination_policies or []
+        self.termination_policies = ListElement(termination_policies)
+        self.instance_id = instance_id
+    # backwards compatible access to 'cooldown' param

@@ -1,0 +1,15 @@
+    def delete_record(self, record, comment=""):
+        """
+        Delete one or more records from this Zone.  Returns a Status object.
+        :param record: A ResourceRecord (e.g. returned by
+           find_records) or list, tuple, or set of ResourceRecords.
+        :type comment: str
+        :param comment: A comment that will be stored with the change.
+        """
+        changes = ResourceRecordSets(self.route53connection, self.id, comment)
+        if type(record) in [list, tuple, set]:
+            for r in record:
+                changes.add_change_record("DELETE", r)
+        else:
+            changes.add_change_record("DELETE", record)
+        return Status(self.route53connection, self._commit(changes))

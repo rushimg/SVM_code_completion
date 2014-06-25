@@ -1,0 +1,20 @@
+    def to_dict(self):
+        """
+        Convert the Batch object into the format required for Layer1.
+        """
+        op_list = []
+        for item in self.puts:
+            d = {'Item': self.table.layer2.dynamize_item(item)}
+            d = {'PutRequest': d}
+            op_list.append(d)
+        for key in self.deletes:
+            if isinstance(key, tuple):
+                hash_key, range_key = key
+            else:
+                hash_key = key
+                range_key = None
+            k = self.table.layer2.build_key_from_values(self.table.schema,
+                                                        hash_key, range_key)
+            d = {'Key': k}
+            op_list.append({'DeleteRequest': d})
+        return (self.table.name, op_list)

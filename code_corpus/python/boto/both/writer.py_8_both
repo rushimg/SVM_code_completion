@@ -1,0 +1,13 @@
+    def skip_part(self, part_index, part_tree_hash, part_length):
+        """Skip uploading of a part.
+        The final close call needs to calculate the tree hash and total size
+        of all uploaded data, so this is the mechanism for resume
+        functionality to provide it without actually uploading the data again.
+        :param part_index: part number where 0 is the first part
+        :param part_tree_hash: binary tree_hash of part being skipped
+        :param part_length: length of part being skipped
+        """
+        if self.closed:
+            raise ValueError("I/O operation on closed file")
+        self._insert_tree_hash(part_index, part_tree_hash)
+        self._uploaded_size += part_length

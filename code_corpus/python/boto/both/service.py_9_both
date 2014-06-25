@@ -1,0 +1,16 @@
+    def write_message(self, message):
+        message['Service-Write'] = get_ts()
+        message['Server'] = self.name
+        if 'HOSTNAME' in os.environ:
+            message['Host'] = os.environ['HOSTNAME']
+        else:
+            message['Host'] = 'unknown'
+        message['Instance-ID'] = self.instance_id
+        if self.output_queue:
+            boto.log.info('Writing message to SQS queue: %s' % self.output_queue.id)
+            self.output_queue.write(message)
+        if self.output_domain:
+            boto.log.info('Writing message to SDB domain: %s' % self.output_domain.name)
+            item_name = '/'.join([message['Service-Write'], message['Bucket'], message['InputKey']])
+            self.output_domain.put_attributes(item_name, message)
+    # delete message from input queue

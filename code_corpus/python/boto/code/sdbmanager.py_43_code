@@ -1,0 +1,9 @@
+    def count(self, cls, filters, quick=True, sort_by=None, select=None):
+        
+        query = "select count(*) from `%s` %s" % (self.domain.name, self._build_filter_part(cls, filters, sort_by, select))
+        count = 0
+        for row in self.domain.select(query):
+            count += int(row['Count'])
+            if quick:
+                return count
+        return count

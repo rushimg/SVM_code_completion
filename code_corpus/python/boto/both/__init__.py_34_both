@@ -1,0 +1,17 @@
+    def delete_notification_configuration(self, autoscale_group, topic):
+        """
+        Deletes notifications created by put_notification_configuration.
+        :type autoscale_group: str or
+            :class:`boto.ec2.autoscale.group.AutoScalingGroup` object
+        :param autoscale_group: The Auto Scaling group to put notification
+            configuration on.
+        :type topic: str
+        :param topic: The Amazon Resource Name (ARN) of the Amazon Simple
+            Notification Service (SNS) topic.
+        """
+        name = autoscale_group
+        if isinstance(autoscale_group, AutoScalingGroup):
+            name = autoscale_group.name
+        params = {'AutoScalingGroupName': name,
+                  'TopicARN': topic}
+        return self.get_status('DeleteNotificationConfiguration', params)

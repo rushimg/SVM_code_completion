@@ -1,0 +1,13 @@
+    def _update_item(self, key, item_data, expects=None):
+        """
+        The internal variant of ``put_item`` (partial data). This is used by the
+        ``Item`` objects, since that operation is represented at the
+        table-level by the API, but conceptually maps better to telling an
+        individual ``Item`` to save itself.
+        """
+        raw_key = self._encode_keys(key)
+        kwargs = {}
+        if expects is not None:
+            kwargs['expected'] = expects
+        self.connection.update_item(self.table_name, raw_key, item_data, **kwargs)
+        return True

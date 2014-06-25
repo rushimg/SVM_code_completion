@@ -1,0 +1,132 @@
+    def update_stack(self, stack_id, name=None, attributes=None,
+                     service_role_arn=None,
+                     default_instance_profile_arn=None, default_os=None,
+                     hostname_theme=None, default_availability_zone=None,
+                     default_subnet_id=None, custom_json=None,
+                     configuration_manager=None, use_custom_cookbooks=None,
+                     custom_cookbooks_source=None, default_ssh_key_name=None,
+                     default_root_device_type=None):
+        """
+        Updates a specified stack.
+        **Required Permissions**: To use this action, an IAM user must
+        have a Manage permissions level for the stack, or an attached
+        policy that explicitly grants permissions. For more
+        information on user permissions, see `Managing User
+        Permissions`_.
+        :type stack_id: string
+        :param stack_id: The stack ID.
+        :type name: string
+        :param name: The stack's new name.
+        :type attributes: map
+        :param attributes: One or more user-defined key/value pairs to be added
+            to the stack attributes bag.
+        :type service_role_arn: string
+        :param service_role_arn:
+        The stack AWS Identity and Access Management (IAM) role, which allows
+            AWS OpsWorks to work with AWS resources on your behalf. You must
+            set this parameter to the Amazon Resource Name (ARN) for an
+            existing IAM role. For more information about IAM ARNs, see `Using
+            Identifiers`_.
+        You must set this parameter to a valid service role ARN or the action
+            will fail; there is no default value. You can specify the stack's
+            current service role ARN, if you prefer, but you must do so
+            explicitly.
+        :type default_instance_profile_arn: string
+        :param default_instance_profile_arn: The ARN of an IAM profile that is
+            the default profile for all of the stack's EC2 instances. For more
+            information about IAM ARNs, see `Using Identifiers`_.
+        :type default_os: string
+        :param default_os: The stack's default operating system, which must be
+            set to `Amazon Linux` or `Ubuntu 12.04 LTS`. The default option is
+            `Amazon Linux`.
+        :type hostname_theme: string
+        :param hostname_theme: The stack's new host name theme, with spaces are
+            replaced by underscores. The theme is used to generate host names
+            for the stack's instances. By default, `HostnameTheme` is set to
+            `Layer_Dependent`, which creates host names by appending integers
+            to the layer's short name. The other themes are:
+        + `Baked_Goods`
+        + `Clouds`
+        + `European_Cities`
+        + `Fruits`
+        + `Greek_Deities`
+        + `Legendary_Creatures_from_Japan`
+        + `Planets_and_Moons`
+        + `Roman_Deities`
+        + `Scottish_Islands`
+        + `US_Cities`
+        + `Wild_Cats`
+        To obtain a generated host name, call `GetHostNameSuggestion`, which
+            returns a host name based on the current theme.
+        :type default_availability_zone: string
+        :param default_availability_zone: The stack's default Availability
+            Zone, which must be in the specified region. For more information,
+            see `Regions and Endpoints`_. If you also specify a value for
+            `DefaultSubnetId`, the subnet must be in the same zone. For more
+            information, see CreateStack.
+        :type default_subnet_id: string
+        :param default_subnet_id: The stack's default subnet ID. All instances
+            will be launched into this subnet unless you specify otherwise when
+            you create the instance. If you also specify a value for
+            `DefaultAvailabilityZone`, the subnet must be in that zone. For
+            more information, see CreateStack.
+        :type custom_json: string
+        :param custom_json: A string that contains user-defined, custom JSON.
+            It is used to override the corresponding default stack
+            configuration JSON values. The string should be in the following
+            format and must escape characters such as '"'.: `"{\"key1\":
+            \"value1\", \"key2\": \"value2\",...}"`
+        For more information on custom JSON, see `Use Custom JSON to Modify the
+            Stack Configuration JSON`_.
+        :type configuration_manager: dict
+        :param configuration_manager: The configuration manager. When you
+            update a stack you can optionally use the configuration manager to
+            specify the Chef version, 0.9 or 11.4. If you omit this parameter,
+            AWS OpsWorks does not change the Chef version.
+        :type use_custom_cookbooks: boolean
+        :param use_custom_cookbooks: Whether the stack uses custom cookbooks.
+        :type custom_cookbooks_source: dict
+        :param custom_cookbooks_source: Contains the information required to
+            retrieve an app or cookbook from a repository. For more
+            information, see `Creating Apps`_ or `Custom Recipes and
+            Cookbooks`_.
+        :type default_ssh_key_name: string
+        :param default_ssh_key_name: A default SSH key for the stack instances.
+            You can override this value when you create or update an instance.
+        :type default_root_device_type: string
+        :param default_root_device_type: The default root device type. This
+            value is used by default for all instances in the cloned stack, but
+            you can override it when you create an instance. For more
+            information, see `Storage for the Root Device`_.
+        """
+        params = {'StackId': stack_id, }
+        if name is not None:
+            params['Name'] = name
+        if attributes is not None:
+            params['Attributes'] = attributes
+        if service_role_arn is not None:
+            params['ServiceRoleArn'] = service_role_arn
+        if default_instance_profile_arn is not None:
+            params['DefaultInstanceProfileArn'] = default_instance_profile_arn
+        if default_os is not None:
+            params['DefaultOs'] = default_os
+        if hostname_theme is not None:
+            params['HostnameTheme'] = hostname_theme
+        if default_availability_zone is not None:
+            params['DefaultAvailabilityZone'] = default_availability_zone
+        if default_subnet_id is not None:
+            params['DefaultSubnetId'] = default_subnet_id
+        if custom_json is not None:
+            params['CustomJson'] = custom_json
+        if configuration_manager is not None:
+            params['ConfigurationManager'] = configuration_manager
+        if use_custom_cookbooks is not None:
+            params['UseCustomCookbooks'] = use_custom_cookbooks
+        if custom_cookbooks_source is not None:
+            params['CustomCookbooksSource'] = custom_cookbooks_source
+        if default_ssh_key_name is not None:
+            params['DefaultSshKeyName'] = default_ssh_key_name
+        if default_root_device_type is not None:
+            params['DefaultRootDeviceType'] = default_root_device_type
+        return self.make_request(action='UpdateStack',
+                                 body=json.dumps(params))

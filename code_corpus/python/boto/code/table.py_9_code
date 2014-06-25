@@ -1,0 +1,14 @@
+    def get_item(self, consistent=False, attributes=None, **kwargs):
+        
+        raw_key = self._encode_keys(kwargs)
+        item_data = self.connection.get_item(
+            self.table_name,
+            raw_key,
+            attributes_to_get=attributes,
+            consistent_read=consistent
+        )
+        if 'Item' not in item_data:
+            raise exceptions.ItemNotFound("Item %s couldn't be found." % kwargs)
+        item = Item(self)
+        item.load(item_data)
+        return item

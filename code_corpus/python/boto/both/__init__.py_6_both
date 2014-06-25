@@ -1,0 +1,12 @@
+    def _get_config(self, id, resource, config_class):
+        uri = '/%s/%s/%s/config' % (self.Version, resource, id)
+        response = self.make_request('GET', uri)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status >= 300:
+            raise CloudFrontServerError(response.status, response.reason, body)
+        d = config_class(connection=self)
+        d.etag = self.get_etag(response)
+        h = handler.XmlHandler(d, self)
+        xml.sax.parseString(body, h)
+        return d

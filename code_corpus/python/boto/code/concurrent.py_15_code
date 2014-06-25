@@ -1,0 +1,16 @@
+    def _upload_chunk(self, work):
+        part_number, part_size = work
+        start_byte = part_number * part_size
+        self._fileobj.seek(start_byte)
+        contents = self._fileobj.read(part_size)
+        linear_hash = hashlib.sha256(contents).hexdigest()
+        tree_hash_bytes = tree_hash(chunk_hashes(contents))
+        byte_range = (start_byte, start_byte + len(contents) - 1)
+        log.debug("Uploading chunk %s of size %s", part_number, part_size)
+        response = self._api.upload_part(self._vault_name, self._upload_id,
+                                         linear_hash,
+                                         bytes_to_hex(tree_hash_bytes),
+                                         byte_range, contents)
+        # Reading the response allows the connection to be reused.
+        response.read()
+        return (part_number, tree_hash_bytes)

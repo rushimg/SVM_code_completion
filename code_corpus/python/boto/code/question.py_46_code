@@ -1,0 +1,18 @@
+    def __init__(self, min=1, max=1, style=None, selections=None, type='text', other=False):
+        if style is not None:
+            if style in SelectionAnswer.ACCEPTED_STYLES:
+                self.style_suggestion = style
+            else:
+                raise ValueError("style '%s' not recognized; should be one of %s" % (style, ', '.join(SelectionAnswer.ACCEPTED_STYLES)))
+        else:
+            self.style_suggestion = None
+        if selections is None:
+            raise ValueError("SelectionAnswer.__init__(): selections must be a non-empty list of (content, identifier) tuples")
+        else:
+            self.selections = selections
+        self.min_selections = min
+        self.max_selections = max
+        assert len(selections) >= self.min_selections, "# of selections is less than minimum of %d" % self.min_selections
+        #assert len(selections) <= self.max_selections, "# of selections exceeds maximum of %d" % self.max_selections
+        self.type = type
+        self.other = other

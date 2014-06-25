@@ -1,0 +1,72 @@
+    def _get_file_internal(self, fp, headers=None, cb=None, num_cb=10,
+                 torrent=False, version_id=None, override_num_retries=None,
+                 response_headers=None, hash_algs=None, query_args=None):
+        if headers is None:
+            headers = {}
+        save_debug = self.bucket.connection.debug
+        if self.bucket.connection.debug == 1:
+            self.bucket.connection.debug = 0
+        query_args = query_args or []
+        if torrent:
+            query_args.append('torrent')
+        if hash_algs is None and not torrent:
+            hash_algs = {'md5': md5}
+        digesters = dict((alg, hash_algs[alg]()) for alg in hash_algs or {})
+        # If a version_id is passed in, use that.  If not, check to see
+        # if the Key object has an explicit version_id and, if so, use that.
+        # Otherwise, don't pass a version_id query param.
+        if version_id is None:
+            version_id = self.version_id
+        if version_id:
+            query_args.append('versionId=%s' % version_id)
+        if response_headers:
+            for key in response_headers:
+                query_args.append('%s=%s' % (
+                    key, urllib.quote(response_headers[key])))
+        query_args = '&'.join(query_args)
+        self.open('r', headers, query_args=query_args,
+                  override_num_retries=override_num_retries)
+        data_len = 0
+        if cb:
+            if self.size is None:
+                cb_size = 0
+            else:
+                cb_size = self.size
+            if self.size is None and num_cb != -1:
+                # If size is not available due to chunked transfer for example,
+                # we'll call the cb for every 1MB of data transferred.
+                cb_count = (1024 * 1024) / self.BufferSize
+            elif num_cb > 1:
+                cb_count = int(math.ceil(cb_size/self.BufferSize/(num_cb-1.0)))
+            elif num_cb < 0:
+                cb_count = -1
+            else:
+                cb_count = 0
+            i = 0
+            cb(data_len, cb_size)
+        try:
+            for bytes in self:
+                fp.write(bytes)
+                data_len += len(bytes)
+                for alg in digesters:
+                    digesters[alg].update(bytes)
+                if cb:
+                    if cb_size > 0 and data_len >= cb_size:
+                        break
+                    i += 1
+                    if i == cb_count or cb_count == -1:
+                        cb(data_len, cb_size)
+                        i = 0
+        except IOError, e:
+            if e.errno == errno.ENOSPC:
+                raise StorageDataError('Out of space for destination file '
+                                       '%s' % fp.name)
+            raise
+        if cb and (cb_count <= 1 or i > 0) and data_len > 0:
+            cb(data_len, cb_size)
+        for alg in digesters:
+          self.local_hashes[alg] = digesters[alg].digest()
+        if self.size is None and not torrent and "Range" not in headers:
+            self.size = data_len
+        self.close()
+        self.bucket.connection.debug = save_debug

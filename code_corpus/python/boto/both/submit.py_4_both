@@ -1,0 +1,8 @@
+    def submit_file(self, path, metadata=None, cb=None, num_cb=0, prefix='/'):
+        if not metadata:
+            metadata = {}
+        key_name = self.get_key_name(path, prefix)
+        k = self.input_bucket.new_key(key_name)
+        k.update_metadata(metadata)
+        k.set_contents_from_filename(path, replace=False, cb=cb, num_cb=num_cb)
+        self.write_message(k, metadata)

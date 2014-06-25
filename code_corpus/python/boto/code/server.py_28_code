@@ -1,0 +1,33 @@
+    def bundle_image(self, prefix, key_file, cert_file, size):
+        print 'bundling image...'
+        print '\tcopying cert and pk over to /mnt directory on server'
+        ssh_client = self.get_ssh_client()
+        sftp_client = ssh_client.open_sftp()
+        path, name = os.path.split(key_file)
+        remote_key_file = '/mnt/%s' % name
+        self.put_file(key_file, remote_key_file)
+        path, name = os.path.split(cert_file)
+        remote_cert_file = '/mnt/%s' % name
+        self.put_file(cert_file, remote_cert_file)
+        print '\tdeleting %s' % BotoConfigPath
+        # delete the metadata.ini file if it exists
+        try:
+            sftp_client.remove(BotoConfigPath)
+        except:
+            pass
+        command = 'sudo ec2-bundle-vol '
+        command += '-c %s -k %s ' % (remote_cert_file, remote_key_file)
+        command += '-u %s ' % self._reservation.owner_id
+        command += '-p %s ' % prefix
+        command += '-s %d ' % size
+        command += '-d /mnt '
+        if self.instance.instance_type == 'm1.small' or self.instance_type == 'c1.medium':
+            command += '-r i386'
+        else:
+            command += '-r x86_64'
+        print '\t%s' % command
+        t = ssh_client.exec_command(command)
+        response = t[1].read()
+        print '\t%s' % response
+        print '\t%s' % t[2].read()
+        print '...complete!'

@@ -1,0 +1,62 @@
+    def do_cli(self):
+        if not self.parser:
+            self.build_cli_parser()
+        self.cli_options, self.cli_args = self.parser.parse_args()
+        d = {}
+        self.process_standard_options(self.cli_options, self.cli_args, d)
+        for param in self.Params:
+            if param.long_name:
+                p_name = param.long_name.replace('-', '_')
+            else:
+                p_name = boto.utils.pythonize_name(param.name)
+            value = getattr(self.cli_options, p_name)
+            if param.ptype == 'file' and value:
+                if value == '-':
+                    value = sys.stdin.read()
+                else:
+                    path = os.path.expanduser(value)
+                    path = os.path.expandvars(path)
+                    if os.path.isfile(path):
+                        fp = open(path)
+                        value = fp.read()
+                        fp.close()
+                    else:
+                        self.parser.error('Unable to read file: %s' % path)
+            d[p_name] = value
+        for arg in self.Args:
+            if arg.long_name:
+                p_name = arg.long_name.replace('-', '_')
+            else:
+                p_name = boto.utils.pythonize_name(arg.name)
+            value = None
+            if arg.cardinality == 1:
+                if len(self.cli_args) >= 1:
+                    value = self.cli_args[0]
+            else:
+                value = self.cli_args
+            d[p_name] = value
+        self.args.update(d)
+        if hasattr(self.cli_options, 'filter') and self.cli_options.filter:
+            d = {}
+            for filter in self.cli_options.filter:
+                name, value = filter.split('=')
+                d[name] = value
+            if 'filters' in self.args:
+                self.args['filters'].update(d)
+            else:
+                self.args['filters'] = d
+        try:
+            response = self.main()
+            self.cli_formatter(response)
+        except RequiredParamError, e:
+            print e
+            sys.exit(1)
+        except self.ServiceClass.ResponseError, err:
+            print 'Error(%s): %s' % (err.error_code, err.error_message)
+            sys.exit(1)
+        except boto.roboto.awsqueryservice.NoCredentialsError, err:
+            print 'Unable to find credentials.'
+            sys.exit(1)
+        except Exception, e:
+            print e
+            sys.exit(1)

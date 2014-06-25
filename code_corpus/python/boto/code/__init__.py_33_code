@@ -1,0 +1,9 @@
+    def put_notification_configuration(self, autoscale_group, topic, notification_types):
+        
+        name = autoscale_group
+        if isinstance(autoscale_group, AutoScalingGroup):
+            name = autoscale_group.name
+        params = {'AutoScalingGroupName': name,
+                  'TopicARN': topic}
+        self.build_list_params(params, notification_types, 'NotificationTypes')
+        return self.get_status('PutNotificationConfiguration', params)

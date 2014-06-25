@@ -1,0 +1,20 @@
+    def __init__(self, cls, db_name, db_user, db_passwd,
+                 db_host, db_port, db_table, ddl_dir, enable_ssl,
+                 consistent=None):
+        self.cls = cls
+        self.db_name = db_name
+        self.db_user = db_user
+        self.db_passwd = db_passwd
+        self.db_host = db_host
+        self.db_port = db_port
+        self.db_table = db_table
+        self.ddl_dir = ddl_dir
+        self.enable_ssl = enable_ssl
+        self.s3 = None
+        self.bucket = None
+        self.converter = SDBConverter(self)
+        self._sdb = None
+        self._domain = None
+        if consistent is None and hasattr(cls, "__consistent__"):
+            consistent = cls.__consistent__
+        self.consistent = consistent

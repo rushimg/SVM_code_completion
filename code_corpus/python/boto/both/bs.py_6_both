@@ -1,0 +1,23 @@
+    def do_start(self):
+        ami_id = self.sd.get('ami_id')
+        instance_type = self.sd.get('instance_type', 'm1.small')
+        security_group = self.sd.get('security_group', 'default')
+        if not ami_id:
+            self.parser.error('ami_id option is required when starting the service')
+        ec2 = boto.connect_ec2()
+        if not self.sd.has_section('Credentials'):
+            self.sd.add_section('Credentials')
+            self.sd.set('Credentials', 'aws_access_key_id', ec2.aws_access_key_id)
+            self.sd.set('Credentials', 'aws_secret_access_key', ec2.aws_secret_access_key)
+        s = StringIO.StringIO()
+        self.sd.write(s)
+        rs = ec2.get_all_images([ami_id])
+        img = rs[0]
+        r = img.run(user_data=s.getvalue(), key_name=self.options.keypair,
+                    max_count=self.options.num_instances,
+                    instance_type=instance_type,
+                    security_groups=[security_group])
+        print 'Starting AMI: %s' % ami_id
+        print 'Reservation %s contains the following instances:' % r.id
+        for i in r.instances:
+            print '\t%s' % i.id

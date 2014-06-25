@@ -1,0 +1,10 @@
+    def validate(self, value):
+        if self.required and value is None:
+            raise ValueError('%s is a required property' % self.name)
+        if self.choices and value and not value in self.choices:
+            raise ValueError('%s not a valid choice for %s.%s' % (value, self.model_class.__name__, self.name))
+        if self.validator:
+            self.validator(value)
+        else:
+            self.default_validator(value)
+        return value

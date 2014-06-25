@@ -1,0 +1,15 @@
+    def dynamize_attribute_updates(self, pending_updates):
+        """
+        Convert a set of pending item updates into the structure
+        required by Layer1.
+        """
+        d = {}
+        for attr_name in pending_updates:
+            action, value = pending_updates[attr_name]
+            if value is None:
+                # DELETE without an attribute value
+                d[attr_name] = {"Action": action}
+            else:
+                d[attr_name] = {"Action": action,
+                                "Value": self.dynamizer.encode(value)}
+        return d

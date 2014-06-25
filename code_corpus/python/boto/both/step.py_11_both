@@ -1,0 +1,28 @@
+    def args(self):
+        args = []
+        # put extra args BEFORE -mapper and -reducer so that e.g. -libjar
+        # will work
+        if self.step_args:
+            args.extend(self.step_args)
+        args.extend(['-mapper', self.mapper])
+        if self.combiner:
+            args.extend(['-combiner', self.combiner])
+        if self.reducer:
+            args.extend(['-reducer', self.reducer])
+        else:
+            args.extend(['-jobconf', 'mapred.reduce.tasks=0'])
+        if self.input:
+            if isinstance(self.input, list):
+                for input in self.input:
+                    args.extend(('-input', input))
+            else:
+                args.extend(('-input', self.input))
+        if self.output:
+            args.extend(('-output', self.output))
+        if self.cache_files:
+            for cache_file in self.cache_files:
+                args.extend(('-cacheFile', cache_file))
+        if self.cache_archives:
+            for cache_archive in self.cache_archives:
+                args.extend(('-cacheArchive', cache_archive))
+        return args

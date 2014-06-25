@@ -1,0 +1,18 @@
+    def _get_xml_acl_helper(self, key_name, headers, query_args):
+        
+        response = self.connection.make_request('GET', self.name, key_name,
+                                                query_args=query_args,
+                                                headers=headers)
+        body = response.read()
+        if response.status != 200:
+            if response.status == 403:
+                match = ERROR_DETAILS_REGEX.search(body)
+                details = match.group('details') if match else None
+                if details:
+                    details = (('<Details>%s. Note that Full Control access'
+                                ' is required to access ACLs.</Details>') %
+                               details)
+                    body = re.sub(ERROR_DETAILS_REGEX, details, body)
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
+        return body

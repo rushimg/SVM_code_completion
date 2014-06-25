@@ -1,0 +1,21 @@
+    def __init__(self, job,
+                 worker_queue, result_queue,
+                 num_retries=5,
+                 time_between_retries=5,
+                 retry_exceptions=Exception):
+        """
+        Individual download thread that will download parts of the file from Glacier. Parts
+        to download stored in work queue.
+        Parts download to a temp dir with each part a separate file
+        :param job: Glacier job object
+        :param work_queue: A queue of tuples which include the part_number and
+            part_size
+        :param result_queue: A priority queue of tuples which include the
+            part_number and the path to the temp file that holds that
+            part's data.
+        """
+        super(DownloadWorkerThread, self).__init__(worker_queue, result_queue)
+        self._job = job
+        self._num_retries = num_retries
+        self._time_between_retries = time_between_retries
+        self._retry_exceptions = retry_exceptions

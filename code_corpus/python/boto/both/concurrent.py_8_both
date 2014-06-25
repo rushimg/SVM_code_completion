@@ -1,0 +1,9 @@
+    def _start_upload_threads(self, result_queue, upload_id, worker_queue,
+                              filename):
+        log.debug("Starting threads.")
+        for _ in xrange(self._num_threads):
+            thread = UploadWorkerThread(self._api, self._vault_name, filename,
+                                        upload_id, worker_queue, result_queue)
+            time.sleep(0.2)
+            thread.start()
+            self._threads.append(thread)

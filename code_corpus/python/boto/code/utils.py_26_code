@@ -1,0 +1,19 @@
+    def run(self, cwd=None):
+        boto.log.info('running:%s' % self.command)
+        self.process = subprocess.Popen(self.command, shell=True,
+                                        stdin=subprocess.PIPE,
+                                        stdout=subprocess.PIPE,
+                                        stderr=subprocess.PIPE,
+                                        cwd=cwd)
+        if(self.wait):
+            while self.process.poll() is None:
+                time.sleep(1)
+                t = self.process.communicate()
+                self.log_fp.write(t[0])
+                self.log_fp.write(t[1])
+            boto.log.info(self.log_fp.getvalue())
+            self.exit_code = self.process.returncode
+            if self.fail_fast and self.exit_code != 0:
+                raise Exception("Command " + self.command +
+                                " failed with status " + self.exit_code)
+            return self.exit_code

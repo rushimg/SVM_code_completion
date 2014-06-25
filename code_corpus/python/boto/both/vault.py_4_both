@@ -1,0 +1,14 @@
+    def upload_archive(self, filename, description=None):
+        """
+        Adds an archive to a vault. For archives greater than 100MB the
+        multipart upload will be used.
+        :type file: str
+        :param file: A filename to upload
+        :type description: str
+        :param description: An optional description for the archive.
+        :rtype: str
+        :return: The archive id of the newly created archive
+        """
+        if os.path.getsize(filename) > self.SingleOperationThreshold:
+            return self.create_archive_from_file(filename, description=description)
+        return self._upload_archive_single_operation(filename, description)

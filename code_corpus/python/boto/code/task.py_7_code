@@ -1,0 +1,8 @@
+    def start(self, queue_name):
+        boto.log.info('Task[%s] - starting with queue: %s' % (self.name, queue_name))
+        queue = boto.lookup('sqs', queue_name)
+        msg = queue.new_message(self.id)
+        msg = queue.write(msg)
+        self.message_id = msg.id
+        self.put()
+        boto.log.info('Task[%s] - start successful' % self.name)

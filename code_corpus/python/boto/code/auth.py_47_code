@@ -1,0 +1,35 @@
+    def determine_region_name(self, host):
+        # S3's different format(s) of representing region/service from the
+        # rest of AWS makes this hurt too.
+        #
+        # Possible domain formats:
+        # - s3.amazonaws.com (Classic)
+        # - s3-us-west-2.amazonaws.com (Specific region)
+        # - bukkit.s3.amazonaws.com (Vhosted Classic)
+        # - bukkit.s3-ap-northeast-1.amazonaws.com (Vhosted specific region)
+        # - s3.cn-north-1.amazonaws.com.cn - (Bejing region)
+        # - bukkit.s3.cn-north-1.amazonaws.com.cn - (Vhosted Bejing region)
+        parts = self.split_host_parts(host)
+        if self.region_name is not None:
+            region_name = self.region_name
+        else:
+            # Classic URLs - s3-us-west-2.amazonaws.com
+            if len(parts) == 3:
+                region_name = self.clean_region_name(parts[0])
+                # Special-case for Classic.
+                if region_name == 's3':
+                    region_name = 'us-east-1'
+            else:
+                # Iterate over the parts in reverse order.
+                for offset, part in enumerate(reversed(parts)):
+                    part = part.lower()
+                    # Look for the first thing starting with 's3'.
+                    # Until there's a ``.s3`` TLD, we should be OK. :P
+                    if part == 's3':
+                        # If it's by itself, the region is the previous part.
+                        region_name = parts[-offset]
+                        break
+                    elif part.startswith('s3-'):
+                        region_name = self.clean_region_name(part)
+                        break
+        return region_name

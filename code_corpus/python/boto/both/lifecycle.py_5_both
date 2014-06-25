@@ -1,0 +1,22 @@
+    def endElement(self, name, value, connection):
+        self.validateEndTag(name)
+        if name == RULE:
+            # We have to validate the rule after it is fully populated because
+            # the action and condition elements could be in any order.
+            self.validate()
+        elif name == ACTION:
+            self.current_tag = RULE
+        elif name in LEGAL_ACTIONS:
+            self.current_tag = ACTION
+        elif name in LEGAL_ACTION_PARAMS:
+            self.current_tag = self.action
+            # Add the action parameter name and value to the dictionary.
+            self.action_params[name] = value.strip()
+        elif name == CONDITION:
+            self.current_tag = RULE
+        elif name in LEGAL_CONDITIONS:
+            self.current_tag = CONDITION
+            # Add the condition name and value to the dictionary.
+            self.conditions[name] = value.strip()
+        else:
+            raise InvalidLifecycleConfigError('Unsupported end tag ' + name)

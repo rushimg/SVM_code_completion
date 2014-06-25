@@ -1,0 +1,21 @@
+    def put_object(self, parent_object, connection_name, **data):
+        """Writes the given object to the graph, connected to the given parent.
+        For example,
+            graph.put_object("me", "feed", message="Hello, world")
+        writes "Hello, world" to the active user's wall. Likewise, this
+        will comment on a the first post of the active user's feed:
+            feed = graph.get_connections("me", "feed")
+            post = feed["data"][0]
+            graph.put_object(post["id"], "comments", message="First!")
+        See http://developers.facebook.com/docs/api#publishing for all
+        of the supported writeable objects.
+        Certain write operations require extended permissions. For
+        example, publishing to a user's feed requires the
+        "publish_actions" permission. See
+        http://developers.facebook.com/docs/publishing/ for details
+        about publishing permissions.
+        """
+        assert self.access_token, "Write operations require an access token"
+        return self.request(parent_object + "/" + connection_name,
+                            post_args=data,
+                            method="POST")

@@ -1,0 +1,15 @@
+    def _wait_for_upload_threads(self, hash_chunks, result_queue, total_parts):
+        for _ in xrange(total_parts):
+            result = result_queue.get()
+            if isinstance(result, Exception):
+                log.debug("An error was found in the result queue, terminating "
+                          "threads: %s", result)
+                self._shutdown_threads()
+                raise UploadArchiveError("An error occurred while uploading "
+                                         "an archive: %s" % result)
+            # Each unit of work returns the tree hash for the given part
+            # number, which we use at the end to compute the tree hash of
+            # the entire archive.
+            part_number, tree_sha256 = result
+            hash_chunks[part_number] = tree_sha256
+        self._shutdown_threads()

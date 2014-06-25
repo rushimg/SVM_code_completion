@@ -1,0 +1,11 @@
+    def set_website_configuration_xml(self, xml, headers=None):
+        """Upload xml website configuration"""
+        response = self.connection.make_request('PUT', self.name, data=xml,
+                                                query_args='website',
+                                                headers=headers)
+        body = response.read()
+        if response.status == 200:
+            return True
+        else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)

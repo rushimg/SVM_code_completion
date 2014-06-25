@@ -1,0 +1,11 @@
+    def _set_tracker_uri(self, uri):
+        
+        parse_result = urlparse.urlparse(uri)
+        if (parse_result.scheme.lower() not in ['http', 'https'] or
+            not parse_result.netloc):
+            raise InvalidUriError('Invalid tracker URI (%s)' % uri)
+        self.tracker_uri = uri
+        self.tracker_uri_host = parse_result.netloc
+        self.tracker_uri_path = '%s?%s' % (
+            parse_result.path, parse_result.query)
+        self.server_has_bytes = 0

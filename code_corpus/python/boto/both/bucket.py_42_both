@@ -1,0 +1,20 @@
+    def enable_logging(self, target_bucket, target_prefix='',
+                       grants=None, headers=None):
+        """
+        Enable logging on a bucket.
+        :type target_bucket: bucket or string
+        :param target_bucket: The bucket to log to.
+        :type target_prefix: string
+        :param target_prefix: The prefix which should be prepended to the
+            generated log files written to the target_bucket.
+        :type grants: list of Grant objects
+        :param grants: A list of extra permissions which will be granted on
+            the log files which are created.
+        :rtype: bool
+        :return: True if ok or raises an exception.
+        """
+        if isinstance(target_bucket, Bucket):
+            target_bucket = target_bucket.name
+        blogging = BucketLogging(target=target_bucket, prefix=target_prefix,
+                                 grants=grants)
+        return self.set_xml_logging(blogging.to_xml(), headers=headers)

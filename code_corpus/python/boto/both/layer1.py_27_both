@@ -1,0 +1,29 @@
+    def modify_cache_subnet_group(self, cache_subnet_group_name,
+                                  cache_subnet_group_description=None,
+                                  subnet_ids=None):
+        """
+        The ModifyCacheSubnetGroup operation modifies an existing
+        cache subnet group.
+        :type cache_subnet_group_name: string
+        :param cache_subnet_group_name: The name for the cache subnet group.
+            This value is stored as a lowercase string.
+        Constraints: Must contain no more than 255 alphanumeric characters or
+            hyphens.
+        Example: `mysubnetgroup`
+        :type cache_subnet_group_description: string
+        :param cache_subnet_group_description: A description for the cache
+            subnet group.
+        :type subnet_ids: list
+        :param subnet_ids: The EC2 subnet IDs for the cache subnet group.
+        """
+        params = {'CacheSubnetGroupName': cache_subnet_group_name, }
+        if cache_subnet_group_description is not None:
+            params['CacheSubnetGroupDescription'] = cache_subnet_group_description
+        if subnet_ids is not None:
+            self.build_list_params(params,
+                                   subnet_ids,
+                                   'SubnetIds.member')
+        return self._make_request(
+            action='ModifyCacheSubnetGroup',
+            verb='POST',
+            path='/', params=params)

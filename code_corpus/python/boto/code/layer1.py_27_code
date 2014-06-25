@@ -1,0 +1,15 @@
+    def modify_cache_subnet_group(self, cache_subnet_group_name,
+                                  cache_subnet_group_description=None,
+                                  subnet_ids=None):
+        
+        params = {'CacheSubnetGroupName': cache_subnet_group_name, }
+        if cache_subnet_group_description is not None:
+            params['CacheSubnetGroupDescription'] = cache_subnet_group_description
+        if subnet_ids is not None:
+            self.build_list_params(params,
+                                   subnet_ids,
+                                   'SubnetIds.member')
+        return self._make_request(
+            action='ModifyCacheSubnetGroup',
+            verb='POST',
+            path='/', params=params)

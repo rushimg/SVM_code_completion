@@ -1,0 +1,12 @@
+    def get_all_bundle_tasks(self, bundle_ids=None, filters=None,
+                             dry_run=False):
+        
+        params = {}
+        if bundle_ids:
+            self.build_list_params(params, bundle_ids, 'BundleId')
+        if filters:
+            self.build_filter_params(params, filters)
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_list('DescribeBundleTasks', params,
+                             [('item', BundleInstanceTask)], verb='POST')

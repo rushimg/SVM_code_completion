@@ -1,0 +1,8 @@
+    def startElement(self, name, attrs, connection):
+        if name == 'TransactionPart':
+            getattr(self, name).append(TransactionPart(name=name))
+            return getattr(self, name)[-1]
+        if name in ('TransactionAmount', 'FPSFees', 'Balance'):
+            setattr(self, name, ComplexAmount(name=name))
+            return getattr(self, name)
+        return super(Transaction, self).startElement(name, attrs, connection)

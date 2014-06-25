@@ -1,0 +1,33 @@
+    def get_output(self, byte_range=None, validate_checksum=False):
+        """
+        This operation downloads the output of the job.  Depending on
+        the job type you specified when you initiated the job, the
+        output will be either the content of an archive or a vault
+        inventory.
+        You can download all the job output or download a portion of
+        the output by specifying a byte range. In the case of an
+        archive retrieval job, depending on the byte range you
+        specify, Amazon Glacier returns the checksum for the portion
+        of the data. You can compute the checksum on the client and
+        verify that the values match to ensure the portion you
+        downloaded is the correct data.
+        :type byte_range: tuple
+        :param range: A tuple of integer specifying the slice (in bytes)
+            of the archive you want to receive
+        :type validate_checksum: bool
+        :param validate_checksum: Specify whether or not to validate
+            the associate tree hash.  If the response does not contain
+            a TreeHash, then no checksum will be verified.
+        """
+        response = self.vault.layer1.get_job_output(self.vault.name,
+                                                    self.id,
+                                                    byte_range)
+        if validate_checksum and 'TreeHash' in response:
+            data = response.read()
+            actual_tree_hash = tree_hash_from_str(data)
+            if response['TreeHash'] != actual_tree_hash:
+                raise TreeHashDoesNotMatchError(
+                    "The calculated tree hash %s does not match the "
+                    "expected tree hash %s for the byte range %s" % (
+                        actual_tree_hash, response['TreeHash'], byte_range))
+        return response

@@ -1,0 +1,13 @@
+    def _query_server_state(self, conn, file_length):
+        
+        # Send an empty PUT so that server replies with this resumable
+        # transfer's state.
+        put_headers = {}
+        put_headers['Content-Range'] = (
+            self._build_content_range_header('*', file_length))
+        put_headers['Content-Length'] = '0'
+        return AWSAuthConnection.make_request(conn, 'PUT',
+                                              path=self.tracker_uri_path,
+                                              auth_path=self.tracker_uri_path,
+                                              headers=put_headers,
+                                              host=self.tracker_uri_host)

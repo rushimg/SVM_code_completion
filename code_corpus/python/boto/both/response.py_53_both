@@ -1,0 +1,17 @@
+    def __init__(self, response):
+        response = response['UpdateConfigurationTemplateResponse']
+        super(UpdateConfigurationTemplateResponse, self).__init__(response)
+        response = response['UpdateConfigurationTemplateResult']
+        self.application_name = str(response['ApplicationName'])
+        self.date_created = datetime.fromtimestamp(response['DateCreated'])
+        self.date_updated = datetime.fromtimestamp(response['DateUpdated'])
+        self.deployment_status = str(response['DeploymentStatus'])
+        self.description = str(response['Description'])
+        self.environment_name = str(response['EnvironmentName'])
+        self.option_settings = []
+        if response['OptionSettings']:
+            for member in response['OptionSettings']:
+                option_setting = ConfigurationOptionSetting(member)
+                self.option_settings.append(option_setting)
+        self.solution_stack_name = str(response['SolutionStackName'])
+        self.template_name = str(response['TemplateName'])

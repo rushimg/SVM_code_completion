@@ -1,0 +1,11 @@
+    def _set_integer_value(self, value):
+        if isinstance(value, basestring):
+            value = int(value)
+        if isinstance(value, int) or isinstance(value, long):
+            if self.allowed_values:
+                min, max = self.allowed_values.split('-')
+                if value < int(min) or value > int(max):
+                    raise ValueError('range is %s' % self.allowed_values)
+            self._value = value
+        else:
+            raise ValueError('value must be integer')

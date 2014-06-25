@@ -1,0 +1,13 @@
+    def properties(cls, hidden=True):
+        properties = []
+        while cls:
+            for key in cls.__dict__.keys():
+                prop = cls.__dict__[key]
+                if isinstance(prop, Property):
+                    if hidden or not prop.__class__.__name__.startswith('_'):
+                        properties.append(prop)
+            if len(cls.__bases__) > 0:
+                cls = cls.__bases__[0]
+            else:
+                cls = None
+        return properties

@@ -1,0 +1,14 @@
+    def _send_file_internal(self, fp, headers=None, cb=None, num_cb=10,
+                            query_args=None, chunked_transfer=False, size=None,
+                            hash_algs=None):
+        provider = self.bucket.connection.provider
+        try:
+            spos = fp.tell()
+        except IOError:
+            spos = None
+            self.read_from_stream = False
+        # If hash_algs is unset and the MD5 hasn't already been computed,
+        # default to an MD5 hash_alg to hash the data on-the-fly.
+        if hash_algs is None and not self.md5:
+            hash_algs = {'md5': md5}
+        digesters = dict((alg, hash_algs[alg]()) for alg in hash_algs or {})

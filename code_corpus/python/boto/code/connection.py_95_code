@@ -1,0 +1,12 @@
+    def get_all_placement_groups(self, groupnames=None, filters=None,
+                                 dry_run=False):
+        
+        params = {}
+        if groupnames:
+            self.build_list_params(params, groupnames, 'GroupName')
+        if filters:
+            self.build_filter_params(params, filters)
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_list('DescribePlacementGroups', params,
+                             [('item', PlacementGroup)], verb='POST')

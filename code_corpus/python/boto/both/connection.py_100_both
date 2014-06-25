@@ -1,0 +1,19 @@
+    def create_tags(self, resource_ids, tags, dry_run=False):
+        """
+        Create new metadata tags for the specified resource ids.
+        :type resource_ids: list
+        :param resource_ids: List of strings
+        :type tags: dict
+        :param tags: A dictionary containing the name/value pairs.
+                     If you want to create only a tag name, the
+                     value for that tag should be the empty string
+                     (e.g. '').
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+        """
+        params = {}
+        self.build_list_params(params, resource_ids, 'ResourceId')
+        self.build_tag_param_list(params, tags)
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_status('CreateTags', params, verb='POST')

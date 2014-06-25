@@ -1,0 +1,11 @@
+    def delete_key(self, validate=False, headers=None, version_id=None,
+                   mfa_token=None):
+        self._check_object_uri('delete_key')
+        bucket = self.get_bucket(validate, headers)
+        if self.get_provider().name == 'aws':
+            version_id = version_id or self.version_id
+            return bucket.delete_key(self.object_name, headers, version_id,
+                                     mfa_token)
+        elif self.get_provider().name == 'google':
+            return bucket.delete_key(self.object_name, headers,
+                                     generation=self.generation)

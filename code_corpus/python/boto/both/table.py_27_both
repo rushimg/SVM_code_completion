@@ -1,0 +1,40 @@
+    def _batch_get(self, keys, consistent=False):
+        """
+        The internal method that performs the actual batch get. Used extensively
+        by ``BatchGetResultSet`` to perform each (paginated) request.
+        """
+        items = {
+            self.table_name: {
+                'Keys': [],
+            },
+        }
+        if consistent:
+            items[self.table_name]['ConsistentRead'] = True
+        for key_data in keys:
+            raw_key = {}
+            for key, value in key_data.items():
+                raw_key[key] = self._dynamizer.encode(value)
+            items[self.table_name]['Keys'].append(raw_key)
+        raw_results = self.connection.batch_get_item(request_items=items)
+        results = []
+        unprocessed_keys = []
+        for raw_item in raw_results['Responses'].get(self.table_name, []):
+            item = Item(self)
+            item.load({
+                'Item': raw_item,
+            })
+            results.append(item)
+        raw_unproccessed = raw_results.get('UnprocessedKeys', {})
+        for raw_key in raw_unproccessed.get('Keys', []):
+            py_key = {}
+            for key, value in raw_key.items():
+                py_key[key] = self._dynamizer.decode(value)
+            unprocessed_keys.append(py_key)
+        return {
+            'results': results,
+            # NEVER return a ``last_key``. Just in-case any part of
+            # ``ResultSet`` peeks through, since much of the
+            # original underlying implementation is based on this key.
+            'last_key': None,
+            'unprocessed_keys': unprocessed_keys,
+        }

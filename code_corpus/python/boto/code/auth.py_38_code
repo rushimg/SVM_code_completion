@@ -1,0 +1,15 @@
+    def credential_scope(self, http_request):
+        scope = []
+        http_request.timestamp = http_request.headers['X-Amz-Date'][0:8]
+        scope.append(http_request.timestamp)
+        # The service_name and region_name either come from:
+        # * The service_name/region_name attrs or (if these values are None)
+        # * parsed from the endpoint <service>.<region>.amazonaws.com.
+        region_name = self.determine_region_name(http_request.host)
+        service_name = self.determine_service_name(http_request.host)
+        http_request.service_name = service_name
+        http_request.region_name = region_name
+        scope.append(http_request.region_name)
+        scope.append(http_request.service_name)
+        scope.append('aws4_request')
+        return '/'.join(scope)

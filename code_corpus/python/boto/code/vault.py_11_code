@@ -1,0 +1,11 @@
+    def retrieve_archive(self, archive_id, sns_topic=None,
+                         description=None):
+        
+        job_data = {'Type': 'archive-retrieval',
+                    'ArchiveId': archive_id}
+        if sns_topic is not None:
+            job_data['SNSTopic'] = sns_topic
+        if description is not None:
+            job_data['Description'] = description
+        response = self.layer1.initiate_job(self.name, job_data)
+        return self.get_job(response['JobId'])

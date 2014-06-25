@@ -1,0 +1,13 @@
+    def create_vpn_connection(self, type, customer_gateway_id, vpn_gateway_id,
+                              static_routes_only=None, dry_run=False):
+        
+        params = {'Type': type,
+                  'CustomerGatewayId': customer_gateway_id,
+                  'VpnGatewayId': vpn_gateway_id}
+        if static_routes_only is not None:
+            if isinstance(static_routes_only, bool):
+                static_routes_only = str(static_routes_only).lower()
+            params['Options.StaticRoutesOnly'] = static_routes_only
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_object('CreateVpnConnection', params, VpnConnection)

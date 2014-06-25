@@ -1,0 +1,13 @@
+    def __repr__(self):
+        # Owner is optional in GS ACLs.
+        if hasattr(self, 'owner'):
+            entries_repr = ['Owner:%s' % self.owner.__repr__()]
+        else:
+            entries_repr = ['']
+        acl_entries = self.entries
+        if acl_entries:
+            for e in acl_entries.entry_list:
+                entries_repr.append(e.__repr__())
+        return '<%s>' % ', '.join(entries_repr)
+    # Method with same signature as boto.s3.acl.ACL.add_email_grant(), to allow
+    # polymorphic treatment at application layer.

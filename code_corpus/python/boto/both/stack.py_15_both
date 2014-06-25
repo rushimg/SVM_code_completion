@@ -1,0 +1,23 @@
+    def endElement(self, name, value, connection):
+        if name == 'StackId':
+            self.stack_id = value
+        elif name == 'StackStatus':
+            self.stack_status = value
+        elif name == 'StackName':
+            self.stack_name = value
+        elif name == 'CreationTime':
+            try:
+                self.creation_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
+            except ValueError:
+                self.creation_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ')
+        elif name == "DeletionTime":
+            try:
+                self.deletion_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
+            except ValueError:
+                self.deletion_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ')
+        elif name == 'TemplateDescription':
+            self.template_description = value
+        elif name == "member":
+            pass
+        else:
+            setattr(self, name, value)

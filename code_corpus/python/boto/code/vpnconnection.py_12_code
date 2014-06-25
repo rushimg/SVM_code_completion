@@ -1,0 +1,18 @@
+    def endElement(self, name, value, connection):
+        if name == 'outsideIpAddress':
+            self.outside_ip_address = value
+        elif name == 'status':
+            self.status = value
+        elif name == 'lastStatusChange':
+            self.last_status_change =  datetime.strptime(value,
+                                        '%Y-%m-%dT%H:%M:%S.%fZ')
+        elif name == 'statusMessage':
+            self.status_message = value
+        elif name == 'acceptedRouteCount':
+            try:
+                value = int(value)
+            except ValueError:
+                boto.log.warning('Error converting code (%s) to int' % value)
+            self.accepted_route_count = value
+        else:
+            setattr(self, name, value)

@@ -1,0 +1,9 @@
+    def set_cors(self, cors, headers=None):
+        
+        response = self.connection.make_request(
+            'PUT', get_utf8_value(self.name), data=get_utf8_value(cors),
+            query_args=CORS_ARG, headers=headers)
+        body = response.read()
+        if response.status != 200:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)

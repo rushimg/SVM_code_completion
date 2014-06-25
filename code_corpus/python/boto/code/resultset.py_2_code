@@ -1,0 +1,13 @@
+    def startElement(self, name, attrs, connection):
+        for t in self.markers:
+            if name == t[0]:
+                obj = t[1](connection)
+                self.append(obj)
+                return obj
+        if name == 'Owner':
+            # Makes owner available for get_service and
+            # perhaps other lists where not handled by
+            # another element.
+            self.owner = User()
+            return self.owner
+        return None

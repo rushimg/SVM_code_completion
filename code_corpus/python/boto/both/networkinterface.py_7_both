@@ -1,0 +1,16 @@
+    def startElement(self, name, attrs, connection):
+        retval = super(NetworkInterface, self).startElement(name, attrs,
+            connection)
+        if retval is not None:
+            return retval
+        if name == 'groupSet':
+            self.groups = ResultSet([('item', Group)])
+            return self.groups
+        elif name == 'attachment':
+            self.attachment = Attachment()
+            return self.attachment
+        elif name == 'privateIpAddressesSet':
+            self.private_ip_addresses = ResultSet([('item', PrivateIPAddress)])
+            return self.private_ip_addresses
+        else:
+            return None

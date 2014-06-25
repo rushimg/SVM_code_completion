@@ -1,0 +1,17 @@
+    def save_to_s3(self, bucket):
+        """
+        Read all messages from the queue and persist them to S3.
+        Messages are stored in the S3 bucket using a naming scheme of::
+            <queue_id>/<message_id>
+        Messages are deleted from the queue after being saved to S3.
+        Returns the number of messages saved.
+        """
+        n = 0
+        m = self.read()
+        while m:
+            n += 1
+            key = bucket.new_key('%s/%s' % (self.id, m.id))
+            key.set_contents_from_string(m.get_body())
+            self.delete_message(m)
+            m = self.read()
+        return n

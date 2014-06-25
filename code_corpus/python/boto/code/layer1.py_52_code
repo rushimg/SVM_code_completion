@@ -1,0 +1,42 @@
+    def restore_from_cluster_snapshot(self, cluster_identifier,
+                                      snapshot_identifier,
+                                      snapshot_cluster_identifier=None,
+                                      port=None, availability_zone=None,
+                                      allow_version_upgrade=None,
+                                      cluster_subnet_group_name=None,
+                                      publicly_accessible=None,
+                                      owner_account=None,
+                                      hsm_client_certificate_identifier=None,
+                                      hsm_configuration_identifier=None,
+                                      elastic_ip=None):
+        
+        params = {
+            'ClusterIdentifier': cluster_identifier,
+            'SnapshotIdentifier': snapshot_identifier,
+        }
+        if snapshot_cluster_identifier is not None:
+            params['SnapshotClusterIdentifier'] = snapshot_cluster_identifier
+        if port is not None:
+            params['Port'] = port
+        if availability_zone is not None:
+            params['AvailabilityZone'] = availability_zone
+        if allow_version_upgrade is not None:
+            params['AllowVersionUpgrade'] = str(
+                allow_version_upgrade).lower()
+        if cluster_subnet_group_name is not None:
+            params['ClusterSubnetGroupName'] = cluster_subnet_group_name
+        if publicly_accessible is not None:
+            params['PubliclyAccessible'] = str(
+                publicly_accessible).lower()
+        if owner_account is not None:
+            params['OwnerAccount'] = owner_account
+        if hsm_client_certificate_identifier is not None:
+            params['HsmClientCertificateIdentifier'] = hsm_client_certificate_identifier
+        if hsm_configuration_identifier is not None:
+            params['HsmConfigurationIdentifier'] = hsm_configuration_identifier
+        if elastic_ip is not None:
+            params['ElasticIp'] = elastic_ip
+        return self._make_request(
+            action='RestoreFromClusterSnapshot',
+            verb='POST',
+            path='/', params=params)

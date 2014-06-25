@@ -1,0 +1,14 @@
+    def get_output(self, byte_range=None, validate_checksum=False):
+        
+        response = self.vault.layer1.get_job_output(self.vault.name,
+                                                    self.id,
+                                                    byte_range)
+        if validate_checksum and 'TreeHash' in response:
+            data = response.read()
+            actual_tree_hash = tree_hash_from_str(data)
+            if response['TreeHash'] != actual_tree_hash:
+                raise TreeHashDoesNotMatchError(
+                    "The calculated tree hash %s does not match the "
+                    "expected tree hash %s for the byte range %s" % (
+                        actual_tree_hash, response['TreeHash'], byte_range))
+        return response

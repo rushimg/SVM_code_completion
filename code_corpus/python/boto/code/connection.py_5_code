@@ -1,0 +1,15 @@
+    def get_hosted_zone(self, hosted_zone_id):
+        
+        uri = '/%s/hostedzone/%s' % (self.Version, hosted_zone_id)
+        response = self.make_request('GET', uri)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status >= 300:
+            raise exception.DNSServerError(response.status,
+                                           response.reason,
+                                           body)
+        e = boto.jsonresponse.Element(list_marker='NameServers',
+                                      item_marker=('NameServer',))
+        h = boto.jsonresponse.XmlHandler(e, None)
+        h.parse(body)
+        return e

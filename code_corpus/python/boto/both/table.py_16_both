@@ -1,0 +1,24 @@
+    def delete_item(self, **kwargs):
+        """
+        Deletes an item in DynamoDB.
+        **IMPORTANT** - Be careful when using this method, there is no undo.
+        To specify the key of the item you'd like to get, you can specify the
+        key attributes as kwargs.
+        Returns ``True`` on success.
+        Example::
+            # A simple hash key.
+            >>> users.delete_item(username='johndoe')
+            True
+            # A complex hash+range key.
+            >>> users.delete_item(username='jane', last_name='Doe')
+            True
+            # With a key that is an invalid variable name in Python.
+            # Also, assumes a different schema than previous examples.
+            >>> users.delete_item(**{
+            ...     'date-joined': 127549192,
+            ... })
+            True
+        """
+        raw_key = self._encode_keys(kwargs)
+        self.connection.delete_item(self.table_name, raw_key)
+        return True

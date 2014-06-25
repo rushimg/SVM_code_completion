@@ -1,0 +1,30 @@
+    def check(self):
+        """
+        Determine how long until the next scheduled time for a Task.
+        Returns the number of seconds until the next scheduled time or zero
+        if the task needs to be run immediately.
+        If it's an hourly task and it's never been run, run it now.
+        If it's a daily task and it's never been run and the hour is right, run it now.
+        """
+        boto.log.info('checking Task[%s]-now=%s, last=%s' % (self.name, self.now, self.last_executed))
+        if self.hourly and not self.last_executed:
+            return 0
+        if self.daily and not self.last_executed:
+            if int(self.hour) == self.now.hour:
+                return 0
+            else:
+                return max( (int(self.hour)-self.now.hour), (self.now.hour-int(self.hour)) )*60*60
+        delta = self.now - self.last_executed
+        if self.hourly:
+            if delta.seconds >= 60*60:
+                return 0
+            else:
+                return 60*60 - delta.seconds
+        else:
+            if int(self.hour) == self.now.hour:
+                if delta.days >= 1:
+                    return 0
+                else:
+                    return 82800 # 23 hours, just to be safe
+            else:
+                return max( (int(self.hour)-self.now.hour), (self.now.hour-int(self.hour)) )*60*60

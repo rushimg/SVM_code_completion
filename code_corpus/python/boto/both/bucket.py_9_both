@@ -1,0 +1,37 @@
+    def set_acl(self, acl_or_str, key_name='', headers=None, version_id=None,
+                generation=None, if_generation=None, if_metageneration=None):
+        """Sets or changes a bucket's or key's ACL.
+        :type acl_or_str: string or :class:`boto.gs.acl.ACL`
+        :param acl_or_str: A canned ACL string (see
+            :data:`~.gs.acl.CannedACLStrings`) or an ACL object.
+        :type key_name: string
+        :param key_name: A key name within the bucket to set the ACL for. If not
+            specified, the ACL for the bucket will be set.
+        :type headers: dict
+        :param headers: Additional headers to set during the request.
+        :type version_id: string
+        :param version_id: Unused in this subclass.
+        :type generation: int
+        :param generation: If specified, sets the ACL for a specific generation
+            of a versioned object. If not specified, the current version is
+            modified.
+        :type if_generation: int
+        :param if_generation: (optional) If set to a generation number, the acl
+            will only be updated if its current generation number is this value.
+        :type if_metageneration: int
+        :param if_metageneration: (optional) If set to a metageneration number,
+            the acl will only be updated if its current metageneration number is
+            this value.
+        """
+        if isinstance(acl_or_str, Policy):
+            raise InvalidAclError('Attempt to set S3 Policy on GS ACL')
+        elif isinstance(acl_or_str, ACL):
+            self.set_xml_acl(acl_or_str.to_xml(), key_name, headers=headers,
+                             generation=generation,
+                             if_generation=if_generation,
+                             if_metageneration=if_metageneration)
+        else:
+            self.set_canned_acl(acl_or_str, key_name, headers=headers,
+                                generation=generation,
+                                if_generation=if_generation,
+                                if_metageneration=if_metageneration)

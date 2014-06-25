@@ -1,0 +1,17 @@
+    def _connect(self):
+        args = dict(aws_access_key_id=self.db_user,
+                    aws_secret_access_key=self.db_passwd,
+                    is_secure=self.enable_ssl)
+        try:
+            region = [x for x in boto.sdb.regions() if x.endpoint == self.db_host][0]
+            args['region'] = region
+        except IndexError:
+            pass
+        self._sdb = boto.connect_sdb(**args)
+        # This assumes that the domain has already been created
+        # It's much more efficient to do it this way rather than
+        # having this make a roundtrip each time to validate.
+        # The downside is that if the domain doesn't exist, it breaks
+        self._domain = self._sdb.lookup(self.db_name, validate=False)
+        if not self._domain:
+            self._domain = self._sdb.create_domain(self.db_name)

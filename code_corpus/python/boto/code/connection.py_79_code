@@ -1,0 +1,52 @@
+    def get_all_reserved_instances_offerings(self,
+                                             reserved_instances_offering_ids=None,
+                                             instance_type=None,
+                                             availability_zone=None,
+                                             product_description=None,
+                                             filters=None,
+                                             instance_tenancy=None,
+                                             offering_type=None,
+                                             include_marketplace=None,
+                                             min_duration=None,
+                                             max_duration=None,
+                                             max_instance_count=None,
+                                             next_token=None,
+                                             max_results=None,
+                                             dry_run=False):
+        
+        params = {}
+        if reserved_instances_offering_ids is not None:
+            self.build_list_params(params, reserved_instances_offering_ids,
+                                   'ReservedInstancesOfferingId')
+        if instance_type:
+            params['InstanceType'] = instance_type
+        if availability_zone:
+            params['AvailabilityZone'] = availability_zone
+        if product_description:
+            params['ProductDescription'] = product_description
+        if filters:
+            self.build_filter_params(params, filters)
+        if instance_tenancy is not None:
+            params['InstanceTenancy'] = instance_tenancy
+        if offering_type is not None:
+            params['OfferingType'] = offering_type
+        if include_marketplace is not None:
+            if include_marketplace:
+                params['IncludeMarketplace'] = 'true'
+            else:
+                params['IncludeMarketplace'] = 'false'
+        if min_duration is not None:
+            params['MinDuration'] = str(min_duration)
+        if max_duration is not None:
+            params['MaxDuration'] = str(max_duration)
+        if max_instance_count is not None:
+            params['MaxInstanceCount'] = str(max_instance_count)
+        if next_token is not None:
+            params['NextToken'] = next_token
+        if max_results is not None:
+            params['MaxResults'] = str(max_results)
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_list('DescribeReservedInstancesOfferings',
+                             params, [('item', ReservedInstancesOffering)],
+                             verb='POST')

@@ -1,0 +1,13 @@
+    def _process_chunk(self, work):
+        
+        result = None
+        for _ in xrange(self._num_retries):
+            try:
+                result = self._download_chunk(work)
+                break
+            except self._retry_exceptions, e:
+                log.error("Exception caught downloading part number %s for "
+                          "job %s", work[0], self._job,)
+                time.sleep(self._time_between_retries)
+                result = e
+        return result

@@ -1,0 +1,26 @@
+    def check_for_env_url(self):
+        
+        url = self.args.get('url', None)
+        if url:
+            del self.args['url']
+        if not url and self.EnvURL in os.environ:
+            url = os.environ[self.EnvURL]
+        if url:
+            rslt = urlparse.urlparse(url)
+            if 'is_secure' not in self.args:
+                if rslt.scheme == 'https':
+                    self.args['is_secure'] = True
+                else:
+                    self.args['is_secure'] = False
+            host = rslt.netloc
+            port = None
+            l = host.split(':')
+            if len(l) > 1:
+                host = l[0]
+                port = int(l[1])
+            if 'host' not in self.args:
+                self.args['host'] = host
+            if port and 'port' not in self.args:
+                self.args['port'] = port
+            if rslt.path and 'path' not in self.args:
+                self.args['path'] = rslt.path

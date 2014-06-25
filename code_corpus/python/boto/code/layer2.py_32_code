@@ -1,0 +1,9 @@
+    def delete_item(self, item, expected_value=None, return_values=None):
+        
+        expected_value = self.dynamize_expected_value(expected_value)
+        key = self.build_key_from_values(item.table.schema,
+                                         item.hash_key, item.range_key)
+        return self.layer1.delete_item(item.table.name, key,
+                                       expected=expected_value,
+                                       return_values=return_values,
+                                       object_hook=self.dynamizer.decode)

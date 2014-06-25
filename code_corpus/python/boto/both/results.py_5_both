@@ -1,0 +1,19 @@
+    def next(self):
+        self._offset += 1
+        if self._offset >= len(self._results):
+            if self._results_left is False:
+                raise StopIteration()
+            self.fetch_more()
+            # It's possible that previous call to ``fetch_more`` may not return
+            # anything useful but there may be more results. Loop until we get
+            # something back, making sure we guard for no results left.
+            while not len(self._results) and self._results_left:
+                self.fetch_more()
+        if self._offset < len(self._results):
+            if self._limit is not None:
+                self._limit -= 1
+                if self._limit < 0:
+                    raise StopIteration()
+            return self._results[self._offset]
+        else:
+            raise StopIteration()

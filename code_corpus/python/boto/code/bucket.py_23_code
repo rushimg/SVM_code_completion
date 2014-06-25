@@ -1,0 +1,15 @@
+    def get_storage_class(self):
+        
+        response = self.connection.make_request('GET', self.name,
+                                                query_args='storageClass')
+        body = response.read()
+        if response.status == 200:
+            rs = ResultSet(self)
+            h = handler.XmlHandler(rs, self)
+            xml.sax.parseString(body, h)
+            return rs.StorageClass
+        else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
+    # Method with same signature as boto.s3.bucket.Bucket.add_email_grant(),
+    # to allow polymorphic treatment at application layer.

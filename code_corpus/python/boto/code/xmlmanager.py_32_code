@@ -1,0 +1,12 @@
+    def get_object(self, cls, id):
+        if not self.connection:
+            self._connect()
+        if not self.connection:
+            raise NotImplementedError("Can't query without a database connection")
+        url = "/%s/%s" % (self.db_name, id)
+        resp = self._make_request('GET', url)
+        if resp.status == 200:
+            doc = parse(resp)
+        else:
+            raise Exception("Error: %s" % resp.status)
+        return self.get_object_from_doc(cls, id, doc)

@@ -1,0 +1,17 @@
+    def get_logging_status(self, headers=None):
+        """
+        Get the logging status for this bucket.
+        :rtype: :class:`boto.s3.bucketlogging.BucketLogging`
+        :return: A BucketLogging object for this bucket.
+        """
+        response = self.connection.make_request('GET', self.name,
+                query_args='logging', headers=headers)
+        body = response.read()
+        if response.status == 200:
+            blogging = BucketLogging()
+            h = handler.XmlHandler(blogging, self)
+            xml.sax.parseString(body, h)
+            return blogging
+        else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)

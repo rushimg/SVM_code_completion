@@ -1,0 +1,46 @@
+    def modify_cache_cluster(self, cache_cluster_id, num_cache_nodes=None,
+                             cache_node_ids_to_remove=None,
+                             cache_security_group_names=None,
+                             security_group_ids=None,
+                             preferred_maintenance_window=None,
+                             notification_topic_arn=None,
+                             cache_parameter_group_name=None,
+                             notification_topic_status=None,
+                             apply_immediately=None, engine_version=None,
+                             auto_minor_version_upgrade=None):
+        
+        params = {'CacheClusterId': cache_cluster_id, }
+        if num_cache_nodes is not None:
+            params['NumCacheNodes'] = num_cache_nodes
+        if cache_node_ids_to_remove is not None:
+            self.build_list_params(params,
+                                   cache_node_ids_to_remove,
+                                   'CacheNodeIdsToRemove.member')
+        if cache_security_group_names is not None:
+            self.build_list_params(params,
+                                   cache_security_group_names,
+                                   'CacheSecurityGroupNames.member')
+        if security_group_ids is not None:
+            self.build_list_params(params,
+                                   security_group_ids,
+                                   'SecurityGroupIds.member')
+        if preferred_maintenance_window is not None:
+            params['PreferredMaintenanceWindow'] = preferred_maintenance_window
+        if notification_topic_arn is not None:
+            params['NotificationTopicArn'] = notification_topic_arn
+        if cache_parameter_group_name is not None:
+            params['CacheParameterGroupName'] = cache_parameter_group_name
+        if notification_topic_status is not None:
+            params['NotificationTopicStatus'] = notification_topic_status
+        if apply_immediately is not None:
+            params['ApplyImmediately'] = str(
+                apply_immediately).lower()
+        if engine_version is not None:
+            params['EngineVersion'] = engine_version
+        if auto_minor_version_upgrade is not None:
+            params['AutoMinorVersionUpgrade'] = str(
+                auto_minor_version_upgrade).lower()
+        return self._make_request(
+            action='ModifyCacheCluster',
+            verb='POST',
+            path='/', params=params)

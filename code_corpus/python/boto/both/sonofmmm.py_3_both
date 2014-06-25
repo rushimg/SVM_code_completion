@@ -1,0 +1,11 @@
+    def process_file(self, in_file_name, msg):
+        base, ext = os.path.splitext(in_file_name)
+        out_file_name = os.path.join(self.working_dir,
+                                     base+self.output_ext)
+        command = self.command % (in_file_name, out_file_name)
+        boto.log.info('running:\n%s' % command)
+        status = self.run(command)
+        if status == 0:
+            return [(out_file_name, self.output_mimetype)]
+        else:
+            return []

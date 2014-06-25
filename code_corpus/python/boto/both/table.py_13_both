@@ -1,0 +1,25 @@
+    def put_item(self, data, overwrite=False):
+        """
+        Saves an entire item to DynamoDB.
+        By default, if any part of the ``Item``'s original data doesn't match
+        what's currently in DynamoDB, this request will fail. This prevents
+        other processes from updating the data in between when you read the
+        item & when your request to update the item's data is processed, which
+        would typically result in some data loss.
+        Requires a ``data`` parameter, which should be a dictionary of the data
+        you'd like to store in DynamoDB.
+        Optionally accepts an ``overwrite`` parameter, which should be a
+        boolean. If you provide ``True``, this will tell DynamoDB to blindly
+        overwrite whatever data is present, if any.
+        Returns ``True`` on success.
+        Example::
+            >>> users.put_item(data={
+            ...     'username': 'jane',
+            ...     'first_name': 'Jane',
+            ...     'last_name': 'Doe',
+            ...     'date_joined': 126478915,
+            ... })
+            True
+        """
+        item = Item(self, data=data)
+        return item.save(overwrite=overwrite)

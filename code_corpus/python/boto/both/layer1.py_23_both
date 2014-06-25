@@ -1,0 +1,26 @@
+    def update_stopword_options(self, domain_name, stopwords):
+        """
+        Updates stopword options used by indexing for the search domain.
+        :type domain_name: string
+        :param domain_name: A string that represents the name of a
+            domain. Domain names must be unique across the domains
+            owned by an account within an AWS region. Domain names
+            must start with a letter or number and can contain the
+            following characters: a-z (lowercase), 0-9, and -
+            (hyphen). Uppercase letters and underscores are not
+            allowed.
+        :type stopwords: string
+        :param stopwords: Lists stopwords in a JSON object. The object has a
+            single key called "stopwords" whose value is an array of strings.
+            The maximum size of a stopwords document is 10KB. Example:
+            {"stopwords": ["a", "an", "the", "of"]}
+        :raises: BaseException, InternalException, InvalidTypeException,
+            LimitExceededException, ResourceNotFoundException
+        """
+        doc_path = ('update_stopword_options_response',
+                    'update_stopword_options_result',
+                    'stopwords')
+        params = {'DomainName': domain_name,
+                  'Stopwords': stopwords}
+        return self.get_response(doc_path, 'UpdateStopwordOptions',
+                                 params, verb='POST')

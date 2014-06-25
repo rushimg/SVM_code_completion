@@ -1,0 +1,40 @@
+    def _new_record(self, changes, resource_type, name, value, ttl, identifier,
+                   comment=""):
+        """
+        Add a CREATE change record to an existing ResourceRecordSets
+        :type changes: ResourceRecordSets
+        :param changes: change set to append to
+        :type name: str
+        :param name: The name of the resource record you want to
+            perform the action on.
+        :type resource_type: str
+        :param resource_type: The DNS record type
+        :param value: Appropriate value for resource_type
+        :type ttl: int
+        :param ttl: The resource record cache time to live (TTL), in seconds.
+        :type identifier: tuple
+        :param identifier: A tuple for setting WRR or LBR attributes.  Valid
+           forms are:
+           * (str, int): WRR record [e.g. ('foo',10)]
+           * (str, str): LBR record [e.g. ('foo','us-east-1')
+        :type comment: str
+        :param comment: A comment that will be stored with the change.
+        """
+        weight = None
+        region = None
+        if identifier is not None:
+            try:
+                int(identifier[1])
+                weight = identifier[1]
+                identifier = identifier[0]
+            except:
+                region = identifier[1]
+                identifier = identifier[0]
+        change = changes.add_change("CREATE", name, resource_type, ttl,
+                                    identifier=identifier, weight=weight,
+                                    region=region)
+        if type(value) in [list, tuple, set]:
+            for record in value:
+                change.add_value(record)
+        else:
+            change.add_value(value)

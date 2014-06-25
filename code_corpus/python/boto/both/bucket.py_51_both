@@ -1,0 +1,19 @@
+    def get_lifecycle_config(self, headers=None):
+        """
+        Returns the current lifecycle configuration on the bucket.
+        :rtype: :class:`boto.s3.lifecycle.Lifecycle`
+        :returns: A LifecycleConfig object that describes all current
+            lifecycle rules in effect for the bucket.
+        """
+        response = self.connection.make_request('GET', self.name,
+                query_args='lifecycle', headers=headers)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status == 200:
+            lifecycle = Lifecycle()
+            h = handler.XmlHandler(lifecycle, self)
+            xml.sax.parseString(body, h)
+            return lifecycle
+        else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)

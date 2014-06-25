@@ -1,0 +1,17 @@
+    def _check_final_md5(self, key, etag):
+        
+        if key.bucket.connection.debug >= 1:
+            print 'Checking md5 against etag.'
+        if key.md5 != etag.strip('"\''):
+            # Call key.open_read() before attempting to delete the
+            # (incorrect-content) key, so we perform that request on a
+            # different HTTP connection. This is neededb because httplib
+            # will return a "Response not ready" error if you try to perform
+            # a second transaction on the connection.
+            key.open_read()
+            key.close()
+            key.delete()
+            raise ResumableUploadException(
+                'File changed during upload: md5 signature doesn\'t match etag '
+                '(incorrect uploaded object deleted)',
+                ResumableTransferDisposition.ABORT)

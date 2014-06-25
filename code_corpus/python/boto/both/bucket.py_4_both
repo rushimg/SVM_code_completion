@@ -1,0 +1,37 @@
+    def get_key(self, key_name, headers=None, version_id=None,
+                response_headers=None, generation=None):
+        """Returns a Key instance for an object in this bucket.
+         Note that this method uses a HEAD request to check for the existence of
+         the key.
+        :type key_name: string
+        :param key_name: The name of the key to retrieve
+        :type response_headers: dict
+        :param response_headers: A dictionary containing HTTP
+            headers/values that will override any headers associated
+            with the stored object in the response.  See
+            http://goo.gl/06N3b for details.
+        :type version_id: string
+        :param version_id: Unused in this subclass.
+        :type generation: int
+        :param generation: A specific generation number to fetch the key at. If
+            not specified, the latest generation is fetched.
+        :rtype: :class:`boto.gs.key.Key`
+        :returns: A Key object from this bucket.
+        """
+        query_args_l = []
+        if generation:
+            query_args_l.append('generation=%s' % generation)
+        if response_headers:
+            for rk, rv in response_headers.iteritems():
+                query_args_l.append('%s=%s' % (rk, urllib.quote(rv)))
+        try:
+            key, resp = self._get_key_internal(key_name, headers,
+                                               query_args_l=query_args_l)
+        except GSResponseError, e:
+            if e.status == 403 and 'Forbidden' in e.reason:
+                # If we failed getting an object, let the user know which object
+                # failed rather than just returning a generic 403.
+                e.reason = ("Access denied to 'gs://%s/%s'." %
+                            (self.name, key_name))
+            raise
+        return key

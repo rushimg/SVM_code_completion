@@ -3,7 +3,7 @@ import fnmatch
 import xml.etree.ElementTree as ET
 
 MATCH = "*"
-DIR_NAME = "../../code_corpus/regular/aws/"
+DIR_NAME = "../../code_corpus/HtmlCleaner/"
 def process_files():
 	matches = []
         for root, dirnames, filenames in os.walk(DIR_NAME):
@@ -14,8 +14,8 @@ def process_files():
 		#print "PROCESSING FILE: " + match
 		f = open(match, 'r').read()
 		f = f.replace(' ','').replace('\n','').replace('\t','').replace('\r','')
-		if f == '/**/':
-			#os.remove(match)
+		if f == '/**/' or f == '':
+			os.remove(match)
 			print match
 		#extract_doc_and_code(match)
 if __name__=='__main__':

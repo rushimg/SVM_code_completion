@@ -4,8 +4,8 @@ import xml.etree.ElementTree as ET
 
 MATCH = "*.java"
 #DIR_NAME = "../../twitter4j"
-DIR_NAME = "../../aws-sdk-for-java"
-OUT_DIR_NAME = "../code_corpus/aws/"
+DIR_NAME = "../../../sdks/HtmlCleaner/src"
+OUT_DIR_NAME = "../../code_corpus/HtmlCleaner/"
 
 def process_files():
 	matches = []
@@ -24,6 +24,7 @@ def extract_doc_and_code(match):
 	counter = 0
 	comment_pointer = ''
 	code = ''
+	comment = ''
 	for line in lines:
 		'''
 		if "@param" in line or "@result" in line:

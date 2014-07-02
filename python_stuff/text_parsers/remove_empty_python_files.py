@@ -3,7 +3,7 @@ import fnmatch
 import xml.etree.ElementTree as ET
 
 MATCH = "*"
-DIR_NAME = "../../code_corpus/python/boto/comments/"
+DIR_NAME = "../../code_corpus/python/HtmlCleaner/"
 def process_files():
 	matches = []
         for root, dirnames, filenames in os.walk(DIR_NAME):

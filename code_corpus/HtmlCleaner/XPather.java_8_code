@@ -1,0 +1,30 @@
+    private final Collection filterByCondition(final Collection source, final int from, final int to)
+            throws XPatherException {
+        final ArrayList result = new ArrayList();
+        final Iterator iterator = source.iterator();
+        int index = 0;
+        final int size = source.size();
+        while (iterator.hasNext()) {
+            final Object curr = iterator.next();
+            index++;
+
+            final ArrayList logicValueList = new ArrayList(evaluateAgainst(singleton(curr), from, to, false, index,
+                    size, true, singleton(curr)));
+            if (logicValueList.size() >= 1) {
+                final Object first = logicValueList.get(0);
+                if (first instanceof Boolean) {
+                    if (((Boolean) first).booleanValue()) {
+                        result.add(curr);
+                    }
+                } else if (first instanceof Integer) {
+                    if (((Integer) first).intValue() == index) {
+                        result.add(curr);
+                    }
+                } else {
+                    result.add(curr);
+                }
+            }
+        }
+        return result;
+    }
+

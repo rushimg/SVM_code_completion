@@ -1,0 +1,73 @@
+    public void start() throws IOException {
+        // initialize runtime values
+        currentTagToken = null;
+        tokenList.clear();
+        asExpected = true;
+        isScriptContext = false;
+
+        boolean isLateForDoctype = false;
+
+        this.pos = WORKING_BUFFER_SIZE;
+        readIfNeeded(0);
+
+        boolean isScriptEmpty = true;
+
+        while (!isAllRead()) {
+            // resets all the runtime values
+            savedLen = 0;
+            currentTagToken = null;
+            asExpected = true;
+
+            // this is enough for making decision
+            readIfNeeded(10);
+
+            if (isScriptContext) {
+                if (startsWith("</script") && (isWhitespace(pos + 8) || isChar(pos + 8, '>'))) {
+                    tagEnd();
+                } else if (isScriptEmpty && startsWithSimple("<!--")) {
+                    comment();
+                } else {
+                    final boolean isTokenAdded = content();
+                    if (isScriptEmpty && isTokenAdded) {
+                        final BaseToken lastToken = tokenList.get(tokenList.size() - 1);
+                        if (lastToken != null) {
+                            final String lastTokenAsString = lastToken.toString();
+                            if (lastTokenAsString != null && lastTokenAsString.trim().length() > 0) {
+                                isScriptEmpty = false;
+                            }
+                        }
+                    }
+                }
+                if (!isScriptContext) {
+                    isScriptEmpty = true;
+                }
+            } else {
+                if (startsWith("<!doctype")) {
+                    if (!isLateForDoctype) {
+                        doctype();
+                        isLateForDoctype = true;
+                    } else {
+                        ignoreUntil('<');
+                    }
+                } else if (startsWithSimple("</") && isIdentifierStartChar(pos + 2)) {
+                    isLateForDoctype = true;
+                    tagEnd();
+                } else if (startsWithSimple("<!--")) {
+                    comment();
+                } else if (startsWithSimple("<") && isIdentifierStartChar(pos + 1)) {
+                    isLateForDoctype = true;
+                    tagStart();
+                } else if (props.isIgnoreQuestAndExclam() && (startsWithSimple("<!") || startsWithSimple("<?"))) {
+                    ignoreUntil('>');
+                    if (isCharSimple('>')) {
+                        go();
+                    }
+                } else {
+                    content();
+                }
+            }
+        }
+
+        reader.close();
+    }
+

@@ -1,0 +1,17 @@
+     Get the outer HTML of this node.
+     @return HTML
+    public String outerHtml() {
+        StringBuilder accum = new StringBuilder(128);
+        outerHtml(accum);
+        return accum.toString();
+    }
+
+    protected void outerHtml(StringBuilder accum) {
+        new NodeTraversor(new OuterHtmlVisitor(accum, getOutputSettings())).traverse(this);
+    }
+
+    // if this node has no document (or parent), retrieve the default output settings
+    Document.OutputSettings getOutputSettings() {
+        return ownerDocument() != null ? ownerDocument().outputSettings() : (new Document("")).outputSettings();
+    }
+

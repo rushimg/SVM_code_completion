@@ -1,0 +1,109 @@
+    private String attributeValue() throws IOException {
+        skipWhitespaces();
+
+        if (isCharSimple('<') || isCharSimple('>') || startsWithSimple("/>")) {
+            return "";
+        }
+
+        boolean isQuoteMode = false;
+        boolean isAposMode = false;
+
+        commonStr.delete(0, commonStr.length());
+        if (isCharSimple('\'')) {
+            isAposMode = true;
+            saveCurrentSafe();
+            go();
+        } else if (isCharSimple('\"')) {
+            isQuoteMode = true;
+            saveCurrentSafe();
+            go();
+        }
+
+        while (!isAllRead()
+                && (((isAposMode && !isCharEquals('\'') || isQuoteMode && !isCharEquals('\"'))
+                        && (isAllowHtmlInsideAttributes || !isCharEquals('>') && !isCharEquals('<')) && (isAllowMultiWordAttributes || !isWhitespaceSafe())) || (!isAposMode
+                        && !isQuoteMode && !isWhitespaceSafe() && !isCharEquals('>') && !isCharEquals('<')))) {
+            if (isValidXmlCharSafe()) {
+                commonStr.append(working[pos]);
+                saveCurrentSafe();
+            }
+            go();
+        }
+
+        if (isCharSimple('\'') && isAposMode) {
+            saveCurrentSafe();
+            go();
+        } else if (isCharSimple('\"') && isQuoteMode) {
+            saveCurrentSafe();
+            go();
+        }
+
+        return commonStr.toString();
+    }
+
+    private void comment() throws IOException {
+        go(4);
+        while (!isAllRead() && !startsWithSimple("-->")) {
+            if (isValidXmlCharSafe()) {
+                saveCurrentSafe();
+            }
+            go();
+        }
+
+        if (startsWithSimple("-->")) {
+            go(3);
+        }
+
+        if (savedLen > 0) {
+            if (!isOmitComments) {
+                final String hyphenRepl = props.getHyphenReplacementInComment();
+                String comment = new String(saved, 0, savedLen).replaceAll("--", hyphenRepl + hyphenRepl);
+
+                if (comment.length() > 0 && comment.charAt(0) == '-') {
+                    comment = hyphenRepl + comment.substring(1);
+                }
+                final int len = comment.length();
+                if (len > 0 && comment.charAt(len - 1) == '-') {
+                    comment = comment.substring(0, len - 1) + hyphenRepl;
+                }
+
+                addToken(new CommentNode(comment));
+            }
+            savedLen = 0;
+        }
+    }
+
+    private boolean content() throws IOException {
+        while (!isAllRead()) {
+            if (isValidXmlCharSafe()) {
+                saveCurrentSafe();
+            }
+            go();
+
+            if (isCharSimple('<')) {
+                break;
+            }
+        }
+
+        return addSavedAsContent();
+    }
+
+    public abstract TagNode createTagNode(String name);
+
+    private void doctype() throws IOException {
+        go(9);
+
+        skipWhitespaces();
+        final String part1 = identifier();
+        skipWhitespaces();
+        final String part2 = identifier();
+        skipWhitespaces();
+        final String part3 = attributeValue();
+        skipWhitespaces();
+        final String part4 = attributeValue();
+
+        ignoreUntil('<');
+
+        docType = new DoctypeToken(part1, part2, part3, part4);
+    }
+

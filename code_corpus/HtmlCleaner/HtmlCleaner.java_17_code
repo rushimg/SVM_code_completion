@@ -1,0 +1,20 @@
+    public String getInnerHtml(final TagNode node) {
+        if (node != null) {
+            try {
+                final String content = new SimpleXmlSerializer(properties).getAsString(node);
+                int index1 = content.indexOf("<" + node.getName());
+                index1 = content.indexOf('>', index1 + 1);
+                final int index2 = content.lastIndexOf('<');
+                return index1 >= 0 && index1 <= index2 ? content.substring(index1 + 1, index2) : null;
+            } catch (final IOException e) {
+                throw new HtmlCleanerException(e);
+            }
+        } else {
+            throw new HtmlCleanerException("Cannot return inner html of the null node!");
+        }
+    }
+
+    public CleanerProperties getProperties() {
+        return properties;
+    }
+

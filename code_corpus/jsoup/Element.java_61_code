@@ -1,0 +1,41 @@
+    public String ownText() {
+        StringBuilder sb = new StringBuilder();
+        ownText(sb);
+        return sb.toString().trim();
+    }
+
+    private void ownText(StringBuilder accum) {
+        for (Node child : childNodes) {
+            if (child instanceof TextNode) {
+                TextNode textNode = (TextNode) child;
+                appendNormalisedText(accum, textNode);
+            } else if (child instanceof Element) {
+                appendWhitespaceIfBr((Element) child, accum);
+            }
+        }
+    }
+
+    private static void appendNormalisedText(StringBuilder accum, TextNode textNode) {
+        String text = textNode.getWholeText();
+
+        if (preserveWhitespace(textNode.parentNode))
+            accum.append(text);
+        else
+            StringUtil.appendNormalisedWhitespace(accum, text, TextNode.lastCharIsWhitespace(accum));
+    }
+
+    private static void appendWhitespaceIfBr(Element element, StringBuilder accum) {
+        if (element.tag.getName().equals("br") && !TextNode.lastCharIsWhitespace(accum))
+            accum.append(" ");
+    }
+
+    static boolean preserveWhitespace(Node node) {
+        // looks only at this element and one level up, to prevent recursion & needless stack searches
+        if (node != null && node instanceof Element) {
+            Element element = (Element) node;
+            return element.tag.preserveWhitespace() ||
+                element.parent() != null && element.parent().tag.preserveWhitespace();
+        }
+        return false;
+    }
+

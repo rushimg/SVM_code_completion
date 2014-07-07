@@ -1,0 +1,41 @@
+    static ByteBuffer readToByteBuffer(InputStream inStream, int maxSize) throws IOException {
+        Validate.isTrue(maxSize >= 0, "maxSize must be 0 (unlimited) or larger");
+        final boolean capped = maxSize > 0;
+        byte[] buffer = new byte[bufferSize];
+        ByteArrayOutputStream outStream = new ByteArrayOutputStream(bufferSize);
+        int read;
+        int remaining = maxSize;
+
+        while (true) {
+            read = inStream.read(buffer);
+            if (read == -1) break;
+            if (capped) {
+                if (read > remaining) {
+                    outStream.write(buffer, 0, remaining);
+                    break;
+                }
+                remaining -= read;
+            }
+            outStream.write(buffer, 0, read);
+        }
+        ByteBuffer byteData = ByteBuffer.wrap(outStream.toByteArray());
+        return byteData;
+    }
+
+    static ByteBuffer readToByteBuffer(InputStream inStream) throws IOException {
+        return readToByteBuffer(inStream, 0);
+    }
+
+    static ByteBuffer readFileToByteBuffer(File file) throws IOException {
+        RandomAccessFile randomAccessFile = null;
+        try {
+            randomAccessFile = new RandomAccessFile(file, "r");
+            byte[] bytes = new byte[(int) randomAccessFile.length()];
+            randomAccessFile.readFully(bytes);
+            return ByteBuffer.wrap(bytes);
+        } finally {
+            if (randomAccessFile != null)
+                randomAccessFile.close();
+        }
+    }
+

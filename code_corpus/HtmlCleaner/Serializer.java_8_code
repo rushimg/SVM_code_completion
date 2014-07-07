@@ -1,0 +1,14 @@
+    public String getAsString(final TagNode tagNode, final String charset, final boolean omitEnvelope)
+            throws IOException {
+        final StringWriter writer = new StringWriter();
+        write(tagNode, writer, charset, omitEnvelope);
+        return writer.getBuffer().toString();
+    }
+
+    protected boolean isScriptOrStyle(final TagNode tagNode) {
+        final String tagName = tagNode.getName();
+        return "script".equalsIgnoreCase(tagName) || "style".equalsIgnoreCase(tagName);
+    }
+
+    protected abstract void serialize(TagNode tagNode, Writer writer) throws IOException;
+

@@ -1,0 +1,45 @@
+    private boolean mustAddRequiredParent(final TagInfo tag, final CleanTimeValues cleanTimeValues) {
+        if (tag != null) {
+            final String requiredParent = tag.getRequiredParent();
+            if (requiredParent != null) {
+                final String fatalTag = tag.getFatalTag();
+                int fatalTagPositon = -1;
+                if (fatalTag != null) {
+                    final TagPos tagPos = cleanTimeValues.openTags.findTag(fatalTag);
+                    if (tagPos != null) {
+                        fatalTagPositon = tagPos.position;
+                    }
+                }
+
+                // iterates through the list of open tags from the end and check
+                // if there is some higher
+                final ListIterator<TagPos> it = cleanTimeValues.openTags.list
+                        .listIterator(cleanTimeValues.openTags.list.size());
+                while (it.hasPrevious()) {
+                    final TagPos currTagPos = it.previous();
+                    if (tag.isHigher(currTagPos.name)) {
+                        return currTagPos.position <= fatalTagPositon;
+                    }
+                }
+
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void saveToLastOpenTag(final List nodeList, final BaseToken tokenToAdd,
+            final CleanTimeValues cleanTimeValues) {
+        final TagPos last = cleanTimeValues.openTags.getLastTagPos();
+        if (last != null && last.info != null && last.info.isIgnorePermitted()) {
+            return;
+        }
+
+        final TagPos rubbishPos = cleanTimeValues.openTags.findTagToPlaceRubbish();
+        if (rubbishPos != null) {
+            final TagNode startTagToken = (TagNode) nodeList.get(rubbishPos.position);
+            startTagToken.addItemForMoving(tokenToAdd);
+        }
+    }
+

@@ -1,0 +1,53 @@
+ CharacterReader consumes tokens off a string. To replace the old TokenQueue.
+class CharacterReader {
+    static final char EOF = (char) -1;
+
+    private final char[] input;
+    private final int length;
+    private int pos = 0;
+    private int mark = 0;
+
+    CharacterReader(String input) {
+        Validate.notNull(input);
+        this.input = input.toCharArray();
+        this.length = this.input.length;
+    }
+
+    int pos() {
+        return pos;
+    }
+
+    boolean isEmpty() {
+        return pos >= length;
+    }
+
+    char current() {
+        return pos >= length ? EOF : input[pos];
+    }
+
+    char consume() {
+        char val = pos >= length ? EOF : input[pos];
+        pos++;
+        return val;
+    }
+
+    void unconsume() {
+        pos--;
+    }
+
+    void advance() {
+        pos++;
+    }
+
+    void mark() {
+        mark = pos;
+    }
+
+    void rewindToMark() {
+        pos = mark;
+    }
+
+    String consumeAsString() {
+        return new String(input, pos++, 1);
+    }
+

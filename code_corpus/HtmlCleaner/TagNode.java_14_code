@@ -1,0 +1,44 @@
+    private TagNode findElement(final ITagNodeCondition condition, final boolean isRecursive) {
+        if (condition == null) {
+            return null;
+        }
+
+        for (int i = 0; i < children.size(); i++) {
+            final Object item = children.get(i);
+            if (item instanceof TagNode) {
+                final TagNode currNode = (TagNode) item;
+                if (condition.satisfy(currNode)) {
+                    return currNode;
+                } else if (isRecursive) {
+                    final TagNode inner = currNode.findElement(condition, isRecursive);
+                    if (inner != null) {
+                        return inner;
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    public TagNode findElementByAttValue(final String attName, final String attValue, final boolean isRecursive,
+            final boolean isCaseSensitive) {
+        return findElement(new TagNodeAttValueCondition(attName, attValue, isCaseSensitive), isRecursive);
+    }
+
+    public TagNode findElementByName(final String findName, final boolean isRecursive) {
+        return findElement(new TagNodeNameCondition(findName), isRecursive);
+    }
+
+    public TagNode findElementHavingAttribute(final String attName, final boolean isRecursive) {
+        return findElement(new TagNodeAttExistsCondition(attName), isRecursive);
+    }
+
+    public TagNode[] getAllElements(final boolean isRecursive) {
+        return getElements(new TagAllCondition(), isRecursive);
+    }
+
+    public List getAllElementsList(final boolean isRecursive) {
+        return getElementList(new TagAllCondition(), isRecursive);
+    }
+

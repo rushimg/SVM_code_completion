@@ -1,0 +1,34 @@
+    public void setInnerHtml(final TagNode node, final String content) {
+        if (node != null) {
+            final String nodeName = node.getName();
+            final StringBuilder html = new StringBuilder();
+            html.append("<" + nodeName + " marker=''>");
+            html.append(content);
+            html.append("</" + nodeName + ">");
+            TagNode parent = node.getParent();
+            while (parent != null) {
+                final String parentName = parent.getName();
+                html.insert(0, "<" + parentName + ">");
+                html.append("</" + parentName + ">");
+                parent = parent.getParent();
+            }
+
+            final TagNode rootNode = clean(html.toString());
+            final TagNode cleanedNode = rootNode.findElementHavingAttribute("marker", true);
+            if (cleanedNode != null) {
+                node.setChildren(cleanedNode.getChildren());
+            }
+        }
+    }
+
+    private void setPruneTags(final String pruneTags, final CleanTimeValues cleanTimeValues) {
+        cleanTimeValues.pruneTagSet.clear();
+        cleanTimeValues.pruneNodeSet.clear();
+        if (pruneTags != null) {
+            final StringTokenizer tokenizer = new StringTokenizer(pruneTags, ",");
+            while (tokenizer.hasMoreTokens()) {
+                cleanTimeValues.pruneTagSet.add(tokenizer.nextToken().trim().toLowerCase());
+            }
+        }
+    }
+

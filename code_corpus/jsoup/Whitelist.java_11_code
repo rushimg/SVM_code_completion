@@ -1,0 +1,31 @@
+     Add an enforced attribute to a tag. An enforced attribute will always be added to the element. If the element
+     already has the attribute set, it will be overridden.
+     <p/>
+     E.g.: <code>addEnforcedAttribute("a", "rel", "nofollow")</code> will make all <code>a</code> tags output as
+     <code>&lt;a href="..." rel="nofollow"></code>
+
+     @param tag   The tag the enforced attribute is for. The tag will be added to the allowed tag list if necessary.
+     @param key   The attribute key
+     @param value The enforced attribute value
+     @return this (for chaining)
+    public Whitelist addEnforcedAttribute(String tag, String key, String value) {
+        Validate.notEmpty(tag);
+        Validate.notEmpty(key);
+        Validate.notEmpty(value);
+
+        TagName tagName = TagName.valueOf(tag);
+        if (!tagNames.contains(tagName))
+            tagNames.add(tagName);
+        AttributeKey attrKey = AttributeKey.valueOf(key);
+        AttributeValue attrVal = AttributeValue.valueOf(value);
+
+        if (enforcedAttributes.containsKey(tagName)) {
+            enforcedAttributes.get(tagName).put(attrKey, attrVal);
+        } else {
+            Map<AttributeKey, AttributeValue> attrMap = new HashMap<AttributeKey, AttributeValue>();
+            attrMap.put(attrKey, attrVal);
+            enforcedAttributes.put(tagName, attrMap);
+        }
+        return this;
+    }
+

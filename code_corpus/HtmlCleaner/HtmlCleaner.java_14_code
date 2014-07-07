@@ -1,0 +1,61 @@
+    public TagNode clean(final Reader reader, final CleanTimeValues cleanTimeValues) throws IOException {
+        cleanTimeValues.openTags = new OpenTags();
+        cleanTimeValues.headOpened = false;
+        cleanTimeValues.bodyOpened = false;
+        cleanTimeValues.headTags.clear();
+        cleanTimeValues.allTags.clear();
+        setPruneTags(properties.getPruneTags(), cleanTimeValues);
+
+        cleanTimeValues.htmlNode = createTagNode("html", cleanTimeValues);
+        cleanTimeValues.bodyNode = createTagNode("body", cleanTimeValues);
+        cleanTimeValues.headNode = createTagNode("head", cleanTimeValues);
+        cleanTimeValues.rootNode = null;
+        cleanTimeValues.htmlNode.addChild(cleanTimeValues.headNode);
+        cleanTimeValues.htmlNode.addChild(cleanTimeValues.bodyNode);
+
+        final HtmlTokenizer htmlTokenizer = new HtmlTokenizer(reader, properties, transformations, tagInfoProvider) {
+            @Override
+            public TagNode createTagNode(final String name) {
+                return HtmlCleaner.this.createTagNode(name, cleanTimeValues);
+            }
+
+            @Override
+            public void makeTree(final List<BaseToken> tokenList) {
+                HtmlCleaner.this.makeTree(tokenList, tokenList.listIterator(tokenList.size() - 1), cleanTimeValues);
+            }
+        };
+
+        htmlTokenizer.start();
+
+        final List<BaseToken> nodeList = htmlTokenizer.getTokenList();
+        closeAll(nodeList, cleanTimeValues);
+        createDocumentNodes(nodeList, cleanTimeValues);
+
+        calculateRootNode(cleanTimeValues);
+
+        // if there are some nodes to prune from tree
+        if (cleanTimeValues.pruneNodeSet != null && !cleanTimeValues.pruneNodeSet.isEmpty()) {
+            final Iterator iterator = cleanTimeValues.pruneNodeSet.iterator();
+            while (iterator.hasNext()) {
+                final TagNode tagNode = (TagNode) iterator.next();
+                final TagNode parent = tagNode.getParent();
+                if (parent != null) {
+                    parent.removeChild(tagNode);
+                }
+            }
+        }
+
+        cleanTimeValues.rootNode.setDocType(htmlTokenizer.getDocType());
+
+        return cleanTimeValues.rootNode;
+    }
+
+    public TagNode clean(final String htmlContent) {
+        try {
+            return clean(new StringReader(htmlContent));
+        } catch (final IOException e) {
+            // should never happen because reading from StringReader
+            throw new HtmlCleanerException(e);
+        }
+    }
+

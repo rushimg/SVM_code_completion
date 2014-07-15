@@ -1,0 +1,41 @@
+    private void tagAttributes() throws IOException {
+        while (!isAllRead() && asExpected && !isCharSimple('>') && !startsWithSimple("/>")) {
+            skipWhitespaces();
+            final String attName = identifier();
+
+            if (!asExpected) {
+                if (!isCharSimple('<') && !isCharSimple('>') && !startsWithSimple("/>")) {
+                    if (isValidXmlChar()) {
+                        saveCurrent();
+                    }
+                    go();
+                }
+
+                if (!isCharSimple('<')) {
+                    asExpected = true;
+                }
+
+                continue;
+            }
+
+            String attValue;
+
+            skipWhitespaces();
+            if (isCharSimple('=')) {
+                saveCurrentSafe();
+                go();
+                attValue = attributeValue();
+            } else if (CleanerProperties.BOOL_ATT_EMPTY.equals(props.getBooleanAttributeValues())) {
+                attValue = "";
+            } else if (CleanerProperties.BOOL_ATT_TRUE.equals(props.getBooleanAttributeValues())) {
+                attValue = "true";
+            } else {
+                attValue = attName;
+            }
+
+            if (asExpected) {
+                currentTagToken.setAttribute(attName, attValue);
+            }
+        }
+    }
+

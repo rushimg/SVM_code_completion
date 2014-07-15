@@ -1,0 +1,21 @@
+        public OutputSettings indentAmount(int indentAmount) {
+            Validate.isTrue(indentAmount >= 0);
+            this.indentAmount = indentAmount;
+            return this;
+        }
+
+        @Override
+        public OutputSettings clone() {
+            OutputSettings clone;
+            try {
+                clone = (OutputSettings) super.clone();
+            } catch (CloneNotSupportedException e) {
+                throw new RuntimeException(e);
+            }
+            clone.charset(charset.name()); // new charset and charset encoder
+            clone.escapeMode = Entities.EscapeMode.valueOf(escapeMode.name());
+            // indentAmount, prettyPrint are primitives so object.clone() will handle
+            return clone;
+        }
+    }
+

@@ -1,0 +1,29 @@
+    public TextNode splitText(int offset) {
+        Validate.isTrue(offset >= 0, "Split offset must be not be negative");
+        Validate.isTrue(offset < text.length(), "Split offset must not be greater than current text length");
+
+        String head = getWholeText().substring(0, offset);
+        String tail = getWholeText().substring(offset);
+        text(head);
+        TextNode tailNode = new TextNode(tail, this.baseUri());
+        if (parent() != null)
+            parent().addChildren(siblingIndex()+1, tailNode);
+
+        return tailNode;
+    }
+
+    void outerHtmlHead(StringBuilder accum, int depth, Document.OutputSettings out) {
+        if (out.prettyPrint() && ((siblingIndex() == 0 && parentNode instanceof Element && ((Element) parentNode).tag().formatAsBlock() && !isBlank()) || (out.outline() && siblingNodes().size()>0 && !isBlank()) ))
+            indent(accum, depth, out);
+
+        boolean normaliseWhite = out.prettyPrint() && parent() instanceof Element
+                && !Element.preserveWhitespace((Element) parent());
+        Entities.escape(accum, getWholeText(), out, false, normaliseWhite, false);
+    }
+
+    void outerHtmlTail(StringBuilder accum, int depth, Document.OutputSettings out) {}
+
+    public String toString() {
+        return outerHtml();
+    }
+

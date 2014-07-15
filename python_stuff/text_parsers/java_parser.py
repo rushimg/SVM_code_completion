@@ -59,7 +59,28 @@ def extract_doc_and_code(match):
 			comment +=line
 		else:
 			code += line
-					
+
+		'''
+		if "/*" in line:
+			if code != '':
+				code_f = open(comment_pointer + '_code', 'w')
+				code_f.write(code)
+				code_f.close()
+				code = ''
+			comment=line
+		elif "*/" in line:
+			counter += 1
+			comment+=line
+			out = open(OUT_DIR_NAME+endstr + "_" +str(counter),'w')
+			out.write(comment)
+			out.close()
+			comment = ""
+			comment_pointer = OUT_DIR_NAME+endstr + "_" +str(counter)
+		elif "*" in line:
+			comment +=line
+		else:
+			code += line
+		'''				
 	
 if __name__=='__main__':
 	process_files()

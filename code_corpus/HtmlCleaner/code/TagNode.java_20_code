@@ -1,0 +1,38 @@
+    private List getElementList(final ITagNodeCondition condition, final boolean isRecursive) {
+        final List result = new LinkedList();
+        if (condition == null) {
+            return result;
+        }
+
+        for (int i = 0; i < children.size(); i++) {
+            final Object item = children.get(i);
+            if (item instanceof TagNode) {
+                final TagNode currNode = (TagNode) item;
+                if (condition.satisfy(currNode)) {
+                    result.add(currNode);
+                }
+                if (isRecursive) {
+                    final List innerList = currNode.getElementList(condition, isRecursive);
+                    if (innerList != null && !innerList.isEmpty()) {
+                        result.addAll(innerList);
+                    }
+                }
+            }
+        }
+
+        return result;
+    }
+
+    public List getElementListByAttValue(final String attName, final String attValue, final boolean isRecursive,
+            final boolean isCaseSensitive) {
+        return getElementList(new TagNodeAttValueCondition(attName, attValue, isCaseSensitive), isRecursive);
+    }
+
+    public List getElementListByName(final String findName, final boolean isRecursive) {
+        return getElementList(new TagNodeNameCondition(findName), isRecursive);
+    }
+
+    public List getElementListHavingAttribute(final String attName, final boolean isRecursive) {
+        return getElementList(new TagNodeAttExistsCondition(attName), isRecursive);
+    }
+

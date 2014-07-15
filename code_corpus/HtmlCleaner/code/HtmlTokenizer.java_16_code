@@ -1,0 +1,47 @@
+    private boolean isWhitespace(final int position) {
+        if (len >= 0 && position >= len) {
+            return false;
+        }
+
+        return Character.isWhitespace(working[position]);
+    }
+
+    private boolean isWhitespaceSafe() {
+        return Character.isWhitespace(working[pos]);
+    }
+
+    public abstract void makeTree(List<BaseToken> tokenList);
+
+    private void readIfNeeded(final int neededChars) throws IOException {
+        if (len == -1 && pos + neededChars >= WORKING_BUFFER_SIZE) {
+            final int numToCopy = WORKING_BUFFER_SIZE - pos;
+            System.arraycopy(working, pos, working, 0, numToCopy);
+            pos = 0;
+
+            int expected = WORKING_BUFFER_SIZE - numToCopy;
+            int size = 0;
+            int charsRead;
+            int offset = numToCopy;
+            do {
+                charsRead = reader.read(working, offset, expected);
+                if (charsRead >= 0) {
+                    size += charsRead;
+                    offset += charsRead;
+                    expected -= charsRead;
+                }
+            } while (charsRead >= 0 && expected > 0);
+
+            if (expected > 0) {
+                len = size + numToCopy;
+            }
+
+            // convert invalid XML characters to spaces
+            for (int i = 0; i < (len >= 0 ? len : WORKING_BUFFER_SIZE); i++) {
+                final int ch = working[i];
+                if (ch >= 1 && ch <= 32 && ch != 10 && ch != 13) {
+                    working[i] = ' ';
+                }
+            }
+        }
+    }
+

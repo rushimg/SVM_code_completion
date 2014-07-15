@@ -1,0 +1,49 @@
+    private void tagEnd() throws IOException {
+        saveCurrent(2);
+        go(2);
+
+        if (isAllRead()) {
+            return;
+        }
+
+        String tagName = identifier();
+        if (transformations != null && transformations.hasTransformationForTag(tagName)) {
+            final TagTransformation tagTransformation = transformations.getTransformation(tagName);
+            if (tagTransformation != null) {
+                tagName = tagTransformation.getDestTag();
+            }
+        }
+
+        if (tagName != null) {
+            final TagInfo tagInfo = tagInfoProvider.getTagInfo(tagName);
+            if ((tagInfo == null && !isOmitUnknownTags && isTreatUnknownTagsAsContent && !isReservedTag(tagName))
+                    || (tagInfo != null && tagInfo.isDeprecated() && !isOmitDeprecatedTags && isTreatDeprecatedTagsAsContent)) {
+                content();
+                return;
+            }
+        }
+
+        currentTagToken = new EndTagToken(tagName);
+
+        if (asExpected) {
+            skipWhitespaces();
+            tagAttributes();
+
+            if (tagName != null) {
+                addToken(currentTagToken);
+            }
+
+            if (isCharSimple('>')) {
+                go();
+            }
+
+            if ("script".equalsIgnoreCase(tagName)) {
+                isScriptContext = false;
+            }
+
+            currentTagToken = null;
+        } else {
+            addSavedAsContent();
+        }
+    }
+

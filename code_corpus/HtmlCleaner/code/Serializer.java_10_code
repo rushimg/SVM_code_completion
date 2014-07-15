@@ -1,0 +1,28 @@
+    public void write(TagNode tagNode, Writer writer, final String charset, final boolean omitEnvelope)
+            throws IOException {
+        if (omitEnvelope) {
+            tagNode = new HeadlessTagNode(tagNode);
+        }
+        writer = new BufferedWriter(writer);
+        if (!props.isOmitXmlDeclaration()) {
+            String declaration = "<?xml version=\"1.0\"";
+            if (charset != null) {
+                declaration += " encoding=\"" + charset + "\"";
+            }
+            declaration += "?>";
+            writer.write(declaration + "\n");
+        }
+
+        if (!props.isOmitDoctypeDeclaration()) {
+            final DoctypeToken doctypeToken = tagNode.getDocType();
+            if (doctypeToken != null) {
+                doctypeToken.serialize(this, writer);
+            }
+        }
+
+        serialize(tagNode, writer);
+
+        writer.flush();
+        writer.close();
+    }
+

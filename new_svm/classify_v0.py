@@ -26,9 +26,9 @@ def run_svm(in_f):
 		for row in reader:
 			data = list()
 			#get_html_text(row[1])
-			data.append(int(row[1]))
-			data.append(int(row[2]))
-			data.append(int(row[3]))
+			data.append(float(row[1]))
+			data.append(float(row[2]))
+			data.append(float(row[3]))
 			training_data.append(data)
 			training_labels.append(int(row[4]))
 	
@@ -60,8 +60,11 @@ def run_svm(in_f):
 	#print X_train
 	
 	svm_classifier = LinearSVC().fit(X_train, y_train)
-
 	y_svm_predicted = svm_classifier.predict(X_test)
+	#y_svm_predicted = svm_classifier.predict(np.array([2,2,118]))
+	#../code_corpus/HtmlCleaner/comments/TagNode.java_14     4       4       125     1
+	print y_svm_predicted
+
 	print "MODEL: Linear SVC\n"
 
 	print 'The precision for this classifier is ' + str(metrics.precision_score(y_test, y_svm_predicted))

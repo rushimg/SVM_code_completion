@@ -1,0 +1,19 @@
+    public Future<CreateHostedZoneResult> createHostedZoneAsync(
+            final CreateHostedZoneRequest createHostedZoneRequest,
+            final AsyncHandler<CreateHostedZoneRequest, CreateHostedZoneResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<CreateHostedZoneResult>() {
+            public CreateHostedZoneResult call() throws Exception {
+                CreateHostedZoneResult result;
+                try {
+                    result = createHostedZone(createHostedZoneRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(createHostedZoneRequest, result);
+                   return result;
+            }
+        });
+    }
+    

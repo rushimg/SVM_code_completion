@@ -1,0 +1,19 @@
+    public Future<GetSessionTokenResult> getSessionTokenAsync(
+            final GetSessionTokenRequest getSessionTokenRequest,
+            final AsyncHandler<GetSessionTokenRequest, GetSessionTokenResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<GetSessionTokenResult>() {
+            public GetSessionTokenResult call() throws Exception {
+                GetSessionTokenResult result;
+                try {
+                    result = getSessionToken(getSessionTokenRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(getSessionTokenRequest, result);
+                   return result;
+            }
+        });
+    }
+    

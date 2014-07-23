@@ -1,0 +1,19 @@
+    public Future<UploadMultipartPartResult> uploadMultipartPartAsync(
+            final UploadMultipartPartRequest uploadMultipartPartRequest,
+            final AsyncHandler<UploadMultipartPartRequest, UploadMultipartPartResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<UploadMultipartPartResult>() {
+            public UploadMultipartPartResult call() throws Exception {
+                UploadMultipartPartResult result;
+                try {
+                    result = uploadMultipartPart(uploadMultipartPartRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(uploadMultipartPartRequest, result);
+                   return result;
+            }
+        });
+    }
+    

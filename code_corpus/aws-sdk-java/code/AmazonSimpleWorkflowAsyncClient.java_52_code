@@ -1,0 +1,19 @@
+    public Future<WorkflowExecutionInfos> listOpenWorkflowExecutionsAsync(
+            final ListOpenWorkflowExecutionsRequest listOpenWorkflowExecutionsRequest,
+            final AsyncHandler<ListOpenWorkflowExecutionsRequest, WorkflowExecutionInfos> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<WorkflowExecutionInfos>() {
+            public WorkflowExecutionInfos call() throws Exception {
+                WorkflowExecutionInfos result;
+                try {
+                    result = listOpenWorkflowExecutions(listOpenWorkflowExecutionsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(listOpenWorkflowExecutionsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

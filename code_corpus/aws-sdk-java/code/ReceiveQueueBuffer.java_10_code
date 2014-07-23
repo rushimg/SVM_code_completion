@@ -1,0 +1,65 @@
+    private void fillFuture( ReceiveMessageFuture f ){
+        ReceiveMessageResult r = new ReceiveMessageResult();
+        LinkedList<Message> messages = new LinkedList<Message>();
+        r.setMessages(messages);
+        Exception exception = null;
+        
+        if ( !finishedTasks.isEmpty() ) {
+            ReceiveMessageBatchTask t = finishedTasks.getFirst();
+            
+            exception = t.getException();
+            int retrieved = 0;
+            
+            boolean batchDone = false;
+            while (  retrieved < f.getRequestedSize() )  
+            {
+                Message m = t.removeMessage();
+                
+                // a non-empty batch can still give back a null 
+                // message if the message expired.
+                if ( null != m) {
+                    messages.add(m);
+                    ++retrieved;
+                }
+                else {
+                    batchDone = true;
+                    break;
+                }
+                
+            }
+            
+            //we may have just drained the batch.
+            batchDone = batchDone || t.isEmpty() || ( exception != null );
+            
+            if ( batchDone) {
+                finishedTasks.removeFirst();
+            }
+            r.setMessages(messages);
+        }
+        
+        //if after the above runs the exception is not null, 
+        //the finished batch has encountered an error, and we will
+        //report that in the Future.  Otherwise, we will fill
+        //the future with the receive result
+        
+        if ( exception != null )
+            f.setFailure(exception);
+        else
+            f.setSuccess(r);
+        
+        //now, a bit of maintenance.  remove empty non-exception-bearing 
+        //batches so we can get new ones.
+        
+        while ( !finishedTasks.isEmpty() ) {
+            ReceiveMessageBatchTask t = finishedTasks.getFirst();
+            if ( (!t.isEmpty()) || (t.getException() != null) ) {
+                //if we found a finished task that has useful content,
+                //our cleanup is done
+                break;
+            }
+            
+            //throw away the empty batch.
+            finishedTasks.removeFirst();
+        }
+    }
+    

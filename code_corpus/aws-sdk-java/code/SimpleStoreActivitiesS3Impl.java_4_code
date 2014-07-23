@@ -1,0 +1,37 @@
+
+    private String downloadFileFromS3(String bucketName, String remoteName, String localName) throws IOException {
+        System.out.println("downloadFileFromS3 begin remoteName=" + remoteName + ", localName=" + localName);
+        FileOutputStream f = new FileOutputStream(localName);
+        try {
+            S3Object obj = s3Client.getObject(bucketName, remoteName);
+            InputStream inputStream = obj.getObjectContent();
+            long totalSize = obj.getObjectMetadata().getContentLength();
+
+            try {
+                long totalRead = 0;
+                int read = 0;
+                byte[] bytes = new byte[1024];
+                long lastHeartbeatTime = System.currentTimeMillis();
+                while ((read = inputStream.read(bytes)) != -1) {
+                    totalRead += read;
+                    f.write(bytes, 0, read);
+                    lastHeartbeatTime = heartbeat(lastHeartbeatTime, progress);
+                }
+            }
+            finally {
+                inputStream.close();
+            }
+        }
+        finally {
+            f.close();
+        }
+        // Return hostname file was downloaded to        
+        System.out.println("downloadFileFromS3 done");
+        return hostSpecificTaskList;
+    }
+
+    @Override
+    public void deleteLocalFile(String fileName) {
+        deleteLocalFiles(localDirectory + fileName);
+    }
+

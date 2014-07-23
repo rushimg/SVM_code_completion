@@ -1,0 +1,19 @@
+    public Future<GetUserPolicyResult> getUserPolicyAsync(
+            final GetUserPolicyRequest getUserPolicyRequest,
+            final AsyncHandler<GetUserPolicyRequest, GetUserPolicyResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<GetUserPolicyResult>() {
+            public GetUserPolicyResult call() throws Exception {
+                GetUserPolicyResult result;
+                try {
+                    result = getUserPolicy(getUserPolicyRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(getUserPolicyRequest, result);
+                   return result;
+            }
+        });
+    }
+    

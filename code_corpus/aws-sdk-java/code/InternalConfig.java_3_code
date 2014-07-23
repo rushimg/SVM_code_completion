@@ -1,0 +1,13 @@
+    InternalConfig(InternalConfigJsonHelper defaults, InternalConfigJsonHelper override) {
+        SignerConfigJsonHelper scb = defaults.getDefaultSigner();
+        this.defaultSignerConfig = scb == null ? null : scb.build();
+        regionSigners = mergeSignerMap(defaults.getRegionSigners(),
+            override.getRegionSigners(), "region");
+        serviceSigners = mergeSignerMap(defaults.getServiceSigners(),
+            override.getServiceSigners(), "service");
+        serviceRegionSigners = mergeSignerMap(defaults.getServiceRegionSigners(),
+            override.getServiceRegionSigners(), 
+            "service" + SERVICE_REGION_DELIMITOR + "region");
+        httpClients = merge(defaults.getHttpClients(), override.getHttpClients());
+    }
+

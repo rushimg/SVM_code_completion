@@ -1,0 +1,19 @@
+    public Future<DBInstance> createDBInstanceReadReplicaAsync(
+            final CreateDBInstanceReadReplicaRequest createDBInstanceReadReplicaRequest,
+            final AsyncHandler<CreateDBInstanceReadReplicaRequest, DBInstance> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DBInstance>() {
+            public DBInstance call() throws Exception {
+                DBInstance result;
+                try {
+                    result = createDBInstanceReadReplica(createDBInstanceReadReplicaRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(createDBInstanceReadReplicaRequest, result);
+                   return result;
+            }
+        });
+    }
+    

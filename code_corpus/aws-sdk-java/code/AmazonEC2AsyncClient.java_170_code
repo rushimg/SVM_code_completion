@@ -1,0 +1,19 @@
+    public Future<DescribeConversionTasksResult> describeConversionTasksAsync(
+            final DescribeConversionTasksRequest describeConversionTasksRequest,
+            final AsyncHandler<DescribeConversionTasksRequest, DescribeConversionTasksResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeConversionTasksResult>() {
+            public DescribeConversionTasksResult call() throws Exception {
+                DescribeConversionTasksResult result;
+                try {
+                    result = describeConversionTasks(describeConversionTasksRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeConversionTasksRequest, result);
+                   return result;
+            }
+        });
+    }
+    

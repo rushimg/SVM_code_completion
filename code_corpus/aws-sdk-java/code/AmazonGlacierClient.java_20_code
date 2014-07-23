@@ -1,0 +1,27 @@
+    public GetJobOutputResult getJobOutput(GetJobOutputRequest getJobOutputRequest) {
+        ExecutionContext executionContext = createExecutionContext(getJobOutputRequest);
+        AWSRequestMetrics awsRequestMetrics = executionContext.getAwsRequestMetrics();
+        awsRequestMetrics.startEvent(Field.ClientExecuteTime);
+        Request<GetJobOutputRequest> request = null;
+        Response<GetJobOutputResult> response = null;
+        try {
+            awsRequestMetrics.startEvent(Field.RequestMarshallTime);
+            try {
+                request = new GetJobOutputRequestMarshaller().marshall(getJobOutputRequest);
+                // Binds the request metrics to the current request.
+                request.setAWSRequestMetrics(awsRequestMetrics);
+            } finally {
+                awsRequestMetrics.endEvent(Field.RequestMarshallTime);
+            }
+            Unmarshaller<GetJobOutputResult, JsonUnmarshallerContext> unmarshaller = new GetJobOutputResultJsonUnmarshaller();
+            JsonResponseHandler<GetJobOutputResult> responseHandler = new JsonResponseHandler<GetJobOutputResult>(unmarshaller);
+            
+            responseHandler.needsConnectionLeftOpen = true;
+            
+            response = invoke(request, responseHandler, executionContext);
+            return response.getAwsResponse();
+        } finally {
+            endClientExecution(awsRequestMetrics, request, response);
+        }
+    }
+

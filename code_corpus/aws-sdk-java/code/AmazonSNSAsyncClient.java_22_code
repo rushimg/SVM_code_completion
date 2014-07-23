@@ -1,0 +1,19 @@
+    public Future<SubscribeResult> subscribeAsync(
+            final SubscribeRequest subscribeRequest,
+            final AsyncHandler<SubscribeRequest, SubscribeResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<SubscribeResult>() {
+            public SubscribeResult call() throws Exception {
+                SubscribeResult result;
+                try {
+                    result = subscribe(subscribeRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(subscribeRequest, result);
+                   return result;
+            }
+        });
+    }
+    

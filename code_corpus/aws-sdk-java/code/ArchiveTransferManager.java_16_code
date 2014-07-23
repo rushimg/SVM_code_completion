@@ -1,0 +1,72 @@
+    public void downloadJobOutput(String accountId, String vaultName, String jobId, File file, ProgressListener progressListener) {
+        downloadJobOutput(accountId, vaultName, jobId, file, ProgressListenerCallbackExecutor.wrapListener(progressListener));
+    }
+    
+    private void downloadJobOutput(String accountId, String vaultName, String jobId, File file, ProgressListenerCallbackExecutor progressListenerCallbackExecutor) {
+        long archiveSize = 0;
+        long chunkSize = DEFAULT_DOWNLOAD_CHUNK_SIZE;
+        long currentPosition = 0;
+        long endPosition = 0;
+
+        RandomAccessFile output = null;
+        String customizedChunkSize = null;
+        customizedChunkSize = System.getProperty("com.amazonaws.services.glacier.transfer.downloadChunkSizeInMB");
+
+        DescribeJobResult describeJobResult = glacier.describeJob(new DescribeJobRequest(accountId, vaultName, jobId));
+        archiveSize = describeJobResult.getArchiveSizeInBytes();
+
+        if (customizedChunkSize != null) {
+            try {
+            } catch (NumberFormatException e) {
+                fireProgressEvent(progressListenerCallbackExecutor, ProgressEvent.FAILED_EVENT_CODE);
+                throw new AmazonClientException("Invalid chunk size: " + e.getMessage());
+            }
+            validateChunkSize(chunkSize);
+        }
+
+        try {
+            output = new RandomAccessFile(file, "rw");
+        } catch (IOException e) {
+            fireProgressEvent(progressListenerCallbackExecutor, ProgressEvent.FAILED_EVENT_CODE);
+            throw new AmazonClientException("Unable to open the output file " + file.getPath(), e);
+        }
+
+        fireProgressEvent(progressListenerCallbackExecutor, ProgressEvent.STARTED_EVENT_CODE);
+
+        while (currentPosition < archiveSize) {
+            if (currentPosition + chunkSize > archiveSize) {
+                endPosition = archiveSize - 1;
+            } else {
+                endPosition = currentPosition + chunkSize - 1;
+            }
+
+            // Download the chunk
+            try {
+            downloadOneChunk(accountId, vaultName, jobId, output, currentPosition, endPosition);
+            } catch (AmazonServiceException ace) {
+                fireProgressEvent(progressListenerCallbackExecutor, ProgressEvent.FAILED_EVENT_CODE);
+                throw ace;
+            }
+
+            if (progressListenerCallbackExecutor != null) {
+                ProgressEvent event = new ProgressEvent(endPosition - currentPosition + 1);
+                progressListenerCallbackExecutor.progressChanged(event);
+            }
+
+            currentPosition += chunkSize;
+        }
+        try { output.close();} catch (Exception e) {};
+        fireProgressEvent(progressListenerCallbackExecutor, ProgressEvent.COMPLETED_EVENT_CODE);
+    }
+
+    private void validateChunkSize(long chunkSize) {
+        if (chunkSize <= 0) {
+            throw new AmazonClientException("Invalid chunk size, chunk size must be great than 0");
+        }
+
+        // Chunk size must be aligned on 2^n MB boundaries
+        if ((chunkSize & (chunkSize - 1)) != 0) {
+            throw new AmazonClientException("Invalid chunk size, chunk size must be aligned on 2^n MB boundaries");
+        }
+    }
+

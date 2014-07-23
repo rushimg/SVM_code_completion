@@ -1,0 +1,25 @@
+    public DomainDetail describeDomain(DescribeDomainRequest describeDomainRequest) {
+        ExecutionContext executionContext = createExecutionContext(describeDomainRequest);
+        AWSRequestMetrics awsRequestMetrics = executionContext.getAwsRequestMetrics();
+        awsRequestMetrics.startEvent(Field.ClientExecuteTime);
+        Request<DescribeDomainRequest> request = null;
+        Response<DomainDetail> response = null;
+        try {
+            awsRequestMetrics.startEvent(Field.RequestMarshallTime);
+            try {
+                request = new DescribeDomainRequestMarshaller().marshall(describeDomainRequest);
+                // Binds the request metrics to the current request.
+                request.setAWSRequestMetrics(awsRequestMetrics);
+            } finally {
+                awsRequestMetrics.endEvent(Field.RequestMarshallTime);
+            }
+            Unmarshaller<DomainDetail, JsonUnmarshallerContext> unmarshaller = new DomainDetailJsonUnmarshaller();
+            JsonResponseHandler<DomainDetail> responseHandler = new JsonResponseHandler<DomainDetail>(unmarshaller);
+            
+            response = invoke(request, responseHandler, executionContext);
+            return response.getAwsResponse();
+        } finally {
+            endClientExecution(awsRequestMetrics, request, response);
+        }
+    }
+

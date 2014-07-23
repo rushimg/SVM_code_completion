@@ -1,0 +1,14 @@
+        if (region != null && !region.toUpperCase().equals(Region.US_Standard.toString())) {
+            XmlWriter xml = new XmlWriter();
+            xml.start("CreateBucketConfiguration", "xmlns", Constants.XML_NAMESPACE);
+            xml.start("LocationConstraint").value(region).end();
+            xml.end();
+
+            request.setContent(new ByteArrayInputStream(xml.getBytes()));
+        }
+
+        invoke(request, voidResponseHandler, bucketName, null);
+
+        return new Bucket(bucketName);
+    }
+

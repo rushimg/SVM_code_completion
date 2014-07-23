@@ -1,0 +1,19 @@
+    public Future<GetStackPolicyResult> getStackPolicyAsync(
+            final GetStackPolicyRequest getStackPolicyRequest,
+            final AsyncHandler<GetStackPolicyRequest, GetStackPolicyResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<GetStackPolicyResult>() {
+            public GetStackPolicyResult call() throws Exception {
+                GetStackPolicyResult result;
+                try {
+                    result = getStackPolicy(getStackPolicyRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(getStackPolicyRequest, result);
+                   return result;
+            }
+        });
+    }
+    

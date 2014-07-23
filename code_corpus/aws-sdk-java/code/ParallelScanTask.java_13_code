@@ -1,0 +1,15 @@
+			if (currentSegmentState == SegmentScanState.Failed) {
+				try {
+					segmentScanFutureTasks.get(segment).get();
+					throw new AmazonClientException("No Exception found in the failed scan task.");
+				} catch (ExecutionException ee) {
+					if ( ee.getCause() instanceof AmazonClientException) {
+						throw (AmazonClientException) (ee.getCause());
+					} else {
+						throw new AmazonClientException("Internal error during the scan on segment #" + segment + ".",
+								ee.getCause());
+					}
+				} catch (Exception e) {
+					throw new AmazonClientException("Error during the scan on segment #" + segment + ".", e);
+				}
+			}

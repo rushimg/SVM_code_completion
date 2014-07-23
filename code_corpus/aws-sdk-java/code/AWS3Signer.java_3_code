@@ -1,0 +1,44 @@
+    public void sign(Request<?> request, AWSCredentials credentials) throws AmazonClientException {
+        // annonymous credentials, don't sign
+        if ( credentials instanceof AnonymousAWSCredentials ) {
+            return;
+        }
+
+        AWSCredentials sanitizedCredentials = sanitizeCredentials(credentials);
+
+        SigningAlgorithm algorithm = SigningAlgorithm.HmacSHA256;
+        String nonce = UUID.randomUUID().toString();
+
+        int timeOffset = getTimeOffset(request);
+        Date dateValue = getSignatureDate(timeOffset);
+        String date = dateUtils.formatRfc822Date(dateValue);
+        boolean isHttps = false;
+
+        if (overriddenDate != null) date = overriddenDate;
+        request.addHeader("Date", date);
+        request.addHeader("X-Amz-Date", date);
+
+        // AWS3 HTTP requires that we sign the Host header
+        // so we have to have it in the request by the time we sign.
+        String hostHeader = request.getEndpoint().getHost();
+        if (HttpUtils.isUsingNonDefaultPort(request.getEndpoint())) {
+            hostHeader += ":" + request.getEndpoint().getPort();
+        }
+        request.addHeader("Host", hostHeader);
+
+        if ( sanitizedCredentials instanceof AWSSessionCredentials ) {
+            addSessionCredentials(request, (AWSSessionCredentials) sanitizedCredentials);
+        }
+        byte[] bytesToSign;
+        String stringToSign;
+        if (isHttps) {
+            request.addHeader(NONCE_HEADER, nonce);
+            stringToSign = date + nonce;
+            try {
+                bytesToSign = stringToSign.getBytes("UTF-8");
+            } catch (UnsupportedEncodingException e) {
+                throw new AmazonClientException("Unable to serialize string to bytes: " + e.getMessage(), e);
+            }
+        } else {
+            String path = HttpUtils.appendUri(request.getEndpoint().getPath(), request.getResourcePath());
+

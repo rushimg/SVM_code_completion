@@ -1,0 +1,25 @@
+    protected static void populateRequestMetadata(Request<?> request, ObjectMetadata metadata) {
+        Map<String, Object> rawMetadata = metadata.getRawMetadata();
+        if (rawMetadata != null) {
+            for (Entry<String, Object> entry : rawMetadata.entrySet()) {
+                request.addHeader(entry.getKey(), entry.getValue().toString());
+            }
+        }
+
+        Date httpExpiresDate = metadata.getHttpExpiresDate();
+        if (httpExpiresDate != null) {
+            request.addHeader(Headers.EXPIRES, new DateUtils().formatRfc822Date(httpExpiresDate));
+        }
+
+        Map<String, String> userMetadata = metadata.getUserMetadata();
+        if (userMetadata != null) {
+            for (Entry<String, String> entry : userMetadata.entrySet()) {
+                String key = entry.getKey();
+                String value = entry.getValue();
+                if (key != null) key = key.trim();
+                if (value != null) value = value.trim();
+                request.addHeader(Headers.S3_USER_METADATA_PREFIX + key, value);
+            }
+        }
+    }
+

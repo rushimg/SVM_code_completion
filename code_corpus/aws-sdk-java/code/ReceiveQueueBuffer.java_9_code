@@ -1,0 +1,13 @@
+    private void satisfyFuturesFromBuffer()    {
+        synchronized( futures )    {
+            synchronized( finishedTasks ) {
+                //attempt to satisfy futures until we run out of either futures or
+                //finished tasks
+                while ( (!futures.isEmpty())  &&  (!finishedTasks.isEmpty()) )    {
+                    ReceiveMessageFuture currentFuture = futures.poll();
+                    fillFuture( currentFuture);
+                }
+            }
+        }
+    }
+    

@@ -1,0 +1,19 @@
+    public Future<DescribeElasticIpsResult> describeElasticIpsAsync(
+            final DescribeElasticIpsRequest describeElasticIpsRequest,
+            final AsyncHandler<DescribeElasticIpsRequest, DescribeElasticIpsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeElasticIpsResult>() {
+            public DescribeElasticIpsResult call() throws Exception {
+                DescribeElasticIpsResult result;
+                try {
+                    result = describeElasticIps(describeElasticIpsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeElasticIpsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -1,0 +1,43 @@
+    public static void updateMetadataWithEncryptionInstruction(PutObjectRequest request, EncryptionInstruction instruction){
+        byte[] keyBytesToStoreInMetadata = instruction.getEncryptedSymmetricKey();
+        Cipher symmetricCipher = instruction.getSymmetricCipher();
+        Map<String, String> materialsDescription = instruction.getMaterialsDescription();
+
+        ObjectMetadata metadata = request.getMetadata();
+        if (metadata == null) metadata = new ObjectMetadata();
+
+        if (request.getFile() != null) {
+            Mimetypes mimetypes = Mimetypes.getInstance();
+            metadata.setContentType(mimetypes.getMimetype(request.getFile()));
+        }
+
+        updateMetadata(metadata, keyBytesToStoreInMetadata, symmetricCipher, materialsDescription);
+        request.setMetadata( metadata );
+    }
+
+    private static void updateMetadata(ObjectMetadata metadata, byte[] keyBytesToStoreInMetadata, Cipher symmetricCipher, Map<String, String> materialsDescription) {
+        // If we generated a symmetric key to encrypt the data, store it in the object metadata.
+        if (keyBytesToStoreInMetadata != null) {
+            keyBytesToStoreInMetadata = Base64.encodeBase64(keyBytesToStoreInMetadata);
+            metadata.addUserMetadata(Headers.CRYPTO_KEY, new String(keyBytesToStoreInMetadata));
+        }
+
+        // Put the cipher initialization vector (IV) into the object metadata
+        byte[] initVectorBytes = symmetricCipher.getIV();
+        initVectorBytes = Base64.encodeBase64(initVectorBytes);
+        metadata.addUserMetadata(Headers.CRYPTO_IV, new String(initVectorBytes));
+
+        // Put the materials description into the object metadata as JSON
+        JSONObject descriptionJSON = new JSONObject(materialsDescription);
+        metadata.addUserMetadata(Headers.MATERIALS_DESCRIPTION, descriptionJSON.toString());
+    }
+
+    public static ObjectMetadata updateMetadataWithEncryptionInfo(InitiateMultipartUploadRequest request, byte[] keyBytesToStoreInMetadata, Cipher symmetricCipher, Map<String, String> materialsDescription) {
+        ObjectMetadata metadata = request.getObjectMetadata();
+        if (metadata == null) metadata = new ObjectMetadata();
+
+        updateMetadata(metadata, keyBytesToStoreInMetadata, symmetricCipher, materialsDescription);
+
+        return metadata;
+    }
+

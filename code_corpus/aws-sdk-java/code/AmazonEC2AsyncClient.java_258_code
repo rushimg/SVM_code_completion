@@ -1,0 +1,19 @@
+    public Future<DescribeKeyPairsResult> describeKeyPairsAsync(
+            final DescribeKeyPairsRequest describeKeyPairsRequest,
+            final AsyncHandler<DescribeKeyPairsRequest, DescribeKeyPairsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeKeyPairsResult>() {
+            public DescribeKeyPairsResult call() throws Exception {
+                DescribeKeyPairsResult result;
+                try {
+                    result = describeKeyPairs(describeKeyPairsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeKeyPairsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

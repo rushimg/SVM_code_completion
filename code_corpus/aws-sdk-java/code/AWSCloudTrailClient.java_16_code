@@ -1,0 +1,25 @@
+    public StopLoggingResult stopLogging(StopLoggingRequest stopLoggingRequest) {
+        ExecutionContext executionContext = createExecutionContext(stopLoggingRequest);
+        AWSRequestMetrics awsRequestMetrics = executionContext.getAwsRequestMetrics();
+        awsRequestMetrics.startEvent(Field.ClientExecuteTime);
+        Request<StopLoggingRequest> request = null;
+        Response<StopLoggingResult> response = null;
+        try {
+            awsRequestMetrics.startEvent(Field.RequestMarshallTime);
+            try {
+                request = new StopLoggingRequestMarshaller().marshall(stopLoggingRequest);
+                // Binds the request metrics to the current request.
+                request.setAWSRequestMetrics(awsRequestMetrics);
+            } finally {
+                awsRequestMetrics.endEvent(Field.RequestMarshallTime);
+            }
+            Unmarshaller<StopLoggingResult, JsonUnmarshallerContext> unmarshaller = new StopLoggingResultJsonUnmarshaller();
+            JsonResponseHandler<StopLoggingResult> responseHandler = new JsonResponseHandler<StopLoggingResult>(unmarshaller);
+            
+            response = invoke(request, responseHandler, executionContext);
+            return response.getAwsResponse();
+        } finally {
+            endClientExecution(awsRequestMetrics, request, response);
+        }
+    }
+

@@ -1,0 +1,19 @@
+    public Future<BundleInstanceResult> bundleInstanceAsync(
+            final BundleInstanceRequest bundleInstanceRequest,
+            final AsyncHandler<BundleInstanceRequest, BundleInstanceResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<BundleInstanceResult>() {
+            public BundleInstanceResult call() throws Exception {
+                BundleInstanceResult result;
+                try {
+                    result = bundleInstance(bundleInstanceRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(bundleInstanceRequest, result);
+                   return result;
+            }
+        });
+    }
+    

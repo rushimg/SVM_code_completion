@@ -1,0 +1,31 @@
+    public ProgressListenerChain(ProgressEventFilter progressEventFilter, ProgressListener... listeners) {
+        for (ProgressListener listener : listeners) addProgressListener(listener);
+        this.progressEventFilter = progressEventFilter;
+    }
+
+    public synchronized void addProgressListener(ProgressListener listener) {
+        if (listener == null) return;
+        this.listeners.add(listener);
+    }
+
+    public synchronized void removeProgressListener(ProgressListener listener) {
+        if (listener == null) return;
+        this.listeners.remove(listener);
+    }
+
+    public void progressChanged(final ProgressEvent progressEvent) {
+        ProgressEvent filteredEvent = progressEvent;
+        if (progressEventFilter != null) {
+            filteredEvent = progressEventFilter.filter(progressEvent);
+            if (filteredEvent == null) return;
+        }
+        
+        for ( ProgressListener listener : listeners ) {
+            try {
+                listener.progressChanged(filteredEvent);
+            } catch ( RuntimeException e ) {
+                log.warn("Couldn't update progress listener", e);
+            }
+        }
+    }
+    

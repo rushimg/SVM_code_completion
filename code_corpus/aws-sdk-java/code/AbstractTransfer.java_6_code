@@ -1,0 +1,14 @@
+    public void waitForCompletion()
+            throws AmazonClientException, AmazonServiceException, InterruptedException {
+        try {
+            Object result = null;
+            while (!monitor.isDone() || result == null) {
+                Future<?> f = monitor.getFuture();
+                result = f.get();
+            }
+        } catch (ExecutionException e) {
+            rethrowExecutionException(e);
+            
+        }
+    }
+

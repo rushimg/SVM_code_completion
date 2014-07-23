@@ -1,0 +1,19 @@
+    public Future<DescribeVirtualInterfacesResult> describeVirtualInterfacesAsync(
+            final DescribeVirtualInterfacesRequest describeVirtualInterfacesRequest,
+            final AsyncHandler<DescribeVirtualInterfacesRequest, DescribeVirtualInterfacesResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeVirtualInterfacesResult>() {
+            public DescribeVirtualInterfacesResult call() throws Exception {
+                DescribeVirtualInterfacesResult result;
+                try {
+                    result = describeVirtualInterfaces(describeVirtualInterfacesRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeVirtualInterfacesRequest, result);
+                   return result;
+            }
+        });
+    }
+    

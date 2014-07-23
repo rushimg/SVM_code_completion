@@ -1,0 +1,19 @@
+    public Future<DescribeRankExpressionsResult> describeRankExpressionsAsync(
+            final DescribeRankExpressionsRequest describeRankExpressionsRequest,
+            final AsyncHandler<DescribeRankExpressionsRequest, DescribeRankExpressionsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeRankExpressionsResult>() {
+            public DescribeRankExpressionsResult call() throws Exception {
+                DescribeRankExpressionsResult result;
+                try {
+                    result = describeRankExpressions(describeRankExpressionsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeRankExpressionsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

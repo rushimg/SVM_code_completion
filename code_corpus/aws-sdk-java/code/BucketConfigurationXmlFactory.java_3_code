@@ -1,0 +1,19 @@
+    public byte[] convertToXmlByteArray(BucketVersioningConfiguration versioningConfiguration) {
+        XmlWriter xml = new XmlWriter();
+        xml.start("VersioningConfiguration", "xmlns", Constants.XML_NAMESPACE);
+        xml.start("Status").value(versioningConfiguration.getStatus()).end();
+
+        Boolean mfaDeleteEnabled = versioningConfiguration.isMfaDeleteEnabled();
+        if (mfaDeleteEnabled != null) {
+            if (mfaDeleteEnabled) {
+                xml.start("MfaDelete").value("Enabled").end();
+            } else {
+                xml.start("MfaDelete").value("Disabled").end();
+            }
+        }
+
+        xml.end();
+
+        return xml.getBytes();
+    }
+

@@ -1,0 +1,19 @@
+    public Future<CreateCaseResult> createCaseAsync(
+            final CreateCaseRequest createCaseRequest,
+            final AsyncHandler<CreateCaseRequest, CreateCaseResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<CreateCaseResult>() {
+            public CreateCaseResult call() throws Exception {
+                CreateCaseResult result;
+                try {
+                    result = createCase(createCaseRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(createCaseRequest, result);
+                   return result;
+            }
+        });
+    }
+    

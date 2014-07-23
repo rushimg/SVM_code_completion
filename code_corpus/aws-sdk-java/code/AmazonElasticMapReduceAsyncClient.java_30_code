@@ -1,0 +1,19 @@
+    public Future<RemoveTagsResult> removeTagsAsync(
+            final RemoveTagsRequest removeTagsRequest,
+            final AsyncHandler<RemoveTagsRequest, RemoveTagsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<RemoveTagsResult>() {
+            public RemoveTagsResult call() throws Exception {
+                RemoveTagsResult result;
+                try {
+                    result = removeTags(removeTagsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(removeTagsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

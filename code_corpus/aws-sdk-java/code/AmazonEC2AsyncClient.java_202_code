@@ -1,0 +1,19 @@
+    public Future<DescribeSpotInstanceRequestsResult> describeSpotInstanceRequestsAsync(
+            final DescribeSpotInstanceRequestsRequest describeSpotInstanceRequestsRequest,
+            final AsyncHandler<DescribeSpotInstanceRequestsRequest, DescribeSpotInstanceRequestsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeSpotInstanceRequestsResult>() {
+            public DescribeSpotInstanceRequestsResult call() throws Exception {
+                DescribeSpotInstanceRequestsResult result;
+                try {
+                    result = describeSpotInstanceRequests(describeSpotInstanceRequestsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeSpotInstanceRequestsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

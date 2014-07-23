@@ -1,0 +1,43 @@
+    public AmazonSimpleWorkflowClient(AWSCredentialsProvider awsCredentialsProvider,
+            ClientConfiguration clientConfiguration,
+            RequestMetricCollector requestMetricCollector) {
+        super(clientConfiguration, requestMetricCollector);
+        
+        this.awsCredentialsProvider = awsCredentialsProvider;
+        
+        init();
+    }
+
+    private void init() {
+        exceptionUnmarshallers = new ArrayList<Unmarshaller<AmazonServiceException, JSONObject>>();
+        exceptionUnmarshallers.add(new LimitExceededExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new DomainAlreadyExistsExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new DomainDeprecatedExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new DefaultUndefinedExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new OperationNotPermittedExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new UnknownResourceExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new WorkflowExecutionAlreadyStartedExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new TypeDeprecatedExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new TypeAlreadyExistsExceptionUnmarshaller());
+        
+        exceptionUnmarshallers.add(new JsonErrorUnmarshaller());
+        // calling this.setEndPoint(...) will also modify the signer accordingly
+        this.setEndpoint("swf.us-east-1.amazonaws.com");
+        HandlerChainFactory chainFactory = new HandlerChainFactory();
+        requestHandler2s.addAll(chainFactory.newRequestHandlerChain(
+                "/com/amazonaws/services/simpleworkflow/request.handlers"));
+        requestHandler2s.addAll(chainFactory.newRequestHandler2Chain(
+                "/com/amazonaws/services/simpleworkflow/request.handler2s"));
+
+        clientConfiguration = new ClientConfiguration(clientConfiguration);
+        if (clientConfiguration.getMaxConnections() == ClientConfiguration.DEFAULT_MAX_CONNECTIONS) {
+            log.debug("Overriding default max connection value to: " + 1000);
+            clientConfiguration.setMaxConnections(1000);
+        }
+        if (clientConfiguration.getSocketTimeout() == ClientConfiguration.DEFAULT_SOCKET_TIMEOUT) {
+            log.debug("Overriding default socket timeout value to: " + 90000);
+            clientConfiguration.setSocketTimeout(90000);
+        }
+        setConfiguration(clientConfiguration);
+    }
+

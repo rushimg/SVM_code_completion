@@ -1,0 +1,19 @@
+    public Future<ListJobsResult> listJobsAsync(
+            final ListJobsRequest listJobsRequest,
+            final AsyncHandler<ListJobsRequest, ListJobsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ListJobsResult>() {
+            public ListJobsResult call() throws Exception {
+                ListJobsResult result;
+                try {
+                    result = listJobs(listJobsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(listJobsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

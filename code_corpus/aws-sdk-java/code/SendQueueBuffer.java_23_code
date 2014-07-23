@@ -1,0 +1,21 @@
+        synchronized QueueBufferFuture<R, Result> addIfAllowed(R request, QueueBufferCallback<R,Result> callback) {
+            if (isOkToAdd(request)) {
+                requests.add(request);
+
+                QueueBufferFuture<R, Result> theFuture = new QueueBufferFuture<R, Result>(callback);
+
+                futures.add(theFuture);
+                onRequestAdded(request);
+                return theFuture;
+            } else
+                return null;
+        }
+
+        protected synchronized boolean isOkToAdd(R request) {
+            return requests.size() < config.getMaxBatchSize();
+        }
+        
+        protected synchronized void onRequestAdded(R request) {
+            // to be overridden by subclasses
+        }
+

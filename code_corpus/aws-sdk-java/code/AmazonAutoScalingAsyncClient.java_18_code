@@ -1,0 +1,19 @@
+    public Future<DescribeAutoScalingGroupsResult> describeAutoScalingGroupsAsync(
+            final DescribeAutoScalingGroupsRequest describeAutoScalingGroupsRequest,
+            final AsyncHandler<DescribeAutoScalingGroupsRequest, DescribeAutoScalingGroupsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeAutoScalingGroupsResult>() {
+            public DescribeAutoScalingGroupsResult call() throws Exception {
+                DescribeAutoScalingGroupsResult result;
+                try {
+                    result = describeAutoScalingGroups(describeAutoScalingGroupsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeAutoScalingGroupsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

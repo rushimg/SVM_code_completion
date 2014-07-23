@@ -1,0 +1,19 @@
+    public Future<DescribeClusterSnapshotsResult> describeClusterSnapshotsAsync(
+            final DescribeClusterSnapshotsRequest describeClusterSnapshotsRequest,
+            final AsyncHandler<DescribeClusterSnapshotsRequest, DescribeClusterSnapshotsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeClusterSnapshotsResult>() {
+            public DescribeClusterSnapshotsResult call() throws Exception {
+                DescribeClusterSnapshotsResult result;
+                try {
+                    result = describeClusterSnapshots(describeClusterSnapshotsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeClusterSnapshotsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

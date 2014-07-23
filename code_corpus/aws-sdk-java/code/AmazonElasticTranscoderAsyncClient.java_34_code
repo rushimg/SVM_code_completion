@@ -1,0 +1,19 @@
+    public Future<DeletePipelineResult> deletePipelineAsync(
+            final DeletePipelineRequest deletePipelineRequest,
+            final AsyncHandler<DeletePipelineRequest, DeletePipelineResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DeletePipelineResult>() {
+            public DeletePipelineResult call() throws Exception {
+                DeletePipelineResult result;
+                try {
+                    result = deletePipeline(deletePipelineRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(deletePipelineRequest, result);
+                   return result;
+            }
+        });
+    }
+    

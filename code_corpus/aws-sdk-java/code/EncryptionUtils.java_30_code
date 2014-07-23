@@ -1,0 +1,17 @@
+    private static JSONObject convertInstructionToJSONObject(EncryptionInstruction instruction) {
+        JSONObject instructionJSON = new JSONObject();
+        try {
+            JSONObject materialsDescriptionJSON = new JSONObject(instruction.getMaterialsDescription());
+            byte[] initVector = instruction.getSymmetricCipher().getIV();
+            initVector = Base64.encodeBase64(initVector);
+            byte[] encryptedKeyBytes = instruction.getEncryptedSymmetricKey();
+            encryptedKeyBytes = Base64.encodeBase64(encryptedKeyBytes);
+
+            instructionJSON.put(Headers.MATERIALS_DESCRIPTION, materialsDescriptionJSON.toString());
+            instructionJSON.put(Headers.CRYPTO_KEY, new String(encryptedKeyBytes));
+            instructionJSON.put(Headers.CRYPTO_IV, new String(initVector));
+
+        } catch (JSONException e) {} // Keys are never null, so JSONException will never be thrown.
+        return instructionJSON;
+    }
+

@@ -1,0 +1,51 @@
+    public boolean areAnyOpen() {
+    	//==========================================================================//
+    	//============== Describe Spot Instance Requests to determine =============//
+    	//==========================================================================//
+
+    	// Create the describeRequest with tall of the request id to monitor (e.g. that we started).
+    	DescribeSpotInstanceRequestsRequest describeRequest = new DescribeSpotInstanceRequestsRequest();
+    	describeRequest.setSpotInstanceRequestIds(spotInstanceRequestIds);
+
+		System.out.println("Checking to determine if Spot Bids have reached the active state...");
+
+		// Initialize variables.
+		instanceIds = new ArrayList<String>();
+
+		try
+		{
+        	// Retrieve all of the requests we want to monitor.
+			DescribeSpotInstanceRequestsResult describeResult = ec2.describeSpotInstanceRequests(describeRequest);
+			List<SpotInstanceRequest> describeResponses = describeResult.getSpotInstanceRequests();
+
+        	// Look through each request and determine if they are all in the active state.
+        	for (SpotInstanceRequest describeResponse : describeResponses) {
+        		System.out.println(" " +describeResponse.getSpotInstanceRequestId() +
+        						   " is in the "+describeResponse.getState() + " state.");
+
+        		// If the state is open, it hasn't changed since we attempted to request it.
+        		// There is the potential for it to transition almost immediately to closed or
+        		// cancelled so we compare against open instead of active.
+        		if (describeResponse.getState().equals("open")) {
+        			return true;
+        		}
+
+        		// Add the instance id to the list we will eventually terminate.
+        		instanceIds.add(describeResponse.getInstanceId());
+        	}
+		} catch (AmazonServiceException e) {
+			// Print out the error.
+			System.out.println("Error when calling describeSpotInstances");
+            System.out.println("Caught Exception: " + e.getMessage());
+            System.out.println("Reponse Status Code: " + e.getStatusCode());
+            System.out.println("Error Code: " + e.getErrorCode());
+            System.out.println("Request ID: " + e.getRequestId());
+
+            // If we have an exception, ensure we don't break out of the loop.
+			// This prevents the scenario where there was blip on the wire.
+			return true;
+        }
+
+		return false;
+    }
+

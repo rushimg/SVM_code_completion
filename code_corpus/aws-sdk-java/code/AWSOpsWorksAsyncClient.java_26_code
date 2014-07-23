@@ -1,0 +1,18 @@
+    public Future<Void> deleteInstanceAsync(
+            final DeleteInstanceRequest deleteInstanceRequest,
+            final AsyncHandler<DeleteInstanceRequest, Void> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<Void>() {
+            public Void call() throws Exception {
+                try {
+                    deleteInstance(deleteInstanceRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(deleteInstanceRequest, null);
+                   return null;
+            }
+        });
+    }
+    

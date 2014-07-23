@@ -1,0 +1,16 @@
+    private Map<String, SignerConfig> buildSignerMap(
+            JsonIndex<SignerConfigJsonHelper, SignerConfig>[] signerIndexes, String theme) {
+        Map<String, SignerConfig> map = new HashMap<String, SignerConfig>();
+        if (signerIndexes != null) {
+            for (JsonIndex<SignerConfigJsonHelper, SignerConfig> index: signerIndexes) {
+                String region = index.getKey();
+                SignerConfig prev = map.put(region, index.newReadOnlyConfig());
+                if (prev != null) {
+                    log.warn("Duplicate definition of signer for " + theme + " "
+                            + index.getKey());
+                }
+            }
+        }
+        return map;
+    }
+

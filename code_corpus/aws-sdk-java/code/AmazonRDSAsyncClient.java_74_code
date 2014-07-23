@@ -1,0 +1,19 @@
+    public Future<EngineDefaults> describeEngineDefaultParametersAsync(
+            final DescribeEngineDefaultParametersRequest describeEngineDefaultParametersRequest,
+            final AsyncHandler<DescribeEngineDefaultParametersRequest, EngineDefaults> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<EngineDefaults>() {
+            public EngineDefaults call() throws Exception {
+                EngineDefaults result;
+                try {
+                    result = describeEngineDefaultParameters(describeEngineDefaultParametersRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeEngineDefaultParametersRequest, result);
+                   return result;
+            }
+        });
+    }
+    

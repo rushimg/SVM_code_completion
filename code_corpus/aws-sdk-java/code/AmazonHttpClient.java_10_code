@@ -1,0 +1,52 @@
+    public <T> Response<T> execute(Request<?> request,
+            HttpResponseHandler<AmazonWebServiceResponse<T>> responseHandler,
+            HttpResponseHandler<AmazonServiceException> errorResponseHandler,
+            ExecutionContext executionContext) throws AmazonClientException, AmazonServiceException {
+        if (executionContext == null)
+            throw new AmazonClientException("Internal SDK Error: No execution context parameter specified.");
+        List<RequestHandler2> requestHandler2s = requestHandler2s(request, executionContext);
+
+        final AWSRequestMetrics awsRequestMetrics = executionContext.getAwsRequestMetrics();
+        Response<T> response = null;
+        try {
+            response = executeHelper(request, responseHandler, errorResponseHandler, executionContext);
+            TimingInfo timingInfo = awsRequestMetrics.getTimingInfo().endTiming();
+            afterResponse(request, requestHandler2s, response, timingInfo);
+            return response;
+        } catch (AmazonClientException e) {
+            afterError(request, response, requestHandler2s, e);
+            throw e;
+        }
+    }
+
+    private void afterError(Request<?> request, Response<?> response,
+            List<RequestHandler2> requestHandler2s, AmazonClientException e) {
+        for (RequestHandler2 handler2 : requestHandler2s) {
+            handler2.afterError(request, response, e);
+        }
+    }
+
+    private <T> void afterResponse(Request<?> request,
+            List<RequestHandler2> requestHandler2s,
+            Response<T> response,
+            TimingInfo timingInfo) {
+        for (RequestHandler2 handler2 : requestHandler2s) {
+            handler2.afterResponse(request, response);
+        }
+    }
+
+    private List<RequestHandler2> requestHandler2s(Request<?> request,
+            ExecutionContext executionContext) {
+        List<RequestHandler2> requestHandler2s = executionContext
+                .getRequestHandler2s();
+        if (requestHandler2s == null) {
+            return Collections.emptyList();
+        }
+        // Apply any additional service specific request handlers that need
+        // to be run
+        for (RequestHandler2 requestHandler2 : requestHandler2s) {
+            requestHandler2.beforeRequest(request);
+        }
+        return requestHandler2s;
+    }
+

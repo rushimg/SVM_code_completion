@@ -1,0 +1,20 @@
+    public static Region getRegionByEndpoint(String endpoint) {
+    	URI targetEndpointUri = getUriByEndpoint(endpoint);
+    	String targetHost = targetEndpointUri.getHost();
+
+        for ( Region region : getRegions() ) {
+            for ( String serviceEndpoint
+                      : region.getServiceEndpoints().values() ) {
+
+                URI serviceEndpointUrl = getUriByEndpoint(serviceEndpoint);
+                
+                if ( serviceEndpointUrl.getHost().equals(targetHost) ) {
+                    return region;
+                }
+            }
+        }
+
+        throw new IllegalArgumentException(
+            "No region found with any service for endpoint " + endpoint);
+    }
+

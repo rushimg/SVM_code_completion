@@ -1,0 +1,18 @@
+    public Future<Void> updateVolumeAsync(
+            final UpdateVolumeRequest updateVolumeRequest,
+            final AsyncHandler<UpdateVolumeRequest, Void> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<Void>() {
+            public Void call() throws Exception {
+                try {
+                    updateVolume(updateVolumeRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(updateVolumeRequest, null);
+                   return null;
+            }
+        });
+    }
+    

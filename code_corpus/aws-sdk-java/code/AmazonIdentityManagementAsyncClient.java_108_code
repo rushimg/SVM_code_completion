@@ -1,0 +1,19 @@
+    public Future<GetSAMLProviderResult> getSAMLProviderAsync(
+            final GetSAMLProviderRequest getSAMLProviderRequest,
+            final AsyncHandler<GetSAMLProviderRequest, GetSAMLProviderResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<GetSAMLProviderResult>() {
+            public GetSAMLProviderResult call() throws Exception {
+                GetSAMLProviderResult result;
+                try {
+                    result = getSAMLProvider(getSAMLProviderRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(getSAMLProviderRequest, result);
+                   return result;
+            }
+        });
+    }
+    

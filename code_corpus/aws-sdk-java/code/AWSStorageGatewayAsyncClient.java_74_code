@@ -1,0 +1,19 @@
+    public Future<DescribeSnapshotScheduleResult> describeSnapshotScheduleAsync(
+            final DescribeSnapshotScheduleRequest describeSnapshotScheduleRequest,
+            final AsyncHandler<DescribeSnapshotScheduleRequest, DescribeSnapshotScheduleResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeSnapshotScheduleResult>() {
+            public DescribeSnapshotScheduleResult call() throws Exception {
+                DescribeSnapshotScheduleResult result;
+                try {
+                    result = describeSnapshotSchedule(describeSnapshotScheduleRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeSnapshotScheduleRequest, result);
+                   return result;
+            }
+        });
+    }
+    

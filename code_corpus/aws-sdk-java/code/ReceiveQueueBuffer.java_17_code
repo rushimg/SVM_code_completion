@@ -1,0 +1,16 @@
+        synchronized Message removeMessage() {
+            if (!open)
+                throw new IllegalStateException("batch is not open");
+
+            // our messages expired.
+            if ( System.nanoTime() > visibilityDeadlineNano ) { 
+                messages.clear();
+                return null;
+            }
+            
+            if (messages.isEmpty())
+                return null;
+            else
+                return messages.remove(messages.size() - 1);
+        }
+

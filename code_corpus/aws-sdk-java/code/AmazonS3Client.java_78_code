@@ -1,0 +1,19 @@
+    public BucketWebsiteConfiguration getBucketWebsiteConfiguration(GetBucketWebsiteConfigurationRequest getBucketWebsiteConfigurationRequest)
+            throws AmazonClientException, AmazonServiceException {
+        String bucketName = getBucketWebsiteConfigurationRequest.getBucketName();
+
+        assertParameterNotNull(bucketName,
+            "The bucket name parameter must be specified when requesting a bucket's website configuration");
+
+        Request<GetBucketWebsiteConfigurationRequest> request = createRequest(bucketName, null, getBucketWebsiteConfigurationRequest, HttpMethodName.GET);
+        request.addParameter("website", null);
+        request.addHeader("Content-Type", "application/xml");
+
+        try {
+            return invoke(request, new Unmarshallers.BucketWebsiteConfigurationUnmarshaller(), bucketName, null);
+        } catch (AmazonServiceException ase) {
+            if (ase.getStatusCode() == 404) return null;
+            throw ase;
+        }
+    }
+

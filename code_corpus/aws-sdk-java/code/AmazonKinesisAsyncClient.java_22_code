@@ -1,0 +1,19 @@
+    public Future<GetRecordsResult> getRecordsAsync(
+            final GetRecordsRequest getRecordsRequest,
+            final AsyncHandler<GetRecordsRequest, GetRecordsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<GetRecordsResult>() {
+            public GetRecordsResult call() throws Exception {
+                GetRecordsResult result;
+                try {
+                    result = getRecords(getRecordsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(getRecordsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

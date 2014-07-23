@@ -1,0 +1,23 @@
+    public void chain(final Promise<V> chainTo) {
+        if (ready) {
+            throw new IllegalStateException("already ready");
+        }
+        if (chainCallback != null) {
+            throw new IllegalStateException("Already chained. Call unchain() to get rid of the previous chaining.");
+        }
+        if (chainTo == null) {
+            set(null);
+            return;
+        }
+        chainCallback = new Runnable() {
+
+            @Override
+            public void run() {
+                set(chainTo.get());
+            }
+        };
+
+        chainTo.addCallback(chainCallback);
+        chainedTo = chainTo;
+    }
+

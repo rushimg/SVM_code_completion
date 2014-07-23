@@ -1,0 +1,49 @@
+            metadata.setContentType(Mimetypes.MIMETYPE_OCTET_STREAM);
+        }
+
+        populateRequestMetadata(request, metadata);
+        request.setContent(input);
+
+        ObjectMetadata returnedMetadata = null;
+        try {
+            returnedMetadata = invoke(request, new S3MetadataResponseHandler(), bucketName, key);
+        } catch (AmazonClientException ace) {
+            fireProgressEvent(progressListenerCallbackExecutor, ProgressEvent.FAILED_EVENT_CODE);
+            throw ace;
+        } finally {
+            try {input.close();} catch (Exception e) {
+                log.warn("Unable to cleanly close input stream: " + e.getMessage(), e);
+            }
+        }
+
+        String contentMd5 = metadata.getContentMD5();
+        if (md5DigestStream != null) {
+            contentMd5 = BinaryUtils.toBase64(md5DigestStream.getMd5Digest());
+        }
+
+        if (returnedMetadata != null && contentMd5 != null) {
+            byte[] clientSideHash = BinaryUtils.fromBase64(contentMd5);
+            byte[] serverSideHash = BinaryUtils.fromHex(returnedMetadata.getETag());
+
+            if (!Arrays.equals(clientSideHash, serverSideHash)) {
+                fireProgressEvent(progressListenerCallbackExecutor, ProgressEvent.FAILED_EVENT_CODE);
+
+                throw new AmazonClientException("Unable to verify integrity of data upload.  " +
+                        "Client calculated content hash didn't match hash calculated by Amazon S3.  " +
+                        "You may need to delete the data stored in Amazon S3.");
+            }
+        }
+
+        fireProgressEvent(progressListenerCallbackExecutor, ProgressEvent.COMPLETED_EVENT_CODE);
+
+        PutObjectResult result = new PutObjectResult();
+        result.setETag(returnedMetadata.getETag());
+        result.setVersionId(returnedMetadata.getVersionId());
+        result.setServerSideEncryption(returnedMetadata.getServerSideEncryption());
+        result.setExpirationTime(returnedMetadata.getExpirationTime());
+        result.setExpirationTimeRuleId(returnedMetadata.getExpirationTimeRuleId());
+        result.setContentMd5(contentMd5);
+
+        return result;
+    }
+

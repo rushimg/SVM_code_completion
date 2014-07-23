@@ -1,0 +1,49 @@
+        ProgressListener progressListener = uploadPartRequest.getGeneralProgressListener();
+        ProgressListenerCallbackExecutor progressListenerCallbackExecutor = ProgressListenerCallbackExecutor
+                .wrapListener(progressListener);
+
+        if (progressListenerCallbackExecutor != null) {
+            inputStream = new ProgressReportingInputStream(inputStream, progressListenerCallbackExecutor);
+            fireProgressEvent(progressListenerCallbackExecutor, ProgressEvent.PART_STARTED_EVENT_CODE);
+        }
+
+        try {
+            request.setContent(inputStream);
+            ObjectMetadata metadata = invoke(request, new S3MetadataResponseHandler(), bucketName, key);
+
+            if (metadata != null && md5DigestStream != null) {
+                String contentMd5 = BinaryUtils.toBase64(md5DigestStream.getMd5Digest());
+                byte[] clientSideHash = BinaryUtils.fromBase64(contentMd5);
+                byte[] serverSideHash = BinaryUtils.fromHex(metadata.getETag());
+
+                if (!Arrays.equals(clientSideHash, serverSideHash)) {
+                    throw new AmazonClientException("Unable to verify integrity of data upload.  " +
+                            "Client calculated content hash didn't match hash calculated by Amazon S3.  " +
+                            "You may need to delete the data stored in Amazon S3.");
+                }
+            }
+
+            fireProgressEvent(progressListenerCallbackExecutor, ProgressEvent.PART_COMPLETED_EVENT_CODE);
+
+            UploadPartResult result = new UploadPartResult();
+            result.setETag(metadata.getETag());
+            result.setPartNumber(partNumber);
+            result.setServerSideEncryption(metadata.getServerSideEncryption());
+            return result;
+        } catch (AmazonClientException ace) {
+            fireProgressEvent(progressListenerCallbackExecutor, ProgressEvent.PART_FAILED_EVENT_CODE);
+
+            // Leaving this here in case anyone is depending on it, but it's
+            // inconsistent with other methods which only generate one of
+            // COMPLETED_EVENT_CODE or FAILED_EVENT_CODE.
+            fireProgressEvent(progressListenerCallbackExecutor, ProgressEvent.PART_COMPLETED_EVENT_CODE);
+
+            throw ace;
+        } finally {
+            if (inputStream != null) {
+                try {inputStream.close();}
+                catch (Exception e) {}
+            }
+        }
+    }
+

@@ -1,0 +1,26 @@
+            log.warn("No content length specified for stream data.  " +
+                     "Stream contents will be buffered in memory and could result in " +
+                     "out of memory errors.");
+        }
+
+        if (progressListenerCallbackExecutor != null) {
+            input = new ProgressReportingInputStream(input, progressListenerCallbackExecutor);
+            fireProgressEvent(progressListenerCallbackExecutor, ProgressEvent.STARTED_EVENT_CODE);
+        }
+
+        if (!input.markSupported()) {
+            int streamBufferSize = Constants.DEFAULT_STREAM_BUFFER_SIZE;
+            String bufferSizeOverride = System.getProperty("com.amazonaws.sdk.s3.defaultStreamBufferSize");
+            if (bufferSizeOverride != null) {
+                try {
+                    streamBufferSize = Integer.parseInt(bufferSizeOverride);
+                } catch (Exception e) {
+                    log.warn("Unable to parse buffer size override from value: " + bufferSizeOverride);
+                }
+            }
+
+            input = new RepeatableInputStream(input, streamBufferSize);
+        }
+
+        MD5DigestCalculatingInputStream md5DigestStream = null;
+        if (metadata.getContentMD5() == null) {

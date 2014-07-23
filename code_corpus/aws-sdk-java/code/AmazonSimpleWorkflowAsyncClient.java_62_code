@@ -1,0 +1,19 @@
+    public Future<ActivityTaskStatus> recordActivityTaskHeartbeatAsync(
+            final RecordActivityTaskHeartbeatRequest recordActivityTaskHeartbeatRequest,
+            final AsyncHandler<RecordActivityTaskHeartbeatRequest, ActivityTaskStatus> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ActivityTaskStatus>() {
+            public ActivityTaskStatus call() throws Exception {
+                ActivityTaskStatus result;
+                try {
+                    result = recordActivityTaskHeartbeat(recordActivityTaskHeartbeatRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(recordActivityTaskHeartbeatRequest, result);
+                   return result;
+            }
+        });
+    }
+    

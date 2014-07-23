@@ -1,0 +1,18 @@
+    public Future<Void> stopInstanceAsync(
+            final StopInstanceRequest stopInstanceRequest,
+            final AsyncHandler<StopInstanceRequest, Void> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<Void>() {
+            public Void call() throws Exception {
+                try {
+                    stopInstance(stopInstanceRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(stopInstanceRequest, null);
+                   return null;
+            }
+        });
+    }
+    

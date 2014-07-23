@@ -1,0 +1,19 @@
+    public byte[] convertToXmlByteArray(BucketLoggingConfiguration loggingConfiguration) {
+        // Default log file prefix to the empty string if none is specified
+        String logFilePrefix = loggingConfiguration.getLogFilePrefix();
+        if (logFilePrefix == null)
+            logFilePrefix = "";
+
+        XmlWriter xml = new XmlWriter();
+        xml.start("BucketLoggingStatus", "xmlns", Constants.XML_NAMESPACE);
+        if (loggingConfiguration.isLoggingEnabled()) {
+            xml.start("LoggingEnabled");
+            xml.start("TargetBucket").value(loggingConfiguration.getDestinationBucketName()).end();
+            xml.start("TargetPrefix").value(loggingConfiguration.getLogFilePrefix()).end();
+            xml.end();
+        }
+        xml.end();
+
+        return xml.getBytes();
+    }
+

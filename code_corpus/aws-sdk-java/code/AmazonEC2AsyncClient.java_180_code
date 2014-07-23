@@ -1,0 +1,19 @@
+    public Future<RunInstancesResult> runInstancesAsync(
+            final RunInstancesRequest runInstancesRequest,
+            final AsyncHandler<RunInstancesRequest, RunInstancesResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<RunInstancesResult>() {
+            public RunInstancesResult call() throws Exception {
+                RunInstancesResult result;
+                try {
+                    result = runInstances(runInstancesRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(runInstancesRequest, result);
+                   return result;
+            }
+        });
+    }
+    

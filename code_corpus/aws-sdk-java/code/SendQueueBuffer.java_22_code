@@ -1,0 +1,20 @@
+        synchronized QueueBufferFuture<R, Result> addRequest(R request, QueueBufferCallback<R, Result> callback) {
+            if (!open.get())
+                return null;
+
+            QueueBufferFuture<R, Result> theFuture = addIfAllowed(request, callback);
+
+            // if the addition did not work, or this addition made us full,
+            // we can close the request
+            if ((null == theFuture) || isFull()) {
+                open.set(false);
+            }
+
+            // the batch request is as full as it will ever be. no need to wait
+            // for the timeout, we can run it now.
+            if (!open.get())
+                notify();
+
+            return theFuture;
+        }
+

@@ -1,0 +1,15 @@
+    private PutObjectResult putObjectUsingMetadata(PutObjectRequest putObjectRequest)
+    throws AmazonClientException, AmazonServiceException {
+        // Create instruction
+        EncryptionInstruction instruction = EncryptionUtils.generateInstruction(this.encryptionMaterialsProvider, this.cryptoConfig.getCryptoProvider());
+
+        // Encrypt the object data with the instruction
+        PutObjectRequest encryptedObjectRequest = EncryptionUtils.encryptRequestUsingInstruction(putObjectRequest, instruction);
+
+        // Update the metadata
+        EncryptionUtils.updateMetadataWithEncryptionInstruction( putObjectRequest, instruction );
+
+        // Put the encrypted object into S3
+        return super.putObject(encryptedObjectRequest);
+    }
+

@@ -1,0 +1,19 @@
+    public Future<ListAccessKeysResult> listAccessKeysAsync(
+            final ListAccessKeysRequest listAccessKeysRequest,
+            final AsyncHandler<ListAccessKeysRequest, ListAccessKeysResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ListAccessKeysResult>() {
+            public ListAccessKeysResult call() throws Exception {
+                ListAccessKeysResult result;
+                try {
+                    result = listAccessKeys(listAccessKeysRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(listAccessKeysRequest, result);
+                   return result;
+            }
+        });
+    }
+    

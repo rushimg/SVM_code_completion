@@ -1,0 +1,30 @@
+  public HadoopJarStepConfig toHadoopJarStepConfig() {
+    if (args.size() == 0) {
+      throw new AmazonServiceException("Cannot create a ResizeJobFlowStep with no resize actions.");
+    }
+
+    if (wait == false) {
+      args.add("--no-wait");
+    }
+
+    if (onArrested != null) {
+      args.add("--on-arrested");
+      args.add(onArrested.toString());
+    }
+
+    if (onFailure != null) {
+      args.add("--on-failure");
+      args.add(onFailure.toString());
+    }
+
+    return new HadoopJarStepConfig()
+      .withJar("s3://" + bucket + "/libs/resize-job-flow/0.1/resize-job-flow.jar")
+      .withArgs(args);
+  }
+
+
+  public static interface ResizeAction {
+    public List<String> getArgs();
+  }
+
+

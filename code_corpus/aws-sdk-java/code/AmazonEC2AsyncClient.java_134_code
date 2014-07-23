@@ -1,0 +1,19 @@
+    public Future<DescribeReservedInstancesListingsResult> describeReservedInstancesListingsAsync(
+            final DescribeReservedInstancesListingsRequest describeReservedInstancesListingsRequest,
+            final AsyncHandler<DescribeReservedInstancesListingsRequest, DescribeReservedInstancesListingsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeReservedInstancesListingsResult>() {
+            public DescribeReservedInstancesListingsResult call() throws Exception {
+                DescribeReservedInstancesListingsResult result;
+                try {
+                    result = describeReservedInstancesListings(describeReservedInstancesListingsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeReservedInstancesListingsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

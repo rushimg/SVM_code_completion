@@ -1,0 +1,19 @@
+    public Future<ListDomainsResult> listDomainsAsync(
+            final ListDomainsRequest listDomainsRequest,
+            final AsyncHandler<ListDomainsRequest, ListDomainsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ListDomainsResult>() {
+            public ListDomainsResult call() throws Exception {
+                ListDomainsResult result;
+                try {
+                    result = listDomains(listDomainsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(listDomainsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

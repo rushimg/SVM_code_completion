@@ -1,0 +1,47 @@
+package com.amazonaws.services.simpleworkflow.flow.examples.helloworld;
+
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import com.amazonaws.services.simpleworkflow.flow.annotations.Asynchronous;
+import com.amazonaws.services.simpleworkflow.flow.core.Promise;
+import com.amazonaws.services.simpleworkflow.flow.core.Task;
+import com.amazonaws.services.simpleworkflow.flow.core.TryFinally;
+import com.amazonaws.services.simpleworkflow.flow.junit.FlowBlockJUnit4ClassRunner;
+import com.amazonaws.services.simpleworkflow.flow.junit.WorkflowTest;
+
+@RunWith(FlowBlockJUnit4ClassRunner.class)
+public class HelloWorldTest {
+
+    private final class TestHelloWorldActivities implements HelloWorldActivities {
+
+        private String greeting;
+
+        @Override
+        public void printHello(String name) {
+            greeting = "Hello " + name + "!";
+        }
+
+        public String getGreeting() {
+            return greeting;
+        }
+
+    }
+
+    @Rule
+    public WorkflowTest workflowTest = new WorkflowTest();
+
+    private final HelloWorldWorkflowClientFactory workflowFactory = new HelloWorldWorkflowClientFactoryImpl();
+
+    private TestHelloWorldActivities activitiesImplementation;
+
+    @Before
+    public void setUp() throws Exception {
+        workflowTest.addWorkflowImplementationType(HelloWorldWorkflowImpl.class);
+        activitiesImplementation = new TestHelloWorldActivities();
+        workflowTest.addActivitiesImplementation(activitiesImplementation);
+    }
+

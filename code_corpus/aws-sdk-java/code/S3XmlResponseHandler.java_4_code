@@ -1,0 +1,14 @@
+    public AmazonWebServiceResponse<T> handle(HttpResponse response) throws Exception {
+        AmazonWebServiceResponse<T> awsResponse = parseResponseMetadata(response);
+        responseHeaders = response.getHeaders();
+
+        if (responseUnmarshaller != null) {
+            log.trace("Beginning to parse service response XML");
+            T result = responseUnmarshaller.unmarshall(response.getContent());
+            log.trace("Done parsing service response XML");
+            awsResponse.setResult(result);
+        }
+
+        return awsResponse;
+    }
+

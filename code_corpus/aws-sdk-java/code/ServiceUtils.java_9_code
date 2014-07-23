@@ -1,0 +1,47 @@
+    public static void downloadObjectToFile(S3Object s3Object, File destinationFile, boolean performIntegrityCheck) {
+
+        // attempt to create the parent if it doesn't exist
+        File parentDirectory = destinationFile.getParentFile();
+        if ( parentDirectory != null && !parentDirectory.exists() ) {
+            parentDirectory.mkdirs();
+        }
+
+        OutputStream outputStream = null;
+        try {
+            outputStream = new BufferedOutputStream(new FileOutputStream(destinationFile));
+            int bytesRead;
+            while ((bytesRead = s3Object.getObjectContent().read(buffer)) > -1) {
+                outputStream.write(buffer, 0, bytesRead);
+            }
+        } catch (IOException e) {
+            try {
+                s3Object.getObjectContent().abort();
+            } catch ( IOException abortException ) {
+                log.warn("Couldn't abort stream", e);
+            }
+            throw new AmazonClientException(
+                    "Unable to store object contents to disk: " + e.getMessage(), e);
+        } finally {
+            try {outputStream.close();} catch (Exception e) {}
+            try {s3Object.getObjectContent().close();} catch (Exception e) {}
+        }
+
+        byte[] clientSideHash = null;
+        byte[] serverSideHash = null;
+        try {
+            // Multipart Uploads don't have an MD5 calculated on the service side
+            if (ServiceUtils.isMultipartUploadETag(s3Object.getObjectMetadata().getETag()) == false) {
+                clientSideHash = Md5Utils.computeMD5Hash(new FileInputStream(destinationFile));
+                serverSideHash = BinaryUtils.fromHex(s3Object.getObjectMetadata().getETag());
+            }
+        } catch (Exception e) {
+            log.warn("Unable to calculate MD5 hash to validate download: " + e.getMessage(), e);
+        }
+
+        if (performIntegrityCheck && clientSideHash != null && serverSideHash != null && !Arrays.equals(clientSideHash, serverSideHash)) {
+            throw new AmazonClientException("Unable to verify integrity of data download.  " +
+                    "Client calculated content hash didn't match hash calculated by Amazon S3.  " +
+                    "The data stored in '" + destinationFile.getAbsolutePath() + "' may be corrupt.");
+        }
+    }
+

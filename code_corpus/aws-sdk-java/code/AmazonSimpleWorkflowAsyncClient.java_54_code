@@ -1,0 +1,19 @@
+    public Future<History> getWorkflowExecutionHistoryAsync(
+            final GetWorkflowExecutionHistoryRequest getWorkflowExecutionHistoryRequest,
+            final AsyncHandler<GetWorkflowExecutionHistoryRequest, History> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<History>() {
+            public History call() throws Exception {
+                History result;
+                try {
+                    result = getWorkflowExecutionHistory(getWorkflowExecutionHistoryRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(getWorkflowExecutionHistoryRequest, result);
+                   return result;
+            }
+        });
+    }
+    

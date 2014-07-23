@@ -1,0 +1,19 @@
+    public Future<DescribeLaunchConfigurationsResult> describeLaunchConfigurationsAsync(
+            final DescribeLaunchConfigurationsRequest describeLaunchConfigurationsRequest,
+            final AsyncHandler<DescribeLaunchConfigurationsRequest, DescribeLaunchConfigurationsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeLaunchConfigurationsResult>() {
+            public DescribeLaunchConfigurationsResult call() throws Exception {
+                DescribeLaunchConfigurationsResult result;
+                try {
+                    result = describeLaunchConfigurations(describeLaunchConfigurationsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeLaunchConfigurationsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

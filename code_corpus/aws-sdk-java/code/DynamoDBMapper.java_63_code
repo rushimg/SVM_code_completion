@@ -1,0 +1,33 @@
+    private List<FailedBatch> writeOneBatch(Map<String, List<WriteRequest>> batch) {
+
+        List<FailedBatch> failedBatches = new LinkedList<FailedBatch>();
+        Map<String, List<WriteRequest>> firstHalfBatch = new HashMap<String, List<WriteRequest>>();
+        Map<String, List<WriteRequest>> secondHalfBatch = new HashMap<String, List<WriteRequest>>();
+        FailedBatch failedBatch = callUntilCompletion(batch);
+
+        if (failedBatch != null) {
+            // If the exception is request entity too large, we divide the batch
+            // into smaller parts.
+
+            if (failedBatch.getException() instanceof AmazonServiceException
+            && RetryUtils.isRequestEntityTooLargeException((AmazonServiceException) failedBatch.getException())) {
+
+                // If only one item left, the item size must beyond 64k, which
+                // exceedes the limit.
+
+                if (computeFailedBatchSize(failedBatch) == 1) {
+                    failedBatches.add(failedBatch);
+                } else {
+                    divideBatch(batch, firstHalfBatch, secondHalfBatch);
+                    failedBatches.addAll(writeOneBatch(firstHalfBatch));
+                    failedBatches.addAll(writeOneBatch(secondHalfBatch));
+                }
+
+            } else {
+                failedBatches.add(failedBatch);
+            }
+
+        }
+        return failedBatches;
+    }
+

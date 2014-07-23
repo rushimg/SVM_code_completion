@@ -1,0 +1,26 @@
+    protected String newString(byte[] bytes) {
+        try {
+            return new String(bytes, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            throw new AmazonClientException("Unable to encode bytes to String", e);
+        }
+    }
+
+    protected Date getSignatureDate(int timeOffset) {
+        Date dateValue = new Date();
+        if (timeOffset != 0) {
+            long epochMillis = dateValue.getTime();
+            dateValue = new Date(epochMillis);   
+        }
+        return dateValue;
+    }
+    
+    protected int getTimeOffset(Request<?> request) {
+    	int timeOffset = request.getTimeOffset();
+        if(SDKGlobalConfiguration.getGlobalTimeOffset() != 0) {
+            // if global time offset is set then use that (For clock skew issues)
+            timeOffset = SDKGlobalConfiguration.getGlobalTimeOffset();
+        }
+        return timeOffset;
+    }
+    

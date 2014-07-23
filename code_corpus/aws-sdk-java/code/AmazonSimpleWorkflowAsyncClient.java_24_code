@@ -1,0 +1,19 @@
+    public Future<Run> startWorkflowExecutionAsync(
+            final StartWorkflowExecutionRequest startWorkflowExecutionRequest,
+            final AsyncHandler<StartWorkflowExecutionRequest, Run> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<Run>() {
+            public Run call() throws Exception {
+                Run result;
+                try {
+                    result = startWorkflowExecution(startWorkflowExecutionRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(startWorkflowExecutionRequest, result);
+                   return result;
+            }
+        });
+    }
+    

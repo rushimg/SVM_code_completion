@@ -1,0 +1,28 @@
+    public DataPipelineClient(AWSCredentialsProvider awsCredentialsProvider,
+            ClientConfiguration clientConfiguration,
+            RequestMetricCollector requestMetricCollector) {
+        super(clientConfiguration, requestMetricCollector);
+        
+        this.awsCredentialsProvider = awsCredentialsProvider;
+        
+        init();
+    }
+
+    private void init() {
+        exceptionUnmarshallers = new ArrayList<Unmarshaller<AmazonServiceException, JSONObject>>();
+        exceptionUnmarshallers.add(new PipelineNotFoundExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new InternalServiceErrorExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new TaskNotFoundExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new PipelineDeletedExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new InvalidRequestExceptionUnmarshaller());
+        
+        exceptionUnmarshallers.add(new JsonErrorUnmarshaller());
+        // calling this.setEndPoint(...) will also modify the signer accordingly
+        this.setEndpoint("datapipeline.us-east-1.amazonaws.com");
+        HandlerChainFactory chainFactory = new HandlerChainFactory();
+        requestHandler2s.addAll(chainFactory.newRequestHandlerChain(
+                "/com/amazonaws/services/datapipeline/request.handlers"));
+        requestHandler2s.addAll(chainFactory.newRequestHandler2Chain(
+                "/com/amazonaws/services/datapipeline/request.handler2s"));
+    }
+

@@ -1,0 +1,18 @@
+    public Future<Void> abortMultipartUploadAsync(
+            final AbortMultipartUploadRequest abortMultipartUploadRequest,
+            final AsyncHandler<AbortMultipartUploadRequest, Void> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<Void>() {
+            public Void call() throws Exception {
+                try {
+                    abortMultipartUpload(abortMultipartUploadRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(abortMultipartUploadRequest, null);
+                   return null;
+            }
+        });
+    }
+    

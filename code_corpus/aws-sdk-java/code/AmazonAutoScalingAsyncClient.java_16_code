@@ -1,0 +1,19 @@
+    public Future<DescribeAccountLimitsResult> describeAccountLimitsAsync(
+            final DescribeAccountLimitsRequest describeAccountLimitsRequest,
+            final AsyncHandler<DescribeAccountLimitsRequest, DescribeAccountLimitsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeAccountLimitsResult>() {
+            public DescribeAccountLimitsResult call() throws Exception {
+                DescribeAccountLimitsResult result;
+                try {
+                    result = describeAccountLimits(describeAccountLimitsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeAccountLimitsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

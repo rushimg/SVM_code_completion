@@ -1,0 +1,19 @@
+    public Future<SendMessageBatchResult> sendMessageBatchAsync(
+            final SendMessageBatchRequest sendMessageBatchRequest,
+            final AsyncHandler<SendMessageBatchRequest, SendMessageBatchResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<SendMessageBatchResult>() {
+            public SendMessageBatchResult call() throws Exception {
+                SendMessageBatchResult result;
+                try {
+                    result = sendMessageBatch(sendMessageBatchRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(sendMessageBatchRequest, result);
+                   return result;
+            }
+        });
+    }
+    

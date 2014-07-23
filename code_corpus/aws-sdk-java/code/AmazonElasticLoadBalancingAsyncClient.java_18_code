@@ -1,0 +1,19 @@
+    public Future<ConfigureHealthCheckResult> configureHealthCheckAsync(
+            final ConfigureHealthCheckRequest configureHealthCheckRequest,
+            final AsyncHandler<ConfigureHealthCheckRequest, ConfigureHealthCheckResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ConfigureHealthCheckResult>() {
+            public ConfigureHealthCheckResult call() throws Exception {
+                ConfigureHealthCheckResult result;
+                try {
+                    result = configureHealthCheck(configureHealthCheckRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(configureHealthCheckRequest, result);
+                   return result;
+            }
+        });
+    }
+    

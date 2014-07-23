@@ -1,0 +1,25 @@
+    public PutRecordResult putRecord(PutRecordRequest putRecordRequest) {
+        ExecutionContext executionContext = createExecutionContext(putRecordRequest);
+        AWSRequestMetrics awsRequestMetrics = executionContext.getAwsRequestMetrics();
+        awsRequestMetrics.startEvent(Field.ClientExecuteTime);
+        Request<PutRecordRequest> request = null;
+        Response<PutRecordResult> response = null;
+        try {
+            awsRequestMetrics.startEvent(Field.RequestMarshallTime);
+            try {
+                request = new PutRecordRequestMarshaller().marshall(putRecordRequest);
+                // Binds the request metrics to the current request.
+                request.setAWSRequestMetrics(awsRequestMetrics);
+            } finally {
+                awsRequestMetrics.endEvent(Field.RequestMarshallTime);
+            }
+            Unmarshaller<PutRecordResult, JsonUnmarshallerContext> unmarshaller = new PutRecordResultJsonUnmarshaller();
+            JsonResponseHandler<PutRecordResult> responseHandler = new JsonResponseHandler<PutRecordResult>(unmarshaller);
+            
+            response = invoke(request, responseHandler, executionContext);
+            return response.getAwsResponse();
+        } finally {
+            endClientExecution(awsRequestMetrics, request, response);
+        }
+    }
+

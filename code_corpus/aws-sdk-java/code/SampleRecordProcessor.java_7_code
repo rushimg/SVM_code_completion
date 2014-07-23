@@ -1,0 +1,11 @@
+    @Override
+    public void shutdown(IRecordProcessorCheckpointer checkpointer, ShutdownReason reason) {
+        LOG.info("Shutting down record processor for shard: " + kinesisShardId);
+        // Important to checkpoint after reaching end of shard, so we can start processing data from child shards.
+        if (reason == ShutdownReason.TERMINATE) {
+            checkpoint(checkpointer);
+        }
+    }
+    
+ 
+

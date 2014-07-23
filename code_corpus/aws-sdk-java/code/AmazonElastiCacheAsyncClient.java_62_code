@@ -1,0 +1,19 @@
+    public Future<CacheSubnetGroup> createCacheSubnetGroupAsync(
+            final CreateCacheSubnetGroupRequest createCacheSubnetGroupRequest,
+            final AsyncHandler<CreateCacheSubnetGroupRequest, CacheSubnetGroup> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<CacheSubnetGroup>() {
+            public CacheSubnetGroup call() throws Exception {
+                CacheSubnetGroup result;
+                try {
+                    result = createCacheSubnetGroup(createCacheSubnetGroupRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(createCacheSubnetGroupRequest, result);
+                   return result;
+            }
+        });
+    }
+    

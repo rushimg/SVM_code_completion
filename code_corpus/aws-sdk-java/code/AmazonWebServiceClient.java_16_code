@@ -1,0 +1,17 @@
+    public void removeRequestHandler(RequestHandler requestHandler) {
+        requestHandler2s.remove(RequestHandler2.adapt(requestHandler));
+    }
+
+    public void removeRequestHandler(RequestHandler2 requestHandler2) {
+        requestHandler2s.remove(requestHandler2);
+    }
+
+    protected final ExecutionContext createExecutionContext(AmazonWebServiceRequest req) {
+        boolean isMetricsEnabled = isRequestMetricsEnabled(req) || isProfilingEnabled();
+        return new ExecutionContext(requestHandler2s, isMetricsEnabled);
+    }
+
+    protected final ExecutionContext createExecutionContext(Request<?> req) {
+        return createExecutionContext(req.getOriginalRequest());
+    }
+

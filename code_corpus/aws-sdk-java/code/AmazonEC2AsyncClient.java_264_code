@@ -1,0 +1,19 @@
+    public Future<DescribeVpcAttributeResult> describeVpcAttributeAsync(
+            final DescribeVpcAttributeRequest describeVpcAttributeRequest,
+            final AsyncHandler<DescribeVpcAttributeRequest, DescribeVpcAttributeResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeVpcAttributeResult>() {
+            public DescribeVpcAttributeResult call() throws Exception {
+                DescribeVpcAttributeResult result;
+                try {
+                    result = describeVpcAttribute(describeVpcAttributeRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeVpcAttributeRequest, result);
+                   return result;
+            }
+        });
+    }
+    

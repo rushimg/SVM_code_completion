@@ -1,0 +1,19 @@
+    public Future<GetAccountSummaryResult> getAccountSummaryAsync(
+            final GetAccountSummaryRequest getAccountSummaryRequest,
+            final AsyncHandler<GetAccountSummaryRequest, GetAccountSummaryResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<GetAccountSummaryResult>() {
+            public GetAccountSummaryResult call() throws Exception {
+                GetAccountSummaryResult result;
+                try {
+                    result = getAccountSummary(getAccountSummaryRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(getAccountSummaryRequest, result);
+                   return result;
+            }
+        });
+    }
+    

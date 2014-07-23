@@ -1,0 +1,19 @@
+    public Future<DescribeLoadBasedAutoScalingResult> describeLoadBasedAutoScalingAsync(
+            final DescribeLoadBasedAutoScalingRequest describeLoadBasedAutoScalingRequest,
+            final AsyncHandler<DescribeLoadBasedAutoScalingRequest, DescribeLoadBasedAutoScalingResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeLoadBasedAutoScalingResult>() {
+            public DescribeLoadBasedAutoScalingResult call() throws Exception {
+                DescribeLoadBasedAutoScalingResult result;
+                try {
+                    result = describeLoadBasedAutoScaling(describeLoadBasedAutoScalingRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeLoadBasedAutoScalingRequest, result);
+                   return result;
+            }
+        });
+    }
+    

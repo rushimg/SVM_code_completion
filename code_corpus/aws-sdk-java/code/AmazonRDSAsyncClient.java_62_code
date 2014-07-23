@@ -1,0 +1,19 @@
+    public Future<DBSecurityGroup> revokeDBSecurityGroupIngressAsync(
+            final RevokeDBSecurityGroupIngressRequest revokeDBSecurityGroupIngressRequest,
+            final AsyncHandler<RevokeDBSecurityGroupIngressRequest, DBSecurityGroup> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DBSecurityGroup>() {
+            public DBSecurityGroup call() throws Exception {
+                DBSecurityGroup result;
+                try {
+                    result = revokeDBSecurityGroupIngress(revokeDBSecurityGroupIngressRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(revokeDBSecurityGroupIngressRequest, result);
+                   return result;
+            }
+        });
+    }
+    

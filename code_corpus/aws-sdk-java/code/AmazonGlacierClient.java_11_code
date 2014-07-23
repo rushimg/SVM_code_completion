@@ -1,0 +1,25 @@
+    public ListVaultsResult listVaults(ListVaultsRequest listVaultsRequest) {
+        ExecutionContext executionContext = createExecutionContext(listVaultsRequest);
+        AWSRequestMetrics awsRequestMetrics = executionContext.getAwsRequestMetrics();
+        awsRequestMetrics.startEvent(Field.ClientExecuteTime);
+        Request<ListVaultsRequest> request = null;
+        Response<ListVaultsResult> response = null;
+        try {
+            awsRequestMetrics.startEvent(Field.RequestMarshallTime);
+            try {
+                request = new ListVaultsRequestMarshaller().marshall(listVaultsRequest);
+                // Binds the request metrics to the current request.
+                request.setAWSRequestMetrics(awsRequestMetrics);
+            } finally {
+                awsRequestMetrics.endEvent(Field.RequestMarshallTime);
+            }
+            Unmarshaller<ListVaultsResult, JsonUnmarshallerContext> unmarshaller = new ListVaultsResultJsonUnmarshaller();
+            JsonResponseHandler<ListVaultsResult> responseHandler = new JsonResponseHandler<ListVaultsResult>(unmarshaller);
+            
+            response = invoke(request, responseHandler, executionContext);
+            return response.getAwsResponse();
+        } finally {
+            endClientExecution(awsRequestMetrics, request, response);
+        }
+    }
+

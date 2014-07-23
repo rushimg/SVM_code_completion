@@ -1,0 +1,16 @@
+    public <X extends AmazonWebServiceRequest> DryRunResult<X> dryRun(DryRunSupportedRequest<X> request) throws AmazonServiceException, AmazonClientException {
+        Request<X> dryRunRequest = request.getDryRunRequest();
+        ExecutionContext executionContext = createExecutionContext(dryRunRequest);
+        try {
+            invoke(dryRunRequest, null, executionContext);
+            throw new AmazonClientException("Unrecognized service response for the dry-run request.");
+        } catch (AmazonServiceException ase) {
+            if (ase.getErrorCode().equals("DryRunOperation") && ase.getStatusCode() == 412) {
+                return new DryRunResult<X>(true, request, ase.getMessage(), ase);
+            } else if (ase.getErrorCode().equals("UnauthorizedOperation") && ase.getStatusCode() == 403) {
+                return new DryRunResult<X>(false, request, ase.getMessage(), ase);
+            }
+            throw new AmazonClientException("Unrecognized service response for the dry-run request.", ase);
+        }
+    }
+

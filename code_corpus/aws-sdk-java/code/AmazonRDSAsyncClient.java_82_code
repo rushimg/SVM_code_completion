@@ -1,0 +1,19 @@
+    public Future<EventSubscription> addSourceIdentifierToSubscriptionAsync(
+            final AddSourceIdentifierToSubscriptionRequest addSourceIdentifierToSubscriptionRequest,
+            final AsyncHandler<AddSourceIdentifierToSubscriptionRequest, EventSubscription> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<EventSubscription>() {
+            public EventSubscription call() throws Exception {
+                EventSubscription result;
+                try {
+                    result = addSourceIdentifierToSubscription(addSourceIdentifierToSubscriptionRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(addSourceIdentifierToSubscriptionRequest, result);
+                   return result;
+            }
+        });
+    }
+    

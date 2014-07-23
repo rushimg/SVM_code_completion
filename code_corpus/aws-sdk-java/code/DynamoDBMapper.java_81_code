@@ -1,0 +1,10 @@
+    public <T> PaginatedParallelScanList<T> parallelScan(Class<T> clazz, DynamoDBScanExpression scanExpression, int totalSegments, DynamoDBMapperConfig config) {
+        config = mergeConfig(config);
+
+        // Create hard copies of the original scan request with difference segment number.
+        List<ScanRequest> parallelScanRequests = createParallelScanRequestsFromExpression(clazz, scanExpression, totalSegments, config);
+        ParallelScanTask parallelScanTask = new ParallelScanTask(this, db, parallelScanRequests);
+
+        return new PaginatedParallelScanList<T>(this, clazz, db, parallelScanTask, config.getPaginationLoadingStrategy(), config);
+    }
+

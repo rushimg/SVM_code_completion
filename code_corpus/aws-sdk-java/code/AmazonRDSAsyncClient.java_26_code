@@ -1,0 +1,19 @@
+    public Future<DescribeDBSnapshotsResult> describeDBSnapshotsAsync(
+            final DescribeDBSnapshotsRequest describeDBSnapshotsRequest,
+            final AsyncHandler<DescribeDBSnapshotsRequest, DescribeDBSnapshotsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeDBSnapshotsResult>() {
+            public DescribeDBSnapshotsResult call() throws Exception {
+                DescribeDBSnapshotsResult result;
+                try {
+                    result = describeDBSnapshots(describeDBSnapshotsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeDBSnapshotsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -1,0 +1,24 @@
+    private static Log log = LogFactory.getLog(XpathUtils.class);
+
+    private static DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+
+
+    public static Document documentFrom(InputStream is)
+            throws SAXException, IOException, ParserConfigurationException {
+
+        is = new NamespaceRemovingInputStream(is);
+        Document doc = factory.newDocumentBuilder().parse(is);
+        is.close();
+        return doc;
+    }
+
+    public static Document documentFrom(String xml) throws SAXException,
+            IOException, ParserConfigurationException {
+        return documentFrom(new ByteArrayInputStream(xml.getBytes()));
+    }
+
+    public static Document documentFrom(URL url) throws SAXException,
+            IOException, ParserConfigurationException {
+        return documentFrom(url.openStream());
+    }
+

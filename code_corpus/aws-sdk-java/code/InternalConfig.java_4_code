@@ -1,0 +1,31 @@
+    private Map<String, SignerConfig> mergeSignerMap(JsonIndex<SignerConfigJsonHelper, SignerConfig>[] defaults,
+            JsonIndex<SignerConfigJsonHelper, SignerConfig>[] overrides, String theme) {
+        Map<String, SignerConfig> map = buildSignerMap(defaults, theme);
+        Map<String, SignerConfig> mapOverride = buildSignerMap(overrides, theme);
+        map.putAll(mapOverride);
+        return Collections.unmodifiableMap(map);
+    }
+
+    private <C extends Builder<T>, T> Map<String, T> merge(JsonIndex<C, T>[] defaults,
+            JsonIndex<C, T>[] overrides) {
+        Map<String, T> map = buildMap(defaults);
+        Map<String, T> mapOverride = buildMap(overrides);
+        map.putAll(mapOverride);
+        return Collections.unmodifiableMap(map);
+    }
+
+    private <C extends Builder<T>, T> Map<String, T> buildMap(JsonIndex<C, T>[] signerIndexes) {
+        Map<String, T> map = new HashMap<String, T>();
+        if (signerIndexes != null) {
+            for (JsonIndex<C, T> index: signerIndexes) {
+                String region = index.getKey();
+                T prev = map.put(region, index.newReadOnlyConfig());
+                if (prev != null) {
+                    log.warn("Duplicate definition of signer for "
+                            + index.getKey());
+                }
+            }
+        }
+        return map;
+    }
+

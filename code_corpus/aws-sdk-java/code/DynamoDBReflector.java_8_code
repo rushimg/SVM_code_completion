@@ -1,0 +1,20 @@
+    <T> Method getHashKeyGetter(Class<T> clazz) {
+        synchronized (hashKeyGetterCache) {
+            if ( !hashKeyGetterCache.containsKey(clazz) ) {
+                for ( Method method : getRelevantGetters(clazz) ) {
+                    if ( method.getParameterTypes().length == 0 && method.isAnnotationPresent(DynamoDBHashKey.class)) {
+                        hashKeyGetterCache.put(clazz, method);
+                        break;
+                    }
+                }
+            }
+        }
+
+        Method hashKeyMethod = hashKeyGetterCache.get(clazz);
+        if ( hashKeyMethod == null ) {
+            throw new DynamoDBMappingException("Public, zero-parameter hash key property must be annotated with "
+                    + DynamoDBHashKey.class);
+        }
+        return hashKeyMethod;
+    }
+

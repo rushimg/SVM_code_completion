@@ -1,0 +1,85 @@
+    private MetricValues metricValues(Set<MachineMetric> customSet,
+            List<MachineMetric> defaults, List<Long> values) {
+        List<MachineMetric> actualMetrics = defaults;
+        List<Long> actualValues = values;
+        if (customSet.size() > 0) {
+            // custom set of machine metrics specified
+            actualMetrics = new ArrayList<MachineMetric>();
+            actualValues = new ArrayList<Long>();
+            for (int i=0; i < defaults.size(); i++) {
+                MachineMetric mm = defaults.get(i);
+                if (customSet.contains(mm)) {
+                    actualMetrics.add(mm);
+                    actualValues.add(values.get(i));
+                }
+            }
+        }
+        return new MetricValues(actualMetrics, actualValues);
+    }
+
+    List<MetricDatum> generateMetrics() {
+        if (AwsSdkMetrics.isMachineMetricExcluded())
+            return Collections.emptyList();
+        Set<MachineMetric> customSet = customMachineMetrics();
+        List<MetricDatum> targetList = new ArrayList<MetricDatum>(
+                MachineMetric.values().length);
+        // Memory usage
+        addMemoryMetrics(targetList, customSet);
+        // Thread related counts
+        try {
+            addThreadMetrics(targetList, customSet);
+        } catch (Throwable t) {
+            LogFactory.getLog(getClass()).debug("Ignoring thread metrics", t);
+        }
+        // File descriptor usage
+        try {
+            addFileDescriptorMetrics(targetList, customSet);
+        } catch (Throwable t) {
+            LogFactory.getLog(getClass()).debug("Ignoring file descriptor metrics", t);
+        }
+        return targetList;
+    }
+
+    private void addMemoryMetrics(List<MetricDatum> targetList,
+            Set<MachineMetric> customSet) {
+        Runtime rt = Runtime.getRuntime();
+        long totalMem = rt.totalMemory();
+        long freeMem = rt.freeMemory();
+        long usedMem = totalMem - freeMem;
+        long spareMem = rt.maxMemory() - usedMem;
+        List<Long> values = Arrays.asList(totalMem, freeMem, usedMem, spareMem);
+        MetricValues metricValues = memoryMetricValues(customSet, values);
+        addMetrics(targetList, metricValues, StandardUnit.Bytes);
+    }
+
+    private void addFileDescriptorMetrics(List<MetricDatum> targetList,
+            Set<MachineMetric> customSet) {
+        JmxInfoProvider provider = JmxInfoProvider.Factory.getJmxInfoProvider();
+        long[] fdInfo = provider.getFileDecriptorInfo();
+
+        if (fdInfo != null) {
+            long openFdCount = fdInfo[0];
+            long maxFdCount = fdInfo[1];
+            List<Long> values = Arrays.asList(openFdCount, maxFdCount - openFdCount);
+            MetricValues metricValues = fdMetricValues(customSet, values); 
+            addMetrics(targetList, metricValues, StandardUnit.Count);
+        }
+    }
+
+    private void addThreadMetrics(List<MetricDatum> targetList,
+            Set<MachineMetric> customSet) {
+        long threadCount = jmxInfoProvider.getThreadCount();
+        long[] ids = jmxInfoProvider.findDeadlockedThreads();
+        long deadLockThreadCount = ids == null ? 0 : ids.length;
+        long daemonThreadCount = jmxInfoProvider.getDaemonThreadCount();
+        long peakThreadCount = jmxInfoProvider.getPeakThreadCount();
+        long totalStartedThreadCount = jmxInfoProvider.getTotalStartedThreadCount();
+        List<Long> values = Arrays.asList(threadCount,
+            deadLockThreadCount,
+            daemonThreadCount,
+            peakThreadCount,
+            totalStartedThreadCount);
+        MetricValues metricValues = threadMetricValues(customSet, values); 
+        addMetrics(targetList, metricValues, StandardUnit.Count);
+    }
+

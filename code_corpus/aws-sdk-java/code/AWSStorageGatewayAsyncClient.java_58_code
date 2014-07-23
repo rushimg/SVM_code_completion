@@ -1,0 +1,19 @@
+    public Future<DescribeCacheResult> describeCacheAsync(
+            final DescribeCacheRequest describeCacheRequest,
+            final AsyncHandler<DescribeCacheRequest, DescribeCacheResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeCacheResult>() {
+            public DescribeCacheResult call() throws Exception {
+                DescribeCacheResult result;
+                try {
+                    result = describeCache(describeCacheRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeCacheRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -1,0 +1,19 @@
+    public Future<DescribeJobResult> describeJobAsync(
+            final DescribeJobRequest describeJobRequest,
+            final AsyncHandler<DescribeJobRequest, DescribeJobResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeJobResult>() {
+            public DescribeJobResult call() throws Exception {
+                DescribeJobResult result;
+                try {
+                    result = describeJob(describeJobRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeJobRequest, result);
+                   return result;
+            }
+        });
+    }
+    

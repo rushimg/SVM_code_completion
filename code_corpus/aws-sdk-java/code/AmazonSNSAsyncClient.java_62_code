@@ -1,0 +1,19 @@
+    public Future<ListSubscriptionsByTopicResult> listSubscriptionsByTopicAsync(
+            final ListSubscriptionsByTopicRequest listSubscriptionsByTopicRequest,
+            final AsyncHandler<ListSubscriptionsByTopicRequest, ListSubscriptionsByTopicResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ListSubscriptionsByTopicResult>() {
+            public ListSubscriptionsByTopicResult call() throws Exception {
+                ListSubscriptionsByTopicResult result;
+                try {
+                    result = listSubscriptionsByTopic(listSubscriptionsByTopicRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(listSubscriptionsByTopicRequest, result);
+                   return result;
+            }
+        });
+    }
+    

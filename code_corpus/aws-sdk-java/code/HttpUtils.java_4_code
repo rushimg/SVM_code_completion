@@ -1,0 +1,18 @@
+    public static boolean isUsingNonDefaultPort(URI uri) {
+        String scheme = uri.getScheme().toLowerCase();
+        int port = uri.getPort();
+
+        if (port <= 0) return false;
+        if (scheme.equals("http") && port == 80) return false;
+        if (scheme.equals("https") && port == 443) return false;
+
+        return true;
+    }
+
+    public static boolean usePayloadForQueryParameters(Request<?> request) {
+        boolean requestIsPOST = HttpMethodName.POST.equals(request.getHttpMethod());
+        boolean requestHasNoPayload = (request.getContent() == null);
+
+        return requestIsPOST && requestHasNoPayload;
+    }
+

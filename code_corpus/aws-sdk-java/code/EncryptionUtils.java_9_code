@@ -1,0 +1,33 @@
+    public static EncryptionInstruction buildInstructionFromObjectMetadata(S3Object object, EncryptionMaterialsProvider materialsProvider, Provider cryptoProvider) {
+        ObjectMetadata metadata = object.getObjectMetadata();
+
+        // Get encryption info from metadata.
+        byte[] encryptedSymmetricKeyBytes = getCryptoBytesFromMetadata(Headers.CRYPTO_KEY, metadata);
+        byte[] initVectorBytes = getCryptoBytesFromMetadata(Headers.CRYPTO_IV, metadata);
+        String materialsDescriptionString = getStringFromMetadata(Headers.MATERIALS_DESCRIPTION, metadata);
+        Map<String, String> materialsDescription = convertJSONToMap(materialsDescriptionString);
+
+        if (encryptedSymmetricKeyBytes == null || initVectorBytes == null || materialsDescription == null) {
+            // If necessary encryption info was not found in the instruction file, throw an exception.
+            throw new AmazonClientException(
+                    String.format("Necessary encryption info not found in the headers of file '%s' in bucket '%s'",
+                                  object.getKey(), object.getBucketName()));
+        }
+
+        EncryptionMaterials materials = retrieveOriginalMaterials(materialsDescription, materialsProvider);
+        // If we're unable to retrieve the original encryption materials, we can't decrypt the object, so
+        // throw an exception.
+        if (materials == null) {
+            throw new AmazonClientException(
+                    String.format("Unable to retrieve the encryption materials that originally " +
+                            "encrypted file '%s' in bucket '%s'.",
+                            object.getKey(), object.getBucketName()));
+        }
+
+        // Decrypt the symmetric key and create the symmetric cipher
+        SecretKey symmetricKey = getDecryptedSymmetricKey(encryptedSymmetricKeyBytes, materials, cryptoProvider);
+        CipherFactory cipherFactory = new CipherFactory(symmetricKey, Cipher.DECRYPT_MODE, initVectorBytes, cryptoProvider);
+
+        return new EncryptionInstruction(materialsDescription, encryptedSymmetricKeyBytes, symmetricKey, cipherFactory);
+    }
+

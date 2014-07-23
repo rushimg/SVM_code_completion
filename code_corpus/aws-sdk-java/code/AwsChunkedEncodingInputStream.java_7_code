@@ -1,0 +1,48 @@
+	@Override
+	public synchronized void reset() throws IOException {
+		// Clear up any encoded data
+		currentChunkIterator = null;
+		priorChunkSignature = headerSignature;
+		// Reset the wrapped stream if it is mark-supported,
+		// otherwise use our buffered data.
+		if (is.markSupported()) {
+			if (log.isDebugEnabled())
+				log.debug("AwsChunkedEncodingInputStream reset "
+						+ "(will reset the wrapped stream because it is mark-supported).");
+			is.reset();
+		}
+		else {
+			if (log.isDebugEnabled())
+				log.debug("AwsChunkedEncodingInputStream reset "
+						+ "(will use the buffer of the decoded stream).");
+			if (null == decodedStreamBuffer) {
+				throw new IOException("Cannot reset the stream because the mark is not set.");
+			}
+			decodedStreamBuffer.startReadBuffer();
+		}
+
+		currentChunkIterator = null;
+		isAtStart = true;
+		isTerminating = false;
+	}
+	
+	public static long calculateStreamContentLength(long originalLength) {
+		if (originalLength < 0) {
+			throw new IllegalArgumentException("Nonnegative content length expected.");
+		}
+		
+		long maxSizeChunks = originalLength / DEFAULT_CHUNK_SIZE;
+		long remainingBytes =  originalLength % DEFAULT_CHUNK_SIZE;
+				+ (remainingBytes > 0? calculateSignedChunkLength(remainingBytes) : 0)
+				+ calculateSignedChunkLength(0);
+	}
+	
+	private static long calculateSignedChunkLength(long chunkDataSize) {
+		return Long.toHexString(chunkDataSize).length()
+				+ CHUNK_SIGNATURE_HEADER.length()
+				+ SIGNATURE_LENGTH
+				+ CLRF.length()
+				+ chunkDataSize
+				+ CLRF.length();
+	}
+	

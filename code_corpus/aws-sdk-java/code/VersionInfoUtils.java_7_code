@@ -1,0 +1,36 @@
+    private static void initializeUserAgent() {
+        userAgent = userAgent();
+    }
+
+    static String userAgent() {
+        StringBuilder buffer = new StringBuilder(128);
+
+        buffer.append("aws-sdk-");
+        buffer.append(VersionInfoUtils.getPlatform().toLowerCase());
+        buffer.append("/");
+
+        buffer.append(VersionInfoUtils.getVersion());
+        buffer.append(" ");
+        buffer.append(replaceSpaces(System.getProperty("os.name")));
+        buffer.append("/");
+        buffer.append(replaceSpaces(System.getProperty("os.version")));
+
+        buffer.append(" ");
+        buffer.append(replaceSpaces(System.getProperty("java.vm.name")));
+        buffer.append("/");
+        buffer.append(replaceSpaces(System.getProperty("java.vm.version")));
+        buffer.append("/");
+        buffer.append(replaceSpaces(System.getProperty("java.version")));
+
+        String language = System.getProperty("user.language");
+        String region = System.getProperty("user.region");
+
+        if (language != null && region != null) {
+            buffer.append(" ");
+            buffer.append(replaceSpaces(language));
+            buffer.append("_");
+            buffer.append(replaceSpaces(region));
+        }
+        return buffer.toString();
+    }
+

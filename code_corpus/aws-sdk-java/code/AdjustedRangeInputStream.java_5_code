@@ -1,0 +1,22 @@
+    @Override
+    public int read() throws IOException {
+        int result = 0;
+        // If there are no more available bytes, mark that we are at the end of the stream.
+        if (this.virtualAvailable <= 0) {
+            result = -1;
+        } else {
+            // Otherwise, read a byte.
+            result = this.decryptedContents.read();
+        }
+
+        // If we have not reached the end of the stream, decrement the number of available bytes.
+        if (result != -1) {
+            this.virtualAvailable--;
+        } else {
+            // If we are at the end of the stream, close it.
+            close();
+            this.virtualAvailable = 0;
+        }
+        return result;
+    }
+

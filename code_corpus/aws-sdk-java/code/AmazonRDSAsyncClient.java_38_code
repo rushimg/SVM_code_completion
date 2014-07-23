@@ -1,0 +1,19 @@
+    public Future<DescribeDBSubnetGroupsResult> describeDBSubnetGroupsAsync(
+            final DescribeDBSubnetGroupsRequest describeDBSubnetGroupsRequest,
+            final AsyncHandler<DescribeDBSubnetGroupsRequest, DescribeDBSubnetGroupsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeDBSubnetGroupsResult>() {
+            public DescribeDBSubnetGroupsResult call() throws Exception {
+                DescribeDBSubnetGroupsResult result;
+                try {
+                    result = describeDBSubnetGroups(describeDBSubnetGroupsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeDBSubnetGroupsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

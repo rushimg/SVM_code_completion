@@ -1,0 +1,15 @@
+public class SampleRecordProcessor implements IRecordProcessor {
+    
+    private static final Log LOG = LogFactory.getLog(SampleRecordProcessor.class);
+    private String kinesisShardId;
+
+    // Backoff and retry settings
+    private static final long BACKOFF_TIME_IN_MILLIS = 3000L;
+    private static final int NUM_RETRIES = 10;
+
+    // Checkpoint about once a minute
+    private static final long CHECKPOINT_INTERVAL_MILLIS = 60000L;
+    private long nextCheckpointTimeInMillis;
+    
+    private final CharsetDecoder decoder = Charset.forName("UTF-8").newDecoder();
+    

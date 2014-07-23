@@ -1,0 +1,19 @@
+    public Future<DeleteHealthCheckResult> deleteHealthCheckAsync(
+            final DeleteHealthCheckRequest deleteHealthCheckRequest,
+            final AsyncHandler<DeleteHealthCheckRequest, DeleteHealthCheckResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DeleteHealthCheckResult>() {
+            public DeleteHealthCheckResult call() throws Exception {
+                DeleteHealthCheckResult result;
+                try {
+                    result = deleteHealthCheck(deleteHealthCheckRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(deleteHealthCheckRequest, result);
+                   return result;
+            }
+        });
+    }
+    

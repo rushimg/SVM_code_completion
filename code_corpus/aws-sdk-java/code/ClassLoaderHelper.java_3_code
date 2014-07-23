@@ -1,0 +1,58 @@
+    public static URL getResource(String resource, boolean classesFirst,
+            Class<?>... classes) {
+        URL url;
+        if (classesFirst) {
+            url = getResourceViaClasses(resource, classes);
+            if (url == null) {
+                url = getResourceViaContext(resource);
+            }
+        } else {
+            url = getResourceViaContext(resource);
+            if (url == null) {
+                url = getResourceViaClasses(resource, classes);
+            }
+        }
+        return url == null ? ClassLoaderHelper.class.getResource(resource) : url;
+    }
+
+    private static URL getResourceViaClasses(String resource, Class<?>[] classes) {
+        if (classes != null) {
+            for (Class<?> c: classes) {
+                URL url = c.getResource(resource);
+                if (url != null)
+                    return url;
+            }
+        }
+        return null;
+    }
+
+    private static URL getResourceViaContext(String resource) {
+        ClassLoader loader = Thread.currentThread().getContextClassLoader();
+        return loader == null ? null : loader.getResource(resource);
+    }
+
+    private static Class<?> loadClassViaClasses(String fqcn, Class<?>[] classes) {
+        if (classes != null) {
+            for (Class<?> c: classes) {
+                ClassLoader loader = c.getClassLoader();
+                if (loader != null) {
+                    try {
+                        return loader.loadClass(fqcn);
+                    } catch (ClassNotFoundException e) {
+                        // move on to try the next class loader
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    private static Class<?> loadClassViaContext(String fqcn) {
+        ClassLoader loader = Thread.currentThread().getContextClassLoader();
+        try {
+            return loader == null ? null : loader.loadClass(fqcn);
+        } catch (ClassNotFoundException e) {
+        }
+        return null;
+    }
+

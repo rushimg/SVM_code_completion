@@ -1,0 +1,40 @@
+    private void processBatchGetRequest(
+            final Map<String, Class<?>> classesByTableName,
+            final Map<String, KeysAndAttributes> requestItems,
+            final Map<String, List<Object>> resultSet,
+            final DynamoDBMapperConfig config) {
+
+        BatchGetItemResult batchGetItemResult = null;
+        BatchGetItemRequest batchGetItemRequest = new BatchGetItemRequest()
+            .withRequestMetricCollector(config.getRequestMetricCollector());
+        batchGetItemRequest.setRequestItems(requestItems);
+        do {
+            if ( batchGetItemResult != null ) {
+                batchGetItemRequest.setRequestItems(batchGetItemResult.getUnprocessedKeys());
+            }
+
+            batchGetItemResult = db.batchGetItem(batchGetItemRequest);
+            Map<String, List<Map<String, AttributeValue>>> responses = batchGetItemResult.getResponses();
+            for ( String tableName : responses.keySet() ) {
+                List<Object> objects = null;
+                if ( resultSet.get(tableName) != null ) {
+                    objects = resultSet.get(tableName);
+                } else {
+                    objects = new LinkedList<Object>();
+                }
+
+                Class<?> clazz = classesByTableName.get(tableName);
+
+                for ( Map<String, AttributeValue> item : responses.get(tableName) ) {
+                    AttributeTransformer.Parameters<?> parameters =
+                        toParameters(item, clazz, config);
+                    objects.add(marshalIntoObject(parameters));
+                }
+
+                resultSet.put(tableName, objects);
+            }
+            // To see whether there are unprocessed keys.
+        } while ( batchGetItemResult.getUnprocessedKeys() != null && batchGetItemResult.getUnprocessedKeys().size() > 0 );
+
+    }
+

@@ -1,0 +1,17 @@
+    public byte[] convertToXmlByteArray(BucketNotificationConfiguration notificationConfiguration) {
+        XmlWriter xml = new XmlWriter();
+        xml.start("NotificationConfiguration", "xmlns", Constants.XML_NAMESPACE);
+
+        List<TopicConfiguration> topicConfigurations = notificationConfiguration.getTopicConfigurations();
+        for ( TopicConfiguration topicConfiguration : topicConfigurations ) {
+            xml.start( "TopicConfiguration" );
+            xml.start( "Topic" ).value( topicConfiguration.getTopic() ).end();
+            xml.start( "Event" ).value( topicConfiguration.getEvent() ).end();
+            xml.end();
+        }
+
+        xml.end();
+
+        return xml.getBytes();
+    }
+

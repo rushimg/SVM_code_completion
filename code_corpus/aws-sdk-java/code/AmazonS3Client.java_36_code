@@ -1,0 +1,38 @@
+    public void setBucketAcl(String bucketName, AccessControlList acl,
+            RequestMetricCollector requestMetricCollector) {
+        setBucketAcl0(bucketName, acl, requestMetricCollector);
+    }
+
+    private void setBucketAcl0(String bucketName, AccessControlList acl,
+            RequestMetricCollector requestMetricCollector) {
+        assertParameterNotNull(bucketName, "The bucket name parameter must be specified when setting a bucket's ACL");
+        assertParameterNotNull(acl, "The ACL parameter must be specified when setting a bucket's ACL");
+
+        setAcl(bucketName, null, null, acl,
+            new GenericBucketRequest(bucketName)
+                .withRequestMetricCollector(requestMetricCollector));
+    }
+
+    @Override
+    public void setBucketAcl(SetBucketAclRequest setBucketAclRequest)
+            throws AmazonClientException, AmazonServiceException {
+        String bucketName = setBucketAclRequest.getBucketName();
+        AccessControlList acl = setBucketAclRequest.getAcl();
+        CannedAccessControlList cannedAcl = setBucketAclRequest.getCannedAcl();
+        assertParameterNotNull(bucketName, "The bucket name parameter must be specified when setting a bucket's ACL");
+
+        if (acl != null) {
+            setAcl(bucketName, null, null, acl, setBucketAclRequest);
+        } else if (cannedAcl != null) {
+            setAcl(bucketName, null, null, cannedAcl, setBucketAclRequest);
+        } else {
+            assertParameterNotNull(null, "The ACL parameter must be specified when setting a bucket's ACL");
+        }
+    }
+
+    @Override
+    public void setBucketAcl(String bucketName, CannedAccessControlList acl)
+            throws AmazonClientException, AmazonServiceException {
+        setBucketAcl0(bucketName, acl, null);
+    }
+

@@ -1,0 +1,19 @@
+    public Future<IndexDocumentsResult> indexDocumentsAsync(
+            final IndexDocumentsRequest indexDocumentsRequest,
+            final AsyncHandler<IndexDocumentsRequest, IndexDocumentsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<IndexDocumentsResult>() {
+            public IndexDocumentsResult call() throws Exception {
+                IndexDocumentsResult result;
+                try {
+                    result = indexDocuments(indexDocumentsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(indexDocumentsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

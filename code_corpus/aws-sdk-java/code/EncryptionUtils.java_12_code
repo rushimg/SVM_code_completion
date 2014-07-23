@@ -1,0 +1,33 @@
+    public static PutObjectRequest createInstructionPutRequest(PutObjectRequest request, EncryptionInstruction instruction) {
+        JSONObject instructionJSON = convertInstructionToJSONObject(instruction);
+        byte[] instructionBytes = instructionJSON.toString().getBytes();
+        InputStream instructionInputStream = new ByteArrayInputStream(instructionBytes);
+
+        ObjectMetadata metadata = request.getMetadata();
+
+        // Set the content-length of the upload
+        metadata.setContentLength(instructionBytes.length);
+
+        // Set the crypto instruction file header
+        metadata.addUserMetadata(Headers.CRYPTO_INSTRUCTION_FILE, "");
+
+        // Update the instruction request
+        request.setKey(request.getKey() + INSTRUCTION_SUFFIX);
+        request.setMetadata(metadata);
+        request.setInputStream(instructionInputStream);
+
+        return request;
+    }
+
+    public static PutObjectRequest createInstructionPutRequest(String bucketName, String key, EncryptionInstruction instruction) {
+        JSONObject instructionJSON = convertInstructionToJSONObject(instruction);
+        byte[] instructionBytes = instructionJSON.toString().getBytes();
+        InputStream instructionInputStream = new ByteArrayInputStream(instructionBytes);
+
+        ObjectMetadata metadata = new ObjectMetadata();
+        metadata.setContentLength(instructionBytes.length);
+        metadata.addUserMetadata(Headers.CRYPTO_INSTRUCTION_FILE, "");
+
+        return new PutObjectRequest(bucketName, key + INSTRUCTION_SUFFIX, instructionInputStream, metadata);
+    }
+

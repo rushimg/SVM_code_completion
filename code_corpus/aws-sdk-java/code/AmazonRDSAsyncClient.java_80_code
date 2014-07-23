@@ -1,0 +1,19 @@
+    public Future<DBSecurityGroup> authorizeDBSecurityGroupIngressAsync(
+            final AuthorizeDBSecurityGroupIngressRequest authorizeDBSecurityGroupIngressRequest,
+            final AsyncHandler<AuthorizeDBSecurityGroupIngressRequest, DBSecurityGroup> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DBSecurityGroup>() {
+            public DBSecurityGroup call() throws Exception {
+                DBSecurityGroup result;
+                try {
+                    result = authorizeDBSecurityGroupIngress(authorizeDBSecurityGroupIngressRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(authorizeDBSecurityGroupIngressRequest, result);
+                   return result;
+            }
+        });
+    }
+    

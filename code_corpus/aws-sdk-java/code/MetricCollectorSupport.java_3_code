@@ -1,0 +1,11 @@
+    static synchronized boolean restartSingleton(CloudWatchMetricConfig config) {
+        if (singleton == null) {
+            throw new IllegalStateException(MetricCollectorSupport.class.getSimpleName()
+                + " has neven been initialized");
+        }
+        log.info("Re-initializing " + MetricCollectorSupport.class.getSimpleName());
+        singleton.stop();
+        // singleton is set to null at this point via the stop method
+        return createAndStartCollector(config);
+    }
+

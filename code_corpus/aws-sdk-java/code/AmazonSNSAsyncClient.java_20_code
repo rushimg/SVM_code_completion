@@ -1,0 +1,19 @@
+    public Future<GetTopicAttributesResult> getTopicAttributesAsync(
+            final GetTopicAttributesRequest getTopicAttributesRequest,
+            final AsyncHandler<GetTopicAttributesRequest, GetTopicAttributesResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<GetTopicAttributesResult>() {
+            public GetTopicAttributesResult call() throws Exception {
+                GetTopicAttributesResult result;
+                try {
+                    result = getTopicAttributes(getTopicAttributesRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(getTopicAttributesRequest, result);
+                   return result;
+            }
+        });
+    }
+    

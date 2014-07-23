@@ -1,0 +1,19 @@
+    public Future<ChangeMessageVisibilityBatchResult> changeMessageVisibilityBatchAsync(
+            final ChangeMessageVisibilityBatchRequest changeMessageVisibilityBatchRequest,
+            final AsyncHandler<ChangeMessageVisibilityBatchRequest, ChangeMessageVisibilityBatchResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ChangeMessageVisibilityBatchResult>() {
+            public ChangeMessageVisibilityBatchResult call() throws Exception {
+                ChangeMessageVisibilityBatchResult result;
+                try {
+                    result = changeMessageVisibilityBatch(changeMessageVisibilityBatchRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(changeMessageVisibilityBatchRequest, result);
+                   return result;
+            }
+        });
+    }
+    

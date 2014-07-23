@@ -1,0 +1,21 @@
+    static public void assertNotNull(final Promise<Object> object) {
+        Assert.assertNotNull(object);
+        new Task(object) {
+
+            @Override
+            protected void doExecute() throws Throwable {
+                Assert.assertNotNull(object.get());
+            }
+        };
+    }
+
+    static public void assertNullWaitFor(final String message, final Object object, Promise<?>... waitFor) {
+        new Task(waitFor) {
+
+            @Override
+            protected void doExecute() throws Throwable {
+                Assert.assertNull(message, object);
+            }
+        };
+    }
+

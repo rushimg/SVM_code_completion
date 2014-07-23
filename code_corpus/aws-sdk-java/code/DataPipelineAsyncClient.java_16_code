@@ -1,0 +1,19 @@
+    public Future<ActivatePipelineResult> activatePipelineAsync(
+            final ActivatePipelineRequest activatePipelineRequest,
+            final AsyncHandler<ActivatePipelineRequest, ActivatePipelineResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ActivatePipelineResult>() {
+            public ActivatePipelineResult call() throws Exception {
+                ActivatePipelineResult result;
+                try {
+                    result = activatePipeline(activatePipelineRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(activatePipelineRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -1,0 +1,25 @@
+    public GetShardIteratorResult getShardIterator(GetShardIteratorRequest getShardIteratorRequest) {
+        ExecutionContext executionContext = createExecutionContext(getShardIteratorRequest);
+        AWSRequestMetrics awsRequestMetrics = executionContext.getAwsRequestMetrics();
+        awsRequestMetrics.startEvent(Field.ClientExecuteTime);
+        Request<GetShardIteratorRequest> request = null;
+        Response<GetShardIteratorResult> response = null;
+        try {
+            awsRequestMetrics.startEvent(Field.RequestMarshallTime);
+            try {
+                request = new GetShardIteratorRequestMarshaller().marshall(getShardIteratorRequest);
+                // Binds the request metrics to the current request.
+                request.setAWSRequestMetrics(awsRequestMetrics);
+            } finally {
+                awsRequestMetrics.endEvent(Field.RequestMarshallTime);
+            }
+            Unmarshaller<GetShardIteratorResult, JsonUnmarshallerContext> unmarshaller = new GetShardIteratorResultJsonUnmarshaller();
+            JsonResponseHandler<GetShardIteratorResult> responseHandler = new JsonResponseHandler<GetShardIteratorResult>(unmarshaller);
+            
+            response = invoke(request, responseHandler, executionContext);
+            return response.getAwsResponse();
+        } finally {
+            endClientExecution(awsRequestMetrics, request, response);
+        }
+    }
+

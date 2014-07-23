@@ -1,0 +1,17 @@
+    public AmazonS3Client() {
+        this(new AWSCredentialsProviderChain(
+                new EnvironmentVariableCredentialsProvider(),
+                new SystemPropertiesCredentialsProvider(),
+                new InstanceProfileCredentialsProvider()) {
+
+            public AWSCredentials getCredentials() {
+                try {
+                    return super.getCredentials();
+                } catch (AmazonClientException ace) {}
+
+                log.debug("No credentials available; falling back to anonymous access");
+                return null;
+            }
+        });
+    }
+

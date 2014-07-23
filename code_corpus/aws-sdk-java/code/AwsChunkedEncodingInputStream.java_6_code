@@ -1,0 +1,20 @@
+	@Override
+	public synchronized void mark(int readlimit) {
+		if ( !isAtStart )
+			throw new UnsupportedOperationException("Chunk-encoded stream only supports mark() at the start of the stream.");
+		if (is.markSupported()) {
+	    	if (log.isDebugEnabled()) {
+	    		log.debug("AwsChunkedEncodingInputStream marked at the start of the stream "
+	    				+ "(will directly mark the wrapped stream since it's mark-supported).");
+	    	}
+			is.mark(readlimit);
+		}
+		else {
+	    	if (log.isDebugEnabled()) {
+	    		log.debug("AwsChunkedEncodingInputStream marked at the start of the stream "
+	    				+ "(initializing the buffer since the wrapped stream is not mark-supported).");
+	    	}
+			decodedStreamBuffer = new DecodedStreamBuffer(maxBufferSize);
+		}
+	}
+

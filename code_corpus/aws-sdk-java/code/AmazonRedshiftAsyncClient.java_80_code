@@ -1,0 +1,19 @@
+    public Future<DescribeHsmConfigurationsResult> describeHsmConfigurationsAsync(
+            final DescribeHsmConfigurationsRequest describeHsmConfigurationsRequest,
+            final AsyncHandler<DescribeHsmConfigurationsRequest, DescribeHsmConfigurationsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeHsmConfigurationsResult>() {
+            public DescribeHsmConfigurationsResult call() throws Exception {
+                DescribeHsmConfigurationsResult result;
+                try {
+                    result = describeHsmConfigurations(describeHsmConfigurationsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeHsmConfigurationsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

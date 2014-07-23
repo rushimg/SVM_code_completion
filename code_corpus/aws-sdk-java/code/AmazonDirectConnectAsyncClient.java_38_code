@@ -1,0 +1,19 @@
+    public Future<DescribeConnectionsResult> describeConnectionsAsync(
+            final DescribeConnectionsRequest describeConnectionsRequest,
+            final AsyncHandler<DescribeConnectionsRequest, DescribeConnectionsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeConnectionsResult>() {
+            public DescribeConnectionsResult call() throws Exception {
+                DescribeConnectionsResult result;
+                try {
+                    result = describeConnections(describeConnectionsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeConnectionsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

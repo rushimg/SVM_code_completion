@@ -1,0 +1,19 @@
+    public Future<ImportKeyPairResult> importKeyPairAsync(
+            final ImportKeyPairRequest importKeyPairRequest,
+            final AsyncHandler<ImportKeyPairRequest, ImportKeyPairResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ImportKeyPairResult>() {
+            public ImportKeyPairResult call() throws Exception {
+                ImportKeyPairResult result;
+                try {
+                    result = importKeyPair(importKeyPairRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(importKeyPairRequest, result);
+                   return result;
+            }
+        });
+    }
+    

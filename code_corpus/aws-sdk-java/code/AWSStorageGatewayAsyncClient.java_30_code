@@ -1,0 +1,19 @@
+    public Future<DescribeBandwidthRateLimitResult> describeBandwidthRateLimitAsync(
+            final DescribeBandwidthRateLimitRequest describeBandwidthRateLimitRequest,
+            final AsyncHandler<DescribeBandwidthRateLimitRequest, DescribeBandwidthRateLimitResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeBandwidthRateLimitResult>() {
+            public DescribeBandwidthRateLimitResult call() throws Exception {
+                DescribeBandwidthRateLimitResult result;
+                try {
+                    result = describeBandwidthRateLimit(describeBandwidthRateLimitRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeBandwidthRateLimitRequest, result);
+                   return result;
+            }
+        });
+    }
+    

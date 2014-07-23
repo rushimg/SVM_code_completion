@@ -1,0 +1,18 @@
+    public Future<Void> deleteStreamAsync(
+            final DeleteStreamRequest deleteStreamRequest,
+            final AsyncHandler<DeleteStreamRequest, Void> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<Void>() {
+            public Void call() throws Exception {
+                try {
+                    deleteStream(deleteStreamRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(deleteStreamRequest, null);
+                   return null;
+            }
+        });
+    }
+    

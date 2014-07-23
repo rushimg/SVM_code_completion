@@ -1,0 +1,19 @@
+    public Future<GetPasswordDataResult> getPasswordDataAsync(
+            final GetPasswordDataRequest getPasswordDataRequest,
+            final AsyncHandler<GetPasswordDataRequest, GetPasswordDataResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<GetPasswordDataResult>() {
+            public GetPasswordDataResult call() throws Exception {
+                GetPasswordDataResult result;
+                try {
+                    result = getPasswordData(getPasswordDataRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(getPasswordDataRequest, result);
+                   return result;
+            }
+        });
+    }
+    

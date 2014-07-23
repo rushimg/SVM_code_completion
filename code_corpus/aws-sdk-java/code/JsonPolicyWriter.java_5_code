@@ -1,0 +1,70 @@
+        Map<String, List<String>> conditionValuesByKey =
+            sortConditionsByKey(conditions);
+
+        for (Map.Entry<String, List<String>> entry
+                 : conditionValuesByKey.entrySet()) {
+
+            String conditionKey = entry.getKey();
+            generator.key(conditionKey).array();
+
+            for (String value : entry.getValue()) {
+                generator.value(value);
+            }
+
+            generator.endArray();
+        }
+    }
+
+    private Map<String, List<String>> sortConditionsByKey(List<Condition> conditions) {
+        Map<String, List<String>> conditionValuesByConditionKey = new HashMap<String, List<String>>();
+
+        for (Condition condition : conditions) {
+            String key = condition.getConditionKey();
+            List<String> values = condition.getValues();
+
+            if (conditionValuesByConditionKey.containsKey(key) == false) {
+                conditionValuesByConditionKey.put(key, new ArrayList<String>());
+            }
+            conditionValuesByConditionKey.get(key).addAll(values);
+        }
+
+        return conditionValuesByConditionKey;
+    }
+
+    private Map<String, List<Condition>> sortConditionsByType(List<Condition> conditions) {
+        Map<String, List<Condition>> conditionsByType = new HashMap<String, List<Condition>>();
+        for (Condition condition : conditions) {
+            String conditionType = condition.getType();
+            if (conditionsByType.get(conditionType) == null) {
+                conditionsByType.put(conditionType, new ArrayList<Condition>());
+            }
+            conditionsByType.get(conditionType).add(condition);
+        }
+
+        return conditionsByType;
+    }
+
+    private void writeResources(Statement statement, JSONWriter generator)
+            throws IOException, JSONException {
+        List<Resource> resources = statement.getResources();
+        if (resources == null || resources.isEmpty()) return;
+
+        generator.key("Resource").array();
+        for (Resource resource : resources) {
+            generator.value(resource.getId());
+        }
+        generator.endArray();
+    }
+
+    private void writeActions(Statement statement, JSONWriter generator)
+            throws IOException, JSONException {
+        List<Action> actions = statement.getActions();
+        if (actions == null || actions.isEmpty()) return;
+
+        generator.key("Action").array();
+        for (Action action : actions) {
+            generator.value(action.getActionName());
+        }
+        generator.endArray();
+    }
+

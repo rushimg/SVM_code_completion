@@ -1,0 +1,17 @@
+    public static ByteBuffer asByteBuffer(String expression, Node node)
+            throws XPathExpressionException {
+        String base64EncodedString = evaluateAsString(expression, node);
+        if (isEmptyString(base64EncodedString)) return null;
+
+        if (!isEmpty(node)) {
+            try {
+                byte[] base64EncodedBytes = base64EncodedString.getBytes("UTF-8");
+                byte[] decodedBytes = Base64.decodeBase64(base64EncodedBytes);
+                return ByteBuffer.wrap(decodedBytes);
+            } catch (UnsupportedEncodingException e) {
+                throw new AmazonClientException("Unable to unmarshall XML data into a ByteBuffer", e);
+            }
+        }
+        return null;
+    }
+

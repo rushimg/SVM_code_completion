@@ -1,0 +1,123 @@
+package com.amazonaws.services.simpleworkflow.flow.worker;
+
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.lang.management.ManagementFactory;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.TimeUnit;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import com.amazonaws.services.simpleworkflow.AmazonSimpleWorkflow;
+import com.amazonaws.services.simpleworkflow.flow.ActivityExecutionContext;
+import com.amazonaws.services.simpleworkflow.flow.ActivityFailureException;
+import com.amazonaws.services.simpleworkflow.flow.common.WorkflowExecutionUtils;
+import com.amazonaws.services.simpleworkflow.flow.generic.ActivityImplementation;
+import com.amazonaws.services.simpleworkflow.flow.generic.ActivityImplementationFactory;
+import com.amazonaws.services.simpleworkflow.model.ActivityTask;
+import com.amazonaws.services.simpleworkflow.model.ActivityType;
+import com.amazonaws.services.simpleworkflow.model.PollForActivityTaskRequest;
+import com.amazonaws.services.simpleworkflow.model.RespondActivityTaskCanceledRequest;
+import com.amazonaws.services.simpleworkflow.model.RespondActivityTaskCompletedRequest;
+import com.amazonaws.services.simpleworkflow.model.RespondActivityTaskFailedRequest;
+import com.amazonaws.services.simpleworkflow.model.TaskList;
+import com.amazonaws.services.simpleworkflow.model.UnknownResourceException;
+
+public class SynchronousActivityTaskPoller implements TaskPoller {
+
+    private static final Log log = LogFactory.getLog(SynchronousActivityTaskPoller.class);
+
+    private AmazonSimpleWorkflow service;
+
+    private String domain;
+
+    private String taskListToPoll;
+
+    private ActivityImplementationFactory activityImplementationFactory;
+
+    private String identity;
+
+    private SynchronousRetrier reportCompletionRetrier;
+
+    private SynchronousRetrier reportFailureRetrier;
+
+    private boolean initialized;
+
+    public SynchronousActivityTaskPoller(AmazonSimpleWorkflow service, String domain, String taskListToPoll,
+            ActivityImplementationFactory activityImplementationFactory) {
+        this();
+        this.service = service;
+        this.domain = domain;
+        this.taskListToPoll = taskListToPoll;
+        this.activityImplementationFactory = activityImplementationFactory;
+        setReportCompletionRetryParameters(new ExponentialRetryParameters());
+        setReportFailureRetryParameters(new ExponentialRetryParameters());
+    }
+
+    public SynchronousActivityTaskPoller() {
+        identity = ManagementFactory.getRuntimeMXBean().getName();
+        int length = Math.min(identity.length(), GenericWorker.MAX_IDENTITY_LENGTH);
+        identity = identity.substring(0, length);
+    }
+
+    public AmazonSimpleWorkflow getService() {
+        return service;
+    }
+
+    public void setService(AmazonSimpleWorkflow service) {
+        this.service = service;
+    }
+
+    public String getDomain() {
+        return domain;
+    }
+
+    public void setDomain(String domain) {
+        this.domain = domain;
+    }
+
+    public String getPollTaskList() {
+        return taskListToPoll;
+    }
+
+    public void setTaskListToPoll(String taskList) {
+        this.taskListToPoll = taskList;
+    }
+
+    public ActivityImplementationFactory getActivityImplementationFactory() {
+        return activityImplementationFactory;
+    }
+
+    public void setActivityImplementationFactory(ActivityImplementationFactory activityImplementationFactory) {
+        this.activityImplementationFactory = activityImplementationFactory;
+    }
+
+    public String getIdentity() {
+        return identity;
+    }
+
+    public void setIdentity(String identity) {
+        this.identity = identity;
+    }
+
+    public ExponentialRetryParameters getReportCompletionRetryParameters() {
+        return reportCompletionRetrier.getRetryParameters();
+    }
+
+    public void setReportCompletionRetryParameters(ExponentialRetryParameters reportCompletionRetryParameters) {
+        this.reportCompletionRetrier = new SynchronousRetrier(reportCompletionRetryParameters, UnknownResourceException.class);
+    }
+
+    public ExponentialRetryParameters getReportFailureRetryParameters() {
+        return reportFailureRetrier.getRetryParameters();
+    }
+
+    public void setReportFailureRetryParameters(ExponentialRetryParameters reportFailureRetryParameters) {
+        this.reportFailureRetrier = new SynchronousRetrier(reportFailureRetryParameters, UnknownResourceException.class);
+    }
+
+    public String getTaskListToPoll() {
+        return taskListToPoll;
+    }
+

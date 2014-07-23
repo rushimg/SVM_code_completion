@@ -1,0 +1,17 @@
+    public UploadMonitor(TransferManager manager, UploadImpl transfer, ExecutorService threadPool,
+            UploadCallable multipartUploadCallable, PutObjectRequest putObjectRequest,
+            ProgressListenerChain progressListenerChain) {
+
+        this.s3 = manager.getAmazonS3Client();
+        this.configuration = manager.getConfiguration();
+
+        this.multipartUploadCallable = multipartUploadCallable;
+        this.threadPool = threadPool;
+        this.putObjectRequest = putObjectRequest;
+        this.progressListenerChainCallbackExecutor = ProgressListenerCallbackExecutor
+                .wrapListener(progressListenerChain);
+        this.transfer = transfer;
+
+        setNextFuture(threadPool.submit(this));
+    }
+    

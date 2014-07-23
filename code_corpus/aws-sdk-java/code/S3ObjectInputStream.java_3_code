@@ -1,0 +1,11 @@
+    private static boolean wrapWithByteCounting(InputStream in) {
+        if (!AwsSdkMetrics.isMetricsEnabled())
+            return false;   // metrics is disabled
+        if (in instanceof MetricAware) {
+            MetricAware aware = (MetricAware)in;
+            // wrap only if not already wrapped in one of it's inner chain of input stream
+            return !aware.isMetricActivated();
+        }
+        return true; // this is a raw input stream so metric wrapping is necessary
+    }
+

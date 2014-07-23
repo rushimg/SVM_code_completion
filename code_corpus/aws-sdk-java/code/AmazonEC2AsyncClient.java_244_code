@@ -1,0 +1,19 @@
+    public Future<TerminateInstancesResult> terminateInstancesAsync(
+            final TerminateInstancesRequest terminateInstancesRequest,
+            final AsyncHandler<TerminateInstancesRequest, TerminateInstancesResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<TerminateInstancesResult>() {
+            public TerminateInstancesResult call() throws Exception {
+                TerminateInstancesResult result;
+                try {
+                    result = terminateInstances(terminateInstancesRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(terminateInstancesRequest, result);
+                   return result;
+            }
+        });
+    }
+    

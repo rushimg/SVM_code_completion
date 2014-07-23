@@ -1,0 +1,15 @@
+    public static <T> boolean unregisterMBean(String objectName)
+            throws MBeanRegistrationException {
+        MBeanServer server = getMBeanServer();
+        try {
+            server.unregisterMBean(new ObjectName(objectName));
+        } catch (MalformedObjectNameException e) {
+            throw new IllegalArgumentException(e);
+        } catch (InstanceNotFoundException e) {
+            LogFactory.getLog(MBeans.class).debug(
+                    "Failed to unregister mbean " + objectName, e);
+            return false;
+        }
+        return true;
+    }
+

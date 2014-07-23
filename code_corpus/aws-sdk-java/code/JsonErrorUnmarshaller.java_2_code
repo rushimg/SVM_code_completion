@@ -1,0 +1,13 @@
+public class JsonErrorUnmarshaller extends AbstractErrorUnmarshaller<JSONObject> {
+
+    public JsonErrorUnmarshaller() {}
+
+    protected JsonErrorUnmarshaller(Class<? extends AmazonServiceException> exceptionClass) {
+        super(exceptionClass);
+    }
+
+    public AmazonServiceException unmarshall(JSONObject json) throws Exception {
+        String message = parseMessage(json);
+        String errorCode = parseErrorCode(json);
+
+        if ((null == message || message.isEmpty()) && (null == errorCode || errorCode.isEmpty())) {

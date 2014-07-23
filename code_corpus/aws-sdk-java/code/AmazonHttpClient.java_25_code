@@ -1,0 +1,16 @@
+    private HttpResponse createResponse(HttpRequestBase method, Request<?> request, org.apache.http.HttpResponse apacheHttpResponse) throws IOException {
+        HttpResponse httpResponse = new HttpResponse(request, method);
+
+        if (apacheHttpResponse.getEntity() != null) {
+            httpResponse.setContent(apacheHttpResponse.getEntity().getContent());
+        }
+
+        httpResponse.setStatusCode(apacheHttpResponse.getStatusLine().getStatusCode());
+        httpResponse.setStatusText(apacheHttpResponse.getStatusLine().getReasonPhrase());
+        for (Header header : apacheHttpResponse.getAllHeaders()) {
+            httpResponse.addHeader(header.getName(), header.getValue());
+        }
+
+        return httpResponse;
+    }
+

@@ -1,0 +1,19 @@
+    public Future<ListLocalDisksResult> listLocalDisksAsync(
+            final ListLocalDisksRequest listLocalDisksRequest,
+            final AsyncHandler<ListLocalDisksRequest, ListLocalDisksResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ListLocalDisksResult>() {
+            public ListLocalDisksResult call() throws Exception {
+                ListLocalDisksResult result;
+                try {
+                    result = listLocalDisks(listLocalDisksRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(listLocalDisksRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -1,0 +1,19 @@
+    public Future<DescribeReservedCacheNodesResult> describeReservedCacheNodesAsync(
+            final DescribeReservedCacheNodesRequest describeReservedCacheNodesRequest,
+            final AsyncHandler<DescribeReservedCacheNodesRequest, DescribeReservedCacheNodesResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeReservedCacheNodesResult>() {
+            public DescribeReservedCacheNodesResult call() throws Exception {
+                DescribeReservedCacheNodesResult result;
+                try {
+                    result = describeReservedCacheNodes(describeReservedCacheNodesRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeReservedCacheNodesRequest, result);
+                   return result;
+            }
+        });
+    }
+    

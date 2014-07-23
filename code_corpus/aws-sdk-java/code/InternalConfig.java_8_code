@@ -1,0 +1,32 @@
+    public SignerConfig getSignerConfig(String serviceName, String regionName) {
+        if (serviceName == null)
+            throw new IllegalArgumentException();
+        SignerConfig signerConfig = null;
+        if (regionName != null) {
+            // Service+Region signer config has the highest precedence
+            String key = serviceName + SERVICE_REGION_DELIMITOR +regionName;
+            signerConfig = serviceRegionSigners.get(key);
+            if (signerConfig != null) {
+                return signerConfig;
+            }
+            // Region signer config has the 2nd highest precedence
+            signerConfig = regionSigners.get(regionName);
+            if (signerConfig != null) {
+                return signerConfig;
+            }
+        }
+        // Service signer config has the 3rd highest precedence
+        signerConfig = serviceSigners.get(serviceName);
+        // Fall back to the default
+        return signerConfig == null ? defaultSignerConfig : signerConfig;
+    }
+
+    static InternalConfigJsonHelper loadfrom(URL url)
+            throws JsonParseException, JsonMappingException, IOException {
+        if (url == null)
+            throw new IllegalArgumentException();
+        InternalConfigJsonHelper target = Jackson.getObjectMapper().readValue(
+                url, InternalConfigJsonHelper.class);
+        return target;
+    }
+

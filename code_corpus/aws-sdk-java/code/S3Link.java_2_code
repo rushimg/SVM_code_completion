@@ -1,0 +1,36 @@
+public class S3Link {
+    private final S3ClientCache s3cc;
+    private final ID id;
+
+    S3Link(S3ClientCache s3cc, String bucketName, String key) {
+        this(s3cc, new ID(bucketName, key));
+    }
+
+    S3Link(S3ClientCache s3cc, Region region, String bucketName, String key) {
+        this(s3cc, new ID(region, bucketName, key));
+    }
+
+    private S3Link(S3ClientCache s3cc, ID id) {
+        this.s3cc = s3cc;
+        this.id = id;
+
+        if ( s3cc == null ) {
+            throw new IllegalArgumentException("S3ClientCache must be configured for use with S3Link");
+        }
+        if ( id == null || id.getBucket() == null || id.getKey() == null ) {
+            throw new IllegalArgumentException("Bucket and key must be specified for S3Link");
+        }
+    }
+
+    public String getKey() {
+        return id.getKey();
+    }
+
+    public String getBucketName() {
+        return id.getBucket();
+    }
+
+    public Region getS3Region() {
+        return Region.fromValue(id.getRegionId());
+    }
+

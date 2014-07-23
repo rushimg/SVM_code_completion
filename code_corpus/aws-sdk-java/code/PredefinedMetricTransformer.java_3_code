@@ -1,0 +1,41 @@
+    public List<MetricDatum> toMetricData(MetricType metricType, Request<?> request, Response<?> response) {
+        if (metricType instanceof Field) {
+            // Predefined metrics across all aws http clients
+            Field predefined = (Field) metricType;
+            switch(predefined) {
+                case HttpClientRetryCount:
+                    return metricOfCount(predefined, request, response);
+                case RequestCount:  // intentionally fall thru to reuse the same routine as RetryCount
+                case RetryCount:
+                    return metricOfRequestOrRetryCount(predefined, request, response);
+                case ResponseProcessingTime: // drop thru
+                case RequestSigningTime: // drop thru
+                    return latencyMetricOf(predefined, request, response, EXCLUDE_REQUEST_TYPE);
+                case ClientExecuteTime:
+                    return latencyOfClientExecuteTime(request, response);
+                case HttpClientSendRequestTime:
+                case HttpClientReceiveResponseTime:
+                case HttpRequestTime:
+                    return latencyMetricOf(predefined, request, response, INCLUDE_REQUEST_TYPE);
+                case Exception:
+                    return counterMetricOf(predefined, request, response, INCLUDE_REQUEST_TYPE);
+                default:
+                    break;
+            }
+        }
+        // Predefined metrics for specific service clients
+        for (AWSMetricTransformerFactory aws: AWSMetricTransformerFactory.values()) {
+            if (metricType.name().startsWith(aws.name())) {
+                List<MetricDatum> metricData = aws.getRequestMetricTransformer()
+                        .toMetricData(metricType, request, response);
+                if (metricData != null)
+                    return metricData;
+                break;
+            }
+        }
+        if (log.isDebugEnabled()) {
+            log.debug("No request metric transformer can be found for metric type " + metricType.name());
+        }
+        return Collections.emptyList();
+    }
+

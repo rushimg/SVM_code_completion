@@ -1,0 +1,52 @@
+    private String getServerDateFromException(String body) {
+        int startPos = body.indexOf("(");
+        int endPos = 0;
+        if(body.contains(" + 15")) {
+            endPos = body.indexOf(" + 15");
+        } else {
+            endPos = body.indexOf(" - 15");
+        }
+        String msg = body.substring(startPos+1, endPos);
+        return msg;
+    }
+    
+    private int parseClockSkewOffset(org.apache.http.HttpResponse response, AmazonServiceException exception) {
+        DateUtils dateUtils = new DateUtils(); 
+        Date deviceDate = new Date();
+        Date serverDate = null;
+        String serverDateStr = null;
+        Header[] responseDateHeader = response.getHeaders("Date");
+        
+        try {
+
+            if(responseDateHeader.length == 0) {
+                // SQS doesn't return Date header
+                serverDateStr = getServerDateFromException(exception.getMessage());
+                serverDate = dateUtils.parseCompressedIso8601Date(serverDateStr);
+            } else {
+                serverDateStr = responseDateHeader[0].getValue();
+                serverDate = dateUtils.parseRfc822Date(serverDateStr);
+            }
+
+        } catch (ParseException e) {
+            log.warn("Unable to parse clock skew offset from response: "
+                     + serverDateStr,
+                     e);
+            return 0;
+        } catch (RuntimeException e) {
+            log.warn("Unable to parse clock skew offset from response: "
+                     + serverDateStr,
+                     e);
+            return 0;
+        }
+        
+        long diff = deviceDate.getTime() - serverDate.getTime();
+        return (int)(diff / 1000);
+    }
+    
+    @Override
+    protected void finalize() throws Throwable {
+        this.shutdown();
+        super.finalize();
+    }
+

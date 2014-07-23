@@ -1,0 +1,18 @@
+    public void reset() throws IOException {
+        this.fis.close();
+        this.fis = new FileInputStream(file);
+
+        long skipped = 0;
+        long toSkip = markPoint;
+        while (toSkip > 0) {
+            skipped = this.fis.skip(toSkip);
+            toSkip -= skipped;
+        }
+
+        if (log.isDebugEnabled()) {
+            log.debug("Reset to mark point " + markPoint
+                    + " after returning " + bytesReadPastMarkPoint + " bytes");
+        }
+        this.bytesReadPastMarkPoint = 0;
+    }
+

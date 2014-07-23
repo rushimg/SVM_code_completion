@@ -1,0 +1,19 @@
+    public Future<CreateTableResult> createTableAsync(
+            final CreateTableRequest createTableRequest,
+            final AsyncHandler<CreateTableRequest, CreateTableResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<CreateTableResult>() {
+            public CreateTableResult call() throws Exception {
+            	CreateTableResult result;
+                try {
+            		result = createTable(createTableRequest);
+            	} catch (Exception ex) {
+            	    asyncHandler.onError(ex);
+    				throw ex;
+            	}
+            	asyncHandler.onSuccess(createTableRequest, result);
+               	return result;
+		    }
+		});
+    }
+    

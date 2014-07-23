@@ -1,0 +1,33 @@
+    public class ListBucketHandler extends DefaultHandler {
+        private S3ObjectSummary currentObject = null;
+        private Owner currentOwner = null;
+        private StringBuilder currText = null;
+        private boolean insideCommonPrefixes = false;
+
+        private ObjectListing objectListing = new ObjectListing();
+        private List<String> commonPrefixes = new ArrayList<String>();
+
+        // Listing properties.
+        private String bucketName = null;
+        private String requestPrefix = null;
+        private String requestMarker = null;
+        private int requestMaxKeys = 0;
+        private String requestDelimiter = null;
+        private boolean listingTruncated = false;
+        private String lastKey = null;
+        private String nextMarker = null;
+
+        public ListBucketHandler() {
+            super();
+            this.currText = new StringBuilder();
+        }
+
+        public ObjectListing getObjectListing() {
+            objectListing.setBucketName(bucketName);
+            objectListing.setCommonPrefixes(commonPrefixes);
+            objectListing.setDelimiter(requestDelimiter);
+            objectListing.setMarker(requestMarker);
+            objectListing.setMaxKeys(requestMaxKeys);
+            objectListing.setPrefix(requestPrefix);
+            objectListing.setTruncated(listingTruncated);
+

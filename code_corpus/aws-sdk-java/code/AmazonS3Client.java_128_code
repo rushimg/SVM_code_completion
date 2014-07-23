@@ -1,0 +1,25 @@
+    private static void populateRequestWithCopyPartParameters(Request<?> request, CopyPartRequest copyPartRequest) {
+        String copySourceHeader =
+             "/" + HttpUtils.urlEncode(copyPartRequest.getSourceBucketName(), true)
+           + "/" + HttpUtils.urlEncode(copyPartRequest.getSourceKey(), true);
+        if (copyPartRequest.getSourceVersionId() != null) {
+            copySourceHeader += "?versionId=" + copyPartRequest.getSourceVersionId();
+        }
+        request.addHeader("x-amz-copy-source", copySourceHeader);
+
+        addDateHeader(request, Headers.COPY_SOURCE_IF_MODIFIED_SINCE,
+                copyPartRequest.getModifiedSinceConstraint());
+        addDateHeader(request, Headers.COPY_SOURCE_IF_UNMODIFIED_SINCE,
+                copyPartRequest.getUnmodifiedSinceConstraint());
+
+        addStringListHeader(request, Headers.COPY_SOURCE_IF_MATCH,
+                copyPartRequest.getMatchingETagConstraints());
+        addStringListHeader(request, Headers.COPY_SOURCE_IF_NO_MATCH,
+                copyPartRequest.getNonmatchingETagConstraints());
+
+        if ( copyPartRequest.getFirstByte() != null && copyPartRequest.getLastByte() != null ) {
+            String range = "bytes=" + copyPartRequest.getFirstByte() + "-" + copyPartRequest.getLastByte();
+            request.addHeader(Headers.COPY_PART_RANGE, range);
+        }
+    }
+

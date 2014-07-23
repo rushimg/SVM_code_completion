@@ -1,0 +1,19 @@
+    public Future<BatchWriteItemResult> batchWriteItemAsync(
+            final BatchWriteItemRequest batchWriteItemRequest,
+            final AsyncHandler<BatchWriteItemRequest, BatchWriteItemResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<BatchWriteItemResult>() {
+            public BatchWriteItemResult call() throws Exception {
+            	BatchWriteItemResult result;
+                try {
+            		result = batchWriteItem(batchWriteItemRequest);
+            	} catch (Exception ex) {
+            	    asyncHandler.onError(ex);
+    				throw ex;
+            	}
+            	asyncHandler.onSuccess(batchWriteItemRequest, result);
+               	return result;
+		    }
+		});
+    }
+    

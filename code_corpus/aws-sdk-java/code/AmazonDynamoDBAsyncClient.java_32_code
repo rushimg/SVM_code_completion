@@ -1,0 +1,19 @@
+    public Future<UpdateTableResult> updateTableAsync(
+            final UpdateTableRequest updateTableRequest,
+            final AsyncHandler<UpdateTableRequest, UpdateTableResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<UpdateTableResult>() {
+            public UpdateTableResult call() throws Exception {
+            	UpdateTableResult result;
+                try {
+            		result = updateTable(updateTableRequest);
+            	} catch (Exception ex) {
+            	    asyncHandler.onError(ex);
+    				throw ex;
+            	}
+            	asyncHandler.onSuccess(updateTableRequest, result);
+               	return result;
+		    }
+		});
+    }
+    

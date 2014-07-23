@@ -1,0 +1,19 @@
+    public Future<ReservedNode> purchaseReservedNodeOfferingAsync(
+            final PurchaseReservedNodeOfferingRequest purchaseReservedNodeOfferingRequest,
+            final AsyncHandler<PurchaseReservedNodeOfferingRequest, ReservedNode> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ReservedNode>() {
+            public ReservedNode call() throws Exception {
+                ReservedNode result;
+                try {
+                    result = purchaseReservedNodeOffering(purchaseReservedNodeOfferingRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(purchaseReservedNodeOfferingRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -1,0 +1,19 @@
+    public Future<CreateTapesResult> createTapesAsync(
+            final CreateTapesRequest createTapesRequest,
+            final AsyncHandler<CreateTapesRequest, CreateTapesResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<CreateTapesResult>() {
+            public CreateTapesResult call() throws Exception {
+                CreateTapesResult result;
+                try {
+                    result = createTapes(createTapesRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(createTapesRequest, result);
+                   return result;
+            }
+        });
+    }
+    

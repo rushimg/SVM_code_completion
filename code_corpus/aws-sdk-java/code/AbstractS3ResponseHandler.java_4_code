@@ -1,0 +1,13 @@
+    protected AmazonWebServiceResponse<T> parseResponseMetadata(HttpResponse response) {
+        AmazonWebServiceResponse<T> awsResponse = new AmazonWebServiceResponse<T>();
+        String awsRequestId = response.getHeaders().get(Headers.REQUEST_ID);
+        String hostId = response.getHeaders().get(Headers.EXTENDED_REQUEST_ID);
+
+        Map<String, String> metadataMap = new HashMap<String, String>();
+        metadataMap.put(ResponseMetadata.AWS_REQUEST_ID, awsRequestId);
+        metadataMap.put(S3ResponseMetadata.HOST_ID, hostId);
+        awsResponse.setResponseMetadata(new S3ResponseMetadata(metadataMap));
+
+        return awsResponse;
+    }
+

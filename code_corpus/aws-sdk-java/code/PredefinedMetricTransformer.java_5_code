@@ -1,0 +1,37 @@
+    protected List<MetricDatum> latencyMetricOf(MetricType metricType,
+            Request<?> req, Object response, boolean includesRequestType) {
+        AWSRequestMetrics m = req.getAWSRequestMetrics();
+        TimingInfo root = m.getTimingInfo();
+        final String metricName = metricType.name();
+        List<TimingInfo> subMeasures =
+            root.getAllSubMeasurements(metricName);
+        if (subMeasures != null) {
+            List<MetricDatum> result =
+                new ArrayList<MetricDatum>(subMeasures.size());
+            for (TimingInfo sub : subMeasures) {
+                if (sub.isEndTimeKnown()) { // being defensive
+                    List<Dimension> dims = new ArrayList<Dimension>();
+                    dims.add(new Dimension()
+                            .withName(Dimensions.MetricType.name())
+                            .withValue(metricName));
+                    // Either a non request type specific datum is created per
+                    // sub-measurement, or a request type specific one is 
+                    // created but not both
+                    if (includesRequestType) {
+                        dims.add(new Dimension()
+                                .withName(Dimensions.RequestType.name())
+                                .withValue(requestType(req)));
+                    }
+                    MetricDatum datum = new MetricDatum()
+                        .withMetricName(req.getServiceName())
+                        .withDimensions(dims)
+                        .withUnit(StandardUnit.Milliseconds)
+                        .withValue(sub.getTimeTakenMillisIfKnown());
+                    result.add(datum);
+                }
+            }
+            return result;
+        }
+        return Collections.emptyList();
+    }
+

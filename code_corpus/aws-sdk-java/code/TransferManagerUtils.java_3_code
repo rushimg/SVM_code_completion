@@ -1,0 +1,13 @@
+    public static ThreadPoolExecutor createDefaultExecutorService() {
+        ThreadFactory threadFactory = new ThreadFactory() {
+            private int threadCount = 1;
+
+            public Thread newThread(Runnable r) {
+                Thread thread = new Thread(r);
+                thread.setName("s3-transfer-manager-worker-" + threadCount++);
+                return thread;
+            }
+        };
+        return (ThreadPoolExecutor)Executors.newFixedThreadPool(10, threadFactory);
+    }
+

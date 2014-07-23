@@ -1,0 +1,19 @@
+    public Future<DescribeLocationsResult> describeLocationsAsync(
+            final DescribeLocationsRequest describeLocationsRequest,
+            final AsyncHandler<DescribeLocationsRequest, DescribeLocationsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeLocationsResult>() {
+            public DescribeLocationsResult call() throws Exception {
+                DescribeLocationsResult result;
+                try {
+                    result = describeLocations(describeLocationsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeLocationsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

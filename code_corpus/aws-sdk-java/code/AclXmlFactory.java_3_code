@@ -1,0 +1,29 @@
+    public byte[] convertToXmlByteArray(AccessControlList acl) throws AmazonClientException {
+        Owner owner = acl.getOwner();
+        if (owner == null) {
+            throw new AmazonClientException("Invalid AccessControlList: missing an S3Owner");
+        }
+
+        XmlWriter xml = new XmlWriter();
+        xml.start("AccessControlPolicy", "xmlns", Constants.XML_NAMESPACE);
+        xml.start("Owner");
+        if (owner.getId() != null) {
+            xml.start("ID").value(owner.getId()).end();
+        }
+        if (owner.getDisplayName() != null) {
+            xml.start("DisplayName").value(owner.getDisplayName()).end();
+        }
+        xml.end();
+        xml.start("AccessControlList");
+        for (Grant grant : acl.getGrants()) {
+            xml.start("Grant");
+            convertToXml(grant.getGrantee(), xml);
+            xml.start("Permission").value(grant.getPermission().toString()).end();
+            xml.end();
+        }
+        xml.end();
+        xml.end();
+
+        return xml.getBytes();
+    }
+

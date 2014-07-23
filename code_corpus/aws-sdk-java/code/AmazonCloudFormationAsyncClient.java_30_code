@@ -1,0 +1,19 @@
+    public Future<EstimateTemplateCostResult> estimateTemplateCostAsync(
+            final EstimateTemplateCostRequest estimateTemplateCostRequest,
+            final AsyncHandler<EstimateTemplateCostRequest, EstimateTemplateCostResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<EstimateTemplateCostResult>() {
+            public EstimateTemplateCostResult call() throws Exception {
+                EstimateTemplateCostResult result;
+                try {
+                    result = estimateTemplateCost(estimateTemplateCostRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(estimateTemplateCostRequest, result);
+                   return result;
+            }
+        });
+    }
+    

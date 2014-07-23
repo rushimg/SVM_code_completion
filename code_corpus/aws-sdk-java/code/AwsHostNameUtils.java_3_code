@@ -1,0 +1,29 @@
+    public static String parseRegionName(final String host,
+                                         final String serviceHint) {
+
+        if (host.endsWith(".amazonaws.com")) {
+            int index = host.length() - ".amazonaws.com".length();
+            return parseStandardRegionName(host.substring(0, index));
+        }
+
+        if (serviceHint != null) {
+            // If we have a service hint, look for 'service.[region]' or
+            // 'service-[region]' in the endpoint's hostname.
+            Pattern pattern = Pattern.compile(
+                "^(?:.+\\.)?"
+                + Pattern.quote(serviceHint)
+                + "[.-]([a-z0-9-]+)\\."
+            );
+
+            Matcher matcher = pattern.matcher(host);
+            if (matcher.find()) {
+                return matcher.group(1);
+            }
+        }
+
+        // Endpoint is totally non-standard; guess us-east-1 for lack of a
+        // better option.
+
+        return "us-east-1";
+    }
+

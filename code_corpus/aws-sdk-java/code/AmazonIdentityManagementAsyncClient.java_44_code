@@ -1,0 +1,19 @@
+    public Future<ListUsersResult> listUsersAsync(
+            final ListUsersRequest listUsersRequest,
+            final AsyncHandler<ListUsersRequest, ListUsersResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ListUsersResult>() {
+            public ListUsersResult call() throws Exception {
+                ListUsersResult result;
+                try {
+                    result = listUsers(listUsersRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(listUsersRequest, result);
+                   return result;
+            }
+        });
+    }
+    

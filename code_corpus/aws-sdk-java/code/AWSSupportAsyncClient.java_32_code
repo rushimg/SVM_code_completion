@@ -1,0 +1,19 @@
+    public Future<ResolveCaseResult> resolveCaseAsync(
+            final ResolveCaseRequest resolveCaseRequest,
+            final AsyncHandler<ResolveCaseRequest, ResolveCaseResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ResolveCaseResult>() {
+            public ResolveCaseResult call() throws Exception {
+                ResolveCaseResult result;
+                try {
+                    result = resolveCase(resolveCaseRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(resolveCaseRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -1,0 +1,31 @@
+    private static ExecutorService executor;
+    
+    public ProgressListenerCallbackExecutor(ProgressListener listener) {
+        this.listener = listener;
+    }
+    
+    public void progressChanged(final ProgressEvent progressEvent) {
+        if (listener == null) return;
+        
+        synchronized (ProgressListenerCallbackExecutor.class) {
+            if (executor == null) {
+                executor = Executors.newSingleThreadExecutor(new ThreadFactory() {
+                    public Thread newThread(Runnable r) {
+                        Thread t = new Thread(r);
+                        t.setName("java-sdk-progress-listener-callback-thread");
+                        t.setDaemon(true);
+                        return t;
+                    }
+                });
+            }
+            executor.submit(new Runnable() {
+                
+                @Override
+                public void run() {
+                    listener.progressChanged(progressEvent);
+                }
+            });
+        }
+        
+    }
+

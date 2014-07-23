@@ -1,0 +1,21 @@
+        try {
+            DescribeAvailabilityZonesResult availabilityZonesResult = ec2.describeAvailabilityZones();
+            System.out.println("You have access to " + availabilityZonesResult.getAvailabilityZones().size() +
+                    " Availability Zones.");
+
+            DescribeInstancesResult describeInstancesRequest = ec2.describeInstances();
+            List<Reservation> reservations = describeInstancesRequest.getReservations();
+            Set<Instance> instances = new HashSet<Instance>();
+
+            for (Reservation reservation : reservations) {
+                instances.addAll(reservation.getInstances());
+            }
+
+            System.out.println("You have " + instances.size() + " Amazon EC2 instance(s) running.");
+        } catch (AmazonServiceException ase) {
+                System.out.println("Caught Exception: " + ase.getMessage());
+                System.out.println("Reponse Status Code: " + ase.getStatusCode());
+                System.out.println("Error Code: " + ase.getErrorCode());
+                System.out.println("Request ID: " + ase.getRequestId());
+        }
+

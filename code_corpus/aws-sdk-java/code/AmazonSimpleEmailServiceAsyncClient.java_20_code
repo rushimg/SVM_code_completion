@@ -1,0 +1,19 @@
+    public Future<GetSendStatisticsResult> getSendStatisticsAsync(
+            final GetSendStatisticsRequest getSendStatisticsRequest,
+            final AsyncHandler<GetSendStatisticsRequest, GetSendStatisticsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<GetSendStatisticsResult>() {
+            public GetSendStatisticsResult call() throws Exception {
+                GetSendStatisticsResult result;
+                try {
+                    result = getSendStatistics(getSendStatisticsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(getSendStatisticsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

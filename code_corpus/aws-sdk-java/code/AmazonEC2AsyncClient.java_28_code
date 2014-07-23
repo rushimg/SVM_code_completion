@@ -1,0 +1,19 @@
+    public Future<AttachVpnGatewayResult> attachVpnGatewayAsync(
+            final AttachVpnGatewayRequest attachVpnGatewayRequest,
+            final AsyncHandler<AttachVpnGatewayRequest, AttachVpnGatewayResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<AttachVpnGatewayResult>() {
+            public AttachVpnGatewayResult call() throws Exception {
+                AttachVpnGatewayResult result;
+                try {
+                    result = attachVpnGateway(attachVpnGatewayRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(attachVpnGatewayRequest, result);
+                   return result;
+            }
+        });
+    }
+    

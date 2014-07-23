@@ -1,0 +1,35 @@
+    public WorkflowExecutionDetail describeWorkflowExecution(DescribeWorkflowExecutionRequest describeWorkflowExecutionRequest) {
+        ExecutionContext executionContext = createExecutionContext(describeWorkflowExecutionRequest);
+        AWSRequestMetrics awsRequestMetrics = executionContext.getAwsRequestMetrics();
+        awsRequestMetrics.startEvent(Field.ClientExecuteTime);
+        Request<DescribeWorkflowExecutionRequest> request = null;
+        Response<WorkflowExecutionDetail> response = null;
+        try {
+            awsRequestMetrics.startEvent(Field.RequestMarshallTime);
+            try {
+                request = new DescribeWorkflowExecutionRequestMarshaller().marshall(describeWorkflowExecutionRequest);
+                // Binds the request metrics to the current request.
+                request.setAWSRequestMetrics(awsRequestMetrics);
+            } finally {
+                awsRequestMetrics.endEvent(Field.RequestMarshallTime);
+            }
+            Unmarshaller<WorkflowExecutionDetail, JsonUnmarshallerContext> unmarshaller = new WorkflowExecutionDetailJsonUnmarshaller();
+            JsonResponseHandler<WorkflowExecutionDetail> responseHandler = new JsonResponseHandler<WorkflowExecutionDetail>(unmarshaller);
+            
+            response = invoke(request, responseHandler, executionContext);
+            return response.getAwsResponse();
+        } finally {
+            endClientExecution(awsRequestMetrics, request, response);
+        }
+    }
+
+    @Override
+    public void setEndpoint(String endpoint) {
+        super.setEndpoint(endpoint);
+    }
+
+    @Override
+    public void setEndpoint(String endpoint, String serviceName, String regionId) throws IllegalArgumentException {
+        super.setEndpoint(endpoint, serviceName, regionId);
+    }
+

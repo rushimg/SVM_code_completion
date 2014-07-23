@@ -1,0 +1,19 @@
+    public Future<DescribeVirtualGatewaysResult> describeVirtualGatewaysAsync(
+            final DescribeVirtualGatewaysRequest describeVirtualGatewaysRequest,
+            final AsyncHandler<DescribeVirtualGatewaysRequest, DescribeVirtualGatewaysResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeVirtualGatewaysResult>() {
+            public DescribeVirtualGatewaysResult call() throws Exception {
+                DescribeVirtualGatewaysResult result;
+                try {
+                    result = describeVirtualGateways(describeVirtualGatewaysRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeVirtualGatewaysRequest, result);
+                   return result;
+            }
+        });
+    }
+    

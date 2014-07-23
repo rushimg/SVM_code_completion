@@ -1,0 +1,20 @@
+    public void abortMultipartUpload(AbortMultipartUploadRequest abortMultipartUploadRequest)
+            throws AmazonClientException, AmazonServiceException {
+        assertParameterNotNull(abortMultipartUploadRequest,
+            "The request parameter must be specified when aborting a multipart upload");
+        assertParameterNotNull(abortMultipartUploadRequest.getBucketName(),
+            "The bucket name parameter must be specified when aborting a multipart upload");
+        assertParameterNotNull(abortMultipartUploadRequest.getKey(),
+            "The key parameter must be specified when aborting a multipart upload");
+        assertParameterNotNull(abortMultipartUploadRequest.getUploadId(),
+            "The upload ID parameter must be specified when aborting a multipart upload");
+
+        String bucketName = abortMultipartUploadRequest.getBucketName();
+        String key = abortMultipartUploadRequest.getKey();
+
+        Request<AbortMultipartUploadRequest> request = createRequest(bucketName, key, abortMultipartUploadRequest, HttpMethodName.DELETE);
+        request.addParameter("uploadId", abortMultipartUploadRequest.getUploadId());
+
+        invoke(request, voidResponseHandler, bucketName, key);
+    }
+

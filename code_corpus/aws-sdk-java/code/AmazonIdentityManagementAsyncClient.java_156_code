@@ -1,0 +1,19 @@
+    public Future<ListRolesResult> listRolesAsync(
+            final ListRolesRequest listRolesRequest,
+            final AsyncHandler<ListRolesRequest, ListRolesResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ListRolesResult>() {
+            public ListRolesResult call() throws Exception {
+                ListRolesResult result;
+                try {
+                    result = listRoles(listRolesRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(listRolesRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -4,8 +4,8 @@ import xml.etree.ElementTree as ET
 
 MATCH = "*.java"
 #DIR_NAME = "../../twitter4j"
-DIR_NAME = "../../../sdks/HtmlCleaner/src"
-OUT_DIR_NAME = "../../code_corpus/HtmlCleaner/"
+DIR_NAME = "../../../sdks/aws-sdk-java/src"
+OUT_DIR_NAME = "../../code_corpus/aws-sdk-java/"
 
 def process_files():
 	matches = []

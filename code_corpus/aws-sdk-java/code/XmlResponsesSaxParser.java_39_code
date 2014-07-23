@@ -1,0 +1,84 @@
+        @Override
+        public void setExpirationTimeRuleId(String expirationTimeRuleId) {
+            if ( result != null )
+                result.setExpirationTimeRuleId(expirationTimeRuleId);
+        }
+
+        // Error during completion
+        private AmazonS3Exception ase;
+        private String hostId;
+        private String requestId;
+        private String errorCode;
+
+        public CompleteMultipartUploadResult getCompleteMultipartUploadResult() {
+            return result;
+        }
+
+        public AmazonS3Exception getAmazonS3Exception() {
+            return ase;
+        }
+
+        @Override
+        public void startDocument() {
+            text = new StringBuilder();
+        }
+
+        @Override
+        public void startElement(String uri, String name, String qName, Attributes attrs) {
+            // Success response XML elements
+            if (name.equals("CompleteMultipartUploadResult")) {
+                result = new CompleteMultipartUploadResult();
+            } else if (name.equals("Location")) {
+            } else if (name.equals("Bucket")) {
+            } else if (name.equals("Key")) {
+            } else if (name.equals("ETag")) {
+            }
+
+            // Error response XML elements
+            if (name.equals("Error")) {
+            } else if (name.equals("Code")) {
+            } else if (name.equals("Message")) {
+            } else if (name.equals("RequestId")) {
+            } else if (name.equals("HostId")) {
+            }
+            text.setLength(0);
+        }
+
+        @Override
+        public void endElement(String uri, String name, String qName) throws SAXException {
+            if (result != null) {
+                // Success response XML elements
+                if (name.equals("CompleteMultipartUploadResult")) {
+                } else if (name.equals("Location")) {
+                    result.setLocation(text.toString());
+                } else if (name.equals("Bucket")) {
+                    result.setBucketName(text.toString());
+                } else if (name.equals("Key")) {
+                    result.setKey(text.toString());
+                } else if (name.equals("ETag")) {
+                    result.setETag(ServiceUtils.removeQuotes(text.toString()));
+                }
+            } else {
+                // Error response XML elements
+                if (name.equals("Error")) {
+                    ase.setErrorCode(errorCode);
+                    ase.setRequestId(requestId);
+                    ase.setExtendedRequestId(hostId);
+                } else if (name.equals("Code")) {
+                    errorCode = text.toString();
+                } else if (name.equals("Message")) {
+                    ase = new AmazonS3Exception(text.toString());
+                } else if (name.equals("RequestId")) {
+                    requestId = text.toString();
+                } else if (name.equals("HostId")) {
+                    hostId = text.toString();
+                }
+            }
+        }
+
+        @Override
+        public void characters(char ch[], int start, int length) {
+            this.text.append(ch, start, length);
+        }
+    }
+

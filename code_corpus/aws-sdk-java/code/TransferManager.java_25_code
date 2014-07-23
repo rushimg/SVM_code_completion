@@ -1,0 +1,15 @@
+        ProgressListener multipleFileTransferProgressListener = new MultipleFileTransferProgressUpdatingListener(
+                transferProgress, additionalProgressListenerChain);
+
+        List<UploadImpl> uploads = new LinkedList<UploadImpl>();
+        MultipleFileUploadImpl multipleFileUpload = new MultipleFileUploadImpl("Uploading etc", transferProgress, additionalProgressListenerChain, virtualDirectoryKeyPrefix, bucketName, uploads);
+        multipleFileUpload.setMonitor(new MultipleFileTransferMonitor(multipleFileUpload, uploads));
+
+        final AllDownloadsQueuedLock allTransfersQueuedLock = new AllDownloadsQueuedLock();
+        MultipleFileTransferStateChangeListener multipleFileTransferStateChangeListener = new MultipleFileTransferStateChangeListener(
+                allTransfersQueuedLock, multipleFileUpload);
+
+        if ( files == null || files.isEmpty()) {
+            multipleFileUpload.setState(TransferState.Completed);
+        }
+

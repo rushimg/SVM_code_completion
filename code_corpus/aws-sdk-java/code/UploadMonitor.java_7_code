@@ -1,0 +1,17 @@
+    private UploadResult poll() throws InterruptedException {
+        for ( Future<PartETag> f : futures ) {
+            if ( !f.isDone() ) {
+                reschedule();
+                return null;
+            }
+        }
+
+        for ( Future<PartETag> f : futures ) {
+            if ( f.isCancelled() ) {
+                throw new CancellationException();
+            }
+        }
+
+        return completeMultipartUpload();
+    }
+

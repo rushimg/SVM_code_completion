@@ -1,0 +1,19 @@
+    public Future<DeleteTrailResult> deleteTrailAsync(
+            final DeleteTrailRequest deleteTrailRequest,
+            final AsyncHandler<DeleteTrailRequest, DeleteTrailResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DeleteTrailResult>() {
+            public DeleteTrailResult call() throws Exception {
+                DeleteTrailResult result;
+                try {
+                    result = deleteTrail(deleteTrailRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(deleteTrailRequest, result);
+                   return result;
+            }
+        });
+    }
+    

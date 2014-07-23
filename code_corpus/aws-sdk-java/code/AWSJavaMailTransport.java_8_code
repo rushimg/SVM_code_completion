@@ -1,0 +1,25 @@
+	private SendRawEmailRequest prepareEmail(Message m)
+			throws MessagingException {
+
+		try {
+			OutputStream byteOutput = new ByteArrayOutputStream();
+			m.writeTo(byteOutput);
+			SendRawEmailRequest req = new SendRawEmailRequest();
+			byte[] messageByteArray = ((ByteArrayOutputStream) byteOutput)
+					.toByteArray();
+			RawMessage message = new RawMessage();
+			message.setData(ByteBuffer.wrap(messageByteArray));
+			req.setRawMessage(message);
+			return req;
+		} catch (Exception e) {
+		    Address[] sent = new Address[0];
+		    Address[] unsent = new Address[0];
+		    Address[] invalid = m.getAllRecipients();
+			super.notifyTransportListeners(
+					TransportEvent.MESSAGE_NOT_DELIVERED, sent, unsent,
+					invalid, m);
+			throw new MessagingException("Unable to write message: "
+					+ m.toString(), e);
+		}
+	}
+

@@ -1,0 +1,82 @@
+    @Deprecated
+    protected Map<String, AttributeValue> transformAttributes(String hashKey, String rangeKey,
+            Map<String, AttributeValue> attributeValues) {
+        return attributeValues;
+    }
+
+    private Map<String, AttributeValueUpdate> transformAttributeUpdates(
+            final Class<?> clazz,
+            final Map<String, AttributeValue> keys,
+            final Map<String, AttributeValueUpdate> updateValues,
+            final DynamoDBMapperConfig config
+    ) {
+        Map<String, AttributeValue> item = convertToItem(updateValues);
+
+        HashSet<String> keysAdded = new HashSet<String>();
+        for (Map.Entry<String, AttributeValue> e : keys.entrySet()) {
+            if (!item.containsKey(e.getKey())) {
+                keysAdded.add(e.getKey());
+                item.put(e.getKey(), e.getValue());
+            }
+        }
+
+        AttributeTransformer.Parameters<?> parameters =
+            toParameters(item, true, clazz, config);
+
+        String hashKey = parameters.getHashKeyName();
+
+        if (!item.containsKey(hashKey)) {
+            item.put(hashKey, keys.get(hashKey));
+        }
+
+        item = transformAttributes(parameters);
+
+        for(Map.Entry<String, AttributeValue> entry: item.entrySet()) {
+            if (keysAdded.contains(entry.getKey())) {
+                // This was added in for context before calling
+                // transformAttributes, but isn't actually being changed.
+                continue;
+            }
+
+            AttributeValueUpdate update = updateValues.get(entry.getKey());
+            if (update != null) {
+                update.getValue()
+                    .withB( entry.getValue().getB() )
+                    .withBS(entry.getValue().getBS())
+                    .withN( entry.getValue().getN() )
+                    .withNS(entry.getValue().getNS())
+                    .withS( entry.getValue().getS() )
+                    .withSS(entry.getValue().getSS());
+            } else {
+                updateValues.put(entry.getKey(),
+                                 new AttributeValueUpdate(entry.getValue(),
+                                                          "PUT"));
+            }
+        }
+
+        return updateValues;
+    }
+
+    private void pauseExponentially(int retries) {
+        if (retries == 0) {
+            return;
+        }
+
+        Random random = new Random();
+        long delay = 0;
+        long scaleFactor = 500 + random.nextInt(100);
+        delay = Math.min(delay, MAX_BACKOFF_IN_MILLISECONDS);
+
+        try {
+            Thread.sleep(delay);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new AmazonClientException(e.getMessage(), e);
+        }
+    }
+
+    static <X extends AmazonWebServiceRequest> X applyUserAgent(X request) {
+        request.getRequestClientOptions().appendUserAgent(USER_AGENT);
+        return request;
+    }
+

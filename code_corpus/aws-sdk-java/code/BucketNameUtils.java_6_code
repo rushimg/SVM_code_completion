@@ -1,0 +1,78 @@
+    private static boolean isValidV2BucketName(final String bucketName,
+                                        final boolean throwOnError) {
+
+        if (bucketName == null) {
+            return exception(throwOnError, "Bucket name cannot be null");
+        }
+
+        if (bucketName.length() < MIN_BUCKET_NAME_LENGTH ||
+            bucketName.length() > MAX_BUCKET_NAME_LENGTH) {
+
+            return exception(
+                throwOnError,
+                "Bucket name should be between 3 and 63 characters long"
+            );
+        }
+
+        char previous = '\0';
+
+        for (int i = 0; i < bucketName.length(); ++i) {
+            char next = bucketName.charAt(i);
+
+            if (next >= 'A' && next <= 'Z') {
+                return exception(
+                    throwOnError,
+                    "Bucket name should not contain uppercase characters"
+                );
+            }
+
+            if (next == ' ' || next == '\t' || next == '\r' || next == '\n') {
+                return exception(
+                    throwOnError,
+                    "Bucket name should not contain white space"
+                );
+            }
+
+            if (next == '.') {
+                if (previous == '.') {
+                    return exception(
+                        throwOnError,
+                        "Bucket name should not contain two adjacent periods"
+                    );
+                }
+                if (previous == '-') {
+                    return exception(
+                        throwOnError,
+                        "Bucket name should not contain dashes next to periods"
+                    );
+                }
+            } else if (next == '-') {
+                if (previous == '.') {
+                    return exception(
+                        throwOnError,
+                        "Bucket name should not contain dashes next to periods"
+                    );
+                }
+            } else if ((next < '0')
+                       || (next > '9' && next < 'a')
+                       || (next > 'z')) {
+
+                return exception(
+                     throwOnError,
+                    "Bucket name should not contain '" + next + "'"
+                );
+            }
+
+            previous = next;
+        }
+
+        if (previous == '.' || previous == '-') {
+            return exception(
+                throwOnError,
+                "Bucket name should not end with '-' or '.'"
+            );
+        }
+
+        return true;
+    }
+

@@ -1,0 +1,23 @@
+    public QueueBufferFuture<ReceiveMessageRequest, ReceiveMessageResult > 
+        receiveMessageAsync( ReceiveMessageRequest rq, QueueBufferCallback<ReceiveMessageRequest, ReceiveMessageResult > callback ) {
+        
+        if (shutDown) {
+            throw new AmazonClientException("The client has been shut down.");
+        }
+        
+        //issue the future...
+        int numMessages = 10;
+        if ( rq.getMaxNumberOfMessages() != null ) {
+            numMessages = rq.getMaxNumberOfMessages();
+        }
+        QueueBufferFuture<ReceiveMessageRequest,ReceiveMessageResult> toReturn = issueFuture(numMessages, callback);
+        
+        //attempt to satisfy it right away...
+        satisfyFuturesFromBuffer();
+        
+        //spawn more receive tasks if we need them...
+        spawnMoreReceiveTasks();
+        
+        return toReturn;
+    }
+    

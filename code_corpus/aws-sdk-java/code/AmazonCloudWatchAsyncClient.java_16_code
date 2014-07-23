@@ -1,0 +1,18 @@
+    public Future<Void> putMetricAlarmAsync(
+            final PutMetricAlarmRequest putMetricAlarmRequest,
+            final AsyncHandler<PutMetricAlarmRequest, Void> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<Void>() {
+            public Void call() throws Exception {
+                try {
+                    putMetricAlarm(putMetricAlarmRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(putMetricAlarmRequest, null);
+                   return null;
+            }
+        });
+    }
+    

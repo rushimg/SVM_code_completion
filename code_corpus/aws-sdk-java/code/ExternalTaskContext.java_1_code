@@ -1,0 +1,70 @@
+package com.amazonaws.services.simpleworkflow.flow.core;
+
+import java.util.concurrent.Executor;
+
+class ExternalTaskContext extends AsyncContextBase {
+
+    private final class ExternalTaskCompletionHandleImpl implements ExternalTaskCompletionHandle {
+
+        private String methodName;
+
+        private boolean completed;
+
+        private Throwable failure;
+
+        private void setDoExecuteFailed(String methodName, Throwable e) {
+            this.failure = e;
+            this.methodName = methodName;
+        }
+
+        @Override
+        public void complete() {
+            if (failure != null) {
+                throw new IllegalStateException("Invalid ExternalTaskCompletionHandle as " + methodName
+                        + " failed with an exception.", failure);
+            }
+            if (completed) {
+                throw new IllegalStateException("Already completed");
+            }
+            completed = true;
+            if (!inCancellationHandler) {
+                removeFromParent();
+            }
+        }
+
+        @Override
+        public void fail(final Throwable e) {
+            if (failure != null) {
+                throw new IllegalStateException("Invalid ExternalTaskCompletionHandle as " + methodName
+                        + " failed with exception.", failure);
+            }
+            if (completed) {
+                throw new IllegalStateException("Already completed");
+            }
+            if (stackTrace != null && !parent.isRethrown(e)) {
+                AsyncStackTrace merged = new AsyncStackTrace(stackTrace, e.getStackTrace(), 0);
+                merged.setStartFrom(getParentTaskMethodName());
+                e.setStackTrace(merged.getStackTrace());
+            }
+            failure = e;
+            if (!inCancellationHandler) {
+                failToParent(e);
+            }
+        }
+
+        public boolean isCompleted() {
+            return completed;
+        }
+
+        public Throwable getFailure() {
+            return failure;
+        }
+
+    }
+
+    private final ExternalTask task;
+
+    private ExternalTaskCancellationHandler cancellationHandler;
+
+    private boolean canceled;
+

@@ -1,0 +1,55 @@
+package com.amazonaws.services.s3.transfer.internal;
+
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import com.amazonaws.event.ProgressListenerChain;
+import com.amazonaws.event.ProgressEvent;
+import com.amazonaws.event.ProgressListenerCallbackExecutor;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3EncryptionClient;
+import com.amazonaws.services.s3.model.AbortMultipartUploadRequest;
+import com.amazonaws.services.s3.model.CompleteMultipartUploadRequest;
+import com.amazonaws.services.s3.model.CompleteMultipartUploadResult;
+import com.amazonaws.services.s3.model.InitiateMultipartUploadRequest;
+import com.amazonaws.services.s3.model.PartETag;
+import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.services.s3.model.PutObjectResult;
+import com.amazonaws.services.s3.model.StorageClass;
+import com.amazonaws.services.s3.model.UploadPartRequest;
+import com.amazonaws.services.s3.transfer.TransferManager;
+import com.amazonaws.services.s3.transfer.TransferManagerConfiguration;
+import com.amazonaws.services.s3.transfer.Transfer.TransferState;
+import com.amazonaws.services.s3.transfer.model.UploadResult;
+
+public class UploadCallable implements Callable<UploadResult> {
+    private final AmazonS3 s3;
+    private final ExecutorService threadPool;
+    private final PutObjectRequest putObjectRequest;
+    private String multipartUploadId;
+    private final UploadImpl upload;
+
+    private static final Log log = LogFactory.getLog(UploadCallable.class);
+    private final TransferManagerConfiguration configuration;
+    private final ProgressListenerCallbackExecutor progressListenerChainCallbackExecutor;
+    private final List<Future<PartETag>> futures = new ArrayList<Future<PartETag>>();
+
+    public UploadCallable(TransferManager transferManager, ExecutorService threadPool, UploadImpl upload, PutObjectRequest putObjectRequest, ProgressListenerChain progressListenerChain) {
+        this.s3 = transferManager.getAmazonS3Client();
+        this.configuration = transferManager.getConfiguration();
+
+        this.threadPool = threadPool;
+        this.putObjectRequest = putObjectRequest;
+        this.progressListenerChainCallbackExecutor = ProgressListenerCallbackExecutor
+                .wrapListener(progressListenerChain);
+        this.upload = upload;
+    }
+

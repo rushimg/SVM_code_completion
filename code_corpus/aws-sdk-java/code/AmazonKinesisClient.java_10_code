@@ -1,0 +1,29 @@
+    public AmazonKinesisClient(AWSCredentialsProvider awsCredentialsProvider,
+            ClientConfiguration clientConfiguration,
+            RequestMetricCollector requestMetricCollector) {
+        super(clientConfiguration, requestMetricCollector);
+        
+        this.awsCredentialsProvider = awsCredentialsProvider;
+        
+        init();
+    }
+
+    private void init() {
+        exceptionUnmarshallers = new ArrayList<Unmarshaller<AmazonServiceException, JSONObject>>();
+        exceptionUnmarshallers.add(new LimitExceededExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new ResourceInUseExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new InvalidArgumentExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new ExpiredIteratorExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new ProvisionedThroughputExceededExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new ResourceNotFoundExceptionUnmarshaller());
+        
+        exceptionUnmarshallers.add(new JsonErrorUnmarshaller());
+        // calling this.setEndPoint(...) will also modify the signer accordingly
+        this.setEndpoint("kinesis.us-east-1.amazonaws.com");
+        HandlerChainFactory chainFactory = new HandlerChainFactory();
+        requestHandler2s.addAll(chainFactory.newRequestHandlerChain(
+                "/com/amazonaws/services/kinesis/request.handlers"));
+        requestHandler2s.addAll(chainFactory.newRequestHandler2Chain(
+                "/com/amazonaws/services/kinesis/request.handler2s"));
+    }
+

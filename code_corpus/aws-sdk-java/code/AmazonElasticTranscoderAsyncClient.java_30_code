@@ -1,0 +1,19 @@
+    public Future<UpdatePipelineResult> updatePipelineAsync(
+            final UpdatePipelineRequest updatePipelineRequest,
+            final AsyncHandler<UpdatePipelineRequest, UpdatePipelineResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<UpdatePipelineResult>() {
+            public UpdatePipelineResult call() throws Exception {
+                UpdatePipelineResult result;
+                try {
+                    result = updatePipeline(updatePipelineRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(updatePipelineRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -1,0 +1,19 @@
+    private void keyOnlyPut(Class<?> clazz, String tableName, Key objectKey,
+                            Method hashKeyGetter, Method rangeKeyGetter) {
+        Map<String, AttributeValue> attributes = new HashMap<String, AttributeValue>();
+        Map<String, ExpectedAttributeValue> expectedValues = new HashMap<String, ExpectedAttributeValue>();
+
+        String hashKeyAttributeName = reflector.getAttributeName(hashKeyGetter);
+        attributes.put(hashKeyAttributeName, objectKey.getHashKeyElement());
+        expectedValues.put(hashKeyAttributeName, new ExpectedAttributeValue().withExists(false));
+
+        if (rangeKeyGetter != null) {
+            String rangeKeyAttributeName = reflector.getAttributeName(rangeKeyGetter);
+            attributes.put(rangeKeyAttributeName, objectKey.getRangeKeyElement());
+            expectedValues.put(rangeKeyAttributeName, new ExpectedAttributeValue().withExists(false));
+        }
+        attributes = transformAttributes(clazz, attributes);
+        db.putItem(applyUserAgent(new PutItemRequest().withTableName(tableName).withItem(attributes)
+                .withExpected(expectedValues)));
+    }
+

@@ -1,0 +1,19 @@
+    public Future<DescribeConfigurationSettingsResult> describeConfigurationSettingsAsync(
+            final DescribeConfigurationSettingsRequest describeConfigurationSettingsRequest,
+            final AsyncHandler<DescribeConfigurationSettingsRequest, DescribeConfigurationSettingsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeConfigurationSettingsResult>() {
+            public DescribeConfigurationSettingsResult call() throws Exception {
+                DescribeConfigurationSettingsResult result;
+                try {
+                    result = describeConfigurationSettings(describeConfigurationSettingsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeConfigurationSettingsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

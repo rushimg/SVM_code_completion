@@ -1,0 +1,19 @@
+    public Future<CreateGroupResult> createGroupAsync(
+            final CreateGroupRequest createGroupRequest,
+            final AsyncHandler<CreateGroupRequest, CreateGroupResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<CreateGroupResult>() {
+            public CreateGroupResult call() throws Exception {
+                CreateGroupResult result;
+                try {
+                    result = createGroup(createGroupRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(createGroupRequest, result);
+                   return result;
+            }
+        });
+    }
+    

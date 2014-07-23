@@ -1,0 +1,19 @@
+    public Future<DescribeSeverityLevelsResult> describeSeverityLevelsAsync(
+            final DescribeSeverityLevelsRequest describeSeverityLevelsRequest,
+            final AsyncHandler<DescribeSeverityLevelsRequest, DescribeSeverityLevelsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeSeverityLevelsResult>() {
+            public DescribeSeverityLevelsResult call() throws Exception {
+                DescribeSeverityLevelsResult result;
+                try {
+                    result = describeSeverityLevels(describeSeverityLevelsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeSeverityLevelsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

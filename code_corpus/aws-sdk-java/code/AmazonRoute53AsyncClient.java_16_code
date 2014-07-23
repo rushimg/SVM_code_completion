@@ -1,0 +1,19 @@
+    public Future<ListResourceRecordSetsResult> listResourceRecordSetsAsync(
+            final ListResourceRecordSetsRequest listResourceRecordSetsRequest,
+            final AsyncHandler<ListResourceRecordSetsRequest, ListResourceRecordSetsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ListResourceRecordSetsResult>() {
+            public ListResourceRecordSetsResult call() throws Exception {
+                ListResourceRecordSetsResult result;
+                try {
+                    result = listResourceRecordSets(listResourceRecordSetsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(listResourceRecordSetsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

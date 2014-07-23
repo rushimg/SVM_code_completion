@@ -1,0 +1,12 @@
+    @Override
+    public void deleteObject(DeleteObjectRequest deleteObjectRequest) {
+
+        appendUserAgent(deleteObjectRequest, USER_AGENT);
+
+        // Delete the object
+        super.deleteObject(deleteObjectRequest);
+        // If it exists, delete the instruction file.
+        DeleteObjectRequest instructionDeleteRequest = EncryptionUtils.createInstructionDeleteObjectRequest(deleteObjectRequest);
+        super.deleteObject(instructionDeleteRequest);
+    }
+

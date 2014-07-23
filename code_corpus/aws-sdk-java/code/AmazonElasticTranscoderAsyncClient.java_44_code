@@ -1,0 +1,19 @@
+    public Future<DeletePresetResult> deletePresetAsync(
+            final DeletePresetRequest deletePresetRequest,
+            final AsyncHandler<DeletePresetRequest, DeletePresetResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DeletePresetResult>() {
+            public DeletePresetResult call() throws Exception {
+                DeletePresetResult result;
+                try {
+                    result = deletePreset(deletePresetRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(deletePresetRequest, result);
+                   return result;
+            }
+        });
+    }
+    

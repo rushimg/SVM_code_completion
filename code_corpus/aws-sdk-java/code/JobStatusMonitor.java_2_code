@@ -1,0 +1,14 @@
+public class JobStatusMonitor {
+    private AmazonSQSClient sqs;
+    private AmazonSNSClient sns;
+    private String queueUrl;
+    private String topicArn;
+
+    private static final Log log = LogFactory.getLog(JobStatusMonitor.class);
+
+    public JobStatusMonitor(AWSCredentialsProvider credentialsProvider, ClientConfiguration clientConfiguration) {
+        sqs = new AmazonSQSClient(credentialsProvider, clientConfiguration);
+        sns = new AmazonSNSClient(credentialsProvider, clientConfiguration);
+        setupQueueAndTopic();
+    }
+

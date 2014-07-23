@@ -1,0 +1,19 @@
+    public Future<ActivityTypeDetail> describeActivityTypeAsync(
+            final DescribeActivityTypeRequest describeActivityTypeRequest,
+            final AsyncHandler<DescribeActivityTypeRequest, ActivityTypeDetail> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ActivityTypeDetail>() {
+            public ActivityTypeDetail call() throws Exception {
+                ActivityTypeDetail result;
+                try {
+                    result = describeActivityType(describeActivityTypeRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeActivityTypeRequest, result);
+                   return result;
+            }
+        });
+    }
+    

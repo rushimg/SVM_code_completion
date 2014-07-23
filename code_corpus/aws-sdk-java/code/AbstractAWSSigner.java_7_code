@@ -1,0 +1,28 @@
+    protected String getCanonicalizedQueryString(Map<String, String> parameters) {
+
+        SortedMap<String, String> sorted = new TreeMap<String, String>();
+
+        Iterator<Map.Entry<String, String>> pairs = parameters.entrySet().iterator();
+        while (pairs.hasNext()) {
+            Map.Entry<String, String> pair = pairs.next();
+            String key = pair.getKey();
+            String value = pair.getValue();
+            sorted.put(HttpUtils.urlEncode(key, false), HttpUtils.urlEncode(value, false));
+        }
+
+        StringBuilder builder = new StringBuilder();
+        pairs = sorted.entrySet().iterator();
+        while (pairs.hasNext()) {
+            Map.Entry<String, String> pair = pairs.next();
+            builder.append(pair.getKey());
+            builder.append("=");
+            builder.append(pair.getValue());
+            if (pairs.hasNext()) {
+                builder.append("&");
+            }
+        }
+
+        return builder.toString();
+    }
+
+    protected String getCanonicalizedQueryString(Request<?> request) {

@@ -1,0 +1,23 @@
+public class SimpleStoreActivitiesS3Impl implements SimpleStoreActivities {
+
+    private static final int HEARTBEAT_INTERVAL = 60000;
+
+    private final ActivityExecutionContextProvider contextProvider = new ActivityExecutionContextProviderImpl();
+
+    private final AmazonS3 s3Client;
+
+    private final String localDirectory;
+
+    private final String hostSpecificTaskList;
+
+    public SimpleStoreActivitiesS3Impl(AmazonS3 s3Client, String localDirectory, String taskList) {
+        this.s3Client = s3Client;
+        this.localDirectory = localDirectory;
+        this.hostSpecificTaskList = taskList;
+    }
+
+    @Override
+    public void upload(String bucketName, String localName, String targetName) {
+        uploadFileToS3(bucketName, localDirectory + localName, targetName);
+    }
+

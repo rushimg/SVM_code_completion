@@ -1,0 +1,79 @@
+                        getCanonicalizedResourcePath(path, doubleUrlEncode) + "\n" +
+                        getCanonicalizedQueryString(request) + "\n" +
+                        getCanonicalizedHeaderString(request) + "\n" +
+                        getSignedHeadersString(request) + "\n" +
+                        contentSha256;
+        log.debug("AWS4 Canonical Request: '\"" + canonicalRequest + "\"");
+        return canonicalRequest;
+    }
+
+    protected String getStringToSign(String algorithm, String dateTime, String scope, String canonicalRequest) {
+        String stringToSign =
+                algorithm + "\n" +
+                        dateTime + "\n" +
+                        scope + "\n" +
+                        BinaryUtils.toHex(hash(canonicalRequest));
+        log.debug("AWS4 String to Sign: '\"" + stringToSign + "\"");
+        return stringToSign;
+    }
+
+
+    protected final HeaderSigningResult computeSignature(
+            Request<?> request,
+            String dateStamp,
+            String timeStamp,
+            String algorithm,
+            String contentSha256,
+            AWSCredentials sanitizedCredentials)
+    {
+        String regionName = extractRegionName(request.getEndpoint());
+        String serviceName = extractServiceName(request.getEndpoint());
+        String scope =  dateStamp + "/" + regionName + "/" + serviceName + "/" + TERMINATOR;
+
+        String stringToSign = getStringToSign(algorithm, timeStamp, scope, getCanonicalRequest(request,contentSha256 ));
+
+        // AWS4 uses a series of derived keys, formed by hashing different
+        // pieces of data
+        byte[] kSecret = ("AWS4" + sanitizedCredentials.getAWSSecretKey()).getBytes();
+        byte[] kDate = sign(dateStamp, kSecret, SigningAlgorithm.HmacSHA256);
+        byte[] kRegion = sign(regionName, kDate, SigningAlgorithm.HmacSHA256);
+        byte[] kService = sign(serviceName, kRegion, SigningAlgorithm.HmacSHA256);
+        byte[] kSigning = sign(TERMINATOR, kService, SigningAlgorithm.HmacSHA256);
+
+        byte[] signature = sign(stringToSign.getBytes(), kSigning, SigningAlgorithm.HmacSHA256);
+        return new HeaderSigningResult(timeStamp, scope, kSigning, signature);
+    }
+
+    protected final String getTimeStamp(long dateMilli) {
+        return timeFormatter.print(dateMilli);
+    }
+
+    protected final String getDateStamp(long dateMilli) {
+        return dateFormatter.print(dateMilli);
+    }
+
+    protected final long getDateFromRequest(Request<?> request) {
+    	int timeOffset = getTimeOffset(request);
+        Date date = getSignatureDate(timeOffset);
+        if (overriddenDate != null) date = overriddenDate;
+        return date.getTime();
+    }
+
+
+    protected void addHostHeader(Request<?> request) {
+        // AWS4 requires that we sign the Host header so we
+        // have to have it in the request by the time we sign.
+        String hostHeader = request.getEndpoint().getHost();
+        if (HttpUtils.isUsingNonDefaultPort(request.getEndpoint())) {
+            hostHeader += ":" + request.getEndpoint().getPort();
+        }
+        request.addHeader("Host", hostHeader);
+    }
+
+    protected String getScope(Request<?> request, String dateStamp) {
+        String regionName = extractRegionName(request.getEndpoint());
+        String serviceName = extractServiceName(request.getEndpoint());
+        String scope =  dateStamp + "/" + regionName + "/" + serviceName + "/" + TERMINATOR;
+        return scope;
+    }
+

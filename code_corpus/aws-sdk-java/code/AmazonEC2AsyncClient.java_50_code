@@ -1,0 +1,19 @@
+    public Future<CreateSecurityGroupResult> createSecurityGroupAsync(
+            final CreateSecurityGroupRequest createSecurityGroupRequest,
+            final AsyncHandler<CreateSecurityGroupRequest, CreateSecurityGroupResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<CreateSecurityGroupResult>() {
+            public CreateSecurityGroupResult call() throws Exception {
+                CreateSecurityGroupResult result;
+                try {
+                    result = createSecurityGroup(createSecurityGroupRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(createSecurityGroupRequest, result);
+                   return result;
+            }
+        });
+    }
+    

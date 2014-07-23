@@ -1,0 +1,19 @@
+    public Future<DescribeVaultResult> describeVaultAsync(
+            final DescribeVaultRequest describeVaultRequest,
+            final AsyncHandler<DescribeVaultRequest, DescribeVaultResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeVaultResult>() {
+            public DescribeVaultResult call() throws Exception {
+                DescribeVaultResult result;
+                try {
+                    result = describeVault(describeVaultRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeVaultRequest, result);
+                   return result;
+            }
+        });
+    }
+    

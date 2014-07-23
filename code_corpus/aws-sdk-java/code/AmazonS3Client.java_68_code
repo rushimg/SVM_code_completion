@@ -1,0 +1,27 @@
+        if ( copyObjectResultHandler.getErrorCode() != null ) {
+            String errorCode = copyObjectResultHandler.getErrorCode();
+            String errorMessage = copyObjectResultHandler.getErrorMessage();
+            String requestId = copyObjectResultHandler.getErrorRequestId();
+            String hostId = copyObjectResultHandler.getErrorHostId();
+
+            AmazonS3Exception ase = new AmazonS3Exception(errorMessage);
+            ase.setErrorCode(errorCode);
+            ase.setErrorType(ErrorType.Service);
+            ase.setRequestId(requestId);
+            ase.setExtendedRequestId(hostId);
+            ase.setServiceName(request.getServiceName());
+            ase.setStatusCode(200);
+
+            throw ase;
+        }
+
+        CopyPartResult copyPartResult = new CopyPartResult();
+        copyPartResult.setETag(copyObjectResultHandler.getETag());
+        copyPartResult.setPartNumber(copyPartRequest.getPartNumber());
+        copyPartResult.setLastModifiedDate(copyObjectResultHandler.getLastModified());
+        copyPartResult.setVersionId(copyObjectResultHandler.getVersionId());
+        copyPartResult.setServerSideEncryption(copyObjectResultHandler.getServerSideEncryption());
+
+        return copyPartResult;
+    }
+

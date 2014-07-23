@@ -1,0 +1,19 @@
+    private PutObjectResult putObjectUsingInstructionFile(PutObjectRequest putObjectRequest)
+    throws AmazonClientException, AmazonServiceException {
+        // Create instruction
+        EncryptionInstruction instruction = EncryptionUtils.generateInstruction(this.encryptionMaterialsProvider, this.cryptoConfig.getCryptoProvider());
+
+        // Encrypt the object data with the instruction
+        PutObjectRequest encryptedObjectRequest = EncryptionUtils.encryptRequestUsingInstruction(putObjectRequest, instruction);
+
+        // Put the encrypted object into S3
+        PutObjectResult encryptedObjectResult = super.putObject(encryptedObjectRequest);
+
+        // Put the instruction file into S3
+        PutObjectRequest instructionRequest = EncryptionUtils.createInstructionPutRequest(putObjectRequest, instruction);
+        super.putObject(instructionRequest);
+
+        // Return the result of the encrypted object PUT.
+        return encryptedObjectResult;
+    }
+

@@ -1,0 +1,19 @@
+    public Future<DescribeStorediSCSIVolumesResult> describeStorediSCSIVolumesAsync(
+            final DescribeStorediSCSIVolumesRequest describeStorediSCSIVolumesRequest,
+            final AsyncHandler<DescribeStorediSCSIVolumesRequest, DescribeStorediSCSIVolumesResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeStorediSCSIVolumesResult>() {
+            public DescribeStorediSCSIVolumesResult call() throws Exception {
+                DescribeStorediSCSIVolumesResult result;
+                try {
+                    result = describeStorediSCSIVolumes(describeStorediSCSIVolumesRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeStorediSCSIVolumesRequest, result);
+                   return result;
+            }
+        });
+    }
+    

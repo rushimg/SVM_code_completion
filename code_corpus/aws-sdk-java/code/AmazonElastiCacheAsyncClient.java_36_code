@@ -1,0 +1,19 @@
+    public Future<DescribeCacheClustersResult> describeCacheClustersAsync(
+            final DescribeCacheClustersRequest describeCacheClustersRequest,
+            final AsyncHandler<DescribeCacheClustersRequest, DescribeCacheClustersResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeCacheClustersResult>() {
+            public DescribeCacheClustersResult call() throws Exception {
+                DescribeCacheClustersResult result;
+                try {
+                    result = describeCacheClusters(describeCacheClustersRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeCacheClustersRequest, result);
+                   return result;
+            }
+        });
+    }
+    

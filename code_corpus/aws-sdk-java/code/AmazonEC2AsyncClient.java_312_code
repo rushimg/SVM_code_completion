@@ -1,0 +1,19 @@
+    public Future<RegisterImageResult> registerImageAsync(
+            final RegisterImageRequest registerImageRequest,
+            final AsyncHandler<RegisterImageRequest, RegisterImageResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<RegisterImageResult>() {
+            public RegisterImageResult call() throws Exception {
+                RegisterImageResult result;
+                try {
+                    result = registerImage(registerImageRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(registerImageRequest, result);
+                   return result;
+            }
+        });
+    }
+    

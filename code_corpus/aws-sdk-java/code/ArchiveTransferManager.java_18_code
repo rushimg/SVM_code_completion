@@ -1,0 +1,62 @@
+    private long calculatePartSize(long fileSize) {
+        long partSize = MINIMUM_PART_SIZE;
+        int approxNumParts = 1;
+        }
+        return partSize;
+    }
+
+
+    private InputSubstream newInputSubstream(File file, long startingPosition, long length) {
+        try {
+            return new InputSubstream(new RepeatableFileInputStream(file), startingPosition, length, true);
+        } catch (FileNotFoundException e) {
+            throw new AmazonClientException("Unable to find file '" + file.getAbsolutePath() + "'", e);
+        }
+    }
+
+    private UploadResult uploadInMultipleParts(final String accountId, final String vaultName, final String archiveDescription, final File file, ProgressListenerCallbackExecutor progressListenerCallbackExecutor) {
+        long partSize = calculatePartSize(file.length());
+        String partSizeString = Long.toString(partSize);
+
+        fireProgressEvent(progressListenerCallbackExecutor, ProgressEvent.PREPARING_EVENT_CODE);
+        String uploadId = null;
+        try {
+            InitiateMultipartUploadResult initiateResult = glacier.initiateMultipartUpload(new InitiateMultipartUploadRequest()
+                .withAccountId(accountId)
+                .withArchiveDescription(archiveDescription)
+                .withVaultName(vaultName)
+                .withPartSize(partSizeString));
+            uploadId = initiateResult.getUploadId();
+        } catch (AmazonServiceException ace) {
+            fireProgressEvent(progressListenerCallbackExecutor, ProgressEvent.FAILED_EVENT_CODE);
+            throw ace;
+        }
+
+        fireProgressEvent(progressListenerCallbackExecutor, ProgressEvent.STARTED_EVENT_CODE);
+
+        try {
+            List<byte[]> binaryChecksums = new LinkedList<byte[]>();
+
+            long currentPosition = 0;
+            while (currentPosition < file.length()) {
+                long length = partSize;
+                if (currentPosition + partSize > file.length()) {
+                    length = file.length() - currentPosition;
+                }
+
+                Exception failedException = null;
+                boolean completed = false;
+                int tries = 0;
+
+                while(!completed && tries<5){
+                    tries++;
+                    InputStream inputSubStream = newInputSubstream(file, currentPosition, length);
+                    inputSubStream.mark(-1);
+                    String checksum = TreeHashGenerator.calculateTreeHash(inputSubStream);
+                    byte[] binaryChecksum = BinaryUtils.fromHex(checksum);
+                    inputSubStream.reset();
+                    try {
+                        glacier.uploadMultipartPart(new UploadMultipartPartRequest()
+                                .withAccountId(accountId)
+                                .withChecksum(checksum)
+                                .withBody(inputSubStream)

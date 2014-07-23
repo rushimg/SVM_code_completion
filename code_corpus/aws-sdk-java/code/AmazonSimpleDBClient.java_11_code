@@ -1,0 +1,17 @@
+    public SelectResult select(SelectRequest selectRequest) {
+        ExecutionContext executionContext = createExecutionContext(selectRequest);
+        AWSRequestMetrics awsRequestMetrics = executionContext.getAwsRequestMetrics();
+        Request<SelectRequest> request = null;
+        Response<SelectResult> response = null;
+        awsRequestMetrics.startEvent(Field.ClientExecuteTime);
+        try {
+            request = new SelectRequestMarshaller().marshall(selectRequest);
+            // Binds the request metrics to the current request.
+            request.setAWSRequestMetrics(awsRequestMetrics);
+            response = invoke(request, new SelectResultStaxUnmarshaller(), executionContext);
+            return response.getAwsResponse();
+        } finally {
+            endClientExecution(awsRequestMetrics, request, response);
+        }
+    }
+    

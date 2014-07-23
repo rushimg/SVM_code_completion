@@ -1,0 +1,19 @@
+    public Future<ImportInstanceResult> importInstanceAsync(
+            final ImportInstanceRequest importInstanceRequest,
+            final AsyncHandler<ImportInstanceRequest, ImportInstanceResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ImportInstanceResult>() {
+            public ImportInstanceResult call() throws Exception {
+                ImportInstanceResult result;
+                try {
+                    result = importInstance(importInstanceRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(importInstanceRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -1,0 +1,31 @@
+    public void sign(Request<?> request, SignatureVersion version, SigningAlgorithm algorithm, AWSCredentials credentials) throws AmazonClientException {
+        // annonymous credentials, don't sign
+        if ( credentials instanceof AnonymousAWSCredentials ) {
+            return;
+        }
+
+        AWSCredentials sanitizedCredentials = sanitizeCredentials(credentials);
+        request.addParameter("AWSAccessKeyId", sanitizedCredentials.getAWSAccessKeyId());
+        request.addParameter("SignatureVersion", version.toString());
+
+        int timeOffset = getTimeOffset(request);
+        request.addParameter("Timestamp", getFormattedTimestamp(timeOffset));
+
+        if ( sanitizedCredentials instanceof AWSSessionCredentials ) {
+            addSessionCredentials(request, (AWSSessionCredentials) sanitizedCredentials);
+        }
+
+        String stringToSign = null;
+        if ( version.equals( SignatureVersion.V1 ) ) {
+            stringToSign = calculateStringToSignV1(request.getParameters());
+        } else if ( version.equals( SignatureVersion.V2 ) ) {
+            request.addParameter("SignatureMethod", algorithm.toString());
+            stringToSign = calculateStringToSignV2(request);
+        } else {
+            throw new AmazonClientException("Invalid Signature Version specified");
+        }
+
+        String signatureValue = signAndBase64Encode(stringToSign, sanitizedCredentials.getAWSSecretKey(), algorithm);
+        request.addParameter("Signature", signatureValue);
+    }
+

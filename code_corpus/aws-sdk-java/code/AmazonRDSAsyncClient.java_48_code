@@ -1,0 +1,19 @@
+    public Future<DBParameterGroup> createDBParameterGroupAsync(
+            final CreateDBParameterGroupRequest createDBParameterGroupRequest,
+            final AsyncHandler<CreateDBParameterGroupRequest, DBParameterGroup> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DBParameterGroup>() {
+            public DBParameterGroup call() throws Exception {
+                DBParameterGroup result;
+                try {
+                    result = createDBParameterGroup(createDBParameterGroupRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(createDBParameterGroupRequest, result);
+                   return result;
+            }
+        });
+    }
+    

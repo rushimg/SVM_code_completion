@@ -1,0 +1,16 @@
+    public BucketTaggingConfiguration getBucketTaggingConfiguration(String bucketName) {
+        Request<GenericBucketRequest> request = createRequest(bucketName, null, new GenericBucketRequest(bucketName), HttpMethodName.GET);
+        request.addParameter("tagging", null);
+
+        try {
+            return invoke(request, new Unmarshallers.BucketTaggingConfigurationUnmarshaller(), bucketName, null);
+        } catch (AmazonServiceException ase) {
+            switch (ase.getStatusCode()) {
+            case 404:
+                return null;
+            default:
+                throw ase;
+            }
+        }
+    }
+

@@ -1,0 +1,13 @@
+    public static Date asDate(String expression, Node node)
+            throws XPathExpressionException {
+        String dateString = evaluateAsString(expression, node);
+        if (isEmptyString(dateString)) return null;
+
+        try {
+            return dateUtils.parseIso8601Date(dateString);
+        } catch (ParseException e) {
+            log.warn("Unable to parse date '" + dateString + "':  " + e.getMessage(), e);
+            return null;
+        }
+    }
+

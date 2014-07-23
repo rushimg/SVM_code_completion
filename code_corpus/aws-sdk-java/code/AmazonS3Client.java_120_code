@@ -1,0 +1,10 @@
+    private AccessControlList getAcl(String bucketName, String key, String versionId, AmazonWebServiceRequest originalRequest) {
+        if (originalRequest == null) originalRequest = new GenericBucketRequest(bucketName);
+
+        Request<AmazonWebServiceRequest> request = createRequest(bucketName, key, originalRequest, HttpMethodName.GET);
+        request.addParameter("acl", null);
+        if (versionId != null) request.addParameter("versionId", versionId);
+
+        return invoke(request, new Unmarshallers.AccessControlListUnmarshaller(), bucketName, key);
+    }
+

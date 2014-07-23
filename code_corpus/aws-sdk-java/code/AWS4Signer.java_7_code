@@ -1,0 +1,61 @@
+    public AWS4Signer(boolean doubleUrlEncoding) {
+        this.doubleUrlEncode = doubleUrlEncoding;
+    }
+
+    protected static final Log log = LogFactory.getLog(AWS4Signer.class);
+
+    @Override
+    public void sign(Request<?> request, AWSCredentials credentials) {
+        // annonymous credentials, don't sign
+        if ( credentials instanceof AnonymousAWSCredentials ) {
+            return;
+        }
+
+        AWSCredentials sanitizedCredentials = sanitizeCredentials(credentials);
+        if ( sanitizedCredentials instanceof AWSSessionCredentials ) {
+            addSessionCredentials(request, (AWSSessionCredentials) sanitizedCredentials);
+        }
+
+        addHostHeader(request);
+
+        long dateMilli = getDateFromRequest(request);
+
+        final String dateStamp = getDateStamp(dateMilli);
+        String scope =  getScope(request, dateStamp);
+
+        String contentSha256 = calculateContentHash(request);
+
+        final String timeStamp = getTimeStamp(dateMilli);
+        request.addHeader("X-Amz-Date", timeStamp);
+
+        if (request.getHeaders().get("x-amz-content-sha256") != null && request.getHeaders().get("x-amz-content-sha256").equals("required")) {
+            request.addHeader("x-amz-content-sha256", contentSha256);
+        }
+
+        String signingCredentials = sanitizedCredentials.getAWSAccessKeyId() + "/" + scope;
+
+        HeaderSigningResult headerSigningResult = computeSignature(
+            request,
+            dateStamp, 
+            timeStamp, 
+            ALGORITHM, 
+            contentSha256,
+            sanitizedCredentials);
+
+        String credentialsAuthorizationHeader =
+                "Credential=" + signingCredentials;
+        String signedHeadersAuthorizationHeader =
+                "SignedHeaders=" + getSignedHeadersString(request);
+        String signatureAuthorizationHeader =
+                "Signature=" + BinaryUtils.toHex(headerSigningResult.getSignature());
+
+        String authorizationHeader = ALGORITHM + " "
+                + credentialsAuthorizationHeader + ", "
+                + signedHeadersAuthorizationHeader + ", "
+                + signatureAuthorizationHeader;
+
+        request.addHeader("Authorization", authorizationHeader);
+
+        processRequestPayload(request, headerSigningResult);
+    }
+

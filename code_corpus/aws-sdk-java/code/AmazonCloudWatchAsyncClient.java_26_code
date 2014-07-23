@@ -1,0 +1,19 @@
+    public Future<DescribeAlarmsResult> describeAlarmsAsync(
+            final DescribeAlarmsRequest describeAlarmsRequest,
+            final AsyncHandler<DescribeAlarmsRequest, DescribeAlarmsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeAlarmsResult>() {
+            public DescribeAlarmsResult call() throws Exception {
+                DescribeAlarmsResult result;
+                try {
+                    result = describeAlarms(describeAlarmsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeAlarmsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

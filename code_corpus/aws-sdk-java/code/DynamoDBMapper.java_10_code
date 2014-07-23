@@ -1,0 +1,25 @@
+    public <T> T marshallIntoObject(Class<T> clazz, Map<String, AttributeValue> itemAttributes) {
+        T toReturn = null;
+        try {
+            toReturn = clazz.newInstance();
+        } catch ( InstantiationException e ) {
+            throw new DynamoDBMappingException("Failed to instantiate new instance of class", e);
+        } catch ( IllegalAccessException e ) {
+            throw new DynamoDBMappingException("Failed to instantiate new instance of class", e);
+        }
+
+        if ( itemAttributes == null || itemAttributes.isEmpty() )
+            return toReturn;
+
+        itemAttributes = untransformAttributes(clazz, itemAttributes);
+
+        for ( Method m : reflector.getRelevantGetters(clazz) ) {
+            String attributeName = reflector.getAttributeName(m);
+            if ( itemAttributes.containsKey(attributeName) ) {
+                setValue(toReturn, m, itemAttributes.get(attributeName));
+            }
+        }
+
+        return toReturn;
+    }
+

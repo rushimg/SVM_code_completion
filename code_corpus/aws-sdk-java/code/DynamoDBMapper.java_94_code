@@ -1,0 +1,31 @@
+    private List<ScanRequest> createParallelScanRequestsFromExpression(Class<?> clazz, DynamoDBScanExpression scanExpression, int totalSegments, DynamoDBMapperConfig config) {
+        if (totalSegments < 1)
+            throw new IllegalArgumentException("Parallel scan should have at least one scan segment.");
+        List<ScanRequest> parallelScanRequests= new LinkedList<ScanRequest>();
+        for (int segment = 0; segment < totalSegments; segment++) {
+            ScanRequest scanRequest = createScanRequestFromExpression(clazz, scanExpression, config);
+            parallelScanRequests.add(scanRequest.withSegment(segment).withTotalSegments(totalSegments));
+        }
+        return parallelScanRequests;
+    }
+
+    private <T> QueryRequest createQueryRequestFromExpression(Class<T> clazz, DynamoDBQueryExpression<T> queryExpression, DynamoDBMapperConfig config) {
+        QueryRequest queryRequest = new QueryRequest();
+        queryRequest.setConsistentRead(queryExpression.isConsistentRead());
+        queryRequest.setTableName(getTableName(clazz, config));
+        queryRequest.setIndexName(queryExpression.getIndexName());
+
+        // Hash key (primary or index) conditions
+        Map<String, Condition> hashKeyConditions = getHashKeyEqualsConditions(queryExpression.getHashKeyValues());
+        // Range key (primary or index) conditions
+        Map<String, Condition> rangeKeyConditions = queryExpression.getRangeKeyConditions();
+        processKeyConditions(clazz, queryRequest, hashKeyConditions, rangeKeyConditions);
+
+        queryRequest.setScanIndexForward(queryExpression.isScanIndexForward());
+        queryRequest.setLimit(queryExpression.getLimit());
+        queryRequest.setExclusiveStartKey(queryExpression.getExclusiveStartKey());
+        queryRequest.setRequestMetricCollector(config.getRequestMetricCollector());
+
+        return queryRequest;
+    }
+

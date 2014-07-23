@@ -1,0 +1,19 @@
+    public Future<CreateRoleResult> createRoleAsync(
+            final CreateRoleRequest createRoleRequest,
+            final AsyncHandler<CreateRoleRequest, CreateRoleResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<CreateRoleResult>() {
+            public CreateRoleResult call() throws Exception {
+                CreateRoleResult result;
+                try {
+                    result = createRole(createRoleRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(createRoleRequest, result);
+                   return result;
+            }
+        });
+    }
+    

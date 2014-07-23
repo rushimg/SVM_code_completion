@@ -1,0 +1,11 @@
+class BlockingRequestBuilder {
+    private static final String OS_METRIC_NAME = MachineMetric.getOSMetricName();
+    private final MachineMetricFactory machineMetricFactory = new MachineMetricFactory();
+    private final BlockingQueue<MetricDatum> queue;
+    private final long timeoutNano;
+
+    BlockingRequestBuilder(CloudWatchMetricConfig config, BlockingQueue<MetricDatum> queue) {
+        this.queue = queue;
+        this.timeoutNano = TimeUnit.MILLISECONDS.toNanos(config.getQueuePollTimeoutMilli());
+    }
+

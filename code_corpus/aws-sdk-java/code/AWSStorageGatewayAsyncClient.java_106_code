@@ -1,0 +1,19 @@
+    public Future<RetrieveTapeArchiveResult> retrieveTapeArchiveAsync(
+            final RetrieveTapeArchiveRequest retrieveTapeArchiveRequest,
+            final AsyncHandler<RetrieveTapeArchiveRequest, RetrieveTapeArchiveResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<RetrieveTapeArchiveResult>() {
+            public RetrieveTapeArchiveResult call() throws Exception {
+                RetrieveTapeArchiveResult result;
+                try {
+                    result = retrieveTapeArchive(retrieveTapeArchiveRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(retrieveTapeArchiveRequest, result);
+                   return result;
+            }
+        });
+    }
+    

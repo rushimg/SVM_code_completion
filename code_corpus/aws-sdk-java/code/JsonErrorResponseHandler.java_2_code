@@ -1,0 +1,38 @@
+    private List<Unmarshaller<AmazonServiceException, JSONObject>> unmarshallerList;
+
+    public JsonErrorResponseHandler(List<Unmarshaller<AmazonServiceException, JSONObject>> exceptionUnmarshallers) {
+        this.unmarshallerList = exceptionUnmarshallers;
+    }
+
+    public AmazonServiceException handle(HttpResponse response) throws Exception {
+        String streamContents = readStreamContents(response.getContent());
+        JSONObject jsonErrorMessage;
+        try {
+            String s = streamContents;
+            if (s.length() == 0 || s.trim().length() == 0) s = "{}";
+            jsonErrorMessage = new JSONObject(s);
+        } catch (Exception e) {
+            throw new AmazonClientException("Unable to parse error response: '" + streamContents + "'", e);
+        }
+
+        AmazonServiceException ase = runErrorUnmarshallers(response, jsonErrorMessage);
+        if (ase == null) return null;
+
+        ase.setServiceName(response.getRequest().getServiceName());
+        ase.setStatusCode(response.getStatusCode());
+        if (response.getStatusCode() < 500) {
+            ase.setErrorType(ErrorType.Client);
+        } else {
+            ase.setErrorType(ErrorType.Service);
+        }
+
+        for (Entry<String, String> headerEntry : response.getHeaders().entrySet()) {
+            if (headerEntry.getKey().equalsIgnoreCase("X-Amzn-RequestId")) {
+                ase.setRequestId(headerEntry.getValue());
+            }
+        }
+
+        return ase;
+    }
+
+    protected AmazonServiceException runErrorUnmarshallers(HttpResponse errorResponse, JSONObject json) throws Exception {

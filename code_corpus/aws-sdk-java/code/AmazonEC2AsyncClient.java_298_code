@@ -1,0 +1,19 @@
+    public Future<AllocateAddressResult> allocateAddressAsync(
+            final AllocateAddressRequest allocateAddressRequest,
+            final AsyncHandler<AllocateAddressRequest, AllocateAddressResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<AllocateAddressResult>() {
+            public AllocateAddressResult call() throws Exception {
+                AllocateAddressResult result;
+                try {
+                    result = allocateAddress(allocateAddressRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(allocateAddressRequest, result);
+                   return result;
+            }
+        });
+    }
+    

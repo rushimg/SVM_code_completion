@@ -1,0 +1,19 @@
+    public Future<ListVerifiedEmailAddressesResult> listVerifiedEmailAddressesAsync(
+            final ListVerifiedEmailAddressesRequest listVerifiedEmailAddressesRequest,
+            final AsyncHandler<ListVerifiedEmailAddressesRequest, ListVerifiedEmailAddressesResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ListVerifiedEmailAddressesResult>() {
+            public ListVerifiedEmailAddressesResult call() throws Exception {
+                ListVerifiedEmailAddressesResult result;
+                try {
+                    result = listVerifiedEmailAddresses(listVerifiedEmailAddressesRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(listVerifiedEmailAddressesRequest, result);
+                   return result;
+            }
+        });
+    }
+    

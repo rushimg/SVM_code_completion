@@ -1,0 +1,18 @@
+    public Future<Void> createAutoScalingGroupAsync(
+            final CreateAutoScalingGroupRequest createAutoScalingGroupRequest,
+            final AsyncHandler<CreateAutoScalingGroupRequest, Void> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<Void>() {
+            public Void call() throws Exception {
+                try {
+                    createAutoScalingGroup(createAutoScalingGroupRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(createAutoScalingGroupRequest, null);
+                   return null;
+            }
+        });
+    }
+    

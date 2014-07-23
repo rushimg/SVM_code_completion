@@ -1,0 +1,10 @@
+    public static boolean doesTableExist(AmazonDynamoDB dynamo, String tableName) {
+        try {
+            TableDescription table = dynamo.describeTable(new DescribeTableRequest(tableName)).getTable();
+            return TableStatus.ACTIVE.toString().equals(table.getTableStatus());
+        } catch (ResourceNotFoundException rnfe) {
+            // This means the table doesn't exist in the account yet
+            return false;
+        }
+    }
+

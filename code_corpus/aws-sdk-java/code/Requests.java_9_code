@@ -1,0 +1,37 @@
+    public void cleanup () {
+    	//==========================================================================//
+    	//================= Cancel/Terminate Your Spot Request =====================//
+    	//==========================================================================//
+    	try {
+        	// Cancel requests.
+        	System.out.println("Cancelling requests.");
+        	CancelSpotInstanceRequestsRequest cancelRequest = new CancelSpotInstanceRequestsRequest(spotInstanceRequestIds);
+        	ec2.cancelSpotInstanceRequests(cancelRequest);
+    	} catch (AmazonServiceException e) {
+    		// Write out any exceptions that may have occurred.
+            System.out.println("Error cancelling instances");
+		    System.out.println("Caught Exception: " + e.getMessage());
+            System.out.println("Reponse Status Code: " + e.getStatusCode());
+            System.out.println("Error Code: " + e.getErrorCode());
+            System.out.println("Request ID: " + e.getRequestId());
+        }
+
+    	try {
+        	// Terminate instances.
+        	System.out.println("Terminate instances");
+        	TerminateInstancesRequest terminateRequest = new TerminateInstancesRequest(instanceIds);
+        	ec2.terminateInstances(terminateRequest);
+    	} catch (AmazonServiceException e) {
+    		// Write out any exceptions that may have occurred.
+            System.out.println("Error terminating instances");
+    		System.out.println("Caught Exception: " + e.getMessage());
+            System.out.println("Reponse Status Code: " + e.getStatusCode());
+            System.out.println("Error Code: " + e.getErrorCode());
+            System.out.println("Request ID: " + e.getRequestId());
+        }
+
+    	// Delete all requests and instances that we have terminated.
+    	instanceIds.clear();
+    	spotInstanceRequestIds.clear();
+    }
+

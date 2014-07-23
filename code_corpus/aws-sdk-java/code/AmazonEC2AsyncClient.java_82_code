@@ -1,0 +1,19 @@
+    public Future<DescribeAccountAttributesResult> describeAccountAttributesAsync(
+            final DescribeAccountAttributesRequest describeAccountAttributesRequest,
+            final AsyncHandler<DescribeAccountAttributesRequest, DescribeAccountAttributesResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeAccountAttributesResult>() {
+            public DescribeAccountAttributesResult call() throws Exception {
+                DescribeAccountAttributesResult result;
+                try {
+                    result = describeAccountAttributes(describeAccountAttributesRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeAccountAttributesRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -1,0 +1,40 @@
+    public Throttler(String name, double maxRatePerSecond, long rateIntervalMilliseconds) {
+        if (null == name) {
+            throw new IllegalArgumentException("null name");
+        }
+        name_ = name;
+        if (maxRatePerSecond <= 0) {
+            throw new IllegalArgumentException("0 or negative maxRatePerSecond");
+        }
+        if (rateIntervalMilliseconds <= 0) {
+            throw new IllegalArgumentException("0 or negative rateIntervalMilliseconds");
+        }
+        synchronized(this) {
+            rateIntervalMilliseconds_ = rateIntervalMilliseconds;
+            setMaxRatePerSecond(maxRatePerSecond);
+        }
+    }
+
+    public synchronized void setMaxRatePerSecond(double maxRatePerSecond) {
+        if (maxMessagesPerRateInterval == 0) {
+            maxMessagesPerRateInterval = 1;
+        } else {
+            rateInterval_ = rateIntervalMilliseconds_;
+        }
+        if (checkPointTimes_ != null) {
+            int oldSize = checkPointTimes_.size();
+            checkPointTimes_ = checkPointTimes_.copy(index_ - maxMessagesPerRateInterval, maxMessagesPerRateInterval);
+            index_ = Math.min(checkPointTimes_.size(), oldSize);
+        } else {
+            checkPointTimes_ = new CircularLongBuffer(maxMessagesPerRateInterval);
+            index_ = 0;
+        }
+        log.debug("new rate=" + maxRatePerSecond + " (msg/sec)");
+    }
+
+    public synchronized void throttle(int count) throws InterruptedException {
+        for(int i=0; i<count; ++i) {
+            throttle();
+        }
+    }
+    

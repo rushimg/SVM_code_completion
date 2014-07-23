@@ -1,0 +1,19 @@
+    public Future<DeleteTapeResult> deleteTapeAsync(
+            final DeleteTapeRequest deleteTapeRequest,
+            final AsyncHandler<DeleteTapeRequest, DeleteTapeResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DeleteTapeResult>() {
+            public DeleteTapeResult call() throws Exception {
+                DeleteTapeResult result;
+                try {
+                    result = deleteTape(deleteTapeRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(deleteTapeRequest, result);
+                   return result;
+            }
+        });
+    }
+    

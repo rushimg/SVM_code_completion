@@ -1,0 +1,8 @@
+    public static long calculateOptimalPartSize(PutObjectRequest putObjectRequest, TransferManagerConfiguration configuration) {
+        double contentLength = TransferManagerUtils.getContentLength(putObjectRequest);
+        double optimalPartSize = (double)contentLength / (double)MAXIMUM_UPLOAD_PARTS;
+        // round up so we don't push the upload over the maximum number of parts
+        optimalPartSize = Math.ceil(optimalPartSize);
+        return (long)Math.max(optimalPartSize, configuration.getMinimumUploadPartSize());
+    }
+

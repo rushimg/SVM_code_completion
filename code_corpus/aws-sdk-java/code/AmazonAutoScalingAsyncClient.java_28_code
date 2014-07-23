@@ -1,0 +1,19 @@
+    public Future<DescribeScalingProcessTypesResult> describeScalingProcessTypesAsync(
+            final DescribeScalingProcessTypesRequest describeScalingProcessTypesRequest,
+            final AsyncHandler<DescribeScalingProcessTypesRequest, DescribeScalingProcessTypesResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeScalingProcessTypesResult>() {
+            public DescribeScalingProcessTypesResult call() throws Exception {
+                DescribeScalingProcessTypesResult result;
+                try {
+                    result = describeScalingProcessTypes(describeScalingProcessTypesRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeScalingProcessTypesRequest, result);
+                   return result;
+            }
+        });
+    }
+    

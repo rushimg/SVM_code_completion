@@ -1,0 +1,19 @@
+    public Future<DescribeInternetGatewaysResult> describeInternetGatewaysAsync(
+            final DescribeInternetGatewaysRequest describeInternetGatewaysRequest,
+            final AsyncHandler<DescribeInternetGatewaysRequest, DescribeInternetGatewaysResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeInternetGatewaysResult>() {
+            public DescribeInternetGatewaysResult call() throws Exception {
+                DescribeInternetGatewaysResult result;
+                try {
+                    result = describeInternetGateways(describeInternetGatewaysRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeInternetGatewaysRequest, result);
+                   return result;
+            }
+        });
+    }
+    

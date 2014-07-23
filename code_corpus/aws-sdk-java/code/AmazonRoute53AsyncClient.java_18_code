@@ -1,0 +1,19 @@
+    public Future<ChangeResourceRecordSetsResult> changeResourceRecordSetsAsync(
+            final ChangeResourceRecordSetsRequest changeResourceRecordSetsRequest,
+            final AsyncHandler<ChangeResourceRecordSetsRequest, ChangeResourceRecordSetsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ChangeResourceRecordSetsResult>() {
+            public ChangeResourceRecordSetsResult call() throws Exception {
+                ChangeResourceRecordSetsResult result;
+                try {
+                    result = changeResourceRecordSets(changeResourceRecordSetsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(changeResourceRecordSetsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -1,0 +1,19 @@
+    public Future<DetachVolumeResult> detachVolumeAsync(
+            final DetachVolumeRequest detachVolumeRequest,
+            final AsyncHandler<DetachVolumeRequest, DetachVolumeResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DetachVolumeResult>() {
+            public DetachVolumeResult call() throws Exception {
+                DetachVolumeResult result;
+                try {
+                    result = detachVolume(detachVolumeRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(detachVolumeRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -1,0 +1,52 @@
+    public String writePolicyToString(Policy policy) {
+        if (policy == null) {
+            throw new IllegalArgumentException("Policy cannot be null");
+        }
+
+        StringWriter writer = new StringWriter();
+        try {
+            JSONWriter generator = new JSONWriter(writer);
+            writePolicy(policy, generator);
+            return writer.toString();
+        } catch (Exception e) {
+            String message = "Unable to serialize policy to JSON string: " + e.getMessage();
+            throw new IllegalArgumentException(message, e);
+        } finally {
+            try {writer.close();} catch (Exception e) {}
+        }
+    }
+
+    private void writePolicy(Policy policy, JSONWriter generator)
+            throws JSONException, IOException {
+        generator.object();
+        generator.key("Version").value(policy.getVersion());
+
+        if (policy.getId() != null) {
+            generator.key("Id").value(policy.getId());
+        }
+
+        generator.key("Statement").array();
+        for (Statement statement : policy.getStatements()) {
+            generator.object();
+            if (statement.getId() != null) {
+                generator.key("Sid").value(statement.getId());
+            }
+            generator.key("Effect").value(statement.getEffect().toString());
+
+            writePrincipals(statement, generator);
+            writeActions(statement, generator);
+            writeResources(statement, generator);
+            writeConditions(statement, generator);
+
+            generator.endObject();
+        }
+        generator.endArray();
+
+        generator.endObject();
+    }
+
+    private void writeConditions(Statement statement, JSONWriter generator)
+            throws IOException, JSONException {
+        List<Condition> conditions = statement.getConditions();
+        if (conditions == null || conditions.isEmpty()) return;
+

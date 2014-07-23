@@ -1,0 +1,19 @@
+    public Future<CreateImageResult> createImageAsync(
+            final CreateImageRequest createImageRequest,
+            final AsyncHandler<CreateImageRequest, CreateImageResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<CreateImageResult>() {
+            public CreateImageResult call() throws Exception {
+                CreateImageResult result;
+                try {
+                    result = createImage(createImageRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(createImageRequest, result);
+                   return result;
+            }
+        });
+    }
+    

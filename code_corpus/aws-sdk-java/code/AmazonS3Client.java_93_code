@@ -1,0 +1,11 @@
+    public BucketNotificationConfiguration getBucketNotificationConfiguration(String bucketName)
+            throws AmazonClientException, AmazonServiceException {
+        assertParameterNotNull(bucketName,
+                "The bucket name parameter must be specified when querying notification configuration");
+
+        Request<GenericBucketRequest> request = createRequest(bucketName, null, new GenericBucketRequest(bucketName), HttpMethodName.GET);
+        request.addParameter("notification", null);
+
+        return invoke(request, new Unmarshallers.BucketNotificationConfigurationUnmarshaller(), bucketName, null);
+    }
+

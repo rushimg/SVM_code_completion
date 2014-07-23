@@ -1,0 +1,44 @@
+    public int read(byte[] out, int outOffset, int outLength) throws IOException {
+        // Check whether we already have buffered data.
+        if (bufferOffset < bytesReadPastMark && buffer != null) {
+            // Data is being repeated, so read from buffer instead of wrapped input stream.
+            int bytesFromBuffer = outLength;
+            if (bufferOffset + bytesFromBuffer > bytesReadPastMark) {
+                bytesFromBuffer = (int) bytesReadPastMark - bufferOffset;
+            }
+
+            // Write to output.
+            System.arraycopy(buffer, bufferOffset, out, outOffset, bytesFromBuffer);
+            bufferOffset += bytesFromBuffer;
+            return bytesFromBuffer;
+        }
+
+        // Read data from input stream.
+        int count = is.read(out, outOffset, outLength);
+
+        if (count <= 0) {
+            return count;
+        }
+
+        // Fill the buffer with data, as long as we won't exceed its capacity.
+        if (bytesReadPastMark + count <= bufferSize) {
+            System.arraycopy(out, outOffset, buffer, (int) bytesReadPastMark, count);
+            bufferOffset += count;
+        } else {
+            // We have exceeded the buffer capacity, after which point it is of no use. Free the memory.
+        	if (! hasWarnedBufferOverflow) {
+        		if (log.isDebugEnabled()) {
+        			log.debug("Buffer size " + bufferSize + " has been exceeded and the input stream "
+        	                + "will not be repeatable until the next mark. Freeing buffer memory");
+        		}
+        		hasWarnedBufferOverflow = true;
+        	}
+        		
+            buffer = null;
+        }
+
+        bytesReadPastMark += count;
+
+        return count;
+    }
+

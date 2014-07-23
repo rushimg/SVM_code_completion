@@ -1,0 +1,11 @@
+    public static WorkflowExecutionCompletedEventAttributes waitForWorkflowExecutionResult(AmazonSimpleWorkflow service,
+            String domain, WorkflowExecution workflowExecution, long timeoutSeconds)
+            throws InterruptedException, TimeoutException {
+        if (!waitForWorkflowInstanceCompletion(service, domain, workflowExecution, timeoutSeconds).equals(
+                CloseStatus.COMPLETED.toString())) {
+            String historyDump = WorkflowExecutionUtils.prettyPrintHistory(service, domain, workflowExecution);
+            throw new RuntimeException("Workflow instance is not in completed state:\n" + historyDump);
+        }
+        return getWorkflowExecutionResult(service, domain, workflowExecution);
+    }
+

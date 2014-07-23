@@ -1,0 +1,19 @@
+    public Future<CreateInterconnectResult> createInterconnectAsync(
+            final CreateInterconnectRequest createInterconnectRequest,
+            final AsyncHandler<CreateInterconnectRequest, CreateInterconnectResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<CreateInterconnectResult>() {
+            public CreateInterconnectResult call() throws Exception {
+                CreateInterconnectResult result;
+                try {
+                    result = createInterconnect(createInterconnectRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(createInterconnectRequest, result);
+                   return result;
+            }
+        });
+    }
+    

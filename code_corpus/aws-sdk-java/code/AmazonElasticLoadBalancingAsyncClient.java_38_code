@@ -1,0 +1,19 @@
+    public Future<DescribeInstanceHealthResult> describeInstanceHealthAsync(
+            final DescribeInstanceHealthRequest describeInstanceHealthRequest,
+            final AsyncHandler<DescribeInstanceHealthRequest, DescribeInstanceHealthResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeInstanceHealthResult>() {
+            public DescribeInstanceHealthResult call() throws Exception {
+                DescribeInstanceHealthResult result;
+                try {
+                    result = describeInstanceHealth(describeInstanceHealthRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeInstanceHealthRequest, result);
+                   return result;
+            }
+        });
+    }
+    

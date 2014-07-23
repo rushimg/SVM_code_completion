@@ -1,0 +1,19 @@
+    public Future<Cluster> restoreFromClusterSnapshotAsync(
+            final RestoreFromClusterSnapshotRequest restoreFromClusterSnapshotRequest,
+            final AsyncHandler<RestoreFromClusterSnapshotRequest, Cluster> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<Cluster>() {
+            public Cluster call() throws Exception {
+                Cluster result;
+                try {
+                    result = restoreFromClusterSnapshot(restoreFromClusterSnapshotRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(restoreFromClusterSnapshotRequest, result);
+                   return result;
+            }
+        });
+    }
+    

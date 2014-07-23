@@ -1,0 +1,19 @@
+    public Future<DescribeRegionsResult> describeRegionsAsync(
+            final DescribeRegionsRequest describeRegionsRequest,
+            final AsyncHandler<DescribeRegionsRequest, DescribeRegionsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeRegionsResult>() {
+            public DescribeRegionsResult call() throws Exception {
+                DescribeRegionsResult result;
+                try {
+                    result = describeRegions(describeRegionsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeRegionsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

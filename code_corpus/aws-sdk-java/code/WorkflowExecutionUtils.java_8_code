@@ -1,0 +1,29 @@
+    public static String waitForWorkflowInstanceCompletionAcrossGenerations(AmazonSimpleWorkflow service, String domain,
+            WorkflowExecution workflowExecution, long timeoutSeconds) throws InterruptedException, TimeoutException {
+
+        WorkflowExecution lastExecutionToRun = workflowExecution;
+        long millisecondsAtFirstWait = System.currentTimeMillis();
+        String lastExecutionToRunCloseStatus = waitForWorkflowInstanceCompletion(service, domain, lastExecutionToRun,
+                timeoutSeconds);
+
+        // keep waiting if the instance continued as new
+        while (lastExecutionToRunCloseStatus.equals(CloseStatus.CONTINUED_AS_NEW.toString())) {
+            // get the new execution's information
+            HistoryEvent closeEvent = getInstanceCloseEvent(service, domain, lastExecutionToRun);
+            WorkflowExecutionContinuedAsNewEventAttributes continuedAsNewAttributes = closeEvent.getWorkflowExecutionContinuedAsNewEventAttributes();
+
+            WorkflowExecution newGenerationExecution = new WorkflowExecution().withWorkflowId(lastExecutionToRun.getWorkflowId()).withRunId(
+                    continuedAsNewAttributes.getNewExecutionRunId());
+            
+            // and wait for it
+            long currentTime = System.currentTimeMillis();
+            long millisecondsSinceFirstWait = currentTime - millisecondsAtFirstWait;
+            long timeoutInSecondsForNextWait = timeoutSeconds - (millisecondsSinceFirstWait / 1000L);
+            
+            lastExecutionToRunCloseStatus = waitForWorkflowInstanceCompletion(service, domain, newGenerationExecution, timeoutInSecondsForNextWait);
+            lastExecutionToRun = newGenerationExecution;
+        }
+
+        return lastExecutionToRunCloseStatus;
+    }
+

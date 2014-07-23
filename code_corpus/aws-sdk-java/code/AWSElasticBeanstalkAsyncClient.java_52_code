@@ -1,0 +1,19 @@
+    public Future<DescribeEnvironmentResourcesResult> describeEnvironmentResourcesAsync(
+            final DescribeEnvironmentResourcesRequest describeEnvironmentResourcesRequest,
+            final AsyncHandler<DescribeEnvironmentResourcesRequest, DescribeEnvironmentResourcesResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeEnvironmentResourcesResult>() {
+            public DescribeEnvironmentResourcesResult call() throws Exception {
+                DescribeEnvironmentResourcesResult result;
+                try {
+                    result = describeEnvironmentResources(describeEnvironmentResourcesRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeEnvironmentResourcesRequest, result);
+                   return result;
+            }
+        });
+    }
+    

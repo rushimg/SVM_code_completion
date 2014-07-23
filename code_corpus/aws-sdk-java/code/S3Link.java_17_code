@@ -1,0 +1,35 @@
+    static class ID {
+        @JsonProperty("s3")
+        private S3 s3;
+
+        ID() {} // used by Jackson to unmarshall
+        ID(String bucketName, String key) {
+            this.s3 = new S3(bucketName, key);
+        }
+        ID(Region region, String bucketName, String key) {
+            this.s3 = new S3(region, bucketName, key);
+        }
+        ID(S3 s3) {
+            this.s3 = s3;
+        }
+        @JsonProperty("s3")
+        public S3 getS3() {
+            return s3;
+        }
+        @JsonIgnore
+        public String getRegionId() {
+            return s3.getRegionId();
+        }
+        @JsonIgnore
+        public String getBucket() {
+            return s3.getBucket();
+        }
+        @JsonIgnore
+        public String getKey() {
+            return s3.getKey();
+        }
+        String toJson() {
+            return Jackson.toJsonString(this);
+        }
+    }
+

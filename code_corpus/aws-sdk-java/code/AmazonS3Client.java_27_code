@@ -1,0 +1,21 @@
+    public Bucket createBucket(CreateBucketRequest createBucketRequest)
+            throws AmazonClientException, AmazonServiceException {
+        assertParameterNotNull(createBucketRequest,
+                "The CreateBucketRequest parameter must be specified when creating a bucket");
+
+        String bucketName = createBucketRequest.getBucketName();
+        String region = createBucketRequest.getRegion();
+        assertParameterNotNull(bucketName,
+                "The bucket name parameter must be specified when creating a bucket");
+
+        if (bucketName != null) bucketName = bucketName.trim();
+        BucketNameUtils.validateBucketName(bucketName);
+
+        Request<CreateBucketRequest> request = createRequest(bucketName, null, createBucketRequest, HttpMethodName.PUT);
+
+        if ( createBucketRequest.getAccessControlList() != null ) {
+            addAclHeaders(request, createBucketRequest.getAccessControlList());
+        } else if ( createBucketRequest.getCannedAcl() != null ) {
+            request.addHeader(Headers.S3_CANNED_ACL, createBucketRequest.getCannedAcl().toString());
+        }
+

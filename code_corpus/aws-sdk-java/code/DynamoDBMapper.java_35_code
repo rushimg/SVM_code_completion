@@ -1,0 +1,97 @@
+    public Map<String, List<Object>> batchLoad(Map<Class<?>, List<KeyPair>> itemsToGet, DynamoDBMapperConfig config) {
+        config = mergeConfig(config);
+        boolean consistentReads = (config.getConsistentReads() == ConsistentReads.CONSISTENT);
+
+        if ( !validBatchGetRequest(itemsToGet) ) {
+            return null;
+        }
+
+        Map<String, KeysAndAttributes> requestItems = new HashMap<String, KeysAndAttributes>();
+        Map<String, Class<?>> classesByTableName = new HashMap<String, Class<?>>();
+        Map<String, List<Object>> resultSet = new HashMap<String, List<Object>>();
+        int count = 0;
+
+        for ( Class<?> clazz : itemsToGet.keySet() ) {
+            String tableName = getTableName(clazz, config);
+            List<KeyPair> keyPairs = itemsToGet.get(clazz);
+            if ( keyPairs == null ) {
+                continue;
+            }
+            classesByTableName.put(tableName, clazz);
+
+            Method hashKeyGetter = reflector.getHashKeyGetter(clazz);
+            for ( KeyPair keyPair : keyPairs ) {
+                AttributeValue hashKeyElement = getHashKeyElement(keyPair.getHashKey(), hashKeyGetter);
+
+                // Determine the range key, if provided
+                AttributeValue rangeKeyElement = null;
+                if ( keyPair.getRangeKey() != null ) {
+                    Method rangeKeyMethod = reflector.getRangeKeyGetter(clazz);
+                    if ( rangeKeyMethod == null ) {
+                        throw new DynamoDBMappingException("Zero-parameter range key property must be annotated with "
+                                + DynamoDBRangeKey.class);
+                    }
+                    rangeKeyElement = getRangeKeyElement(keyPair.getRangeKey(), rangeKeyMethod);
+                }
+
+                if ( !requestItems.containsKey(tableName) ) {
+                    requestItems
+                            .put(tableName,
+                                    new KeysAndAttributes().withConsistentRead(consistentReads).withKeys(
+                                            new LinkedList<Key>()));
+                }
+
+                requestItems.get(tableName).getKeys()
+                        .add(new Key().withHashKeyElement(hashKeyElement).withRangeKeyElement(rangeKeyElement));
+
+                // Reach the maximum number which can be handled in a single
+                // batchGet
+                if ( ++count == 100 ) {
+                    processBatchGetRequest(classesByTableName, requestItems, resultSet);
+                    requestItems.clear();
+                    count = 0;
+                }
+
+            }
+        }
+
+        if ( count > 0 ) {
+            processBatchGetRequest(classesByTableName, requestItems, resultSet);
+        }
+
+        return resultSet;
+    }
+
+    private void processBatchGetRequest(Map<String, Class<?>> tableNameToClassMapper,
+            Map<String, KeysAndAttributes> requestItems, Map<String, List<Object>> resultSet) {
+        BatchGetItemResult batchGetItemResult = null;
+        BatchGetItemRequest batchGetItemRequest = new BatchGetItemRequest();
+        batchGetItemRequest.setRequestItems(requestItems);
+        do {
+            if (batchGetItemResult != null) {
+                batchGetItemRequest.setRequestItems(batchGetItemResult.getUnprocessedKeys());
+            }
+
+            batchGetItemResult = db.batchGetItem(batchGetItemRequest);
+            Map<String, BatchResponse> responses = batchGetItemResult.getResponses();
+            for (String tableName : responses.keySet()) {
+                BatchResponse batchResponse = responses.get(tableName);
+                List<Object> objects = null;
+                if (resultSet.get(tableName) != null) {
+                    objects = resultSet.get(tableName);
+                } else {
+                    objects = new LinkedList<Object>();
+                }
+                List<Map<String, AttributeValue>> items = batchResponse.getItems();
+                for (Map<String, AttributeValue> item : items) {
+
+                    objects.add(marshallIntoObject(tableNameToClassMapper.get(tableName), item));
+                }
+                resultSet.put(tableName, objects);
+
+            }
+            // To see whether there are unprocessed keys.
+        } while (batchGetItemResult.getUnprocessedKeys() != null && batchGetItemResult.getUnprocessedKeys().size() > 0);
+
+    }
+

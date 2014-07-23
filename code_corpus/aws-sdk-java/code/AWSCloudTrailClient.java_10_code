@@ -1,0 +1,34 @@
+    public AWSCloudTrailClient(AWSCredentialsProvider awsCredentialsProvider,
+            ClientConfiguration clientConfiguration,
+            RequestMetricCollector requestMetricCollector) {
+        super(clientConfiguration, requestMetricCollector);
+        
+        this.awsCredentialsProvider = awsCredentialsProvider;
+        
+        init();
+    }
+
+    private void init() {
+        exceptionUnmarshallers = new ArrayList<Unmarshaller<AmazonServiceException, JSONObject>>();
+        exceptionUnmarshallers.add(new TrailAlreadyExistsExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new InvalidS3BucketNameExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new TrailNotProvidedExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new InvalidSnsTopicNameExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new InvalidS3PrefixExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new MaximumNumberOfTrailsExceededExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new InsufficientSnsTopicPolicyExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new TrailNotFoundExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new InvalidTrailNameExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new S3BucketDoesNotExistExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new InsufficientS3BucketPolicyExceptionUnmarshaller());
+        
+        exceptionUnmarshallers.add(new JsonErrorUnmarshaller());
+        // calling this.setEndPoint(...) will also modify the signer accordingly
+        this.setEndpoint("cloudtrail.us-east-1.amazonaws.com");
+        HandlerChainFactory chainFactory = new HandlerChainFactory();
+        requestHandler2s.addAll(chainFactory.newRequestHandlerChain(
+                "/com/amazonaws/services/cloudtrail/request.handlers"));
+        requestHandler2s.addAll(chainFactory.newRequestHandler2Chain(
+                "/com/amazonaws/services/cloudtrail/request.handler2s"));
+    }
+

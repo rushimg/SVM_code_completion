@@ -1,0 +1,19 @@
+    public Future<DescribeAdjustmentTypesResult> describeAdjustmentTypesAsync(
+            final DescribeAdjustmentTypesRequest describeAdjustmentTypesRequest,
+            final AsyncHandler<DescribeAdjustmentTypesRequest, DescribeAdjustmentTypesResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeAdjustmentTypesResult>() {
+            public DescribeAdjustmentTypesResult call() throws Exception {
+                DescribeAdjustmentTypesResult result;
+                try {
+                    result = describeAdjustmentTypes(describeAdjustmentTypesRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeAdjustmentTypesRequest, result);
+                   return result;
+            }
+        });
+    }
+    

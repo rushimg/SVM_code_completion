@@ -1,0 +1,74 @@
+    protected byte[] getBinaryRequestPayloadWithoutQueryParams(Request<?> request) {
+        InputStream content = getBinaryRequestPayloadStreamWithoutQueryParams(request);
+
+        try {
+            content.mark(-1);
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            while (true) {
+                int bytesRead = content.read(buffer);
+                if (bytesRead == -1) break;
+
+                byteArrayOutputStream.write(buffer, 0, bytesRead);
+            }
+
+            byteArrayOutputStream.close();
+            content.reset();
+
+            return byteArrayOutputStream.toByteArray();
+        } catch (Exception e) {
+            throw new AmazonClientException("Unable to read request payload to sign request: " + e.getMessage(), e);
+        }
+    }
+
+    protected InputStream getBinaryRequestPayloadStream(Request<?> request) {
+        if (HttpUtils.usePayloadForQueryParameters(request)) {
+            String encodedParameters = HttpUtils.encodeParameters(request);
+            if (encodedParameters == null) return new ByteArrayInputStream(new byte[0]);
+            try {
+                return new ByteArrayInputStream(encodedParameters.getBytes(DEFAULT_ENCODING));
+            } catch (UnsupportedEncodingException e) {
+                throw new AmazonClientException("Unable to encode string into bytes");
+            }
+        }
+
+        return getBinaryRequestPayloadStreamWithoutQueryParams(request);
+    }
+
+    protected InputStream getBinaryRequestPayloadStreamWithoutQueryParams(Request<?> request) {
+        try {
+            InputStream content = request.getContent();
+            if (content == null) return new ByteArrayInputStream(new byte[0]);
+
+            if (content instanceof StringInputStream) {
+                return content;
+            }
+
+            if (!content.markSupported()) {
+                throw new AmazonClientException("Unable to read request payload to sign request.");
+            }
+
+            return request.getContent();
+        } catch (Exception e) {
+            throw new AmazonClientException("Unable to read request payload to sign request: " + e.getMessage(), e);
+        }
+    }
+
+    protected String getCanonicalizedResourcePath(String resourcePath) {
+        return getCanonicalizedResourcePath(resourcePath, true);
+    }
+
+    protected String getCanonicalizedResourcePath(String resourcePath, boolean urlEncode) {
+        if (resourcePath == null || resourcePath.length() == 0) {
+            return "/";
+        } else {
+            String value = urlEncode ? HttpUtils.urlEncode(resourcePath, true) : resourcePath;
+            if (value.startsWith("/")) {
+                return value;
+            } else {
+                return "/".concat(value);
+            }
+        }
+    }
+
+    protected String getCanonicalizedEndpoint(URI endpoint) {
+        String endpointForStringToSign = endpoint.getHost().toLowerCase();

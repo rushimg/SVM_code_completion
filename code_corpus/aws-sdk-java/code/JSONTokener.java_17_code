@@ -1,0 +1,26 @@
+    public char skipTo(char to) throws JSONException {
+        char c;
+        try {
+            int startIndex = this.index;
+            int startCharacter = this.character;
+            int startLine = this.line;
+            reader.mark(Integer.MAX_VALUE);
+            do {
+                c = next();
+                if (c == 0) {
+                    reader.reset();
+                    this.index = startIndex;
+                    this.character = startCharacter;
+                    this.line = startLine;
+                    return c;
+                }
+            } while (c != to);
+        } catch (IOException exc) {
+            throw new JSONException(exc);
+        }
+
+        back();
+        return c;
+    }
+
+

@@ -1,0 +1,19 @@
+    public Future<CancelRetrievalResult> cancelRetrievalAsync(
+            final CancelRetrievalRequest cancelRetrievalRequest,
+            final AsyncHandler<CancelRetrievalRequest, CancelRetrievalResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<CancelRetrievalResult>() {
+            public CancelRetrievalResult call() throws Exception {
+                CancelRetrievalResult result;
+                try {
+                    result = cancelRetrieval(cancelRetrievalRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(cancelRetrievalRequest, result);
+                   return result;
+            }
+        });
+    }
+    

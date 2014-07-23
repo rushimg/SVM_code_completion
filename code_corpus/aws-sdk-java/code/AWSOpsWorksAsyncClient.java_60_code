@@ -1,0 +1,19 @@
+    public Future<CreateLayerResult> createLayerAsync(
+            final CreateLayerRequest createLayerRequest,
+            final AsyncHandler<CreateLayerRequest, CreateLayerResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<CreateLayerResult>() {
+            public CreateLayerResult call() throws Exception {
+                CreateLayerResult result;
+                try {
+                    result = createLayer(createLayerRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(createLayerRequest, result);
+                   return result;
+            }
+        });
+    }
+    

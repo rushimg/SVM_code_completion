@@ -1,0 +1,25 @@
+    public CopyPartResult copyPart(CopyPartRequest copyPartRequest) {
+        assertParameterNotNull(copyPartRequest.getSourceBucketName(),
+                "The source bucket name must be specified when copying a part");
+        assertParameterNotNull(copyPartRequest.getSourceKey(),
+                "The source object key must be specified when copying a part");
+        assertParameterNotNull(copyPartRequest.getDestinationBucketName(),
+                "The destination bucket name must be specified when copying a part");
+        assertParameterNotNull(copyPartRequest.getUploadId(),
+                "The upload id must be specified when copying a part");
+        assertParameterNotNull(copyPartRequest.getDestinationKey(),
+                "The destination object key must be specified when copying a part");
+        assertParameterNotNull(copyPartRequest.getPartNumber(),
+                "The part number must be specified when copying a part");
+
+        String destinationKey = copyPartRequest.getDestinationKey();
+        String destinationBucketName = copyPartRequest.getDestinationBucketName();
+
+        Request<CopyPartRequest> request = createRequest(destinationBucketName, destinationKey, copyPartRequest,
+                HttpMethodName.PUT);
+
+        populateRequestWithCopyPartParameters(request, copyPartRequest);
+
+        request.addParameter("uploadId", copyPartRequest.getUploadId());
+        request.addParameter("partNumber", Integer.toString(copyPartRequest.getPartNumber()));
+

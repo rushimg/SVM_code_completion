@@ -1,0 +1,19 @@
+    public Future<ReceiveMessageResult> receiveMessageAsync(
+            final ReceiveMessageRequest receiveMessageRequest,
+            final AsyncHandler<ReceiveMessageRequest, ReceiveMessageResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ReceiveMessageResult>() {
+            public ReceiveMessageResult call() throws Exception {
+                ReceiveMessageResult result;
+                try {
+                    result = receiveMessage(receiveMessageRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(receiveMessageRequest, result);
+                   return result;
+            }
+        });
+    }
+    

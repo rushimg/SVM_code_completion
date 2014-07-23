@@ -1,0 +1,19 @@
+    public Future<VerifyEmailIdentityResult> verifyEmailIdentityAsync(
+            final VerifyEmailIdentityRequest verifyEmailIdentityRequest,
+            final AsyncHandler<VerifyEmailIdentityRequest, VerifyEmailIdentityResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<VerifyEmailIdentityResult>() {
+            public VerifyEmailIdentityResult call() throws Exception {
+                VerifyEmailIdentityResult result;
+                try {
+                    result = verifyEmailIdentity(verifyEmailIdentityRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(verifyEmailIdentityRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -1,0 +1,65 @@
+            if (key != null && key.startsWith("/")) {
+                key = "/" + key;
+            }
+            request.setResourcePath(key);
+        } else {
+            request.setEndpoint(endpoint);
+
+            if (bucketName != null) {
+                request.setResourcePath(bucketName + "/" + (key != null ? key : ""));
+            }
+        }
+    }
+
+    private boolean validIP(String IP) {
+        if (IP == null) {
+            return false;
+        }
+        String[] tokens = IP.split("\\.");
+        if (tokens.length != 4) {
+            return false;
+        }
+        for (String token : tokens) {
+            int tokenInt;
+            try {
+                tokenInt = Integer.parseInt(token);
+            } catch (NumberFormatException ase) {
+                return false;
+            }
+            if (tokenInt < 0 || tokenInt > 255) {
+                return false;
+            }
+
+        }
+        return true;
+    }
+
+    private <X, Y extends AmazonWebServiceRequest> X invoke(Request<Y> request,
+                                  Unmarshaller<X, InputStream> unmarshaller,
+                                  String bucketName,
+                                  String key) {
+        return invoke(request, new S3XmlResponseHandler<X>(unmarshaller), bucketName, key);
+    }
+
+    private <X, Y extends AmazonWebServiceRequest> X invoke(Request<Y> request,
+            HttpResponseHandler<AmazonWebServiceResponse<X>> responseHandler,
+            String bucket, String key) {
+        AmazonWebServiceRequest originalRequest = request.getOriginalRequest();
+        ExecutionContext executionContext = createExecutionContext(originalRequest);
+        AWSRequestMetrics awsRequestMetrics = executionContext.getAwsRequestMetrics();
+        // Binds the request metrics to the current request.
+        request.setAWSRequestMetrics(awsRequestMetrics);
+        // Having the ClientExecuteTime defined here is not ideal (for the
+        // timing measurement should start as close to the top of the call
+        // stack of the service client method as possible)
+        // but definitely a safe compromise for S3 at least for now.
+        // We can incrementally make it more elaborate should the need arise
+        // for individual method.
+        awsRequestMetrics.startEvent(Field.ClientExecuteTime);
+        Response<X> response = null;
+        try {
+            for (Entry<String, String> entry : request.getOriginalRequest()
+                    .copyPrivateRequestParameters().entrySet()) {
+                request.addParameter(entry.getKey(), entry.getValue());
+            }
+            request.setTimeOffset(timeOffset);

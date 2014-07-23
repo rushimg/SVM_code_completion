@@ -1,0 +1,19 @@
+    public Future<DescribeStreamResult> describeStreamAsync(
+            final DescribeStreamRequest describeStreamRequest,
+            final AsyncHandler<DescribeStreamRequest, DescribeStreamResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeStreamResult>() {
+            public DescribeStreamResult call() throws Exception {
+                DescribeStreamResult result;
+                try {
+                    result = describeStream(describeStreamRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeStreamRequest, result);
+                   return result;
+            }
+        });
+    }
+    

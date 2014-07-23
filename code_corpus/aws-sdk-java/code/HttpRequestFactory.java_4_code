@@ -1,0 +1,11 @@
+        boolean requestHasNoPayload = request.getContent() != null;
+        boolean requestIsPost = request.getHttpMethod() == HttpMethodName.POST;
+        boolean putParamsInUri = !requestIsPost || requestHasNoPayload;
+        if (encodedParams != null && putParamsInUri) {
+            uri += "?" + encodedParams;
+        }
+
+        HttpRequestBase httpRequest;
+        if (request.getHttpMethod() == HttpMethodName.POST) {
+            HttpPost postMethod = new HttpPost(uri);
+

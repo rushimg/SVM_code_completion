@@ -1,0 +1,19 @@
+    public Future<DescribeIndexFieldsResult> describeIndexFieldsAsync(
+            final DescribeIndexFieldsRequest describeIndexFieldsRequest,
+            final AsyncHandler<DescribeIndexFieldsRequest, DescribeIndexFieldsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeIndexFieldsResult>() {
+            public DescribeIndexFieldsResult call() throws Exception {
+                DescribeIndexFieldsResult result;
+                try {
+                    result = describeIndexFields(describeIndexFieldsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeIndexFieldsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

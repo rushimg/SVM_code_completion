@@ -1,0 +1,19 @@
+    public Future<ClusterSubnetGroup> createClusterSubnetGroupAsync(
+            final CreateClusterSubnetGroupRequest createClusterSubnetGroupRequest,
+            final AsyncHandler<CreateClusterSubnetGroupRequest, ClusterSubnetGroup> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ClusterSubnetGroup>() {
+            public ClusterSubnetGroup call() throws Exception {
+                ClusterSubnetGroup result;
+                try {
+                    result = createClusterSubnetGroup(createClusterSubnetGroupRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(createClusterSubnetGroupRequest, result);
+                   return result;
+            }
+        });
+    }
+    

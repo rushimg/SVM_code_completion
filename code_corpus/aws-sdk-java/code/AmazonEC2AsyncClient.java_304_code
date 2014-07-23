@@ -1,0 +1,19 @@
+    public Future<CreateKeyPairResult> createKeyPairAsync(
+            final CreateKeyPairRequest createKeyPairRequest,
+            final AsyncHandler<CreateKeyPairRequest, CreateKeyPairResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<CreateKeyPairResult>() {
+            public CreateKeyPairResult call() throws Exception {
+                CreateKeyPairResult result;
+                try {
+                    result = createKeyPair(createKeyPairRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(createKeyPairRequest, result);
+                   return result;
+            }
+        });
+    }
+    

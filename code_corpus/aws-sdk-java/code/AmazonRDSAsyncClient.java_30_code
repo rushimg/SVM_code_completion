@@ -1,0 +1,19 @@
+    public Future<DBSecurityGroup> createDBSecurityGroupAsync(
+            final CreateDBSecurityGroupRequest createDBSecurityGroupRequest,
+            final AsyncHandler<CreateDBSecurityGroupRequest, DBSecurityGroup> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DBSecurityGroup>() {
+            public DBSecurityGroup call() throws Exception {
+                DBSecurityGroup result;
+                try {
+                    result = createDBSecurityGroup(createDBSecurityGroupRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(createDBSecurityGroupRequest, result);
+                   return result;
+            }
+        });
+    }
+    

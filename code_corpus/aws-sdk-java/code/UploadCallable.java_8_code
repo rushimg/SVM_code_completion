@@ -1,0 +1,8 @@
+    private void uploadPartsInParallel(UploadPartRequestFactory requestFactory) {
+        while (requestFactory.hasMoreRequests()) {
+            if (threadPool.isShutdown()) throw new CancellationException("TransferManager has been shutdown");
+            UploadPartRequest request = requestFactory.getNextUploadPartRequest();
+            futures.add(threadPool.submit(new UploadPartCallable(s3, request)));
+        }
+    }
+

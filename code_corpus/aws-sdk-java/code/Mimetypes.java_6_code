@@ -1,0 +1,24 @@
+    public String getMimetype(String fileName) {
+        int lastPeriodIndex = fileName.lastIndexOf(".");
+        if (lastPeriodIndex > 0 && lastPeriodIndex + 1 < fileName.length()) {
+            String ext = fileName.substring(lastPeriodIndex + 1);
+            if (extensionToMimetypeMap.keySet().contains(ext)) {
+                String mimetype = (String) extensionToMimetypeMap.get(ext);
+                if (log.isDebugEnabled()) {
+                	log.debug("Recognised extension '" + ext + "', mimetype is: '" + mimetype + "'");
+                }
+                return mimetype;
+            } else {
+            	if (log.isDebugEnabled()) {
+            		log.debug("Extension '" + ext + "' is unrecognized in mime type listing"
+                    + ", using default mime type: '" + MIMETYPE_OCTET_STREAM + "'");
+            	}
+            }
+        } else {
+        	if (log.isDebugEnabled()) {
+        		log.debug("File name has no extension, mime type cannot be recognised for: " + fileName);
+        	}
+        }
+        return MIMETYPE_OCTET_STREAM;
+    }
+

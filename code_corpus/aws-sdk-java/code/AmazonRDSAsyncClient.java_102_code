@@ -1,0 +1,19 @@
+    public Future<EventSubscription> deleteEventSubscriptionAsync(
+            final DeleteEventSubscriptionRequest deleteEventSubscriptionRequest,
+            final AsyncHandler<DeleteEventSubscriptionRequest, EventSubscription> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<EventSubscription>() {
+            public EventSubscription call() throws Exception {
+                EventSubscription result;
+                try {
+                    result = deleteEventSubscription(deleteEventSubscriptionRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(deleteEventSubscriptionRequest, result);
+                   return result;
+            }
+        });
+    }
+    

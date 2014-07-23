@@ -1,0 +1,19 @@
+    public Future<DescribeBundleTasksResult> describeBundleTasksAsync(
+            final DescribeBundleTasksRequest describeBundleTasksRequest,
+            final AsyncHandler<DescribeBundleTasksRequest, DescribeBundleTasksResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeBundleTasksResult>() {
+            public DescribeBundleTasksResult call() throws Exception {
+                DescribeBundleTasksResult result;
+                try {
+                    result = describeBundleTasks(describeBundleTasksRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeBundleTasksRequest, result);
+                   return result;
+            }
+        });
+    }
+    

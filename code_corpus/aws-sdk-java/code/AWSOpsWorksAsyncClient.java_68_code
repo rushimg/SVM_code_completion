@@ -1,0 +1,19 @@
+    public Future<RegisterVolumeResult> registerVolumeAsync(
+            final RegisterVolumeRequest registerVolumeRequest,
+            final AsyncHandler<RegisterVolumeRequest, RegisterVolumeResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<RegisterVolumeResult>() {
+            public RegisterVolumeResult call() throws Exception {
+                RegisterVolumeResult result;
+                try {
+                    result = registerVolume(registerVolumeRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(registerVolumeRequest, result);
+                   return result;
+            }
+        });
+    }
+    

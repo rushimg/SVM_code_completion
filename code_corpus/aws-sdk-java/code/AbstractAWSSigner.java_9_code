@@ -1,0 +1,14 @@
+    protected byte[] getBinaryRequestPayload(Request<?> request) {
+        if (HttpUtils.usePayloadForQueryParameters(request)) {
+            String encodedParameters = HttpUtils.encodeParameters(request);
+            if (encodedParameters == null) return new byte[0];
+            try {
+                return encodedParameters.getBytes(DEFAULT_ENCODING);
+            } catch (UnsupportedEncodingException e) {
+                throw new AmazonClientException("Unable to encode string into bytes");
+            }
+        }
+
+        return getBinaryRequestPayloadWithoutQueryParams(request);
+    }
+

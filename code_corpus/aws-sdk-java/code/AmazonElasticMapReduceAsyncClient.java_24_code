@@ -1,0 +1,19 @@
+    public Future<AddJobFlowStepsResult> addJobFlowStepsAsync(
+            final AddJobFlowStepsRequest addJobFlowStepsRequest,
+            final AsyncHandler<AddJobFlowStepsRequest, AddJobFlowStepsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<AddJobFlowStepsResult>() {
+            public AddJobFlowStepsResult call() throws Exception {
+                AddJobFlowStepsResult result;
+                try {
+                    result = addJobFlowSteps(addJobFlowStepsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(addJobFlowStepsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

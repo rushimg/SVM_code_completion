@@ -1,0 +1,19 @@
+    public Future<DescribeUserProfilesResult> describeUserProfilesAsync(
+            final DescribeUserProfilesRequest describeUserProfilesRequest,
+            final AsyncHandler<DescribeUserProfilesRequest, DescribeUserProfilesResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeUserProfilesResult>() {
+            public DescribeUserProfilesResult call() throws Exception {
+                DescribeUserProfilesResult result;
+                try {
+                    result = describeUserProfiles(describeUserProfilesRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeUserProfilesRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -1,0 +1,25 @@
+    public UploadArchiveResult uploadArchive(UploadArchiveRequest uploadArchiveRequest) {
+        ExecutionContext executionContext = createExecutionContext(uploadArchiveRequest);
+        AWSRequestMetrics awsRequestMetrics = executionContext.getAwsRequestMetrics();
+        awsRequestMetrics.startEvent(Field.ClientExecuteTime);
+        Request<UploadArchiveRequest> request = null;
+        Response<UploadArchiveResult> response = null;
+        try {
+            awsRequestMetrics.startEvent(Field.RequestMarshallTime);
+            try {
+                request = new UploadArchiveRequestMarshaller().marshall(uploadArchiveRequest);
+                // Binds the request metrics to the current request.
+                request.setAWSRequestMetrics(awsRequestMetrics);
+            } finally {
+                awsRequestMetrics.endEvent(Field.RequestMarshallTime);
+            }
+            Unmarshaller<UploadArchiveResult, JsonUnmarshallerContext> unmarshaller = new UploadArchiveResultJsonUnmarshaller();
+            JsonResponseHandler<UploadArchiveResult> responseHandler = new JsonResponseHandler<UploadArchiveResult>(unmarshaller);
+            
+            response = invoke(request, responseHandler, executionContext);
+            return response.getAwsResponse();
+        } finally {
+            endClientExecution(awsRequestMetrics, request, response);
+        }
+    }
+

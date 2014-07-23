@@ -1,0 +1,19 @@
+    public Future<DescribeWorkingStorageResult> describeWorkingStorageAsync(
+            final DescribeWorkingStorageRequest describeWorkingStorageRequest,
+            final AsyncHandler<DescribeWorkingStorageRequest, DescribeWorkingStorageResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeWorkingStorageResult>() {
+            public DescribeWorkingStorageResult call() throws Exception {
+                DescribeWorkingStorageResult result;
+                try {
+                    result = describeWorkingStorage(describeWorkingStorageRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeWorkingStorageRequest, result);
+                   return result;
+            }
+        });
+    }
+    

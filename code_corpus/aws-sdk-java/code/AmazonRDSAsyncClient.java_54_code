@@ -1,0 +1,19 @@
+    public Future<DBSnapshot> deleteDBSnapshotAsync(
+            final DeleteDBSnapshotRequest deleteDBSnapshotRequest,
+            final AsyncHandler<DeleteDBSnapshotRequest, DBSnapshot> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DBSnapshot>() {
+            public DBSnapshot call() throws Exception {
+                DBSnapshot result;
+                try {
+                    result = deleteDBSnapshot(deleteDBSnapshotRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(deleteDBSnapshotRequest, result);
+                   return result;
+            }
+        });
+    }
+    

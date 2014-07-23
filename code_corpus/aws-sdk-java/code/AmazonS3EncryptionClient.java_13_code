@@ -1,0 +1,28 @@
+    public AmazonS3EncryptionClient(AWSCredentials credentials, EncryptionMaterials encryptionMaterials,
+            ClientConfiguration clientConfig, CryptoConfiguration cryptoConfig) {
+        this(credentials, new StaticEncryptionMaterialsProvider(encryptionMaterials), clientConfig, cryptoConfig);
+    }
+
+
+    public AmazonS3EncryptionClient(AWSCredentials credentials,
+            EncryptionMaterialsProvider encryptionMaterialsProvider,
+            ClientConfiguration clientConfig, CryptoConfiguration cryptoConfig) {
+        super(credentials, clientConfig);
+        assertParameterNotNull(encryptionMaterialsProvider,
+                               "EncryptionMaterialsProvider parameter must not be null.");
+        assertParameterNotNull(cryptoConfig, "CryptoConfiguration parameter must not be null.");
+        this.encryptionMaterialsProvider = encryptionMaterialsProvider;
+        this.cryptoConfig = cryptoConfig;
+    }
+
+    public AmazonS3EncryptionClient(AWSCredentialsProvider credentialsProvider,
+            EncryptionMaterialsProvider encryptionMaterialsProvider,
+            ClientConfiguration clientConfig, CryptoConfiguration cryptoConfig) {
+        super(credentialsProvider, clientConfig);
+        assertParameterNotNull(encryptionMaterialsProvider,
+                               "EncryptionMaterialsProvider parameter must not be null.");
+        assertParameterNotNull(cryptoConfig, "CryptoConfiguration parameter must not be null.");
+        this.encryptionMaterialsProvider = encryptionMaterialsProvider;
+        this.cryptoConfig = cryptoConfig;
+    }
+

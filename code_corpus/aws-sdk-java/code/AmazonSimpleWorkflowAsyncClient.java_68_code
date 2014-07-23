@@ -1,0 +1,19 @@
+    public Future<DomainDetail> describeDomainAsync(
+            final DescribeDomainRequest describeDomainRequest,
+            final AsyncHandler<DescribeDomainRequest, DomainDetail> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DomainDetail>() {
+            public DomainDetail call() throws Exception {
+                DomainDetail result;
+                try {
+                    result = describeDomain(describeDomainRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeDomainRequest, result);
+                   return result;
+            }
+        });
+    }
+    

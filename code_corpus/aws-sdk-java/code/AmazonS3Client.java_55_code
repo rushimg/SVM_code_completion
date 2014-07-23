@@ -1,0 +1,62 @@
+        ProgressListener progressListener = putObjectRequest.getGeneralProgressListener();
+        ProgressListenerCallbackExecutor progressListenerCallbackExecutor = ProgressListenerCallbackExecutor
+                .wrapListener(progressListener);
+
+        if (metadata == null) metadata = new ObjectMetadata();
+
+        assertParameterNotNull(bucketName, "The bucket name parameter must be specified when uploading an object");
+        assertParameterNotNull(key, "The key parameter must be specified when uploading an object");
+
+        // If a file is specified for upload, we need to pull some additional
+        // information from it to auto-configure a few options
+        if (putObjectRequest.getFile() != null) {
+            File file = putObjectRequest.getFile();
+
+            // Always set the content length, even if it's already set
+            metadata.setContentLength(file.length());
+
+            // Only set the content type if it hasn't already been set
+            if (metadata.getContentType() == null) {
+                metadata.setContentType(Mimetypes.getInstance().getMimetype(file));
+            }
+
+            FileInputStream fileInputStream = null;
+            try {
+                fileInputStream = new FileInputStream(file);
+                byte[] md5Hash = Md5Utils.computeMD5Hash(fileInputStream);
+                metadata.setContentMD5(BinaryUtils.toBase64(md5Hash));
+            } catch (Exception e) {
+                throw new AmazonClientException(
+                        "Unable to calculate MD5 hash: " + e.getMessage(), e);
+            } finally {
+                try {fileInputStream.close();} catch (Exception e) {}
+            }
+
+            try {
+                input = new RepeatableFileInputStream(file);
+            } catch (FileNotFoundException fnfe) {
+                throw new AmazonClientException("Unable to find file to upload", fnfe);
+            }
+        }
+
+        Request<PutObjectRequest> request = createRequest(bucketName, key, putObjectRequest, HttpMethodName.PUT);
+
+        if ( putObjectRequest.getAccessControlList() != null) {
+            addAclHeaders(request, putObjectRequest.getAccessControlList());
+        } else if ( putObjectRequest.getCannedAcl() != null ) {
+            request.addHeader(Headers.S3_CANNED_ACL, putObjectRequest.getCannedAcl().toString());
+        }
+
+        if (putObjectRequest.getStorageClass() != null) {
+            request.addHeader(Headers.STORAGE_CLASS, putObjectRequest.getStorageClass());
+        }
+
+        if (putObjectRequest.getRedirectLocation() != null) {
+            request.addHeader(Headers.REDIRECT_LOCATION, putObjectRequest.getRedirectLocation());
+            if (input == null) {
+                input = new ByteArrayInputStream(new byte[0]);
+            }
+        }
+
+        // Use internal interface to differentiate 0 from unset.
+        if (metadata.getRawMetadata().get(Headers.CONTENT_LENGTH) == null) {

@@ -1,0 +1,19 @@
+    public Future<DeleteVolumeResult> deleteVolumeAsync(
+            final DeleteVolumeRequest deleteVolumeRequest,
+            final AsyncHandler<DeleteVolumeRequest, DeleteVolumeResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DeleteVolumeResult>() {
+            public DeleteVolumeResult call() throws Exception {
+                DeleteVolumeResult result;
+                try {
+                    result = deleteVolume(deleteVolumeRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(deleteVolumeRequest, result);
+                   return result;
+            }
+        });
+    }
+    

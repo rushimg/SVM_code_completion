@@ -1,0 +1,19 @@
+    public Future<GetSubscriptionAttributesResult> getSubscriptionAttributesAsync(
+            final GetSubscriptionAttributesRequest getSubscriptionAttributesRequest,
+            final AsyncHandler<GetSubscriptionAttributesRequest, GetSubscriptionAttributesResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<GetSubscriptionAttributesResult>() {
+            public GetSubscriptionAttributesResult call() throws Exception {
+                GetSubscriptionAttributesResult result;
+                try {
+                    result = getSubscriptionAttributes(getSubscriptionAttributesRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(getSubscriptionAttributesRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -1,0 +1,23 @@
+    protected List<MetricDatum> latencyOfClientExecuteTime(Request<?> req, Object response) {
+        AWSRequestMetrics m = req.getAWSRequestMetrics();
+        TimingInfo root = m.getTimingInfo();
+        final String metricName = Field.ClientExecuteTime.name();
+        if (root.isEndTimeKnown()) { // being defensive
+            List<Dimension> dims = new ArrayList<Dimension>();
+            dims.add(new Dimension()
+                    .withName(Dimensions.MetricType.name())
+                    .withValue(metricName));
+            // request type specific
+            dims.add(new Dimension()
+                    .withName(Dimensions.RequestType.name())
+                    .withValue(requestType(req)));
+            MetricDatum datum = new MetricDatum()
+                .withMetricName(req.getServiceName())
+                .withDimensions(dims)
+                .withUnit(StandardUnit.Milliseconds)
+                .withValue(root.getTimeTakenMillisIfKnown());
+            return Collections.singletonList(datum);
+        }
+        return Collections.emptyList();
+    }
+    

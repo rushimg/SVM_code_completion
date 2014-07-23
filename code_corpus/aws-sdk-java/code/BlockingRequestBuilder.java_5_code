@@ -1,0 +1,57 @@
+    private Iterable<PutMetricDataRequest> toPutMetricDataRequests(Map<String, MetricDatum> uniqueMetrics) {
+        // Opportunistically generates some machine metrics whenever there
+        // is metrics consolidation
+        for (MetricDatum datum: machineMetricFactory.generateMetrics()) {
+            summarize(datum, uniqueMetrics);
+        }
+        List<PutMetricDataRequest> list = new ArrayList<PutMetricDataRequest>();
+        List<MetricDatum> data = new ArrayList<MetricDatum>();
+        for (MetricDatum m: uniqueMetrics.values()) {
+            data.add(m);
+            if (data.size() == CloudWatchMetricConfig.MAX_METRICS_DATUM_SIZE) {
+                list.addAll(newPutMetricDataRequests(data));
+                data.clear();
+            }
+        }
+
+        if (data.size() > 0) {
+            list.addAll(newPutMetricDataRequests(data));
+        }
+        return list;
+    }
+
+    private List<PutMetricDataRequest> newPutMetricDataRequests(Collection<MetricDatum> data) {
+        List<PutMetricDataRequest> list = new ArrayList<PutMetricDataRequest>();
+        final String ns = AwsSdkMetrics.getMetricNameSpace();
+        PutMetricDataRequest req = newPutMetricDataRequest(data, ns);
+        list.add(req);
+        String perHostNameSpace = null;
+        final boolean perHost = AwsSdkMetrics.isPerHostMetricEnabled();
+        if (perHost) {
+            String hostName = AwsSdkMetrics.getHostMetricName();
+            hostName = hostName == null ? "" : hostName.trim();
+            if (hostName.length() == 0)
+                hostName = AwsHostNameUtils.localHostName();
+            perHostNameSpace = ns + NAMESPACE_DELIMITER + hostName;
+            req = newPutMetricDataRequest(data, perHostNameSpace);
+            list.add(req);
+        }
+        String jvmMetricName = AwsSdkMetrics.getJvmMetricName();
+        if (jvmMetricName != null) {
+            jvmMetricName = jvmMetricName.trim();
+            if (jvmMetricName.length() > 0) {
+                String perJvmNameSpace = perHostNameSpace == null
+                    ? ns + NAMESPACE_DELIMITER + jvmMetricName
+                    : perHostNameSpace + NAMESPACE_DELIMITER + jvmMetricName
+                    ;
+                // If OS metrics are already included at the per host level,
+                // there is little reason, if any, to include them at the
+                // JVM level.  Hence the filtering.
+                req = newPutMetricDataRequest
+                    (perHost ? filterOSMetrics(data) : data, perJvmNameSpace);
+                list.add(req);
+            }
+        }
+        return list;
+    }
+

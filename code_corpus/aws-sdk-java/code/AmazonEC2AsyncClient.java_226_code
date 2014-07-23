@@ -1,0 +1,19 @@
+    public Future<AttachNetworkInterfaceResult> attachNetworkInterfaceAsync(
+            final AttachNetworkInterfaceRequest attachNetworkInterfaceRequest,
+            final AsyncHandler<AttachNetworkInterfaceRequest, AttachNetworkInterfaceResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<AttachNetworkInterfaceResult>() {
+            public AttachNetworkInterfaceResult call() throws Exception {
+                AttachNetworkInterfaceResult result;
+                try {
+                    result = attachNetworkInterface(attachNetworkInterfaceRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(attachNetworkInterfaceRequest, result);
+                   return result;
+            }
+        });
+    }
+    

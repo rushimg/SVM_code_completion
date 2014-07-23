@@ -1,0 +1,32 @@
+        HttpParams httpClientParams = new BasicHttpParams();
+        HttpConnectionParams.setConnectionTimeout(httpClientParams, config.getConnectionTimeout());
+        HttpConnectionParams.setSoTimeout(httpClientParams, config.getSocketTimeout());
+        HttpConnectionParams.setStaleCheckingEnabled(httpClientParams, true);
+        HttpConnectionParams.setTcpNoDelay(httpClientParams, true);
+
+        int socketSendBufferSizeHint = config.getSocketBufferSizeHints()[0];
+        int socketReceiveBufferSizeHint = config.getSocketBufferSizeHints()[1];
+        if (socketSendBufferSizeHint > 0 || socketReceiveBufferSizeHint > 0) {
+            HttpConnectionParams.setSocketBufferSize(httpClientParams,
+                    Math.max(socketSendBufferSizeHint, socketReceiveBufferSizeHint));
+        }
+
+        PoolingClientConnectionManager connectionManager = ConnectionManagerFactory
+                .createPoolingClientConnManager(config, httpClientParams);
+        SdkHttpClient httpClient = new SdkHttpClient(connectionManager, httpClientParams);
+        httpClient.setHttpRequestRetryHandler(SdkHttpRequestRetryHandler.Singleton);
+        httpClient.setRedirectStrategy(new LocationHeaderNotRequiredRedirectStrategy());
+
+        try {
+            Scheme http = new Scheme("http", 80, PlainSocketFactory.getSocketFactory());
+            SSLSocketFactory sf = new SSLSocketFactory(
+                    SSLContext.getDefault(),
+                    SSLSocketFactory.STRICT_HOSTNAME_VERIFIER);
+            Scheme https = new Scheme("https", 443, sf);
+            SchemeRegistry sr = connectionManager.getSchemeRegistry();
+            sr.register(http);
+            sr.register(https);
+        } catch (NoSuchAlgorithmException e) {
+            throw new AmazonClientException("Unable to access default SSL context", e);
+        }
+

@@ -1,0 +1,13 @@
+	@Override
+	protected void processRequestPayload(Request<?> request, HeaderSigningResult headerSigningResult) {
+		if (useChunkEncoding(request)) {
+        	InputStream payloadStream = request.getContent();
+            String dateTime = headerSigningResult.getDateTime();
+        	String keyPath = headerSigningResult.getScope();
+        	byte[] kSigning = headerSigningResult.getKSigning();
+        	String signature = BinaryUtils.toHex(headerSigningResult.getSignature());
+    		AwsChunkedEncodingInputStream chunkEncodededStream = new AwsChunkedEncodingInputStream(payloadStream, kSigning, dateTime, keyPath, signature, this);
+    		request.setContent(chunkEncodededStream);
+		}
+	}
+

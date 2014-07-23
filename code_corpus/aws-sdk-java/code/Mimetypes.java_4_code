@@ -1,0 +1,24 @@
+    public synchronized static Mimetypes getInstance() {
+        if (mimetypes != null) return mimetypes;
+        
+        mimetypes = new Mimetypes();
+        InputStream mimetypesFile = mimetypes.getClass().getResourceAsStream("/mime.types");
+        if (mimetypesFile != null) {
+        	if (log.isDebugEnabled()) {
+        		log.debug("Loading mime types from file in the classpath: mime.types");
+        	}
+            try {
+                mimetypes.loadAndReplaceMimetypes(mimetypesFile);
+            } catch (IOException e) {
+            	if (log.isErrorEnabled()) {
+            		log.error("Failed to load mime types from file in the classpath: mime.types", e);
+            	}
+            }
+        } else {
+        	if (log.isWarnEnabled()) {
+        		log.warn("Unable to find 'mime.types' file in classpath");
+        	}
+        }
+        return mimetypes;
+    }
+

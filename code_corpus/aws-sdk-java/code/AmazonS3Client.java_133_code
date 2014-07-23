@@ -1,0 +1,19 @@
+    public URL getUrl(String bucketName, String key) {
+        Request<?> request = new DefaultRequest<Object>(Constants.S3_SERVICE_NAME);
+        configRequest(request, bucketName, key);
+        return ServiceUtils.convertRequestToUrl(request);
+    }
+
+    public Region getRegion() {
+        String authority = super.endpoint.getAuthority();
+        if (Constants.S3_HOSTNAME.equals(authority)) {
+            return Region.US_Standard;
+        }
+        Matcher m = Region.S3_REGIONAL_ENDPOINT_PATTERN.matcher(authority);
+        if (m.matches()) {
+            return Region.fromValue(m.group(1));
+        } else {
+            throw new IllegalStateException("S3 client with invalid S3 endpoint configured");
+        }
+    }
+

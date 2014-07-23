@@ -1,0 +1,17 @@
+    public static Class<?> loadClass(String fqcn, boolean classesFirst,
+            Class<?>... classes) throws ClassNotFoundException {
+        Class<?> target = null;
+        if (classesFirst) {
+            target = loadClassViaClasses(fqcn, classes);
+            if (target == null) {
+                target = loadClassViaContext(fqcn);
+            }
+        } else {
+            target = loadClassViaContext(fqcn);
+            if (target == null) {
+                target = loadClassViaClasses(fqcn, classes);
+            }
+        }
+        return target == null ? Class.forName(fqcn) : target;
+    }
+

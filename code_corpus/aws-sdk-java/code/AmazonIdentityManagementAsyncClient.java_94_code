@@ -1,0 +1,19 @@
+    public Future<ListAccountAliasesResult> listAccountAliasesAsync(
+            final ListAccountAliasesRequest listAccountAliasesRequest,
+            final AsyncHandler<ListAccountAliasesRequest, ListAccountAliasesResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ListAccountAliasesResult>() {
+            public ListAccountAliasesResult call() throws Exception {
+                ListAccountAliasesResult result;
+                try {
+                    result = listAccountAliases(listAccountAliasesRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(listAccountAliasesRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -1,0 +1,19 @@
+    public Future<CopySnapshotResult> copySnapshotAsync(
+            final CopySnapshotRequest copySnapshotRequest,
+            final AsyncHandler<CopySnapshotRequest, CopySnapshotResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<CopySnapshotResult>() {
+            public CopySnapshotResult call() throws Exception {
+                CopySnapshotResult result;
+                try {
+                    result = copySnapshot(copySnapshotRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(copySnapshotRequest, result);
+                   return result;
+            }
+        });
+    }
+    

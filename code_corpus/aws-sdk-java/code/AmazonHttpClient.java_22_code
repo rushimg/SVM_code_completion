@@ -1,0 +1,50 @@
+    private boolean shouldRetry(AmazonWebServiceRequest originalRequest,
+                                HttpRequestBase method, 
+                                AmazonClientException exception, 
+                                int requestCount,
+                                RetryPolicy retryPolicy) {
+        final int retries = requestCount - 1;
+        
+        int maxErrorRetry = config.getMaxErrorRetry();
+        // We should use the maxErrorRetry in
+        // the RetryPolicy if either the user has not explicitly set it in
+        // ClientConfiguration, or the RetryPolicy is configured to take
+        // higher precedence.
+        if ( maxErrorRetry < 0
+                || !retryPolicy.isMaxErrorRetryInClientConfigHonored() ) {
+            maxErrorRetry = retryPolicy.getMaxErrorRetry();
+        }
+        
+        // Immediately fails when it has exceeds the max retry count.
+        if (retries >= maxErrorRetry) return false;
+        
+        // Never retry on requests containing non-repeatable entity
+        if (method instanceof HttpEntityEnclosingRequest) {
+            HttpEntity entity = ((HttpEntityEnclosingRequest)method).getEntity();
+            if (entity != null && !entity.isRepeatable()) {
+                if (log.isDebugEnabled()) {
+                    log.debug("Entity not repeatable");
+                }
+                return false;
+            }
+        }
+        
+        // Pass all the context information to the RetryCondition and let it
+        // decide whether it should be retried.
+        return retryPolicy.getRetryCondition().shouldRetry(originalRequest,
+                                                           exception,
+                                                           retries);
+    }
+
+    private static boolean isTemporaryRedirect(org.apache.http.HttpResponse response) {
+        int status = response.getStatusLine().getStatusCode();
+        return status == HttpStatus.SC_TEMPORARY_REDIRECT &&
+                         response.getHeaders("Location") != null &&
+                         response.getHeaders("Location").length > 0;
+    }
+
+    private boolean isRequestSuccessful(org.apache.http.HttpResponse response) {
+        int status = response.getStatusLine().getStatusCode();
+        return status / 100 == HttpStatus.SC_OK / 100;
+    }
+

@@ -1,0 +1,19 @@
+    public Future<GetHostnameSuggestionResult> getHostnameSuggestionAsync(
+            final GetHostnameSuggestionRequest getHostnameSuggestionRequest,
+            final AsyncHandler<GetHostnameSuggestionRequest, GetHostnameSuggestionResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<GetHostnameSuggestionResult>() {
+            public GetHostnameSuggestionResult call() throws Exception {
+                GetHostnameSuggestionResult result;
+                try {
+                    result = getHostnameSuggestion(getHostnameSuggestionRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(getHostnameSuggestionRequest, result);
+                   return result;
+            }
+        });
+    }
+    

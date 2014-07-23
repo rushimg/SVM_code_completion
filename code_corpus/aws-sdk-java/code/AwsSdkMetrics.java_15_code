@@ -1,0 +1,58 @@
+    private static volatile String jvmMetricName;
+    private static volatile String hostMetricName;
+
+    static {
+        String defaultMetrics = System.getProperty(DEFAULT_METRICS_SYSTEM_PROPERTY);
+        defaultMetricsEnabled = defaultMetrics != null;
+        if (defaultMetricsEnabled) {
+            String[] values = defaultMetrics.split(",");
+            boolean excludeMachineMetrics = false;
+            boolean includePerHostMetrics = false;
+            for (String s: values) {
+                String part = s.trim();
+                if (!excludeMachineMetrics && EXCLUDE_MACHINE_METRICS.equals(part)) {
+                    excludeMachineMetrics = true;
+                } else if (!includePerHostMetrics && INCLUDE_PER_HOST_METRICS.equals(part)) {
+                    includePerHostMetrics = true;
+                } else {
+                    String[] pair = part.split("=");
+                    if (pair.length == 2) {
+                        String key = pair[0].trim();
+                        String value  = pair[1].trim();
+                        try {
+                            if (AWS_CREDENTAIL_PROPERTIES_FILE.equals(key)) {
+                                setCredentialFile0(value);
+                            } else if (CLOUDWATCH_REGION.equals(key)) {
+                                region = Regions.fromName(value);
+                            } else if (METRIC_QUEUE_SIZE.equals(key)) {
+                                Integer i = new Integer(value);
+                                if (i.intValue() < 1)
+                                    throw new IllegalArgumentException(METRIC_QUEUE_SIZE + " must be at least 1");
+                                metricQueueSize = i;
+                            } else if (QUEUE_POLL_TIMEOUT_MILLI.equals(key)) {
+                                Long i = new Long(value);
+                                if (i.intValue() < 1000)
+                                    throw new IllegalArgumentException(QUEUE_POLL_TIMEOUT_MILLI + " must be at least 1000");
+                                queuePollTimeoutMilli = i;
+                            } else if (METRIC_NAME_SPACE.equals(key)) {
+                                metricNameSpace = value;
+                            } else if (JVM_METRIC_NAME.equals(key)) {
+                                jvmMetricName = value;
+                            } else if (HOST_METRIC_NAME.equals(key)) {
+                                hostMetricName = value;
+                            } else {
+                                LogFactory.getLog(AwsSdkMetrics.class).debug("Ignoring unrecognized parameter: " + part);
+                            }
+                        } catch (Exception e) {
+                            LogFactory.getLog(AwsSdkMetrics.class).debug("Ignoring failure", e);
+                        }
+                    }
+                }
+            }
+            machineMetricsExcluded = excludeMachineMetrics;
+            perHostMetricsIncluded = includePerHostMetrics;
+        }
+    }
+
+    private static final MetricRegistry registry = new MetricRegistry();
+    private static volatile MetricCollector mc;

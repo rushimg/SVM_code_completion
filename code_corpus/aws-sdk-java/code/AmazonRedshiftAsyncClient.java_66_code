@@ -1,0 +1,19 @@
+    public Future<DescribeResizeResult> describeResizeAsync(
+            final DescribeResizeRequest describeResizeRequest,
+            final AsyncHandler<DescribeResizeRequest, DescribeResizeResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeResizeResult>() {
+            public DescribeResizeResult call() throws Exception {
+                DescribeResizeResult result;
+                try {
+                    result = describeResize(describeResizeRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeResizeRequest, result);
+                   return result;
+            }
+        });
+    }
+    

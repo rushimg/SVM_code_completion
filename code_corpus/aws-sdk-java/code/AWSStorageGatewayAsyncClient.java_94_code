@@ -1,0 +1,19 @@
+    public Future<ListGatewaysResult> listGatewaysAsync(
+            final ListGatewaysRequest listGatewaysRequest,
+            final AsyncHandler<ListGatewaysRequest, ListGatewaysResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ListGatewaysResult>() {
+            public ListGatewaysResult call() throws Exception {
+                ListGatewaysResult result;
+                try {
+                    result = listGateways(listGatewaysRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(listGatewaysRequest, result);
+                   return result;
+            }
+        });
+    }
+    

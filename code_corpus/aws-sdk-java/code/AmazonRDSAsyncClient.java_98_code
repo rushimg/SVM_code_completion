@@ -1,0 +1,19 @@
+    public Future<DescribeReservedDBInstancesResult> describeReservedDBInstancesAsync(
+            final DescribeReservedDBInstancesRequest describeReservedDBInstancesRequest,
+            final AsyncHandler<DescribeReservedDBInstancesRequest, DescribeReservedDBInstancesResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeReservedDBInstancesResult>() {
+            public DescribeReservedDBInstancesResult call() throws Exception {
+                DescribeReservedDBInstancesResult result;
+                try {
+                    result = describeReservedDBInstances(describeReservedDBInstancesRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeReservedDBInstancesRequest, result);
+                   return result;
+            }
+        });
+    }
+    

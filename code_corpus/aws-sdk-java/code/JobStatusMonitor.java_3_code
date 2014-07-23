@@ -1,0 +1,24 @@
+    public JobStatusMonitor(AmazonSQSClient sqs, AmazonSNSClient sns) {
+        this.sqs = sqs;
+        this.sns = sns;
+        setupQueueAndTopic();
+    }
+
+    public String getTopicArn() {
+        return topicArn;
+    }
+
+    public void shutdown() {
+        try {
+            sqs.deleteQueue(new DeleteQueueRequest(queueUrl));
+        } catch (Exception e) {
+            log.warn("Unable to delete queue: " + queueUrl, e);
+        }
+
+        try {
+            sns.deleteTopic(new DeleteTopicRequest(topicArn));
+        } catch (Exception e) {
+            log.warn("Unable to delete topic: " + topicArn, e);
+        }
+    }
+

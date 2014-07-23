@@ -1,0 +1,43 @@
+    protected <T> void presignRequest(Request<T> request, HttpMethod methodName,
+            String bucketName, String key, Date expiration, String subResource) {
+        // Run any additional request handlers if present
+        beforeRequest(request);
+
+        String resourcePath = "/" +
+            ((bucketName != null) ? bucketName + "/" : "") +
+            ((key != null) ? HttpUtils.urlEncode(key, true) : "") +
+            ((subResource != null) ? "?" + subResource : "");
+        
+        // Make sure the resource-path for signing does not contain
+        // any consecutive "/"s.
+        // Note that we should also follow the same rule to escape
+        // consecutive "/"s when generating the presigned URL.
+        // See ServiceUtils#convertRequestToUrl(...)
+        resourcePath = resourcePath.replaceAll("(?<=/)/", "%2F");
+
+        AWSCredentials credentials = awsCredentialsProvider.getCredentials();
+        AmazonWebServiceRequest originalRequest = request.getOriginalRequest();
+        if (originalRequest != null && originalRequest.getRequestCredentials() != null) {
+            credentials = originalRequest.getRequestCredentials();
+        }
+
+        new S3QueryStringSigner<T>(methodName.toString(), resourcePath, expiration).sign(request, credentials);
+
+        // The Amazon S3 DevPay token header is a special exception and can be safely moved
+        // from the request's headers into the query string to ensure that it travels along
+        // with the pre-signed URL when it's sent back to Amazon S3.
+        if (request.getHeaders().containsKey(Headers.SECURITY_TOKEN)) {
+            String value = request.getHeaders().get(Headers.SECURITY_TOKEN);
+            request.addParameter(Headers.SECURITY_TOKEN, value);
+            request.getHeaders().remove(Headers.SECURITY_TOKEN);
+        }
+    }
+
+    private <T> void beforeRequest(Request<T> request) {
+        if (requestHandler2s != null) {
+            for (RequestHandler2 requestHandler2 : requestHandler2s) {
+                requestHandler2.beforeRequest(request);
+            }
+        }
+    }
+

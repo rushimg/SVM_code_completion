@@ -1,0 +1,22 @@
+        Map<String, ExpectedAttributeValue> expectedValues = new HashMap<String, ExpectedAttributeValue>();
+        if ( config.getSaveBehavior() != SaveBehavior.CLOBBER ) {
+            for ( Method method : reflector.getRelevantGetters(clazz) ) {
+
+                if ( reflector.isVersionAttributeGetter(method) ) {
+                    Object getterResult = safeInvoke(method, object);
+                    String attributeName = reflector.getAttributeName(method);
+
+                    ExpectedAttributeValue expected = new ExpectedAttributeValue();
+                    AttributeValue currentValue = getSimpleAttributeValue(method, getterResult);
+                    expected.setExists(currentValue != null);
+                    if ( currentValue != null )
+                        expected.setValue(currentValue);
+                    expectedValues.put(attributeName, expected);
+                    break;
+                }
+            }
+        }
+
+        db.deleteItem(applyUserAgent(new DeleteItemRequest().withKey(objectKey).withTableName(tableName).withExpected(expectedValues)));
+    }
+

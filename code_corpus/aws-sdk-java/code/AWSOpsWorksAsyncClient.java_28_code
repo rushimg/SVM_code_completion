@@ -1,0 +1,19 @@
+    public Future<CloneStackResult> cloneStackAsync(
+            final CloneStackRequest cloneStackRequest,
+            final AsyncHandler<CloneStackRequest, CloneStackResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<CloneStackResult>() {
+            public CloneStackResult call() throws Exception {
+                CloneStackResult result;
+                try {
+                    result = cloneStack(cloneStackRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(cloneStackRequest, result);
+                   return result;
+            }
+        });
+    }
+    

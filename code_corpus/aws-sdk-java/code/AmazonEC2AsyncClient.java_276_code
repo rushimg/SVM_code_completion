@@ -1,0 +1,19 @@
+    public Future<CreateSubnetResult> createSubnetAsync(
+            final CreateSubnetRequest createSubnetRequest,
+            final AsyncHandler<CreateSubnetRequest, CreateSubnetResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<CreateSubnetResult>() {
+            public CreateSubnetResult call() throws Exception {
+                CreateSubnetResult result;
+                try {
+                    result = createSubnet(createSubnetRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(createSubnetRequest, result);
+                   return result;
+            }
+        });
+    }
+    

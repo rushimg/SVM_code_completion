@@ -1,0 +1,14 @@
+    public Date parseIso8601Date(String dateString) throws ParseException {
+        try {
+            synchronized (iso8601DateFormat) {
+                return iso8601DateFormat.parse(dateString);
+            }
+        } catch (ParseException e) {
+            // If the first ISO 8601 parser didn't work, try the alternate
+            // version which doesn't include fractional seconds
+            synchronized (alternateIso8601DateFormat) {
+                return alternateIso8601DateFormat.parse(dateString);
+            }
+        }
+    }
+

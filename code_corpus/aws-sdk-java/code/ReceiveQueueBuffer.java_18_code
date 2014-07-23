@@ -1,0 +1,33 @@
+        synchronized void clear() {
+            if (!open)
+                throw new IllegalStateException("batch is not open");
+
+            if (System.nanoTime() < visibilityDeadlineNano) {
+                ChangeMessageVisibilityBatchRequest batchRequest = new ChangeMessageVisibilityBatchRequest()
+                .withQueueUrl(qUrl);
+                ResultConverter.appendUserAgent(batchRequest, AmazonSQSBufferedAsyncClient.USER_AGENT);
+
+                List<ChangeMessageVisibilityBatchRequestEntry> entries = 
+                    new ArrayList<ChangeMessageVisibilityBatchRequestEntry>(messages.size());
+
+                int i = 0;
+                for (Message m : messages) {
+                        
+                    entries.add(new ChangeMessageVisibilityBatchRequestEntry()
+                            .withId(Integer.toString(i))
+                            .withReceiptHandle(m.getReceiptHandle())
+                            .withVisibilityTimeout(0));
+                    ++i;
+                }
+                
+                try {
+                    batchRequest.setEntries(entries);
+                    sqsClient.changeMessageVisibilityBatch(batchRequest);
+                } catch (AmazonClientException e) {
+                    // Log and ignore.
+                    log.warn("ReceiveMessageBatchTask: changeMessageVisibility failed "    + e);
+                }
+            }
+            messages.clear();
+        }
+

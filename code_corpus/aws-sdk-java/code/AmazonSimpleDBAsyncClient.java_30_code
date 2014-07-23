@@ -1,0 +1,19 @@
+    public Future<GetAttributesResult> getAttributesAsync(
+            final GetAttributesRequest getAttributesRequest,
+            final AsyncHandler<GetAttributesRequest, GetAttributesResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<GetAttributesResult>() {
+            public GetAttributesResult call() throws Exception {
+                GetAttributesResult result;
+                try {
+                    result = getAttributes(getAttributesRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(getAttributesRequest, result);
+                   return result;
+            }
+        });
+    }
+    

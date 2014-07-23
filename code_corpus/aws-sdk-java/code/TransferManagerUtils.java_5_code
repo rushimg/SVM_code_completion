@@ -1,0 +1,13 @@
+    public static long getContentLength(PutObjectRequest putObjectRequest) {
+        File file = getRequestFile(putObjectRequest);
+        if (file != null) return file.length();
+
+        if (putObjectRequest.getInputStream() != null) {
+            if (putObjectRequest.getMetadata().getContentLength() > 0) {
+                return putObjectRequest.getMetadata().getContentLength();
+            }
+        }
+
+        return -1;
+    }
+

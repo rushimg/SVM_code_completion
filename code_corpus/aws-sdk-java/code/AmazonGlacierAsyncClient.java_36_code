@@ -1,0 +1,19 @@
+    public Future<InitiateJobResult> initiateJobAsync(
+            final InitiateJobRequest initiateJobRequest,
+            final AsyncHandler<InitiateJobRequest, InitiateJobResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<InitiateJobResult>() {
+            public InitiateJobResult call() throws Exception {
+                InitiateJobResult result;
+                try {
+                    result = initiateJob(initiateJobRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(initiateJobRequest, result);
+                   return result;
+            }
+        });
+    }
+    

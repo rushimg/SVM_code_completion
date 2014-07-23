@@ -1,0 +1,19 @@
+    public Future<UpdateApplicationResult> updateApplicationAsync(
+            final UpdateApplicationRequest updateApplicationRequest,
+            final AsyncHandler<UpdateApplicationRequest, UpdateApplicationResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<UpdateApplicationResult>() {
+            public UpdateApplicationResult call() throws Exception {
+                UpdateApplicationResult result;
+                try {
+                    result = updateApplication(updateApplicationRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(updateApplicationRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -1,0 +1,34 @@
+                    else if ( !String.class.isAssignableFrom(paramType) ) {                	 
+                        throw new DynamoDBMappingException("Expected a String, but was " + paramType);
+                    } else {
+                        if ( isCollection ) {
+                            unmarshaller = new SSUnmarshaller() {
+
+                                @Override
+                                public Object unmarshall(AttributeValue value) {
+                                    Set<String> argument = new HashSet<String>();
+                                    for ( String s : value.getSS() ) {
+                                        argument.add(s);
+                                    }
+                                    return argument;
+                                }
+                            };
+                        } else {
+                            unmarshaller = new SUnmarshaller() {
+
+                                @Override
+                                public Object unmarshall(AttributeValue value) {
+                                    return value.getS();
+                                }
+                            };
+                        }
+                    }
+                }
+
+                argumentUnmarshallerCache.put(getter, unmarshaller);
+            }
+        }
+
+        return argumentUnmarshallerCache.get(getter);
+    }
+

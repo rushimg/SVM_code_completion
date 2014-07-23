@@ -1,0 +1,19 @@
+    public Future<CacheCluster> modifyCacheClusterAsync(
+            final ModifyCacheClusterRequest modifyCacheClusterRequest,
+            final AsyncHandler<ModifyCacheClusterRequest, CacheCluster> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<CacheCluster>() {
+            public CacheCluster call() throws Exception {
+                CacheCluster result;
+                try {
+                    result = modifyCacheCluster(modifyCacheClusterRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(modifyCacheClusterRequest, result);
+                   return result;
+            }
+        });
+    }
+    

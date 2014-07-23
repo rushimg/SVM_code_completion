@@ -1,0 +1,18 @@
+    private <T> void setValue(final T toReturn, final Method getter, AttributeValue value) {
+
+        Method setter = reflector.getSetter(getter);
+        ArgumentUnmarshaller unmarhsaller = reflector.getArgumentUnmarshaller(toReturn, getter, setter);
+        unmarhsaller.typeCheck(value, setter);
+
+        Object argument;
+        try {
+            argument = unmarhsaller.unmarshall(value);
+        } catch ( IllegalArgumentException e ) {
+            throw new DynamoDBMappingException("Couldn't unmarshall value " + value + " for " + setter, e);
+        } catch ( ParseException e ) {
+            throw new DynamoDBMappingException("Error attempting to parse date string " + value + " for "+ setter, e);
+        }
+
+        safeInvoke(setter, toReturn, argument);
+    }
+

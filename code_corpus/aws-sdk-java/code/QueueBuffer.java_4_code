@@ -1,0 +1,10 @@
+    public Future< SendMessageResult> sendMessage(SendMessageRequest request, AsyncHandler<SendMessageRequest, SendMessageResult> handler) {
+        QueueBufferCallback<SendMessageRequest,SendMessageResult> callback = null;
+        if ( handler != null ) {
+            callback = new QueueBufferCallback<SendMessageRequest,SendMessageResult> (handler, request);
+        }
+        QueueBufferFuture<SendMessageRequest, SendMessageResult> future =  sendBuffer.sendMessage(request, callback);
+        future.setBuffer(this);
+        return future;
+    }
+    

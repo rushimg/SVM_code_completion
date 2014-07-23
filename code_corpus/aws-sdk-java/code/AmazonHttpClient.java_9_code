@@ -1,0 +1,17 @@
+        if (System.getProperty(DISABLE_CERT_CHECKING_SYSTEM_PROPERTY) != null) {
+            return;
+        }
+
+        try {
+            SchemeRegistry schemeRegistry = httpClient.getConnectionManager().getSchemeRegistry();
+
+            SSLSocketFactory sf = new SSLSocketFactory(
+                    SSLContext.getDefault(),
+                    SSLSocketFactory.BROWSER_COMPATIBLE_HOSTNAME_VERIFIER);
+            Scheme https = new Scheme("https", 443, sf);
+
+            schemeRegistry.register(https);
+        } catch (NoSuchAlgorithmException e) {
+            throw new AmazonClientException("Unable to access default SSL context to disable strict hostname verification");
+        }
+    }

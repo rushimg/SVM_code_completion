@@ -1,0 +1,24 @@
+    public void setBucketWebsiteConfiguration(SetBucketWebsiteConfigurationRequest setBucketWebsiteConfigurationRequest)
+           throws AmazonClientException, AmazonServiceException {
+        String bucketName = setBucketWebsiteConfigurationRequest.getBucketName();
+        BucketWebsiteConfiguration configuration = setBucketWebsiteConfigurationRequest.getConfiguration();
+
+            assertParameterNotNull(bucketName,
+                    "The bucket name parameter must be specified when setting a bucket's website configuration");
+            assertParameterNotNull(configuration,
+                    "The bucket website configuration parameter must be specified when setting a bucket's website configuration");
+            if (configuration.getRedirectAllRequestsTo() == null) {
+            assertParameterNotNull(configuration.getIndexDocumentSuffix(),
+                    "The bucket website configuration parameter must specify the index document suffix when setting a bucket's website configuration");
+            }
+
+        Request<SetBucketWebsiteConfigurationRequest> request = createRequest(bucketName, null, setBucketWebsiteConfigurationRequest, HttpMethodName.PUT);
+        request.addParameter("website", null);
+        request.addHeader("Content-Type", "application/xml");
+
+        byte[] bytes = bucketConfigurationXmlFactory.convertToXmlByteArray(configuration);
+        request.setContent(new ByteArrayInputStream(bytes));
+
+        invoke(request, voidResponseHandler, bucketName, null);
+    }
+

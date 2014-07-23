@@ -1,0 +1,19 @@
+    public Future<ListTopicsResult> listTopicsAsync(
+            final ListTopicsRequest listTopicsRequest,
+            final AsyncHandler<ListTopicsRequest, ListTopicsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ListTopicsResult>() {
+            public ListTopicsResult call() throws Exception {
+                ListTopicsResult result;
+                try {
+                    result = listTopics(listTopicsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(listTopicsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -1,0 +1,19 @@
+    public Future<DeleteIdentityResult> deleteIdentityAsync(
+            final DeleteIdentityRequest deleteIdentityRequest,
+            final AsyncHandler<DeleteIdentityRequest, DeleteIdentityResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DeleteIdentityResult>() {
+            public DeleteIdentityResult call() throws Exception {
+                DeleteIdentityResult result;
+                try {
+                    result = deleteIdentity(deleteIdentityRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(deleteIdentityRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -1,0 +1,23 @@
+    public void deleteVersion(DeleteVersionRequest deleteVersionRequest)
+            throws AmazonClientException, AmazonServiceException {
+        assertParameterNotNull(deleteVersionRequest,
+            "The delete version request object must be specified when deleting a version");
+
+        String bucketName = deleteVersionRequest.getBucketName();
+        String key = deleteVersionRequest.getKey();
+        String versionId = deleteVersionRequest.getVersionId();
+
+        assertParameterNotNull(bucketName, "The bucket name must be specified when deleting a version");
+        assertParameterNotNull(key, "The key must be specified when deleting a version");
+        assertParameterNotNull(versionId, "The version ID must be specified when deleting a version");
+
+        Request<DeleteVersionRequest> request = createRequest(bucketName, key, deleteVersionRequest, HttpMethodName.DELETE);
+        if (versionId != null) request.addParameter("versionId", versionId);
+
+        if (deleteVersionRequest.getMfa() != null) {
+            populateRequestWithMfaDetails(request, deleteVersionRequest.getMfa());
+        }
+
+        invoke(request, voidResponseHandler, bucketName, key);
+    }
+

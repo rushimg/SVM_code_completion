@@ -1,0 +1,44 @@
+        int startingPosition = directory.getAbsolutePath().length();
+        if (!(directory.getAbsolutePath().endsWith(File.separator))) startingPosition++;
+
+        long totalSize = 0;
+        for (File f : files) {
+            //Check, if file, since only files can be uploaded.
+            if (f.isFile()) {
+                totalSize += f.length();
+
+                String key = f.getAbsolutePath().substring(startingPosition).replaceAll("\\\\", "/");
+
+                ObjectMetadata metadata=new ObjectMetadata();
+
+                // Invoke the callback if it's present.
+                // The callback allows the user to customize the metadata for each file being uploaded.
+                if (metadataProvider != null) {
+                    metadataProvider.provideObjectMetadata(f, metadata);
+                }
+
+                // All the single-file uploads share the same
+                // MultipleFileTransferProgressUpdatingListener and
+                // MultipleFileTransferStateChangeListener
+                uploads.add((UploadImpl) upload(
+                        new PutObjectRequest(bucketName,
+                                virtualDirectoryKeyPrefix + key, f)
+                                .withMetadata(metadata)
+                                .withGeneralProgressListener(
+                                        multipleFileTransferProgressListener),
+                        multipleFileTransferStateChangeListener));
+            }
+        }
+
+        transferProgress.setTotalBytesToTransfer(totalSize);
+
+        // Notify all state changes waiting for the uploads to all be queued
+        // to wake up and continue
+        synchronized (allTransfersQueuedLock) {
+            allTransfersQueuedLock.allQueued = true;
+            allTransfersQueuedLock.notifyAll();
+        }
+
+        return multipleFileUpload;
+    }
+

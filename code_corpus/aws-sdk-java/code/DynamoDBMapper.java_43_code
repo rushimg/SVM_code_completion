@@ -1,0 +1,9 @@
+    public <T> PaginatedScanList<T> scan(Class<T> clazz, DynamoDBScanExpression scanExpression, DynamoDBMapperConfig config) {
+        config = mergeConfig(config);
+
+        ScanRequest scanRequest = createScanRequestFromExpression(clazz, scanExpression, config);
+
+        ScanResult scanResult = db.scan(applyUserAgent(scanRequest));
+        return new PaginatedScanList<T>(this, clazz, db, scanRequest, scanResult);
+    }
+    

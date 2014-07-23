@@ -1,0 +1,18 @@
+    public Future<Void> createLaunchConfigurationAsync(
+            final CreateLaunchConfigurationRequest createLaunchConfigurationRequest,
+            final AsyncHandler<CreateLaunchConfigurationRequest, Void> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<Void>() {
+            public Void call() throws Exception {
+                try {
+                    createLaunchConfiguration(createLaunchConfigurationRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(createLaunchConfigurationRequest, null);
+                   return null;
+            }
+        });
+    }
+    

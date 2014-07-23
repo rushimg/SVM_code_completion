@@ -1,0 +1,40 @@
+    private Upload upload(final PutObjectRequest putObjectRequest, final TransferStateChangeListener stateListener)
+            throws AmazonServiceException, AmazonClientException {
+
+            appendUserAgent(putObjectRequest, USER_AGENT);
+
+            if (putObjectRequest.getMetadata() == null)
+                putObjectRequest.setMetadata(new ObjectMetadata());
+            ObjectMetadata metadata = putObjectRequest.getMetadata();
+
+            if ( TransferManagerUtils.getRequestFile(putObjectRequest) != null ) {
+                File file = TransferManagerUtils.getRequestFile(putObjectRequest);
+
+                // Always set the content length, even if it's already set
+                metadata.setContentLength(file.length());
+
+                // Only set the content type if it hasn't already been set
+                if ( metadata.getContentType() == null ) {
+                    metadata.setContentType(Mimetypes.getInstance().getMimetype(file));
+                }
+            }
+
+            String description = "Uploading to " + putObjectRequest.getBucketName() + "/" + putObjectRequest.getKey();
+            TransferProgressImpl transferProgress = new TransferProgressImpl();
+            transferProgress.setTotalBytesToTransfer(TransferManagerUtils.getContentLength(putObjectRequest));
+
+            ProgressListenerChain listenerChain = new ProgressListenerChain(new TransferProgressUpdatingListener(
+                    transferProgress), putObjectRequest.getGeneralProgressListener());
+            putObjectRequest.setGeneralProgressListener(listenerChain);
+
+            UploadImpl upload = new UploadImpl(description, transferProgress, listenerChain, stateListener);
+
+            UploadCallable uploadCallable = new UploadCallable(this, threadPool, upload, putObjectRequest, listenerChain);
+            UploadMonitor watcher = new UploadMonitor(this, upload, threadPool, uploadCallable, putObjectRequest, listenerChain);
+            watcher.setTimedThreadPool(timedThreadPool);
+            upload.setMonitor(watcher);
+
+            return upload;
+        }
+
+

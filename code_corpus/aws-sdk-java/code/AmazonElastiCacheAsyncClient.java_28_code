@@ -1,0 +1,19 @@
+    public Future<ReplicationGroup> createReplicationGroupAsync(
+            final CreateReplicationGroupRequest createReplicationGroupRequest,
+            final AsyncHandler<CreateReplicationGroupRequest, ReplicationGroup> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ReplicationGroup>() {
+            public ReplicationGroup call() throws Exception {
+                ReplicationGroup result;
+                try {
+                    result = createReplicationGroup(createReplicationGroupRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(createReplicationGroupRequest, result);
+                   return result;
+            }
+        });
+    }
+    

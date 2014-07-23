@@ -1,0 +1,19 @@
+    public Future<DescribeDBParametersResult> describeDBParametersAsync(
+            final DescribeDBParametersRequest describeDBParametersRequest,
+            final AsyncHandler<DescribeDBParametersRequest, DescribeDBParametersResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeDBParametersResult>() {
+            public DescribeDBParametersResult call() throws Exception {
+                DescribeDBParametersResult result;
+                try {
+                    result = describeDBParameters(describeDBParametersRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeDBParametersRequest, result);
+                   return result;
+            }
+        });
+    }
+    

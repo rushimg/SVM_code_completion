@@ -1,0 +1,19 @@
+    public Future<ReadPresetResult> readPresetAsync(
+            final ReadPresetRequest readPresetRequest,
+            final AsyncHandler<ReadPresetRequest, ReadPresetResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ReadPresetResult>() {
+            public ReadPresetResult call() throws Exception {
+                ReadPresetResult result;
+                try {
+                    result = readPreset(readPresetRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(readPresetRequest, result);
+                   return result;
+            }
+        });
+    }
+    

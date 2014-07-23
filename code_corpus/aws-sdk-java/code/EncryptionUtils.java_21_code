@@ -1,0 +1,24 @@
+    public static byte[] getEncryptedSymmetricKey(SecretKey toBeEncrypted, EncryptionMaterials materials, Provider cryptoProvider) {
+        Key keyToDoEncryption;
+        if (materials.getKeyPair() != null) {
+            // Do envelope encryption with public key from key pair
+            keyToDoEncryption = materials.getKeyPair().getPublic();
+        } else {
+            // Do envelope encryption with symmetric key
+            keyToDoEncryption= materials.getSymmetricKey();
+        }
+        try {
+            Cipher cipher;
+            byte[] toBeEncryptedBytes = toBeEncrypted.getEncoded();
+            if (cryptoProvider != null) {
+                cipher = Cipher.getInstance(keyToDoEncryption.getAlgorithm(), cryptoProvider);
+            } else {
+                cipher = Cipher.getInstance(keyToDoEncryption.getAlgorithm()); // Use default JCE Provider
+            }
+            cipher.init(Cipher.ENCRYPT_MODE, keyToDoEncryption);
+            return cipher.doFinal(toBeEncryptedBytes);
+        } catch (Exception e) {
+            throw new AmazonClientException("Unable to encrypt symmetric key: " + e.getMessage(), e);
+        }
+    }
+

@@ -1,0 +1,19 @@
+    public Future<DescribeChapCredentialsResult> describeChapCredentialsAsync(
+            final DescribeChapCredentialsRequest describeChapCredentialsRequest,
+            final AsyncHandler<DescribeChapCredentialsRequest, DescribeChapCredentialsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeChapCredentialsResult>() {
+            public DescribeChapCredentialsResult call() throws Exception {
+                DescribeChapCredentialsResult result;
+                try {
+                    result = describeChapCredentials(describeChapCredentialsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeChapCredentialsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -1,0 +1,67 @@
+package com.amazonaws.services.simpleworkflow.flow.test;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.CancellationException;
+
+import com.amazonaws.services.simpleworkflow.flow.ChildWorkflowFailedException;
+import com.amazonaws.services.simpleworkflow.flow.DecisionContext;
+import com.amazonaws.services.simpleworkflow.flow.DecisionContextProvider;
+import com.amazonaws.services.simpleworkflow.flow.DecisionContextProviderImpl;
+import com.amazonaws.services.simpleworkflow.flow.SignalExternalWorkflowException;
+import com.amazonaws.services.simpleworkflow.flow.StartChildWorkflowFailedException;
+import com.amazonaws.services.simpleworkflow.flow.WorkflowClock;
+import com.amazonaws.services.simpleworkflow.flow.WorkflowException;
+import com.amazonaws.services.simpleworkflow.flow.common.FlowConstants;
+import com.amazonaws.services.simpleworkflow.flow.core.Functor;
+import com.amazonaws.services.simpleworkflow.flow.core.Promise;
+import com.amazonaws.services.simpleworkflow.flow.core.Settable;
+import com.amazonaws.services.simpleworkflow.flow.core.Task;
+import com.amazonaws.services.simpleworkflow.flow.core.TryCatchFinally;
+import com.amazonaws.services.simpleworkflow.flow.generic.ContinueAsNewWorkflowExecutionParameters;
+import com.amazonaws.services.simpleworkflow.flow.generic.GenericActivityClient;
+import com.amazonaws.services.simpleworkflow.flow.generic.GenericWorkflowClient;
+import com.amazonaws.services.simpleworkflow.flow.generic.SignalExternalWorkflowParameters;
+import com.amazonaws.services.simpleworkflow.flow.generic.StartChildWorkflowExecutionParameters;
+import com.amazonaws.services.simpleworkflow.flow.generic.StartChildWorkflowReply;
+import com.amazonaws.services.simpleworkflow.flow.generic.WorkflowDefinition;
+import com.amazonaws.services.simpleworkflow.flow.generic.WorkflowDefinitionFactory;
+import com.amazonaws.services.simpleworkflow.flow.generic.WorkflowDefinitionFactoryFactory;
+import com.amazonaws.services.simpleworkflow.model.StartChildWorkflowExecutionFailedCause;
+import com.amazonaws.services.simpleworkflow.model.UnknownResourceException;
+import com.amazonaws.services.simpleworkflow.model.WorkflowExecution;
+import com.amazonaws.services.simpleworkflow.model.WorkflowType;
+
+public class TestGenericWorkflowClient implements GenericWorkflowClient {
+
+    private static class StartChildWorkflowReplyImpl implements StartChildWorkflowReply {
+
+        private final Settable<String> result;
+
+        private final String runId;
+
+        private StartChildWorkflowReplyImpl(Settable<String> result, String runId) {
+            this.result = result;
+            this.runId = runId;
+        }
+
+        @Override
+        public String getRunId() {
+            return runId;
+        }
+
+        @Override
+        public Promise<String> getResult() {
+            return result;
+        }
+    }
+
+    private final class ChildWorkflowTryCatchFinally extends TryCatchFinally {
+
+        private final StartChildWorkflowExecutionParameters parameters;
+
+        private final WorkflowExecution childExecution;
+
+        private final Settable<String> result;
+

@@ -1,0 +1,18 @@
+    public Future<Void> rebootInstanceAsync(
+            final RebootInstanceRequest rebootInstanceRequest,
+            final AsyncHandler<RebootInstanceRequest, Void> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<Void>() {
+            public Void call() throws Exception {
+                try {
+                    rebootInstance(rebootInstanceRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(rebootInstanceRequest, null);
+                   return null;
+            }
+        });
+    }
+    

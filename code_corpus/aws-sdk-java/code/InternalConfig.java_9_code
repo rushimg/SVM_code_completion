@@ -1,0 +1,51 @@
+    static InternalConfig load() throws JsonParseException,
+        JsonMappingException, IOException {
+        URL url = ClassLoaderHelper.getResource("/" + DEFAULT_CONFIG_RESOURCE,
+                InternalConfig.class);
+        if (url == null) { // Try without a leading "/"
+            url = ClassLoaderHelper.getResource(DEFAULT_CONFIG_RESOURCE,
+                    InternalConfig.class);
+        }
+        InternalConfigJsonHelper config = loadfrom(url);
+        InternalConfigJsonHelper configOverride;
+        URL overrideUrl = ClassLoaderHelper.getResource(
+                "/" + CONFIG_OVERRIDE_RESOURCE, InternalConfig.class);
+        if (overrideUrl == null) { // Try without a leading "/"
+            overrideUrl = ClassLoaderHelper.getResource(
+                    CONFIG_OVERRIDE_RESOURCE, InternalConfig.class);
+        }
+        if (overrideUrl == null) {
+            log.debug("Configuration override " + CONFIG_OVERRIDE_RESOURCE
+                    + " not found.");
+            configOverride = new InternalConfigJsonHelper();
+        } else {
+            configOverride = loadfrom(overrideUrl);
+        }
+        return new InternalConfig(config, configOverride);
+    }
+    
+    // For debugging purposes
+    void dump() {
+        StringBuilder sb = new StringBuilder().append("defaultSignerConfig: ")
+                .append(defaultSignerConfig).append("\n")
+                .append("serviceRegionSigners: ").append(serviceRegionSigners)
+                .append("\n").append("regionSigners: ").append(regionSigners)
+                .append("\n").append("serviceSigners: ").append(serviceSigners);
+        log.debug(sb.toString());
+    }
+
+    public static class Factory {
+        private static final InternalConfig SINGELTON;
+        static {
+            InternalConfig config = null;
+            try {
+                config = InternalConfig.load();
+            } catch(RuntimeException ex) {
+                throw ex;
+            } catch(Exception ex) {
+                throw new IllegalStateException(
+                        "Fatal: Failed to load the internal config for AWS Java SDK",
+                        ex);
+            }
+            SINGELTON = config;
+        }

@@ -1,0 +1,62 @@
+    public URL generatePresignedUrl(GeneratePresignedUrlRequest generatePresignedUrlRequest)
+            throws AmazonClientException {
+        assertParameterNotNull(generatePresignedUrlRequest,
+            "The request parameter must be specified when generating a pre-signed URL");
+
+        String bucketName = generatePresignedUrlRequest.getBucketName();
+        String key = generatePresignedUrlRequest.getKey();
+
+        assertParameterNotNull(bucketName,
+            "The bucket name parameter must be specified when generating a pre-signed URL");
+        assertParameterNotNull(generatePresignedUrlRequest.getMethod(),
+            "The HTTP method request parameter must be specified when generating a pre-signed URL");
+
+        if (generatePresignedUrlRequest.getExpiration() == null) {
+            generatePresignedUrlRequest.setExpiration(
+        }
+
+        HttpMethodName httpMethod = HttpMethodName.valueOf(generatePresignedUrlRequest.getMethod().toString());
+        
+        // If the key starts with a slash character itself, the following method
+        // will actually add another slash before the resource path to prevent
+        // the HttpClient mistakenly treating the slash as a path delimiter.
+        // For presigned request, we need to remember to remove this extra slash
+        // before generating the URL.
+        Request<GeneratePresignedUrlRequest> request = createRequest(bucketName, key, generatePresignedUrlRequest, httpMethod);
+        
+        for (Entry<String, String> entry : generatePresignedUrlRequest.getRequestParameters().entrySet()) {
+            request.addParameter(entry.getKey(), entry.getValue());
+        }
+
+        if (generatePresignedUrlRequest.getContentType() != null) {
+            request.addHeader(Headers.CONTENT_TYPE, generatePresignedUrlRequest.getContentType());
+        }
+
+        addResponseHeaderParameters(request, generatePresignedUrlRequest.getResponseHeaders());
+
+        Signer signer = getSigner();
+        if (signer instanceof Presigner) {
+            // If we have a signer which knows how to presign requests,
+            // delegate directly to it.
+            ((Presigner) signer).presignRequest(
+                request,
+                awsCredentialsProvider.getCredentials(),
+                generatePresignedUrlRequest.getExpiration()
+            );
+        } else {
+            // Otherwise use the default presigning method, which is hardcoded
+            // to use QueryStringSigner.
+            presignRequest(
+                request,
+                generatePresignedUrlRequest.getMethod(),
+                bucketName,
+                key,
+                generatePresignedUrlRequest.getExpiration(),
+                null
+            );
+        }
+
+        // Remove the leading slash (if any) in the resource-path
+        return ServiceUtils.convertRequestToUrl(request, true);
+    }
+

@@ -1,0 +1,19 @@
+    public Future<Snapshot> authorizeSnapshotAccessAsync(
+            final AuthorizeSnapshotAccessRequest authorizeSnapshotAccessRequest,
+            final AsyncHandler<AuthorizeSnapshotAccessRequest, Snapshot> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<Snapshot>() {
+            public Snapshot call() throws Exception {
+                Snapshot result;
+                try {
+                    result = authorizeSnapshotAccess(authorizeSnapshotAccessRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(authorizeSnapshotAccessRequest, result);
+                   return result;
+            }
+        });
+    }
+    

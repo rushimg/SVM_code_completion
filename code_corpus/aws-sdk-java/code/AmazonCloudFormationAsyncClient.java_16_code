@@ -1,0 +1,19 @@
+    public Future<ValidateTemplateResult> validateTemplateAsync(
+            final ValidateTemplateRequest validateTemplateRequest,
+            final AsyncHandler<ValidateTemplateRequest, ValidateTemplateResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ValidateTemplateResult>() {
+            public ValidateTemplateResult call() throws Exception {
+                ValidateTemplateResult result;
+                try {
+                    result = validateTemplate(validateTemplateRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(validateTemplateRequest, result);
+                   return result;
+            }
+        });
+    }
+    

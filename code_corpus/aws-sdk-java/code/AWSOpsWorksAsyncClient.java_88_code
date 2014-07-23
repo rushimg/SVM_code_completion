@@ -1,0 +1,19 @@
+    public Future<DescribeLayersResult> describeLayersAsync(
+            final DescribeLayersRequest describeLayersRequest,
+            final AsyncHandler<DescribeLayersRequest, DescribeLayersResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeLayersResult>() {
+            public DescribeLayersResult call() throws Exception {
+                DescribeLayersResult result;
+                try {
+                    result = describeLayers(describeLayersRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeLayersRequest, result);
+                   return result;
+            }
+        });
+    }
+    

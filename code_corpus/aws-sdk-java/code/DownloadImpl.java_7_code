@@ -1,0 +1,13 @@
+    public synchronized void abortWithoutNotifyingStateChangeListener() throws IOException {
+        
+        this.monitor.getFuture().cancel(true);
+        
+        if ( s3Object != null ) {
+              s3Object.getObjectContent().abort();
+        }
+        
+        synchronized (this) {
+            this.state = TransferState.Canceled;
+        }
+    }
+    

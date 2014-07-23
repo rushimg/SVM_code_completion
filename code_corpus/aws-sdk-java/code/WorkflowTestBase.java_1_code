@@ -1,0 +1,67 @@
+package com.amazonaws.services.simpleworkflow.flow.junit;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Callable;
+
+import org.junit.rules.MethodRule;
+import org.junit.runners.model.FrameworkMethod;
+import org.junit.runners.model.Statement;
+
+import com.amazonaws.services.simpleworkflow.flow.DecisionContext;
+import com.amazonaws.services.simpleworkflow.flow.WorkflowClock;
+import com.amazonaws.services.simpleworkflow.flow.core.AsyncScope;
+import com.amazonaws.services.simpleworkflow.flow.core.Promise;
+import com.amazonaws.services.simpleworkflow.flow.core.Settable;
+import com.amazonaws.services.simpleworkflow.flow.core.Task;
+import com.amazonaws.services.simpleworkflow.flow.junit.spring.FlowSpringJUnit4ClassRunner;
+import com.amazonaws.services.simpleworkflow.flow.test.TestWorkflowClock;
+import com.amazonaws.services.simpleworkflow.flow.test.TestWorkflowContext;
+import com.amazonaws.services.simpleworkflow.flow.worker.CurrentDecisionContext;
+import com.amazonaws.services.simpleworkflow.model.WorkflowExecution;
+import com.amazonaws.services.simpleworkflow.model.WorkflowType;
+
+public abstract class WorkflowTestBase implements MethodRule {
+
+    protected String defaultActivitiesTaskListToPoll = "TestTaskList";
+
+    boolean disableOutstandingTasksCheck;
+
+    protected DecisionContext decisionContext;
+
+    protected TestWorkflowContext workflowContext;
+
+    protected TestWorkflowClock workflowClock;
+
+    AsyncScope scope;
+
+    List<Settable<Void>> waits = new ArrayList<Settable<Void>>();
+
+    double clockAcceleration = 1.0;
+
+    boolean flowTestRunner;
+    
+    private long testTimeoutActualTimeMilliseconds;
+
+    private WorkflowTestStatement workflowTestStatement;
+
+    private Class<? extends Throwable> expectedException;
+
+    public WorkflowTestBase(DecisionContext decisionContext) {
+        this.decisionContext = decisionContext;
+        workflowContext = (TestWorkflowContext) decisionContext.getWorkflowContext();
+        workflowClock = (TestWorkflowClock) decisionContext.getWorkflowClock();
+        WorkflowExecution we = new WorkflowExecution();
+        we.setWorkflowId("testWorkflowId");
+        we.setRunId("testRunId");
+        workflowContext.setWorkflowExecution(we);
+        WorkflowType wt = new WorkflowType();
+        wt.setName("testWorkflow");
+        wt.setVersion("0.0");
+        workflowContext.setWorkflowType(wt);
+    }
+
+    public boolean isDisableOutstandingTasksCheck() {
+        return disableOutstandingTasksCheck;
+    }
+

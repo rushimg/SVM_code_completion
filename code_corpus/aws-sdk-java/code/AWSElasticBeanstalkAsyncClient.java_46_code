@@ -1,0 +1,19 @@
+    public Future<ListAvailableSolutionStacksResult> listAvailableSolutionStacksAsync(
+            final ListAvailableSolutionStacksRequest listAvailableSolutionStacksRequest,
+            final AsyncHandler<ListAvailableSolutionStacksRequest, ListAvailableSolutionStacksResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ListAvailableSolutionStacksResult>() {
+            public ListAvailableSolutionStacksResult call() throws Exception {
+                ListAvailableSolutionStacksResult result;
+                try {
+                    result = listAvailableSolutionStacks(listAvailableSolutionStacksRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(listAvailableSolutionStacksRequest, result);
+                   return result;
+            }
+        });
+    }
+    

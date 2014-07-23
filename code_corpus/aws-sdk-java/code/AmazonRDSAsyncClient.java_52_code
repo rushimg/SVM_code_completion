@@ -1,0 +1,19 @@
+    public Future<ListTagsForResourceResult> listTagsForResourceAsync(
+            final ListTagsForResourceRequest listTagsForResourceRequest,
+            final AsyncHandler<ListTagsForResourceRequest, ListTagsForResourceResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ListTagsForResourceResult>() {
+            public ListTagsForResourceResult call() throws Exception {
+                ListTagsForResourceResult result;
+                try {
+                    result = listTagsForResource(listTagsForResourceRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(listTagsForResourceRequest, result);
+                   return result;
+            }
+        });
+    }
+    

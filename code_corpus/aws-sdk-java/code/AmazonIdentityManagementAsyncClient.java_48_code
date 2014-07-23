@@ -1,0 +1,19 @@
+    public Future<CreateUserResult> createUserAsync(
+            final CreateUserRequest createUserRequest,
+            final AsyncHandler<CreateUserRequest, CreateUserResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<CreateUserResult>() {
+            public CreateUserResult call() throws Exception {
+                CreateUserResult result;
+                try {
+                    result = createUser(createUserRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(createUserRequest, result);
+                   return result;
+            }
+        });
+    }
+    

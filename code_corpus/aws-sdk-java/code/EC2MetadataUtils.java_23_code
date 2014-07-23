@@ -1,0 +1,63 @@
+	public static String getUserData() {
+		return getData(EC2_USERDATA_ROOT);
+	}
+	
+	public static String getData(String path) {
+		return getData(path, DEFAULT_QUERY_RETRIES);
+	}
+	
+	public static String getData(String path, int tries) {
+		List<String> items = getItems(path, tries, true);
+		if (null != items && items.size() > 0)
+			return items.get(0);
+		return null;
+	}
+	
+	public static List<String> getItems(String path) {
+		return getItems(path, DEFAULT_QUERY_RETRIES, false);
+	}
+	
+	public static List<String> getItems(String path, int tries) {
+		return getItems(path, tries, false);
+	}
+	
+	private static List<String> getItems(String path, int tries, boolean slurp) {
+		if (tries == 0)
+			throw new AmazonClientException("Unable to contact EC2 metadata service.");
+		
+		List<String> items;
+		try {
+			String response = ec2MetadataClient.readResource(path);
+			if (slurp)
+				items = Collections.singletonList(response);
+			else
+				items = Arrays.asList(response.split("\n"));
+			return items;
+		} catch (AmazonClientException ace) {
+			log.warn("Unable to retrieve the requested metadata.");
+			return null;
+		} catch (Exception e) {
+			// Retry on any other exceptions
+			try {
+				Thread.sleep(pause < MINIMUM_RETRY_WAIT_TIME_MILLISECONDS ? MINIMUM_RETRY_WAIT_TIME_MILLISECONDS : pause);
+			} catch (InterruptedException e1) {
+				Thread.currentThread().interrupt();
+			}
+			return getItems(path, tries - 1, slurp);
+		}
+	}
+	
+	private static String fetchData(String path) {
+		return fetchData(path, false);
+	}
+	
+	private static String fetchData(String path, boolean force) {
+		try {
+			if (force || !cache.containsKey(path))
+				cache.put(path, getData(path));
+			return cache.get(path);
+		} catch (Exception e) {
+			return null;
+		}
+	}
+	

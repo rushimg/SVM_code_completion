@@ -1,0 +1,19 @@
+    public Future<DescribeAlarmHistoryResult> describeAlarmHistoryAsync(
+            final DescribeAlarmHistoryRequest describeAlarmHistoryRequest,
+            final AsyncHandler<DescribeAlarmHistoryRequest, DescribeAlarmHistoryResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeAlarmHistoryResult>() {
+            public DescribeAlarmHistoryResult call() throws Exception {
+                DescribeAlarmHistoryResult result;
+                try {
+                    result = describeAlarmHistory(describeAlarmHistoryRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeAlarmHistoryRequest, result);
+                   return result;
+            }
+        });
+    }
+    

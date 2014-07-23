@@ -1,0 +1,19 @@
+    public Future<DescribeVpcsResult> describeVpcsAsync(
+            final DescribeVpcsRequest describeVpcsRequest,
+            final AsyncHandler<DescribeVpcsRequest, DescribeVpcsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeVpcsResult>() {
+            public DescribeVpcsResult call() throws Exception {
+                DescribeVpcsResult result;
+                try {
+                    result = describeVpcs(describeVpcsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeVpcsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -1,0 +1,19 @@
+    public Future<GetPipelineDefinitionResult> getPipelineDefinitionAsync(
+            final GetPipelineDefinitionRequest getPipelineDefinitionRequest,
+            final AsyncHandler<GetPipelineDefinitionRequest, GetPipelineDefinitionResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<GetPipelineDefinitionResult>() {
+            public GetPipelineDefinitionResult call() throws Exception {
+                GetPipelineDefinitionResult result;
+                try {
+                    result = getPipelineDefinition(getPipelineDefinitionRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(getPipelineDefinitionRequest, result);
+                   return result;
+            }
+        });
+    }
+    

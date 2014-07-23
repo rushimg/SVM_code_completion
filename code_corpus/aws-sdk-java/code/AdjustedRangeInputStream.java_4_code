@@ -1,0 +1,24 @@
+    private void initializeForRead(long rangeBeginning, long rangeEnd) throws IOException {
+        // To get to the left-most byte desired by a user, we must skip over the 16 bytes of the
+        // preliminary cipher block, and then possibly skip a few more bytes into the next block
+        // to where the the left-most byte is located.
+        int numBytesToSkip;
+        if(rangeBeginning < JceEncryptionConstants.SYMMETRIC_CIPHER_BLOCK_SIZE) {
+            numBytesToSkip = (int)rangeBeginning;
+        } else {
+            int offsetIntoBlock = (int)(rangeBeginning % JceEncryptionConstants.SYMMETRIC_CIPHER_BLOCK_SIZE);
+            numBytesToSkip = JceEncryptionConstants.SYMMETRIC_CIPHER_BLOCK_SIZE + offsetIntoBlock;
+        }
+        if(numBytesToSkip != 0) {
+            // Skip to the left-most desired byte.  The read() method is used instead of the skip() method
+            // since the skip() method will not block if the underlying input stream is waiting for more input.
+            while(numBytesToSkip > 0) {
+                this.decryptedContents.read();
+                numBytesToSkip--;
+            }
+        }
+        // The number of bytes the user may read is equal to the number of the bytes in the range.
+        // Note that the range includes the endpoints.
+        this.virtualAvailable = (int)(rangeEnd - rangeBeginning) + 1;
+    }
+

@@ -1,0 +1,19 @@
+    public Future<MonitorInstancesResult> monitorInstancesAsync(
+            final MonitorInstancesRequest monitorInstancesRequest,
+            final AsyncHandler<MonitorInstancesRequest, MonitorInstancesResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<MonitorInstancesResult>() {
+            public MonitorInstancesResult call() throws Exception {
+                MonitorInstancesResult result;
+                try {
+                    result = monitorInstances(monitorInstancesRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(monitorInstancesRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -1,0 +1,19 @@
+    public Future<DescribeInstanceAttributeResult> describeInstanceAttributeAsync(
+            final DescribeInstanceAttributeRequest describeInstanceAttributeRequest,
+            final AsyncHandler<DescribeInstanceAttributeRequest, DescribeInstanceAttributeResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeInstanceAttributeResult>() {
+            public DescribeInstanceAttributeResult call() throws Exception {
+                DescribeInstanceAttributeResult result;
+                try {
+                    result = describeInstanceAttribute(describeInstanceAttributeRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeInstanceAttributeRequest, result);
+                   return result;
+            }
+        });
+    }
+    

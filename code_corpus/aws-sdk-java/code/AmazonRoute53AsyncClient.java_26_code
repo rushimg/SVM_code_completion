@@ -1,0 +1,19 @@
+    public Future<GetChangeResult> getChangeAsync(
+            final GetChangeRequest getChangeRequest,
+            final AsyncHandler<GetChangeRequest, GetChangeResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<GetChangeResult>() {
+            public GetChangeResult call() throws Exception {
+                GetChangeResult result;
+                try {
+                    result = getChange(getChangeRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(getChangeRequest, result);
+                   return result;
+            }
+        });
+    }
+    

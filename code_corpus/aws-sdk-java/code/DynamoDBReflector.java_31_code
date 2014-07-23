@@ -1,0 +1,46 @@
+    List<String> getLocalSecondaryIndexNamesByIndexKeyName(Class<?> clazz, String indexRangeKeyName) {
+        synchronized (indexRangeKeyNameToLocalSecondaryIndexNamesCache) {
+            if ( !indexRangeKeyNameToLocalSecondaryIndexNamesCache.isCached(clazz) ) {
+                Map<String, List<String>> indexRangeKeyNameToLocalSecondaryIndexNamesMap = new HashMap<String, List<String>>();
+                for ( Method method : getRelevantGetters(clazz) ) {
+                    String attributeName = getAttributeName(method);
+                    List<String> indexNames = new LinkedList<String>();
+
+                    // If it's annotated as a range key for one or more LSI
+                    if ( method.getParameterTypes().length == 0
+                            && method.isAnnotationPresent(DynamoDBIndexRangeKey.class)) {
+                        DynamoDBIndexRangeKey indexRangeKeyAnnotation = method.getAnnotation(DynamoDBIndexRangeKey.class);
+                        String localSecondaryIndexName = indexRangeKeyAnnotation.localSecondaryIndexName();
+                        String[] localSecondaryIndexNames = indexRangeKeyAnnotation.localSecondaryIndexNames();
+                        boolean singleLSIName = localSecondaryIndexName != null
+                                && localSecondaryIndexName.length() != 0;
+                        boolean multipleLSINames = localSecondaryIndexNames != null
+                                && localSecondaryIndexNames.length != 0;
+
+                        if (singleLSIName && multipleLSINames) {
+                            throw new DynamoDBMappingException(
+                                    "@DynamoDBIndexRangeKey annotation on getter "
+                                            + method
+                                            + " contains both localSecondaryIndexName and localSecondaryIndexNames.");
+                        }
+
+                        if (singleLSIName) {
+                            indexNames.add(localSecondaryIndexName);
+                        } else if (multipleLSINames){
+                            indexNames.addAll(Arrays.asList(localSecondaryIndexNames));
+                        }
+                    }
+
+                    if ( !indexNames.isEmpty() ) {
+                        indexRangeKeyNameToLocalSecondaryIndexNamesMap.put(attributeName, indexNames);
+                    } else {
+                        // Save as null instead of empty list
+                        indexRangeKeyNameToLocalSecondaryIndexNamesMap.put(attributeName, null);
+                    }
+                }
+                indexRangeKeyNameToLocalSecondaryIndexNamesCache.cache(clazz, indexRangeKeyNameToLocalSecondaryIndexNamesMap);
+            }
+            return indexRangeKeyNameToLocalSecondaryIndexNamesCache.getIndexNames(clazz, indexRangeKeyName);
+        }
+    }
+

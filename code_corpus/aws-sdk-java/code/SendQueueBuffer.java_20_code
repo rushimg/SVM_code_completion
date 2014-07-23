@@ -1,0 +1,43 @@
+        QueueBufferFuture<R, Result> theFuture = null;
+        try {
+            synchronized (operationLock) {
+                if (openOutboundBatchTask[0] == null || ((theFuture = openOutboundBatchTask[0].addRequest(request, callback))) == null) {
+                    OBT obt = (OBT) newOutboundBatchTask(request);
+                    inflightOperationBatches.acquire();
+                    openOutboundBatchTask[0] = obt;
+                    // Register a listener for the event signaling that the
+                    // batch task has completed (successfully or not).
+                    openOutboundBatchTask[0].onCompleted = new Listener<OutboundBatchTask<R, Result>>() {
+                        public void invoke(OutboundBatchTask<R, Result> task) {
+                            inflightOperationBatches.release();
+                        }
+                    };
+                    
+                    if ( log.isTraceEnabled() ) {
+                        log.trace("Queue " + qUrl + " created new batch for " + request.getClass().toString()
+                                + " " + inflightOperationBatches.availablePermits() 
+                                + " free slots remain");
+                    }
+                    
+                    theFuture = openOutboundBatchTask[0].addRequest(request, callback);
+                    executor.execute(openOutboundBatchTask[0]);
+                    if ( null == theFuture ) {
+                        //this can happen only if the request itself is flawed, 
+                        //so that it can't be added to any batch, even a brand
+                        //new one
+                        throw new AmazonClientException("Failed to schedule request "+ request + " for execution" );
+                    }
+                }
+            }
+
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            AmazonClientException toThrow = new AmazonClientException("Interrupted while waiting for lock.");
+            toThrow.initCause(e);
+            throw toThrow;
+        }
+
+        return theFuture;
+    }
+
+

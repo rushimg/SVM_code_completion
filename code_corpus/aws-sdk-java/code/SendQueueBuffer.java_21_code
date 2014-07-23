@@ -1,0 +1,11 @@
+    private abstract class OutboundBatchTask<R extends AmazonWebServiceRequest, Result> implements Runnable {
+        final List<R> requests;
+        final ArrayList<QueueBufferFuture<R, Result>> futures;
+        AtomicBoolean open = new AtomicBoolean(true);
+        volatile Listener<OutboundBatchTask<R, Result>> onCompleted = null;
+
+        OutboundBatchTask() {
+            requests = new ArrayList<R>(config.getMaxBatchSize());
+            futures = new ArrayList<QueueBufferFuture<R, Result>>(config.getMaxBatchSize());
+        }
+

@@ -1,0 +1,191 @@
+    boolean requestCancelExternalWorkflowExecution(boolean childWorkflow,
+            RequestCancelExternalWorkflowExecutionDecisionAttributes request, Runnable immediateCancellationCallback) {
+        DecisionStateMachine decision = getDecision(new DecisionId(DecisionTarget.EXTERNAL_WORKFLOW, request.getWorkflowId()));
+        decision.cancel(immediateCancellationCallback);
+        return decision.isDone();
+    }
+
+    void handleRequestCancelExternalWorkflowExecutionInitiated(HistoryEvent event) {
+        RequestCancelExternalWorkflowExecutionInitiatedEventAttributes attributes = event.getRequestCancelExternalWorkflowExecutionInitiatedEventAttributes();
+        String workflowId = attributes.getWorkflowId();
+        DecisionStateMachine decision = getDecision(new DecisionId(DecisionTarget.EXTERNAL_WORKFLOW, workflowId));
+        decision.handleCancellationInitiatedEvent();
+    }
+
+    void handleRequestCancelExternalWorkflowExecutionFailed(HistoryEvent event) {
+        RequestCancelExternalWorkflowExecutionFailedEventAttributes attributes = event.getRequestCancelExternalWorkflowExecutionFailedEventAttributes();
+        DecisionStateMachine decision = getDecision(new DecisionId(DecisionTarget.EXTERNAL_WORKFLOW, attributes.getWorkflowId()));
+        decision.handleCancellationFailureEvent(event);
+    }
+
+    void signalExternalWorkflowExecution(SignalExternalWorkflowExecutionDecisionAttributes signal) {
+        DecisionId decisionId = new DecisionId(DecisionTarget.SIGNAL, signal.getControl());
+        addDecision(decisionId, new SignalDecisionStateMachine(decisionId, signal));
+    }
+
+    void cancelSignalExternalWorkflowExecution(String signalId, Runnable immediateCancellationCallback) {
+        DecisionStateMachine decision = getDecision(new DecisionId(DecisionTarget.SIGNAL, signalId));
+        decision.cancel(immediateCancellationCallback);
+    }
+
+    void handleSignalExternalWorkflowExecutionInitiated(HistoryEvent event) {
+        SignalExternalWorkflowExecutionInitiatedEventAttributes attributes = event.getSignalExternalWorkflowExecutionInitiatedEventAttributes();
+        String signalId = attributes.getControl();
+        signalInitiatedEventIdToSignalId.put(event.getEventId(), signalId);
+        DecisionStateMachine decision = getDecision(new DecisionId(DecisionTarget.SIGNAL, signalId));
+        decision.handleInitiatedEvent(event);
+    }
+
+    public boolean handleSignalExternalWorkflowExecutionFailed(String signalId) {
+        DecisionStateMachine decision = getDecision(new DecisionId(DecisionTarget.SIGNAL, signalId));
+        decision.handleCompletionEvent();
+        return decision.isDone();
+    }
+
+    public boolean handleExternalWorkflowExecutionSignaled(String signalId) {
+        DecisionStateMachine decision = getDecision(new DecisionId(DecisionTarget.SIGNAL, signalId));
+        decision.handleCompletionEvent();
+        return decision.isDone();
+    }
+
+    void startTimer(StartTimerDecisionAttributes request, Object createTimerUserContext) {
+        String timerId = request.getTimerId();
+        DecisionId decisionId = new DecisionId(DecisionTarget.TIMER, timerId);
+        addDecision(decisionId, new TimerDecisionStateMachine(decisionId, request));
+    }
+
+    boolean cancelTimer(String timerId, Runnable immediateCancellationCallback) {
+        DecisionStateMachine decision = getDecision(new DecisionId(DecisionTarget.TIMER, timerId));
+        decision.cancel(immediateCancellationCallback);
+        return decision.isDone();
+    }
+
+    public void handleChildWorkflowExecutionStarted(HistoryEvent event) {
+        ChildWorkflowExecutionStartedEventAttributes attributes = event.getChildWorkflowExecutionStartedEventAttributes();
+        String workflowId = attributes.getWorkflowExecution().getWorkflowId();
+        DecisionStateMachine decision = getDecision(new DecisionId(DecisionTarget.EXTERNAL_WORKFLOW, workflowId));
+        decision.handleStartedEvent(event);
+    }
+
+    boolean handleChildWorkflowExecutionClosed(String workflowId) {
+        DecisionStateMachine decision = getDecision(new DecisionId(DecisionTarget.EXTERNAL_WORKFLOW, workflowId));
+        decision.handleCompletionEvent();
+        return decision.isDone();
+    }
+
+    public void handleChildWorkflowExecutionCancelRequested(HistoryEvent event) {
+    }
+
+    public boolean handleChildWorkflowExecutionCanceled(String workflowId) {
+        DecisionStateMachine decision = getDecision(new DecisionId(DecisionTarget.EXTERNAL_WORKFLOW, workflowId));
+        decision.handleCancellationEvent();
+        return decision.isDone();
+    }
+
+    boolean handleTimerClosed(String timerId) {
+        DecisionStateMachine decision = getDecision(new DecisionId(DecisionTarget.TIMER, timerId));
+        decision.handleCompletionEvent();
+        return decision.isDone();
+    }
+
+    boolean handleTimerStarted(HistoryEvent event) {
+        TimerStartedEventAttributes attributes = event.getTimerStartedEventAttributes();
+        DecisionStateMachine decision = getDecision(new DecisionId(DecisionTarget.TIMER, attributes.getTimerId()));
+        decision.handleInitiatedEvent(event);
+        return decision.isDone();
+    }
+
+    public boolean handleStartTimerFailed(HistoryEvent event) {
+        StartTimerFailedEventAttributes attributes = event.getStartTimerFailedEventAttributes();
+        DecisionStateMachine decision = getDecision(new DecisionId(DecisionTarget.TIMER, attributes.getTimerId()));
+        decision.handleInitiationFailedEvent(event);
+        return decision.isDone();
+    }
+
+    boolean handleTimerCanceled(HistoryEvent event) {
+        TimerCanceledEventAttributes attributes = event.getTimerCanceledEventAttributes();
+        DecisionStateMachine decision = getDecision(new DecisionId(DecisionTarget.TIMER, attributes.getTimerId()));
+        decision.handleCancellationEvent();
+        return decision.isDone();
+    }
+
+    boolean handleCancelTimerFailed(HistoryEvent event) {
+        CancelTimerFailedEventAttributes attributes = event.getCancelTimerFailedEventAttributes();
+        DecisionStateMachine decision = getDecision(new DecisionId(DecisionTarget.TIMER, attributes.getTimerId()));
+        decision.handleCancellationFailureEvent(event);
+        return decision.isDone();
+    }
+
+    void completeWorkflowExecution(String output) {
+        Decision decision = new Decision();
+        CompleteWorkflowExecutionDecisionAttributes complete = new CompleteWorkflowExecutionDecisionAttributes();
+        complete.setResult(output);
+        decision.setCompleteWorkflowExecutionDecisionAttributes(complete);
+        decision.setDecisionType(DecisionType.CompleteWorkflowExecution.toString());
+        DecisionId decisionId = new DecisionId(DecisionTarget.SELF, null);
+        addDecision(decisionId, new CompleteWorkflowStateMachine(decisionId, decision));
+    }
+
+    void continueAsNewWorkflowExecution(ContinueAsNewWorkflowExecutionParameters continueParameters) {
+        ContinueAsNewWorkflowExecutionDecisionAttributes attributes = new ContinueAsNewWorkflowExecutionDecisionAttributes();
+        attributes.setWorkflowTypeVersion(continueParameters.getWorkflowTypeVersion());
+        ChildPolicy childPolicy = continueParameters.getChildPolicy();
+        if (childPolicy != null) {
+            attributes.setChildPolicy(childPolicy);
+        }
+        attributes.setInput(continueParameters.getInput());
+        attributes.setExecutionStartToCloseTimeout(FlowHelpers.secondsToDuration(continueParameters.getExecutionStartToCloseTimeoutSeconds()));
+        attributes.setTaskStartToCloseTimeout(FlowHelpers.secondsToDuration(continueParameters.getTaskStartToCloseTimeoutSeconds()));
+        List<String> tagList = continueParameters.getTagList();
+        if (tagList != null) {
+            attributes.setTagList(tagList);
+        }
+        String taskList = continueParameters.getTaskList();
+        if (taskList != null && !taskList.isEmpty()) {
+            attributes.setTaskList(new TaskList().withName(taskList));
+        }
+
+        Decision decision = new Decision();
+        decision.setDecisionType(DecisionType.ContinueAsNewWorkflowExecution.toString());
+        decision.setContinueAsNewWorkflowExecutionDecisionAttributes(attributes);
+
+        DecisionId decisionId = new DecisionId(DecisionTarget.SELF, null);
+        addDecision(decisionId, new CompleteWorkflowStateMachine(decisionId, decision));
+    }
+
+    void failWorkflowExecution(Throwable e) {
+        Decision decision = new Decision();
+        FailWorkflowExecutionDecisionAttributes fail = createFailWorkflowInstanceAttributes(e);
+        decision.setFailWorkflowExecutionDecisionAttributes(fail);
+        decision.setDecisionType(DecisionType.FailWorkflowExecution.toString());
+        DecisionId decisionId = new DecisionId(DecisionTarget.SELF, null);
+        addDecision(decisionId, new CompleteWorkflowStateMachine(decisionId, decision));
+        workflowFailureCause = e;
+    }
+
+    void failWorkflowDueToUnexpectedError(Throwable e) {
+        // To make sure that failure goes through do not make any other decisions
+        decisions.clear();
+        this.failWorkflowExecution(e);
+    }
+
+    void handleCompleteWorkflowExecutionFailed(HistoryEvent event) {
+        DecisionStateMachine decision = getDecision(new DecisionId(DecisionTarget.SELF, null));
+        decision.handleInitiationFailedEvent(event);
+    }
+
+    void handleFailWorkflowExecutionFailed(HistoryEvent event) {
+        DecisionStateMachine decision = getDecision(new DecisionId(DecisionTarget.SELF, null));
+        decision.handleInitiationFailedEvent(event);
+    }
+
+    void handleCancelWorkflowExecutionFailed(HistoryEvent event) {
+        DecisionStateMachine decision = getDecision(new DecisionId(DecisionTarget.SELF, null));
+        decision.handleInitiationFailedEvent(event);
+    }
+
+    void handleContinueAsNewWorkflowExecutionFailed(HistoryEvent event) {
+        DecisionStateMachine decision = getDecision(new DecisionId(DecisionTarget.SELF, null));
+        decision.handleInitiationFailedEvent(event);
+    }
+

@@ -1,0 +1,19 @@
+    public Future<DescribeClustersResult> describeClustersAsync(
+            final DescribeClustersRequest describeClustersRequest,
+            final AsyncHandler<DescribeClustersRequest, DescribeClustersResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeClustersResult>() {
+            public DescribeClustersResult call() throws Exception {
+                DescribeClustersResult result;
+                try {
+                    result = describeClusters(describeClustersRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeClustersRequest, result);
+                   return result;
+            }
+        });
+    }
+    

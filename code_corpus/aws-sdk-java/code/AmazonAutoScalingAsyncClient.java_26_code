@@ -1,0 +1,19 @@
+    public Future<DescribePoliciesResult> describePoliciesAsync(
+            final DescribePoliciesRequest describePoliciesRequest,
+            final AsyncHandler<DescribePoliciesRequest, DescribePoliciesResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribePoliciesResult>() {
+            public DescribePoliciesResult call() throws Exception {
+                DescribePoliciesResult result;
+                try {
+                    result = describePolicies(describePoliciesRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describePoliciesRequest, result);
+                   return result;
+            }
+        });
+    }
+    

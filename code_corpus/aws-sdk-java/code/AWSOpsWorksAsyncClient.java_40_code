@@ -1,0 +1,18 @@
+    public Future<Void> unassignVolumeAsync(
+            final UnassignVolumeRequest unassignVolumeRequest,
+            final AsyncHandler<UnassignVolumeRequest, Void> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<Void>() {
+            public Void call() throws Exception {
+                try {
+                    unassignVolume(unassignVolumeRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(unassignVolumeRequest, null);
+                   return null;
+            }
+        });
+    }
+    

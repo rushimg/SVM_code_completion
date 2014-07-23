@@ -1,0 +1,19 @@
+    public Future<WorkflowTypeInfos> listWorkflowTypesAsync(
+            final ListWorkflowTypesRequest listWorkflowTypesRequest,
+            final AsyncHandler<ListWorkflowTypesRequest, WorkflowTypeInfos> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<WorkflowTypeInfos>() {
+            public WorkflowTypeInfos call() throws Exception {
+                WorkflowTypeInfos result;
+                try {
+                    result = listWorkflowTypes(listWorkflowTypesRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(listWorkflowTypesRequest, result);
+                   return result;
+            }
+        });
+    }
+    

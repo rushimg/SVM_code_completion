@@ -1,0 +1,19 @@
+    public Future<CreateVpcResult> createVpcAsync(
+            final CreateVpcRequest createVpcRequest,
+            final AsyncHandler<CreateVpcRequest, CreateVpcResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<CreateVpcResult>() {
+            public CreateVpcResult call() throws Exception {
+                CreateVpcResult result;
+                try {
+                    result = createVpc(createVpcRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(createVpcRequest, result);
+                   return result;
+            }
+        });
+    }
+    

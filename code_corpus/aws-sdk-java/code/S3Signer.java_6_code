@@ -1,0 +1,28 @@
+    public S3Signer(String httpVerb, String resourcePath) {
+        this.httpVerb = httpVerb;
+        this.resourcePath = resourcePath;
+
+        if (resourcePath == null)
+            throw new IllegalArgumentException("Parameter resourcePath is empty");
+    }
+
+    @Override
+    public void sign(Request<?> request, AWSCredentials credentials) {
+
+        if (resourcePath == null) {
+            throw new UnsupportedOperationException(
+                "Cannot sign a request using a dummy S3Signer instance with "
+                + "no resource path"
+            );
+        }
+
+        if (credentials == null || credentials.getAWSSecretKey() == null) {
+            log.debug("Canonical string will not be signed, as no AWS Secret Key was provided");
+            return;
+        }
+
+        AWSCredentials sanitizedCredentials = sanitizeCredentials(credentials);
+        if ( sanitizedCredentials instanceof AWSSessionCredentials ) {
+            addSessionCredentials(request, (AWSSessionCredentials) sanitizedCredentials);
+        }
+

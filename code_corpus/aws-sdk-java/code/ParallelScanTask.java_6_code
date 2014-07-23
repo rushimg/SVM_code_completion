@@ -1,0 +1,32 @@
+	private final DynamoDBMapper mapper;
+	
+	private final AmazonDynamoDB dynamo;
+	
+	public ParallelScanTask(DynamoDBMapper mapper, AmazonDynamoDB dynamo, List<ScanRequest> parallelScanRequests) {
+		this.mapper = mapper;
+		this.dynamo = dynamo;
+		this.parallelScanRequests = parallelScanRequests;
+		this.totalSegments = parallelScanRequests.size();
+		executorService = Executors.newCachedThreadPool();
+		
+		// Create synchronized views of the list to guarantee any changes are visible across all threads.
+		segmentScanFutureTasks = Collections.synchronizedList(new ArrayList<Future<ScanResult>>(totalSegments));
+		segmentScanResults = Collections.synchronizedList(new ArrayList<ScanResult>(totalSegments));
+		segmentScanStates = Collections.synchronizedList(new ArrayList<SegmentScanState>(totalSegments));
+		
+		initSegmentScanStates();
+	}
+	
+	public boolean isAllSegmentScanFinished() {
+		synchronized(segmentScanStates) {
+			for (int segment = 0; segment < totalSegments; segment++) {
+				if (segmentScanStates.get(segment) != SegmentScanState.SegmentScanCompleted)
+					return false;
+			}
+			// Shut down if all data have been scanned and loaded.
+			executorService.shutdown();
+			return true;
+		}
+	}
+	
+	public List<ScanResult> getNextBatchOfScanResults() throws AmazonClientException {

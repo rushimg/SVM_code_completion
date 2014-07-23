@@ -1,0 +1,19 @@
+    public Future<DescribeDBParameterGroupsResult> describeDBParameterGroupsAsync(
+            final DescribeDBParameterGroupsRequest describeDBParameterGroupsRequest,
+            final AsyncHandler<DescribeDBParameterGroupsRequest, DescribeDBParameterGroupsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeDBParameterGroupsResult>() {
+            public DescribeDBParameterGroupsResult call() throws Exception {
+                DescribeDBParameterGroupsResult result;
+                try {
+                    result = describeDBParameterGroups(describeDBParameterGroupsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeDBParameterGroupsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

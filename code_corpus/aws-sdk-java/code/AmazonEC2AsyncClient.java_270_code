@@ -1,0 +1,19 @@
+    public Future<CreateVolumeResult> createVolumeAsync(
+            final CreateVolumeRequest createVolumeRequest,
+            final AsyncHandler<CreateVolumeRequest, CreateVolumeResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<CreateVolumeResult>() {
+            public CreateVolumeResult call() throws Exception {
+                CreateVolumeResult result;
+                try {
+                    result = createVolume(createVolumeRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(createVolumeRequest, result);
+                   return result;
+            }
+        });
+    }
+    

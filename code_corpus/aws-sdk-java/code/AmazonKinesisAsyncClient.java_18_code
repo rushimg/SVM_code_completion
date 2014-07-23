@@ -1,0 +1,19 @@
+    public Future<GetShardIteratorResult> getShardIteratorAsync(
+            final GetShardIteratorRequest getShardIteratorRequest,
+            final AsyncHandler<GetShardIteratorRequest, GetShardIteratorResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<GetShardIteratorResult>() {
+            public GetShardIteratorResult call() throws Exception {
+                GetShardIteratorResult result;
+                try {
+                    result = getShardIterator(getShardIteratorRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(getShardIteratorRequest, result);
+                   return result;
+            }
+        });
+    }
+    

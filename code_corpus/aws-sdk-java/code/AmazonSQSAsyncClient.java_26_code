@@ -1,0 +1,19 @@
+    public Future<GetQueueAttributesResult> getQueueAttributesAsync(
+            final GetQueueAttributesRequest getQueueAttributesRequest,
+            final AsyncHandler<GetQueueAttributesRequest, GetQueueAttributesResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<GetQueueAttributesResult>() {
+            public GetQueueAttributesResult call() throws Exception {
+                GetQueueAttributesResult result;
+                try {
+                    result = getQueueAttributes(getQueueAttributesRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(getQueueAttributesRequest, result);
+                   return result;
+            }
+        });
+    }
+    

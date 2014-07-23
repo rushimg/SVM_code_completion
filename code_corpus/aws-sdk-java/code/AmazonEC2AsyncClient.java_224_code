@@ -1,0 +1,19 @@
+    public Future<DescribeVolumeAttributeResult> describeVolumeAttributeAsync(
+            final DescribeVolumeAttributeRequest describeVolumeAttributeRequest,
+            final AsyncHandler<DescribeVolumeAttributeRequest, DescribeVolumeAttributeResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeVolumeAttributeResult>() {
+            public DescribeVolumeAttributeResult call() throws Exception {
+                DescribeVolumeAttributeResult result;
+                try {
+                    result = describeVolumeAttribute(describeVolumeAttributeRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeVolumeAttributeRequest, result);
+                   return result;
+            }
+        });
+    }
+    

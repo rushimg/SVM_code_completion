@@ -1,0 +1,45 @@
+/**
+ * High level utility for managing transfers to Amazon S3.
+ * <p>
+ * <code>TransferManager</code> provides a simple API for uploading content to
+ * Amazon S3, and makes extensive use of Amazon S3 multipart uploads to achieve
+ * enhanced throughput, performance and reliability.
+ * <p>
+ * When possible, <code>TransferManager</code> attempts to use multiple threads
+ * to upload multiple parts of a single upload at once. When dealing with large
+ * content sizes and high bandwidth, this can have a significant increase on
+ * throughput.
+ * <p>
+ * <code>TransferManager</code> is responsible for managing resources such as
+ * connections and threads; share a single instance of
+ * <code>TransferManager</code> whenever possible. <code>TransferManager</code>,
+ * like all the client classes in the AWS SDK for Java, is thread safe.
+ * <p>
+ * Using <code>TransferManager</code> to upload options to Amazon S3 is easy:
+ *
+ * <pre>
+ * AWSCredentials myCredentials = new BasicAWSCredentials(...);
+ * TransferManager tx = new TransferManager(myCredentials);
+ * Upload myUpload = tx.upload(myBucket, myFile.getName(), myFile);
+ *
+ * // You can poll your transfer's status to check its progress
+ * if (myUpload.isDone() == false) {
+ *     System.out.println("Transfer: " + myUpload.getDescription());
+ *     System.out.println("  - State: " + myUpload.getState());
+ *     System.out.println("  - Progress: " + myUpload.getProgress().getBytesTransferred());
+ * }
+ *
+ * // Transfers also allow you to set a <code>ProgressListener</code> to receive
+ * // asynchronous notifications about your transfer's progress.
+ * myUpload.addProgressListener(myProgressListener);
+ *
+ * // Or you can block the current thread and wait for your transfer to
+ * // to complete.  If the transfer fails, this method will throw an
+ * // AmazonClientException or AmazonServiceException detailing the reason.
+ * myUpload.waitForCompletion();
+ * </pre>
+ * <p>
+ * Note: Transfers are stored in memory. If the JVM is restarted, previous
+ * transfers are no longer accessible. If needed, clean up any multipart uploads
+ * that are incomplete.
+ */

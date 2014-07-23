@@ -1,0 +1,19 @@
+    public Future<SendRawEmailResult> sendRawEmailAsync(
+            final SendRawEmailRequest sendRawEmailRequest,
+            final AsyncHandler<SendRawEmailRequest, SendRawEmailResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<SendRawEmailResult>() {
+            public SendRawEmailResult call() throws Exception {
+                SendRawEmailResult result;
+                try {
+                    result = sendRawEmail(sendRawEmailRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(sendRawEmailRequest, result);
+                   return result;
+            }
+        });
+    }
+    

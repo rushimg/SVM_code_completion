@@ -1,0 +1,19 @@
+    public Future<UnmonitorInstancesResult> unmonitorInstancesAsync(
+            final UnmonitorInstancesRequest unmonitorInstancesRequest,
+            final AsyncHandler<UnmonitorInstancesRequest, UnmonitorInstancesResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<UnmonitorInstancesResult>() {
+            public UnmonitorInstancesResult call() throws Exception {
+                UnmonitorInstancesResult result;
+                try {
+                    result = unmonitorInstances(unmonitorInstancesRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(unmonitorInstancesRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -1,0 +1,17 @@
+    public ObjectMetadata getObjectMetadata(GetObjectMetadataRequest getObjectMetadataRequest)
+            throws AmazonClientException, AmazonServiceException {
+        assertParameterNotNull(getObjectMetadataRequest, "The GetObjectMetadataRequest parameter must be specified when requesting an object's metadata");
+
+        String bucketName = getObjectMetadataRequest.getBucketName();
+        String key = getObjectMetadataRequest.getKey();
+        String versionId = getObjectMetadataRequest.getVersionId();
+
+        assertParameterNotNull(bucketName, "The bucket name parameter must be specified when requesting an object's metadata");
+        assertParameterNotNull(key, "The key parameter must be specified when requesting an object's metadata");
+
+        Request<GetObjectMetadataRequest> request = createRequest(bucketName, key, getObjectMetadataRequest, HttpMethodName.HEAD);
+        if (versionId != null) request.addParameter("versionId", versionId);
+
+        return invoke(request, new S3MetadataResponseHandler(), bucketName, key);
+    }
+

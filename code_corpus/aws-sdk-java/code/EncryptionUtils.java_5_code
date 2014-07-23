@@ -1,0 +1,18 @@
+    @Deprecated
+    public static EncryptionInstruction generateInstruction(EncryptionMaterials materials, Provider cryptoProvider) {
+      return generateInstruction(new StaticEncryptionMaterialsProvider(materials), cryptoProvider);
+    }
+
+    public static EncryptionInstruction generateInstruction(EncryptionMaterialsProvider materialsProvider, Provider cryptoProvider) {
+        // Generate a one-time use symmetric key and initialize a cipher to encrypt object data
+        SecretKey envelopeSymmetricKey = generateOneTimeUseSymmetricKey();
+        CipherFactory cipherFactory = new CipherFactory(envelopeSymmetricKey, Cipher.ENCRYPT_MODE, null, cryptoProvider);
+
+        // Encrypt the envelope symmetric key
+        EncryptionMaterials materials = materialsProvider.getEncryptionMaterials();
+        byte[] encryptedEnvelopeSymmetricKey = getEncryptedSymmetricKey(envelopeSymmetricKey, materials, cryptoProvider);
+
+        // Return a new instruction with the appropriate fields.
+        return new EncryptionInstruction(materials.getMaterialsDescription(), encryptedEnvelopeSymmetricKey, envelopeSymmetricKey, cipherFactory);
+    }
+

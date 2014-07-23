@@ -1,0 +1,114 @@
+    public class ListMultipartUploadsHandler extends DefaultHandler {
+        private StringBuilder text;
+
+        private MultipartUploadListing result;
+
+        private MultipartUpload currentMultipartUpload;
+        private Owner currentOwner;
+        private Owner currentInitiator;
+
+        boolean inCommonPrefixes = false;
+
+        public MultipartUploadListing getListMultipartUploadsResult() {
+            return result;
+        }
+
+        @Override
+        public void startDocument() {
+            text = new StringBuilder();
+        }
+
+        @Override
+        public void startElement(String uri, String name, String qName, Attributes attrs) {
+            if (name.equals("ListMultipartUploadsResult")) {
+                result = new MultipartUploadListing();
+            } else if (name.equals("Bucket")) {
+            } else if (name.equals("KeyMarker")) {
+            } else if (name.equals("Delimiter")) {
+            } else if (name.equals("UploadIdMarker")) {
+            } else if (name.equals("NextKeyMarker")) {
+            } else if (name.equals("NextUploadIdMarker")) {
+            } else if (name.equals("MaxUploads")) {
+            } else if (name.equals("IsTruncated")) {
+            } else if (name.equals("Upload")) {
+                currentMultipartUpload = new MultipartUpload();
+            } else if (name.equals("Key")) {
+            } else if (name.equals("UploadId")) {
+            } else if (name.equals("Owner")) {
+                currentOwner = new Owner();
+            } else if (name.equals("Initiator")) {
+                currentInitiator = new Owner();
+            } else if (name.equals("ID")) {
+            } else if (name.equals("DisplayName")) {
+            } else if (name.equals("StorageClass")) {
+            } else if (name.equals("Initiated")) {
+            } else if (name.equals("CommonPrefixes")) {
+                inCommonPrefixes = true;
+            }
+            text.setLength(0);
+        }
+
+        @Override
+        public void endElement(String uri, String name, String qName) throws SAXException {
+            if (name.equals("ListMultipartUploadsResult")) {
+            } else if (name.equals("Bucket")) {
+                result.setBucketName(text.toString());
+            } else if (name.equals("KeyMarker")) {
+                result.setKeyMarker(checkForEmptyString(text.toString()));
+            } else if (name.equals("Delimiter")) {
+                result.setDelimiter(checkForEmptyString(text.toString()));
+            } else if (name.equals("Prefix") && inCommonPrefixes == false) {
+                result.setPrefix(checkForEmptyString(text.toString()));
+            } else if (name.equals("Prefix") && inCommonPrefixes == true) {
+                result.getCommonPrefixes().add(text.toString());
+            } else if (name.equals("UploadIdMarker")) {
+                result.setUploadIdMarker(checkForEmptyString(text.toString()));
+            } else if (name.equals("NextKeyMarker")) {
+                result.setNextKeyMarker(checkForEmptyString(text.toString()));
+            } else if (name.equals("NextUploadIdMarker")) {
+                result.setNextUploadIdMarker(checkForEmptyString(text.toString()));
+            } else if (name.equals("MaxUploads")) {
+                result.setMaxUploads(Integer.parseInt(text.toString()));
+            } else if (name.equals("IsTruncated")) {
+                result.setTruncated(Boolean.parseBoolean(text.toString()));
+            } else if (name.equals("Upload")) {
+                result.getMultipartUploads().add(currentMultipartUpload);
+            } else if (name.equals("Key")) {
+                currentMultipartUpload.setKey(text.toString());
+            } else if (name.equals("UploadId")) {
+                currentMultipartUpload.setUploadId(text.toString());
+            } else if (name.equals("Owner")) {
+                currentMultipartUpload.setOwner(currentOwner);
+                currentOwner = null;
+            } else if (name.equals("Initiator")) {
+                currentMultipartUpload.setInitiator(currentInitiator);
+                currentInitiator = null;
+            } else if (name.equals("ID") && currentOwner != null) {
+                currentOwner.setId(checkForEmptyString(text.toString()));
+            } else if (name.equals("DisplayName") && currentOwner != null) {
+                currentOwner.setDisplayName(checkForEmptyString(text.toString()));
+            } else if (name.equals("ID") && currentInitiator != null) {
+                currentInitiator.setId(checkForEmptyString(text.toString()));
+            } else if (name.equals("DisplayName") && currentInitiator != null) {
+                currentInitiator.setDisplayName(checkForEmptyString(text.toString()));
+            } else if (name.equals("StorageClass")) {
+                currentMultipartUpload.setStorageClass(text.toString());
+            } else if (name.equals("Initiated")) {
+                try {
+                    currentMultipartUpload.setInitiated(ServiceUtils.parseIso8601Date(text.toString()));
+                } catch (ParseException e) {
+                    throw new SAXException(
+                            "Non-ISO8601 date for Initiated in initiate multipart upload result: "
+                            + text.toString(), e);
+                }
+            } else if (name.equals("CommonPrefixes")) {
+                inCommonPrefixes = false;
+            }
+        }
+
+        @Override
+        public void characters(char ch[], int start, int length) {
+            this.text.append(ch, start, length);
+        }
+    }
+

@@ -1,0 +1,12 @@
+    protected String calculateContentHash(Request<?> request) {
+        InputStream payloadStream = getBinaryRequestPayloadStream(request);
+        payloadStream.mark(-1);
+        String contentSha256 = BinaryUtils.toHex(hash(payloadStream));
+        try {
+            payloadStream.reset();
+        } catch (IOException e) {
+            throw new AmazonClientException("Unable to reset stream after calculating AWS4 signature", e);
+        }
+        return contentSha256;
+    }
+

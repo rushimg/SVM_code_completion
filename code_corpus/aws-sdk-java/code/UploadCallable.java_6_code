@@ -1,0 +1,10 @@
+    private long getOptimalPartSize(boolean isUsingEncryption) {
+        long optimalPartSize = TransferManagerUtils.calculateOptimalPartSize(putObjectRequest, configuration);
+        if (isUsingEncryption && optimalPartSize % 32 > 0) {
+            // When using encryption, parts must line up correctly along cipher block boundaries
+            optimalPartSize = optimalPartSize - (optimalPartSize % 32) + 32 ;
+        }
+        log.debug("Calculated optimal part size: " + optimalPartSize);
+        return optimalPartSize;
+    }
+

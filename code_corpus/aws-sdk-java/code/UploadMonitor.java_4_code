@@ -1,0 +1,23 @@
+    private boolean isUploadDone = false;
+    private Future<UploadResult> nextFuture;
+
+    public synchronized Future<UploadResult> getFuture() {
+        return nextFuture;
+    }
+
+    private synchronized void setNextFuture(Future<UploadResult> nextFuture) {
+        this.nextFuture = nextFuture;
+    }
+
+    public synchronized boolean isDone() {
+        return isUploadDone;
+    }
+
+    private synchronized void markAllDone() {
+        isUploadDone = true;
+    }
+
+    // TODO: this could be configured in the configuration object (which we're
+    // not using right now)
+    private int pollInterval = 5000;
+

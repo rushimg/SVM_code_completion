@@ -1,0 +1,42 @@
+    public void download(final String accountId, final String vaultName, final String archiveId, final File file, ProgressListener progressListener)
+            throws AmazonServiceException, AmazonClientException {
+
+        JobStatusMonitor jobStatusMonitor = null;
+        String jobId = null;
+        ProgressListenerCallbackExecutor progressListenerCallbackExecutor = ProgressListenerCallbackExecutor
+                .wrapListener(progressListener);
+
+        fireProgressEvent(progressListenerCallbackExecutor, ProgressEvent.PREPARING_EVENT_CODE);
+
+        try {
+            if (credentialsProvider != null && clientConfiguration != null) {
+                jobStatusMonitor = new JobStatusMonitor(credentialsProvider, clientConfiguration);
+            } else {
+                jobStatusMonitor = new JobStatusMonitor(sqs, sns);
+            }
+
+            JobParameters jobParameters = new JobParameters()
+                .withArchiveId(archiveId)
+                .withType("archive-retrieval")
+                .withSNSTopic(jobStatusMonitor.getTopicArn());
+            InitiateJobResult archiveRetrievalResult =
+                glacier.initiateJob(new InitiateJobRequest()
+                    .withAccountId(accountId)
+                    .withVaultName(vaultName)
+                    .withJobParameters(jobParameters));
+            jobId = archiveRetrievalResult.getJobId();
+
+            jobStatusMonitor.waitForJobToComplete(jobId);
+
+        } catch (AmazonServiceException ace) {
+            fireProgressEvent(progressListenerCallbackExecutor, ProgressEvent.FAILED_EVENT_CODE);
+            throw ace;
+        } finally {
+            if (jobStatusMonitor != null) {
+                jobStatusMonitor.shutdown();
+            }
+        }
+
+        downloadJobOutput(accountId, vaultName, jobId, file, progressListenerCallbackExecutor);
+    }
+

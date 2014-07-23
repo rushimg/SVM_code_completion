@@ -1,0 +1,73 @@
+    boolean requestCancelActivityTask(String activityId, Runnable immediateCancellationCallback) {
+        DecisionStateMachine decision = getDecision(new DecisionId(DecisionTarget.ACTIVITY, activityId));
+        decision.cancel(immediateCancellationCallback);
+        return decision.isDone();
+    }
+
+    boolean handleActivityTaskClosed(String activityId) {
+        DecisionStateMachine decision = getDecision(new DecisionId(DecisionTarget.ACTIVITY, activityId));
+        decision.handleCompletionEvent();
+        return decision.isDone();
+    }
+
+    boolean handleActivityTaskScheduled(HistoryEvent event) {
+        ActivityTaskScheduledEventAttributes attributes = event.getActivityTaskScheduledEventAttributes();
+        String activityId = attributes.getActivityId();
+        activitySchedulingEventIdToActivityId.put(event.getEventId(), activityId);
+        DecisionStateMachine decision = getDecision(new DecisionId(DecisionTarget.ACTIVITY, activityId));
+        decision.handleInitiatedEvent(event);
+        return decision.isDone();
+    }
+
+    public boolean handleScheduleActivityTaskFailed(HistoryEvent event) {
+        ScheduleActivityTaskFailedEventAttributes attributes = event.getScheduleActivityTaskFailedEventAttributes();
+        String activityId = attributes.getActivityId();
+        DecisionStateMachine decision = getDecision(new DecisionId(DecisionTarget.ACTIVITY, activityId));
+        decision.handleInitiationFailedEvent(event);
+        return decision.isDone();
+    }
+
+    boolean handleActivityTaskCancelRequested(HistoryEvent event) {
+        ActivityTaskCancelRequestedEventAttributes attributes = event.getActivityTaskCancelRequestedEventAttributes();
+        String activityId = attributes.getActivityId();
+        DecisionStateMachine decision = getDecision(new DecisionId(DecisionTarget.ACTIVITY, activityId));
+        decision.handleCancellationInitiatedEvent();
+        return decision.isDone();
+    }
+
+    public boolean handleActivityTaskCanceled(HistoryEvent event) {
+        ActivityTaskCanceledEventAttributes attributes = event.getActivityTaskCanceledEventAttributes();
+        String activityId = getActivityId(attributes);
+        DecisionStateMachine decision = getDecision(new DecisionId(DecisionTarget.ACTIVITY, activityId));
+        decision.handleCancellationEvent();
+        return decision.isDone();
+    }
+
+    boolean handleRequestCancelActivityTaskFailed(HistoryEvent event) {
+        RequestCancelActivityTaskFailedEventAttributes attributes = event.getRequestCancelActivityTaskFailedEventAttributes();
+        String activityId = attributes.getActivityId();
+        DecisionStateMachine decision = getDecision(new DecisionId(DecisionTarget.ACTIVITY, activityId));
+        decision.handleCancellationFailureEvent(event);
+        return decision.isDone();
+    }
+
+    void startChildWorkflowExecution(StartChildWorkflowExecutionDecisionAttributes schedule) {
+        DecisionId decisionId = new DecisionId(DecisionTarget.EXTERNAL_WORKFLOW, schedule.getWorkflowId());
+        addDecision(decisionId, new ChildWorkflowDecisionStateMachine(decisionId, schedule));
+    }
+
+    void handleStartChildWorkflowExecutionInitiated(HistoryEvent event) {
+        StartChildWorkflowExecutionInitiatedEventAttributes attributes = event.getStartChildWorkflowExecutionInitiatedEventAttributes();
+        String workflowId = attributes.getWorkflowId();
+        DecisionStateMachine decision = getDecision(new DecisionId(DecisionTarget.EXTERNAL_WORKFLOW, workflowId));
+        decision.handleInitiatedEvent(event);
+    }
+
+    public boolean handleStartChildWorkflowExecutionFailed(HistoryEvent event) {
+        StartChildWorkflowExecutionFailedEventAttributes attributes = event.getStartChildWorkflowExecutionFailedEventAttributes();
+        String workflowId = attributes.getWorkflowId();
+        DecisionStateMachine decision = getDecision(new DecisionId(DecisionTarget.EXTERNAL_WORKFLOW, workflowId));
+        decision.handleInitiationFailedEvent(event);
+        return decision.isDone();
+    }
+

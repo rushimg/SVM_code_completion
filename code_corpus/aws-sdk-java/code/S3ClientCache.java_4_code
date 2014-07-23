@@ -1,0 +1,12 @@
+    public void useClient(AmazonS3Client client) {
+        Region s3region = client.getRegion();
+
+        synchronized (transferManagersByRegion) {
+            TransferManager tm = transferManagersByRegion.remove(s3region);
+            if (tm != null) {
+                tm.shutdownNow();
+            }
+            clientsByRegion.put(s3region, client);
+        }
+    }
+

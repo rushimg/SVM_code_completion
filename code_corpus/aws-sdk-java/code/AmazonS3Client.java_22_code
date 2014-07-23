@@ -1,0 +1,12 @@
+    public String getBucketLocation(GetBucketLocationRequest getBucketLocationRequest)
+            throws AmazonClientException, AmazonServiceException {
+        assertParameterNotNull(getBucketLocationRequest, "The request parameter must be specified when requesting a bucket's location");
+        String bucketName = getBucketLocationRequest.getBucketName();
+        assertParameterNotNull(bucketName, "The bucket name parameter must be specified when requesting a bucket's location");
+
+        Request<GetBucketLocationRequest> request = createRequest(bucketName, null, getBucketLocationRequest, HttpMethodName.GET);
+        request.addParameter("location", null);
+
+        return invoke(request, new Unmarshallers.BucketLocationUnmarshaller(), bucketName, null);
+    }
+

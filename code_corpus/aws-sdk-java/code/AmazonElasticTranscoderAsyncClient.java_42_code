@@ -1,0 +1,19 @@
+    public Future<CreatePresetResult> createPresetAsync(
+            final CreatePresetRequest createPresetRequest,
+            final AsyncHandler<CreatePresetRequest, CreatePresetResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<CreatePresetResult>() {
+            public CreatePresetResult call() throws Exception {
+                CreatePresetResult result;
+                try {
+                    result = createPreset(createPresetRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(createPresetRequest, result);
+                   return result;
+            }
+        });
+    }
+    

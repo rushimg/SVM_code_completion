@@ -1,0 +1,12 @@
+  public BootstrapActionConfig newRunIf(String condition, BootstrapActionConfig config) {
+    List<String> args = config.getScriptBootstrapAction().getArgs();
+    args.add(0, condition);
+    args.add(1, config.getScriptBootstrapAction().getPath());
+
+    return new BootstrapActionConfig()
+      .withName("Run If, " + config.getName())
+      .withScriptBootstrapAction(new ScriptBootstrapActionConfig()
+        .withPath("s3://" + bucket + "/bootstrap-actions/run-if")
+        .withArgs(args));
+  }
+

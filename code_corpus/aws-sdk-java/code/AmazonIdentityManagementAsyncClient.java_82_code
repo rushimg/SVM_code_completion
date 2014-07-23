@@ -1,0 +1,19 @@
+    public Future<ListMFADevicesResult> listMFADevicesAsync(
+            final ListMFADevicesRequest listMFADevicesRequest,
+            final AsyncHandler<ListMFADevicesRequest, ListMFADevicesResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ListMFADevicesResult>() {
+            public ListMFADevicesResult call() throws Exception {
+                ListMFADevicesResult result;
+                try {
+                    result = listMFADevices(listMFADevicesRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(listMFADevicesRequest, result);
+                   return result;
+            }
+        });
+    }
+    

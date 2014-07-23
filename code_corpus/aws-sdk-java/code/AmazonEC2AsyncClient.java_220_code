@@ -1,0 +1,19 @@
+    public Future<RequestSpotInstancesResult> requestSpotInstancesAsync(
+            final RequestSpotInstancesRequest requestSpotInstancesRequest,
+            final AsyncHandler<RequestSpotInstancesRequest, RequestSpotInstancesResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<RequestSpotInstancesResult>() {
+            public RequestSpotInstancesResult call() throws Exception {
+                RequestSpotInstancesResult result;
+                try {
+                    result = requestSpotInstances(requestSpotInstancesRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(requestSpotInstancesRequest, result);
+                   return result;
+            }
+        });
+    }
+    

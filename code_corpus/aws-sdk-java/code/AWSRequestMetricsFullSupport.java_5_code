@@ -1,0 +1,18 @@
+        if (event == null) {
+            LogFactory.getLog(getClass()).warn
+                ("Trying to end an event which was never started: " + eventName);
+            return;
+        }
+        event.endTiming();
+        this.timingInfo.addSubMeasurement(
+            eventName,
+            TimingInfo.unmodifiableTimingInfo(
+                event.getStartTimeNano(),
+                event.getEndTimeNano()));
+    }
+
+    @Override
+    public void endEvent(MetricType f) {
+        endEvent(f.name());
+    }
+

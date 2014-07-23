@@ -1,0 +1,47 @@
+    public UploadPartResult uploadPart(UploadPartRequest uploadPartRequest)
+            throws AmazonClientException, AmazonServiceException {
+        assertParameterNotNull(uploadPartRequest,
+            "The request parameter must be specified when uploading a part");
+
+        String bucketName = uploadPartRequest.getBucketName();
+        String key        = uploadPartRequest.getKey();
+        String uploadId   = uploadPartRequest.getUploadId();
+        int partNumber    = uploadPartRequest.getPartNumber();
+        long partSize     = uploadPartRequest.getPartSize();
+
+        assertParameterNotNull(bucketName,
+            "The bucket name parameter must be specified when uploading a part");
+        assertParameterNotNull(key,
+            "The key parameter must be specified when uploading a part");
+        assertParameterNotNull(uploadId,
+            "The upload ID parameter must be specified when uploading a part");
+        assertParameterNotNull(partNumber,
+            "The part number parameter must be specified when uploading a part");
+        assertParameterNotNull(partSize,
+            "The part size parameter must be specified when uploading a part");
+
+        Request<UploadPartRequest> request = createRequest(bucketName, key, uploadPartRequest, HttpMethodName.PUT);
+        request.addParameter("uploadId", uploadId);
+        request.addParameter("partNumber", Integer.toString(partNumber));
+
+        if (uploadPartRequest.getMd5Digest() != null)
+            request.addHeader(Headers.CONTENT_MD5, uploadPartRequest.getMd5Digest());
+
+        request.addHeader(Headers.CONTENT_LENGTH, Long.toString(partSize));
+
+        InputStream inputStream = null;
+        if (uploadPartRequest.getInputStream() != null) {
+            inputStream = uploadPartRequest.getInputStream();
+        } else if (uploadPartRequest.getFile() != null) {
+            try {
+                inputStream = new InputSubstream(new RepeatableFileInputStream(uploadPartRequest.getFile()),
+                        uploadPartRequest.getFileOffset(), partSize, true);
+            } catch (FileNotFoundException e) {
+                throw new IllegalArgumentException("The specified file doesn't exist", e);
+            }
+        } else {
+            throw new IllegalArgumentException("A File or InputStream must be specified when uploading part");
+        }
+
+        MD5DigestCalculatingInputStream md5DigestStream = null;
+        if (uploadPartRequest.getMd5Digest() == null) {

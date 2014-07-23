@@ -1,0 +1,19 @@
+    public Future<EvaluateExpressionResult> evaluateExpressionAsync(
+            final EvaluateExpressionRequest evaluateExpressionRequest,
+            final AsyncHandler<EvaluateExpressionRequest, EvaluateExpressionResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<EvaluateExpressionResult>() {
+            public EvaluateExpressionResult call() throws Exception {
+                EvaluateExpressionResult result;
+                try {
+                    result = evaluateExpression(evaluateExpressionRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(evaluateExpressionRequest, result);
+                   return result;
+            }
+        });
+    }
+    

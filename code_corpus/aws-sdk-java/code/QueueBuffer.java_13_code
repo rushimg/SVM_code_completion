@@ -1,0 +1,28 @@
+    private <ResultType>  ResultType waitForFuture( Future<ResultType> future ) {
+        ResultType toReturn = null;
+        try {
+            toReturn = future.get();
+        } catch ( InterruptedException ie ) {
+            Thread.currentThread().interrupt();
+            AmazonClientException ce = new AmazonClientException("Thread interrupted while waiting for execution result");
+            ce.initCause(ie);
+            throw ce;
+        } catch (ExecutionException ee ) {
+            //if the cause of the execution exception is an SQS exception, extract it 
+            //and throw the extracted exception to the clients
+            //otherwise, wrap ee in an SQS exception and throw that.
+            Throwable cause = ee.getCause();
+
+            if (cause instanceof AmazonClientException) {
+                throw ( AmazonClientException ) cause;
+            }
+            
+            AmazonClientException ce = new AmazonClientException("Caught an exception while waiting for request to complete...");
+            ce.initCause(ee);
+            throw ce;
+        }
+        
+        return toReturn;
+        
+    }
+    

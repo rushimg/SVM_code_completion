@@ -1,0 +1,19 @@
+    public Future<ReadJobResult> readJobAsync(
+            final ReadJobRequest readJobRequest,
+            final AsyncHandler<ReadJobRequest, ReadJobResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ReadJobResult>() {
+            public ReadJobResult call() throws Exception {
+                ReadJobResult result;
+                try {
+                    result = readJob(readJobRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(readJobRequest, result);
+                   return result;
+            }
+        });
+    }
+    

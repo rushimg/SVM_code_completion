@@ -1,0 +1,19 @@
+    public BucketPolicy getBucketPolicy(
+            GetBucketPolicyRequest getBucketPolicyRequest)
+            throws AmazonClientException, AmazonServiceException {
+        assertParameterNotNull(getBucketPolicyRequest,
+            "The request object must be specified when getting a bucket policy");
+
+        String bucketName = getBucketPolicyRequest.getBucketName();
+        assertParameterNotNull(bucketName,
+            "The bucket name must be specified when getting a bucket policy");
+
+        Request<GetBucketPolicyRequest> request = createRequest(bucketName, null, getBucketPolicyRequest, HttpMethodName.GET);
+        request.addParameter("policy", null);
+
+        BucketPolicy result = new BucketPolicy();
+        try {
+            String policyText = invoke(request, new S3StringResponseHandler(), bucketName, null);
+            result.setPolicyText(policyText);
+            return result;
+        } catch (AmazonServiceException ase) {

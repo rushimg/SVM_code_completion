@@ -1,0 +1,13 @@
+    public UploadResult upload(final String accountId, final String vaultName, final String archiveDescription, final File file, ProgressListener progressListener)
+            throws AmazonServiceException, AmazonClientException, FileNotFoundException {
+        ProgressListenerCallbackExecutor progressListenerCallbackExecutor = ProgressListenerCallbackExecutor
+                .wrapListener(progressListener);
+        
+        if (file.length() > MULTIPART_UPLOAD_SIZE_THRESHOLD) {
+            return uploadInMultipleParts(accountId, vaultName, archiveDescription, file, progressListenerCallbackExecutor);
+        } else {
+            return uploadInSinglePart(accountId, vaultName, archiveDescription, file, progressListenerCallbackExecutor);
+        }
+    }
+
+

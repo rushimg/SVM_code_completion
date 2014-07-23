@@ -1,0 +1,19 @@
+    public Future<DescribeScheduledActionsResult> describeScheduledActionsAsync(
+            final DescribeScheduledActionsRequest describeScheduledActionsRequest,
+            final AsyncHandler<DescribeScheduledActionsRequest, DescribeScheduledActionsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeScheduledActionsResult>() {
+            public DescribeScheduledActionsResult call() throws Exception {
+                DescribeScheduledActionsResult result;
+                try {
+                    result = describeScheduledActions(describeScheduledActionsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeScheduledActionsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

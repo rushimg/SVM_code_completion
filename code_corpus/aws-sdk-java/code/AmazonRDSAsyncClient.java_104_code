@@ -1,0 +1,19 @@
+    public Future<DBInstance> promoteReadReplicaAsync(
+            final PromoteReadReplicaRequest promoteReadReplicaRequest,
+            final AsyncHandler<PromoteReadReplicaRequest, DBInstance> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DBInstance>() {
+            public DBInstance call() throws Exception {
+                DBInstance result;
+                try {
+                    result = promoteReadReplica(promoteReadReplicaRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(promoteReadReplicaRequest, result);
+                   return result;
+            }
+        });
+    }
+    

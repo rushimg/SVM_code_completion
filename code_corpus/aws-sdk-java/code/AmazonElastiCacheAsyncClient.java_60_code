@@ -1,0 +1,19 @@
+    public Future<CacheSecurityGroup> authorizeCacheSecurityGroupIngressAsync(
+            final AuthorizeCacheSecurityGroupIngressRequest authorizeCacheSecurityGroupIngressRequest,
+            final AsyncHandler<AuthorizeCacheSecurityGroupIngressRequest, CacheSecurityGroup> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<CacheSecurityGroup>() {
+            public CacheSecurityGroup call() throws Exception {
+                CacheSecurityGroup result;
+                try {
+                    result = authorizeCacheSecurityGroupIngress(authorizeCacheSecurityGroupIngressRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(authorizeCacheSecurityGroupIngressRequest, result);
+                   return result;
+            }
+        });
+    }
+    

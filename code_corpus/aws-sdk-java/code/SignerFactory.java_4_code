@@ -1,0 +1,38 @@
+    public static Signer getSigner(String serviceName, String regionName) {
+
+        InternalConfig config = InternalConfig.Factory.getInternalConfig();
+        SignerConfig signerConfig = config.getSignerConfig(serviceName, regionName);
+        String signerType = signerConfig.getSignerType();
+        Class<? extends Signer> signerClass = SIGNERS.get(signerType);
+
+        if (signerClass == null) {
+            throw new IllegalStateException(
+                "No signer implementation registered for signer type "
+                + signerType + ".");
+        }
+
+        Signer signer;
+        try {
+            signer = signerClass.newInstance();
+        } catch (InstantiationException exception) {
+            throw new IllegalStateException(
+                "Cannot create an instance of " + signerClass.getName()
+                + " for signer type " + signerType + ".",
+                exception);
+        } catch (IllegalAccessException exception) {
+            throw new IllegalStateException(
+                "Cannot create an instance of " + signerClass.getName()
+                + " for signer type " + signerType + ".",
+                exception);
+        }
+
+        if (signer instanceof ServiceAwareSigner) {
+            ((ServiceAwareSigner) signer).setServiceName(serviceName);
+        }
+        if (signer instanceof RegionAwareSigner) {
+            ((RegionAwareSigner) signer).setRegionName(regionName);
+        }
+
+        return signer;
+    }
+

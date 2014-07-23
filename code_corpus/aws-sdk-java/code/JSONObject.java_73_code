@@ -1,0 +1,37 @@
+     static Object wrap(Object object) {
+         try {
+             if (object == null) {
+                 return NULL;
+             }
+             if (object instanceof JSONObject || object instanceof JSONArray ||
+            		 NULL.equals(object)      || object instanceof String    ||
+            		 object instanceof Byte   || object instanceof Character ||
+                     object instanceof Short  || object instanceof Integer   ||
+                     object instanceof Long   || object instanceof Boolean   ||
+                     object instanceof Float  || object instanceof Double) {
+                 return object;
+             }
+
+             if (object instanceof Collection) {
+                 return new JSONArray((Collection)object);
+             }
+             if (object.getClass().isArray()) {
+                 return new JSONArray(object);
+             }
+             if (object instanceof Map) {
+                 return new JSONObject((Map)object);
+             }
+             Package objectPackage = object.getClass().getPackage();
+             String objectPackageName = ( objectPackage != null ? objectPackage.getName() : "" );
+             if (objectPackageName.startsWith("java.") ||
+            		 objectPackageName.startsWith("javax.") ||
+            		 object.getClass().getClassLoader() == null) {
+                 return object.toString();
+             }
+             return new JSONObject(object);
+         } catch(Exception exception) {
+             return null;
+         }
+     }
+
+

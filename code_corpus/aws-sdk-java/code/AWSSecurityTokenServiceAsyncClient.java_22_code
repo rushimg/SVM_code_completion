@@ -1,0 +1,19 @@
+    public Future<AssumeRoleWithWebIdentityResult> assumeRoleWithWebIdentityAsync(
+            final AssumeRoleWithWebIdentityRequest assumeRoleWithWebIdentityRequest,
+            final AsyncHandler<AssumeRoleWithWebIdentityRequest, AssumeRoleWithWebIdentityResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<AssumeRoleWithWebIdentityResult>() {
+            public AssumeRoleWithWebIdentityResult call() throws Exception {
+                AssumeRoleWithWebIdentityResult result;
+                try {
+                    result = assumeRoleWithWebIdentity(assumeRoleWithWebIdentityRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(assumeRoleWithWebIdentityRequest, result);
+                   return result;
+            }
+        });
+    }
+    

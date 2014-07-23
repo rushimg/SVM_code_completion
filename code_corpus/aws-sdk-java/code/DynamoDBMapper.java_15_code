@@ -1,0 +1,25 @@
+    public <T extends Object> void save(T object, DynamoDBMapperConfig config) {
+        config = mergeConfig(config);
+
+        @SuppressWarnings("unchecked")
+        Class<? extends T> clazz = (Class<? extends T>) object.getClass();
+        String tableName = getTableName(clazz, config);
+
+        Method hashKeyGetter = reflector.getHashKeyGetter(clazz);
+        AttributeValue hashKeyElement = getHashKeyElement(safeInvoke(hashKeyGetter, object), hashKeyGetter);
+
+        AttributeValue rangeKeyElement = null;
+        Method rangeKeyGetter = reflector.getRangeKeyGetter(clazz);
+        if ( rangeKeyGetter != null ) {
+            rangeKeyElement = getRangeKeyElement(safeInvoke(rangeKeyGetter, object), rangeKeyGetter);
+        }
+
+        Key objectKey = new Key().withHashKeyElement(hashKeyElement).withRangeKeyElement(rangeKeyElement);
+
+        Map<String, AttributeValueUpdate> updateValues = new HashMap<String, AttributeValueUpdate>();
+        Map<String, ExpectedAttributeValue> expectedValues = new HashMap<String, ExpectedAttributeValue>();
+
+        boolean forcePut = config.getSaveBehavior() == SaveBehavior.CLOBBER;
+        boolean nonKeyAttributePresent = false;
+        List<ValueUpdate> inMemoryUpdates = new LinkedList<ValueUpdate>();
+

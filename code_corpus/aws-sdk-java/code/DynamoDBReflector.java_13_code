@@ -1,0 +1,17 @@
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    private <T> T getCustomMarshalledValue(T toReturn, Method getter, AttributeValue value) {
+        DynamoDBMarshalling annotation = getter.getAnnotation(DynamoDBMarshalling.class);
+        Class<? extends DynamoDBMarshaller<? extends Object>> marshallerClass = annotation.marshallerClass();
+
+        DynamoDBMarshaller marshaller;
+        try {
+            marshaller = marshallerClass.newInstance();
+        } catch ( InstantiationException e ) {
+            throw new DynamoDBMappingException("Couldn't instantiate marshaller of class " + marshallerClass, e);
+        } catch ( IllegalAccessException e ) {
+            throw new DynamoDBMappingException("Couldn't instantiate marshaller of class " + marshallerClass, e);
+        }
+
+        return (T) marshaller.unmarshall(getter.getReturnType(), value.getS());
+    }
+

@@ -1,0 +1,19 @@
+    public Future<DescribeTapesResult> describeTapesAsync(
+            final DescribeTapesRequest describeTapesRequest,
+            final AsyncHandler<DescribeTapesRequest, DescribeTapesResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeTapesResult>() {
+            public DescribeTapesResult call() throws Exception {
+                DescribeTapesResult result;
+                try {
+                    result = describeTapes(describeTapesRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeTapesRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -1,0 +1,19 @@
+    public Future<GetConsoleOutputResult> getConsoleOutputAsync(
+            final GetConsoleOutputRequest getConsoleOutputRequest,
+            final AsyncHandler<GetConsoleOutputRequest, GetConsoleOutputResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<GetConsoleOutputResult>() {
+            public GetConsoleOutputResult call() throws Exception {
+                GetConsoleOutputResult result;
+                try {
+                    result = getConsoleOutput(getConsoleOutputRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(getConsoleOutputRequest, result);
+                   return result;
+            }
+        });
+    }
+    

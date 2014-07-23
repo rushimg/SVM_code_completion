@@ -1,0 +1,16 @@
+    public <T> ScanResultPage<T> scanPage(Class<T> clazz, DynamoDBScanExpression scanExpression, DynamoDBMapperConfig config) {
+        config = mergeConfig(config);
+
+        ScanRequest scanRequest = createScanRequestFromExpression(clazz, scanExpression, config);
+
+        ScanResult scanResult = db.scan(applyUserAgent(scanRequest));
+        ScanResultPage<T> result = new ScanResultPage<T>();
+        List<AttributeTransformer.Parameters<T>> parameters =
+            toParameters(scanResult.getItems(), clazz, config);
+
+        result.setResults(marshalIntoObjects(parameters));
+        result.setLastEvaluatedKey(scanResult.getLastEvaluatedKey());
+
+        return result;
+    }
+

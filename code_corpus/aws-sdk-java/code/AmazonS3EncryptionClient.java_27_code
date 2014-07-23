@@ -1,0 +1,11 @@
+    private S3Object getInstructionFile(GetObjectRequest getObjectRequest) {
+        try {
+            GetObjectRequest instructionFileRequest = EncryptionUtils.createInstructionGetRequest(getObjectRequest);
+            return super.getObject(instructionFileRequest);
+        } catch (AmazonServiceException e) {
+            // If no instruction file is found, log a debug message, and return null.
+            log.debug("Unable to retrieve instruction file : " + e.getMessage());
+            return null;
+        }
+    }
+

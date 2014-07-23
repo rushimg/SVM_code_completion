@@ -1,0 +1,18 @@
+    private final Map<DecisionId, DecisionStateMachine> decisions = new LinkedHashMap<DecisionId, DecisionStateMachine>(100,
+            0.75f, true);
+
+    private Throwable workflowFailureCause;
+
+    private String workflowContextData;
+
+    private String workfowContextFromLastDecisionCompletion;
+
+    DecisionsHelper(DecisionTask task) {
+        this.task = task;
+    }
+
+    void scheduleActivityTask(ScheduleActivityTaskDecisionAttributes schedule) {
+        DecisionId decisionId = new DecisionId(DecisionTarget.ACTIVITY, schedule.getActivityId());
+        addDecision(decisionId, new ActivityDecisionStateMachine(decisionId, schedule));
+    }
+

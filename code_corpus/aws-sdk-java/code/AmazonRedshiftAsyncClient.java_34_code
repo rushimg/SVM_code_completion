@@ -1,0 +1,19 @@
+    public Future<EnableLoggingResult> enableLoggingAsync(
+            final EnableLoggingRequest enableLoggingRequest,
+            final AsyncHandler<EnableLoggingRequest, EnableLoggingResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<EnableLoggingResult>() {
+            public EnableLoggingResult call() throws Exception {
+                EnableLoggingResult result;
+                try {
+                    result = enableLogging(enableLoggingRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(enableLoggingRequest, result);
+                   return result;
+            }
+        });
+    }
+    

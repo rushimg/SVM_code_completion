@@ -1,0 +1,19 @@
+    public Future<DescribeTableResult> describeTableAsync(
+            final DescribeTableRequest describeTableRequest,
+            final AsyncHandler<DescribeTableRequest, DescribeTableResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeTableResult>() {
+            public DescribeTableResult call() throws Exception {
+            	DescribeTableResult result;
+                try {
+            		result = describeTable(describeTableRequest);
+            	} catch (Exception ex) {
+            	    asyncHandler.onError(ex);
+    				throw ex;
+            	}
+            	asyncHandler.onSuccess(describeTableRequest, result);
+               	return result;
+		    }
+		});
+    }
+    

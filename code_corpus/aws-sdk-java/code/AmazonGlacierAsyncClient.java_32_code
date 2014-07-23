@@ -1,0 +1,18 @@
+    public Future<Void> deleteArchiveAsync(
+            final DeleteArchiveRequest deleteArchiveRequest,
+            final AsyncHandler<DeleteArchiveRequest, Void> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<Void>() {
+            public Void call() throws Exception {
+                try {
+                    deleteArchive(deleteArchiveRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(deleteArchiveRequest, null);
+                   return null;
+            }
+        });
+    }
+    

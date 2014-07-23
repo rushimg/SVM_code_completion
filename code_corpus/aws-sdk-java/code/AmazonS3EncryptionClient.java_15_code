@@ -1,0 +1,56 @@
+    @Override
+    public S3Object getObject(GetObjectRequest getObjectRequest)
+    throws AmazonClientException, AmazonServiceException {
+
+        appendUserAgent(getObjectRequest, USER_AGENT);
+
+        // Adjust the crypto range to retrieve all of the cipher blocks needed to contain the user's desired
+        // range of bytes.
+        long[] desiredRange = getObjectRequest.getRange();
+        long[] adjustedCryptoRange = EncryptionUtils.getAdjustedCryptoRange(desiredRange);
+        if (adjustedCryptoRange != null) {
+            getObjectRequest.setRange(adjustedCryptoRange[0], adjustedCryptoRange[1]);
+        }
+
+        // Get the object from S3
+        S3Object retrievedObject = super.getObject(getObjectRequest);
+
+        // If the caller has specified constraints, it's possible that super.getObject(...)
+        // would return null, so we simply return null as well.
+        if (retrievedObject == null) return null;
+
+        S3Object objectToBeReturned;
+        try {
+            // Check if encryption info is in object metadata
+            if (EncryptionUtils.isEncryptionInfoInMetadata(retrievedObject)) {
+                objectToBeReturned = decryptObjectUsingMetadata(retrievedObject);
+            } else {
+                // Check if encrypted info is in an instruction file
+                S3Object instructionFile = null;
+                try {
+                    instructionFile = getInstructionFile(getObjectRequest);
+                    if (EncryptionUtils.isEncryptionInfoInInstructionFile(instructionFile)) {
+                        objectToBeReturned = decryptObjectUsingInstructionFile(retrievedObject, instructionFile);
+                    } else {
+                        // The object was not encrypted to begin with.  Return the object without decrypting it.
+                        log.warn(String.format("Unable to detect encryption information for object '%s' in bucket '%s'. " +
+                                "Returning object without decryption.",
+                                retrievedObject.getKey(), retrievedObject.getBucketName()));
+                        objectToBeReturned = retrievedObject;
+                    }
+                } finally {
+                    if (instructionFile != null) {
+                        try { instructionFile.getObjectContent().close();} catch (Exception e) {}
+                    }
+                }
+            }
+        } catch (AmazonClientException ace) {
+            // If we're unable to set up the decryption, make sure we close the HTTP connection
+            try {retrievedObject.getObjectContent().close();} catch (Exception e) {}
+            throw ace;
+        }
+
+        // Adjust the output to the desired range of bytes.
+        return EncryptionUtils.adjustOutputToDesiredRange(objectToBeReturned, desiredRange);
+    }
+

@@ -1,0 +1,25 @@
+    public CancelArchivalResult cancelArchival(CancelArchivalRequest cancelArchivalRequest) {
+        ExecutionContext executionContext = createExecutionContext(cancelArchivalRequest);
+        AWSRequestMetrics awsRequestMetrics = executionContext.getAwsRequestMetrics();
+        awsRequestMetrics.startEvent(Field.ClientExecuteTime);
+        Request<CancelArchivalRequest> request = null;
+        Response<CancelArchivalResult> response = null;
+        try {
+            awsRequestMetrics.startEvent(Field.RequestMarshallTime);
+            try {
+                request = new CancelArchivalRequestMarshaller().marshall(cancelArchivalRequest);
+                // Binds the request metrics to the current request.
+                request.setAWSRequestMetrics(awsRequestMetrics);
+            } finally {
+                awsRequestMetrics.endEvent(Field.RequestMarshallTime);
+            }
+            Unmarshaller<CancelArchivalResult, JsonUnmarshallerContext> unmarshaller = new CancelArchivalResultJsonUnmarshaller();
+            JsonResponseHandler<CancelArchivalResult> responseHandler = new JsonResponseHandler<CancelArchivalResult>(unmarshaller);
+            
+            response = invoke(request, responseHandler, executionContext);
+            return response.getAwsResponse();
+        } finally {
+            endClientExecution(awsRequestMetrics, request, response);
+        }
+    }
+

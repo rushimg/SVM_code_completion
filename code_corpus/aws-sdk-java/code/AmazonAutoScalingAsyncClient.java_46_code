@@ -1,0 +1,19 @@
+    public Future<PutScalingPolicyResult> putScalingPolicyAsync(
+            final PutScalingPolicyRequest putScalingPolicyRequest,
+            final AsyncHandler<PutScalingPolicyRequest, PutScalingPolicyResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<PutScalingPolicyResult>() {
+            public PutScalingPolicyResult call() throws Exception {
+                PutScalingPolicyResult result;
+                try {
+                    result = putScalingPolicy(putScalingPolicyRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(putScalingPolicyRequest, result);
+                   return result;
+            }
+        });
+    }
+    

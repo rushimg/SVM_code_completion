@@ -1,0 +1,29 @@
+        if (copyObjectResultHandler.getErrorCode() != null) {
+            String errorCode = copyObjectResultHandler.getErrorCode();
+            String errorMessage = copyObjectResultHandler.getErrorMessage();
+            String requestId = copyObjectResultHandler.getErrorRequestId();
+            String hostId = copyObjectResultHandler.getErrorHostId();
+
+            AmazonS3Exception ase = new AmazonS3Exception(errorMessage);
+            ase.setErrorCode(errorCode);
+            ase.setErrorType(ErrorType.Service);
+            ase.setRequestId(requestId);
+            ase.setExtendedRequestId(hostId);
+            ase.setServiceName(request.getServiceName());
+            ase.setStatusCode(200);
+
+            throw ase;
+        }
+
+        // TODO: Might be nice to create this in our custom S3VersionHeaderHandler
+        CopyObjectResult copyObjectResult = new CopyObjectResult();
+        copyObjectResult.setETag(copyObjectResultHandler.getETag());
+        copyObjectResult.setLastModifiedDate(copyObjectResultHandler.getLastModified());
+        copyObjectResult.setVersionId(copyObjectResultHandler.getVersionId());
+        copyObjectResult.setServerSideEncryption(copyObjectResultHandler.getServerSideEncryption());
+        copyObjectResult.setExpirationTime(copyObjectResultHandler.getExpirationTime());
+        copyObjectResult.setExpirationTimeRuleId(copyObjectResultHandler.getExpirationTimeRuleId());
+
+        return copyObjectResult;
+    }
+

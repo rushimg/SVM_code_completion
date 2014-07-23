@@ -1,0 +1,23 @@
+			else if (currentSegmentState == SegmentScanState.HasNextPage
+					|| currentSegmentState == SegmentScanState.SegmentScanCompleted) {
+				ScanResult scanResult = segmentScanResults.get(segment);
+				scanResults.add(scanResult);
+			}
+			else if (currentSegmentState == SegmentScanState.Waiting
+					|| currentSegmentState == SegmentScanState.Scanning){
+				throw new AmazonClientException("Should never see a 'Scanning' or 'Waiting' state when marshalling parallel scan results.");
+			}
+		}
+		return scanResults;
+	}
+	
+	private ScanResult scanNextPageOfSegment(int currentSegment, boolean checkLastEvaluatedKey) {
+		ScanRequest segmentScanRequest = parallelScanRequests.get(currentSegment);
+		if (checkLastEvaluatedKey) {
+			ScanResult lastScanResult = segmentScanResults.get(currentSegment);
+			segmentScanRequest.setExclusiveStartKey(lastScanResult.getLastEvaluatedKey());
+		} else {
+			segmentScanRequest.setExclusiveStartKey(null);
+		}
+		ScanResult scanResult = dynamo.scan(mapper.applyUserAgent(segmentScanRequest));
+		

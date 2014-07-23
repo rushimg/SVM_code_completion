@@ -1,0 +1,19 @@
+    public Future<ReportTaskProgressResult> reportTaskProgressAsync(
+            final ReportTaskProgressRequest reportTaskProgressRequest,
+            final AsyncHandler<ReportTaskProgressRequest, ReportTaskProgressResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ReportTaskProgressResult>() {
+            public ReportTaskProgressResult call() throws Exception {
+                ReportTaskProgressResult result;
+                try {
+                    result = reportTaskProgress(reportTaskProgressRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(reportTaskProgressRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -1,0 +1,36 @@
+        long contentLength = -1;
+        try {
+            String contentLengthString = request.getHeaders().get("Content-Length");
+            if (contentLengthString != null) {
+                contentLength = Long.parseLong(contentLengthString);
+            }
+        } catch (NumberFormatException nfe) {
+            log.warn("Unable to parse content length from request.  " +
+            		"Buffering contents in memory.");
+        }
+
+        String contentType = request.getHeaders().get("Content-Type");
+        ThroughputMetricType type = ServiceMetricTypeGuesser
+                .guessThroughputMetricType(request,
+                        ServiceMetricType.UPLOAD_THROUGHPUT_NAME_SUFFIX,
+                        ServiceMetricType.UPLOAD_BYTE_COUNT_NAME_SUFFIX);
+        if (type == null) {
+            inputStreamRequestEntity = 
+                new InputStreamEntity(request.getContent(), contentLength);
+        } else {
+            inputStreamRequestEntity = 
+                new MetricInputStreamEntity(type, request.getContent(), contentLength);
+        }
+        inputStreamRequestEntity.setContentType(contentType);
+        content = request.getContent();
+
+        setContent(content);
+        setContentType(contentType);
+        setContentLength(contentLength);
+    }
+
+    @Override
+	public boolean isChunked() {
+    	return false;
+	}
+

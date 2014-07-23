@@ -1,0 +1,35 @@
+    public ResponseMetadata getCachedResponseMetadata(AmazonWebServiceRequest request) {
+        return client.getResponseMetadataForRequest(request);
+    }
+
+    private <X, Y extends AmazonWebServiceRequest> X invoke(Request<Y> request,
+                                                                HttpResponseHandler<AmazonWebServiceResponse<X>> responseHandler,
+                                                                ExecutionContext executionContext) throws AmazonClientException {
+
+        request.setEndpoint(endpoint);
+        request.setTimeOffset(timeOffset);
+
+        AWSRequestMetrics awsRequestMetrics = executionContext.getAwsRequestMetrics();
+        AWSCredentials credentials;
+        awsRequestMetrics.startEvent(Field.CredentialsRequestTime);
+        try {
+            credentials = awsCredentialsProvider.getCredentials();
+        } finally {
+            awsRequestMetrics.endEvent(Field.CredentialsRequestTime);
+        }
+
+        AmazonWebServiceRequest originalRequest = request.getOriginalRequest();
+        if (originalRequest != null && originalRequest.getRequestCredentials() != null) {
+            credentials = originalRequest.getRequestCredentials();
+        }
+
+        executionContext.setSigner(signer);
+        executionContext.setCredentials(credentials);
+
+        JsonErrorResponseHandler errorResponseHandler = new JsonErrorResponseHandler(exceptionUnmarshallers);
+        Response<X> result = client.execute(request, responseHandler,
+                errorResponseHandler, executionContext);
+        awsRequestMetrics.log();
+        return result.getAwsResponse();
+    }
+

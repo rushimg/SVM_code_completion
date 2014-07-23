@@ -1,0 +1,19 @@
+    public Future<RetrieveEnvironmentInfoResult> retrieveEnvironmentInfoAsync(
+            final RetrieveEnvironmentInfoRequest retrieveEnvironmentInfoRequest,
+            final AsyncHandler<RetrieveEnvironmentInfoRequest, RetrieveEnvironmentInfoResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<RetrieveEnvironmentInfoResult>() {
+            public RetrieveEnvironmentInfoResult call() throws Exception {
+                RetrieveEnvironmentInfoResult result;
+                try {
+                    result = retrieveEnvironmentInfo(retrieveEnvironmentInfoRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(retrieveEnvironmentInfoRequest, result);
+                   return result;
+            }
+        });
+    }
+    

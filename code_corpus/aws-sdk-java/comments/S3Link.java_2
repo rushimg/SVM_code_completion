@@ -1,0 +1,61 @@
+/**
+ * An S3 Link that works with {@link DynamoDBMapper}.
+ * An S3 link is persisted as a JSON string in DynamoDB.
+ * This link object can be used directly to upload/download files to S3.
+ * Alternatively, the underlying
+ * {@link AmazonS3Client} and {@link TransferManager} can be retrieved to
+ * provide full access API to S3.
+ * <p>
+ * For example:
+ * <pre><blockquote>
+ * AWSCredentialsProvider s3CredentialProvider = ...;
+ * DynamoDBMapper mapper = new DynamoDBMapper(..., s3CredentialProvider);
+ * String username = "jamestkirk";
+ *
+ * User user = new User();
+ * user.setUsername(username);
+ *
+ * // S3 region can be specified, but is optional
+ * S3Link s3link = mapper.createS3Link("my-company-user-avatars", username + ".jpg");
+ * user.setAvatar(s3link);
+ *
+ * // All meta information of the S3 resource is persisted in DynamoDB, including
+ * // region, bucket, and key
+ * mapper.save(user);
+ *
+ * // Upload file to S3 with the link saved in DynamoDB
+ * s3link.uploadFrom(new File("/path/to/all/those/user/avatars/" + username + ".jpg"));
+ * // Download file from S3 via an S3Link
+ * s3link.downloadTo(new File("/path/to/downloads/" + username + ".jpg"));
+ *
+ * // Full S3 API is available via the canonical AmazonS3Client and TransferManager API.
+ * // For example:
+ * AmazonS3Client s3 = s3link.getAmazonS3Client();
+ * TransferManager s3m = s3link.getTransferManager();
+ * // etc.
+ * </blockquote></pre>The User pojo class used above:<pre><blockquote>
+ * &commat;DynamoDBTable(tableName = "user-table")
+ * public class User {
+ *     private String username;
+ *     private S3Link avatar;
+ *
+ *     &commat;DynamoDBHashKey
+ *     public String getUsername() {
+ *         return username;
+ *     }
+ *
+ *     public void setUsername(String username) {
+ *         this.username = username;
+ *     }
+ *
+ *     public S3Link getAvatar() {
+ *         return avatar;
+ *     }
+ *
+ *     public void setAvatar(S3Link avatar) {
+ *         this.avatar = avatar;
+ *     }
+ * }
+ * </blockquote>
+ * </pre>
+ */

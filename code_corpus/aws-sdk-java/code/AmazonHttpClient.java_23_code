@@ -1,0 +1,51 @@
+    private <T> T handleResponse(Request<?> request,
+            HttpResponseHandler<AmazonWebServiceResponse<T>> responseHandler,
+            HttpRequestBase method, HttpResponse httpResponse,
+            org.apache.http.HttpResponse apacheHttpResponse,
+            ExecutionContext executionContext) throws IOException
+    {
+        if (responseHandler.needsConnectionLeftOpen() && method instanceof HttpEntityEnclosingRequest) {
+            HttpEntityEnclosingRequest httpEntityEnclosingRequest = (HttpEntityEnclosingRequest)method;
+            httpResponse.setContent(new HttpMethodReleaseInputStream(httpEntityEnclosingRequest));
+        }
+
+        try {
+            CountingInputStream countingInputStream = null;
+            if (System.getProperty(PROFILING_SYSTEM_PROPERTY) != null) {
+                countingInputStream = new CountingInputStream(httpResponse.getContent());
+                httpResponse.setContent(countingInputStream);
+            }
+
+            AWSRequestMetrics awsRequestMetrics = executionContext.getAwsRequestMetrics();
+            AmazonWebServiceResponse<? extends T> awsResponse;
+            awsRequestMetrics.startEvent(Field.ResponseProcessingTime);
+            try {
+                awsResponse = responseHandler.handle(httpResponse);
+            } finally {
+                awsRequestMetrics.endEvent(Field.ResponseProcessingTime);
+            }
+            if (countingInputStream != null) {
+                awsRequestMetrics.setCounter(Field.BytesProcessed, countingInputStream.getByteCount());
+            }
+
+            if (awsResponse == null)
+                throw new RuntimeException("Unable to unmarshall response metadata");
+
+            responseMetadataCache.add(request.getOriginalRequest(), awsResponse.getResponseMetadata());
+
+            if (requestLog.isDebugEnabled()) {
+                requestLog.debug("Received successful response: " + apacheHttpResponse.getStatusLine().getStatusCode()
+                        + ", AWS Request ID: " + awsResponse.getRequestId());
+            }
+            awsRequestMetrics.addProperty(Field.AWSRequestID, awsResponse.getRequestId());
+
+            return awsResponse.getResult();
+        } catch (CRC32MismatchException e) {
+            throw e;
+        } catch (Exception e) {
+            String errorMessage = "Unable to unmarshall response (" + e.getMessage() + ")";
+            throw new AmazonClientException(errorMessage, e);
+        }
+    }
+
+

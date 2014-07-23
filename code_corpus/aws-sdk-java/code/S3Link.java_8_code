@@ -1,0 +1,15 @@
+    public PutObjectResult uploadFrom(final byte[] buffer,
+            RequestMetricCollector requestMetricCollector) {
+        return uploadFrom0(buffer, requestMetricCollector);
+    }
+
+    private PutObjectResult uploadFrom0(final byte[] buffer,
+            RequestMetricCollector requestMetricCollector) {
+        ObjectMetadata objectMetadata = new ObjectMetadata();
+        objectMetadata.setContentLength(buffer.length);
+        PutObjectRequest req = new PutObjectRequest(getBucketName(), getKey(),
+                new ByteArrayInputStream(buffer), objectMetadata)
+                .withRequestMetricCollector(requestMetricCollector);
+        return getAmazonS3Client().putObject(req);
+    }
+

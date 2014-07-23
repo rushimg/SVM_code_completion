@@ -1,0 +1,19 @@
+    public Future<ListMultipartUploadsResult> listMultipartUploadsAsync(
+            final ListMultipartUploadsRequest listMultipartUploadsRequest,
+            final AsyncHandler<ListMultipartUploadsRequest, ListMultipartUploadsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ListMultipartUploadsResult>() {
+            public ListMultipartUploadsResult call() throws Exception {
+                ListMultipartUploadsResult result;
+                try {
+                    result = listMultipartUploads(listMultipartUploadsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(listMultipartUploadsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

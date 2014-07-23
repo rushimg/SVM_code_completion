@@ -1,0 +1,15 @@
+    @Deprecated
+    AbstractTransfer(String description, TransferProgress transferProgress, com.amazonaws.services.s3.transfer.internal.ProgressListenerChain progressListenerChain) {
+        this(description, transferProgress, progressListenerChain, null);
+    }
+
+    AbstractTransfer(String description, TransferProgress transferProgress,
+            ProgressListenerChain progressListenerChain, TransferStateChangeListener stateChangeListener) {
+        this.description = description;
+        this.progressListenerChain = progressListenerChain;
+        this.progressListenerChainCallbackExecutor = ProgressListenerCallbackExecutor
+                .wrapListener(progressListenerChain);
+        this.transferProgress = transferProgress;
+        addStateChangeListener(stateChangeListener);
+    }
+    

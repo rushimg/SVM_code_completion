@@ -1,0 +1,38 @@
+    protected void parseXmlInputStream(DefaultHandler handler, InputStream inputStream)
+            throws AmazonClientException {
+        try {
+            if (log.isDebugEnabled()) {
+                log.debug("Parsing XML response document with handler: " + handler.getClass());
+            }
+
+            BufferedReader breader = new BufferedReader(new InputStreamReader(inputStream,
+                Constants.DEFAULT_ENCODING));
+            xr.setContentHandler(handler);
+            xr.setErrorHandler(handler);
+            xr.parse(new InputSource(breader));
+        } catch (Throwable t) {
+            try {
+                inputStream.close();
+            } catch (IOException e) {
+                if (log.isErrorEnabled()) {
+                    log.error("Unable to close response InputStream up after XML parse failure", e);
+                }
+            }
+            throw new AmazonClientException("Failed to parse XML document with handler "
+                + handler.getClass(), t);
+        }
+    }
+
+    protected InputStream sanitizeXmlDocument(DefaultHandler handler, InputStream inputStream)
+            throws AmazonClientException {
+        if (!sanitizeXmlDocument) {
+            // No sanitizing will be performed, return the original input stream unchanged.
+            return inputStream;
+        } else {
+            if (log.isDebugEnabled()) {
+                log.debug("Sanitizing XML document destined for handler " + handler.getClass());
+            }
+
+            InputStream sanitizedInputStream = null;
+
+            try {

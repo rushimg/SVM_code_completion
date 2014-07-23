@@ -1,0 +1,19 @@
+    public Future<CreateDistributionResult> createDistributionAsync(
+            final CreateDistributionRequest createDistributionRequest,
+            final AsyncHandler<CreateDistributionRequest, CreateDistributionResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<CreateDistributionResult>() {
+            public CreateDistributionResult call() throws Exception {
+                CreateDistributionResult result;
+                try {
+                    result = createDistribution(createDistributionRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(createDistributionRequest, result);
+                   return result;
+            }
+        });
+    }
+    

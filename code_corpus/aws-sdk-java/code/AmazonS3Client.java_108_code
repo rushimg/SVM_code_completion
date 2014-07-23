@@ -1,0 +1,44 @@
+    public InitiateMultipartUploadResult initiateMultipartUpload(
+            InitiateMultipartUploadRequest initiateMultipartUploadRequest)
+            throws AmazonClientException, AmazonServiceException {
+        assertParameterNotNull(initiateMultipartUploadRequest,
+            "The request parameter must be specified when initiating a multipart upload");
+
+        assertParameterNotNull(initiateMultipartUploadRequest.getBucketName(),
+            "The bucket name parameter must be specified when initiating a multipart upload");
+        assertParameterNotNull(initiateMultipartUploadRequest.getKey(),
+            "The key parameter must be specified when initiating a multipart upload");
+
+        Request<InitiateMultipartUploadRequest> request = createRequest(initiateMultipartUploadRequest.getBucketName(), initiateMultipartUploadRequest.getKey(), initiateMultipartUploadRequest, HttpMethodName.POST);
+        request.addParameter("uploads", null);
+
+        if (initiateMultipartUploadRequest.getStorageClass() != null)
+            request.addHeader(Headers.STORAGE_CLASS, initiateMultipartUploadRequest.getStorageClass().toString());
+
+        if (initiateMultipartUploadRequest.getRedirectLocation() != null) {
+            request.addHeader(Headers.REDIRECT_LOCATION, initiateMultipartUploadRequest.getRedirectLocation());
+        }
+
+        if ( initiateMultipartUploadRequest.getAccessControlList() != null ) {
+            addAclHeaders(request, initiateMultipartUploadRequest.getAccessControlList());
+        } else if ( initiateMultipartUploadRequest.getCannedACL() != null ) {
+            request.addHeader(Headers.S3_CANNED_ACL, initiateMultipartUploadRequest.getCannedACL().toString());
+        }
+
+        if (initiateMultipartUploadRequest.objectMetadata != null) populateRequestMetadata(request, initiateMultipartUploadRequest.objectMetadata);
+
+        // Be careful that we don't send the object's total size as the content
+        // length for the InitiateMultipartUpload request.
+        request.getHeaders().remove(Headers.CONTENT_LENGTH);
+        // Set the request content to be empty (but not null) to force the runtime to pass
+        // any query params in the query string and not the request body, to keep S3 happy.
+        request.setContent(new ByteArrayInputStream(new byte[0]));
+
+        @SuppressWarnings("unchecked")
+        ResponseHeaderHandlerChain<InitiateMultipartUploadResult> responseHandler = new ResponseHeaderHandlerChain<InitiateMultipartUploadResult>(
+                new Unmarshallers.InitiateMultipartUploadResultUnmarshaller(),
+                new ServerSideEncryptionHeaderHandler<InitiateMultipartUploadResult>());
+        return invoke(request, responseHandler,
+                initiateMultipartUploadRequest.getBucketName(), initiateMultipartUploadRequest.getKey());
+    }
+

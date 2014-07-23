@@ -1,0 +1,27 @@
+    public VersionListing listNextBatchOfVersions(VersionListing previousVersionListing)
+            throws AmazonClientException, AmazonServiceException {
+        assertParameterNotNull(previousVersionListing,
+            "The previous version listing parameter must be specified when listing the next batch of versions in a bucket");
+
+        if (!previousVersionListing.isTruncated()) {
+            VersionListing emptyListing = new VersionListing();
+            emptyListing.setBucketName(previousVersionListing.getBucketName());
+            emptyListing.setDelimiter(previousVersionListing.getDelimiter());
+            emptyListing.setKeyMarker(previousVersionListing.getNextKeyMarker());
+            emptyListing.setVersionIdMarker(previousVersionListing.getNextVersionIdMarker());
+            emptyListing.setMaxKeys(previousVersionListing.getMaxKeys());
+            emptyListing.setPrefix(previousVersionListing.getPrefix());
+            emptyListing.setTruncated(false);
+
+            return emptyListing;
+        }
+
+        return listVersions(new ListVersionsRequest(
+                previousVersionListing.getBucketName(),
+                previousVersionListing.getPrefix(),
+                previousVersionListing.getNextKeyMarker(),
+                previousVersionListing.getNextVersionIdMarker(),
+                previousVersionListing.getDelimiter(),
+                new Integer( previousVersionListing.getMaxKeys() ) ));
+    }
+

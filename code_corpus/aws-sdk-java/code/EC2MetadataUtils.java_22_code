@@ -1,0 +1,13 @@
+	public static List<NetworkInterface> getNetworkInterfaces() {
+		List<NetworkInterface> networkInterfaces = new LinkedList<NetworkInterface>();
+		
+		List<String> macs = getItems(EC2_METADATA_ROOT + "/network/interfaces/macs/");
+		for (String mac : macs) {
+			String key = mac.trim();
+			if (key.endsWith("/"))
+				key = key.substring(0, key.length() - 1);
+			networkInterfaces.add(new NetworkInterface(key));
+		}
+		return networkInterfaces;
+	}
+	

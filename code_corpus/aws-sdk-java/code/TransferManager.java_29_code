@@ -1,0 +1,18 @@
+    public void shutdownNow() {
+        threadPool.shutdownNow();
+        timedThreadPool.shutdownNow();
+
+        if (s3 instanceof AmazonS3Client) {
+            ((AmazonS3Client)s3).shutdown();
+        }
+    }
+
+    public <X extends AmazonWebServiceRequest> X appendUserAgent(X request, String userAgent) {
+        request.getRequestClientOptions().appendUserAgent(userAgent);
+        return request;
+    }
+
+    private static final String USER_AGENT = TransferManager.class.getName() + "/" + VersionInfoUtils.getVersion();
+
+    private static final String DEFAULT_DELIMITER = "/";
+

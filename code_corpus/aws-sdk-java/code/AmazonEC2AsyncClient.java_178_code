@@ -1,0 +1,19 @@
+    public Future<DescribeSubnetsResult> describeSubnetsAsync(
+            final DescribeSubnetsRequest describeSubnetsRequest,
+            final AsyncHandler<DescribeSubnetsRequest, DescribeSubnetsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeSubnetsResult>() {
+            public DescribeSubnetsResult call() throws Exception {
+                DescribeSubnetsResult result;
+                try {
+                    result = describeSubnets(describeSubnetsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeSubnetsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -1,0 +1,19 @@
+    public Future<ListInstanceProfilesResult> listInstanceProfilesAsync(
+            final ListInstanceProfilesRequest listInstanceProfilesRequest,
+            final AsyncHandler<ListInstanceProfilesRequest, ListInstanceProfilesResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ListInstanceProfilesResult>() {
+            public ListInstanceProfilesResult call() throws Exception {
+                ListInstanceProfilesResult result;
+                try {
+                    result = listInstanceProfiles(listInstanceProfilesRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(listInstanceProfilesRequest, result);
+                   return result;
+            }
+        });
+    }
+    

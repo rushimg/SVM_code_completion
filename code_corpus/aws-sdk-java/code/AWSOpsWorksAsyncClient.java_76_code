@@ -1,0 +1,19 @@
+    public Future<CreateInstanceResult> createInstanceAsync(
+            final CreateInstanceRequest createInstanceRequest,
+            final AsyncHandler<CreateInstanceRequest, CreateInstanceResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<CreateInstanceResult>() {
+            public CreateInstanceResult call() throws Exception {
+                CreateInstanceResult result;
+                try {
+                    result = createInstance(createInstanceRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(createInstanceRequest, result);
+                   return result;
+            }
+        });
+    }
+    

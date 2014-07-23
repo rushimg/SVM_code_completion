@@ -1,0 +1,25 @@
+    public StartLoggingResult startLogging(StartLoggingRequest startLoggingRequest) {
+        ExecutionContext executionContext = createExecutionContext(startLoggingRequest);
+        AWSRequestMetrics awsRequestMetrics = executionContext.getAwsRequestMetrics();
+        awsRequestMetrics.startEvent(Field.ClientExecuteTime);
+        Request<StartLoggingRequest> request = null;
+        Response<StartLoggingResult> response = null;
+        try {
+            awsRequestMetrics.startEvent(Field.RequestMarshallTime);
+            try {
+                request = new StartLoggingRequestMarshaller().marshall(startLoggingRequest);
+                // Binds the request metrics to the current request.
+                request.setAWSRequestMetrics(awsRequestMetrics);
+            } finally {
+                awsRequestMetrics.endEvent(Field.RequestMarshallTime);
+            }
+            Unmarshaller<StartLoggingResult, JsonUnmarshallerContext> unmarshaller = new StartLoggingResultJsonUnmarshaller();
+            JsonResponseHandler<StartLoggingResult> responseHandler = new JsonResponseHandler<StartLoggingResult>(unmarshaller);
+            
+            response = invoke(request, responseHandler, executionContext);
+            return response.getAwsResponse();
+        } finally {
+            endClientExecution(awsRequestMetrics, request, response);
+        }
+    }
+

@@ -1,0 +1,53 @@
+    private static class MetadataExpression {
+        public String expression;
+        public int targetDepth;
+        public String key;
+
+        public MetadataExpression(String expression, int targetDepth, String key) {
+            this.expression = expression;
+            this.targetDepth = targetDepth;
+            this.key = key;
+        }
+    }
+
+    private void updateContext() throws IOException {
+        lastParsedParentElement = null;
+        if (currentToken == null) return;
+
+        if (currentToken == START_OBJECT || currentToken == START_ARRAY) {
+            if (currentField != null) {
+                stack.push(new JsonFieldTokenPair(currentField, currentToken));
+                currentField = null;
+            }
+        } else if (currentToken == END_OBJECT || currentToken == END_ARRAY) {
+            if (!stack.isEmpty()) {
+                boolean squareBracketsMatch = currentToken == END_ARRAY && stack.peek().getToken() == START_ARRAY;
+                boolean curlyBracketsMatch = currentToken == END_OBJECT && stack.peek().getToken() == START_OBJECT;
+                if (squareBracketsMatch || curlyBracketsMatch) {
+                    lastParsedParentElement = stack.pop().getField();
+                }
+            }
+            currentField = null;
+        } else if (currentToken == FIELD_NAME) {
+            String t = jsonParser.getText();
+            currentField = t;
+        }
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder stackString = new StringBuilder();
+
+        for (JsonFieldTokenPair jsonFieldTokenPair : stack) {
+            stackString.append("/")
+                       .append(jsonFieldTokenPair.getField());
+        }
+
+        if (currentField != null) {
+            stackString.append("/")
+                       .append(currentField);
+        }
+
+        return stackString.length() == 0 ? "/" : stackString.toString();
+    }
+

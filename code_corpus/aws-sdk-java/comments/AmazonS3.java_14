@@ -1,0 +1,138 @@
+    /**
+     * <p>
+     * Returns a list of summary information about the versions in the specified
+     * bucket.
+     * </p>
+     * <p>
+     * The returned version summaries are ordered first by key and then by
+     * version. Keys are sorted lexicographically (alphabetically)
+     * and versions are sorted from most recent to least recent.
+     * Versions
+     * with data and delete markers are included in the results.
+     * </p>
+     * <p>
+     * Because buckets can contain a virtually unlimited number of versions, the
+     * complete results of a list query can be extremely large. To manage large
+     * result sets, Amazon S3 uses pagination to split them into multiple
+     * responses. Always check the
+     * {@link VersionListing#isTruncated()} method to determine if the
+     * returned listing is complete or if additional calls are needed
+     * to get more results.
+     * Callers are
+     * encouraged to use
+     * {@link AmazonS3#listNextBatchOfVersions(VersionListing)} as an easy way
+     * to get the next page of results.
+     * </p>
+     * <p>
+     * The <code>keyMarker</code> and <code>versionIdMarker</code> parameters allow
+     * callers to specify where to start the version listing.
+     * </p>
+     * <p>
+     * The <code>delimiter</code> parameter allows groups of keys that share a
+     * delimiter-terminated prefix to be included
+     * in the returned listing. This allows applications to organize and browse
+     * their keys hierarchically, much like how a file system organizes
+     * files into directories. These common prefixes can be retrieved
+     * by calling the {@link VersionListing#getCommonPrefixes()} method.
+     * </p>
+     * <p>
+     * For example, consider a bucket that contains the following keys:
+     * <ul>
+     * 	<li>"foo/bar/baz"</li>
+     * 	<li>"foo/bar/bash"</li>
+     * 	<li>"foo/bar/bang"</li>
+     * 	<li>"foo/boo"</li>
+     * </ul>
+     * If calling <code>listVersions</code> with
+     * a <code>prefix</code> value of "foo/" and a <code>delimiter</code> value of "/"
+     * on this bucket, a <code>VersionListing</code> is returned that contains:
+     * 	<ul>
+     * 		<li>all the versions for one key ("foo/boo")</li>
+     * 		<li>one entry in the common prefixes list ("foo/bar/")</li>
+     * 	</ul>
+     * </p>
+     * <p>
+     * To see deeper into the virtual hierarchy, make
+     * another call to <code>listVersions</code> setting the prefix parameter to any
+     * interesting common prefix to list the individual versions under that
+     * prefix.
+     * </p>
+     * <p>
+     * For more information about enabling versioning for a bucket, see
+     * {@link #setBucketVersioningConfiguration(SetBucketVersioningConfigurationRequest)}.
+     * </p>
+     *
+     * @param bucketName
+     *            The name of the Amazon S3 bucket whose versions are to be
+     *            listed.
+     * @param prefix
+     *            An optional parameter restricting the response to keys that
+     *            begin with the specified prefix. Use prefixes to
+     *            separate a bucket into different sets of keys,
+     *            similar to how a file system organizes files
+     * 		      into directories.
+     * @param keyMarker
+     *            Optional parameter indicating where in the sorted list of all
+     *            versions in the specified bucket to begin returning results.
+     *            Results are always ordered first lexicographically (i.e.
+     *            alphabetically) and then from most recent version to least
+     *            recent version. If a keyMarker is used without a
+     *            versionIdMarker, results begin immediately after that key's
+     *            last version. When a keyMarker is used with a versionIdMarker,
+     *            results begin immediately after the version with the specified
+     *            key and version ID.
+     *            <p>
+     *            This enables pagination; to get the next page of results use
+     *            the next key marker and next version ID marker (from
+     *            {@link VersionListing#getNextKeyMarker()} and
+     *            {@link VersionListing#getNextVersionIdMarker()}) as the
+     *            markers for the next request to list versions, or use the
+     *            convenience method
+     *            {@link AmazonS3#listNextBatchOfVersions(VersionListing)}
+     * @param versionIdMarker
+     *            Optional parameter indicating where in the sorted list of all
+     *            versions in the specified bucket to begin returning results.
+     *            Results are always ordered first lexicographically (i.e.
+     *            alphabetically) and then from most recent version to least
+     *            recent version. A keyMarker must be specified when specifying
+     *            a versionIdMarker. Results begin immediately after the version
+     *            with the specified key and version ID.
+     *            <p>
+     *            This enables pagination; to get the next page of results use
+     *            the next key marker and next version ID marker (from
+     *            {@link VersionListing#getNextKeyMarker()} and
+     *            {@link VersionListing#getNextVersionIdMarker()}) as the
+     *            markers for the next request to list versions, or use the
+     *            convenience method
+     *            {@link AmazonS3#listNextBatchOfVersions(VersionListing)}
+     * @param delimiter
+     *            Optional parameter that causes keys that contain the same
+     *            string between the prefix and the first occurrence of the
+     *            delimiter to be rolled up into a single result element in the
+     *            {@link VersionListing#getCommonPrefixes()} list. These
+     *            rolled-up keys are not returned elsewhere in the response. The
+     *            most commonly used delimiter is "/", which simulates a
+     *            hierarchical organization similar to a file system directory
+     *            structure.
+     * @param maxResults
+     *            Optional parameter indicating the maximum number of results to
+     *            include in the response. Amazon S3 might return fewer than
+     *            this, but will not return more. Even if maxKeys is not
+     *            specified, Amazon S3 will limit the number of results in the
+     *            response.
+     *
+     * @return A listing of the versions in the specified bucket, along with any
+     *         other associated information such as common prefixes (if a
+     *         delimiter was specified), the original request parameters, etc.
+     *
+     * @throws AmazonClientException
+     *             If any errors are encountered in the client while making the
+     *             request or handling the response.
+     * @throws AmazonServiceException
+     *             If any errors occurred in Amazon S3 while processing the
+     *             request.
+     *
+     * @see AmazonS3Client#listVersions(String, String)
+     * @see AmazonS3Client#listVersions(ListVersionsRequest)
+     * @see AmazonS3Client#listNextBatchOfVersions(VersionListing)
+     */

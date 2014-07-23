@@ -1,0 +1,35 @@
+    public static PutObjectRequest encryptRequestUsingInstruction(PutObjectRequest request, EncryptionInstruction instruction) {
+        // Create a new metadata object if there is no metadata already.
+        ObjectMetadata metadata = request.getMetadata();
+        if (metadata == null) {
+            metadata = new ObjectMetadata();
+        }
+
+        // Record the original Content MD5, if present, for the unencrypted data
+        if (metadata.getContentMD5() != null) {
+            metadata.addUserMetadata(Headers.UNENCRYPTED_CONTENT_MD5, metadata.getContentMD5());
+        }
+        
+        // Removes the original content MD5 if present from the meta data.
+        metadata.setContentMD5(null);
+        
+        // Record the original, unencrypted content-length so it can be accessed later
+        long originalContentLength = getUnencryptedContentLength(request, metadata);
+        if (originalContentLength >= 0) metadata.addUserMetadata(
+                Headers.UNENCRYPTED_CONTENT_LENGTH, Long.toString(originalContentLength));
+
+        // Put the calculated length of the encrypted contents in the metadata
+        long cryptoContentLength = calculateCryptoContentLength(instruction.getSymmetricCipher(), request, metadata);
+        if (cryptoContentLength >= 0) metadata.setContentLength(cryptoContentLength);
+
+        request.setMetadata(metadata);
+
+        // Create encrypted input stream
+        request.setInputStream(getEncryptedInputStream(request, instruction.getCipherFactory()));
+
+        // Treat all encryption requests as input stream upload requests, not as file upload requests.
+        request.setFile(null);
+
+        return request;
+    }
+

@@ -1,0 +1,12 @@
+    public static AWSCredentialsProvider getCredentialProvider() {
+        StackTraceElement[] e = Thread.currentThread().getStackTrace();
+        for (int i=0; i < e.length; i++) {
+            if (e[i].getClassName().equals(DEFAULT_METRIC_COLLECTOR_FACTORY)) {
+                return credentialProvider;
+            }
+        }
+        SecurityException ex = new SecurityException();
+        LogFactory.getLog(AwsSdkMetrics.class).warn("Illegal attempt to access the credential provider", ex);
+        throw ex;
+    }
+

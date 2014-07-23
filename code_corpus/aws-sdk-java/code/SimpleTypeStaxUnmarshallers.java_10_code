@@ -1,0 +1,20 @@
+    public static class DateStaxUnmarshaller implements Unmarshaller<Date, StaxUnmarshallerContext> {
+        public Date unmarshall(StaxUnmarshallerContext unmarshallerContext) throws Exception {
+            String dateString = unmarshallerContext.readText();
+            if (dateString == null) return null;
+
+            try {
+                return dateUtils.parseIso8601Date(dateString);
+            } catch (ParseException e) {
+                log.warn("Unable to parse date '" + dateString + "':  " + e.getMessage(), e);
+                return null;
+            }
+        }
+
+        private static DateStaxUnmarshaller instance;
+        public static DateStaxUnmarshaller getInstance() {
+            if (instance == null) instance = new DateStaxUnmarshaller();
+            return instance;
+        }
+    }
+

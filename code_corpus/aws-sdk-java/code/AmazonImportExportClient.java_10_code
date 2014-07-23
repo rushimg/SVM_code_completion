@@ -1,0 +1,37 @@
+    public AmazonImportExportClient(AWSCredentialsProvider awsCredentialsProvider,
+            ClientConfiguration clientConfiguration,
+            RequestMetricCollector requestMetricCollector) {
+        super(clientConfiguration, requestMetricCollector);
+        this.awsCredentialsProvider = awsCredentialsProvider;
+        init();
+    }
+
+    private void init() {
+        exceptionUnmarshallers.add(new BucketPermissionExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new InvalidFileSystemExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new MissingCustomsExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new ExpiredJobIdExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new InvalidManifestFieldExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new MissingManifestFieldExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new MalformedManifestExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new InvalidAddressExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new InvalidParameterExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new MultipleRegionsExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new UnableToCancelJobIdExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new CanceledJobIdExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new InvalidJobIdExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new NoSuchBucketExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new InvalidAccessKeyIdExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new MissingParameterExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new InvalidCustomsExceptionUnmarshaller());
+        
+        exceptionUnmarshallers.add(new StandardErrorUnmarshaller());
+        // calling this.setEndPoint(...) will also modify the signer accordingly
+        this.setEndpoint("importexport.amazonaws.com");
+        HandlerChainFactory chainFactory = new HandlerChainFactory();
+        requestHandler2s.addAll(chainFactory.newRequestHandlerChain(
+                "/com/amazonaws/services/importexport/request.handlers"));
+        requestHandler2s.addAll(chainFactory.newRequestHandler2Chain(
+                "/com/amazonaws/services/importexport/request.handler2s"));
+    }
+

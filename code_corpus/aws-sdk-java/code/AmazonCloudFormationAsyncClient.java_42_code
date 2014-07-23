@@ -1,0 +1,18 @@
+    public Future<Void> deleteStackAsync(
+            final DeleteStackRequest deleteStackRequest,
+            final AsyncHandler<DeleteStackRequest, Void> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<Void>() {
+            public Void call() throws Exception {
+                try {
+                    deleteStack(deleteStackRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(deleteStackRequest, null);
+                   return null;
+            }
+        });
+    }
+    

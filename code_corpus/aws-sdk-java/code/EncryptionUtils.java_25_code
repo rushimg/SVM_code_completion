@@ -1,0 +1,19 @@
+    @SuppressWarnings("unchecked") // Suppresses Iterator<String> type warning
+    private static Map<String, String> convertJSONToMap(String descriptionJSONString) {
+        if (descriptionJSONString == null) {
+            return null;
+        }
+        try {
+            JSONObject descriptionJSON = new JSONObject(descriptionJSONString);
+            Iterator<String> keysIterator = descriptionJSON.keys();
+            Map<String, String> materialsDescription = new HashMap<String, String>();
+            while(keysIterator.hasNext()) {
+                String key = keysIterator.next();
+                materialsDescription.put(key, descriptionJSON.getString(key));
+            }
+            return materialsDescription;
+        } catch (JSONException e) {
+            throw new AmazonClientException("Unable to parse encryption materials description from metadata :" + e.getMessage());
+        }
+    }
+

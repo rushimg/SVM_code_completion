@@ -1,0 +1,19 @@
+    public Future<DescribeClusterSubnetGroupsResult> describeClusterSubnetGroupsAsync(
+            final DescribeClusterSubnetGroupsRequest describeClusterSubnetGroupsRequest,
+            final AsyncHandler<DescribeClusterSubnetGroupsRequest, DescribeClusterSubnetGroupsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeClusterSubnetGroupsResult>() {
+            public DescribeClusterSubnetGroupsResult call() throws Exception {
+                DescribeClusterSubnetGroupsResult result;
+                try {
+                    result = describeClusterSubnetGroups(describeClusterSubnetGroupsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeClusterSubnetGroupsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

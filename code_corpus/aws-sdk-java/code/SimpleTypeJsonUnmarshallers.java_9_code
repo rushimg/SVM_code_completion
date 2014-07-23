@@ -1,0 +1,20 @@
+    public static class DateJsonUnmarshaller implements Unmarshaller<Date, JsonUnmarshallerContext> {
+        public Date unmarshall(JsonUnmarshallerContext unmarshallerContext) throws Exception {
+            String dateString = unmarshallerContext.readText();
+            if (dateString == null) return null;
+
+            try {
+            	Number number = DecimalFormat.getInstance(new Locale("en")).parse(dateString);
+            } catch (ParseException e) {
+                String errorMessage = "Unable to parse date '" + dateString + "':  " + e.getMessage();
+                throw new AmazonClientException(errorMessage, e);
+            }
+        }
+
+        private static DateJsonUnmarshaller instance;
+        public static DateJsonUnmarshaller getInstance() {
+            if (instance == null) instance = new DateJsonUnmarshaller();
+            return instance;
+        }
+    }
+

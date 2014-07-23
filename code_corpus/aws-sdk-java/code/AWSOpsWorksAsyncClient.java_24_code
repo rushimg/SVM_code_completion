@@ -1,0 +1,19 @@
+    public Future<DescribePermissionsResult> describePermissionsAsync(
+            final DescribePermissionsRequest describePermissionsRequest,
+            final AsyncHandler<DescribePermissionsRequest, DescribePermissionsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribePermissionsResult>() {
+            public DescribePermissionsResult call() throws Exception {
+                DescribePermissionsResult result;
+                try {
+                    result = describePermissions(describePermissionsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describePermissionsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

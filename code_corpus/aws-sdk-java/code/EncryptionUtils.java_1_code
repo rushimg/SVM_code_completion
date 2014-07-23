@@ -1,0 +1,44 @@
+package com.amazonaws.services.s3.internal.crypto;
+
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.security.Key;
+import java.security.NoSuchAlgorithmException;
+import java.security.Provider;
+import java.security.SecureRandom;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+
+import javax.crypto.Cipher;
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
+
+import org.apache.commons.codec.binary.Base64;
+
+import com.amazonaws.AmazonClientException;
+import com.amazonaws.services.s3.Headers;
+import com.amazonaws.services.s3.internal.InputSubstream;
+import com.amazonaws.services.s3.internal.Mimetypes;
+import com.amazonaws.services.s3.internal.RepeatableCipherInputStream;
+import com.amazonaws.services.s3.internal.RepeatableFileInputStream;
+import com.amazonaws.services.s3.model.DeleteObjectRequest;
+import com.amazonaws.services.s3.model.EncryptionMaterials;
+import com.amazonaws.services.s3.model.EncryptionMaterialsAccessor;
+import com.amazonaws.services.s3.model.EncryptionMaterialsProvider;
+import com.amazonaws.services.s3.model.GetObjectRequest;
+import com.amazonaws.services.s3.model.InitiateMultipartUploadRequest;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.services.s3.model.S3Object;
+import com.amazonaws.services.s3.model.S3ObjectInputStream;
+import com.amazonaws.services.s3.model.StaticEncryptionMaterialsProvider;
+import com.amazonaws.services.s3.model.UploadPartRequest;
+import com.amazonaws.util.json.JSONException;
+import com.amazonaws.util.json.JSONObject;
+

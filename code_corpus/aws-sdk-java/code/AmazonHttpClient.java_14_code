@@ -1,0 +1,26 @@
+                    Header[] locationHeaders = apacheResponse.getHeaders("location");
+                    String redirectedLocation = locationHeaders[0].getValue();
+                    log.debug("Redirecting to: " + redirectedLocation);
+                    redirectedURI = URI.create(redirectedLocation);
+                    httpRequest.setURI(redirectedURI);
+                    awsRequestMetrics.addProperty(Field.StatusCode, apacheResponse.getStatusLine().getStatusCode());
+                    awsRequestMetrics.addProperty(Field.RedirectLocation, redirectedLocation);
+                    awsRequestMetrics.addProperty(Field.AWSRequestID, null);
+
+                } else {
+                    leaveHttpConnectionOpen = errorResponseHandler.needsConnectionLeftOpen();
+                    AmazonServiceException ase = handleErrorResponse(request, errorResponseHandler, httpRequest, apacheResponse);
+                    awsRequestMetrics.addProperty(Field.AWSRequestID, ase.getRequestId());
+                    awsRequestMetrics.addProperty(Field.AWSErrorCode, ase.getErrorCode());
+                    awsRequestMetrics.addProperty(Field.StatusCode, ase.getStatusCode());
+                    
+                    if (!shouldRetry(request.getOriginalRequest(),
+                                     httpRequest,
+                                     ase,
+                                     requestCount,
+                                     config.getRetryPolicy())) {
+                        throw ase;
+                    }
+
+                    // Cache the retryable exception
+                    retriedException = ase;

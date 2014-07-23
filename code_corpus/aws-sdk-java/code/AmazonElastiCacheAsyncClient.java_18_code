@@ -1,0 +1,19 @@
+    public Future<ReplicationGroup> deleteReplicationGroupAsync(
+            final DeleteReplicationGroupRequest deleteReplicationGroupRequest,
+            final AsyncHandler<DeleteReplicationGroupRequest, ReplicationGroup> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ReplicationGroup>() {
+            public ReplicationGroup call() throws Exception {
+                ReplicationGroup result;
+                try {
+                    result = deleteReplicationGroup(deleteReplicationGroupRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(deleteReplicationGroupRequest, result);
+                   return result;
+            }
+        });
+    }
+    

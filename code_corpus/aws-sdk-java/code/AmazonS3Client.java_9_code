@@ -1,0 +1,31 @@
+    public AmazonS3Client(ClientConfiguration clientConfiguration) {
+        this(new DefaultAWSCredentialsProviderChain(), clientConfiguration);
+    }
+
+    private void init() {
+        // Because of S3's virtual host style addressing, we need to change the
+        // default, strict hostname verification to be more lenient.
+        client.disableStrictHostnameVerification();
+
+        // calling this.setEndpoint(...) will also modify the signer accordingly
+        setEndpoint(Constants.S3_HOSTNAME);
+
+        HandlerChainFactory chainFactory = new HandlerChainFactory();
+        requestHandler2s.addAll(chainFactory.newRequestHandlerChain(
+                "/com/amazonaws/services/s3/request.handlers"));
+        requestHandler2s.addAll(chainFactory.newRequestHandler2Chain(
+                "/com/amazonaws/services/s3/request.handler2s"));
+    }
+
+    @Override
+    public void setEndpoint(final String endpoint,
+                            final String serviceName,
+                            final String regionName) {
+
+        super.setEndpoint(endpoint, serviceName, regionName);
+
+        this.v4Signer = null;
+        this.serviceName = serviceName;
+        this.regionName = regionName;
+    }
+

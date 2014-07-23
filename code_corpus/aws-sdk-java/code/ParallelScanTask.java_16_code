@@ -1,0 +1,18 @@
+		synchronized(segmentScanStates) {
+			if (null == scanResult.getLastEvaluatedKey())
+				segmentScanStates.set(currentSegment, SegmentScanState.SegmentScanCompleted);
+			else
+				segmentScanStates.set(currentSegment, SegmentScanState.HasNextPage);
+			segmentScanStates.notifyAll();
+		}
+		return scanResult;
+	}
+	
+	private void initSegmentScanStates() {
+		for (int segment = 0; segment < totalSegments; segment++) {
+			segmentScanFutureTasks.add(null);
+			segmentScanResults.add(null);
+			segmentScanStates.add(SegmentScanState.Waiting);			
+		}
+	}
+

@@ -1,0 +1,19 @@
+    public Future<SetTaskStatusResult> setTaskStatusAsync(
+            final SetTaskStatusRequest setTaskStatusRequest,
+            final AsyncHandler<SetTaskStatusRequest, SetTaskStatusResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<SetTaskStatusResult>() {
+            public SetTaskStatusResult call() throws Exception {
+                SetTaskStatusResult result;
+                try {
+                    result = setTaskStatus(setTaskStatusRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(setTaskStatusRequest, result);
+                   return result;
+            }
+        });
+    }
+    

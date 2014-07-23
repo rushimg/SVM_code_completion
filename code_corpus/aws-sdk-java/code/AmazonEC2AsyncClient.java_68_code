@@ -1,0 +1,19 @@
+    public Future<ImportVolumeResult> importVolumeAsync(
+            final ImportVolumeRequest importVolumeRequest,
+            final AsyncHandler<ImportVolumeRequest, ImportVolumeResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ImportVolumeResult>() {
+            public ImportVolumeResult call() throws Exception {
+                ImportVolumeResult result;
+                try {
+                    result = importVolume(importVolumeRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(importVolumeRequest, result);
+                   return result;
+            }
+        });
+    }
+    

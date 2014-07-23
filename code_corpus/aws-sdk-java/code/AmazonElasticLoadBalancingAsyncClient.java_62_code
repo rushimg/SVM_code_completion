@@ -1,0 +1,19 @@
+    public Future<RegisterInstancesWithLoadBalancerResult> registerInstancesWithLoadBalancerAsync(
+            final RegisterInstancesWithLoadBalancerRequest registerInstancesWithLoadBalancerRequest,
+            final AsyncHandler<RegisterInstancesWithLoadBalancerRequest, RegisterInstancesWithLoadBalancerResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<RegisterInstancesWithLoadBalancerResult>() {
+            public RegisterInstancesWithLoadBalancerResult call() throws Exception {
+                RegisterInstancesWithLoadBalancerResult result;
+                try {
+                    result = registerInstancesWithLoadBalancer(registerInstancesWithLoadBalancerRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(registerInstancesWithLoadBalancerRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -1,0 +1,19 @@
+    public Future<DescribeLicensesResult> describeLicensesAsync(
+            final DescribeLicensesRequest describeLicensesRequest,
+            final AsyncHandler<DescribeLicensesRequest, DescribeLicensesResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeLicensesResult>() {
+            public DescribeLicensesResult call() throws Exception {
+                DescribeLicensesResult result;
+                try {
+                    result = describeLicenses(describeLicensesRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeLicensesRequest, result);
+                   return result;
+            }
+        });
+    }
+    

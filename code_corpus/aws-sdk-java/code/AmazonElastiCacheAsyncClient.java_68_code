@@ -1,0 +1,19 @@
+    public Future<ReservedCacheNode> purchaseReservedCacheNodesOfferingAsync(
+            final PurchaseReservedCacheNodesOfferingRequest purchaseReservedCacheNodesOfferingRequest,
+            final AsyncHandler<PurchaseReservedCacheNodesOfferingRequest, ReservedCacheNode> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ReservedCacheNode>() {
+            public ReservedCacheNode call() throws Exception {
+                ReservedCacheNode result;
+                try {
+                    result = purchaseReservedCacheNodesOffering(purchaseReservedCacheNodesOfferingRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(purchaseReservedCacheNodesOfferingRequest, result);
+                   return result;
+            }
+        });
+    }
+    

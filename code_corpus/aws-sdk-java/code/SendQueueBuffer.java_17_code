@@ -1,0 +1,14 @@
+    @SuppressWarnings("unchecked")
+    private <R extends AmazonWebServiceRequest, Result> OutboundBatchTask<R, Result> newOutboundBatchTask(
+            R request) {
+        if (request instanceof SendMessageRequest)
+            return (OutboundBatchTask<R, Result>) new SendMessageBatchTask();
+        else if (request instanceof DeleteMessageRequest)
+            return (OutboundBatchTask<R, Result>) new DeleteMessageBatchTask();
+        else if (request instanceof ChangeMessageVisibilityRequest)
+            return (OutboundBatchTask<R, Result>) new ChangeMessageVisibilityBatchTask();
+        else
+            // this should never happen
+            throw new IllegalArgumentException("Unsupported request type " + request.getClass().getName());
+    }
+

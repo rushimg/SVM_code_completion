@@ -1,0 +1,38 @@
+			else {
+				// Update the state to "Scanning" and notify any waiting thread.
+				synchronized(segmentScanStates) {
+					segmentScanStates.set(currentSegment, SegmentScanState.Scanning);
+					segmentScanStates.notifyAll();
+				}
+				Future<ScanResult> futureTask = executorService.submit(new Callable<ScanResult>() {
+					@Override
+					public ScanResult call() throws Exception {
+						try {
+							if (currentSegmentState == SegmentScanState.HasNextPage) {
+								return scanNextPageOfSegment(currentSegment, true);
+							} 
+							else if (currentSegmentState == SegmentScanState.Waiting) {
+								return scanNextPageOfSegment(currentSegment, false);
+							} 
+							else {
+								throw new AmazonClientException("Should not start a new future task");
+							}
+						} catch (Exception e) {
+							synchronized(segmentScanStates) {
+								segmentScanStates.set(currentSegment, SegmentScanState.Failed);
+								segmentScanStates.notifyAll();
+							}
+							throw e;
+						}
+					}
+				});
+				// Cache the future task (for getting the Exceptions in the working thread).
+				segmentScanFutureTasks.set(currentSegment, futureTask);
+			}
+		}
+	}
+	
+	private List<ScanResult> marshalParallelScanResults() {
+		List<ScanResult> scanResults = new LinkedList<ScanResult>();
+		for (int segment = 0; segment < totalSegments; segment++) {
+			SegmentScanState currentSegmentState = segmentScanStates.get(segment);

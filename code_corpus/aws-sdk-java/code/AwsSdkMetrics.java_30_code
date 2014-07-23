@@ -1,0 +1,24 @@
+    public static synchronized boolean enableDefaultMetrics() {
+        if (mc == null || !mc.isEnabled()) {
+            if (dirtyEnabling) {
+                throw new IllegalStateException("Reentrancy is not allowed");
+            }
+            dirtyEnabling = true;
+            try {
+                Class<?> c = Class.forName(DEFAULT_METRIC_COLLECTOR_FACTORY);
+                MetricCollector.Factory f = (MetricCollector.Factory)c.newInstance();
+                MetricCollector instance = f.getInstance();
+                if (instance != null) {
+                    setMetricCollector(instance);
+                    return true;
+                }
+            } catch (Exception e) {
+                LogFactory.getLog(AwsSdkMetrics.class)
+                    .warn("Failed to enable the default metrics", e);
+            } finally {
+                dirtyEnabling = false;
+            }
+        }
+        return false;
+    }
+

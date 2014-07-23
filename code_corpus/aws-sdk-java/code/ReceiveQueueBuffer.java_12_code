@@ -1,0 +1,19 @@
+    void reportBatchFinished( ReceiveMessageBatchTask batch )
+    {
+        synchronized( finishedTasks ) {
+            finishedTasks.addLast( batch );
+            if ( log.isTraceEnabled() ) {
+                log.info("Queue " + qUrl + " now has " + finishedTasks.size() + " receive results cached ");
+            }
+        }
+        
+        synchronized( taskSpawnSyncPoint )    {
+            --inflightReceiveMessageBatches;
+        }
+        
+        satisfyFuturesFromBuffer();
+        
+        spawnMoreReceiveTasks();
+    }
+
+    

@@ -1,0 +1,19 @@
+    public Future<ReadPipelineResult> readPipelineAsync(
+            final ReadPipelineRequest readPipelineRequest,
+            final AsyncHandler<ReadPipelineRequest, ReadPipelineResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ReadPipelineResult>() {
+            public ReadPipelineResult call() throws Exception {
+                ReadPipelineResult result;
+                try {
+                    result = readPipeline(readPipelineRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(readPipelineRequest, result);
+                   return result;
+            }
+        });
+    }
+    

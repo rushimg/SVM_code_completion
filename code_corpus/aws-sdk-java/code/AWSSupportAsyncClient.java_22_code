@@ -1,0 +1,19 @@
+    public Future<DescribeCommunicationsResult> describeCommunicationsAsync(
+            final DescribeCommunicationsRequest describeCommunicationsRequest,
+            final AsyncHandler<DescribeCommunicationsRequest, DescribeCommunicationsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeCommunicationsResult>() {
+            public DescribeCommunicationsResult call() throws Exception {
+                DescribeCommunicationsResult result;
+                try {
+                    result = describeCommunications(describeCommunicationsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeCommunicationsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

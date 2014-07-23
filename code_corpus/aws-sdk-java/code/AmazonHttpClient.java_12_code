@@ -1,0 +1,93 @@
+        awsRequestMetrics.addProperty(Field.ServiceName, request.getServiceName());
+        awsRequestMetrics.addProperty(Field.ServiceEndpoint, request.getEndpoint());
+        // Apply whatever request options we know how to handle, such as user-agent.
+        setUserAgent(request);
+        int requestCount = 0;
+        URI redirectedURI = null;
+        HttpEntity entity = null;
+        AmazonClientException retriedException = null;
+
+        // Make a copy of the original request params and headers so that we can
+        // permute it in this loop and start over with the original every time.
+        Map<String, String> originalParameters = new HashMap<String, String>();
+        originalParameters.putAll(request.getParameters());
+        Map<String, String> originalHeaders = new HashMap<String, String>();
+        originalHeaders.putAll(request.getHeaders());
+
+        while (true) {
+            ++requestCount;
+            awsRequestMetrics.setCounter(Field.RequestCount, requestCount);
+            if (requestCount > 1) { // retry
+                request.setParameters(originalParameters);
+                request.setHeaders(originalHeaders);
+            }
+
+            HttpRequestBase httpRequest = null;
+            org.apache.http.HttpResponse apacheResponse = null;
+
+            try {
+                // Sign the request if a signer was provided
+                if (executionContext.getSigner() != null && executionContext.getCredentials() != null) {
+                    awsRequestMetrics.startEvent(Field.RequestSigningTime);
+                    try {
+                        executionContext.getSigner().sign(request,
+                                executionContext.getCredentials());
+                    } finally {
+                        awsRequestMetrics.endEvent(Field.RequestSigningTime);
+                    }
+                }
+
+                 if (requestLog.isDebugEnabled()) {
+                    requestLog.debug("Sending Request: " + request.toString());
+                 }
+
+                httpRequest = httpRequestFactory.createHttpRequest(request, config, entity, executionContext);
+
+                if (httpRequest instanceof HttpEntityEnclosingRequest) {
+                    entity = ((HttpEntityEnclosingRequest)httpRequest).getEntity();
+                }
+
+                if (redirectedURI != null) {
+                    httpRequest.setURI(redirectedURI);
+                }
+
+                if (requestCount > 1) {   // retry
+                    awsRequestMetrics.startEvent(Field.RetryPauseTime);
+                    try {
+                        pauseBeforeNextRetry(request.getOriginalRequest(),
+                                             retriedException,
+                                             requestCount,
+                                             config.getRetryPolicy());
+                    } finally {
+                        awsRequestMetrics.endEvent(Field.RetryPauseTime);
+                    }
+                }
+
+                if ( entity != null ) {
+                    InputStream content = entity.getContent();
+                    if ( requestCount > 1 ) {   // retry
+                        if ( content.markSupported() ) {
+                            content.reset();
+                            content.mark(-1);
+                        }
+                    } else {
+                        if ( content.markSupported() ) {
+                            content.mark(-1);
+                        }
+                    }
+                }
+                
+                HttpContext httpContext = new BasicHttpContext();
+                httpContext.setAttribute(
+                        AWSRequestMetrics.class.getSimpleName(),
+                        awsRequestMetrics);
+                retriedException = null;
+                awsRequestMetrics.startEvent(Field.HttpRequestTime);
+                try {
+                    apacheResponse = httpClient.execute(httpRequest, httpContext);
+                } finally {
+                    awsRequestMetrics.endEvent(Field.HttpRequestTime);
+                }
+
+                if (isRequestSuccessful(apacheResponse)) {
+                    awsRequestMetrics.addProperty(Field.StatusCode, apacheResponse.getStatusLine().getStatusCode());

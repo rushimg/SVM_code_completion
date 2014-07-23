@@ -1,0 +1,19 @@
+    public Future<ReportTaskRunnerHeartbeatResult> reportTaskRunnerHeartbeatAsync(
+            final ReportTaskRunnerHeartbeatRequest reportTaskRunnerHeartbeatRequest,
+            final AsyncHandler<ReportTaskRunnerHeartbeatRequest, ReportTaskRunnerHeartbeatResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ReportTaskRunnerHeartbeatResult>() {
+            public ReportTaskRunnerHeartbeatResult call() throws Exception {
+                ReportTaskRunnerHeartbeatResult result;
+                try {
+                    result = reportTaskRunnerHeartbeat(reportTaskRunnerHeartbeatRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(reportTaskRunnerHeartbeatRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -1,0 +1,19 @@
+    public Future<CreateStackResult> createStackAsync(
+            final CreateStackRequest createStackRequest,
+            final AsyncHandler<CreateStackRequest, CreateStackResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<CreateStackResult>() {
+            public CreateStackResult call() throws Exception {
+                CreateStackResult result;
+                try {
+                    result = createStack(createStackRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(createStackRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -1,0 +1,19 @@
+    public Future<CreateApplicationResult> createApplicationAsync(
+            final CreateApplicationRequest createApplicationRequest,
+            final AsyncHandler<CreateApplicationRequest, CreateApplicationResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<CreateApplicationResult>() {
+            public CreateApplicationResult call() throws Exception {
+                CreateApplicationResult result;
+                try {
+                    result = createApplication(createApplicationRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(createApplicationRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -1,0 +1,71 @@
+    @Override
+    public UploadPartResult uploadPart(UploadPartRequest uploadPartRequest)
+        throws AmazonClientException, AmazonServiceException {
+
+        appendUserAgent(uploadPartRequest, USER_AGENT);
+
+        boolean isLastPart = uploadPartRequest.isLastPart();
+        String uploadId = uploadPartRequest.getUploadId();
+
+        boolean partSizeMultipleOfCipherBlockSize = uploadPartRequest.getPartSize() % JceEncryptionConstants.SYMMETRIC_CIPHER_BLOCK_SIZE == 0;
+        if (!isLastPart && !partSizeMultipleOfCipherBlockSize) {
+            throw new AmazonClientException("Invalid part size: part sizes for encrypted multipart uploads must be multiples " +
+                    "of the cipher block size (" + JceEncryptionConstants.SYMMETRIC_CIPHER_BLOCK_SIZE + ") with the exception of the last part.  " +
+                    "Otherwise encryption adds extra padding that will corrupt the final object.");
+        }
+
+        // Generate the envelope symmetric key and initialize a cipher to encrypt the object's data
+        EncryptedUploadContext encryptedUploadContext = currentMultipartUploadSecretKeys.get(uploadId);
+        if (encryptedUploadContext == null) throw new AmazonClientException("No client-side information available on upload ID " + uploadId);
+
+        SecretKey envelopeSymmetricKey = encryptedUploadContext.getEnvelopeEncryptionKey();
+        byte[] iv = encryptedUploadContext.getNextInitializationVector();
+        CipherFactory cipherFactory = new CipherFactory(envelopeSymmetricKey, Cipher.ENCRYPT_MODE, iv, this.cryptoConfig.getCryptoProvider());
+
+        // Create encrypted input stream
+        InputStream encryptedInputStream = EncryptionUtils.getEncryptedInputStream(uploadPartRequest, cipherFactory);
+        uploadPartRequest.setInputStream(encryptedInputStream);
+
+        // The last part of the multipart upload will contain extra padding from the encryption process, which
+        // changes the
+        if (uploadPartRequest.isLastPart()) {
+            // We only change the size of the last part
+            long cryptoContentLength = EncryptionUtils.calculateCryptoContentLength(cipherFactory.createCipher(), uploadPartRequest);
+            if (cryptoContentLength > 0) uploadPartRequest.setPartSize(cryptoContentLength);
+
+            if (encryptedUploadContext.hasFinalPartBeenSeen()) {
+                throw new AmazonClientException("This part was specified as the last part in a multipart upload, but a previous part was already marked as the last part.  " +
+                        "Only the last part of the upload should be marked as the last part, otherwise it will cause the encrypted data to be corrupted.");
+            }
+
+            encryptedUploadContext.setHasFinalPartBeenSeen(true);
+        }
+
+        // Treat all encryption requests as input stream upload requests, not as file upload requests.
+        uploadPartRequest.setFile(null);
+        uploadPartRequest.setFileOffset(0);
+
+        UploadPartResult result = super.uploadPart(uploadPartRequest);
+
+        if (encryptedInputStream instanceof ByteRangeCapturingInputStream) {
+            ByteRangeCapturingInputStream bris = (ByteRangeCapturingInputStream)encryptedInputStream;
+            encryptedUploadContext.setNextInitializationVector(bris.getBlock());
+        } else {
+            throw new AmazonClientException("Unable to access last block of encrypted data");
+        }
+
+        return result;
+    }
+
+    @Override
+     public CopyPartResult copyPart(CopyPartRequest copyPartRequest) {
+        String uploadId = copyPartRequest.getUploadId();
+        EncryptedUploadContext encryptedUploadContext = currentMultipartUploadSecretKeys.get(uploadId);
+
+        if (!encryptedUploadContext.hasFinalPartBeenSeen()) {
+            encryptedUploadContext.setHasFinalPartBeenSeen(true);
+        }
+
+        return super.copyPart(copyPartRequest);
+    }
+

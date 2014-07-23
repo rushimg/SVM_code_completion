@@ -1,0 +1,22 @@
+    public void setBucketLoggingConfiguration(SetBucketLoggingConfigurationRequest setBucketLoggingConfigurationRequest)
+            throws AmazonClientException, AmazonServiceException {
+        assertParameterNotNull(setBucketLoggingConfigurationRequest,
+            "The set bucket logging configuration request object must be specified when enabling server access logging");
+
+        String bucketName = setBucketLoggingConfigurationRequest.getBucketName();
+        BucketLoggingConfiguration loggingConfiguration = setBucketLoggingConfigurationRequest.getLoggingConfiguration();
+
+        assertParameterNotNull(bucketName,
+            "The bucket name parameter must be specified when enabling server access logging");
+        assertParameterNotNull(bucketName,
+            "The logging configuration parameter must be specified when enabling server access logging");
+
+        Request<SetBucketLoggingConfigurationRequest> request = createRequest(bucketName, null, setBucketLoggingConfigurationRequest, HttpMethodName.PUT);
+        request.addParameter("logging", null);
+
+        byte[] bytes = bucketConfigurationXmlFactory.convertToXmlByteArray(loggingConfiguration);
+        request.setContent(new ByteArrayInputStream(bytes));
+
+        invoke(request, voidResponseHandler, bucketName, null);
+    }
+

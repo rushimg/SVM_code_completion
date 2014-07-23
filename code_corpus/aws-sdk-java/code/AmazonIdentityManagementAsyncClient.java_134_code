@@ -1,0 +1,19 @@
+    public Future<GetRolePolicyResult> getRolePolicyAsync(
+            final GetRolePolicyRequest getRolePolicyRequest,
+            final AsyncHandler<GetRolePolicyRequest, GetRolePolicyResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<GetRolePolicyResult>() {
+            public GetRolePolicyResult call() throws Exception {
+                GetRolePolicyResult result;
+                try {
+                    result = getRolePolicy(getRolePolicyRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(getRolePolicyRequest, result);
+                   return result;
+            }
+        });
+    }
+    

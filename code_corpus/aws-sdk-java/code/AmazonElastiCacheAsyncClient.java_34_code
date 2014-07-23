@@ -1,0 +1,19 @@
+    public Future<ReplicationGroup> modifyReplicationGroupAsync(
+            final ModifyReplicationGroupRequest modifyReplicationGroupRequest,
+            final AsyncHandler<ModifyReplicationGroupRequest, ReplicationGroup> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ReplicationGroup>() {
+            public ReplicationGroup call() throws Exception {
+                ReplicationGroup result;
+                try {
+                    result = modifyReplicationGroup(modifyReplicationGroupRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(modifyReplicationGroupRequest, result);
+                   return result;
+            }
+        });
+    }
+    

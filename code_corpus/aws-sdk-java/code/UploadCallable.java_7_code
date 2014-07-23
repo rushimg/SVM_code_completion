@@ -1,0 +1,31 @@
+    private UploadResult uploadPartsInSeries(UploadPartRequestFactory requestFactory) {
+
+        final List<PartETag> partETags = new ArrayList<PartETag>();
+
+        while (requestFactory.hasMoreRequests()) {
+            if (threadPool.isShutdown()) throw new CancellationException("TransferManager has been shutdown");
+            UploadPartRequest uploadPartRequest = requestFactory.getNextUploadPartRequest();
+            // Mark the stream in case we need to reset it
+            InputStream inputStream = uploadPartRequest.getInputStream();
+            if (inputStream != null && inputStream.markSupported()) {
+                if (uploadPartRequest.getPartSize() >= Integer.MAX_VALUE) {
+                    inputStream.mark(Integer.MAX_VALUE);
+                } else {
+                    inputStream.mark((int)uploadPartRequest.getPartSize());
+                }
+            }
+            partETags.add(s3.uploadPart(uploadPartRequest).getPartETag());
+        }
+
+        CompleteMultipartUploadResult completeMultipartUploadResult = s3
+                .completeMultipartUpload(new CompleteMultipartUploadRequest(putObjectRequest.getBucketName(),
+                        putObjectRequest.getKey(), multipartUploadId, partETags));
+
+        UploadResult uploadResult = new UploadResult();
+        uploadResult.setBucketName(completeMultipartUploadResult.getBucketName());
+        uploadResult.setKey(completeMultipartUploadResult.getKey());
+        uploadResult.setETag(completeMultipartUploadResult.getETag());
+        uploadResult.setVersionId(completeMultipartUploadResult.getVersionId());
+        return uploadResult;
+    }
+

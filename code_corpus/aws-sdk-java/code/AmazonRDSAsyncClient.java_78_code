@@ -1,0 +1,19 @@
+    public Future<OptionGroup> modifyOptionGroupAsync(
+            final ModifyOptionGroupRequest modifyOptionGroupRequest,
+            final AsyncHandler<ModifyOptionGroupRequest, OptionGroup> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<OptionGroup>() {
+            public OptionGroup call() throws Exception {
+                OptionGroup result;
+                try {
+                    result = modifyOptionGroup(modifyOptionGroupRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(modifyOptionGroupRequest, result);
+                   return result;
+            }
+        });
+    }
+    

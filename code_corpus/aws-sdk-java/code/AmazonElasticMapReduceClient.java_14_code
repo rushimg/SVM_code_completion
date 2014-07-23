@@ -1,0 +1,25 @@
+    public ListStepsResult listSteps(ListStepsRequest listStepsRequest) {
+        ExecutionContext executionContext = createExecutionContext(listStepsRequest);
+        AWSRequestMetrics awsRequestMetrics = executionContext.getAwsRequestMetrics();
+        awsRequestMetrics.startEvent(Field.ClientExecuteTime);
+        Request<ListStepsRequest> request = null;
+        Response<ListStepsResult> response = null;
+        try {
+            awsRequestMetrics.startEvent(Field.RequestMarshallTime);
+            try {
+                request = new ListStepsRequestMarshaller().marshall(listStepsRequest);
+                // Binds the request metrics to the current request.
+                request.setAWSRequestMetrics(awsRequestMetrics);
+            } finally {
+                awsRequestMetrics.endEvent(Field.RequestMarshallTime);
+            }
+            Unmarshaller<ListStepsResult, JsonUnmarshallerContext> unmarshaller = new ListStepsResultJsonUnmarshaller();
+            JsonResponseHandler<ListStepsResult> responseHandler = new JsonResponseHandler<ListStepsResult>(unmarshaller);
+            
+            response = invoke(request, responseHandler, executionContext);
+            return response.getAwsResponse();
+        } finally {
+            endClientExecution(awsRequestMetrics, request, response);
+        }
+    }
+

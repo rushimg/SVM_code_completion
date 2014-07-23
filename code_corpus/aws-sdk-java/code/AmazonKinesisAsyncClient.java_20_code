@@ -1,0 +1,19 @@
+    public Future<PutRecordResult> putRecordAsync(
+            final PutRecordRequest putRecordRequest,
+            final AsyncHandler<PutRecordRequest, PutRecordResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<PutRecordResult>() {
+            public PutRecordResult call() throws Exception {
+                PutRecordResult result;
+                try {
+                    result = putRecord(putRecordRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(putRecordRequest, result);
+                   return result;
+            }
+        });
+    }
+    

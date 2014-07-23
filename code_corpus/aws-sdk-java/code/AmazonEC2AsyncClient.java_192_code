@@ -1,0 +1,19 @@
+    public Future<StartInstancesResult> startInstancesAsync(
+            final StartInstancesRequest startInstancesRequest,
+            final AsyncHandler<StartInstancesRequest, StartInstancesResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<StartInstancesResult>() {
+            public StartInstancesResult call() throws Exception {
+                StartInstancesResult result;
+                try {
+                    result = startInstances(startInstancesRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(startInstancesRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -1,0 +1,19 @@
+    public Future<DeleteMessageBatchResult> deleteMessageBatchAsync(
+            final DeleteMessageBatchRequest deleteMessageBatchRequest,
+            final AsyncHandler<DeleteMessageBatchRequest, DeleteMessageBatchResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DeleteMessageBatchResult>() {
+            public DeleteMessageBatchResult call() throws Exception {
+                DeleteMessageBatchResult result;
+                try {
+                    result = deleteMessageBatch(deleteMessageBatchRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(deleteMessageBatchRequest, result);
+                   return result;
+            }
+        });
+    }
+    

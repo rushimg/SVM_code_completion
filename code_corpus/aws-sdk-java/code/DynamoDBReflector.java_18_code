@@ -1,0 +1,30 @@
+    Method getSetter(Method getter) {
+        synchronized (setterCache) {
+            if ( !setterCache.containsKey(getter) ) {
+                String attributeName = null;
+                if ( getter.getName().startsWith("get") ) {
+                    attributeName = getter.getName().substring("get".length());
+                } else if ( getter.getName().startsWith("is") ) {
+                    attributeName = getter.getName().substring("is".length());
+                } else {
+                    // should be impossible to reach this exception
+                    throw new RuntimeException("Getter method must start with 'is' or 'get'");
+                }
+                String setterName = "set" + attributeName;
+                Method setter = null;
+                try {
+                    setter = getter.getDeclaringClass().getMethod(setterName, getter.getReturnType());
+                } catch ( NoSuchMethodException e ) {
+                    throw new DynamoDBMappingException("Expected a public, one-argument method called " + setterName
+                            + " on class " + getter.getDeclaringClass(), e);
+                } catch ( SecurityException e ) {
+                    throw new DynamoDBMappingException("No access to public, one-argument method called " + setterName
+                            + " on class " + getter.getDeclaringClass(), e);
+                }
+                setterCache.put(getter, setter);
+            }
+        }
+        
+        return setterCache.get(getter);
+    }
+

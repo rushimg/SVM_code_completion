@@ -1,0 +1,19 @@
+    public Future<DescribeElasticLoadBalancersResult> describeElasticLoadBalancersAsync(
+            final DescribeElasticLoadBalancersRequest describeElasticLoadBalancersRequest,
+            final AsyncHandler<DescribeElasticLoadBalancersRequest, DescribeElasticLoadBalancersResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeElasticLoadBalancersResult>() {
+            public DescribeElasticLoadBalancersResult call() throws Exception {
+                DescribeElasticLoadBalancersResult result;
+                try {
+                    result = describeElasticLoadBalancers(describeElasticLoadBalancersRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeElasticLoadBalancersRequest, result);
+                   return result;
+            }
+        });
+    }
+    

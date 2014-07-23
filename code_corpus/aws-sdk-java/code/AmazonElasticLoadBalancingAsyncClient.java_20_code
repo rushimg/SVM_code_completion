@@ -1,0 +1,19 @@
+    public Future<DetachLoadBalancerFromSubnetsResult> detachLoadBalancerFromSubnetsAsync(
+            final DetachLoadBalancerFromSubnetsRequest detachLoadBalancerFromSubnetsRequest,
+            final AsyncHandler<DetachLoadBalancerFromSubnetsRequest, DetachLoadBalancerFromSubnetsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DetachLoadBalancerFromSubnetsResult>() {
+            public DetachLoadBalancerFromSubnetsResult call() throws Exception {
+                DetachLoadBalancerFromSubnetsResult result;
+                try {
+                    result = detachLoadBalancerFromSubnets(detachLoadBalancerFromSubnetsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(detachLoadBalancerFromSubnetsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

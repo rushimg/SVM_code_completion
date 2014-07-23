@@ -1,0 +1,123 @@
+    /**
+     * <p>
+     * This operation initiates a job of the specified type. In this release,
+     * you can initiate a job to retrieve either an archive or a vault
+     * inventory (a list of archives in a vault).
+     * </p>
+     * <p>
+     * Retrieving data from Amazon Glacier is a two-step process:
+     * </p>
+     * <ol> <li> <p>
+     * Initiate a retrieval job.
+     * </p>
+     * </li>
+     * <li> <p>
+     * After the job completes, download the bytes.
+     * </p>
+     * </li>
+     * </ol> <p>
+     * The retrieval request is executed asynchronously. When you initiate a
+     * retrieval job, Amazon Glacier creates a job and returns a job ID in
+     * the response. When Amazon Glacier completes the job, you can get the
+     * job output (archive or inventory data). For information about getting
+     * job output, see GetJobOutput operation.
+     * </p>
+     * <p>
+     * The job must complete before you can get its output. To determine when
+     * a job is complete, you have the following options:
+     * </p>
+     * 
+     * <ul>
+     * <li> <p>
+     * <b>Use Amazon SNS Notification</b> You can specify an Amazon Simple
+     * Notification Service (Amazon SNS) topic to which Amazon Glacier can
+     * post a notification after the job is completed. You can specify an SNS
+     * topic per job request. The notification is sent only after Amazon
+     * Glacier completes the job. In addition to specifying an SNS topic per
+     * job request, you can configure vault notifications for a vault so that
+     * job notifications are always sent. For more information, see
+     * SetVaultNotificationConfiguration.
+     * </p>
+     * </li>
+     * <li> <p>
+     * <b>Get job details</b> You can make a DescribeJob request to obtain
+     * job status information while a job is in progress. However, it is more
+     * efficient to use an Amazon SNS notification to determine when a job is
+     * complete.
+     * </p>
+     * </li>
+     * 
+     * </ul>
+     * <p>
+     * <b>NOTE:</b> The information you get via notification is same that you
+     * get by calling DescribeJob.
+     * </p>
+     * <p>
+     * If for a specific event, you add both the notification configuration
+     * on the vault and also specify an SNS topic in your initiate job
+     * request, Amazon Glacier sends both notifications. For more
+     * information, see SetVaultNotificationConfiguration.
+     * </p>
+     * <p>
+     * An AWS account has full permission to perform all operations
+     * (actions). However, AWS Identity and Access Management (IAM) users
+     * don't have any permissions by default. You must grant them explicit
+     * permission to perform specific actions. For more information, see <a
+     * ices.com/amazonglacier/latest/dev/using-iam-with-amazon-glacier.html">
+     * Access Control Using AWS Identity and Access Management (IAM) </a> .
+     * </p>
+     * <p>
+     * <b>About the Vault Inventory</b>
+     * </p>
+     * <p>
+     * Amazon Glacier prepares an inventory for each vault periodically,
+     * every 24 hours. When you initiate a job for a vault inventory, Amazon
+     * Glacier returns the last inventory for the vault. The inventory data
+     * you get might be up to a day or two days old. Also, the initiate
+     * inventory job might take some time to complete before you can download
+     * the vault inventory. So you do not want to retrieve a vault inventory
+     * for each vault operation. However, in some scenarios, you might find
+     * the vault inventory useful. For example, when you upload an archive,
+     * you can provide an archive description but not an archive name. Amazon
+     * Glacier provides you a unique archive ID, an opaque string of
+     * characters. So, you might maintain your own database that maps archive
+     * names to their corresponding Amazon Glacier assigned archive IDs. You
+     * might find the vault inventory useful in the event you need to
+     * reconcile information in your database with the actual vault
+     * inventory.
+     * </p>
+     * <p>
+     * An AWS account has full permission to perform all operations
+     * (actions). However, AWS Identity and Access Management (IAM) users
+     * don't have any permissions by default. You must grant them explicit
+     * permission to perform specific actions. For more information, see <a
+     * ices.com/amazonglacier/latest/dev/using-iam-with-amazon-glacier.html">
+     * Access Control Using AWS Identity and Access Management (IAM) </a> .
+     * </p>
+     * <p>
+     * For conceptual information and the underlying REST API, go to <a
+     * nwebservices.com/amazonglacier/latest/dev/api-initiate-job-post.html">
+     * Initiate a Job </a> and <a
+     * .amazonwebservices.com/amazonglacier/latest/dev/vault-inventory.html">
+     * Downloading a Vault Inventory </a>
+     * </p>
+     *
+     * @param initiateJobRequest Container for the necessary parameters to
+     *           execute the InitiateJob operation on AmazonGlacier.
+     * @param asyncHandler Asynchronous callback handler for events in the
+     *           life-cycle of the request. Users could provide the implementation of
+     *           the four callback methods in this interface to process the operation
+     *           result or handle the exception.
+     * 
+     * @return A Java Future object containing the response from the
+     *         InitiateJob service method, as returned by AmazonGlacier.
+     * 
+     *
+     * @throws AmazonClientException
+     *             If any internal errors are encountered inside the client while
+     *             attempting to make the request or handle the response.  For example
+     *             if a network connection is not available.
+     * @throws AmazonServiceException
+     *             If an error response is returned by AmazonGlacier indicating
+     *             either a problem with the data in the request, or a server side issue.
+     */

@@ -1,0 +1,11 @@
+    public BucketVersioningConfiguration getBucketVersioningConfiguration(String bucketName)
+            throws AmazonClientException, AmazonServiceException {
+        assertParameterNotNull(bucketName,
+                "The bucket name parameter must be specified when querying versioning configuration");
+
+        Request<GenericBucketRequest> request = createRequest(bucketName, null, new GenericBucketRequest(bucketName), HttpMethodName.GET);
+        request.addParameter("versioning", null);
+
+        return invoke(request, new Unmarshallers.BucketVersioningConfigurationUnmarshaller(), bucketName, null);
+    }
+

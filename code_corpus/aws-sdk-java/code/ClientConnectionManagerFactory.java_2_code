@@ -1,0 +1,10 @@
+    public static ClientConnectionManager wrap(ClientConnectionManager orig) {
+        if (orig instanceof Wrapped)
+            throw new IllegalArgumentException();
+        return (ClientConnectionManager) Proxy.newProxyInstance(
+                // https://github.com/aws/aws-sdk-java/pull/48#issuecomment-29454423
+                ClientConnectionManagerFactory.class.getClassLoader(),
+                interfaces,
+                new Handler(orig));
+    }
+

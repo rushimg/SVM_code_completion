@@ -1,0 +1,19 @@
+    public Future<ListMetricsResult> listMetricsAsync(
+            final ListMetricsRequest listMetricsRequest,
+            final AsyncHandler<ListMetricsRequest, ListMetricsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ListMetricsResult>() {
+            public ListMetricsResult call() throws Exception {
+                ListMetricsResult result;
+                try {
+                    result = listMetrics(listMetricsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(listMetricsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -1,0 +1,32 @@
+    private void summarize(MetricDatum datum, Map<String, MetricDatum> uniqueMetrics) {
+        Double value = datum.getValue();
+        if (value == null) {
+            return;
+        }
+        List<Dimension> dims = datum.getDimensions();
+        Collections.sort(dims, DimensionComparator.INSTANCE);
+        String metricName = datum.getMetricName();
+        String key = metricName + Jackson.toJsonString(dims);
+        MetricDatum statDatum = uniqueMetrics.get(key);
+        if (statDatum == null) {
+            statDatum = new MetricDatum()
+                .withDimensions(datum.getDimensions())
+                .withMetricName(metricName)
+                .withUnit(datum.getUnit())
+                .withStatisticValues(new StatisticSet()
+                    .withMaximum(value)
+                    .withMinimum(value)
+                    .withSampleCount(0.0)
+                    .withSum(0.0))
+                ;
+            uniqueMetrics.put(key, statDatum);
+        }
+        StatisticSet stat = statDatum.getStatisticValues();
+        stat.setSampleCount(stat.getSampleCount() + 1.0);
+        stat.setSum(stat.getSum() + value);
+        if (value > stat.getMaximum()) {
+            stat.setMaximum(value);
+        } else if (value < stat.getMinimum()) {
+            stat.setMinimum(value);
+        }
+    }

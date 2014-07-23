@@ -1,0 +1,19 @@
+    public Future<UploadSigningCertificateResult> uploadSigningCertificateAsync(
+            final UploadSigningCertificateRequest uploadSigningCertificateRequest,
+            final AsyncHandler<UploadSigningCertificateRequest, UploadSigningCertificateResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<UploadSigningCertificateResult>() {
+            public UploadSigningCertificateResult call() throws Exception {
+                UploadSigningCertificateResult result;
+                try {
+                    result = uploadSigningCertificate(uploadSigningCertificateRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(uploadSigningCertificateRequest, result);
+                   return result;
+            }
+        });
+    }
+    

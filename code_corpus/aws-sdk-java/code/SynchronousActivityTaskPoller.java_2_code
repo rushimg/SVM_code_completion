@@ -1,0 +1,28 @@
+    public ActivityTask poll() {
+        if (!initialized) {
+            checkRequiredProperty(service, "service");
+            checkRequiredProperty(domain, "domain");
+            checkRequiredProperty(taskListToPoll, "taskListToPoll");
+            initialized = true;
+        }
+
+        PollForActivityTaskRequest pollRequest = new PollForActivityTaskRequest();
+        pollRequest.setDomain(domain);
+        pollRequest.setIdentity(identity);
+        pollRequest.setTaskList(new TaskList().withName(taskListToPoll));
+        if (log.isDebugEnabled()) {
+            log.debug("poll request begin: " + pollRequest);
+        }
+        ActivityTask result = service.pollForActivityTask(pollRequest);
+        if (result == null || result.getTaskToken() == null) {
+            if (log.isDebugEnabled()) {
+                log.debug("poll request returned no task");
+            }
+            return null;
+        }
+        if (log.isTraceEnabled()) {
+            log.trace("poll request returned " + result);
+        }
+        return result;
+    }
+

@@ -1,0 +1,25 @@
+
+    private FailedBatch callUntilCompletion(Map<String, List<WriteRequest>> batch) {
+        BatchWriteItemResult result = null;
+        int retries = 0;
+        FailedBatch failedBatch = null;
+        while (true) {
+            try {
+                result = db.batchWriteItem(new BatchWriteItemRequest().withRequestItems(batch));
+            } catch (Exception e) {
+                failedBatch = new FailedBatch();
+                failedBatch.setUnprocessedItems(batch);
+                failedBatch.setException(e);
+                return failedBatch;
+            }
+            retries++;
+            batch = result.getUnprocessedItems();
+            if (batch.size() > 0) {
+                pauseExponentially(retries);
+            } else {
+                break;
+            }
+        }
+        return failedBatch;
+    }
+

@@ -1,0 +1,28 @@
+    @Override
+    public int read(byte[] buffer, int offset, int length) throws IOException {
+        int numBytesRead;
+        // If no more bytes are available, do not read any bytes into the buffer
+        if(this.virtualAvailable <= 0) {
+            numBytesRead = -1;
+        } else {
+            // If the desired read length is greater than the number of available bytes,
+            // shorten the read length to the number of available bytes.
+            if(length > this.virtualAvailable) {
+                // If the number of available bytes is greater than the maximum value of a 32 bit int, then
+                // read as many bytes as an int can.
+                length = (this.virtualAvailable < Integer.MAX_VALUE) ? (int)this.virtualAvailable : Integer.MAX_VALUE;
+            }
+            // Read bytes into the buffer.
+            numBytesRead = this.decryptedContents.read(buffer, offset, length);
+        }
+        // If we were able to read bytes, decrement the number of bytes available to be read.
+        if(numBytesRead != -1) {
+            this.virtualAvailable -= numBytesRead;
+        } else {
+            // If we've reached the end of the stream, close it
+            close();
+            this.virtualAvailable = 0;
+        }
+        return numBytesRead;
+    }
+

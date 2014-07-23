@@ -1,0 +1,43 @@
+    public static String prettyPrintHistory(History history, boolean showWorkflowTasks) {
+        return prettyPrintHistory(history.getEvents(), showWorkflowTasks);
+    }
+
+    public static String prettyPrintHistory(Iterable<HistoryEvent> events, boolean showWorkflowTasks) {
+        StringBuffer result = new StringBuffer();
+        result.append("{");
+        boolean first = true;
+        for (HistoryEvent event : events) {
+            if (!showWorkflowTasks && event.getEventType().startsWith("WorkflowTask")) {
+                continue;
+            }
+            if (first) {
+                first = false;
+            }
+            else {
+                result.append(",");
+            }
+            result.append("\n    ");
+            result.append(prettyPrintHistoryEvent(event));
+        }
+        result.append("\n}");
+        return result.toString();
+    }
+
+    public static String prettyPrintDecisions(Iterable<Decision> decisions) {
+        StringBuffer result = new StringBuffer();
+        result.append("{");
+        boolean first = true;
+        for (Decision decision : decisions) {
+            if (first) {
+                first = false;
+            }
+            else {
+                result.append(",");
+            }
+            result.append("\n    ");
+            result.append(prettyPrintDecision(decision));
+        }
+        result.append("\n}");
+        return result.toString();
+    }
+

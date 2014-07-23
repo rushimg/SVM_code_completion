@@ -1,0 +1,35 @@
+        props.setProperty("mail.aws.user", credentials.getAWSAccessKeyId());
+        props.setProperty("mail.aws.password", credentials.getAWSSecretKey());
+
+        Session session = Session.getInstance(props);
+
+        try {
+            // Create a new Message
+            Message msg = new MimeMessage(session);
+            msg.setFrom(new InternetAddress(FROM));
+            msg.addRecipient(Message.RecipientType.TO, new InternetAddress(TO));
+            msg.setSubject(SUBJECT);
+            msg.setText(BODY);
+            msg.saveChanges();
+
+            // Reuse one Transport object for sending all your messages
+            // for better performance
+            Transport t = new AWSJavaMailTransport(session, null);
+            t.connect();
+            t.sendMessage(msg, null);
+
+            // Close your transport when you're completely done sending
+            // all your messages
+            t.close();
+        } catch (AddressException e) {
+            e.printStackTrace();
+            System.out.println("Caught an AddressException, which means one or more of your "
+                    + "addresses are improperly formatted.");
+        } catch (MessagingException e) {
+            e.printStackTrace();
+            System.out.println("Caught a MessagingException, which means that there was a "
+                    + "problem sending your message to Amazon's E-mail Service check the "
+                    + "stack trace for more information.");
+        }
+    }
+

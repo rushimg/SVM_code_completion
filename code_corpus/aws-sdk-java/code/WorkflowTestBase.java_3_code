@@ -1,0 +1,21 @@
+    public void setClockAccelerationCoefficient(double clockAcceleration) {
+        if (clockAcceleration < 1.0) {
+            throw new IllegalArgumentException("clock acceleration less then 1: " + clockAcceleration);
+        }
+        this.clockAcceleration = clockAcceleration;
+    }
+
+    @Override
+    public Statement apply(final Statement base, FrameworkMethod method, Object target) {
+        Callable<WorkflowTestBase> accessor = new Callable<WorkflowTestBase>() {
+
+            @Override
+            public WorkflowTestBase call() throws Exception {
+                return WorkflowTestBase.this;
+            }
+        };
+        workflowTestStatement = new WorkflowTestStatement(accessor, base, testTimeoutActualTimeMilliseconds, expectedException);
+        workflowTestStatement.setFlowTestRunner(flowTestRunner);
+        return workflowTestStatement;
+    }
+

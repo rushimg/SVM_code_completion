@@ -1,0 +1,15 @@
+    protected void releaseConnection() throws IOException {
+        if (!alreadyReleased) {
+            if (!underlyingStreamConsumed) {
+                // Underlying input stream has not been consumed, abort method
+                // to force connection to be closed and cleaned-up.
+            	if (httpRequest instanceof AbortableHttpRequest) {
+            		AbortableHttpRequest abortableHttpRequest = (AbortableHttpRequest)httpRequest;
+            		abortableHttpRequest.abort();
+            	}
+            }
+            inputStream.close();
+            alreadyReleased = true;
+        }
+    }
+

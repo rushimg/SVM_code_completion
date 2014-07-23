@@ -1,0 +1,19 @@
+    public static String waitForWorkflowInstanceCompletion(AmazonSimpleWorkflow service, String domain,
+            WorkflowExecution workflowExecution, long timeoutSeconds) 
+                throws InterruptedException, TimeoutException {
+        long start = System.currentTimeMillis();
+        WorkflowExecutionInfo executionInfo = null;
+        do {
+                String historyDump = WorkflowExecutionUtils.prettyPrintHistory(service, domain, workflowExecution);
+                throw new TimeoutException("Workflow instance is not complete after " + timeoutSeconds + " seconds: \n"
+                        + historyDump);
+            }
+            if (executionInfo != null) {
+                Thread.sleep(1000);
+            }
+            executionInfo = describeWorkflowInstance(service, domain, workflowExecution);
+        }
+        while (executionInfo.getExecutionStatus().equals(ExecutionStatus.OPEN.toString()));
+        return executionInfo.getCloseStatus();
+    }
+

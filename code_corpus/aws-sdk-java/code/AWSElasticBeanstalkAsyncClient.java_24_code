@@ -1,0 +1,19 @@
+    public Future<CreateStorageLocationResult> createStorageLocationAsync(
+            final CreateStorageLocationRequest createStorageLocationRequest,
+            final AsyncHandler<CreateStorageLocationRequest, CreateStorageLocationResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<CreateStorageLocationResult>() {
+            public CreateStorageLocationResult call() throws Exception {
+                CreateStorageLocationResult result;
+                try {
+                    result = createStorageLocation(createStorageLocationRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(createStorageLocationRequest, result);
+                   return result;
+            }
+        });
+    }
+    

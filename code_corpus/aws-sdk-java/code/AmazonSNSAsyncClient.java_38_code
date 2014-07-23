@@ -1,0 +1,19 @@
+    public Future<CreateTopicResult> createTopicAsync(
+            final CreateTopicRequest createTopicRequest,
+            final AsyncHandler<CreateTopicRequest, CreateTopicResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<CreateTopicResult>() {
+            public CreateTopicResult call() throws Exception {
+                CreateTopicResult result;
+                try {
+                    result = createTopic(createTopicRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(createTopicRequest, result);
+                   return result;
+            }
+        });
+    }
+    

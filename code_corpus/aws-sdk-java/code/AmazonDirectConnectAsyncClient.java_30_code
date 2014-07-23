@@ -1,0 +1,19 @@
+    public Future<ConfirmConnectionResult> confirmConnectionAsync(
+            final ConfirmConnectionRequest confirmConnectionRequest,
+            final AsyncHandler<ConfirmConnectionRequest, ConfirmConnectionResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ConfirmConnectionResult>() {
+            public ConfirmConnectionResult call() throws Exception {
+                ConfirmConnectionResult result;
+                try {
+                    result = confirmConnection(confirmConnectionRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(confirmConnectionRequest, result);
+                   return result;
+            }
+        });
+    }
+    

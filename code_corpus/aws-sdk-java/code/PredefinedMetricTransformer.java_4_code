@@ -1,0 +1,60 @@
+    protected List<MetricDatum> metricOfRequestOrRetryCount(
+            Field metricType, Request<?> req, Object resp) {
+        AWSRequestMetrics m = req.getAWSRequestMetrics(); 
+        TimingInfo ti = m.getTimingInfo();
+        // Always retrieve the request count even for retry which is equivalent
+        // to the number of requests minus one.
+        Number counter = ti.getCounter(Field.RequestCount.name());
+        if (counter == null) {
+            // this is possible if one of the request handlers screwed up
+            return Collections.emptyList();
+        }
+        int requestCount = counter.intValue();
+        if (requestCount < 1) {
+            LogFactory.getLog(getClass()).warn(
+                "request count must be at least one");
+            return Collections.emptyList();
+        }
+        final double count = metricType == Field.RequestCount 
+                           ? requestCount
+                           : requestCount-1 // retryCount = requestCount - 1
+                           ;
+        if (count < 1) {
+            return Collections.emptyList();
+        } else {
+            return Collections.singletonList(new MetricDatum()
+                .withMetricName(req.getServiceName())
+                .withDimensions(new Dimension()
+                    .withName(Dimensions.MetricType.name())
+                    .withValue(metricType.name()))
+                .withUnit(StandardUnit.Count)
+                .withValue(Double.valueOf(count))
+                .withTimestamp(endTimestamp(ti)))
+                ;
+        }
+    }
+
+    protected List<MetricDatum> metricOfCount(
+            Field metricType, Request<?> req, Object resp) {
+        AWSRequestMetrics m = req.getAWSRequestMetrics(); 
+        TimingInfo ti = m.getTimingInfo();
+        Number counter = ti.getCounter(metricType.name());
+        if (counter == null) {
+            return Collections.emptyList();
+        }
+        final double count = counter.doubleValue();
+        if (count < 1) {
+            return Collections.emptyList();
+        } else {
+            return Collections.singletonList(new MetricDatum()
+                .withMetricName(req.getServiceName())
+                .withDimensions(new Dimension()
+                    .withName(Dimensions.MetricType.name())
+                    .withValue(metricType.name()))
+                .withUnit(StandardUnit.Count)
+                .withValue(Double.valueOf(count))
+                .withTimestamp(endTimestamp(ti)))
+                ;
+        }
+    }
+    

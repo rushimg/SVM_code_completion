@@ -1,0 +1,13 @@
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    public static void before() {
+        List<WorkflowExecutionLocal<?>> currentLocals;
+        synchronized (locals) {
+            currentLocals = new ArrayList<WorkflowExecutionLocal<?>>(locals);
+        }
+        for (WorkflowExecutionLocal local : currentLocals) {
+            Wrapper w = new Wrapper();
+            w.wrapped = local.initialValue();
+            local.set(w);
+        }
+    }
+

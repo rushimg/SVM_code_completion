@@ -1,0 +1,19 @@
+    public Future<DescribeDBEngineVersionsResult> describeDBEngineVersionsAsync(
+            final DescribeDBEngineVersionsRequest describeDBEngineVersionsRequest,
+            final AsyncHandler<DescribeDBEngineVersionsRequest, DescribeDBEngineVersionsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeDBEngineVersionsResult>() {
+            public DescribeDBEngineVersionsResult call() throws Exception {
+                DescribeDBEngineVersionsResult result;
+                try {
+                    result = describeDBEngineVersions(describeDBEngineVersionsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeDBEngineVersionsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

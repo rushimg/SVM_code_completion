@@ -1,0 +1,19 @@
+    public Future<ListClustersResult> listClustersAsync(
+            final ListClustersRequest listClustersRequest,
+            final AsyncHandler<ListClustersRequest, ListClustersResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ListClustersResult>() {
+            public ListClustersResult call() throws Exception {
+                ListClustersResult result;
+                try {
+                    result = listClusters(listClustersRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(listClustersRequest, result);
+                   return result;
+            }
+        });
+    }
+    

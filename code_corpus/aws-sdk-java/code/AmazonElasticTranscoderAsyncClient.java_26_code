@@ -1,0 +1,19 @@
+    public Future<CreatePipelineResult> createPipelineAsync(
+            final CreatePipelineRequest createPipelineRequest,
+            final AsyncHandler<CreatePipelineRequest, CreatePipelineResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<CreatePipelineResult>() {
+            public CreatePipelineResult call() throws Exception {
+                CreatePipelineResult result;
+                try {
+                    result = createPipeline(createPipelineRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(createPipelineRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -1,0 +1,34 @@
+    public static String prettyPrintHistory(AmazonSimpleWorkflow service, String domain, WorkflowExecution workflowExecution,
+            boolean showWorkflowTasks) {
+        List<HistoryEvent> events = getHistory(service, domain, workflowExecution);
+        return prettyPrintHistory(events, showWorkflowTasks);
+    }
+
+    public static List<HistoryEvent> getHistory(AmazonSimpleWorkflow service, String domain,
+            WorkflowExecution workflowExecution) {
+        List<HistoryEvent> events = new ArrayList<HistoryEvent>();
+        String nextPageToken = null;
+        do {
+            History history = getHistoryPage(nextPageToken, service, domain, workflowExecution);
+            events.addAll(history.getEvents());
+            nextPageToken = history.getNextPageToken();
+        }
+        while (nextPageToken != null);
+        return events;
+    }
+
+    public static History getHistoryPage(String nextPageToken, AmazonSimpleWorkflow service, String domain,
+            WorkflowExecution workflowExecution) {
+
+        GetWorkflowExecutionHistoryRequest getHistoryRequest = new GetWorkflowExecutionHistoryRequest();
+        getHistoryRequest.setDomain(domain);
+        getHistoryRequest.setExecution(workflowExecution);
+        getHistoryRequest.setNextPageToken(nextPageToken);
+
+        History history = service.getWorkflowExecutionHistory(getHistoryRequest);
+        if (history == null) {
+            throw new IllegalArgumentException("unknown workflow execution: " + workflowExecution);
+        }
+        return history;
+    }
+

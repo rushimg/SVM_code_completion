@@ -1,0 +1,21 @@
+public class AmazonSQSBufferedAsyncClient implements AmazonSQSAsync {
+    
+    public static final String USER_AGENT = AmazonSQSBufferedAsyncClient.class.getSimpleName() + "/" + VersionInfoUtils.getVersion();
+    
+    private final CachingMap buffers = new CachingMap( 16, (float) 0.75, true );
+    private final AmazonSQSAsync realSQS;
+    private final QueueBufferConfig bufferConfigExemplar;
+    
+    public AmazonSQSBufferedAsyncClient( AmazonSQSAsync paramRealSQS) {
+        this( paramRealSQS, new QueueBufferConfig());
+    }
+    
+    //route all future constructors to the most general one, because validation
+    //happens here
+    public AmazonSQSBufferedAsyncClient( AmazonSQSAsync paramRealSQS, QueueBufferConfig config) {
+        config.validate();
+        realSQS = paramRealSQS;
+        bufferConfigExemplar = config;
+    }
+
+    

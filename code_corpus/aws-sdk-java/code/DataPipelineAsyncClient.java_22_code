@@ -1,0 +1,19 @@
+    public Future<ValidatePipelineDefinitionResult> validatePipelineDefinitionAsync(
+            final ValidatePipelineDefinitionRequest validatePipelineDefinitionRequest,
+            final AsyncHandler<ValidatePipelineDefinitionRequest, ValidatePipelineDefinitionResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ValidatePipelineDefinitionResult>() {
+            public ValidatePipelineDefinitionResult call() throws Exception {
+                ValidatePipelineDefinitionResult result;
+                try {
+                    result = validatePipelineDefinition(validatePipelineDefinitionRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(validatePipelineDefinitionRequest, result);
+                   return result;
+            }
+        });
+    }
+    

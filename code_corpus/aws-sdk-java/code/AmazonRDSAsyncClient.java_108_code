@@ -1,0 +1,19 @@
+    public Future<DescribeOptionGroupsResult> describeOptionGroupsAsync(
+            final DescribeOptionGroupsRequest describeOptionGroupsRequest,
+            final AsyncHandler<DescribeOptionGroupsRequest, DescribeOptionGroupsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeOptionGroupsResult>() {
+            public DescribeOptionGroupsResult call() throws Exception {
+                DescribeOptionGroupsResult result;
+                try {
+                    result = describeOptionGroups(describeOptionGroupsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeOptionGroupsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -1,0 +1,29 @@
+/**
+ * Class that provides helper methods for constructing predefined bootstrap actions.
+ *
+ * <pre>
+ * AWSCredentials credentials = new BasicAWSCredentials(accessKey, secretKey);
+ * AmazonElasticMapReduce emr = new AmazonElasticMapReduceClient(credentials);
+ *
+ * BootstrapActions bootstrapActions = new BootstrapActions();
+ *
+ * RunJobFlowRequest request = new RunJobFlowRequest()
+ *       .withName("Job Flow With Bootstrap Actions")
+ *       .withBootstrapActions(
+ *             bootstrapActions.newRunIf(
+ *                 "instance.isMaster=true",
+ *                 bootstrapActions.newConfigureDaemons()
+ *                     .withHeapSize(Daemon.JobTracker, 2048)
+ *                     .build()))
+ *       .withLogUri("s3://log-bucket/")
+ *       .withInstances(new JobFlowInstancesConfig()
+ *            .withEc2KeyName("keypair")
+ *            .withHadoopVersion("0.20")
+ *            .withInstanceCount(5)
+ *            .withKeepJobFlowAliveWhenNoSteps(true)
+ *            .withMasterInstanceType("m1.small")
+ *            .withSlaveInstanceType("m1.small"));
+ *
+ * RunJobFlowResult result = emr.runJobFlow(request);
+ * </pre>
+ */

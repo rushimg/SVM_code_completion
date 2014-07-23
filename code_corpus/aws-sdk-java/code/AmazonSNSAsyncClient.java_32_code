@@ -1,0 +1,19 @@
+    public Future<ListSubscriptionsResult> listSubscriptionsAsync(
+            final ListSubscriptionsRequest listSubscriptionsRequest,
+            final AsyncHandler<ListSubscriptionsRequest, ListSubscriptionsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ListSubscriptionsResult>() {
+            public ListSubscriptionsResult call() throws Exception {
+                ListSubscriptionsResult result;
+                try {
+                    result = listSubscriptions(listSubscriptionsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(listSubscriptionsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -1,0 +1,40 @@
+    public static EncryptionInstruction buildInstructionFromInstructionFile(S3Object instructionFile, EncryptionMaterialsProvider materialsProvider, Provider cryptoProvider) {
+        JSONObject instructionJSON = parseJSONInstruction(instructionFile);
+        try {
+            // Get fields from instruction object
+            byte[] encryptedSymmetricKeyBytes = instructionJSON.getString(Headers.CRYPTO_KEY).getBytes();
+            byte[] initVectorBytes = instructionJSON.getString(Headers.CRYPTO_IV).getBytes();
+            String materialsDescriptionString = instructionJSON.getString(Headers.MATERIALS_DESCRIPTION);
+            Map<String, String> materialsDescription = convertJSONToMap(materialsDescriptionString);
+
+            // Decode from Base 64 to standard binary bytes
+            encryptedSymmetricKeyBytes = Base64.decodeBase64(encryptedSymmetricKeyBytes);
+            initVectorBytes = Base64.decodeBase64(initVectorBytes);
+
+            if (encryptedSymmetricKeyBytes == null || initVectorBytes == null || materialsDescription == null) {
+                // If necessary encryption info was not found in the instruction file, throw an exception.
+                throw new AmazonClientException(
+                        String.format("Necessary encryption info not found in the instruction file '%s' in bucket '%s'",
+                                      instructionFile.getKey(), instructionFile.getBucketName()));
+            }
+
+            EncryptionMaterials materials = retrieveOriginalMaterials(materialsDescription, materialsProvider);
+            // If we're unable to retrieve the original encryption materials, we can't decrypt the object, so
+            // throw an exception.
+            if (materials == null) {
+                throw new AmazonClientException(
+                        String.format("Unable to retrieve the encryption materials that originally " +
+                                "encrypted object corresponding to instruction file '%s' in bucket '%s'.",
+                                instructionFile.getKey(), instructionFile.getBucketName()));
+            }
+
+            // Decrypt the symmetric key and create the symmetric cipher
+            SecretKey symmetricKey = getDecryptedSymmetricKey(encryptedSymmetricKeyBytes, materials, cryptoProvider);
+            CipherFactory cipherFactory = new CipherFactory(symmetricKey, Cipher.DECRYPT_MODE, initVectorBytes, cryptoProvider);
+
+            return new EncryptionInstruction(materialsDescription, encryptedSymmetricKeyBytes, symmetricKey, cipherFactory);
+        } catch (JSONException e) {
+            throw new AmazonClientException("Unable to parse retrieved instruction file : " + e.getMessage());
+        }
+    }
+

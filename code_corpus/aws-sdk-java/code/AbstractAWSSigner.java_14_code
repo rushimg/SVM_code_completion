@@ -1,0 +1,22 @@
+    protected AWSCredentials sanitizeCredentials(AWSCredentials credentials) {
+        String accessKeyId = null;
+        String secretKey   = null;
+        String token = null;
+        synchronized (credentials) {
+            accessKeyId = credentials.getAWSAccessKeyId();
+            secretKey   = credentials.getAWSSecretKey();
+            if ( credentials instanceof AWSSessionCredentials ) {
+                token = ((AWSSessionCredentials) credentials).getSessionToken();
+            }
+        }
+        if (secretKey != null) secretKey = secretKey.trim();
+        if (accessKeyId != null) accessKeyId = accessKeyId.trim();
+        if (token != null) token = token.trim();
+
+        if (credentials instanceof AWSSessionCredentials) {
+            return new BasicSessionCredentials(accessKeyId, secretKey, token);
+        }
+
+        return new BasicAWSCredentials(accessKeyId, secretKey);
+    }
+

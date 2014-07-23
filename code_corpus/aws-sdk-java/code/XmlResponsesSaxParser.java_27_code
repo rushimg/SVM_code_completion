@@ -1,0 +1,21 @@
+                currentGrantee = GroupGrantee.parseGroupGrantee(elementText);
+            } else if (name.equals("DisplayName")) {
+                ((CanonicalGrantee) currentGrantee).setDisplayName(elementText);
+            } else if (name.equals("Permission")) {
+                currentPermission = Permission.parsePermission(elementText);
+            } else if (name.equals("Grant")) {
+                accessControlList.grantPermission(currentGrantee, currentPermission);
+                currentGrantee = null;
+                currentPermission = null;
+            } else if (name.equals("AccessControlList")) {
+                insideACL = false;
+            }
+            this.currText = new StringBuilder();
+        }
+
+        @Override
+        public void characters(char ch[], int start, int length) {
+            this.currText.append(ch, start, length);
+        }
+    }
+

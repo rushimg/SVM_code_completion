@@ -1,0 +1,27 @@
+    private static void addAclHeaders(Request<? extends AmazonWebServiceRequest> request, AccessControlList acl) {
+        Set<Grant> grants = acl.getGrants();
+        Map<Permission, Collection<Grantee>> grantsByPermission = new HashMap<Permission, Collection<Grantee>>();
+        for ( Grant grant : grants ) {
+            if ( !grantsByPermission.containsKey(grant.getPermission()) ) {
+                grantsByPermission.put(grant.getPermission(), new LinkedList<Grantee>());
+            }
+            grantsByPermission.get(grant.getPermission()).add(grant.getGrantee());
+        }
+        for ( Permission permission : Permission.values() ) {
+            if ( grantsByPermission.containsKey(permission) ) {
+                Collection<Grantee> grantees = grantsByPermission.get(permission);
+                boolean seenOne = false;
+                StringBuilder granteeString = new StringBuilder();
+                for ( Grantee grantee : grantees ) {
+                    if ( !seenOne )
+                        seenOne = true;
+                    else
+                        granteeString.append(", ");
+                    granteeString.append(grantee.getTypeIdentifier()).append("=").append("\"")
+                            .append(grantee.getIdentifier()).append("\"");
+                }
+                request.addHeader(permission.getHeaderName(), granteeString.toString());
+            }
+        }
+    }
+

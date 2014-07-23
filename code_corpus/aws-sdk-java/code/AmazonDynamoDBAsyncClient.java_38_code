@@ -1,0 +1,19 @@
+    public Future<GetItemResult> getItemAsync(
+            final GetItemRequest getItemRequest,
+            final AsyncHandler<GetItemRequest, GetItemResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<GetItemResult>() {
+            public GetItemResult call() throws Exception {
+            	GetItemResult result;
+                try {
+            		result = getItem(getItemRequest);
+            	} catch (Exception ex) {
+            	    asyncHandler.onError(ex);
+    				throw ex;
+            	}
+            	asyncHandler.onSuccess(getItemRequest, result);
+               	return result;
+		    }
+		});
+    }
+    

@@ -1,0 +1,42 @@
+    private UploadResult upload() throws Exception, InterruptedException {
+
+        UploadResult result = multipartUploadCallable.call();
+
+        if ( result != null ) {
+            uploadComplete();
+        } else {
+            uploadId = multipartUploadCallable.getMultipartUploadId();
+            futures.addAll(multipartUploadCallable.getFutures());
+            reschedule();
+        }
+
+        return result;
+    }
+
+    private void uploadComplete() {
+        markAllDone();
+        transfer.setState(TransferState.Completed);
+
+        // AmazonS3Client takes care of all the events for single part uploads,
+        // so we only need to send a completed event for multipart uploads.
+        if (multipartUploadCallable.isMultipartUpload()) {
+            fireProgressEvent(ProgressEvent.COMPLETED_EVENT_CODE);
+        }
+    }
+
+    private void reschedule()  {
+        setNextFuture(timedThreadPool.schedule(new Callable<UploadResult>() {
+            public UploadResult call() throws Exception {
+                setNextFuture(threadPool.submit(UploadMonitor.this));
+                return null;
+            }
+        }, pollInterval, TimeUnit.MILLISECONDS));
+    }
+
+    private void fireProgressEvent(final int eventType) {
+        if (progressListenerChainCallbackExecutor == null) return;
+        ProgressEvent event = new ProgressEvent(0);
+        event.setEventCode(eventType);
+        progressListenerChainCallbackExecutor.progressChanged(event);
+    }
+

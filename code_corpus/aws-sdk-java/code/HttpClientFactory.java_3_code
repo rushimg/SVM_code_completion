@@ -1,0 +1,22 @@
+        String proxyHost = config.getProxyHost();
+        int proxyPort = config.getProxyPort();
+        if (proxyHost != null && proxyPort > 0) {
+            AmazonHttpClient.log.info("Configuring Proxy. Proxy Host: " + proxyHost + " " + "Proxy Port: " + proxyPort);
+            HttpHost proxyHttpHost = new HttpHost(proxyHost, proxyPort);
+            httpClient.getParams().setParameter(ConnRoutePNames.DEFAULT_PROXY, proxyHttpHost);
+
+            String proxyUsername    = config.getProxyUsername();
+            String proxyPassword    = config.getProxyPassword();
+            String proxyDomain      = config.getProxyDomain();
+            String proxyWorkstation = config.getProxyWorkstation();
+
+            if (proxyUsername != null && proxyPassword != null) {
+                httpClient.getCredentialsProvider().setCredentials(
+                        new AuthScope(proxyHost, proxyPort),
+                        new NTCredentials(proxyUsername, proxyPassword, proxyWorkstation, proxyDomain));
+            }
+        }
+
+        return httpClient;
+    }
+

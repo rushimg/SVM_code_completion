@@ -1,0 +1,38 @@
+    public static URL convertRequestToUrl(Request<?> request, boolean removeLeadingSlashInResourcePath) {
+        String resourcePath = HttpUtils.urlEncode(request.getResourcePath(), true);
+        
+        // Removed the padding "/" that was already added into the request's resource path.
+        if (removeLeadingSlashInResourcePath
+                && resourcePath.startsWith("/")) {
+            resourcePath = resourcePath.substring(1);
+        }
+        
+        // Some http client libraries (e.g. Apache HttpClient) cannot handle
+        // consecutive "/"s between URL authority and path components.
+        // So we escape "////..." into "/%2F%2F%2F...", in the same way as how
+        // we treat consecutive "/"s in AmazonS3Client#presignRequest(...)
+        String urlPath = "/" + resourcePath;
+        urlPath = urlPath.replaceAll("(?<=/)/", "%2F");
+        String urlString =  request.getEndpoint() + urlPath;
+
+        boolean firstParam = true;
+        for (String param : request.getParameters().keySet()) {
+            if (firstParam) {
+                urlString += "?";
+                firstParam = false;
+            } else {
+                urlString += "&";
+            }
+
+            String value = request.getParameters().get(param);
+            urlString += param + "=" + HttpUtils.urlEncode(value, false);
+        }
+
+        try {
+            return new URL(urlString);
+        } catch (MalformedURLException e) {
+            throw new AmazonClientException(
+                    "Unable to convert request to well formed URL: " + e.getMessage(), e);
+        }
+    }
+

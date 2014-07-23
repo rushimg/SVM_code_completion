@@ -1,0 +1,49 @@
+    @Override
+    public void addProperty(String propertyName, Object value) {
+        List<Object> propertyList = properties.get(propertyName);
+        if (propertyList == null) {
+            propertyList = new ArrayList<Object>();
+            properties.put(propertyName, propertyList);
+        }
+        
+        propertyList.add(value);
+    }
+
+    @Override
+    public void addProperty(MetricType f, Object value) {
+        addProperty(f.name(), value);
+    }
+
+    @Override
+    public void log() {
+        StringBuilder builder = new StringBuilder();
+
+        for (Entry<String, List<Object>> entry : properties.entrySet()) {
+            keyValueFormat(entry.getKey(), entry.getValue(), builder);
+        }
+
+        for (Entry<String, Number> entry : timingInfo.getAllCounters().entrySet()) {
+            keyValueFormat(entry.getKey(), entry.getValue(), builder);
+        }
+
+        for (Entry<String, List<TimingInfo>> entry : timingInfo.getSubMeasurementsByName().entrySet()) {
+            keyValueFormat(entry.getKey(), entry.getValue(), builder);
+        }
+
+        latencyLogger.info(builder.toString());
+    }
+
+    private void keyValueFormat(Object key, Object value, StringBuilder builder) {
+        builder.append(key).append(KEY_VALUE_SEPARATOR).append(value).append(COMMA_SEPARATOR);
+    }
+
+    @Override
+    public List<Object> getProperty(String propertyName){
+    	return properties.get(propertyName);
+    }
+
+    @Override
+    public List<Object> getProperty(MetricType f){
+        return getProperty(f.name());
+    }
+

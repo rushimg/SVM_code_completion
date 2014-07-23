@@ -1,0 +1,19 @@
+    public Future<DescribeCustomerGatewaysResult> describeCustomerGatewaysAsync(
+            final DescribeCustomerGatewaysRequest describeCustomerGatewaysRequest,
+            final AsyncHandler<DescribeCustomerGatewaysRequest, DescribeCustomerGatewaysResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeCustomerGatewaysResult>() {
+            public DescribeCustomerGatewaysResult call() throws Exception {
+                DescribeCustomerGatewaysResult result;
+                try {
+                    result = describeCustomerGateways(describeCustomerGatewaysRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeCustomerGatewaysRequest, result);
+                   return result;
+            }
+        });
+    }
+    

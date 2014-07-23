@@ -1,0 +1,18 @@
+    public Future<Void> attachInstancesAsync(
+            final AttachInstancesRequest attachInstancesRequest,
+            final AsyncHandler<AttachInstancesRequest, Void> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<Void>() {
+            public Void call() throws Exception {
+                try {
+                    attachInstances(attachInstancesRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(attachInstancesRequest, null);
+                   return null;
+            }
+        });
+    }
+    

@@ -1,0 +1,33 @@
+public abstract class AsyncScope extends AsyncContextAware implements Cancelable {
+
+    private final AsyncScopeContext context;
+
+    public AsyncScope() {
+        // The reason this(...) is not called is to keep the same stack depth for both constructors.
+        // It simplifies creation of async stack traces
+        this.context = new AsyncScopeContext(this, false, false);
+    }
+
+    public AsyncScope(boolean disableAsyncStackTrace, boolean excludeAsyncScopeStack) {
+        this.context = new AsyncScopeContext(this, disableAsyncStackTrace, excludeAsyncScopeStack);
+    }
+
+    public void cancel(Throwable cause) {
+        context.cancel(cause);
+    }
+
+    @Override
+    public boolean isCancelRequested() {
+        return context.isCancelRequested();
+    }
+    
+    
+
+    public List<AsyncTaskInfo> getAsynchronousThreadDump() {
+        return context.getAsynchronousStackTraceDump();
+    }
+
+    public String getAsynchronousThreadDumpAsString() {
+        return context.getAsynchronousStackTraceDumpAsString();
+    }
+

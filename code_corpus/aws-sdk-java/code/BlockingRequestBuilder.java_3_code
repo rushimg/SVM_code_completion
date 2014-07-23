@@ -1,0 +1,41 @@
+    Iterable<PutMetricDataRequest> nextUploadUnits() throws InterruptedException {
+        final Map<String,MetricDatum> uniqueMetrics = new HashMap<String,MetricDatum>();
+        long startNano = System.nanoTime();
+        
+        while(true) {
+            final long elapsedNano = System.nanoTime() - startNano;
+            if (elapsedNano >= timeoutNano) {
+                return toPutMetricDataRequests(uniqueMetrics);
+            }
+            MetricDatum datum = queue.poll(timeoutNano - elapsedNano, TimeUnit.NANOSECONDS);
+            if (datum == null) {
+                // timed out
+                if (uniqueMetrics.size() > 0) {
+                    // return whatever we have so far
+                    return toPutMetricDataRequests(uniqueMetrics);
+                }
+                // zero AWS related metrics
+                if (AwsSdkMetrics.isMachineMetricExcluded()) {
+                    // Short note: nothing to do, so just wait indefinitely.
+                    // (Long note: There exists a pedagogical case where the
+                    // next statement is executed followed by no subsequent AWS
+                    // traffic whatsoever, and then the machine metric is enabled 
+                    // via JMX.
+                    // In such case, we require the metric generation to be
+                    // disabled and then re-enabled (eg via JMX).
+                    // So why not always wake up periodically instead of going
+                    // into long wait ?
+                    // I (hchar@) think we should optimize for the most typical
+                    // cases instead of the edge cases. Going into long wait has
+                    // the benefit of relatively less runtime footprint.)
+                    datum = queue.take();   
+                    startNano = System.nanoTime();
+                }
+            }
+            // Note at this point datum is null if and only if there is no
+            // pending AWS related metrics but machine metrics is enabled
+            if (datum != null)
+                summarize(datum, uniqueMetrics);
+        }
+    }
+

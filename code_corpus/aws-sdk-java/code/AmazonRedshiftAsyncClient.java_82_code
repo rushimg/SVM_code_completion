@@ -1,0 +1,19 @@
+    public Future<Snapshot> deleteClusterSnapshotAsync(
+            final DeleteClusterSnapshotRequest deleteClusterSnapshotRequest,
+            final AsyncHandler<DeleteClusterSnapshotRequest, Snapshot> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<Snapshot>() {
+            public Snapshot call() throws Exception {
+                Snapshot result;
+                try {
+                    result = deleteClusterSnapshot(deleteClusterSnapshotRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(deleteClusterSnapshotRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -1,0 +1,19 @@
+    public Future<ListPlatformApplicationsResult> listPlatformApplicationsAsync(
+            final ListPlatformApplicationsRequest listPlatformApplicationsRequest,
+            final AsyncHandler<ListPlatformApplicationsRequest, ListPlatformApplicationsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ListPlatformApplicationsResult>() {
+            public ListPlatformApplicationsResult call() throws Exception {
+                ListPlatformApplicationsResult result;
+                try {
+                    result = listPlatformApplications(listPlatformApplicationsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(listPlatformApplicationsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

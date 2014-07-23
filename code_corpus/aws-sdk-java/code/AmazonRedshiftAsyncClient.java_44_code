@@ -1,0 +1,19 @@
+    public Future<Cluster> deleteClusterAsync(
+            final DeleteClusterRequest deleteClusterRequest,
+            final AsyncHandler<DeleteClusterRequest, Cluster> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<Cluster>() {
+            public Cluster call() throws Exception {
+                Cluster result;
+                try {
+                    result = deleteCluster(deleteClusterRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(deleteClusterRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -1,0 +1,17 @@
+    public CopyObjectResult copyObject(CopyObjectRequest copyObjectRequest)
+            throws AmazonClientException, AmazonServiceException {
+        assertParameterNotNull(copyObjectRequest.getSourceBucketName(),
+                "The source bucket name must be specified when copying an object");
+        assertParameterNotNull(copyObjectRequest.getSourceKey(),
+                "The source object key must be specified when copying an object");
+        assertParameterNotNull(copyObjectRequest.getDestinationBucketName(),
+                "The destination bucket name must be specified when copying an object");
+        assertParameterNotNull(copyObjectRequest.getDestinationKey(),
+                "The destination object key must be specified when copying an object");
+
+        String destinationKey = copyObjectRequest.getDestinationKey();
+        String destinationBucketName = copyObjectRequest.getDestinationBucketName();
+
+        Request<CopyObjectRequest> request = createRequest(destinationBucketName, destinationKey, copyObjectRequest, HttpMethodName.PUT);
+
+        populateRequestWithCopyObjectParameters(request, copyObjectRequest);

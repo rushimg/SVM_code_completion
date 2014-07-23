@@ -1,0 +1,29 @@
+    public void loadAndReplaceMimetypes(InputStream is) throws IOException {
+        BufferedReader br = new BufferedReader(new InputStreamReader(is));
+        String line =  null;
+
+        while ((line = br.readLine()) != null) {
+            line = line.trim();
+
+            if (line.startsWith("#") || line.length() == 0) {
+                // Ignore comments and empty lines.
+            } else {
+                StringTokenizer st = new StringTokenizer(line, " \t");
+                if (st.countTokens() > 1) {
+                    String mimetype = st.nextToken();
+                    while (st.hasMoreTokens()) {
+                        String extension = st.nextToken();
+                        extensionToMimetypeMap.put(extension, mimetype);
+                        if (log.isDebugEnabled()) {
+                        	log.debug("Setting mime type for extension '" + extension + "' to '" + mimetype + "'");
+                        }
+                    }
+                } else {
+                	if (log.isDebugEnabled()) {
+                		log.debug("Ignoring mimetype with no associated file extensions: '" + line + "'");
+                	}
+                }
+            }
+        }
+    }
+

@@ -1,0 +1,44 @@
+    String getAttributeName(Method getter) {
+        synchronized (attributeNameCache) {
+            if ( !attributeNameCache.containsKey(getter) ) {
+
+                // First check for a hash key annotation
+                DynamoDBHashKey hashKeyAnnotation = getter.getAnnotation(DynamoDBHashKey.class);
+                if ( hashKeyAnnotation != null && hashKeyAnnotation.attributeName() != null
+                        && hashKeyAnnotation.attributeName().length() > 0 )
+                    return hashKeyAnnotation.attributeName();
+
+                // Then a range key
+                DynamoDBRangeKey rangeKey = getter.getAnnotation(DynamoDBRangeKey.class);
+                if ( rangeKey != null && rangeKey.attributeName() != null && rangeKey.attributeName().length() > 0 )
+                    return rangeKey.attributeName();
+
+                // Then an attribute
+                DynamoDBAttribute attribute = getter.getAnnotation(DynamoDBAttribute.class);
+                if ( attribute != null && attribute.attributeName() != null && attribute.attributeName().length() > 0 )
+                    return attribute.attributeName();
+
+                // Finally a version attribute
+                DynamoDBVersionAttribute version = getter.getAnnotation(DynamoDBVersionAttribute.class);
+                if ( version != null && version.attributeName() != null && version.attributeName().length() > 0 )
+                    return version.attributeName();
+
+                // Default to method name
+                String attributeName = null;
+                if ( getter.getName().startsWith("get") ) {
+                    attributeName = getter.getName().substring("get".length());
+                } else if ( getter.getName().startsWith("is") ) {
+                    attributeName = getter.getName().substring("is".length());
+                } else {
+                    throw new DynamoDBMappingException("Getter must begin with 'get' or 'is'");
+                }
+
+                // Lowercase the first letter of the name
+                attributeName = attributeName.substring(0, 1).toLowerCase() + attributeName.substring(1);
+                attributeNameCache.put(getter, attributeName);
+            }
+        }
+        
+        return attributeNameCache.get(getter);
+    }
+

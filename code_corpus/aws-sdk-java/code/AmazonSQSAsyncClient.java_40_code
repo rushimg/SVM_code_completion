@@ -1,0 +1,19 @@
+    public Future<CreateQueueResult> createQueueAsync(
+            final CreateQueueRequest createQueueRequest,
+            final AsyncHandler<CreateQueueRequest, CreateQueueResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<CreateQueueResult>() {
+            public CreateQueueResult call() throws Exception {
+                CreateQueueResult result;
+                try {
+                    result = createQueue(createQueueRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(createQueueRequest, result);
+                   return result;
+            }
+        });
+    }
+    

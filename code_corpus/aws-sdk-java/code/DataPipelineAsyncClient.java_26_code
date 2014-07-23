@@ -1,0 +1,19 @@
+    public Future<QueryObjectsResult> queryObjectsAsync(
+            final QueryObjectsRequest queryObjectsRequest,
+            final AsyncHandler<QueryObjectsRequest, QueryObjectsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<QueryObjectsResult>() {
+            public QueryObjectsResult call() throws Exception {
+                QueryObjectsResult result;
+                try {
+                    result = queryObjects(queryObjectsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(queryObjectsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

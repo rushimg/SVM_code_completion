@@ -1,0 +1,19 @@
+    public Future<CacheParameterGroup> createCacheParameterGroupAsync(
+            final CreateCacheParameterGroupRequest createCacheParameterGroupRequest,
+            final AsyncHandler<CreateCacheParameterGroupRequest, CacheParameterGroup> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<CacheParameterGroup>() {
+            public CacheParameterGroup call() throws Exception {
+                CacheParameterGroup result;
+                try {
+                    result = createCacheParameterGroup(createCacheParameterGroupRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(createCacheParameterGroupRequest, result);
+                   return result;
+            }
+        });
+    }
+    

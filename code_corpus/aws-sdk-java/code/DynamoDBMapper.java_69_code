@@ -1,0 +1,43 @@
+    public Map<String, List<Object>> batchLoad(List<Object> itemsToGet, DynamoDBMapperConfig config) {
+        config = mergeConfig(config);
+        boolean consistentReads = (config.getConsistentReads() == ConsistentReads.CONSISTENT);
+
+        if ( itemsToGet == null || itemsToGet.isEmpty() ) {
+            return new HashMap<String, List<Object>>();
+        }
+
+        Map<String, KeysAndAttributes> requestItems = new HashMap<String, KeysAndAttributes>();
+        Map<String, Class<?>> classesByTableName = new HashMap<String, Class<?>>();
+        Map<String, List<Object>> resultSet = new HashMap<String, List<Object>>();
+        int count = 0;
+
+        for ( Object keyObject : itemsToGet ) {
+            Class<?> clazz = keyObject.getClass();
+
+            String tableName = getTableName(clazz, config);
+            classesByTableName.put(tableName, clazz);
+
+            if ( !requestItems.containsKey(tableName) ) {
+                requestItems.put(
+                        tableName,
+                        new KeysAndAttributes().withConsistentRead(consistentReads).withKeys(
+                                new LinkedList<Map<String, AttributeValue>>()));
+            }
+
+            requestItems.get(tableName).getKeys().add(getKey(keyObject));
+
+            // Reach the maximum number which can be handled in a single batchGet
+            if ( ++count == 100 ) {
+                processBatchGetRequest(classesByTableName, requestItems, resultSet, config);
+                requestItems.clear();
+                count = 0;
+            }
+        }
+
+        if ( count > 0 ) {
+            processBatchGetRequest(classesByTableName, requestItems, resultSet, config);
+        }
+
+        return resultSet;
+    }
+

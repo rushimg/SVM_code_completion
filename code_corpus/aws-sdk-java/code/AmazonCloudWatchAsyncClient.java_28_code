@@ -1,0 +1,19 @@
+    public Future<DescribeAlarmsForMetricResult> describeAlarmsForMetricAsync(
+            final DescribeAlarmsForMetricRequest describeAlarmsForMetricRequest,
+            final AsyncHandler<DescribeAlarmsForMetricRequest, DescribeAlarmsForMetricResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeAlarmsForMetricResult>() {
+            public DescribeAlarmsForMetricResult call() throws Exception {
+                DescribeAlarmsForMetricResult result;
+                try {
+                    result = describeAlarmsForMetric(describeAlarmsForMetricRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeAlarmsForMetricRequest, result);
+                   return result;
+            }
+        });
+    }
+    

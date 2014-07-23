@@ -1,0 +1,19 @@
+    public Future<PollForTaskResult> pollForTaskAsync(
+            final PollForTaskRequest pollForTaskRequest,
+            final AsyncHandler<PollForTaskRequest, PollForTaskResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<PollForTaskResult>() {
+            public PollForTaskResult call() throws Exception {
+                PollForTaskResult result;
+                try {
+                    result = pollForTask(pollForTaskRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(pollForTaskRequest, result);
+                   return result;
+            }
+        });
+    }
+    

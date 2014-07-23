@@ -1,0 +1,19 @@
+    public Future<RunJobFlowResult> runJobFlowAsync(
+            final RunJobFlowRequest runJobFlowRequest,
+            final AsyncHandler<RunJobFlowRequest, RunJobFlowResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<RunJobFlowResult>() {
+            public RunJobFlowResult call() throws Exception {
+                RunJobFlowResult result;
+                try {
+                    result = runJobFlow(runJobFlowRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(runJobFlowRequest, result);
+                   return result;
+            }
+        });
+    }
+    

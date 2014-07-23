@@ -1,0 +1,39 @@
+           <Rule>
+               <ID>logs-rule</ID>
+               <Prefix>logs/</Prefix>
+               <Status>Enabled</Status>
+               <Transition>
+                   <Days>30</Days>
+                   <StorageClass>GLACIER</StorageClass>
+               </Transition>
+               <Expiration>
+                   <Days>365</Days>
+               </Expiration>
+           </Rule>
+           <Rule>
+               <ID>image-rule</ID>
+               <Prefix>image/</Prefix>
+               <Status>Enabled</Status>
+               <Transition>
+                   <Date>2012-12-31T00:00:00.000Z</Date>
+                   <StorageClass>GLACIER</StorageClass>
+               </Transition>
+               <Expiration>
+                   <Date>2020-12-31T00:00:00.000Z</Date>
+               </Expiration>
+          </Rule>
+    </LifecycleConfiguration>
+    public byte[] convertToXmlByteArray(BucketLifecycleConfiguration config) throws AmazonClientException {
+
+        XmlWriter xml = new XmlWriter();
+        xml.start("LifecycleConfiguration");
+
+        for (Rule rule : config.getRules()) {
+            writeRule(xml, rule);
+        }
+
+        xml.end();
+
+        return xml.getBytes();
+    }
+

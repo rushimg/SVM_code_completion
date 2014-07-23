@@ -1,0 +1,19 @@
+    public Future<CreateAccessKeyResult> createAccessKeyAsync(
+            final CreateAccessKeyRequest createAccessKeyRequest,
+            final AsyncHandler<CreateAccessKeyRequest, CreateAccessKeyResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<CreateAccessKeyResult>() {
+            public CreateAccessKeyResult call() throws Exception {
+                CreateAccessKeyResult result;
+                try {
+                    result = createAccessKey(createAccessKeyRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(createAccessKeyRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -1,0 +1,18 @@
+    public void delete(Object object, DynamoDBMapperConfig config) {
+        config = mergeConfig(config);
+
+        Class<?> clazz = object.getClass();
+
+        String tableName = getTableName(clazz, config);
+
+        Method hashKeyGetter = reflector.getHashKeyGetter(clazz);
+        AttributeValue hashKeyElement = getHashKeyElement(safeInvoke(hashKeyGetter, object), hashKeyGetter);
+
+        AttributeValue rangeKeyElement = null;
+        Method rangeKeyGetter = reflector.getRangeKeyGetter(clazz);
+        if ( rangeKeyGetter != null ) {
+            rangeKeyElement = getRangeKeyElement(safeInvoke(rangeKeyGetter, object), rangeKeyGetter);
+        }
+
+        Key objectKey = new Key().withHashKeyElement(hashKeyElement).withRangeKeyElement(rangeKeyElement);
+

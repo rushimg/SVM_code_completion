@@ -1,0 +1,19 @@
+    public Future<CreateInstanceProfileResult> createInstanceProfileAsync(
+            final CreateInstanceProfileRequest createInstanceProfileRequest,
+            final AsyncHandler<CreateInstanceProfileRequest, CreateInstanceProfileResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<CreateInstanceProfileResult>() {
+            public CreateInstanceProfileResult call() throws Exception {
+                CreateInstanceProfileResult result;
+                try {
+                    result = createInstanceProfile(createInstanceProfileRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(createInstanceProfileRequest, result);
+                   return result;
+            }
+        });
+    }
+    

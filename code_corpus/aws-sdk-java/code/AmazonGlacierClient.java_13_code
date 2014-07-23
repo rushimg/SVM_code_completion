@@ -1,0 +1,25 @@
+    public ListPartsResult listParts(ListPartsRequest listPartsRequest) {
+        ExecutionContext executionContext = createExecutionContext(listPartsRequest);
+        AWSRequestMetrics awsRequestMetrics = executionContext.getAwsRequestMetrics();
+        awsRequestMetrics.startEvent(Field.ClientExecuteTime);
+        Request<ListPartsRequest> request = null;
+        Response<ListPartsResult> response = null;
+        try {
+            awsRequestMetrics.startEvent(Field.RequestMarshallTime);
+            try {
+                request = new ListPartsRequestMarshaller().marshall(listPartsRequest);
+                // Binds the request metrics to the current request.
+                request.setAWSRequestMetrics(awsRequestMetrics);
+            } finally {
+                awsRequestMetrics.endEvent(Field.RequestMarshallTime);
+            }
+            Unmarshaller<ListPartsResult, JsonUnmarshallerContext> unmarshaller = new ListPartsResultJsonUnmarshaller();
+            JsonResponseHandler<ListPartsResult> responseHandler = new JsonResponseHandler<ListPartsResult>(unmarshaller);
+            
+            response = invoke(request, responseHandler, executionContext);
+            return response.getAwsResponse();
+        } finally {
+            endClientExecution(awsRequestMetrics, request, response);
+        }
+    }
+

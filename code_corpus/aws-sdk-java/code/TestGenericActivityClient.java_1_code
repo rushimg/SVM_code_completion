@@ -1,0 +1,69 @@
+package com.amazonaws.services.simpleworkflow.flow.test;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import com.amazonaws.AmazonClientException;
+import com.amazonaws.AmazonServiceException;
+import com.amazonaws.services.simpleworkflow.AmazonSimpleWorkflow;
+import com.amazonaws.services.simpleworkflow.flow.ActivityExecutionContext;
+import com.amazonaws.services.simpleworkflow.flow.ActivityFailureException;
+import com.amazonaws.services.simpleworkflow.flow.ActivityTaskFailedException;
+import com.amazonaws.services.simpleworkflow.flow.ActivityTaskTimedOutException;
+import com.amazonaws.services.simpleworkflow.flow.DecisionContext;
+import com.amazonaws.services.simpleworkflow.flow.DecisionContextProvider;
+import com.amazonaws.services.simpleworkflow.flow.DecisionContextProviderImpl;
+import com.amazonaws.services.simpleworkflow.flow.ScheduleActivityTaskFailedException;
+import com.amazonaws.services.simpleworkflow.flow.common.FlowConstants;
+import com.amazonaws.services.simpleworkflow.flow.worker.ActivityTypeRegistrationOptions;
+import com.amazonaws.services.simpleworkflow.model.ActivityTask;
+import com.amazonaws.services.simpleworkflow.model.ActivityTaskTimeoutType;
+import com.amazonaws.services.simpleworkflow.model.ActivityType;
+import com.amazonaws.services.simpleworkflow.model.ScheduleActivityTaskFailedCause;
+import com.amazonaws.services.simpleworkflow.model.WorkflowExecution;
+
+public class TestGenericActivityClient implements GenericActivityClient {
+
+    private final class TestActivityExecutionContext extends ActivityExecutionContext {
+
+        private final ActivityTask activityTask;
+
+        private final WorkflowExecution workflowExecution;
+
+        private TestActivityExecutionContext(ActivityTask activityTask, WorkflowExecution workflowExecution) {
+            this.activityTask = activityTask;
+            this.workflowExecution = workflowExecution;
+        }
+
+        @Override
+        public void recordActivityHeartbeat(String details) throws AmazonServiceException, AmazonClientException {
+            //TODO: timeouts
+        }
+
+        @Override
+        public ActivityTask getTask() {
+            return activityTask;
+        }
+
+        @Override
+        public AmazonSimpleWorkflow getService() {
+            throw new UnsupportedOperationException("not implemented");
+        }
+
+        @Override
+        public String getTaskToken() {
+            return activityTask.getTaskToken();
+        }
+
+        @Override
+        public WorkflowExecution getWorkflowExecution() {
+            return workflowExecution;
+        }
+
+        @Override
+        public String getDomain() {
+            return "dummyTestDomain";
+        }
+        
+    }
+

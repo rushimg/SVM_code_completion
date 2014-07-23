@@ -1,0 +1,19 @@
+    public Future<DBInstance> rebootDBInstanceAsync(
+            final RebootDBInstanceRequest rebootDBInstanceRequest,
+            final AsyncHandler<RebootDBInstanceRequest, DBInstance> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DBInstance>() {
+            public DBInstance call() throws Exception {
+                DBInstance result;
+                try {
+                    result = rebootDBInstance(rebootDBInstanceRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(rebootDBInstanceRequest, result);
+                   return result;
+            }
+        });
+    }
+    

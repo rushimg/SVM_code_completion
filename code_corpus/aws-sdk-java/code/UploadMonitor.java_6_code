@@ -1,0 +1,30 @@
+    @Deprecated
+    public UploadMonitor(TransferManager manager, UploadImpl transfer, ExecutorService threadPool,
+            UploadCallable multipartUploadCallable, PutObjectRequest putObjectRequest,
+            com.amazonaws.services.s3.transfer.internal.ProgressListenerChain progressListenerChain) {
+        this(manager, transfer, threadPool, multipartUploadCallable, putObjectRequest, progressListenerChain.transformToGeneralProgressListenerChain());
+    }
+
+    public void setTimedThreadPool(ScheduledExecutorService timedThreadPool) {
+        this.timedThreadPool = timedThreadPool;
+    }
+
+    @Override
+    public UploadResult call() throws Exception {
+        try {
+            if ( uploadId == null ) {
+                return upload();
+            } else {
+                return poll();
+            }
+        } catch ( CancellationException e ) {
+            transfer.setState(TransferState.Canceled);
+            fireProgressEvent(ProgressEvent.CANCELED_EVENT_CODE);
+            throw new AmazonClientException("Upload canceled");
+        } catch ( Exception e ) {
+            transfer.setState(TransferState.Failed);
+            fireProgressEvent(ProgressEvent.FAILED_EVENT_CODE);
+            throw e;
+        }
+    }
+

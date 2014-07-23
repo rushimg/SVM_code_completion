@@ -1,0 +1,53 @@
+    public <T extends Object> T load(Class<T> clazz, Object hashKey, Object rangeKey, DynamoDBMapperConfig config) {
+        config = mergeConfig(config);
+
+        String tableName = getTableName(clazz, config);
+
+        // Fill in the hash key element in the service request
+        Method hashKeyGetter = reflector.getHashKeyGetter(clazz);
+        AttributeValue hashKeyElement = getHashKeyElement(hashKey, hashKeyGetter);
+
+        // Determine the range key, if provided
+        AttributeValue rangeKeyElement = null;
+        if ( rangeKey != null ) {
+            Method rangeKeyMethod = reflector.getRangeKeyGetter(clazz);
+            if ( rangeKeyMethod == null ) {
+                throw new DynamoDBMappingException("Zero-parameter range key property must be annotated with "
+                        + DynamoDBRangeKey.class);
+            }
+            rangeKeyElement = getRangeKeyElement(rangeKey, rangeKeyMethod);
+        }
+
+        GetItemResult item = db.getItem(applyUserAgent(new GetItemRequest().withTableName(tableName)
+                .withKey(new Key().withHashKeyElement(hashKeyElement).withRangeKeyElement(rangeKeyElement))
+                .withConsistentRead(config.getConsistentReads() == ConsistentReads.CONSISTENT)));
+        Map<String, AttributeValue> itemAttributes = item.getItem();
+        if ( itemAttributes == null ) {
+            return null;
+        }
+
+        return marshallIntoObject(clazz, itemAttributes);
+    }
+
+    private <T> String getTableName(Class<T> clazz, DynamoDBMapperConfig config) {
+        DynamoDBTable table = reflector.getTable(clazz);
+        String tableName = table.tableName();
+        if ( config.getTableNameOverride() != null ) {
+            if ( config.getTableNameOverride().getTableName() != null ) {
+                tableName = config.getTableNameOverride().getTableName();
+            } else {
+                tableName = config.getTableNameOverride().getTableNamePrefix() + tableName;
+            }
+        }
+
+        return tableName;
+    }
+
+    private AttributeValue getHashKeyElement(Object hashKey, Method hashKeyGetter) {
+        return getSimpleAttributeValue(hashKeyGetter, hashKey);
+    }
+
+    private AttributeValue getRangeKeyElement(Object rangeKey, Method rangeKeyGetter) {
+        return getSimpleAttributeValue(rangeKeyGetter, rangeKey);
+    }
+

@@ -1,0 +1,29 @@
+    protected String signAndBase64Encode(byte[] data, String key, SigningAlgorithm algorithm)
+            throws AmazonClientException {
+        try {
+            byte[] signature = sign(data, key.getBytes(DEFAULT_ENCODING), algorithm);
+            return new String(Base64.encodeBase64(signature));
+        } catch (Exception e) {
+            throw new AmazonClientException("Unable to calculate a request signature: " + e.getMessage(), e);
+        }
+    }
+
+    public byte[] sign(String stringData, byte[] key, SigningAlgorithm algorithm) throws AmazonClientException {
+        try {
+            byte[] data = stringData.getBytes(DEFAULT_ENCODING);
+            return sign(data, key, algorithm);
+        } catch (Exception e) {
+            throw new AmazonClientException("Unable to calculate a request signature: " + e.getMessage(), e);
+        }
+    }
+
+    protected byte[] sign(byte[] data, byte[] key, SigningAlgorithm algorithm) throws AmazonClientException {
+        try {
+            Mac mac = Mac.getInstance(algorithm.toString());
+            mac.init(new SecretKeySpec(key, algorithm.toString()));
+            return mac.doFinal(data);
+        } catch (Exception e) {
+            throw new AmazonClientException("Unable to calculate a request signature: " + e.getMessage(), e);
+        }
+    }
+

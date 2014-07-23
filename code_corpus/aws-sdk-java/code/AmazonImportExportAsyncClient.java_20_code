@@ -1,0 +1,19 @@
+    public Future<GetStatusResult> getStatusAsync(
+            final GetStatusRequest getStatusRequest,
+            final AsyncHandler<GetStatusRequest, GetStatusResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<GetStatusResult>() {
+            public GetStatusResult call() throws Exception {
+                GetStatusResult result;
+                try {
+                    result = getStatus(getStatusRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(getStatusRequest, result);
+                   return result;
+            }
+        });
+    }
+    

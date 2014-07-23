@@ -1,0 +1,19 @@
+    public Future<CheckDNSAvailabilityResult> checkDNSAvailabilityAsync(
+            final CheckDNSAvailabilityRequest checkDNSAvailabilityRequest,
+            final AsyncHandler<CheckDNSAvailabilityRequest, CheckDNSAvailabilityResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<CheckDNSAvailabilityResult>() {
+            public CheckDNSAvailabilityResult call() throws Exception {
+                CheckDNSAvailabilityResult result;
+                try {
+                    result = checkDNSAvailability(checkDNSAvailabilityRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(checkDNSAvailabilityRequest, result);
+                   return result;
+            }
+        });
+    }
+    

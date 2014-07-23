@@ -1,0 +1,42 @@
+    public Promise<Void> waitBlocked(Promise<?>... waitFor) {
+        if (scope == null) {
+            throw new IllegalArgumentException("Called outside of test method");
+        }
+        final Settable<Void> result = new Settable<Void>();
+        new Task(waitFor) {
+
+            @Override
+            protected void doExecute() throws Throwable {
+                waits.add(result);
+            }
+
+        };
+        return result;
+    }
+
+    public void setClockCurrentTimeMillis(long timeMillis) {
+        workflowClock.setCurrentTimeMillis(timeMillis);
+    }
+
+    public void clockAdvanceSeconds(final long seconds) {
+        workflowClock.advanceSeconds(seconds);
+    }
+
+    public void clockAdvanceSeconds(final long seconds, Promise<?>... waitFor) {
+        new Task(waitFor) {
+
+            @Override
+            protected void doExecute() throws Throwable {
+                workflowClock.advanceSeconds(seconds);
+            }
+        };
+    }
+
+    protected void beforeEvaluate(DecisionContext decisionContext) {
+        CurrentDecisionContext.set(decisionContext);
+    }
+
+    protected void afterEvaluate() {
+        CurrentDecisionContext.unset();
+    }
+

@@ -1,0 +1,19 @@
+    public Future<VerifyDomainIdentityResult> verifyDomainIdentityAsync(
+            final VerifyDomainIdentityRequest verifyDomainIdentityRequest,
+            final AsyncHandler<VerifyDomainIdentityRequest, VerifyDomainIdentityResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<VerifyDomainIdentityResult>() {
+            public VerifyDomainIdentityResult call() throws Exception {
+                VerifyDomainIdentityResult result;
+                try {
+                    result = verifyDomainIdentity(verifyDomainIdentityRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(verifyDomainIdentityRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -1,0 +1,19 @@
+    public Future<ActivityTask> pollForActivityTaskAsync(
+            final PollForActivityTaskRequest pollForActivityTaskRequest,
+            final AsyncHandler<PollForActivityTaskRequest, ActivityTask> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ActivityTask>() {
+            public ActivityTask call() throws Exception {
+                ActivityTask result;
+                try {
+                    result = pollForActivityTask(pollForActivityTaskRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(pollForActivityTaskRequest, result);
+                   return result;
+            }
+        });
+    }
+    

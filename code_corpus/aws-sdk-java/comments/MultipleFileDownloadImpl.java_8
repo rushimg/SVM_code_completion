@@ -1,0 +1,12 @@
+        /*
+         * The abort() method of DownloadImpl would attempt to notify its
+         * TransferStateChangeListener BEFORE it releases its intrinsic lock.
+         * And according to the implementation of
+         * MultipleFileTransferStateChangeListener which is actually shared by
+         * all sub-transfers, it will call the synchronized method isDone() on
+         * ALL sub-transfer objects. This would result in serious
+         * contention with the worker threads who try to acquire the same set of
+         * locks to call setState().
+         * In order to prevent this. we should first cancel all download jobs and
+         * then notify the listener.
+         */

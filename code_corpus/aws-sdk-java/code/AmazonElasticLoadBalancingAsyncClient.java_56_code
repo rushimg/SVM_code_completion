@@ -1,0 +1,19 @@
+    public Future<DescribeLoadBalancerAttributesResult> describeLoadBalancerAttributesAsync(
+            final DescribeLoadBalancerAttributesRequest describeLoadBalancerAttributesRequest,
+            final AsyncHandler<DescribeLoadBalancerAttributesRequest, DescribeLoadBalancerAttributesResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeLoadBalancerAttributesResult>() {
+            public DescribeLoadBalancerAttributesResult call() throws Exception {
+                DescribeLoadBalancerAttributesResult result;
+                try {
+                    result = describeLoadBalancerAttributes(describeLoadBalancerAttributesRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeLoadBalancerAttributesRequest, result);
+                   return result;
+            }
+        });
+    }
+    

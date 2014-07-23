@@ -1,0 +1,8 @@
+    public static S3Object decryptObjectUsingInstruction(S3Object object, EncryptionInstruction instruction) {
+        S3ObjectInputStream objectContent = object.getObjectContent();
+
+        InputStream decryptedInputStream = new RepeatableCipherInputStream(objectContent, instruction.getCipherFactory());
+        object.setObjectContent(new S3ObjectInputStream(decryptedInputStream, objectContent.getHttpRequest()));
+        return object;
+    }
+

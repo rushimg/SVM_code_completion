@@ -1,0 +1,19 @@
+    public Future<DescribeSpotPriceHistoryResult> describeSpotPriceHistoryAsync(
+            final DescribeSpotPriceHistoryRequest describeSpotPriceHistoryRequest,
+            final AsyncHandler<DescribeSpotPriceHistoryRequest, DescribeSpotPriceHistoryResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeSpotPriceHistoryResult>() {
+            public DescribeSpotPriceHistoryResult call() throws Exception {
+                DescribeSpotPriceHistoryResult result;
+                try {
+                    result = describeSpotPriceHistory(describeSpotPriceHistoryRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeSpotPriceHistoryRequest, result);
+                   return result;
+            }
+        });
+    }
+    

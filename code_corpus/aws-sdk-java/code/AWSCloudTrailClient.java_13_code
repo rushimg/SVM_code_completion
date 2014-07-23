@@ -1,0 +1,25 @@
+    public CreateTrailResult createTrail(CreateTrailRequest createTrailRequest) {
+        ExecutionContext executionContext = createExecutionContext(createTrailRequest);
+        AWSRequestMetrics awsRequestMetrics = executionContext.getAwsRequestMetrics();
+        awsRequestMetrics.startEvent(Field.ClientExecuteTime);
+        Request<CreateTrailRequest> request = null;
+        Response<CreateTrailResult> response = null;
+        try {
+            awsRequestMetrics.startEvent(Field.RequestMarshallTime);
+            try {
+                request = new CreateTrailRequestMarshaller().marshall(createTrailRequest);
+                // Binds the request metrics to the current request.
+                request.setAWSRequestMetrics(awsRequestMetrics);
+            } finally {
+                awsRequestMetrics.endEvent(Field.RequestMarshallTime);
+            }
+            Unmarshaller<CreateTrailResult, JsonUnmarshallerContext> unmarshaller = new CreateTrailResultJsonUnmarshaller();
+            JsonResponseHandler<CreateTrailResult> responseHandler = new JsonResponseHandler<CreateTrailResult>(unmarshaller);
+            
+            response = invoke(request, responseHandler, executionContext);
+            return response.getAwsResponse();
+        } finally {
+            endClientExecution(awsRequestMetrics, request, response);
+        }
+    }
+

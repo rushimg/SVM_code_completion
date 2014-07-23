@@ -1,0 +1,19 @@
+    public Future<DescribeAvailabilityZonesResult> describeAvailabilityZonesAsync(
+            final DescribeAvailabilityZonesRequest describeAvailabilityZonesRequest,
+            final AsyncHandler<DescribeAvailabilityZonesRequest, DescribeAvailabilityZonesResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeAvailabilityZonesResult>() {
+            public DescribeAvailabilityZonesResult call() throws Exception {
+                DescribeAvailabilityZonesResult result;
+                try {
+                    result = describeAvailabilityZones(describeAvailabilityZonesRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeAvailabilityZonesRequest, result);
+                   return result;
+            }
+        });
+    }
+    

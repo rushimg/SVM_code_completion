@@ -1,0 +1,274 @@
+    private void processKeyConditions(Class<?> clazz,
+                                      QueryRequest queryRequest,
+                                      Map<String, Condition> hashKeyConditions,
+                                      Map<String, Condition> rangeKeyConditions) {
+        // There should be least one hash key condition.
+        if (hashKeyConditions == null || hashKeyConditions.isEmpty()) {
+            throw new IllegalArgumentException("Illegal query expression: No hash key condition is found in the query");
+        }
+        // We don't allow multiple range key conditions.
+        if (rangeKeyConditions != null && rangeKeyConditions.size() > 1) {
+            throw new IllegalArgumentException(
+                    "Illegal query expression: Conditions on multiple range keys ("
+                    + rangeKeyConditions.keySet().toString()
+                    + ") are found in the query. DynamoDB service only accepts up to ONE range key condition.");
+        }
+        final boolean hasRangeKeyCondition = (rangeKeyConditions != null)
+                                            && (!rangeKeyConditions.isEmpty());
+        final String userProvidedIndexName = queryRequest.getIndexName();
+        final String primaryHashKeyName = reflector.getPrimaryHashKeyName(clazz);
+
+        // First collect the names of all the global/local secondary indexes that could be applied to this query.
+        // If the user explicitly specified an index name, we also need to
+        //   1) check the index is applicable for both hash and range key conditions
+        //   2) choose one hash key condition if there are more than one of them
+        boolean hasPrimaryHashKeyCondition = false;
+        final Map<String, Set<String>> annotatedGSIsOnHashKeys = new HashMap<String, Set<String>>();
+        String hashKeyNameForThisQuery = null;
+
+        boolean hasPrimaryRangeKeyCondition = false;
+        final Set<String> annotatedLSIsOnRangeKey = new HashSet<String>();
+        final Set<String> annotatedGSIsOnRangeKey = new HashSet<String>();
+
+        // Range key condition
+        String rangeKeyNameForThisQuery = null;
+        if (hasRangeKeyCondition) {
+            for (String rangeKeyName : rangeKeyConditions.keySet()) {
+                rangeKeyNameForThisQuery = rangeKeyName;
+
+                if (reflector.hasPrimaryRangeKey(clazz) 
+	                && rangeKeyName.equals(reflector.getPrimaryRangeKeyName(clazz))) {
+                    hasPrimaryRangeKeyCondition = true;
+                }
+
+                List<String> annotatedLSI = reflector.getLocalSecondaryIndexNamesByIndexKeyName(clazz, rangeKeyName);
+                if (annotatedLSI != null) {
+                    annotatedLSIsOnRangeKey.addAll(annotatedLSI);
+                }
+                List<String> annotatedGSI = reflector.getGlobalSecondaryIndexNamesByIndexKeyName(clazz, rangeKeyName, false);
+                if (annotatedGSI != null) {
+                    annotatedGSIsOnRangeKey.addAll(annotatedGSI);
+                }
+            }
+
+            if ( !hasPrimaryRangeKeyCondition
+                 && annotatedLSIsOnRangeKey.isEmpty()
+                 && annotatedGSIsOnRangeKey.isEmpty()) {
+                throw new DynamoDBMappingException(
+                        "The query contains a condition on a range key (" +
+                        rangeKeyNameForThisQuery + ") " +
+                        "that is not annotated with either @DynamoDBRangeKey or @DynamoDBIndexRangeKey.");
+            }
+        }
+
+        final boolean userProvidedLSI = (userProvidedIndexName != null)
+                                        && (annotatedLSIsOnRangeKey.contains(userProvidedIndexName));
+        final boolean userProvidedGSI = (userProvidedIndexName != null)
+                                        && ( !hasRangeKeyCondition   // it must be a GSI if no range condition is specified.
+                                                || (annotatedGSIsOnRangeKey.contains(userProvidedIndexName)) );
+        if (userProvidedLSI && userProvidedGSI) {
+            throw new DynamoDBMappingException(
+                    "Invalid @DynamoDBIndexRangeKey annotation: " +
+                    "Index \"" + userProvidedIndexName + "\" " +
+                    "is annotateded as both the LSI and GSI for attribute " +
+                    "\"" + rangeKeyNameForThisQuery + "\".");
+        }
+
+        // Hash key conditions
+        for (String hashKeyName : hashKeyConditions.keySet()) {
+            if (hashKeyName.equals(primaryHashKeyName)) {
+                hasPrimaryHashKeyCondition = true;
+            }
+
+            List<String> annotatedGSINames = reflector.getGlobalSecondaryIndexNamesByIndexKeyName(clazz, hashKeyName, true);
+            annotatedGSIsOnHashKeys.put(hashKeyName,
+                    annotatedGSINames == null ? new HashSet<String>() : new HashSet<String>(annotatedGSINames));
+
+            // Additional validation if the user provided an index name.
+            if (userProvidedIndexName != null) {
+                boolean foundHashKeyConditionValidWithUserProvidedIndex = false;
+                if (userProvidedLSI && hashKeyName.equals(primaryHashKeyName)) {
+                    // found an applicable hash key condition (primary hash + LSI range)
+                    foundHashKeyConditionValidWithUserProvidedIndex = true;
+                } else if (userProvidedGSI &&
+                        annotatedGSINames != null && annotatedGSINames.contains(userProvidedIndexName)) {
+                    // found an applicable hash key condition (GSI hash + range)
+                    foundHashKeyConditionValidWithUserProvidedIndex = true;
+                }
+                if (foundHashKeyConditionValidWithUserProvidedIndex) {
+                    if ( hashKeyNameForThisQuery != null ) {
+                        throw new IllegalArgumentException(
+                                "Ambiguous query expression: More than one hash key EQ conditions (" +
+                                hashKeyNameForThisQuery + ", " + hashKeyName +
+                                ") are applicable to the specified index ("
+                                + userProvidedIndexName + "). " +
+                                "Please provide only one of them in the query expression.");
+                    } else {
+                        // found an applicable hash key condition
+                        hashKeyNameForThisQuery = hashKeyName;
+                    }
+                }
+            }
+        }
+
+        // Collate all the key conditions
+        Map<String, Condition> keyConditions = new HashMap<String, Condition>();
+
+        // With user-provided index name
+        if (userProvidedIndexName != null) {
+            if (hasRangeKeyCondition
+                    && ( !userProvidedLSI )
+                    && ( !userProvidedGSI )) {
+                throw new IllegalArgumentException(
+                        "Illegal query expression: No range key condition is applicable to the specified index ("
+                        + userProvidedIndexName + "). ");
+            }
+            if (hashKeyNameForThisQuery == null) {
+                throw new IllegalArgumentException(
+                        "Illegal query expression: No hash key condition is applicable to the specified index ("
+                        + userProvidedIndexName + "). ");
+            }
+
+            keyConditions.put(hashKeyNameForThisQuery, hashKeyConditions.get(hashKeyNameForThisQuery));
+            if (hasRangeKeyCondition) {
+                keyConditions.putAll(rangeKeyConditions);
+            }
+        }
+        // Infer the index name by finding the index shared by both hash and range key annotations.
+        else {
+            if (hasRangeKeyCondition) {
+                String inferredIndexName = null;
+                hashKeyNameForThisQuery = null;
+                if (hasPrimaryHashKeyCondition && hasPrimaryRangeKeyCondition) {
+                    // Found valid query: primary hash + range key conditions
+                    hashKeyNameForThisQuery = primaryHashKeyName;
+                } else {
+                    // Intersect the set of all the indexes applicable to the range key
+                    // with the set of indexes applicable to each hash key condition.
+                    for (String hashKeyName : annotatedGSIsOnHashKeys.keySet()) {
+                        boolean foundValidQueryExpressionWithInferredIndex = false;
+                        String indexNameInferredByThisHashKey = null;
+                        if (hashKeyName.equals(primaryHashKeyName)) {
+                            if (annotatedLSIsOnRangeKey.size() == 1) {
+                                // Found valid query (Primary hash + LSI range conditions)
+                                foundValidQueryExpressionWithInferredIndex = true;
+                                indexNameInferredByThisHashKey = annotatedLSIsOnRangeKey.iterator().next();
+                            }
+                        }
+
+                        Set<String> annotatedGSIsOnHashKey = annotatedGSIsOnHashKeys.get(hashKeyName);
+                        // We don't need the data in annotatedGSIsOnHashKeys afterwards,
+                        // so it's safe to do the intersection in-place.
+                        annotatedGSIsOnHashKey.retainAll(annotatedGSIsOnRangeKey);
+                        if (annotatedGSIsOnHashKey.size() == 1) {
+                            // Found valid query (Hash + range conditions on a GSI)
+                            if (foundValidQueryExpressionWithInferredIndex) {
+                                hashKeyNameForThisQuery = hashKeyName;
+                                inferredIndexName = indexNameInferredByThisHashKey;
+                            }
+
+                            foundValidQueryExpressionWithInferredIndex = true;
+                            indexNameInferredByThisHashKey = annotatedGSIsOnHashKey.iterator().next();
+                        }
+
+                        if (foundValidQueryExpressionWithInferredIndex) {
+                            if (hashKeyNameForThisQuery != null) {
+                                throw new IllegalArgumentException(
+                                        "Ambiguous query expression: Found multiple valid queries: " +
+                                        "(Hash: \"" + hashKeyNameForThisQuery + "\", Range: \"" + rangeKeyNameForThisQuery + "\", Index: \"" + inferredIndexName + "\") and " +
+                                        "(Hash: \"" + hashKeyName + "\", Range: \"" + rangeKeyNameForThisQuery + "\", Index: \"" + indexNameInferredByThisHashKey + "\").");
+                            } else {
+                                hashKeyNameForThisQuery = hashKeyName;
+                                inferredIndexName = indexNameInferredByThisHashKey;
+                            }
+                        }
+                    }
+                }
+
+                if (hashKeyNameForThisQuery != null) {
+                    keyConditions.put(hashKeyNameForThisQuery, hashKeyConditions.get(hashKeyNameForThisQuery));
+                    keyConditions.putAll(rangeKeyConditions);
+                    queryRequest.setIndexName(inferredIndexName);
+                } else {
+                    throw new IllegalArgumentException(
+                            "Illegal query expression: Cannot infer the index name from the query expression.");
+                }
+
+            } else {
+                // No range key condition is specified.
+                if (hashKeyConditions.size() > 1) {
+                    if ( hasPrimaryHashKeyCondition ) {
+                        keyConditions.put(primaryHashKeyName, hashKeyConditions.get(primaryHashKeyName));
+                    } else {
+                        throw new IllegalArgumentException(
+                                "Ambiguous query expression: More than one index hash key EQ conditions (" +
+                                hashKeyConditions.keySet() +
+                                ") are applicable to the query. " +
+                                "Please provide only one of them in the query expression, or specify the appropriate index name.");
+                    }
+
+                } else {
+                    // Only one hash key condition
+                    String hashKeyName = annotatedGSIsOnHashKeys.keySet().iterator().next();
+                    if ( !hasPrimaryHashKeyCondition ) {
+                        if (annotatedGSIsOnHashKeys.get(hashKeyName).size() == 1) {
+                            // Set the index if the index hash key is only annotated with one GSI.
+                            queryRequest.setIndexName(annotatedGSIsOnHashKeys.get(hashKeyName).iterator().next());
+                        } else if (annotatedGSIsOnHashKeys.get(hashKeyName).size() > 1) {
+                            throw new IllegalArgumentException(
+                                    "Ambiguous query expression: More than one GSIs (" +
+                                    annotatedGSIsOnHashKeys.get(hashKeyName) +
+                                    ") are applicable to the query. " +
+                                    "Please specify one of them in your query expression.");
+                        } else {
+                            throw new IllegalArgumentException(
+                                    "Illegal query expression: No GSI is found in the @DynamoDBIndexHashKey annotation for attribute " +
+                                    "\"" + hashKeyName + "\".");
+                        }
+                    }
+                    keyConditions.putAll(hashKeyConditions);
+                }
+
+            }
+        }
+
+        queryRequest.setKeyConditions(keyConditions);
+    }
+
+    private <T> AttributeTransformer.Parameters<T> toParameters(
+            final Map<String, AttributeValue> attributeValues,
+            final Class<T> modelClass,
+            final DynamoDBMapperConfig mapperConfig) {
+
+        return toParameters(attributeValues, false, modelClass, mapperConfig);
+    }
+
+    private <T> AttributeTransformer.Parameters<T> toParameters(
+            final Map<String, AttributeValue> attributeValues,
+            final boolean partialUpdate,
+            final Class<T> modelClass,
+            final DynamoDBMapperConfig mapperConfig) {
+
+        return new TransformerParameters(reflector,
+                                         attributeValues,
+                                         partialUpdate,
+                                         modelClass,
+                                         mapperConfig);
+    }
+
+    final <T> List<AttributeTransformer.Parameters<T>> toParameters(
+            final List<Map<String, AttributeValue>> attributeValues,
+            final Class<T> modelClass,
+            final DynamoDBMapperConfig mapperConfig
+    ) {
+        List<AttributeTransformer.Parameters<T>> rval =
+            new ArrayList<AttributeTransformer.Parameters<T>>(
+                attributeValues.size());
+
+        for (Map<String, AttributeValue> item : attributeValues) {
+            rval.add(toParameters(item, modelClass, mapperConfig));
+        }
+
+        return rval;
+    }
+

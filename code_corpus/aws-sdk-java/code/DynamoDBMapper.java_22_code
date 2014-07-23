@@ -1,0 +1,11 @@
+        if ( config.getSaveBehavior() == SaveBehavior.CLOBBER || forcePut ) {
+            db.putItem(applyUserAgent(new PutItemRequest().withTableName(tableName)
+                    .withItem(transformAttributes(clazz, convertToItem(updateValues)))
+                    .withExpected(expectedValues)));
+        } else if ( !nonKeyAttributePresent ) {
+            keyOnlyPut(clazz, tableName, objectKey, hashKeyGetter, rangeKeyGetter);
+        } else {
+            db.updateItem(applyUserAgent(new UpdateItemRequest().withTableName(tableName).withKey(objectKey)
+                                         .withAttributeUpdates(transformAttributeUpdates(clazz, objectKey, updateValues)).withExpected(expectedValues)));
+        }
+

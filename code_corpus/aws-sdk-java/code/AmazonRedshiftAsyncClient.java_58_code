@@ -1,0 +1,19 @@
+    public Future<DescribeReservedNodesResult> describeReservedNodesAsync(
+            final DescribeReservedNodesRequest describeReservedNodesRequest,
+            final AsyncHandler<DescribeReservedNodesRequest, DescribeReservedNodesResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeReservedNodesResult>() {
+            public DescribeReservedNodesResult call() throws Exception {
+                DescribeReservedNodesResult result;
+                try {
+                    result = describeReservedNodes(describeReservedNodesRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeReservedNodesRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -1,0 +1,17 @@
+    public JSONObject accumulate(String key, Object value)
+            throws JSONException {
+        testValidity(value);
+        Object o = opt(key);
+        if (o == null) {
+            put(key, value instanceof JSONArray ?
+                    new JSONArray().put(value) :
+                    value);
+        } else if (o instanceof JSONArray) {
+            ((JSONArray)o).put(value);
+        } else {
+            put(key, new JSONArray().put(o).put(value));
+        }
+        return this;
+    }
+
+

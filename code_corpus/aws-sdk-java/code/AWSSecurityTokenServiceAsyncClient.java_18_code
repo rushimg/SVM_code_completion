@@ -1,0 +1,19 @@
+    public Future<DecodeAuthorizationMessageResult> decodeAuthorizationMessageAsync(
+            final DecodeAuthorizationMessageRequest decodeAuthorizationMessageRequest,
+            final AsyncHandler<DecodeAuthorizationMessageRequest, DecodeAuthorizationMessageResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DecodeAuthorizationMessageResult>() {
+            public DecodeAuthorizationMessageResult call() throws Exception {
+                DecodeAuthorizationMessageResult result;
+                try {
+                    result = decodeAuthorizationMessage(decodeAuthorizationMessageRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(decodeAuthorizationMessageRequest, result);
+                   return result;
+            }
+        });
+    }
+    

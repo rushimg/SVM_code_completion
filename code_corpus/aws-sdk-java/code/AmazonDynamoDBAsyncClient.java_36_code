@@ -1,0 +1,19 @@
+    public Future<DeleteItemResult> deleteItemAsync(
+            final DeleteItemRequest deleteItemRequest,
+            final AsyncHandler<DeleteItemRequest, DeleteItemResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DeleteItemResult>() {
+            public DeleteItemResult call() throws Exception {
+            	DeleteItemResult result;
+                try {
+            		result = deleteItem(deleteItemRequest);
+            	} catch (Exception ex) {
+            	    asyncHandler.onError(ex);
+    				throw ex;
+            	}
+            	asyncHandler.onSuccess(deleteItemRequest, result);
+               	return result;
+		    }
+		});
+    }
+    

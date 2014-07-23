@@ -1,0 +1,47 @@
+    public List<byte[]> getChecksums() throws IOException {
+        if ( !closed ) {
+            throw new IOException("Stream must be closed before getting checksums");
+        }
+        return Collections.unmodifiableList(checksums);
+    }
+
+    public String getTreeHash() throws IOException {
+        if ( !closed ) {
+            throw new IOException("Stream must be closed before getting the tree hash");
+        }
+        return TreeHashGenerator.calculateTreeHash(getChecksums());
+    }
+
+    private int byteOffset = 0;
+
+    @Override
+    public int read() throws IOException {
+        int read = super.read();
+        if ( read >= 0 )
+            byteOffset++;
+
+        digestPart();
+        return read;
+    }
+
+    @Override
+    public int read(byte[] b, int off, int len) throws IOException {
+        int totalBytesRead = 0;
+        int lastBytesRead = 0;
+        while ( totalBytesRead < len && lastBytesRead > -1 ) {
+            int bytesToRead = Math.min(MB - byteOffset, len - totalBytesRead);
+
+            lastBytesRead = super.read(b, off + totalBytesRead, bytesToRead);
+            if ( lastBytesRead > 0 ) {
+                totalBytesRead += lastBytesRead;
+                byteOffset += lastBytesRead;
+            }
+
+            digestPart();
+            
+            if (lastBytesRead == -1 && totalBytesRead == 0) return -1;
+        }
+
+        return totalBytesRead;
+    }
+

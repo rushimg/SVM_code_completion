@@ -1,0 +1,22 @@
+        Map<String, List<Condition>> conditionsByType =
+            sortConditionsByType(conditions);
+
+        generator.key("Condition").object();
+        for (Map.Entry<String, List<Condition>> entry
+                 : conditionsByType.entrySet()) {
+
+            String conditionType = entry.getKey();
+            generator.key(conditionType).object();
+
+            writeConditions(entry.getValue(), generator);
+
+            generator.endObject();
+
+        }
+        generator.endObject();
+    }
+
+    private void writeConditions(final List<Condition> conditions,
+                                 final JSONWriter generator)
+            throws IOException, JSONException {
+

@@ -1,0 +1,18 @@
+    public Future<Void> putMetricDataAsync(
+            final PutMetricDataRequest putMetricDataRequest,
+            final AsyncHandler<PutMetricDataRequest, Void> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<Void>() {
+            public Void call() throws Exception {
+                try {
+                    putMetricData(putMetricDataRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(putMetricDataRequest, null);
+                   return null;
+            }
+        });
+    }
+    

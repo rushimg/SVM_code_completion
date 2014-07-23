@@ -1,0 +1,18 @@
+    public Future<Void> suspendProcessesAsync(
+            final SuspendProcessesRequest suspendProcessesRequest,
+            final AsyncHandler<SuspendProcessesRequest, Void> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<Void>() {
+            public Void call() throws Exception {
+                try {
+                    suspendProcesses(suspendProcessesRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(suspendProcessesRequest, null);
+                   return null;
+            }
+        });
+    }
+    

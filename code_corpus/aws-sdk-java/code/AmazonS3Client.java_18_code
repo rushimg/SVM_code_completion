@@ -1,0 +1,26 @@
+    public ObjectListing listNextBatchOfObjects(ObjectListing previousObjectListing)
+            throws AmazonClientException, AmazonServiceException {
+        assertParameterNotNull(previousObjectListing,
+                "The previous object listing parameter must be specified when listing the next batch of objects in a bucket");
+
+        if (!previousObjectListing.isTruncated()) {
+            ObjectListing emptyListing = new ObjectListing();
+            emptyListing.setBucketName(previousObjectListing.getBucketName());
+            emptyListing.setDelimiter(previousObjectListing.getDelimiter());
+            emptyListing.setMarker(previousObjectListing.getNextMarker());
+            emptyListing.setMaxKeys(previousObjectListing.getMaxKeys());
+            emptyListing.setPrefix(previousObjectListing.getPrefix());
+            emptyListing.setTruncated(false);
+
+            return emptyListing;
+        }
+
+        return listObjects(new ListObjectsRequest(
+                previousObjectListing.getBucketName(),
+                previousObjectListing.getPrefix(),
+                previousObjectListing.getNextMarker(),
+                previousObjectListing.getDelimiter(),
+                new Integer( previousObjectListing.getMaxKeys() ) ));
+    }
+
+

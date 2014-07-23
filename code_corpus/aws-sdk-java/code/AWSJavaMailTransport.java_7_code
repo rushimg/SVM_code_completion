@@ -1,0 +1,45 @@
+    private void collateRecipients(Message m, Address[] addresses) throws MessagingException {
+
+        if ( !isNullOrEmpty(addresses) ) {
+            Hashtable<Address, Message.RecipientType> addressTable = new Hashtable<Address, Message.RecipientType>();
+
+            for ( Address a : addresses ) {
+                addressTable.put(a, Message.RecipientType.TO);
+            }
+
+            if ( !isNullOrEmpty(m.getRecipients(Message.RecipientType.TO)) ) {
+                for ( Address a : m.getRecipients(Message.RecipientType.TO) ) {
+                    addressTable.put(a, Message.RecipientType.TO);
+                }
+            }
+            if ( !isNullOrEmpty(m.getRecipients(Message.RecipientType.CC)) ) {
+                for ( Address a : m.getRecipients(Message.RecipientType.CC) ) {
+                    addressTable.put(a, Message.RecipientType.CC);
+                }
+            }
+            if ( !isNullOrEmpty(m.getRecipients(Message.RecipientType.BCC)) ) {
+                for ( Address a : m.getRecipients(Message.RecipientType.BCC) ) {
+                    addressTable.put(a, Message.RecipientType.BCC);
+                }
+            }
+
+            // Clear the original recipients for collation
+            m.setRecipients(Message.RecipientType.TO, new Address[0]);
+            m.setRecipients(Message.RecipientType.CC, new Address[0]);
+            m.setRecipients(Message.RecipientType.BCC, new Address[0]);
+
+            Iterator<Address> aIter = addressTable.keySet().iterator();
+
+            while ( aIter.hasNext() ) {
+                Address a = aIter.next();
+                m.addRecipient(addressTable.get(a), a);
+            }
+
+            // Simple E-mail needs at least one TO address, so add one if there isn't one
+            if ( m.getRecipients(Message.RecipientType.TO) == null ||
+                    m.getRecipients(Message.RecipientType.TO).length == 0 ) {
+                m.setRecipient(Message.RecipientType.TO, addressTable.keySet().iterator().next());
+            }
+        }
+    }
+

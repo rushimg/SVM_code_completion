@@ -1,0 +1,19 @@
+    public Future<ListUserPoliciesResult> listUserPoliciesAsync(
+            final ListUserPoliciesRequest listUserPoliciesRequest,
+            final AsyncHandler<ListUserPoliciesRequest, ListUserPoliciesResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ListUserPoliciesResult>() {
+            public ListUserPoliciesResult call() throws Exception {
+                ListUserPoliciesResult result;
+                try {
+                    result = listUserPolicies(listUserPoliciesRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(listUserPoliciesRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -1,0 +1,19 @@
+    public Future<DescribeImagesResult> describeImagesAsync(
+            final DescribeImagesRequest describeImagesRequest,
+            final AsyncHandler<DescribeImagesRequest, DescribeImagesResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeImagesResult>() {
+            public DescribeImagesResult call() throws Exception {
+                DescribeImagesResult result;
+                try {
+                    result = describeImages(describeImagesRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeImagesRequest, result);
+                   return result;
+            }
+        });
+    }
+    

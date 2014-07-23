@@ -1,0 +1,22 @@
+@ThreadSafe
+public class ServiceMetricCollectorSupport extends ServiceMetricCollector 
+{
+    static final double NANO_PER_SEC = TimeUnit.SECONDS.toNanos(1);
+    protected final static Log log = LogFactory.getLog(ServiceMetricCollectorSupport.class);
+    private final BlockingQueue<MetricDatum> queue;
+
+    protected ServiceMetricCollectorSupport(BlockingQueue<MetricDatum> queue) {
+        this.queue = queue;
+    }
+
+    @Override
+    public void collectByteThroughput(ByteThroughputProvider provider) {
+        try {
+            collectByteThroughput0(provider);
+        } catch(Exception ex) { // defensive code
+            if (log.isDebugEnabled()) {
+                log.debug("Ignoring unexpected failure", ex);
+            }
+        }
+    }
+    

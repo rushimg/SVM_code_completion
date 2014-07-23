@@ -1,0 +1,24 @@
+    @Override
+    public int read() throws IOException {
+        int b = in.read();
+        if (b == 'x' && !hasRemovedNamespace) {
+            lookAheadData[0] = (byte)b;
+            in.mark(lookAheadData.length);
+            int bytesRead = in.read(lookAheadData, 1, lookAheadData.length - 1);
+            in.reset();
+
+            String string = new String(lookAheadData, 0, bytesRead + 1);
+
+            int numberCharsMatched = matchXmlNamespaceAttribute(string);
+            if (numberCharsMatched > 0) {
+                for (int i = 0; i < numberCharsMatched - 1; i++) {
+                    in.read();
+                }
+                b = in.read();
+                hasRemovedNamespace = true;
+            }
+        }
+
+        return b;
+    }
+

@@ -1,0 +1,19 @@
+    public Future<CreateVaultResult> createVaultAsync(
+            final CreateVaultRequest createVaultRequest,
+            final AsyncHandler<CreateVaultRequest, CreateVaultResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<CreateVaultResult>() {
+            public CreateVaultResult call() throws Exception {
+                CreateVaultResult result;
+                try {
+                    result = createVault(createVaultRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(createVaultRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -1,0 +1,42 @@
+    private AmazonServiceException handleErrorResponse(Request<?> request,
+            HttpResponseHandler<AmazonServiceException> errorResponseHandler,
+            HttpRequestBase method, org.apache.http.HttpResponse apacheHttpResponse) throws IOException {
+
+        int status = apacheHttpResponse.getStatusLine().getStatusCode();
+        HttpResponse response = createResponse(method, request, apacheHttpResponse);
+        if (errorResponseHandler.needsConnectionLeftOpen() && method instanceof HttpEntityEnclosingRequestBase) {
+            HttpEntityEnclosingRequestBase entityEnclosingRequest = (HttpEntityEnclosingRequestBase)method;
+            response.setContent(new HttpMethodReleaseInputStream(entityEnclosingRequest));
+        }
+
+        AmazonServiceException exception = null;
+        try {
+            exception = errorResponseHandler.handle(response);
+            requestLog.debug("Received error response: " + exception.toString());
+        } catch (Exception e) {
+            // If the errorResponseHandler doesn't work, then check for error
+            // responses that don't have any content
+            if (status == 413) {
+                exception = new AmazonServiceException("Request entity too large");
+                exception.setServiceName(request.getServiceName());
+                exception.setStatusCode(413);
+                exception.setErrorType(ErrorType.Client);
+                exception.setErrorCode("Request entity too large");
+            } else if (status == 503 && "Service Unavailable".equalsIgnoreCase(apacheHttpResponse.getStatusLine().getReasonPhrase())) {
+                exception = new AmazonServiceException("Service unavailable");
+                exception.setServiceName(request.getServiceName());
+                exception.setStatusCode(503);
+                exception.setErrorType(ErrorType.Service);
+                exception.setErrorCode("Service unavailable");
+            } else {
+                String errorMessage = "Unable to unmarshall error response (" + e.getMessage() + ")";
+                throw new AmazonClientException(errorMessage, e);
+            }
+        }
+
+        exception.setStatusCode(status);
+        exception.setServiceName(request.getServiceName());
+        exception.fillInStackTrace();
+        return exception;
+    }
+

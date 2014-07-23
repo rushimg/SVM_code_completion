@@ -1,0 +1,22 @@
+            if ( reflector.isVersionAttributeGetter(method) ) {
+                if ( config.getSaveBehavior() != SaveBehavior.CLOBBER ) {
+                    // First establish the expected (current) value for the
+                    // update call
+                    ExpectedAttributeValue expected = new ExpectedAttributeValue();
+
+                    // For new objects, insist that the value doesn't exist.
+                    // For existing ones, insist it has the old value.
+                    AttributeValue currentValue = getSimpleAttributeValue(method, getterResult);
+                    expected.setExists(currentValue != null);
+                    if ( currentValue != null ) {
+                        expected.setValue(currentValue);
+                    }
+                    expectedValues.put(attributeName, expected);
+                }
+
+                AttributeValue newVersionValue = getVersionAttributeValue(method, getterResult);
+                updateValues
+                        .put(attributeName, new AttributeValueUpdate().withAction("PUT").withValue(newVersionValue));
+                inMemoryUpdates.add(new ValueUpdate(method, newVersionValue, object));
+            }
+

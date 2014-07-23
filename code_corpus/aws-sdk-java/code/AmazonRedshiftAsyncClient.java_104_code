@@ -1,0 +1,19 @@
+    public Future<HsmClientCertificate> createHsmClientCertificateAsync(
+            final CreateHsmClientCertificateRequest createHsmClientCertificateRequest,
+            final AsyncHandler<CreateHsmClientCertificateRequest, HsmClientCertificate> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<HsmClientCertificate>() {
+            public HsmClientCertificate call() throws Exception {
+                HsmClientCertificate result;
+                try {
+                    result = createHsmClientCertificate(createHsmClientCertificateRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(createHsmClientCertificateRequest, result);
+                   return result;
+            }
+        });
+    }
+    

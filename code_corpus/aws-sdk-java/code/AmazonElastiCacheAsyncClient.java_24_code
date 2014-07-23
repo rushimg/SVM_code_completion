@@ -1,0 +1,19 @@
+    public Future<DescribeReplicationGroupsResult> describeReplicationGroupsAsync(
+            final DescribeReplicationGroupsRequest describeReplicationGroupsRequest,
+            final AsyncHandler<DescribeReplicationGroupsRequest, DescribeReplicationGroupsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeReplicationGroupsResult>() {
+            public DescribeReplicationGroupsResult call() throws Exception {
+                DescribeReplicationGroupsResult result;
+                try {
+                    result = describeReplicationGroups(describeReplicationGroupsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeReplicationGroupsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

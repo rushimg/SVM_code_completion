@@ -1,0 +1,21 @@
+    private void setUserAgent(Request<?> request) {
+        String userAgent = config.getUserAgent();
+        if ( !userAgent.equals(ClientConfiguration.DEFAULT_USER_AGENT) ) {
+            userAgent += ", " + ClientConfiguration.DEFAULT_USER_AGENT;
+        }
+        if ( userAgent != null ) {
+            request.addHeader(HEADER_USER_AGENT, userAgent);
+        }
+        AmazonWebServiceRequest awsreq = request.getOriginalRequest();
+        if (awsreq != null) {
+            RequestClientOptions opts = awsreq.getRequestClientOptions();
+            if (opts != null) {
+                String userAgentMarker = opts.getClientMarker(Marker.USER_AGENT);
+                if (userAgentMarker != null) {
+                    request.addHeader(HEADER_USER_AGENT,
+                        createUserAgentString(userAgent, userAgentMarker));
+                }
+            }
+        }
+    }
+

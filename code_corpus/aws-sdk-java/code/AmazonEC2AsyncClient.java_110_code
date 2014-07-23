@@ -1,0 +1,19 @@
+    public Future<ModifyReservedInstancesResult> modifyReservedInstancesAsync(
+            final ModifyReservedInstancesRequest modifyReservedInstancesRequest,
+            final AsyncHandler<ModifyReservedInstancesRequest, ModifyReservedInstancesResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ModifyReservedInstancesResult>() {
+            public ModifyReservedInstancesResult call() throws Exception {
+                ModifyReservedInstancesResult result;
+                try {
+                    result = modifyReservedInstances(modifyReservedInstancesRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(modifyReservedInstancesRequest, result);
+                   return result;
+            }
+        });
+    }
+    

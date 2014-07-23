@@ -1,0 +1,24 @@
+    public void setObjectAcl(String bucketName, String key, String versionId,
+            AccessControlList acl, RequestMetricCollector requestMetricCollector)
+            throws AmazonClientException, AmazonServiceException {
+        setObjectAcl0(bucketName, key, versionId, acl, requestMetricCollector);
+    }
+
+    private void setObjectAcl0(String bucketName, String key, String versionId,
+            AccessControlList acl, RequestMetricCollector requestMetricCollector)
+            throws AmazonClientException, AmazonServiceException {
+        assertParameterNotNull(bucketName, "The bucket name parameter must be specified when setting an object's ACL");
+        assertParameterNotNull(key, "The key parameter must be specified when setting an object's ACL");
+        assertParameterNotNull(acl, "The ACL parameter must be specified when setting an object's ACL");
+
+        setAcl(bucketName, key, versionId, acl,
+            new GenericBucketRequest(bucketName)
+                .withRequestMetricCollector(requestMetricCollector));
+    }
+
+    @Override
+    public void setObjectAcl(String bucketName, String key, String versionId, CannedAccessControlList acl)
+            throws AmazonClientException, AmazonServiceException {
+        setObjectAcl0(bucketName, key, versionId, acl, null);
+    }
+

@@ -1,0 +1,15 @@
+	    		try {
+					originalContentLength = getContentLength(request);
+				} catch (IOException e) {
+					throw new AmazonClientException("Cannot get the content-lenght of the request content.", e);
+				}
+	    	}
+	    	request.addHeader("x-amz-decoded-content-length", Long.toString(originalContentLength));
+	    	// Make sure "Content-Length" header is not empty so that HttpClient won't cache the stream again to recover Content-Length
+    		request.addHeader(Headers.CONTENT_LENGTH, Long.toString(AwsChunkedEncodingInputStream.calculateStreamContentLength(originalContentLength)));
+			return contentSha256;
+		}
+		else
+			return super.calculateContentHash(request);
+	}
+

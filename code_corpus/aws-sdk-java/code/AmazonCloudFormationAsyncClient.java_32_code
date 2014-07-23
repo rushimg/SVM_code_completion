@@ -1,0 +1,19 @@
+    public Future<DescribeStackEventsResult> describeStackEventsAsync(
+            final DescribeStackEventsRequest describeStackEventsRequest,
+            final AsyncHandler<DescribeStackEventsRequest, DescribeStackEventsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeStackEventsResult>() {
+            public DescribeStackEventsResult call() throws Exception {
+                DescribeStackEventsResult result;
+                try {
+                    result = describeStackEvents(describeStackEventsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeStackEventsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

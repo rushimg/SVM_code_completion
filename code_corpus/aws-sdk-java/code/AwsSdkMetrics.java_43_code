@@ -1,0 +1,15 @@
+    private static void setCredentialFile0(String filepath)
+            throws FileNotFoundException, IOException {
+        final PropertiesCredentials cred =
+            new PropertiesCredentials(new File(filepath));
+        synchronized(AwsSdkMetrics.class) {
+            credentialProvider = new AWSCredentialsProvider() {
+                @Override public void refresh() {}
+                @Override public AWSCredentials getCredentials() {
+                    return cred;
+                }
+            };
+            AwsSdkMetrics.credentialFile = filepath;
+        }
+    }
+

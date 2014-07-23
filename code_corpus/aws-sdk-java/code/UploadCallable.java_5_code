@@ -1,0 +1,36 @@
+    private UploadResult uploadInParts() throws Exception {
+        final String bucketName = putObjectRequest.getBucketName();
+        final String key        = putObjectRequest.getKey();
+
+        boolean isUsingEncryption = s3 instanceof AmazonS3EncryptionClient;
+        long optimalPartSize = getOptimalPartSize(isUsingEncryption);
+
+        multipartUploadId = initiateMultipartUpload(putObjectRequest);
+
+        try {
+            UploadPartRequestFactory requestFactory = new UploadPartRequestFactory(putObjectRequest, multipartUploadId, optimalPartSize);
+
+            if (TransferManagerUtils.isUploadParallelizable(putObjectRequest, isUsingEncryption)) {
+                uploadPartsInParallel(requestFactory);
+                return null;
+            } else {
+                return uploadPartsInSeries(requestFactory);
+            }
+        } catch (Exception e) {
+            fireProgressEvent(ProgressEvent.FAILED_EVENT_CODE);
+
+            try {
+                s3.abortMultipartUpload(new AbortMultipartUploadRequest(bucketName, key, multipartUploadId));
+            } catch (Exception e2) {
+                log.info("Unable to abort multipart upload, you may need to manually remove uploaded parts: " + e2.getMessage(), e2);
+            }
+            throw e;
+        } finally {
+            if (putObjectRequest.getInputStream() != null) {
+                try {putObjectRequest.getInputStream().close(); } catch (Exception e) {
+                    log.warn("Unable to cleanly close input stream: " + e.getMessage(), e);
+                }
+            }
+        }
+    }
+

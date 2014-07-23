@@ -1,0 +1,34 @@
+    public AmazonWebServiceResponse<T> handle(HttpResponse response) throws Exception {
+        log.trace("Parsing service response XML");
+        InputStream content = response.getContent();
+        if (content == null) content = new ByteArrayInputStream("<eof/>".getBytes());
+
+        XMLEventReader eventReader;
+        synchronized (xmlInputFactory) {
+            eventReader = xmlInputFactory.createXMLEventReader(content);
+        }
+
+        try {
+            AmazonWebServiceResponse<T> awsResponse = new AmazonWebServiceResponse<T>();
+            StaxUnmarshallerContext unmarshallerContext = new StaxUnmarshallerContext(eventReader, response.getHeaders());
+            unmarshallerContext.registerMetadataExpression("ResponseMetadata/RequestId", 2, ResponseMetadata.AWS_REQUEST_ID);
+            unmarshallerContext.registerMetadataExpression("requestId", 2, ResponseMetadata.AWS_REQUEST_ID);
+            registerAdditionalMetadataExpressions(unmarshallerContext);
+
+            T result = responseUnmarshaller.unmarshall(unmarshallerContext);
+            awsResponse.setResult(result);
+
+            Map<String, String> metadata = unmarshallerContext.getMetadata();
+            awsResponse.setResponseMetadata(new ResponseMetadata(metadata));
+
+            log.trace("Done parsing service response");
+            return awsResponse;
+        } finally {
+            try {
+                eventReader.close();
+            } catch (XMLStreamException e) {
+                log.warn("Error closing xml parser", e);
+            }
+        }
+    }
+

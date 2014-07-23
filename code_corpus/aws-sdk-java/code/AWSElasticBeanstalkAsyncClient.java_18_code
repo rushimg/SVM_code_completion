@@ -1,0 +1,19 @@
+    public Future<DescribeConfigurationOptionsResult> describeConfigurationOptionsAsync(
+            final DescribeConfigurationOptionsRequest describeConfigurationOptionsRequest,
+            final AsyncHandler<DescribeConfigurationOptionsRequest, DescribeConfigurationOptionsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeConfigurationOptionsResult>() {
+            public DescribeConfigurationOptionsResult call() throws Exception {
+                DescribeConfigurationOptionsResult result;
+                try {
+                    result = describeConfigurationOptions(describeConfigurationOptionsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeConfigurationOptionsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

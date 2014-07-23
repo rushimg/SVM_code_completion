@@ -1,0 +1,19 @@
+    public Future<DescribeCacheSecurityGroupsResult> describeCacheSecurityGroupsAsync(
+            final DescribeCacheSecurityGroupsRequest describeCacheSecurityGroupsRequest,
+            final AsyncHandler<DescribeCacheSecurityGroupsRequest, DescribeCacheSecurityGroupsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeCacheSecurityGroupsResult>() {
+            public DescribeCacheSecurityGroupsResult call() throws Exception {
+                DescribeCacheSecurityGroupsResult result;
+                try {
+                    result = describeCacheSecurityGroups(describeCacheSecurityGroupsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeCacheSecurityGroupsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

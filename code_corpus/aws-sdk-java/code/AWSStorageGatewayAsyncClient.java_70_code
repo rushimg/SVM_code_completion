@@ -1,0 +1,19 @@
+    public Future<StartGatewayResult> startGatewayAsync(
+            final StartGatewayRequest startGatewayRequest,
+            final AsyncHandler<StartGatewayRequest, StartGatewayResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<StartGatewayResult>() {
+            public StartGatewayResult call() throws Exception {
+                StartGatewayResult result;
+                try {
+                    result = startGateway(startGatewayRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(startGatewayRequest, result);
+                   return result;
+            }
+        });
+    }
+    

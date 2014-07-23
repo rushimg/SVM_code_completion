@@ -1,0 +1,22 @@
+    public AmazonServiceException unmarshall(Node in) throws Exception {
+        String errorCode = parseErrorCode(in);
+        String message = XpathUtils.asString("Response/Errors/Error/Message", in);
+        String requestId = XpathUtils.asString("Response/RequestID", in);
+        String errorType = XpathUtils.asString("Response/Errors/Error/Type", in);
+
+        Constructor<? extends AmazonServiceException> constructor = exceptionClass.getConstructor(String.class);
+        AmazonServiceException ase = constructor.newInstance(message);
+        ase.setErrorCode(errorCode);
+        ase.setRequestId(requestId);
+
+        if (errorType == null) {
+            ase.setErrorType(ErrorType.Unknown);
+        } else if (errorType.equalsIgnoreCase("server")) {
+            ase.setErrorType(ErrorType.Service);
+        } else if (errorType.equalsIgnoreCase("client")) {
+            ase.setErrorType(ErrorType.Client);
+        }
+
+        return ase;
+    }
+

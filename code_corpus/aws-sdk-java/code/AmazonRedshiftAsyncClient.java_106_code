@@ -1,0 +1,19 @@
+    public Future<ClusterSecurityGroup> revokeClusterSecurityGroupIngressAsync(
+            final RevokeClusterSecurityGroupIngressRequest revokeClusterSecurityGroupIngressRequest,
+            final AsyncHandler<RevokeClusterSecurityGroupIngressRequest, ClusterSecurityGroup> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ClusterSecurityGroup>() {
+            public ClusterSecurityGroup call() throws Exception {
+                ClusterSecurityGroup result;
+                try {
+                    result = revokeClusterSecurityGroupIngress(revokeClusterSecurityGroupIngressRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(revokeClusterSecurityGroupIngressRequest, result);
+                   return result;
+            }
+        });
+    }
+    

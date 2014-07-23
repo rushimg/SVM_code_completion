@@ -1,0 +1,27 @@
+    public XMLEvent nextEvent() throws XMLStreamException {
+        if (attributeIterator != null && attributeIterator.hasNext()) {
+            currentEvent = (XMLEvent)attributeIterator.next();
+        } else {
+            currentEvent = eventReader.nextEvent();
+        }
+
+        if (currentEvent.isStartElement()) {
+            attributeIterator = currentEvent.asStartElement().getAttributes();
+        }
+
+        updateContext(currentEvent);
+
+        if (eventReader.hasNext()) {
+            XMLEvent nextEvent = eventReader.peek();
+            if (nextEvent != null && nextEvent.isCharacters()) {
+                for (MetadataExpression metadataExpression : metadataExpressions) {
+                    if (testExpression(metadataExpression.expression, metadataExpression.targetDepth)) {
+                        metadata.put(metadataExpression.key, nextEvent.asCharacters().getData());
+                    }
+                }
+            }
+        }
+
+        return currentEvent;
+    }
+

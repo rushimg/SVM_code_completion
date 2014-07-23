@@ -1,0 +1,88 @@
+        ProgressListener multipleFileTransferProgressListener = new MultipleFileTransferProgressUpdatingListener(
+                transferProgress, additionalProgressListenerChain);
+
+        List<DownloadImpl> downloads = new ArrayList<DownloadImpl>();
+
+        String description = "Downloading from " + bucketName + "/" + keyPrefix;
+        final MultipleFileDownloadImpl multipleFileDownload = new MultipleFileDownloadImpl(description, transferProgress,
+                additionalProgressListenerChain, keyPrefix, bucketName, downloads);
+        multipleFileDownload.setMonitor(new MultipleFileTransferMonitor(multipleFileDownload, downloads));
+
+        final AllDownloadsQueuedLock allTransfersQueuedLock = new AllDownloadsQueuedLock();
+        MultipleFileTransferStateChangeListener multipleFileTransferStateChangeListener = new MultipleFileTransferStateChangeListener(
+                allTransfersQueuedLock, multipleFileDownload);
+
+        for ( S3ObjectSummary summary : objectSummaries ) {
+            // TODO: non-standard delimiters
+            File f = new File(destinationDirectory, summary.getKey());
+            File parentFile = f.getParentFile();
+            if ( !parentFile.exists() && !parentFile.mkdirs() ) {
+                throw new RuntimeException("Couldn't create parent directories for " + f.getAbsolutePath());
+            }
+
+            // All the single-file downloads share the same
+            // MultipleFileTransferProgressUpdatingListener and
+            // MultipleFileTransferStateChangeListener
+            downloads.add((DownloadImpl) download(
+                            new GetObjectRequest(summary.getBucketName(),
+                                    summary.getKey())
+                                    .withGeneralProgressListener(
+                                            multipleFileTransferProgressListener),
+                            f,
+                            multipleFileTransferStateChangeListener));
+        }
+
+        if ( downloads.isEmpty() ) {
+            multipleFileDownload.setState(TransferState.Completed);
+            return multipleFileDownload;
+        }
+
+        // Notify all state changes waiting for the downloads to all be queued
+        // to wake up and continue.
+        synchronized (allTransfersQueuedLock) {
+            allTransfersQueuedLock.allQueued = true;
+            allTransfersQueuedLock.notifyAll();
+        }
+
+        return multipleFileDownload;
+    }
+
+    private static final class AllDownloadsQueuedLock {
+        private volatile boolean allQueued = false;
+    }
+
+    private  static final class StartDownloadLock {
+        private volatile boolean downloadReady = false;
+    }
+
+    private static final class MultipleFileTransferStateChangeListener implements TransferStateChangeListener {
+
+        private final AllDownloadsQueuedLock allTransfersQueuedLock;
+        private final MultipleFileTransfer multipleFileTransfer;
+
+        public MultipleFileTransferStateChangeListener(AllDownloadsQueuedLock allTransfersQueuedLock,
+                MultipleFileTransfer multipleFileDownload) {
+            this.allTransfersQueuedLock = allTransfersQueuedLock;
+            this.multipleFileTransfer = multipleFileDownload;
+        }
+
+        @Override
+        public void transferStateChanged(Transfer upload, TransferState state) {
+
+            // There's a race here: we can't start monitoring the state of
+            // individual transfers until we have added all the transfers to the
+            // list, or we may incorrectly report completion.
+            synchronized (allTransfersQueuedLock) {
+                if ( !allTransfersQueuedLock.allQueued ) {
+                    try {
+                        allTransfersQueuedLock.wait();
+                    } catch ( InterruptedException e ) {
+                        throw new AmazonClientException("Couldn't wait for all downloads to be queued");
+                    }
+                }
+            }
+
+            synchronized (multipleFileTransfer) {
+                if ( multipleFileTransfer.getState() == state || multipleFileTransfer.isDone() )
+                    return;
+

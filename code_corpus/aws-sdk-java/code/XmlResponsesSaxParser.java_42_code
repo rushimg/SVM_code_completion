@@ -1,0 +1,222 @@
+    public class ListPartsHandler extends DefaultHandler {
+        private StringBuilder text;
+
+        private PartListing result;
+        private Owner currentOwner;
+        private Owner currentInitiator;
+        private PartSummary currentPart;
+
+        public PartListing getListPartsResult() {
+            return result;
+        }
+
+        @Override
+        public void startDocument() {
+            text = new StringBuilder();
+        }
+
+        @Override
+        public void startElement(String uri, String name, String qName, Attributes attrs) {
+            if (name.equals("ListPartsResult")) {
+                result = new PartListing();
+            } else if (name.equals("Bucket")) {
+            } else if (name.equals("Key")) {
+            } else if (name.equals("UploadId")) {
+            } else if (name.equals("Owner")) {
+                currentOwner = new Owner();
+            } else if (name.equals("Initiator")) {
+                currentInitiator = new Owner();
+            } else if (name.equals("ID")) {
+            } else if (name.equals("DisplayName")) {
+            } else if (name.equals("StorageClass")) {
+            } else if (name.equals("PartNumberMarker")) {
+            } else if (name.equals("NextPartNumberMarker")) {
+            } else if (name.equals("MaxParts")) {
+            } else if (name.equals("IsTruncated")) {
+            } else if (name.equals("Part")) {
+                currentPart = new PartSummary();
+            } else if (name.equals("PartNumber")) {
+            } else if (name.equals("LastModified")) {
+            } else if (name.equals("ETag")) {
+            } else if (name.equals("Size")) {
+            }
+            text.setLength(0);
+        }
+
+        private Integer parseInteger(String text) {
+            text = checkForEmptyString(text.toString());
+            if (text == null) return null;
+            return Integer.parseInt(text);
+        }
+
+        @Override
+        public void endElement(String uri, String name, String qName) throws SAXException {
+            if (name.equals("ListPartsResult")) {
+            } else if (name.equals("Bucket")) {
+                result.setBucketName(text.toString());
+            } else if (name.equals("Key")) {
+                result.setKey(text.toString());
+            } else if (name.equals("UploadId")) {
+                result.setUploadId(text.toString());
+            } else if (name.equals("Owner")) {
+                result.setOwner(currentOwner);
+                currentOwner = null;
+            } else if (name.equals("Initiator")) {
+                result.setInitiator(currentInitiator);
+                currentInitiator = null;
+            } else if (name.equals("ID") && currentOwner != null) {
+                currentOwner.setId(checkForEmptyString(text.toString()));
+            } else if (name.equals("DisplayName") && currentOwner != null) {
+                currentOwner.setDisplayName(checkForEmptyString(text.toString()));
+            } else if (name.equals("ID") && currentInitiator != null) {
+                currentInitiator.setId(checkForEmptyString(text.toString()));
+            } else if (name.equals("DisplayName") && currentInitiator != null) {
+                currentInitiator.setDisplayName(checkForEmptyString(text.toString()));
+            } else if (name.equals("StorageClass")) {
+                result.setStorageClass(text.toString());
+            } else if (name.equals("PartNumberMarker")) {
+                result.setPartNumberMarker(parseInteger(text.toString()));
+            } else if (name.equals("NextPartNumberMarker")) {
+                result.setNextPartNumberMarker(parseInteger(text.toString()));
+            } else if (name.equals("MaxParts")) {
+                result.setMaxParts(parseInteger(text.toString()));
+            } else if (name.equals("IsTruncated")) {
+                result.setTruncated(Boolean.parseBoolean(text.toString()));
+            } else if (name.equals("Part")) {
+                result.getParts().add(currentPart);
+            } else if (name.equals("PartNumber")) {
+                currentPart.setPartNumber(Integer.parseInt(text.toString()));
+            } else if (name.equals("LastModified")) {
+                try {
+                    currentPart.setLastModified(ServiceUtils.parseIso8601Date(text.toString()));
+                } catch (ParseException e) {
+                    throw new SAXException(
+                            "Non-ISO8601 date for LastModified in list parts result: "
+                            + text.toString(), e);
+                }
+            } else if (name.equals("ETag")) {
+                currentPart.setETag(ServiceUtils.removeQuotes(text.toString()));
+            } else if (name.equals("Size")) {
+                currentPart.setSize(Long.parseLong(text.toString()));
+            }
+        }
+
+        @Override
+        public void characters(char ch[], int start, int length) {
+            this.text.append(ch, start, length);
+        }
+    }
+
+    public class BucketNotificationConfigurationHandler extends DefaultHandler {
+        private BucketNotificationConfiguration configuration = new BucketNotificationConfiguration();
+        private StringBuilder text;
+        private List<TopicConfiguration> topicConfigurations;
+        private String topic;
+        private String event;
+
+        public BucketNotificationConfiguration getConfiguration() { return configuration; }
+
+        @Override
+        public void startDocument() {
+            text = new StringBuilder();
+        }
+
+        @Override
+        public void startElement(String uri, String name, String qName, Attributes attrs) {
+            if (name.equals("NotificationConfiguration")) {
+                topicConfigurations = new ArrayList<BucketNotificationConfiguration.TopicConfiguration>(1);
+            }
+            else if (name.equals("TopicConfiguration")) {
+                topic = null;
+                event = null;
+            } else if (name.equals("Topic")) {
+                text.setLength(0);
+            } else if (name.equals("Event")) {
+                text.setLength(0);
+            } else {
+                log.warn("Ignoring unexpected tag <"+name+">");
+            }
+        }
+
+        @Override
+        public void endElement(String uri, String name, String qName) throws SAXException {
+            if (name.equals("Topic")) {
+                topic = text.toString();
+            }
+            else if (name.equals("Event")) {
+                event = text.toString();
+            }
+            else if (name.equals("TopicConfiguration")) {
+                if ( topic != null && event != null ) {
+                    topicConfigurations.add( new TopicConfiguration( topic, event ) );
+                }
+            }
+            else if (name.equals("NotificationConfiguration")) {
+                configuration.setTopicConfigurations( topicConfigurations );
+            }
+            text.setLength(0);
+        }
+
+        @Override
+        public void characters(char ch[], int start, int length) {
+            this.text.append(ch, start, length);
+        }
+    }
+
+    public class BucketTaggingConfigurationHandler extends DefaultHandler {
+        private BucketTaggingConfiguration configuration = new BucketTaggingConfiguration();
+        private StringBuilder text;
+        private List<TagSet> tagSets;
+        private Map<String, String> tags;
+        private String tagKey;
+        private String tagValue;
+
+        public BucketTaggingConfiguration getConfiguration() { return configuration; }
+
+        @Override
+        public void startDocument() {
+            text = new StringBuilder();
+        }
+
+        @Override
+        public void startElement(String uri, String name, String qName, Attributes attrs) {
+            if (name.equals("Tagging")) {
+                tagSets = new ArrayList<TagSet>(1);
+            } else if (name.equals("TagSet")) {
+                tags = new HashMap<String, String>( 1 );
+            } else if (name.equals("Tag")) {
+                tagKey = null;
+                tagValue = null;
+            } else if (name.equals("Key")) {
+                text.setLength(0);
+            } else if (name.equals("Value")) {
+                text.setLength(0);
+            } else {
+                log.warn("Ignoring unexpected tag <"+name+">");
+            }
+        }
+
+        @Override
+        public void endElement(String uri, String name, String qName) throws SAXException {
+            if (name.equals("Key")) {
+                tagKey = text.toString();
+            } else if (name.equals("Value")) {
+                tagValue = text.toString();
+            } else if (name.equals("Tag")) {
+                if (tagKey != null && tagValue != null) {
+                    tags.put(tagKey, tagValue);
+                }
+            } else if (name.equals("TagSet")) {
+                tagSets.add(new TagSet(tags));
+            } else if (name.equals("Tagging")) {
+                configuration.setTagSets(tagSets);
+            }
+            text.setLength(0);
+        }
+
+        @Override
+        public void characters(char ch[], int start, int length) {
+            this.text.append(ch, start, length);
+        }
+    }
+

@@ -1,0 +1,19 @@
+    public Future<DescribeCacheEngineVersionsResult> describeCacheEngineVersionsAsync(
+            final DescribeCacheEngineVersionsRequest describeCacheEngineVersionsRequest,
+            final AsyncHandler<DescribeCacheEngineVersionsRequest, DescribeCacheEngineVersionsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeCacheEngineVersionsResult>() {
+            public DescribeCacheEngineVersionsResult call() throws Exception {
+                DescribeCacheEngineVersionsResult result;
+                try {
+                    result = describeCacheEngineVersions(describeCacheEngineVersionsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeCacheEngineVersionsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

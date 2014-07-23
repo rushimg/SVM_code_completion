@@ -1,0 +1,12 @@
+    public static String calculateTreeHash(InputStream input) throws AmazonClientException {
+		try {
+			TreeHashInputStream treeHashInputStream = new TreeHashInputStream(input);
+            byte[] buffer = new byte[1024];
+            while (treeHashInputStream.read(buffer, 0, buffer.length) != -1);
+			treeHashInputStream.close();
+			return calculateTreeHash(treeHashInputStream.getChecksums());
+		} catch (Exception e) {
+			throw new AmazonClientException("Unable to compute hash", e);
+		}
+    }
+

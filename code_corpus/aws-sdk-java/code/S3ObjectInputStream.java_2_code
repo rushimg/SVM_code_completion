@@ -1,0 +1,11 @@
+public class S3ObjectInputStream extends SdkFilterInputStream {
+
+    private final HttpRequestBase httpRequest;
+
+    public S3ObjectInputStream(InputStream in, HttpRequestBase httpRequest) {
+        super(wrapWithByteCounting(in)
+            ? new MetricFilterInputStream(S3ServiceMetric.S3DownloadThroughput, in)
+            : in);
+        this.httpRequest = httpRequest;
+    }
+

@@ -1,0 +1,19 @@
+    public Future<DescribeVolumeStatusResult> describeVolumeStatusAsync(
+            final DescribeVolumeStatusRequest describeVolumeStatusRequest,
+            final AsyncHandler<DescribeVolumeStatusRequest, DescribeVolumeStatusResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeVolumeStatusResult>() {
+            public DescribeVolumeStatusResult call() throws Exception {
+                DescribeVolumeStatusResult result;
+                try {
+                    result = describeVolumeStatus(describeVolumeStatusRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeVolumeStatusRequest, result);
+                   return result;
+            }
+        });
+    }
+    

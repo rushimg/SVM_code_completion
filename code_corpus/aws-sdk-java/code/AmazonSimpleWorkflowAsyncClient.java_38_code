@@ -1,0 +1,19 @@
+    public Future<PendingTaskCount> countPendingActivityTasksAsync(
+            final CountPendingActivityTasksRequest countPendingActivityTasksRequest,
+            final AsyncHandler<CountPendingActivityTasksRequest, PendingTaskCount> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<PendingTaskCount>() {
+            public PendingTaskCount call() throws Exception {
+                PendingTaskCount result;
+                try {
+                    result = countPendingActivityTasks(countPendingActivityTasksRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(countPendingActivityTasksRequest, result);
+                   return result;
+            }
+        });
+    }
+    

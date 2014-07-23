@@ -1,0 +1,19 @@
+    public Future<UploadArchiveResult> uploadArchiveAsync(
+            final UploadArchiveRequest uploadArchiveRequest,
+            final AsyncHandler<UploadArchiveRequest, UploadArchiveResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<UploadArchiveResult>() {
+            public UploadArchiveResult call() throws Exception {
+                UploadArchiveResult result;
+                try {
+                    result = uploadArchive(uploadArchiveRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(uploadArchiveRequest, result);
+                   return result;
+            }
+        });
+    }
+    

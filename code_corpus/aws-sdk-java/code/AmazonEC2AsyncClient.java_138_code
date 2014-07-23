@@ -1,0 +1,19 @@
+    public Future<DescribeRouteTablesResult> describeRouteTablesAsync(
+            final DescribeRouteTablesRequest describeRouteTablesRequest,
+            final AsyncHandler<DescribeRouteTablesRequest, DescribeRouteTablesResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeRouteTablesResult>() {
+            public DescribeRouteTablesResult call() throws Exception {
+                DescribeRouteTablesResult result;
+                try {
+                    result = describeRouteTables(describeRouteTablesRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeRouteTablesRequest, result);
+                   return result;
+            }
+        });
+    }
+    

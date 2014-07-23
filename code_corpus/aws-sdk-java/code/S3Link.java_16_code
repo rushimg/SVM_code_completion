@@ -1,0 +1,29 @@
+    public ObjectMetadata downloadTo(final OutputStream output,
+            RequestMetricCollector requestMetricCollector) {
+        return downloadTo0(output, requestMetricCollector);
+    }
+
+    private ObjectMetadata downloadTo0(final OutputStream output,
+            RequestMetricCollector requestMetricCollector) {
+        GetObjectRequest req = new GetObjectRequest(getBucketName(), getKey())
+            .withRequestMetricCollector(requestMetricCollector);
+        S3Object s3Object = getAmazonS3Client().getObject(req);
+        S3ObjectInputStream objectContent = s3Object.getObjectContent();
+
+        try {
+            int bytesRead = -1;
+            while ((bytesRead = objectContent.read(buffer)) > -1) {
+                output.write(buffer, 0, bytesRead);
+            }
+        } catch (IOException ioe) {
+            try {
+                objectContent.abort();
+            } catch (IOException e) {}
+            throw new AmazonClientException("Unable to transfer content from Amazon S3 to the output stream", ioe);
+        } finally {
+            try { objectContent.close(); } catch (IOException ioe) {}
+        }
+
+        return s3Object.getObjectMetadata();
+    }
+

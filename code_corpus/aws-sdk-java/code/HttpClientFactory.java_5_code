@@ -1,0 +1,49 @@
+    private static class TrustingSocketFactory implements SchemeSocketFactory, SchemeLayeredSocketFactory {
+
+        private SSLContext sslcontext = null;
+
+        private static SSLContext createSSLContext() throws IOException {
+            try {
+                SSLContext context = SSLContext.getInstance("TLS");
+                context.init(null, new TrustManager[] { new TrustingX509TrustManager() }, null);
+                return context;
+            } catch (Exception e) {
+                throw new IOException(e.getMessage(), e);
+            }
+        }
+
+        private SSLContext getSSLContext() throws IOException {
+            if (this.sslcontext == null) this.sslcontext = createSSLContext();
+            return this.sslcontext;
+        }
+
+        public Socket createSocket(HttpParams params) throws IOException {
+            return getSSLContext().getSocketFactory().createSocket();
+        }
+
+        public Socket connectSocket(Socket sock,
+                InetSocketAddress remoteAddress,
+                InetSocketAddress localAddress, HttpParams params)
+                throws IOException, UnknownHostException,
+                ConnectTimeoutException {
+            int connTimeout = HttpConnectionParams.getConnectionTimeout(params);
+            int soTimeout = HttpConnectionParams.getSoTimeout(params);
+
+            SSLSocket sslsock = (SSLSocket) ((sock != null) ? sock : createSocket(params));
+            if (localAddress != null) sslsock.bind(localAddress);
+
+            sslsock.connect(remoteAddress, connTimeout);
+            sslsock.setSoTimeout(soTimeout);
+            return sslsock;
+        }
+
+        public boolean isSecure(Socket sock) throws IllegalArgumentException {
+            return true;
+        }
+
+        public Socket createLayeredSocket(Socket arg0, String arg1, int arg2, HttpParams arg3)
+                throws IOException, UnknownHostException {
+            return getSSLContext().getSocketFactory().createSocket(arg0, arg1, arg2, true);
+        }
+    }
+

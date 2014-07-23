@@ -1,0 +1,19 @@
+    public Future<AssociateAddressResult> associateAddressAsync(
+            final AssociateAddressRequest associateAddressRequest,
+            final AsyncHandler<AssociateAddressRequest, AssociateAddressResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<AssociateAddressResult>() {
+            public AssociateAddressResult call() throws Exception {
+                AssociateAddressResult result;
+                try {
+                    result = associateAddress(associateAddressRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(associateAddressRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -1,0 +1,19 @@
+    public Future<DescribeStackSummaryResult> describeStackSummaryAsync(
+            final DescribeStackSummaryRequest describeStackSummaryRequest,
+            final AsyncHandler<DescribeStackSummaryRequest, DescribeStackSummaryResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeStackSummaryResult>() {
+            public DescribeStackSummaryResult call() throws Exception {
+                DescribeStackSummaryResult result;
+                try {
+                    result = describeStackSummary(describeStackSummaryRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeStackSummaryRequest, result);
+                   return result;
+            }
+        });
+    }
+    

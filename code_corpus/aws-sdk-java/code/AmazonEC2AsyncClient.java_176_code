@@ -1,0 +1,19 @@
+    public Future<DescribePlacementGroupsResult> describePlacementGroupsAsync(
+            final DescribePlacementGroupsRequest describePlacementGroupsRequest,
+            final AsyncHandler<DescribePlacementGroupsRequest, DescribePlacementGroupsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribePlacementGroupsResult>() {
+            public DescribePlacementGroupsResult call() throws Exception {
+                DescribePlacementGroupsResult result;
+                try {
+                    result = describePlacementGroups(describePlacementGroupsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describePlacementGroupsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

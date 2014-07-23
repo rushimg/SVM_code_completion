@@ -1,0 +1,19 @@
+    public Future<AssumeRoleWithSAMLResult> assumeRoleWithSAMLAsync(
+            final AssumeRoleWithSAMLRequest assumeRoleWithSAMLRequest,
+            final AsyncHandler<AssumeRoleWithSAMLRequest, AssumeRoleWithSAMLResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<AssumeRoleWithSAMLResult>() {
+            public AssumeRoleWithSAMLResult call() throws Exception {
+                AssumeRoleWithSAMLResult result;
+                try {
+                    result = assumeRoleWithSAML(assumeRoleWithSAMLRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(assumeRoleWithSAMLRequest, result);
+                   return result;
+            }
+        });
+    }
+    

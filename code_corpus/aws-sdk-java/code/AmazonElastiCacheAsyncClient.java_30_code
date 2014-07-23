@@ -1,0 +1,19 @@
+    public Future<CacheCluster> deleteCacheClusterAsync(
+            final DeleteCacheClusterRequest deleteCacheClusterRequest,
+            final AsyncHandler<DeleteCacheClusterRequest, CacheCluster> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<CacheCluster>() {
+            public CacheCluster call() throws Exception {
+                CacheCluster result;
+                try {
+                    result = deleteCacheCluster(deleteCacheClusterRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(deleteCacheClusterRequest, result);
+                   return result;
+            }
+        });
+    }
+    

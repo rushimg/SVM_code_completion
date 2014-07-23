@@ -1,0 +1,19 @@
+    public Future<DeleteLoadBalancerPolicyResult> deleteLoadBalancerPolicyAsync(
+            final DeleteLoadBalancerPolicyRequest deleteLoadBalancerPolicyRequest,
+            final AsyncHandler<DeleteLoadBalancerPolicyRequest, DeleteLoadBalancerPolicyResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DeleteLoadBalancerPolicyResult>() {
+            public DeleteLoadBalancerPolicyResult call() throws Exception {
+                DeleteLoadBalancerPolicyResult result;
+                try {
+                    result = deleteLoadBalancerPolicy(deleteLoadBalancerPolicyRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(deleteLoadBalancerPolicyRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -1,0 +1,19 @@
+    public Future<DescribeAutoScalingInstancesResult> describeAutoScalingInstancesAsync(
+            final DescribeAutoScalingInstancesRequest describeAutoScalingInstancesRequest,
+            final AsyncHandler<DescribeAutoScalingInstancesRequest, DescribeAutoScalingInstancesResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeAutoScalingInstancesResult>() {
+            public DescribeAutoScalingInstancesResult call() throws Exception {
+                DescribeAutoScalingInstancesResult result;
+                try {
+                    result = describeAutoScalingInstances(describeAutoScalingInstancesRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeAutoScalingInstancesRequest, result);
+                   return result;
+            }
+        });
+    }
+    

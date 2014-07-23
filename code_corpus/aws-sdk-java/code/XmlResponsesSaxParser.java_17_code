@@ -1,0 +1,18 @@
+            if (nextMarker != null) {
+                objectListing.setNextMarker(nextMarker);
+            } else if (listingTruncated) {
+                String nextMarker = null;
+                if (objectListing.getObjectSummaries().isEmpty() == false) {
+                    nextMarker = objectListing.getObjectSummaries().get(objectListing.getObjectSummaries().size() - 1).getKey();
+                } else if (objectListing.getCommonPrefixes().isEmpty() == false) {
+                    nextMarker = objectListing.getCommonPrefixes().get(objectListing.getCommonPrefixes().size() - 1);
+                } else {
+                    log.error("S3 response indicates truncated results, but contains no object summaries or common prefixes.");
+                }
+
+                objectListing.setNextMarker(nextMarker);
+            }
+
+            return objectListing;
+        }
+

@@ -1,0 +1,33 @@
+    public boolean testExpression(String expression, int stackDepth) {
+        if (expression.equals(".")) {
+            return true;
+        } else {
+            return testExpression(expression)
+                    && stackDepth == getCurrentDepth();
+        }
+    }
+
+    public JsonToken nextToken() throws IOException {
+        // Use the value from the nextToken field if
+        // we've already populated it to peek ahead.
+        JsonToken token = (nextToken != null) ?
+                nextToken : jsonParser.nextToken();
+
+        this.currentToken = token;
+        nextToken = null;
+
+        updateContext();
+        return token;
+    }
+
+    public JsonToken peek() throws IOException {
+        if (nextToken != null) return nextToken;
+
+        nextToken = jsonParser.nextToken();
+        return nextToken;
+    }
+
+    public JsonParser getJsonParser() {
+        return jsonParser;
+    }
+

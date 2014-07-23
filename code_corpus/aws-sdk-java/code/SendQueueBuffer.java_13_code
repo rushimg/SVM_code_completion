@@ -1,0 +1,21 @@
+    private final Semaphore inflightChangeMessageVisibilityBatches;
+
+    SendQueueBuffer(AmazonSQS sqsClient, Executor executor, QueueBufferConfig paramConfig, String url) {
+        this.sqsClient = sqsClient;
+        this.executor = executor;
+        this.config = paramConfig;
+        qUrl = url;
+        int maxBatch = config.getMaxInflightOutboundBatches();
+        
+        //must allow at least one outbound batch.
+        maxBatch = maxBatch > 0 ? maxBatch : 1;
+
+        this.inflightSendMessageBatches = new Semaphore( maxBatch);
+        this.inflightDeleteMessageBatches = new Semaphore( maxBatch);
+        this.inflightChangeMessageVisibilityBatches = new Semaphore( maxBatch);
+    }
+    
+      public QueueBufferConfig getConfig()  {
+          return config;
+      }
+

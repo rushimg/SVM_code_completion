@@ -1,0 +1,19 @@
+
+    public Future<ReceiveMessageResult> receiveMessage(ReceiveMessageRequest rq, AsyncHandler<ReceiveMessageRequest, ReceiveMessageResult> handler) {
+        //only handle simple requests, because these are the settings we pre-fetch with
+        boolean noAttributes = (rq.getAttributeNames() == null) || rq.getAttributeNames().isEmpty();   
+        boolean bufferngEnabled = (config.getMaxInflightReceiveBatches() > 0) && (config.getMaxDoneReceiveBatches() > 0);
+        if (  noAttributes && bufferngEnabled && ( rq.getVisibilityTimeout() == null ) ) {
+            QueueBufferCallback<ReceiveMessageRequest,ReceiveMessageResult> callback = null;
+            if ( handler != null ) {
+                callback = new QueueBufferCallback<ReceiveMessageRequest,ReceiveMessageResult> (handler, rq);
+            }
+
+            QueueBufferFuture<ReceiveMessageRequest, ReceiveMessageResult> future = receiveBuffer.receiveMessageAsync(rq, callback);
+            future.setBuffer(this);
+            return future;
+        } else {
+            return realSqs.receiveMessageAsync(rq); 
+        }
+    }
+    

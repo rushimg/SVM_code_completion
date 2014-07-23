@@ -1,0 +1,19 @@
+    public Future<ClusterParameterGroup> createClusterParameterGroupAsync(
+            final CreateClusterParameterGroupRequest createClusterParameterGroupRequest,
+            final AsyncHandler<CreateClusterParameterGroupRequest, ClusterParameterGroup> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ClusterParameterGroup>() {
+            public ClusterParameterGroup call() throws Exception {
+                ClusterParameterGroup result;
+                try {
+                    result = createClusterParameterGroup(createClusterParameterGroupRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(createClusterParameterGroupRequest, result);
+                   return result;
+            }
+        });
+    }
+    

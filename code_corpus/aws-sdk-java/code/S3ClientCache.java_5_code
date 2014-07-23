@@ -1,0 +1,17 @@
+    public AmazonS3Client getClient(Region s3region) {
+        if ( s3region == null ) {
+            throw new IllegalArgumentException("S3 region must be specified");
+        }
+        AmazonS3Client client = clientsByRegion.get(s3region);
+        if (client != null) {
+            return client;
+        }
+        if (credentials == null) {
+            throw new IllegalArgumentException("No client provided for S3 region: " + s3region);
+        }
+        client = new AmazonS3Client(credentials);
+        client.setRegion(s3region.toAWSRegion());
+        AmazonS3Client prev = clientsByRegion.putIfAbsent(s3region, client);
+        return prev == null ? client : prev;
+    }
+

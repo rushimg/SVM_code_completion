@@ -1,0 +1,19 @@
+    public Future<ShutdownGatewayResult> shutdownGatewayAsync(
+            final ShutdownGatewayRequest shutdownGatewayRequest,
+            final AsyncHandler<ShutdownGatewayRequest, ShutdownGatewayResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ShutdownGatewayResult>() {
+            public ShutdownGatewayResult call() throws Exception {
+                ShutdownGatewayResult result;
+                try {
+                    result = shutdownGateway(shutdownGatewayRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(shutdownGatewayRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -1,0 +1,19 @@
+    public Future<ConfirmSubscriptionResult> confirmSubscriptionAsync(
+            final ConfirmSubscriptionRequest confirmSubscriptionRequest,
+            final AsyncHandler<ConfirmSubscriptionRequest, ConfirmSubscriptionResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ConfirmSubscriptionResult>() {
+            public ConfirmSubscriptionResult call() throws Exception {
+                ConfirmSubscriptionResult result;
+                try {
+                    result = confirmSubscription(confirmSubscriptionRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(confirmSubscriptionRequest, result);
+                   return result;
+            }
+        });
+    }
+    

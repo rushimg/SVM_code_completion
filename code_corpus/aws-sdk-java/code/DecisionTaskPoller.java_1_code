@@ -1,0 +1,135 @@
+package com.amazonaws.services.simpleworkflow.flow.worker;
+
+import java.lang.management.ManagementFactory;
+import java.util.Iterator;
+import java.util.concurrent.TimeUnit;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import com.amazonaws.services.simpleworkflow.AmazonSimpleWorkflow;
+import com.amazonaws.services.simpleworkflow.flow.common.WorkflowExecutionUtils;
+import com.amazonaws.services.simpleworkflow.model.DecisionTask;
+import com.amazonaws.services.simpleworkflow.model.PollForDecisionTaskRequest;
+import com.amazonaws.services.simpleworkflow.model.RespondDecisionTaskCompletedRequest;
+import com.amazonaws.services.simpleworkflow.model.TaskList;
+
+public class DecisionTaskPoller implements TaskPoller {
+
+    private static final Log log = LogFactory.getLog(DecisionTaskPoller.class);
+
+    private static final Log decisionsLog = LogFactory.getLog(DecisionTaskPoller.class.getName() + ".decisions");
+
+    private class DecisionTaskIterator implements Iterator<DecisionTask> {
+
+        private final DecisionTask firstDecisionTask;
+
+        private DecisionTask next;
+
+        public DecisionTaskIterator() {
+            next = firstDecisionTask = poll(null);
+        }
+
+        @Override
+        public boolean hasNext() {
+            return next != null;
+        }
+
+        @Override
+        public DecisionTask next() {
+            if (!hasNext()) {
+                throw new IllegalStateException("hasNext() == false");
+            }
+            DecisionTask result = next;
+            if (next.getNextPageToken() == null) {
+                next = null;
+            }
+            else {
+                next = poll(next.getNextPageToken());
+                // Just to not keep around the history page
+                if (firstDecisionTask != result) {
+                    firstDecisionTask.setEvents(null);
+                }
+            }
+            return result;
+        }
+
+        @Override
+        public void remove() {
+            throw new UnsupportedOperationException();
+        }
+
+        public DecisionTask getFirstDecisionTask() {
+            return firstDecisionTask;
+        }
+
+    }
+
+    private AmazonSimpleWorkflow service;
+
+    private String domain;
+
+    private String taskListToPoll;
+
+    private String identity;
+
+    private boolean validated;
+
+    private DecisionTaskHandler decisionTaskHandler;
+
+    public DecisionTaskPoller() {
+        identity = ManagementFactory.getRuntimeMXBean().getName();
+    }
+
+    public DecisionTaskPoller(AmazonSimpleWorkflow service, String domain, String taskListToPoll,
+            DecisionTaskHandler decisionTaskHandler) {
+        this.service = service;
+        this.domain = domain;
+        this.taskListToPoll = taskListToPoll;
+        this.decisionTaskHandler = decisionTaskHandler;
+        identity = ManagementFactory.getRuntimeMXBean().getName();
+    }
+
+    public String getIdentity() {
+        return identity;
+    }
+
+    public void setIdentity(String identity) {
+        validated = false;
+        this.identity = identity;
+    }
+
+    public AmazonSimpleWorkflow getService() {
+        return service;
+    }
+
+    public String getDomain() {
+        return domain;
+    }
+
+    public DecisionTaskHandler getDecisionTaskHandler() {
+        return decisionTaskHandler;
+    }
+
+    public void setDecisionTaskHandler(DecisionTaskHandler decisionTaskHandler) {
+        validated = false;
+        this.decisionTaskHandler = decisionTaskHandler;
+    }
+
+    public void setService(AmazonSimpleWorkflow service) {
+        validated = false;
+        this.service = service;
+    }
+
+    public void setDomain(String domain) {
+        this.domain = domain;
+    }
+
+    public String getTaskListToPoll() {
+        return taskListToPoll;
+    }
+
+    public void setTaskListToPoll(String pollTaskList) {
+        this.taskListToPoll = pollTaskList;
+    }
+

@@ -1,0 +1,24 @@
+    private void pauseBeforeNextRetry(AmazonWebServiceRequest originalRequest,
+                                    AmazonClientException previousException,
+                                    int requestCount,
+                                    RetryPolicy retryPolicy) {
+        final int retries = requestCount // including next attempt
+                            - 1          // number of attempted requests
+                            - 1;         // number of attempted retries
+        
+        long delay = retryPolicy.getBackoffStrategy().delayBeforeNextRetry(
+                originalRequest, previousException, retries);
+        
+        if (log.isDebugEnabled()) {
+            log.debug("Retriable error detected, " +
+                    "will retry in " + delay + "ms, attempt number: " + retries);
+        }
+
+        try {
+            Thread.sleep(delay);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new AmazonClientException(e.getMessage(), e);
+        }
+    }
+

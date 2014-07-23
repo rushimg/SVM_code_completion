@@ -1,0 +1,19 @@
+    public Future<UpdateStackResult> updateStackAsync(
+            final UpdateStackRequest updateStackRequest,
+            final AsyncHandler<UpdateStackRequest, UpdateStackResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<UpdateStackResult>() {
+            public UpdateStackResult call() throws Exception {
+                UpdateStackResult result;
+                try {
+                    result = updateStack(updateStackRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(updateStackRequest, result);
+                   return result;
+            }
+        });
+    }
+    

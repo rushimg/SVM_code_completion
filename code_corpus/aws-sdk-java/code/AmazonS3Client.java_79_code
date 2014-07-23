@@ -1,0 +1,16 @@
+    public BucketLifecycleConfiguration getBucketLifecycleConfiguration(String bucketName) {
+        Request<GenericBucketRequest> request = createRequest(bucketName, null, new GenericBucketRequest(bucketName), HttpMethodName.GET);
+        request.addParameter("lifecycle", null);
+
+        try {
+            return invoke(request, new Unmarshallers.BucketLifecycleConfigurationUnmarshaller(), bucketName, null);
+        } catch (AmazonServiceException ase) {
+            switch (ase.getStatusCode()) {
+            case 404:
+                return null;
+            default:
+                throw ase;
+            }
+        }
+    }
+

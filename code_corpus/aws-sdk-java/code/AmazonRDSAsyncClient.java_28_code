@@ -1,0 +1,19 @@
+    public Future<DescribeDBSecurityGroupsResult> describeDBSecurityGroupsAsync(
+            final DescribeDBSecurityGroupsRequest describeDBSecurityGroupsRequest,
+            final AsyncHandler<DescribeDBSecurityGroupsRequest, DescribeDBSecurityGroupsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeDBSecurityGroupsResult>() {
+            public DescribeDBSecurityGroupsResult call() throws Exception {
+                DescribeDBSecurityGroupsResult result;
+                try {
+                    result = describeDBSecurityGroups(describeDBSecurityGroupsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeDBSecurityGroupsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

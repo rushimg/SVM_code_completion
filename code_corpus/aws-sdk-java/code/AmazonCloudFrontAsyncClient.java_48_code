@@ -1,0 +1,19 @@
+    public Future<ListDistributionsResult> listDistributionsAsync(
+            final ListDistributionsRequest listDistributionsRequest,
+            final AsyncHandler<ListDistributionsRequest, ListDistributionsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ListDistributionsResult>() {
+            public ListDistributionsResult call() throws Exception {
+                ListDistributionsResult result;
+                try {
+                    result = listDistributions(listDistributionsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(listDistributionsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

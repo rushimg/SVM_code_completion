@@ -1,0 +1,26 @@
+    public void flush() {
+
+        try {
+            synchronized (sendMessageLock) {
+                inflightSendMessageBatches
+                        .acquire(config.getMaxInflightOutboundBatches());
+                inflightSendMessageBatches
+                        .release(config.getMaxInflightOutboundBatches());
+            }
+            synchronized (deleteMessageLock) {
+                inflightDeleteMessageBatches
+                        .acquire(config.getMaxInflightOutboundBatches());
+                inflightDeleteMessageBatches
+                        .release(config.getMaxInflightOutboundBatches());
+            }
+            synchronized (changeMessageVisibilityLock) {
+                inflightChangeMessageVisibilityBatches
+                        .acquire(config.getMaxInflightOutboundBatches());
+                inflightChangeMessageVisibilityBatches
+                        .release(config.getMaxInflightOutboundBatches());
+            }
+        } catch( InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+

@@ -1,0 +1,20 @@
+    public JSONObject(JSONTokener x) throws JSONException {
+        this();
+        char c;
+        String key;
+
+        if (x.nextClean() != '{') {
+            throw x.syntaxError("A JSONObject text must begin with '{'");
+        }
+        for (;;) {
+            c = x.nextClean();
+            switch (c) {
+            case 0:
+                throw x.syntaxError("A JSONObject text must end with '}'");
+            case '}':
+                return;
+            default:
+                x.back();
+                key = x.nextValue().toString();
+            }
+

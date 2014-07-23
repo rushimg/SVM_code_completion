@@ -1,0 +1,19 @@
+    public Future<GetSendQuotaResult> getSendQuotaAsync(
+            final GetSendQuotaRequest getSendQuotaRequest,
+            final AsyncHandler<GetSendQuotaRequest, GetSendQuotaResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<GetSendQuotaResult>() {
+            public GetSendQuotaResult call() throws Exception {
+                GetSendQuotaResult result;
+                try {
+                    result = getSendQuota(getSendQuotaRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(getSendQuotaRequest, result);
+                   return result;
+            }
+        });
+    }
+    

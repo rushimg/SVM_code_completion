@@ -1,0 +1,19 @@
+    public Future<ApplySecurityGroupsToLoadBalancerResult> applySecurityGroupsToLoadBalancerAsync(
+            final ApplySecurityGroupsToLoadBalancerRequest applySecurityGroupsToLoadBalancerRequest,
+            final AsyncHandler<ApplySecurityGroupsToLoadBalancerRequest, ApplySecurityGroupsToLoadBalancerResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ApplySecurityGroupsToLoadBalancerResult>() {
+            public ApplySecurityGroupsToLoadBalancerResult call() throws Exception {
+                ApplySecurityGroupsToLoadBalancerResult result;
+                try {
+                    result = applySecurityGroupsToLoadBalancer(applySecurityGroupsToLoadBalancerRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(applySecurityGroupsToLoadBalancerRequest, result);
+                   return result;
+            }
+        });
+    }
+    

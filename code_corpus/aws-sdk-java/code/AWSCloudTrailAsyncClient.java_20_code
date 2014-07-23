@@ -1,0 +1,19 @@
+    public Future<CreateTrailResult> createTrailAsync(
+            final CreateTrailRequest createTrailRequest,
+            final AsyncHandler<CreateTrailRequest, CreateTrailResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<CreateTrailResult>() {
+            public CreateTrailResult call() throws Exception {
+                CreateTrailResult result;
+                try {
+                    result = createTrail(createTrailRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(createTrailRequest, result);
+                   return result;
+            }
+        });
+    }
+    

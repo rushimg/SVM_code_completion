@@ -1,0 +1,28 @@
+        if (errorResponse.getContent() == null
+                || errorResponse.getRequest().getHttpMethod() == HttpMethodName.HEAD) {
+            String requestId = errorResponse.getHeaders().get(Headers.REQUEST_ID);
+            String extendedRequestId = errorResponse.getHeaders().get(Headers.EXTENDED_REQUEST_ID);
+            AmazonS3Exception ase = new AmazonS3Exception(errorResponse.getStatusText());
+            ase.setStatusCode(errorResponse.getStatusCode());
+            ase.setRequestId(requestId);
+            ase.setExtendedRequestId(extendedRequestId);
+            fillInErrorType(ase, errorResponse);
+            return ase;
+        }
+
+        Document document = XpathUtils.documentFrom(errorResponse.getContent());
+        String message = XpathUtils.asString("Error/Message", document);
+        String errorCode = XpathUtils.asString("Error/Code", document);
+        String requestId = XpathUtils.asString("Error/RequestId", document);
+        String extendedRequestId = XpathUtils.asString("Error/HostId", document);
+
+        AmazonS3Exception ase = new AmazonS3Exception(message);
+        ase.setStatusCode(errorResponse.getStatusCode());
+        ase.setErrorCode(errorCode);
+        ase.setRequestId(requestId);
+        ase.setExtendedRequestId(extendedRequestId);
+        fillInErrorType(ase, errorResponse);
+
+        return ase;
+    }
+

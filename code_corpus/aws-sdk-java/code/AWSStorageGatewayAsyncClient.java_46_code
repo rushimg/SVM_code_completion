@@ -1,0 +1,19 @@
+    public Future<DescribeGatewayInformationResult> describeGatewayInformationAsync(
+            final DescribeGatewayInformationRequest describeGatewayInformationRequest,
+            final AsyncHandler<DescribeGatewayInformationRequest, DescribeGatewayInformationResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeGatewayInformationResult>() {
+            public DescribeGatewayInformationResult call() throws Exception {
+                DescribeGatewayInformationResult result;
+                try {
+                    result = describeGatewayInformation(describeGatewayInformationRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeGatewayInformationRequest, result);
+                   return result;
+            }
+        });
+    }
+    

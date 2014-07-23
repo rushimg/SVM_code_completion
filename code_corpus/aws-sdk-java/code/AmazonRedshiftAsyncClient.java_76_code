@@ -1,0 +1,19 @@
+    public Future<DescribeClusterSecurityGroupsResult> describeClusterSecurityGroupsAsync(
+            final DescribeClusterSecurityGroupsRequest describeClusterSecurityGroupsRequest,
+            final AsyncHandler<DescribeClusterSecurityGroupsRequest, DescribeClusterSecurityGroupsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeClusterSecurityGroupsResult>() {
+            public DescribeClusterSecurityGroupsResult call() throws Exception {
+                DescribeClusterSecurityGroupsResult result;
+                try {
+                    result = describeClusterSecurityGroups(describeClusterSecurityGroupsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeClusterSecurityGroupsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

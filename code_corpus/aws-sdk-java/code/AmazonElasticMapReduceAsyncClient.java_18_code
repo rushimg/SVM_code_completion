@@ -1,0 +1,19 @@
+    public Future<AddTagsResult> addTagsAsync(
+            final AddTagsRequest addTagsRequest,
+            final AsyncHandler<AddTagsRequest, AddTagsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<AddTagsResult>() {
+            public AddTagsResult call() throws Exception {
+                AddTagsResult result;
+                try {
+                    result = addTags(addTagsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(addTagsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

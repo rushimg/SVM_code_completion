@@ -1,0 +1,28 @@
+    public AmazonCloudWatchClient(AWSCredentialsProvider awsCredentialsProvider,
+            ClientConfiguration clientConfiguration,
+            RequestMetricCollector requestMetricCollector) {
+        super(clientConfiguration, requestMetricCollector);
+        this.awsCredentialsProvider = awsCredentialsProvider;
+        init();
+    }
+
+    private void init() {
+        exceptionUnmarshallers.add(new InvalidNextTokenExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new InvalidParameterCombinationExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new InvalidFormatExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new LimitExceededExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new InternalServiceExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new ResourceNotFoundExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new MissingRequiredParameterExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new InvalidParameterValueExceptionUnmarshaller());
+        
+        exceptionUnmarshallers.add(new StandardErrorUnmarshaller());
+        // calling this.setEndPoint(...) will also modify the signer accordingly
+        this.setEndpoint("monitoring.us-east-1.amazonaws.com");
+        HandlerChainFactory chainFactory = new HandlerChainFactory();
+        requestHandler2s.addAll(chainFactory.newRequestHandlerChain(
+                "/com/amazonaws/services/cloudwatch/request.handlers"));
+        requestHandler2s.addAll(chainFactory.newRequestHandler2Chain(
+                "/com/amazonaws/services/cloudwatch/request.handler2s"));
+    }
+

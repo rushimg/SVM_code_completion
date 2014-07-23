@@ -1,0 +1,16 @@
+    public <T> QueryResultPage<T> queryPage(Class<T> clazz, DynamoDBQueryExpression<T> queryExpression, DynamoDBMapperConfig config) {
+        config = mergeConfig(config);
+
+        QueryRequest queryRequest = createQueryRequestFromExpression(clazz, queryExpression, config);
+
+        QueryResult scanResult = db.query(applyUserAgent(queryRequest));
+        QueryResultPage<T> result = new QueryResultPage<T>();
+        List<AttributeTransformer.Parameters<T>> parameters =
+            toParameters(scanResult.getItems(), clazz, config);
+
+        result.setResults(marshalIntoObjects(parameters));
+        result.setLastEvaluatedKey(scanResult.getLastEvaluatedKey());
+
+        return result;
+    }
+

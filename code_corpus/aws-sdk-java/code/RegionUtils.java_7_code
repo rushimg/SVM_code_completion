@@ -1,0 +1,68 @@
+    public static synchronized void init() {
+        String overrideFilePath = System.getProperty(REGIONS_FILE_OVERRIDE);
+
+        if (overrideFilePath != null) {
+
+            try {
+                loadRegionsFromOverrideFile(overrideFilePath);
+            } catch ( FileNotFoundException exception ) {
+                throw new RuntimeException(
+                    "Couldn't find regions override file specified: "
+                    + overrideFilePath,
+                    exception);
+            }
+
+        } else if (System.getProperty(DISABLE_REMOTE_REGIONS_FILE) == null) {
+
+            try {
+                InputStream regionsFile = getRegionsFileFromCloudfront();
+                initRegions(regionsFile, true);
+            } catch ( Exception e ) {
+                log.warn("Failed to initialize regional endpoints from "
+                         + "cloudfront", e);
+                regions = null;
+            }
+            
+            if ( regions == null ) {
+                // Switch to the S3 bucket origin endpoint
+                try {
+                    InputStream regionsFile = getRegionsFileFromS3Bucket();
+                    initRegions(regionsFile, true);
+                } catch ( Exception e ) {
+                    log.warn("Failed to initialize regional endpoints from S3 "
+                             + "bucket", e);
+                    regions = null;
+                }
+            }
+
+        }
+
+        // Fall back onto the version we ship with the SDK
+        if ( regions == null ) {
+            initSDKRegions();
+        }
+
+    }
+
+    private static void loadRegionsFromOverrideFile(String overrideFilePath)
+            throws FileNotFoundException {
+
+        if ( log.isDebugEnabled() ) {
+            log.debug("Using local override of the regions file (" 
+                        + overrideFilePath
+                        + ") to initiate regions data...");
+        }
+
+        File regionsFile = new File(overrideFilePath);
+        FileInputStream override = new FileInputStream(regionsFile);
+
+        // Disable endpoint verification
+        try {
+            initRegions(override, false);
+        } catch (IOException exception) {
+            log.warn("Failed to parse regional endpoints from override file "
+                     + overrideFilePath,
+                     exception);
+        }
+    }
+

@@ -1,0 +1,16 @@
+    <T> Method getRangeKeyGetter(Class<T> clazz) {
+        synchronized (rangeKeyGetterCache) {
+            if ( !rangeKeyGetterCache.containsKey(clazz) ) {
+                Method rangeKeyMethod = null;
+                for ( Method method : getRelevantGetters(clazz) ) {
+                    if ( method.getParameterTypes().length == 0 && method.isAnnotationPresent(DynamoDBRangeKey.class)) {
+                        rangeKeyMethod = method;
+                        break;
+                    }
+                }
+                rangeKeyGetterCache.put(clazz, rangeKeyMethod);
+            }
+        }
+        return rangeKeyGetterCache.get(clazz);
+    }
+

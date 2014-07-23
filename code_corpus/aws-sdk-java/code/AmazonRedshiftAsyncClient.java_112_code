@@ -1,0 +1,19 @@
+    public Future<HsmConfiguration> createHsmConfigurationAsync(
+            final CreateHsmConfigurationRequest createHsmConfigurationRequest,
+            final AsyncHandler<CreateHsmConfigurationRequest, HsmConfiguration> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<HsmConfiguration>() {
+            public HsmConfiguration call() throws Exception {
+                HsmConfiguration result;
+                try {
+                    result = createHsmConfiguration(createHsmConfigurationRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(createHsmConfigurationRequest, result);
+                   return result;
+            }
+        });
+    }
+    

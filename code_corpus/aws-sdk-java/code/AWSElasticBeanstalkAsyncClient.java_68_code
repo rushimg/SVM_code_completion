@@ -1,0 +1,19 @@
+    public Future<DescribeApplicationsResult> describeApplicationsAsync(
+            final DescribeApplicationsRequest describeApplicationsRequest,
+            final AsyncHandler<DescribeApplicationsRequest, DescribeApplicationsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeApplicationsResult>() {
+            public DescribeApplicationsResult call() throws Exception {
+                DescribeApplicationsResult result;
+                try {
+                    result = describeApplications(describeApplicationsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeApplicationsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

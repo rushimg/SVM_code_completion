@@ -1,0 +1,19 @@
+    public Future<CreateSnapshotResult> createSnapshotAsync(
+            final CreateSnapshotRequest createSnapshotRequest,
+            final AsyncHandler<CreateSnapshotRequest, CreateSnapshotResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<CreateSnapshotResult>() {
+            public CreateSnapshotResult call() throws Exception {
+                CreateSnapshotResult result;
+                try {
+                    result = createSnapshot(createSnapshotRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(createSnapshotRequest, result);
+                   return result;
+            }
+        });
+    }
+    

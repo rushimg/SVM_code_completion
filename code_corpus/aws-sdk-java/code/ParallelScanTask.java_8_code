@@ -1,0 +1,9 @@
+		synchronized(segmentScanStates) {
+			while (segmentScanStates.contains(SegmentScanState.Waiting)
+					|| segmentScanStates.contains(SegmentScanState.Scanning)) {
+				try {
+					segmentScanStates.wait();
+				} catch (InterruptedException ie) {
+					throw new AmazonClientException("Parallel scan interrupted by other thread.", ie);
+				}
+			}

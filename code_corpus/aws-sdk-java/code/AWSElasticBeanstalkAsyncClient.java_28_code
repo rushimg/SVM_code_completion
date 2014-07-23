@@ -1,0 +1,19 @@
+    public Future<CreateApplicationVersionResult> createApplicationVersionAsync(
+            final CreateApplicationVersionRequest createApplicationVersionRequest,
+            final AsyncHandler<CreateApplicationVersionRequest, CreateApplicationVersionResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<CreateApplicationVersionResult>() {
+            public CreateApplicationVersionResult call() throws Exception {
+                CreateApplicationVersionResult result;
+                try {
+                    result = createApplicationVersion(createApplicationVersionRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(createApplicationVersionRequest, result);
+                   return result;
+            }
+        });
+    }
+    

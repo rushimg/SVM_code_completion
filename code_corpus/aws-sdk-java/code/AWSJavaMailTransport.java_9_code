@@ -1,0 +1,27 @@
+	private void sendEmail(Message m, SendRawEmailRequest req)
+			throws SendFailedException, MessagingException {
+
+		Address[] sent = null;
+		Address[] unsent = null;
+		Address[] invalid = null;
+
+		try {
+		    appendUserAgent(req, USER_AGENT);
+			this.emailService.sendRawEmail(req);
+			sent = m.getAllRecipients();
+			unsent = new Address[0];
+			invalid = new Address[0];
+			super.notifyTransportListeners(TransportEvent.MESSAGE_DELIVERED,
+					sent, unsent, invalid, m);
+		} catch (Exception e) {
+			sent = new Address[0];
+			unsent = m.getAllRecipients();
+			invalid = new Address[0];
+			super.notifyTransportListeners(
+					TransportEvent.MESSAGE_NOT_DELIVERED, sent, unsent,
+					invalid, m);
+			throw new SendFailedException("Unable to send email", e, sent,
+					unsent, invalid);
+		}
+	}
+

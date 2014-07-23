@@ -1,0 +1,47 @@
+    public JSONArray(JSONTokener x) throws JSONException {
+        this();
+        char c = x.nextClean();
+        char q;
+        if (c == '[') {
+            q = ']';
+        } else if (c == '(') {
+            q = ')';
+        } else {
+            throw x.syntaxError("A JSONArray text must start with '['");
+        }
+        if (x.nextClean() == ']') {
+            return;
+        }
+        x.back();
+        for (;;) {
+            if (x.nextClean() == ',') {
+                x.back();
+                this.myArrayList.add(null);
+            } else {
+                x.back();
+                this.myArrayList.add(x.nextValue());
+            }
+            c = x.nextClean();
+            switch (c) {
+            case ';':
+            case ',':
+                if (x.nextClean() == ']') {
+                    return;
+                }
+                x.back();
+                break;
+            case ']':
+            case ')':
+                if (q != c) {
+                    throw x.syntaxError("Expected a '"
+                                        + Character.valueOf(q)
+                                        + "'");
+                }
+                return;
+            default:
+                throw x.syntaxError("Expected a ',' or ']'");
+            }
+        }
+    }
+
+

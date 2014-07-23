@@ -1,0 +1,26 @@
+    @Override
+    public ObjectMetadata getObject(GetObjectRequest getObjectRequest, File destinationFile)
+    throws AmazonClientException, AmazonServiceException {
+
+        assertParameterNotNull(destinationFile,
+        "The destination file parameter must be specified when downloading an object directly to a file");
+
+        S3Object s3Object = getObject(getObjectRequest);
+        // getObject can return null if constraints were specified but not met
+        if (s3Object == null) return null;
+
+        OutputStream outputStream = null;
+        try {
+            outputStream = new BufferedOutputStream(new FileOutputStream(destinationFile));
+            int bytesRead;
+            while ((bytesRead = s3Object.getObjectContent().read(buffer)) > -1) {
+                outputStream.write(buffer, 0, bytesRead);
+            }
+        } catch (IOException e) {
+            throw new AmazonClientException(
+                    "Unable to store object contents to disk: " + e.getMessage(), e);
+        } finally {
+            try {outputStream.close();} catch (Exception e) {}
+            try {s3Object.getObjectContent().close();} catch (Exception e) {}
+        }
+

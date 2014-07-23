@@ -1,0 +1,34 @@
+public class RegionUtils {
+
+    private static final String REGIONS_FILE_OVERRIDE =
+        SDKGlobalConfiguration.REGIONS_FILE_OVERRIDE_SYSTEM_PROPERTY;
+
+    private static final String DISABLE_REMOTE_REGIONS_FILE =
+        SDKGlobalConfiguration.DISABLE_REMOTE_REGIONS_FILE_SYSTEM_PROPERTY;
+
+    // The CNAME "https://aws-sdk-configurations.amazonwebservices.com/" does
+    // endpoint to enable HTTPS access to the regions file.
+    private static final String CLOUDFRONT_DISTRO =
+        "https://d3s62xsdspbbg2.cloudfront.net/endpoints.xml";
+    
+    // If we cannot get the regions file from the cloudfront distribution, we
+    // first switch to the S3 bucket origin before fall back to using the local
+    // file.
+    private static final String S3_BUCKET_ORIGIN_ENDPOINT =
+        "https://aws-sdk-configurations.s3.amazonaws.com/endpoints.xml";
+    
+    // If all things failed, this is the fall back config file. 
+    private static final String FALLBACK = "/etc/regions.xml";
+
+    private static final int CONNECTION_TIMEOUT =
+        ClientConfiguration.DEFAULT_CONNECTION_TIMEOUT;
+
+    private static final int SOCKET_TIMEOUT =
+        ClientConfiguration.DEFAULT_SOCKET_TIMEOUT;
+
+    // Use the same logger as the http client
+    private static final Log log = LogFactory.getLog("com.amazonaws.request");
+
+
+    private static List<Region> regions;
+

@@ -1,0 +1,19 @@
+    public Future<ListStreamsResult> listStreamsAsync(
+            final ListStreamsRequest listStreamsRequest,
+            final AsyncHandler<ListStreamsRequest, ListStreamsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ListStreamsResult>() {
+            public ListStreamsResult call() throws Exception {
+                ListStreamsResult result;
+                try {
+                    result = listStreams(listStreamsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(listStreamsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

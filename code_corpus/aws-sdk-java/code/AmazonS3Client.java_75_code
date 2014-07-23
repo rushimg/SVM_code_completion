@@ -1,0 +1,32 @@
+    public void setBucketVersioningConfiguration(SetBucketVersioningConfigurationRequest setBucketVersioningConfigurationRequest)
+        throws AmazonClientException, AmazonServiceException {
+        assertParameterNotNull(setBucketVersioningConfigurationRequest,
+            "The SetBucketVersioningConfigurationRequest object must be specified when setting versioning configuration");
+
+        String bucketName = setBucketVersioningConfigurationRequest.getBucketName();
+        BucketVersioningConfiguration versioningConfiguration = setBucketVersioningConfigurationRequest.getVersioningConfiguration();
+
+        assertParameterNotNull(bucketName,
+            "The bucket name parameter must be specified when setting versioning configuration");
+        assertParameterNotNull(versioningConfiguration,
+            "The bucket versioning parameter must be specified when setting versioning configuration");
+        if (versioningConfiguration.isMfaDeleteEnabled() != null) {
+            assertParameterNotNull(setBucketVersioningConfigurationRequest.getMfa(),
+                "The MFA parameter must be specified when changing MFA Delete status in the versioning configuration");
+        }
+
+        Request<SetBucketVersioningConfigurationRequest> request = createRequest(bucketName, null, setBucketVersioningConfigurationRequest, HttpMethodName.PUT);
+        request.addParameter("versioning", null);
+
+        if (versioningConfiguration.isMfaDeleteEnabled() != null) {
+            if (setBucketVersioningConfigurationRequest.getMfa() != null) {
+                populateRequestWithMfaDetails(request, setBucketVersioningConfigurationRequest.getMfa());
+            }
+        }
+
+        byte[] bytes = bucketConfigurationXmlFactory.convertToXmlByteArray(versioningConfiguration);
+        request.setContent(new ByteArrayInputStream(bytes));
+
+        invoke(request, voidResponseHandler, bucketName, null);
+    }
+

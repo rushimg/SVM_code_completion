@@ -1,0 +1,19 @@
+    public int count(Class<?> clazz, DynamoDBScanExpression scanExpression, DynamoDBMapperConfig config) {
+        config = mergeConfig(config);
+
+        ScanRequest scanRequest = createScanRequestFromExpression(clazz, scanExpression, config);
+        scanRequest.setCount(true);
+
+        // Count scans can also be truncated for large datasets
+        int count = 0;
+        ScanResult scanResult = null;
+        do {
+            scanResult = db.scan(applyUserAgent(scanRequest));
+            count += scanResult.getCount();
+            scanRequest.setExclusiveStartKey(scanResult.getLastEvaluatedKey());
+        } while (scanResult.getLastEvaluatedKey() != null);
+
+        return count;
+    }
+
+

@@ -1,0 +1,49 @@
+    private IdleConnectionReaper() {
+        super("java-sdk-http-connection-reaper");
+        setDaemon(true);
+    }
+
+    public static synchronized void registerConnectionManager(ClientConnectionManager connectionManager) {
+        if (instance == null) {
+            instance = new IdleConnectionReaper();
+            instance.start();
+        }
+        connectionManagers.add(connectionManager);
+    }
+
+    public static synchronized void removeConnectionManager(ClientConnectionManager connectionManager) {
+        connectionManagers.remove(connectionManager);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public void run() {
+        while (true) {
+            try {
+                Thread.sleep(PERIOD_MILLISECONDS);
+
+                // Copy the list of managed ConnectionManagers to avoid possible
+                // ConcurrentModificationExceptions if registerConnectionManager or
+                // removeConnectionManager are called while we're iterating (rather
+                // than block/lock while this loop executes).
+                List<ClientConnectionManager> connectionManagers = null;
+                synchronized (IdleConnectionReaper.class) {
+                    connectionManagers = (List<ClientConnectionManager>)IdleConnectionReaper.connectionManagers.clone();
+                }
+                for (ClientConnectionManager connectionManager : connectionManagers) {
+                    // When we release connections, the connection manager leaves them
+                    // open so they can be reused.  We want to close out any idle
+                    // connections so that they don't sit around in CLOSE_WAIT.
+                    try {
+                        connectionManager.closeIdleConnections(60, TimeUnit.SECONDS);
+                    } catch (Throwable t) {
+                        log.warn("Unable to close idle connections", t);
+                    }
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+            }
+        }
+    }
+

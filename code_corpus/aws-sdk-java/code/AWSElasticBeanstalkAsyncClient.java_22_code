@@ -1,0 +1,19 @@
+    public Future<CreateEnvironmentResult> createEnvironmentAsync(
+            final CreateEnvironmentRequest createEnvironmentRequest,
+            final AsyncHandler<CreateEnvironmentRequest, CreateEnvironmentResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<CreateEnvironmentResult>() {
+            public CreateEnvironmentResult call() throws Exception {
+                CreateEnvironmentResult result;
+                try {
+                    result = createEnvironment(createEnvironmentRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(createEnvironmentRequest, result);
+                   return result;
+            }
+        });
+    }
+    

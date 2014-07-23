@@ -1,0 +1,19 @@
+    public Future<ListSigningCertificatesResult> listSigningCertificatesAsync(
+            final ListSigningCertificatesRequest listSigningCertificatesRequest,
+            final AsyncHandler<ListSigningCertificatesRequest, ListSigningCertificatesResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ListSigningCertificatesResult>() {
+            public ListSigningCertificatesResult call() throws Exception {
+                ListSigningCertificatesResult result;
+                try {
+                    result = listSigningCertificates(listSigningCertificatesRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(listSigningCertificatesRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -1,0 +1,19 @@
+    public void abortMultipartUploads(String bucketName, Date date)
+            throws AmazonServiceException, AmazonClientException {
+        MultipartUploadListing uploadListing = s3.listMultipartUploads(appendUserAgent(
+                new ListMultipartUploadsRequest(bucketName), USER_AGENT));
+        do {
+            for (MultipartUpload upload : uploadListing.getMultipartUploads()) {
+                if (upload.getInitiated().compareTo(date) < 0) {
+                    s3.abortMultipartUpload(appendUserAgent(new AbortMultipartUploadRequest(
+                            bucketName, upload.getKey(), upload.getUploadId()), USER_AGENT));
+                }
+            }
+
+            ListMultipartUploadsRequest request = new ListMultipartUploadsRequest(bucketName)
+                .withUploadIdMarker(uploadListing.getNextUploadIdMarker())
+                .withKeyMarker(uploadListing.getNextKeyMarker());
+            uploadListing = s3.listMultipartUploads(appendUserAgent(request, USER_AGENT));
+        } while (uploadListing.isTruncated());
+    }
+

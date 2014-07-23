@@ -1,0 +1,18 @@
+    public Future<Void> deleteAppAsync(
+            final DeleteAppRequest deleteAppRequest,
+            final AsyncHandler<DeleteAppRequest, Void> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<Void>() {
+            public Void call() throws Exception {
+                try {
+                    deleteApp(deleteAppRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(deleteAppRequest, null);
+                   return null;
+            }
+        });
+    }
+    

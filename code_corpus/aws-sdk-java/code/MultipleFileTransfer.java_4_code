@@ -1,0 +1,16 @@
+    public void collateFinalState() {
+        boolean seenCanceled = false;
+        for ( Transfer download : subTransfers ) {
+            if ( download.getState() == TransferState.Failed ) {
+                setState(TransferState.Failed);
+                return;
+            } else if ( download.getState() == TransferState.Canceled ) {
+                seenCanceled = true;
+            }
+        }
+        if ( seenCanceled )
+            setState(TransferState.Canceled);
+        else
+            setState(TransferState.Completed);
+    }
+    

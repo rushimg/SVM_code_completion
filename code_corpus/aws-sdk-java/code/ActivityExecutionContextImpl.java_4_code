@@ -1,0 +1,14 @@
+    @Override
+    public void recordActivityHeartbeat(String details) throws CancellationException {
+        //TODO: call service with the specified minimal interval (through @ActivityExecutionOptions)
+        // allowing more frequent calls of this method.
+        RecordActivityTaskHeartbeatRequest r = new RecordActivityTaskHeartbeatRequest();
+        r.setTaskToken(task.getTaskToken());
+        r.setDetails(details);
+        ActivityTaskStatus status;
+        status = service.recordActivityTaskHeartbeat(r);
+        if (status.isCancelRequested()) {
+            throw new CancellationException();
+        }
+    }
+

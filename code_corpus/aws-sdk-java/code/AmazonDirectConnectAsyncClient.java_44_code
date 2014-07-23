@@ -1,0 +1,19 @@
+    public Future<DeleteConnectionResult> deleteConnectionAsync(
+            final DeleteConnectionRequest deleteConnectionRequest,
+            final AsyncHandler<DeleteConnectionRequest, DeleteConnectionResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DeleteConnectionResult>() {
+            public DeleteConnectionResult call() throws Exception {
+                DeleteConnectionResult result;
+                try {
+                    result = deleteConnection(deleteConnectionRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(deleteConnectionRequest, result);
+                   return result;
+            }
+        });
+    }
+    

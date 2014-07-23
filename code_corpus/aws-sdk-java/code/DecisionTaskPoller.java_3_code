@@ -1,0 +1,38 @@
+    @Override
+    public boolean pollAndProcessSingleTask() throws Exception {
+        DecisionTaskIterator tasks = null;
+        RespondDecisionTaskCompletedRequest taskCompletedRequest = null;
+        try {
+            tasks = new DecisionTaskIterator();
+            if (!tasks.hasNext()) {
+                return false;
+            }
+            taskCompletedRequest = decisionTaskHandler.handleDecisionTask(tasks);
+            if (decisionsLog.isTraceEnabled()) {
+                decisionsLog.trace(WorkflowExecutionUtils.prettyPrintDecisions(taskCompletedRequest.getDecisions()));
+            }
+            service.respondDecisionTaskCompleted(taskCompletedRequest);
+        }
+        catch (Exception e) {
+            if (tasks != null) {
+                DecisionTask firstTask = tasks.getFirstDecisionTask();
+                if (firstTask != null) {
+                    if (log.isWarnEnabled()) {
+                        log.warn("DecisionTask failure: taskId= " + firstTask.getStartedEventId() + ", workflowExecution="
+                                + firstTask.getWorkflowExecution(), e);
+                    }
+                    if (log.isDebugEnabled() && firstTask.getEvents() != null) {
+                        log.debug("Failed taskId=" + firstTask.getStartedEventId() + " history: "
+                                + WorkflowExecutionUtils.prettyPrintHistory(firstTask.getEvents(), true));
+                    }
+                }
+                if (taskCompletedRequest != null && decisionsLog.isWarnEnabled()) {
+                    decisionsLog.warn("Failed taskId=" + firstTask.getStartedEventId() + " decisions="
+                            + WorkflowExecutionUtils.prettyPrintDecisions(taskCompletedRequest.getDecisions()));
+                }
+            }
+            throw e;
+        }
+        return true;
+    }
+

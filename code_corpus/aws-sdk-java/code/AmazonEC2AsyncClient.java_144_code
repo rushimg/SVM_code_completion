@@ -1,0 +1,19 @@
+    public Future<DescribeNetworkAclsResult> describeNetworkAclsAsync(
+            final DescribeNetworkAclsRequest describeNetworkAclsRequest,
+            final AsyncHandler<DescribeNetworkAclsRequest, DescribeNetworkAclsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeNetworkAclsResult>() {
+            public DescribeNetworkAclsResult call() throws Exception {
+                DescribeNetworkAclsResult result;
+                try {
+                    result = describeNetworkAcls(describeNetworkAclsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeNetworkAclsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -1,0 +1,21 @@
+    public PartListing listParts(ListPartsRequest listPartsRequest)
+            throws AmazonClientException, AmazonServiceException {
+        assertParameterNotNull(listPartsRequest,
+            "The request parameter must be specified when listing parts");
+
+        assertParameterNotNull(listPartsRequest.getBucketName(),
+            "The bucket name parameter must be specified when listing parts");
+        assertParameterNotNull(listPartsRequest.getKey(),
+            "The key parameter must be specified when listing parts");
+        assertParameterNotNull(listPartsRequest.getUploadId(),
+            "The upload ID parameter must be specified when listing parts");
+
+        Request<ListPartsRequest> request = createRequest(listPartsRequest.getBucketName(), listPartsRequest.getKey(), listPartsRequest, HttpMethodName.GET);
+        request.addParameter("uploadId", listPartsRequest.getUploadId());
+
+        if (listPartsRequest.getMaxParts() != null) request.addParameter("max-parts", listPartsRequest.getMaxParts().toString());
+        if (listPartsRequest.getPartNumberMarker() != null) request.addParameter("part-number-marker", listPartsRequest.getPartNumberMarker().toString());
+
+        return invoke(request, new Unmarshallers.ListPartsResultUnmarshaller(), listPartsRequest.getBucketName(), listPartsRequest.getKey());
+    }
+

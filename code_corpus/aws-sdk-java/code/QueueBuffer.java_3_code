@@ -1,0 +1,11 @@
+    static ExecutorService executor = Executors.newCachedThreadPool(new DaemonThreadFactory());;
+    
+    QueueBuffer( QueueBufferConfig paramConfig, String url, AmazonSQSAsync sqs) {
+        realSqs = sqs;
+        config = paramConfig;
+        sendBuffer = new SendQueueBuffer(sqs, executor, paramConfig, url);
+        receiveBuffer =  new ReceiveQueueBuffer(sqs, executor, paramConfig, url);
+        
+    }
+
+

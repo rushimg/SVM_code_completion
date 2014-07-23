@@ -1,0 +1,19 @@
+    public Future<DescribeRaidArraysResult> describeRaidArraysAsync(
+            final DescribeRaidArraysRequest describeRaidArraysRequest,
+            final AsyncHandler<DescribeRaidArraysRequest, DescribeRaidArraysResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeRaidArraysResult>() {
+            public DescribeRaidArraysResult call() throws Exception {
+                DescribeRaidArraysResult result;
+                try {
+                    result = describeRaidArrays(describeRaidArraysRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeRaidArraysRequest, result);
+                   return result;
+            }
+        });
+    }
+    

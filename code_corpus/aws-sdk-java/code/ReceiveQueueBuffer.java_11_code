@@ -1,0 +1,48 @@
+    private void spawnMoreReceiveTasks() {
+        
+        if( shutDown )
+            return;
+
+        int desiredBatches = config.getMaxDoneReceiveBatches();
+        desiredBatches = desiredBatches < 1 ? 1 : desiredBatches;
+        
+        synchronized( finishedTasks ) {
+            if (  finishedTasks.size() >= desiredBatches )
+                return;
+            
+            //if we have some finished batches already, and 
+            //existing inflight batches will bring us to the limit, 
+            //don't spawn more. if our finished tasks cache is empty, we will
+            //always spawn a thread.
+            if ( finishedTasks.size() > 0 && ( finishedTasks.size() + inflightReceiveMessageBatches ) >= desiredBatches )
+                return;
+        }
+
+        synchronized (taskSpawnSyncPoint) {
+            if (visibilityTimeoutNanos == -1) {
+                GetQueueAttributesRequest request = new GetQueueAttributesRequest().
+                        withQueueUrl(qUrl).
+                        withAttributeNames("VisibilityTimeout");
+                ResultConverter.appendUserAgent(request, AmazonSQSBufferedAsyncClient.USER_AGENT);
+                long visibilityTimeoutSeconds = Long.parseLong(sqsClient.getQueueAttributes( request ).getAttributes().get("VisibilityTimeout"));
+                visibilityTimeoutNanos = TimeUnit.NANOSECONDS.convert(visibilityTimeoutSeconds, TimeUnit.SECONDS);
+            }
+
+            int max = config.getMaxInflightReceiveBatches();
+            //must allow at least one inflight receive task, or receive won't 
+            //work at all.
+            max = max > 0 ? max : 1; 
+            int toSpawn =  max - inflightReceiveMessageBatches;
+            if (toSpawn > 0) {
+                ReceiveMessageBatchTask task = new ReceiveMessageBatchTask(this );
+                ++inflightReceiveMessageBatches;
+                ++bufferCounter;
+                if (log.isTraceEnabled()) {
+                    log.trace("Spawned receive batch #" + bufferCounter + " (" + inflightReceiveMessageBatches 
+                            + " of " + max + " inflight) for queue " + qUrl);
+                }
+                executor.execute(task);
+            }
+        }
+    }
+    

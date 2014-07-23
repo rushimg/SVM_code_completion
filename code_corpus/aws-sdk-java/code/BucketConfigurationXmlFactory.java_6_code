@@ -1,0 +1,51 @@
+    public byte[] convertToXmlByteArray(BucketWebsiteConfiguration websiteConfiguration) {
+        XmlWriter xml = new XmlWriter();
+        xml.start("WebsiteConfiguration", "xmlns", Constants.XML_NAMESPACE);
+
+        if (websiteConfiguration.getIndexDocumentSuffix() != null) {
+            XmlWriter indexDocumentElement = xml.start("IndexDocument");
+            indexDocumentElement.start("Suffix").value(websiteConfiguration.getIndexDocumentSuffix()).end();
+            indexDocumentElement.end();
+        }
+
+        if (websiteConfiguration.getErrorDocument() != null) {
+            XmlWriter errorDocumentElement = xml.start("ErrorDocument");
+            errorDocumentElement.start("Key").value(websiteConfiguration.getErrorDocument()).end();
+            errorDocumentElement.end();
+        }
+
+        RedirectRule redirectAllRequestsTo = websiteConfiguration.getRedirectAllRequestsTo();
+        if (redirectAllRequestsTo != null) {
+            XmlWriter redirectAllRequestsElement = xml.start("RedirectAllRequestsTo");
+            if (redirectAllRequestsTo.getprotocol() != null) {
+                xml.start("Protocol").value(redirectAllRequestsTo.getprotocol()).end();
+            }
+
+            if (redirectAllRequestsTo.getHostName() != null) {
+                xml.start("HostName").value(redirectAllRequestsTo.getHostName()).end();
+            }
+
+            if (redirectAllRequestsTo.getReplaceKeyPrefixWith() != null) {
+                xml.start("ReplaceKeyPrefixWith").value(redirectAllRequestsTo.getReplaceKeyPrefixWith()).end();
+            }
+
+            if (redirectAllRequestsTo.getReplaceKeyWith() != null) {
+                xml.start("ReplaceKeyWith").value(redirectAllRequestsTo.getReplaceKeyWith()).end();
+            }
+            redirectAllRequestsElement.end();
+        }
+
+        if (websiteConfiguration.getRoutingRules() != null && websiteConfiguration.getRoutingRules().size() > 0) {
+
+            XmlWriter routingRules = xml.start("RoutingRules");
+            for (RoutingRule rule : websiteConfiguration.getRoutingRules()) {
+                writeRule(routingRules, rule);
+            }
+
+            routingRules.end();
+        }
+
+        xml.end();
+        return xml.getBytes();
+    }
+

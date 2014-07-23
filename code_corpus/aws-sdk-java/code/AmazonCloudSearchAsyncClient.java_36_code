@@ -1,0 +1,19 @@
+    public Future<DescribeServiceAccessPoliciesResult> describeServiceAccessPoliciesAsync(
+            final DescribeServiceAccessPoliciesRequest describeServiceAccessPoliciesRequest,
+            final AsyncHandler<DescribeServiceAccessPoliciesRequest, DescribeServiceAccessPoliciesResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeServiceAccessPoliciesResult>() {
+            public DescribeServiceAccessPoliciesResult call() throws Exception {
+                DescribeServiceAccessPoliciesResult result;
+                try {
+                    result = describeServiceAccessPolicies(describeServiceAccessPoliciesRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeServiceAccessPoliciesRequest, result);
+                   return result;
+            }
+        });
+    }
+    

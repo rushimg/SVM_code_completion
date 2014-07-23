@@ -1,0 +1,18 @@
+    public int count(Class<?> clazz, DynamoDBQueryExpression queryExpression, DynamoDBMapperConfig config) {
+        config = mergeConfig(config);
+
+        QueryRequest queryRequest = createQueryRequestFromExpression(clazz, queryExpression, config);
+        queryRequest.setCount(true);
+
+        // Count queries can also be truncated for large datasets
+        int count = 0;
+        QueryResult queryResult = null;
+        do {
+            queryResult = db.query(applyUserAgent(queryRequest));
+            count += queryResult.getCount();
+            queryRequest.setExclusiveStartKey(queryResult.getLastEvaluatedKey());
+        } while (queryResult.getLastEvaluatedKey() != null);
+
+        return count;
+    }
+

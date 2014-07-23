@@ -1,0 +1,9 @@
+    public static boolean isUploadParallelizable(final PutObjectRequest putObjectRequest, final boolean isUsingEncryption) {
+    	// Each uploaded part in an encrypted upload depends on the encryption context
+    	// from the previous upload, so we cannot parallelize encrypted upload parts.
+    	if (isUsingEncryption) return false;
+
+    	// Otherwise, if there's a file, we can process the uploads concurrently.
+        return (getRequestFile(putObjectRequest) != null);
+    }
+

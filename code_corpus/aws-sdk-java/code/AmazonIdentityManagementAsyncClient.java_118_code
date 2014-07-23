@@ -1,0 +1,19 @@
+    public Future<GetServerCertificateResult> getServerCertificateAsync(
+            final GetServerCertificateRequest getServerCertificateRequest,
+            final AsyncHandler<GetServerCertificateRequest, GetServerCertificateResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<GetServerCertificateResult>() {
+            public GetServerCertificateResult call() throws Exception {
+                GetServerCertificateResult result;
+                try {
+                    result = getServerCertificate(getServerCertificateRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(getServerCertificateRequest, result);
+                   return result;
+            }
+        });
+    }
+    

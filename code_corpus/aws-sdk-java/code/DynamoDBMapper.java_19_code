@@ -1,0 +1,20 @@
+            if ( hashKeyElement == null ) {
+                throw new DynamoDBMappingException("No value provided for hash key for object " + object);
+            }
+            if ( rangeKeyGetter != null && rangeKeyElement == null ) {
+                throw new DynamoDBMappingException("No value provided for range key for object " + object);
+            }
+        }
+
+        // Look at every getter and construct an update object for it
+        for ( Method method : reflector.getRelevantGetters(clazz) ) {
+
+            // Skip any key methods, since they are handled separately
+            if ( method.equals(hashKeyGetter) || method.equals(rangeKeyGetter) )
+                continue;
+
+            nonKeyAttributePresent = true;
+
+            Object getterResult = safeInvoke(method, object);
+            String attributeName = reflector.getAttributeName(method);
+

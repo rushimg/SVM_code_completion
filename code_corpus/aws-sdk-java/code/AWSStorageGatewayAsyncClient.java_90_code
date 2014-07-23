@@ -1,0 +1,19 @@
+    public Future<DescribeTapeRecoveryPointsResult> describeTapeRecoveryPointsAsync(
+            final DescribeTapeRecoveryPointsRequest describeTapeRecoveryPointsRequest,
+            final AsyncHandler<DescribeTapeRecoveryPointsRequest, DescribeTapeRecoveryPointsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeTapeRecoveryPointsResult>() {
+            public DescribeTapeRecoveryPointsResult call() throws Exception {
+                DescribeTapeRecoveryPointsResult result;
+                try {
+                    result = describeTapeRecoveryPoints(describeTapeRecoveryPointsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeTapeRecoveryPointsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

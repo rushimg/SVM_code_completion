@@ -1,0 +1,19 @@
+    public Future<DescribeDBLogFilesResult> describeDBLogFilesAsync(
+            final DescribeDBLogFilesRequest describeDBLogFilesRequest,
+            final AsyncHandler<DescribeDBLogFilesRequest, DescribeDBLogFilesResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeDBLogFilesResult>() {
+            public DescribeDBLogFilesResult call() throws Exception {
+                DescribeDBLogFilesResult result;
+                try {
+                    result = describeDBLogFiles(describeDBLogFilesRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeDBLogFilesRequest, result);
+                   return result;
+            }
+        });
+    }
+    

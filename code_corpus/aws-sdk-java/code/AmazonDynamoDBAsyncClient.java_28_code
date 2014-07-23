@@ -1,0 +1,19 @@
+    public Future<ScanResult> scanAsync(
+            final ScanRequest scanRequest,
+            final AsyncHandler<ScanRequest, ScanResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ScanResult>() {
+            public ScanResult call() throws Exception {
+            	ScanResult result;
+                try {
+            		result = scan(scanRequest);
+            	} catch (Exception ex) {
+            	    asyncHandler.onError(ex);
+    				throw ex;
+            	}
+            	asyncHandler.onSuccess(scanRequest, result);
+               	return result;
+		    }
+		});
+    }
+    

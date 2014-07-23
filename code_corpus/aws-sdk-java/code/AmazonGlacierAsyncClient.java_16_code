@@ -1,0 +1,19 @@
+    public Future<ListVaultsResult> listVaultsAsync(
+            final ListVaultsRequest listVaultsRequest,
+            final AsyncHandler<ListVaultsRequest, ListVaultsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ListVaultsResult>() {
+            public ListVaultsResult call() throws Exception {
+                ListVaultsResult result;
+                try {
+                    result = listVaults(listVaultsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(listVaultsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

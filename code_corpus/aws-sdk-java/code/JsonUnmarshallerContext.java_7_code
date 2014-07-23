@@ -1,0 +1,23 @@
+    public String readText() throws IOException {
+        switch (currentToken) {
+        case VALUE_STRING:
+            String text = jsonParser.getText();
+            return text;
+        case VALUE_FALSE: return "false";
+        case VALUE_TRUE: return "true";
+        case VALUE_NULL: return null;
+        case VALUE_NUMBER_FLOAT:
+        case VALUE_NUMBER_INT:
+            return jsonParser.getNumberValue().toString();
+        case FIELD_NAME:
+            return jsonParser.getText();
+        default:
+            throw new RuntimeException(
+                    "We expected a VALUE token but got: " + currentToken);
+        }
+    }
+
+    public boolean isStartOfDocument() {
+        return jsonParser == null || jsonParser.getCurrentToken() == null;
+    }
+

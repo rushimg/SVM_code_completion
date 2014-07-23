@@ -1,0 +1,22 @@
+    public int read(byte[] b, int off, int len) throws IOException {
+        try {
+            int read = inputStream.read(b, off, len);
+            if (read == -1) {
+                underlyingStreamConsumed = true;
+                if (!alreadyReleased) {
+                    releaseConnection();
+                    if (log.isDebugEnabled()) {
+                    	log.debug("Released HttpMethod as its response data stream is fully consumed");
+                    }
+                }
+            }
+            return read;
+        } catch (IOException e) {
+            releaseConnection();
+            if (log.isDebugEnabled()) {
+            	log.debug("Released HttpMethod as its response data stream threw an exception", e);
+            }
+            throw e;
+        }
+    }
+

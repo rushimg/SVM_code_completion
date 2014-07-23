@@ -1,0 +1,19 @@
+    public Future<CreateLoginProfileResult> createLoginProfileAsync(
+            final CreateLoginProfileRequest createLoginProfileRequest,
+            final AsyncHandler<CreateLoginProfileRequest, CreateLoginProfileResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<CreateLoginProfileResult>() {
+            public CreateLoginProfileResult call() throws Exception {
+                CreateLoginProfileResult result;
+                try {
+                    result = createLoginProfile(createLoginProfileRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(createLoginProfileRequest, result);
+                   return result;
+            }
+        });
+    }
+    

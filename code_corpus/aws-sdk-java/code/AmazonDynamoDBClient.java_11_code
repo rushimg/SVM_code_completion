@@ -1,0 +1,37 @@
+    public AmazonDynamoDBClient(AWSCredentialsProvider awsCredentialsProvider,
+            ClientConfiguration clientConfiguration,
+            RequestMetricCollector requestMetricCollector) {
+        super(clientConfiguration, requestMetricCollector);
+        this.awsCredentialsProvider = awsCredentialsProvider;
+        init();
+    }
+
+    private void init() {
+        exceptionUnmarshallers = new ArrayList<Unmarshaller<AmazonServiceException, JSONObject>>();
+        exceptionUnmarshallers.add(new LimitExceededExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new InternalServerErrorExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new ProvisionedThroughputExceededExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new ResourceInUseExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new ConditionalCheckFailedExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new ResourceNotFoundExceptionUnmarshaller());
+
+        exceptionUnmarshallers.add(new JsonErrorUnmarshaller());
+        setEndpoint("dynamodb.us-east-1.amazonaws.com/");
+
+        signer = new AWS4Signer();
+
+        signer.setServiceName("dynamodb");
+
+
+        HandlerChainFactory chainFactory = new HandlerChainFactory();
+        requestHandler2s.addAll(chainFactory.newRequestHandlerChain(
+                "/com/amazonaws/services/dynamodb/request.handlers"));
+
+
+        clientConfiguration = new ClientConfiguration(clientConfiguration);
+        if (clientConfiguration.getRetryPolicy() == com.amazonaws.retry.PredefinedRetryPolicies.DEFAULT) {
+            clientConfiguration.setRetryPolicy(com.amazonaws.retry.PredefinedRetryPolicies.DYNAMODB_DEFAULT);
+        }
+        setConfiguration(clientConfiguration);
+    }
+

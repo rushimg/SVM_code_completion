@@ -1,0 +1,19 @@
+    public Future<CreateDomainResult> createDomainAsync(
+            final CreateDomainRequest createDomainRequest,
+            final AsyncHandler<CreateDomainRequest, CreateDomainResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<CreateDomainResult>() {
+            public CreateDomainResult call() throws Exception {
+                CreateDomainResult result;
+                try {
+                    result = createDomain(createDomainRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(createDomainRequest, result);
+                   return result;
+            }
+        });
+    }
+    

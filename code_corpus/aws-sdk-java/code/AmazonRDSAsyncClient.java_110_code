@@ -1,0 +1,19 @@
+    public Future<DownloadDBLogFilePortionResult> downloadDBLogFilePortionAsync(
+            final DownloadDBLogFilePortionRequest downloadDBLogFilePortionRequest,
+            final AsyncHandler<DownloadDBLogFilePortionRequest, DownloadDBLogFilePortionResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DownloadDBLogFilePortionResult>() {
+            public DownloadDBLogFilePortionResult call() throws Exception {
+                DownloadDBLogFilePortionResult result;
+                try {
+                    result = downloadDBLogFilePortion(downloadDBLogFilePortionRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(downloadDBLogFilePortionRequest, result);
+                   return result;
+            }
+        });
+    }
+    

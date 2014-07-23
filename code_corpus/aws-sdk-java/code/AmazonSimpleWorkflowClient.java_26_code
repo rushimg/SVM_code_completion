@@ -1,0 +1,25 @@
+    public ActivityTask pollForActivityTask(PollForActivityTaskRequest pollForActivityTaskRequest) {
+        ExecutionContext executionContext = createExecutionContext(pollForActivityTaskRequest);
+        AWSRequestMetrics awsRequestMetrics = executionContext.getAwsRequestMetrics();
+        awsRequestMetrics.startEvent(Field.ClientExecuteTime);
+        Request<PollForActivityTaskRequest> request = null;
+        Response<ActivityTask> response = null;
+        try {
+            awsRequestMetrics.startEvent(Field.RequestMarshallTime);
+            try {
+                request = new PollForActivityTaskRequestMarshaller().marshall(pollForActivityTaskRequest);
+                // Binds the request metrics to the current request.
+                request.setAWSRequestMetrics(awsRequestMetrics);
+            } finally {
+                awsRequestMetrics.endEvent(Field.RequestMarshallTime);
+            }
+            Unmarshaller<ActivityTask, JsonUnmarshallerContext> unmarshaller = new ActivityTaskJsonUnmarshaller();
+            JsonResponseHandler<ActivityTask> responseHandler = new JsonResponseHandler<ActivityTask>(unmarshaller);
+            
+            response = invoke(request, responseHandler, executionContext);
+            return response.getAwsResponse();
+        } finally {
+            endClientExecution(awsRequestMetrics, request, response);
+        }
+    }
+

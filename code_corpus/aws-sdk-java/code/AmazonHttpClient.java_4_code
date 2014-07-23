@@ -1,0 +1,18 @@
+    private final RequestMetricCollector requestMetricCollector;
+
+    private static final HttpRequestFactory httpRequestFactory = new HttpRequestFactory();
+    private static final HttpClientFactory httpClientFactory = new HttpClientFactory();
+
+    static {
+        // Customers have reported XML parsing issues with the following
+        // JVM versions, which don't occur with more recent versions, so
+        // if we detect any of these, give customers a heads up.
+        List<String> problematicJvmVersions = Arrays.asList(
+            "1.6.0_06", "1.6.0_13", "1.6.0_17");
+        String jvmVersion = System.getProperty("java.version");
+        if (problematicJvmVersions.contains(jvmVersion)) {
+            log.warn("Detected a possible problem with the current JVM version (" + jvmVersion + ").  " +
+                     "If you experience XML parsing problems using the SDK, try upgrading to a more recent JVM update.");
+        }
+    }
+

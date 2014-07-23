@@ -1,0 +1,19 @@
+    public Future<DescribeCacheParameterGroupsResult> describeCacheParameterGroupsAsync(
+            final DescribeCacheParameterGroupsRequest describeCacheParameterGroupsRequest,
+            final AsyncHandler<DescribeCacheParameterGroupsRequest, DescribeCacheParameterGroupsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeCacheParameterGroupsResult>() {
+            public DescribeCacheParameterGroupsResult call() throws Exception {
+                DescribeCacheParameterGroupsResult result;
+                try {
+                    result = describeCacheParameterGroups(describeCacheParameterGroupsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeCacheParameterGroupsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

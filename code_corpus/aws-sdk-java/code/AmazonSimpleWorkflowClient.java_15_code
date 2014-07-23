@@ -1,0 +1,25 @@
+    public Run startWorkflowExecution(StartWorkflowExecutionRequest startWorkflowExecutionRequest) {
+        ExecutionContext executionContext = createExecutionContext(startWorkflowExecutionRequest);
+        AWSRequestMetrics awsRequestMetrics = executionContext.getAwsRequestMetrics();
+        awsRequestMetrics.startEvent(Field.ClientExecuteTime);
+        Request<StartWorkflowExecutionRequest> request = null;
+        Response<Run> response = null;
+        try {
+            awsRequestMetrics.startEvent(Field.RequestMarshallTime);
+            try {
+                request = new StartWorkflowExecutionRequestMarshaller().marshall(startWorkflowExecutionRequest);
+                // Binds the request metrics to the current request.
+                request.setAWSRequestMetrics(awsRequestMetrics);
+            } finally {
+                awsRequestMetrics.endEvent(Field.RequestMarshallTime);
+            }
+            Unmarshaller<Run, JsonUnmarshallerContext> unmarshaller = new RunJsonUnmarshaller();
+            JsonResponseHandler<Run> responseHandler = new JsonResponseHandler<Run>(unmarshaller);
+            
+            response = invoke(request, responseHandler, executionContext);
+            return response.getAwsResponse();
+        } finally {
+            endClientExecution(awsRequestMetrics, request, response);
+        }
+    }
+

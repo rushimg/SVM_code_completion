@@ -1,0 +1,19 @@
+    public Future<DescribeSnapshotAttributeResult> describeSnapshotAttributeAsync(
+            final DescribeSnapshotAttributeRequest describeSnapshotAttributeRequest,
+            final AsyncHandler<DescribeSnapshotAttributeRequest, DescribeSnapshotAttributeResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeSnapshotAttributeResult>() {
+            public DescribeSnapshotAttributeResult call() throws Exception {
+                DescribeSnapshotAttributeResult result;
+                try {
+                    result = describeSnapshotAttribute(describeSnapshotAttributeRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeSnapshotAttributeRequest, result);
+                   return result;
+            }
+        });
+    }
+    

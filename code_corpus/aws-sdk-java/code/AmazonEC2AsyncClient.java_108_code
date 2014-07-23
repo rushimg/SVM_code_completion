@@ -1,0 +1,19 @@
+    public Future<CreateNetworkInterfaceResult> createNetworkInterfaceAsync(
+            final CreateNetworkInterfaceRequest createNetworkInterfaceRequest,
+            final AsyncHandler<CreateNetworkInterfaceRequest, CreateNetworkInterfaceResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<CreateNetworkInterfaceResult>() {
+            public CreateNetworkInterfaceResult call() throws Exception {
+                CreateNetworkInterfaceResult result;
+                try {
+                    result = createNetworkInterface(createNetworkInterfaceRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(createNetworkInterfaceRequest, result);
+                   return result;
+            }
+        });
+    }
+    

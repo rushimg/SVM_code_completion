@@ -1,0 +1,11 @@
+    public MultipleFileUpload uploadDirectory(String bucketName, String virtualDirectoryKeyPrefix, File directory, boolean includeSubdirectories, ObjectMetadataProvider metadataProvider) {
+    	if ( directory == null || !directory.exists() || !directory.isDirectory() ) {
+            throw new IllegalArgumentException("Must provide a directory to upload");
+        }
+
+        List<File> files = new LinkedList<File>();
+        listFiles(directory, files, includeSubdirectories);
+
+        return uploadFileList(bucketName, virtualDirectoryKeyPrefix, directory, files, metadataProvider);
+    }
+

@@ -1,0 +1,18 @@
+    public void setBucketNotificationConfiguration(String bucketName, BucketNotificationConfiguration bucketNotificationConfiguration)
+        throws AmazonClientException, AmazonServiceException {
+        assertParameterNotNull(bucketName,
+            "The bucket name parameter must be specified when setting notification configuration");
+        assertParameterNotNull(bucketNotificationConfiguration,
+            "The bucket notification parameter must be specified when setting notification configuration");
+
+        SetBucketNotificationConfigurationRequest notificationRequest = new SetBucketNotificationConfigurationRequest(bucketNotificationConfiguration, bucketName);
+
+        Request<SetBucketNotificationConfigurationRequest> request = createRequest(bucketName, null, notificationRequest, HttpMethodName.PUT);
+        request.addParameter("notification", null);
+
+        byte[] bytes = bucketConfigurationXmlFactory.convertToXmlByteArray(bucketNotificationConfiguration);
+        request.setContent(new ByteArrayInputStream(bytes));
+
+        invoke(request, voidResponseHandler, bucketName, null);
+    }
+

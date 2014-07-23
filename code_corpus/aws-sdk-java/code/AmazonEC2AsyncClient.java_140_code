@@ -1,0 +1,19 @@
+    public Future<DescribeDhcpOptionsResult> describeDhcpOptionsAsync(
+            final DescribeDhcpOptionsRequest describeDhcpOptionsRequest,
+            final AsyncHandler<DescribeDhcpOptionsRequest, DescribeDhcpOptionsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeDhcpOptionsResult>() {
+            public DescribeDhcpOptionsResult call() throws Exception {
+                DescribeDhcpOptionsResult result;
+                try {
+                    result = describeDhcpOptions(describeDhcpOptionsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeDhcpOptionsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

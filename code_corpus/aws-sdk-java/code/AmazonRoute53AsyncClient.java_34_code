@@ -1,0 +1,19 @@
+    public Future<DeleteHostedZoneResult> deleteHostedZoneAsync(
+            final DeleteHostedZoneRequest deleteHostedZoneRequest,
+            final AsyncHandler<DeleteHostedZoneRequest, DeleteHostedZoneResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DeleteHostedZoneResult>() {
+            public DeleteHostedZoneResult call() throws Exception {
+                DeleteHostedZoneResult result;
+                try {
+                    result = deleteHostedZone(deleteHostedZoneRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(deleteHostedZoneRequest, result);
+                   return result;
+            }
+        });
+    }
+    

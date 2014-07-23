@@ -1,0 +1,21 @@
+    public static Cipher createSymmetricCipher(SecretKey symmetricCryptoKey, int encryptMode, Provider cryptoProvider, byte[] initVector) {
+        try {
+            Cipher cipher;
+            if (cryptoProvider != null) {
+                cipher = Cipher.getInstance(JceEncryptionConstants.SYMMETRIC_CIPHER_METHOD, cryptoProvider);
+            } else {
+                cipher = Cipher.getInstance(JceEncryptionConstants.SYMMETRIC_CIPHER_METHOD);
+            }
+            if (initVector != null) {
+                cipher.init(encryptMode, symmetricCryptoKey, new IvParameterSpec(initVector));
+            } else {
+                cipher.init(encryptMode, symmetricCryptoKey);
+            }
+            return cipher;
+        } catch (Exception e) {
+            throw new AmazonClientException("Unable to build cipher: " + e.getMessage() +
+                    "\nMake sure you have the JCE unlimited strength policy files installed and " +
+                    "configured for your JVM: http://www.ngs.ac.uk/tools/jcepolicyfiles", e);
+        }
+    }
+

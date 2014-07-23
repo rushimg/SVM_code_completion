@@ -1,0 +1,42 @@
+    public CompleteMultipartUploadResult completeMultipartUpload(
+            CompleteMultipartUploadRequest completeMultipartUploadRequest)
+            throws AmazonClientException, AmazonServiceException {
+        assertParameterNotNull(completeMultipartUploadRequest,
+            "The request parameter must be specified when completing a multipart upload");
+
+        String bucketName = completeMultipartUploadRequest.getBucketName();
+        String key = completeMultipartUploadRequest.getKey();
+        String uploadId = completeMultipartUploadRequest.getUploadId();
+        assertParameterNotNull(bucketName,
+            "The bucket name parameter must be specified when completing a multipart upload");
+        assertParameterNotNull(key,
+            "The key parameter must be specified when completing a multipart upload");
+        assertParameterNotNull(uploadId,
+            "The upload ID parameter must be specified when completing a multipart upload");
+        assertParameterNotNull(completeMultipartUploadRequest.getPartETags(),
+            "The part ETags parameter must be specified when completing a multipart upload");
+
+        Request<CompleteMultipartUploadRequest> request = createRequest(bucketName, key, completeMultipartUploadRequest, HttpMethodName.POST);
+        request.addParameter("uploadId", uploadId);
+
+        byte[] xml = RequestXmlFactory.convertToXmlByteArray(completeMultipartUploadRequest.getPartETags());
+        request.addHeader("Content-Type", "text/plain");
+        request.addHeader("Content-Length", String.valueOf(xml.length));
+
+        request.setContent(new ByteArrayInputStream(xml));
+
+        @SuppressWarnings("unchecked")
+        ResponseHeaderHandlerChain<CompleteMultipartUploadHandler> responseHandler = new ResponseHeaderHandlerChain<CompleteMultipartUploadHandler>(
+                new Unmarshallers.CompleteMultipartUploadResultUnmarshaller(),
+                new ServerSideEncryptionHeaderHandler<CompleteMultipartUploadHandler>(),
+                new ObjectExpirationHeaderHandler<CompleteMultipartUploadHandler>());
+        CompleteMultipartUploadHandler handler = invoke(request, responseHandler, bucketName, key);
+        if (handler.getCompleteMultipartUploadResult() != null) {
+            String versionId = responseHandler.getResponseHeaders().get(Headers.S3_VERSION_ID);
+            handler.getCompleteMultipartUploadResult().setVersionId(versionId);
+            return handler.getCompleteMultipartUploadResult();
+        } else {
+            throw handler.getAmazonS3Exception();
+        }
+    }
+

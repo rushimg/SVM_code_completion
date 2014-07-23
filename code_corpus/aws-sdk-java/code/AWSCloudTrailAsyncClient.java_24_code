@@ -1,0 +1,19 @@
+    public Future<DescribeTrailsResult> describeTrailsAsync(
+            final DescribeTrailsRequest describeTrailsRequest,
+            final AsyncHandler<DescribeTrailsRequest, DescribeTrailsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeTrailsResult>() {
+            public DescribeTrailsResult call() throws Exception {
+                DescribeTrailsResult result;
+                try {
+                    result = describeTrails(describeTrailsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeTrailsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

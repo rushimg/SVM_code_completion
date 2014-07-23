@@ -1,0 +1,19 @@
+    public Future<ListInstanceGroupsResult> listInstanceGroupsAsync(
+            final ListInstanceGroupsRequest listInstanceGroupsRequest,
+            final AsyncHandler<ListInstanceGroupsRequest, ListInstanceGroupsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ListInstanceGroupsResult>() {
+            public ListInstanceGroupsResult call() throws Exception {
+                ListInstanceGroupsResult result;
+                try {
+                    result = listInstanceGroups(listInstanceGroupsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(listInstanceGroupsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

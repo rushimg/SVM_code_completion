@@ -1,0 +1,18 @@
+	public static Map<String, IAMSecurityCredential> getIAMSecurityCredentials() {
+		Map<String, IAMSecurityCredential> credentialsInfoMap = new HashMap<String, IAMSecurityCredential>();
+		
+		List<String> credentials = getItems(EC2_METADATA_ROOT + "/iam/security-credentials");
+		if (null != credentials) {
+			for (String credential : credentials) {
+				String json = getData(EC2_METADATA_ROOT + "/iam/security-credentials/" + credential);
+				try {
+					IAMSecurityCredential credentialInfo = JSONUtils.toObject(IAMSecurityCredential.class, json);
+					credentialsInfoMap.put(credential, credentialInfo);
+				} catch(Exception e) {
+					log.warn("Unable to process the credential(" + credential + "). " + e.getMessage(), e);
+				}
+			}
+		}
+		return credentialsInfoMap;
+	}
+	

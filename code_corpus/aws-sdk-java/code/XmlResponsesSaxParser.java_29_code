@@ -1,0 +1,39 @@
+        public BucketLoggingConfiguration getBucketLoggingConfiguration() {
+            return bucketLoggingConfiguration;
+        }
+
+        @Override
+        public void startDocument() {
+        }
+
+        @Override
+        public void endDocument() {
+        }
+
+        @Override
+        public void startElement(String uri, String name, String qName, Attributes attrs) {
+            if (name.equals("BucketLoggingStatus")) {
+                bucketLoggingConfiguration = new BucketLoggingConfiguration();
+            }
+        }
+
+        @Override
+        public void endElement(String uri, String name, String qName) {
+            String elementText = this.currText.toString();
+            if (name.equals("TargetBucket")) {
+                targetBucket = elementText;
+            } else if (name.equals("TargetPrefix")) {
+                targetPrefix = elementText;
+            } else if (name.equals("LoggingEnabled")) {
+                bucketLoggingConfiguration.setDestinationBucketName(targetBucket);
+                bucketLoggingConfiguration.setLogFilePrefix(targetPrefix);
+            }
+            this.currText = new StringBuilder();
+        }
+
+        @Override
+        public void characters(char ch[], int start, int length) {
+            this.currText.append(ch, start, length);
+        }
+    }
+

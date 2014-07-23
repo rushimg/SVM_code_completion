@@ -1,0 +1,19 @@
+    public Future<DescribeClusterParametersResult> describeClusterParametersAsync(
+            final DescribeClusterParametersRequest describeClusterParametersRequest,
+            final AsyncHandler<DescribeClusterParametersRequest, DescribeClusterParametersResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeClusterParametersResult>() {
+            public DescribeClusterParametersResult call() throws Exception {
+                DescribeClusterParametersResult result;
+                try {
+                    result = describeClusterParameters(describeClusterParametersRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeClusterParametersRequest, result);
+                   return result;
+            }
+        });
+    }
+    

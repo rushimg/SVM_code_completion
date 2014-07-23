@@ -1,0 +1,13 @@
+    boolean isVersionAttributeGetter(Method getter) {
+        synchronized (versionAttributeGetterCache) {
+            if ( !versionAttributeGetterCache.containsKey(getter) ) {
+                versionAttributeGetterCache.put(
+                        getter,
+                        getter.getName().startsWith("get") && getter.getParameterTypes().length == 0
+                                && getter.isAnnotationPresent(DynamoDBVersionAttribute.class));
+            }
+        }
+        
+        return versionAttributeGetterCache.get(getter);
+    }
+    

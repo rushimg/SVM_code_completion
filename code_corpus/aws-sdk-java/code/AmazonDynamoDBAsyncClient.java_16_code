@@ -1,0 +1,19 @@
+    public Future<ListTablesResult> listTablesAsync(
+            final ListTablesRequest listTablesRequest,
+            final AsyncHandler<ListTablesRequest, ListTablesResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ListTablesResult>() {
+            public ListTablesResult call() throws Exception {
+            	ListTablesResult result;
+                try {
+            		result = listTables(listTablesRequest);
+            	} catch (Exception ex) {
+            	    asyncHandler.onError(ex);
+    				throw ex;
+            	}
+            	asyncHandler.onSuccess(listTablesRequest, result);
+               	return result;
+		    }
+		});
+    }
+    

@@ -1,0 +1,11 @@
+    private void setAcl(String bucketName, String key, String versionId, CannedAccessControlList cannedAcl, AmazonWebServiceRequest originalRequest) {
+        if (originalRequest == null) originalRequest = new GenericBucketRequest(bucketName);
+
+        Request<AmazonWebServiceRequest> request = createRequest(bucketName, key, originalRequest, HttpMethodName.PUT);
+        request.addParameter("acl", null);
+        request.addHeader(Headers.S3_CANNED_ACL, cannedAcl.toString());
+        if (versionId != null) request.addParameter("versionId", versionId);
+
+        invoke(request, voidResponseHandler, bucketName, key);
+    }
+

@@ -1,0 +1,36 @@
+            s3Object.setBucketName(getObjectRequest.getBucketName());
+            s3Object.setKey(getObjectRequest.getKey());
+
+            S3ObjectInputStream input = s3Object.getObjectContent();
+            if (progressListenerCallbackExecutor != null) {
+                ProgressReportingInputStream progressReportingInputStream = new ProgressReportingInputStream(input, progressListenerCallbackExecutor);
+                progressReportingInputStream.setFireCompletedEvent(true);
+                input = new S3ObjectInputStream(progressReportingInputStream, input.getHttpRequest());
+                fireProgressEvent(progressListenerCallbackExecutor, ProgressEvent.STARTED_EVENT_CODE);
+            }
+
+            if (getObjectRequest.getRange() == null && System.getProperty("com.amazonaws.services.s3.disableGetObjectMD5Validation") == null) {
+                byte[] serverSideHash = null;
+                String etag = s3Object.getObjectMetadata().getETag();
+                if (etag != null && ServiceUtils.isMultipartUploadETag(etag) == false) {
+                    serverSideHash = BinaryUtils.fromHex(s3Object.getObjectMetadata().getETag());
+                    DigestValidationInputStream inputStreamWithMD5DigestValidation;
+                    try {
+                        MessageDigest digest = MessageDigest.getInstance("MD5");
+                        inputStreamWithMD5DigestValidation = new DigestValidationInputStream(input, digest, serverSideHash);
+                        input = new S3ObjectInputStream(inputStreamWithMD5DigestValidation, input.getHttpRequest());
+                    } catch (NoSuchAlgorithmException e) {
+                        log.warn("No MD5 digest algorithm available.  Unable to calculate "
+                                    + "checksum and verify data integrity.", e);
+                    }
+                }
+            } else {
+                input = new S3ObjectInputStream(
+                            new ContentLengthValidationInputStream(input, s3Object.getObjectMetadata().getContentLength()),
+                            input.getHttpRequest());
+            }
+
+            s3Object.setObjectContent(input);
+
+            return s3Object;
+        } catch (AmazonS3Exception ase) {

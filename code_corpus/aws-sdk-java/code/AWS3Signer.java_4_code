@@ -1,0 +1,51 @@
+            stringToSign = request.getHttpMethod().toString() + "\n"
+                    + getCanonicalizedResourcePath(path) + "\n"
+                    + getCanonicalizedQueryString(request.getParameters()) + "\n"
+                    + getCanonicalizedHeadersForStringToSign(request) + "\n"
+                    + getRequestPayloadWithoutQueryParams(request);
+            bytesToSign = hash(stringToSign);
+        }
+        log.debug("Calculated StringToSign: " + stringToSign);
+
+        String signature = signAndBase64Encode(bytesToSign, sanitizedCredentials.getAWSSecretKey(), algorithm);
+
+        StringBuilder builder = new StringBuilder();
+        builder.append(isHttps ? HTTPS_SCHEME : HTTP_SCHEME).append(" ");
+        builder.append("AWSAccessKeyId=" + sanitizedCredentials.getAWSAccessKeyId() + ",");
+        builder.append("Algorithm=" + algorithm.toString() + ",");
+
+        if (!isHttps) {
+            builder.append(getSignedHeadersComponent(request) + ",");
+        }
+
+        builder.append("Signature=" + signature);
+        request.addHeader(AUTHORIZATION_HEADER, builder.toString());
+    }
+
+    private String getSignedHeadersComponent(Request<?> request) {
+        StringBuilder builder = new StringBuilder();
+        builder.append("SignedHeaders=");
+        boolean first = true;
+        for (String header : getHeadersForStringToSign(request)) {
+            if (!first) builder.append(";");
+            builder.append(header);
+            first = false;
+        }
+        return builder.toString();
+    }
+
+    protected List<String> getHeadersForStringToSign(Request<?> request) {
+        List<String> headersToSign = new ArrayList<String>();
+        for (Map.Entry<String, String> entry : request.getHeaders().entrySet()) {
+            String key = entry.getKey();
+            String lowerCaseKey = key.toLowerCase();
+            if (lowerCaseKey.startsWith("x-amz")
+                    || lowerCaseKey.equals("host")) {
+                headersToSign.add(key);
+            }
+        }
+
+        Collections.sort(headersToSign);
+        return headersToSign;
+    }
+

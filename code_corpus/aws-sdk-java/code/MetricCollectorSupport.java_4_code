@@ -1,0 +1,39 @@
+    private static boolean createAndStartCollector(CloudWatchMetricConfig config) {
+        MetricCollectorSupport collector = new MetricCollectorSupport(config);
+        if (collector.start()) {
+            singleton = collector;
+            return true;
+        }
+        return false;
+    }
+
+    private final RequestMetricCollectorSupport requestMetricCollector;
+    private final ServiceMetricCollectorSupport serviceMetricCollector;
+
+    private final BlockingQueue<MetricDatum> queue;
+//    private final PredefinedMetricTransformer transformer = new PredefinedMetricTransformer();
+    private final CloudWatchMetricConfig config;
+    private MetricUploaderThread uploaderThread;
+
+    protected MetricCollectorSupport(CloudWatchMetricConfig config) {
+        if (config == null) {
+            throw new IllegalArgumentException();
+        }
+        this.config = config;
+        this.queue = new LinkedBlockingQueue<MetricDatum>(config.getMetricQueueSize());
+        this.requestMetricCollector = new RequestMetricCollectorSupport(queue);
+        this.serviceMetricCollector = new ServiceMetricCollectorSupport(queue);
+    }
+
+    @Override
+    public boolean start() {
+        synchronized(MetricCollectorSupport.class) {
+            if (uploaderThread != null) {
+                return false;   // already started
+            }
+            uploaderThread = new MetricUploaderThread(config, queue);
+            uploaderThread.start();
+        }
+        return true;
+    }
+

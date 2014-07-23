@@ -1,0 +1,18 @@
+    public Future<Void> setStatusAsync(
+            final SetStatusRequest setStatusRequest,
+            final AsyncHandler<SetStatusRequest, Void> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<Void>() {
+            public Void call() throws Exception {
+                try {
+                    setStatus(setStatusRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(setStatusRequest, null);
+                   return null;
+            }
+        });
+    }
+    

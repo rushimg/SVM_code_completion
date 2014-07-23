@@ -1,0 +1,28 @@
+    public AmazonSNSClient(AWSCredentialsProvider awsCredentialsProvider,
+            ClientConfiguration clientConfiguration,
+            RequestMetricCollector requestMetricCollector) {
+        super(clientConfiguration, requestMetricCollector);
+        this.awsCredentialsProvider = awsCredentialsProvider;
+        init();
+    }
+
+    private void init() {
+        exceptionUnmarshallers.add(new TopicLimitExceededExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new NotFoundExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new EndpointDisabledExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new PlatformApplicationDisabledExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new InvalidParameterExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new AuthorizationErrorExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new InternalErrorExceptionUnmarshaller());
+        exceptionUnmarshallers.add(new SubscriptionLimitExceededExceptionUnmarshaller());
+        
+        exceptionUnmarshallers.add(new StandardErrorUnmarshaller());
+        // calling this.setEndPoint(...) will also modify the signer accordingly
+        this.setEndpoint("sns.us-east-1.amazonaws.com");
+        HandlerChainFactory chainFactory = new HandlerChainFactory();
+        requestHandler2s.addAll(chainFactory.newRequestHandlerChain(
+                "/com/amazonaws/services/sns/request.handlers"));
+        requestHandler2s.addAll(chainFactory.newRequestHandler2Chain(
+                "/com/amazonaws/services/sns/request.handler2s"));
+    }
+

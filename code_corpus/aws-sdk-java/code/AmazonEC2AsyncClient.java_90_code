@@ -1,0 +1,19 @@
+    public Future<AttachVolumeResult> attachVolumeAsync(
+            final AttachVolumeRequest attachVolumeRequest,
+            final AsyncHandler<AttachVolumeRequest, AttachVolumeResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<AttachVolumeResult>() {
+            public AttachVolumeResult call() throws Exception {
+                AttachVolumeResult result;
+                try {
+                    result = attachVolume(attachVolumeRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(attachVolumeRequest, result);
+                   return result;
+            }
+        });
+    }
+    

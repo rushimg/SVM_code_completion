@@ -1,0 +1,19 @@
+    public Future<AddUploadBufferResult> addUploadBufferAsync(
+            final AddUploadBufferRequest addUploadBufferRequest,
+            final AsyncHandler<AddUploadBufferRequest, AddUploadBufferResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<AddUploadBufferResult>() {
+            public AddUploadBufferResult call() throws Exception {
+                AddUploadBufferResult result;
+                try {
+                    result = addUploadBuffer(addUploadBufferRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(addUploadBufferRequest, result);
+                   return result;
+            }
+        });
+    }
+    

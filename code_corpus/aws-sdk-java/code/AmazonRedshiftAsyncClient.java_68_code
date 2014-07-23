@@ -1,0 +1,19 @@
+    public Future<DescribeClusterVersionsResult> describeClusterVersionsAsync(
+            final DescribeClusterVersionsRequest describeClusterVersionsRequest,
+            final AsyncHandler<DescribeClusterVersionsRequest, DescribeClusterVersionsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeClusterVersionsResult>() {
+            public DescribeClusterVersionsResult call() throws Exception {
+                DescribeClusterVersionsResult result;
+                try {
+                    result = describeClusterVersions(describeClusterVersionsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeClusterVersionsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

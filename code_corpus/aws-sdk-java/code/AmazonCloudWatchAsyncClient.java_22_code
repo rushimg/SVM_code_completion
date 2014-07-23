@@ -1,0 +1,19 @@
+    public Future<GetMetricStatisticsResult> getMetricStatisticsAsync(
+            final GetMetricStatisticsRequest getMetricStatisticsRequest,
+            final AsyncHandler<GetMetricStatisticsRequest, GetMetricStatisticsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<GetMetricStatisticsResult>() {
+            public GetMetricStatisticsResult call() throws Exception {
+                GetMetricStatisticsResult result;
+                try {
+                    result = getMetricStatistics(getMetricStatisticsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(getMetricStatisticsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -1,0 +1,36 @@
+    public void unchain() {
+        if (chainedTo == null) {
+            return;
+        }
+        if (chainedTo.isReady()) {
+            throw new IllegalStateException("Cannot unchain from a value which is ready");
+        }
+        if (chainCallback != null) {
+            chainedTo.removeCallback(chainCallback);
+            chainCallback = null;
+            chainedTo = null;
+        }
+    }
+
+    protected void addCallback(Runnable callback) {
+        if (ready) {
+            callback.run();
+        }
+        else {
+            callbacks.add(callback);
+        }
+    }
+
+    @Override
+    protected void removeCallback(Runnable callback) {
+        callbacks.remove(callback);
+    }
+
+    @Override
+    public String getDescription() {
+        if (description == null && chainedTo != null) {
+            return chainedTo.getDescription();
+        }
+        return description;
+    }
+

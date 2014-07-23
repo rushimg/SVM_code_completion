@@ -1,0 +1,40 @@
+package com.amazonaws.metrics.internal.cloudwatch;
+
+import static com.amazonaws.metrics.internal.cloudwatch.MachineMetric.DaemonThreadCount;
+import static com.amazonaws.metrics.internal.cloudwatch.MachineMetric.DeadLockThreadCount;
+import static com.amazonaws.metrics.internal.cloudwatch.MachineMetric.FreeMemory;
+import static com.amazonaws.metrics.internal.cloudwatch.MachineMetric.OpenFileDescriptorCount;
+import static com.amazonaws.metrics.internal.cloudwatch.MachineMetric.PeakThreadCount;
+import static com.amazonaws.metrics.internal.cloudwatch.MachineMetric.SpareFileDescriptorCount;
+import static com.amazonaws.metrics.internal.cloudwatch.MachineMetric.SpareMemory;
+import static com.amazonaws.metrics.internal.cloudwatch.MachineMetric.ThreadCount;
+import static com.amazonaws.metrics.internal.cloudwatch.MachineMetric.TotalMemory;
+import static com.amazonaws.metrics.internal.cloudwatch.MachineMetric.TotalStartedThreadCount;
+import static com.amazonaws.metrics.internal.cloudwatch.MachineMetric.UsedMemory;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import org.apache.commons.logging.LogFactory;
+
+import com.amazonaws.jmx.spi.JmxInfoProvider;
+import com.amazonaws.metrics.AwsSdkMetrics;
+import com.amazonaws.metrics.MetricType;
+import com.amazonaws.services.cloudwatch.model.Dimension;
+import com.amazonaws.services.cloudwatch.model.MetricDatum;
+import com.amazonaws.services.cloudwatch.model.StandardUnit;
+
+class MachineMetricFactory {
+    private static final List<MachineMetric> memoryMetrics = Arrays.asList(
+            TotalMemory, FreeMemory, UsedMemory, SpareMemory);
+    private static final List<MachineMetric> threadMetrics = Arrays.asList(
+            ThreadCount, DeadLockThreadCount, DaemonThreadCount,
+            PeakThreadCount, TotalStartedThreadCount);
+    private static final List<MachineMetric> fdMetrics = Arrays.asList(
+            OpenFileDescriptorCount, SpareFileDescriptorCount);
+    private final JmxInfoProvider jmxInfoProvider = JmxInfoProvider.Factory.getJmxInfoProvider();
+

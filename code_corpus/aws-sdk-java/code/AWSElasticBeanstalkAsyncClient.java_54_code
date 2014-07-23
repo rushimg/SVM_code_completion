@@ -1,0 +1,19 @@
+    public Future<TerminateEnvironmentResult> terminateEnvironmentAsync(
+            final TerminateEnvironmentRequest terminateEnvironmentRequest,
+            final AsyncHandler<TerminateEnvironmentRequest, TerminateEnvironmentResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<TerminateEnvironmentResult>() {
+            public TerminateEnvironmentResult call() throws Exception {
+                TerminateEnvironmentResult result;
+                try {
+                    result = terminateEnvironment(terminateEnvironmentRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(terminateEnvironmentRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -1,0 +1,19 @@
+    public Future<ListPresetsResult> listPresetsAsync(
+            final ListPresetsRequest listPresetsRequest,
+            final AsyncHandler<ListPresetsRequest, ListPresetsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ListPresetsResult>() {
+            public ListPresetsResult call() throws Exception {
+                ListPresetsResult result;
+                try {
+                    result = listPresets(listPresetsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(listPresetsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

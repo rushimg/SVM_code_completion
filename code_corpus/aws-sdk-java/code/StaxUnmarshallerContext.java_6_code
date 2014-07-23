@@ -1,0 +1,20 @@
+    public String readText() throws XMLStreamException {
+        if (currentEvent.isAttribute()) {
+            Attribute attribute = (Attribute)currentEvent;
+            return attribute.getValue();
+        }
+
+        StringBuilder sb = new StringBuilder();
+        while (true) {
+            XMLEvent event = eventReader.peek();
+            if (event.getEventType() == XMLStreamConstants.CHARACTERS) {
+                eventReader.nextEvent();
+                sb.append(event.asCharacters().getData());
+            } else if (event.getEventType() == XMLStreamConstants.END_ELEMENT) {
+                return sb.toString();
+            } else {
+                throw new RuntimeException("Encountered unexpected event: " + event.toString());
+            }
+        }
+    }
+

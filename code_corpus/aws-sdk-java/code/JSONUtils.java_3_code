@@ -1,0 +1,36 @@
+    private static Object parseField(JSONObject jsonObject, Class<?> clazz, String key) throws JSONException, IllegalArgumentException, IllegalAccessException {
+		// Boolean
+		if (clazz.equals(Boolean.class) || clazz.equals(boolean.class))
+			return jsonObject.getBoolean(key);
+		// Double
+		else if (clazz.equals(Double.class) || clazz.equals(double.class))
+			return jsonObject.getDouble(key);
+		// Integer
+		else if (clazz.equals(Integer.class) || clazz.equals(int.class))
+			return jsonObject.getInt(key);
+		// Long
+		else if (clazz.equals(Long.class) || clazz.equals(long.class))
+			return jsonObject.getLong(key);
+		// String
+		else if (clazz.equals(String.class))
+			return jsonObject.getString(key);
+		// Char
+		else if (clazz.equals(Character.class) || clazz.equals(char.class))
+			return jsonObject.getString(key).charAt(0);
+		// Array
+		else if (clazz.isArray()) {
+			Class<?> componentType = clazz.getComponentType();
+			JSONArray jsonArray = jsonObject.getJSONArray(key);
+			Object array = Array.newInstance(componentType, jsonArray.length());
+			for (int i = 0; i < jsonArray.length(); i++) {
+				Array.set(array, i, parseField(jsonArray, componentType, i));
+			}
+			return array;
+		}
+		// Handled as a nested Class object
+		else {
+			JSONObject nestedObject = jsonObject.getJSONObject(key);
+			return toObject(clazz, nestedObject);
+		}
+    }
+    

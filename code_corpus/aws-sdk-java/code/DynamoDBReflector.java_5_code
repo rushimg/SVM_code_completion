@@ -1,0 +1,15 @@
+    Collection<Method> getRelevantGetters(Class<?> clazz) {
+        synchronized (getterCache) {
+            if ( !getterCache.containsKey(clazz) ) {
+                List<Method> relevantGetters = new LinkedList<Method>();
+                for ( Method m : clazz.getMethods() ) {
+                    if ( isRelevantGetter(m) ) {
+                        relevantGetters.add(m);
+                    }
+                }
+                getterCache.put(clazz, relevantGetters);
+            }
+        }
+        return getterCache.get(clazz);
+    }
+

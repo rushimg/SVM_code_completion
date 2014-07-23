@@ -1,0 +1,27 @@
+    @Override
+    public ExponentialRetryPolicy withExceptionsToExclude(Collection<Class<? extends Throwable>> exceptionsToRetry) {
+        super.withExceptionsToExclude(exceptionsToRetry);
+        return this;
+    }
+
+    @Override
+    public long nextRetryDelaySeconds(Date firstAttempt, Date recordedFailure, int numberOfTries) {
+
+        if (numberOfTries < 2) {
+            throw new IllegalArgumentException("attempt is less then 2: " + numberOfTries);
+        }
+
+        if (maximumAttempts > FlowConstants.NONE && numberOfTries > maximumAttempts) {
+            return FlowConstants.NONE;
+        }
+
+        result = maximumRetryIntervalSeconds > FlowConstants.NONE ? Math.min(result, maximumRetryIntervalSeconds) : result;
+        int secondsSinceFirstAttempt = (int) ((recordedFailure.getTime() - firstAttempt.getTime()) / 1000);
+        if (retryExpirationIntervalSeconds > FlowConstants.NONE
+                && secondsSinceFirstAttempt + result >= retryExpirationIntervalSeconds) {
+            return FlowConstants.NONE;
+        }
+
+        return result;
+    }
+

@@ -1,0 +1,19 @@
+    public Future<AddCacheResult> addCacheAsync(
+            final AddCacheRequest addCacheRequest,
+            final AsyncHandler<AddCacheRequest, AddCacheResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<AddCacheResult>() {
+            public AddCacheResult call() throws Exception {
+                AddCacheResult result;
+                try {
+                    result = addCache(addCacheRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(addCacheRequest, result);
+                   return result;
+            }
+        });
+    }
+    

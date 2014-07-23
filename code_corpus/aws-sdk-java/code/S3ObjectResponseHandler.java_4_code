@@ -1,0 +1,15 @@
+        S3Object object = new S3Object();
+        AmazonWebServiceResponse<S3Object> awsResponse = parseResponseMetadata(response);
+        if (response.getHeaders().get(Headers.REDIRECT_LOCATION) != null) {
+            object.setRedirectLocation(response.getHeaders().get(Headers.REDIRECT_LOCATION));
+        }
+		ObjectMetadata metadata = object.getObjectMetadata();
+		populateObjectMetadata(response, metadata);
+
+		object.setObjectContent(new S3ObjectInputStream(response.getContent(),
+				response.getHttpRequest()));
+
+		awsResponse.setResult(object);
+		return awsResponse;
+    }
+

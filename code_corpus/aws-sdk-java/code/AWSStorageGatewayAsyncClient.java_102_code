@@ -1,0 +1,19 @@
+    public Future<ListVolumeRecoveryPointsResult> listVolumeRecoveryPointsAsync(
+            final ListVolumeRecoveryPointsRequest listVolumeRecoveryPointsRequest,
+            final AsyncHandler<ListVolumeRecoveryPointsRequest, ListVolumeRecoveryPointsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ListVolumeRecoveryPointsResult>() {
+            public ListVolumeRecoveryPointsResult call() throws Exception {
+                ListVolumeRecoveryPointsResult result;
+                try {
+                    result = listVolumeRecoveryPoints(listVolumeRecoveryPointsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(listVolumeRecoveryPointsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

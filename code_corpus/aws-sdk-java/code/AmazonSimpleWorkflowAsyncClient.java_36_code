@@ -1,0 +1,19 @@
+    public Future<WorkflowExecutionCount> countClosedWorkflowExecutionsAsync(
+            final CountClosedWorkflowExecutionsRequest countClosedWorkflowExecutionsRequest,
+            final AsyncHandler<CountClosedWorkflowExecutionsRequest, WorkflowExecutionCount> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<WorkflowExecutionCount>() {
+            public WorkflowExecutionCount call() throws Exception {
+                WorkflowExecutionCount result;
+                try {
+                    result = countClosedWorkflowExecutions(countClosedWorkflowExecutionsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(countClosedWorkflowExecutionsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

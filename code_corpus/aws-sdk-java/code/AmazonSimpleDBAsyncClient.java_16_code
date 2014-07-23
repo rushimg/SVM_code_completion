@@ -1,0 +1,19 @@
+    public Future<SelectResult> selectAsync(
+            final SelectRequest selectRequest,
+            final AsyncHandler<SelectRequest, SelectResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<SelectResult>() {
+            public SelectResult call() throws Exception {
+                SelectResult result;
+                try {
+                    result = select(selectRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(selectRequest, result);
+                   return result;
+            }
+        });
+    }
+    

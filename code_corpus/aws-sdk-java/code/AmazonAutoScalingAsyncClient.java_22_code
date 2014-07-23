@@ -1,0 +1,18 @@
+    public Future<Void> resumeProcessesAsync(
+            final ResumeProcessesRequest resumeProcessesRequest,
+            final AsyncHandler<ResumeProcessesRequest, Void> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<Void>() {
+            public Void call() throws Exception {
+                try {
+                    resumeProcesses(resumeProcessesRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(resumeProcessesRequest, null);
+                   return null;
+            }
+        });
+    }
+    

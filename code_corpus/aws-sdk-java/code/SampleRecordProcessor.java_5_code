@@ -1,0 +1,15 @@
+    @Override
+    public void processRecords(List<Record> records, IRecordProcessorCheckpointer checkpointer) {
+        LOG.info("Processing " + records.size() + " records from " + kinesisShardId);
+        
+        // Process records and perform all exception handling.
+        processRecordsWithRetries(records);
+        
+        // Checkpoint once every checkpoint interval.
+        if (System.currentTimeMillis() > nextCheckpointTimeInMillis) {
+            checkpoint(checkpointer);
+            nextCheckpointTimeInMillis = System.currentTimeMillis() + CHECKPOINT_INTERVAL_MILLIS;
+        }
+        
+    }
+

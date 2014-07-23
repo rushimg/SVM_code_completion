@@ -1,0 +1,59 @@
+    private static SecretKey getDecryptedSymmetricKey(byte[] encryptedSymmetricKeyBytes, EncryptionMaterials materials, Provider cryptoProvider) {
+        Key keyToDoDecryption;
+        if (materials.getKeyPair() != null) {
+            // Do envelope decryption with private key from key pair
+            keyToDoDecryption = materials.getKeyPair().getPrivate();
+        } else {
+            // Do envelope decryption with symmetric key
+            keyToDoDecryption = materials.getSymmetricKey();
+        }
+        try {
+            Cipher cipher;
+            if (cryptoProvider != null) {
+                cipher = Cipher.getInstance(keyToDoDecryption.getAlgorithm(), cryptoProvider);
+            } else {
+                cipher = Cipher.getInstance(keyToDoDecryption.getAlgorithm());
+            }
+            cipher.init(Cipher.DECRYPT_MODE, keyToDoDecryption);
+            byte[] decryptedSymmetricKeyBytes = cipher.doFinal(encryptedSymmetricKeyBytes);
+            return new SecretKeySpec(decryptedSymmetricKeyBytes, JceEncryptionConstants.SYMMETRIC_KEY_ALGORITHM);
+        } catch (Exception e) {
+            throw new AmazonClientException("Unable to decrypt symmetric key from object metadata : " + e.getMessage(), e);
+        }
+    }
+
+    private static InputStream getEncryptedInputStream(PutObjectRequest request, CipherFactory cipherFactory) {
+        try {
+            InputStream originalInputStream = request.getInputStream();
+            if (request.getFile() != null) {
+                originalInputStream = new RepeatableFileInputStream(request.getFile());
+            }
+            return new RepeatableCipherInputStream(originalInputStream, cipherFactory);
+        } catch (Exception e) {
+            throw new AmazonClientException("Unable to create cipher input stream: " + e.getMessage(), e);
+        }
+    }
+
+    public static InputStream getEncryptedInputStream(UploadPartRequest request, CipherFactory cipherFactory) {
+        try {
+            InputStream originalInputStream = request.getInputStream();
+            if (request.getFile() != null) {
+                originalInputStream = new InputSubstream(new RepeatableFileInputStream(request.getFile()),
+                        request.getFileOffset(), request.getPartSize(), request.isLastPart());
+            }
+
+            originalInputStream = new RepeatableCipherInputStream(originalInputStream, cipherFactory);
+
+            if (request.isLastPart() == false) {
+                // We want to prevent the final padding from being sent on the stream...
+                originalInputStream = new InputSubstream(originalInputStream, 0, request.getPartSize(), false);
+            }
+
+            long partSize = request.getPartSize();
+            int cipherBlockSize = cipherFactory.createCipher().getBlockSize();
+            return new ByteRangeCapturingInputStream(originalInputStream, partSize - cipherBlockSize, partSize);
+        } catch (Exception e) {
+            throw new AmazonClientException("Unable to create cipher input stream: " + e.getMessage(), e);
+        }
+    }
+

@@ -1,0 +1,19 @@
+    public Future<Snapshot> copyClusterSnapshotAsync(
+            final CopyClusterSnapshotRequest copyClusterSnapshotRequest,
+            final AsyncHandler<CopyClusterSnapshotRequest, Snapshot> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<Snapshot>() {
+            public Snapshot call() throws Exception {
+                Snapshot result;
+                try {
+                    result = copyClusterSnapshot(copyClusterSnapshotRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(copyClusterSnapshotRequest, result);
+                   return result;
+            }
+        });
+    }
+    

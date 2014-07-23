@@ -1,0 +1,69 @@
+    protected TimingInfo(Long startEpochTimeMilli, long startTimeNano, Long endTimeNano) {
+        this.startEpochTimeMilli = startEpochTimeMilli;
+        this.startTimeNano = startTimeNano;
+        this.endTimeNano = endTimeNano;
+    }
+
+    @Deprecated
+    public final long getStartTime() {
+        return isStartEpochTimeMilliKnown()
+             ? startEpochTimeMilli
+               // best effort even though technically this is incorrect
+             : TimeUnit.NANOSECONDS.toMillis(startTimeNano)
+             ;
+    }
+
+    @Deprecated
+    public final long getStartEpochTimeMilli() {
+        Long v = getStartEpochTimeMilliIfKnown();
+        return v == null ? UNKNOWN : v.longValue();
+    }
+
+    public final Long getStartEpochTimeMilliIfKnown() {
+        return startEpochTimeMilli;
+    }
+
+    public final long getStartTimeNano() {
+        return startTimeNano;
+    }
+
+    @Deprecated
+    public final long getEndTime() {
+        return getEndEpochTimeMilli();
+    }
+
+    @Deprecated
+    public final long getEndEpochTimeMilli() {
+        Long v = getEndEpochTimeMilliIfKnown();
+        return v == null ? UNKNOWN : v.longValue();
+    }
+
+    public final Long getEndEpochTimeMilliIfKnown() {
+        return isStartEpochTimeMilliKnown() && isEndTimeKnown()
+               // make use of the wall clock time and elpased time
+             ? startEpochTimeMilli.longValue()
+                 + TimeUnit.NANOSECONDS.toMillis(endTimeNano.longValue() - startTimeNano)
+             : null;
+    }
+
+    public final long getEndTimeNano() {
+        return endTimeNano == null ? UNKNOWN : endTimeNano;
+    }
+
+    public final Long getEndTimeNanoIfKnown() {
+        return endTimeNano;
+    }
+
+    @Deprecated
+    public final double getTimeTakenMillis() {
+        Double v = getTimeTakenMillisIfKnown();
+        return v == null ? UNKNOWN : v.doubleValue();
+    }
+
+    public final Double getTimeTakenMillisIfKnown() {
+        return isEndTimeKnown() 
+             ? durationMilliOf(startTimeNano, endTimeNano)
+             : null
+             ;
+    }
+

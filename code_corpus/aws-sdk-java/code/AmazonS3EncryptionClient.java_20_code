@@ -1,0 +1,32 @@
+    @Override
+    public InitiateMultipartUploadResult initiateMultipartUpload(
+            InitiateMultipartUploadRequest initiateMultipartUploadRequest)
+            throws AmazonClientException, AmazonServiceException {
+
+        appendUserAgent(initiateMultipartUploadRequest, USER_AGENT);
+
+        // Generate a one-time use symmetric key and initialize a cipher to encrypt object data
+        SecretKey envelopeSymmetricKey = EncryptionUtils.generateOneTimeUseSymmetricKey();
+        Cipher symmetricCipher = EncryptionUtils.createSymmetricCipher(envelopeSymmetricKey, Cipher.ENCRYPT_MODE, cryptoConfig.getCryptoProvider(), null);
+
+        if (cryptoConfig.getStorageMode() == CryptoStorageMode.ObjectMetadata) {
+      EncryptionMaterials encryptionMaterials = encryptionMaterialsProvider.getEncryptionMaterials();
+            // Encrypt the envelope symmetric key
+            byte[] encryptedEnvelopeSymmetricKey = EncryptionUtils.getEncryptedSymmetricKey(envelopeSymmetricKey, encryptionMaterials, cryptoConfig.getCryptoProvider());
+
+            // Store encryption info in metadata
+            ObjectMetadata metadata = EncryptionUtils.updateMetadataWithEncryptionInfo(initiateMultipartUploadRequest, encryptedEnvelopeSymmetricKey, symmetricCipher, encryptionMaterials.getMaterialsDescription());
+
+            // Update the request's metadata to the updated metadata
+            initiateMultipartUploadRequest.setObjectMetadata(metadata);
+        }
+
+        InitiateMultipartUploadResult result = super.initiateMultipartUpload(initiateMultipartUploadRequest);
+        EncryptedUploadContext encryptedUploadContext = new EncryptedUploadContext(initiateMultipartUploadRequest.getBucketName(), initiateMultipartUploadRequest.getKey(), envelopeSymmetricKey);
+        encryptedUploadContext.setNextInitializationVector(symmetricCipher.getIV());
+        encryptedUploadContext.setFirstInitializationVector(symmetricCipher.getIV());
+        currentMultipartUploadSecretKeys.put(result.getUploadId(), encryptedUploadContext);
+
+        return result;
+    }
+

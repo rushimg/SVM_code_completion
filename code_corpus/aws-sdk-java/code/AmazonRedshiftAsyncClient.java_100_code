@@ -1,0 +1,19 @@
+    public Future<DescribeLoggingStatusResult> describeLoggingStatusAsync(
+            final DescribeLoggingStatusRequest describeLoggingStatusRequest,
+            final AsyncHandler<DescribeLoggingStatusRequest, DescribeLoggingStatusResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeLoggingStatusResult>() {
+            public DescribeLoggingStatusResult call() throws Exception {
+                DescribeLoggingStatusResult result;
+                try {
+                    result = describeLoggingStatus(describeLoggingStatusRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeLoggingStatusRequest, result);
+                   return result;
+            }
+        });
+    }
+    

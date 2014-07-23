@@ -15,6 +15,7 @@ from operator import itemgetter
 from sklearn.metrics import classification_report
 import csv,sys,os
 import urllib2
+from sklearn import cross_validation
 
 def run_svm(in_f):
 	with open(in_f, 'rb') as csvfile:
@@ -34,14 +35,20 @@ def run_svm(in_f):
 	
 	text_data = training_data
 	text_labels = training_labels
-	trainset_size = int(round(len(text_data)*0.75)) # i chose this threshold arbitrarily...to discuss
-	print 'The training set size for this classifier is ' + str(trainset_size) + '\n'
+	#trainset_size = int(round(len(text_data)*0.75)) # i chose this threshold arbitrarily...to discuss
+	#print 'The training set size for this classifier is ' + str(trainset_size) + '\n'
 
-	X_train = np.array([el for el in text_data[0:trainset_size]])
-	y_train = np.array([el for el in text_labels[0:trainset_size]])
+	X = np.array([el for el in text_data])
+	Y = np.array([el for el in text_labels])
 
-	X_test = np.array([el for el in text_data[trainset_size+1:len(text_data)]]) 
-	y_test = np.array([el for el in text_labels[trainset_size+1:len(text_labels)]]) 
+	model = LinearSVC()
+        scores = cross_validation.cross_val_score(model, X, Y,cv=2,scoring='f1')
+
+        #print("Baseline: %0.2f (+/- %0.2f)" % (baseline_scores.mean(), baseline_scores.std() * 2))
+        print("F1 Score: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
+	
+	#X_test = np.array([el for el in text_data[trainset_size+1:len(text_data)]]) 
+	#y_test = np.array([el for el in text_labels[trainset_size+1:len(text_labels)]]) 
 
 	#vectorizer = CountVectorizer(binary=True)
 	#vectorizer = TfidfVectorizer(min_df=2, 
@@ -59,14 +66,13 @@ def run_svm(in_f):
 	#X_test = vectorizer.transform(X_test)
 	#print X_train
 	
-	svm_classifier = LinearSVC().fit(X_train, y_train)
-	y_svm_predicted = svm_classifier.predict(X_test)
+	#svm_classifier = LinearSVC().fit(X_train, y_train)
+	#y_svm_predicted = svm_classifier.predict(X_test)
 	#y_svm_predicted = svm_classifier.predict(np.array([2,2,118]))
 	#../code_corpus/HtmlCleaner/comments/TagNode.java_14     4       4       125     1
-	print y_svm_predicted
-
-	print "MODEL: Linear SVC\n"
-
+	
+	#print "MODEL: Linear SVC\n"
+	'''
 	print 'The precision for this classifier is ' + str(metrics.precision_score(y_test, y_svm_predicted))
 	print 'The recall for this classifier is ' + str(metrics.recall_score(y_test, y_svm_predicted))
 	print 'The f1 for this classifier is ' + str(metrics.f1_score(y_test, y_svm_predicted))
@@ -74,7 +80,7 @@ def run_svm(in_f):
 
 	print '\nHere is the classification report:'
 	print classification_report(y_test, y_svm_predicted)
-
+	'''
 	#simple thing to do would be to up the n-grams to bigrams; try varying ngram_range from (1, 1) to (1, 2)
 	#we could also modify the vectorizer to stem or lemmatize
 	#print '\nHere is the confusion matrix:'

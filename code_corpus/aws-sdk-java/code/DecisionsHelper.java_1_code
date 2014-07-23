@@ -1,0 +1,66 @@
+package com.amazonaws.services.simpleworkflow.flow.worker;
+
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import com.amazonaws.services.simpleworkflow.flow.WorkflowException;
+import com.amazonaws.services.simpleworkflow.flow.common.FlowHelpers;
+import com.amazonaws.services.simpleworkflow.flow.common.WorkflowExecutionUtils;
+import com.amazonaws.services.simpleworkflow.flow.generic.ContinueAsNewWorkflowExecutionParameters;
+import com.amazonaws.services.simpleworkflow.model.ActivityTaskCancelRequestedEventAttributes;
+import com.amazonaws.services.simpleworkflow.model.ActivityTaskCanceledEventAttributes;
+import com.amazonaws.services.simpleworkflow.model.ActivityTaskCompletedEventAttributes;
+import com.amazonaws.services.simpleworkflow.model.ActivityTaskFailedEventAttributes;
+import com.amazonaws.services.simpleworkflow.model.ActivityTaskScheduledEventAttributes;
+import com.amazonaws.services.simpleworkflow.model.ActivityTaskTimedOutEventAttributes;
+import com.amazonaws.services.simpleworkflow.model.CancelTimerFailedEventAttributes;
+import com.amazonaws.services.simpleworkflow.model.CancelWorkflowExecutionDecisionAttributes;
+import com.amazonaws.services.simpleworkflow.model.ChildPolicy;
+import com.amazonaws.services.simpleworkflow.model.ChildWorkflowExecutionStartedEventAttributes;
+import com.amazonaws.services.simpleworkflow.model.CompleteWorkflowExecutionDecisionAttributes;
+import com.amazonaws.services.simpleworkflow.model.ContinueAsNewWorkflowExecutionDecisionAttributes;
+import com.amazonaws.services.simpleworkflow.model.Decision;
+import com.amazonaws.services.simpleworkflow.model.DecisionTask;
+import com.amazonaws.services.simpleworkflow.model.DecisionTaskCompletedEventAttributes;
+import com.amazonaws.services.simpleworkflow.model.DecisionType;
+import com.amazonaws.services.simpleworkflow.model.FailWorkflowExecutionDecisionAttributes;
+import com.amazonaws.services.simpleworkflow.model.HistoryEvent;
+import com.amazonaws.services.simpleworkflow.model.RequestCancelActivityTaskFailedEventAttributes;
+import com.amazonaws.services.simpleworkflow.model.RequestCancelExternalWorkflowExecutionDecisionAttributes;
+import com.amazonaws.services.simpleworkflow.model.RequestCancelExternalWorkflowExecutionFailedEventAttributes;
+import com.amazonaws.services.simpleworkflow.model.RequestCancelExternalWorkflowExecutionInitiatedEventAttributes;
+import com.amazonaws.services.simpleworkflow.model.ScheduleActivityTaskDecisionAttributes;
+import com.amazonaws.services.simpleworkflow.model.ScheduleActivityTaskFailedEventAttributes;
+import com.amazonaws.services.simpleworkflow.model.SignalExternalWorkflowExecutionDecisionAttributes;
+import com.amazonaws.services.simpleworkflow.model.SignalExternalWorkflowExecutionInitiatedEventAttributes;
+import com.amazonaws.services.simpleworkflow.model.StartChildWorkflowExecutionDecisionAttributes;
+import com.amazonaws.services.simpleworkflow.model.StartChildWorkflowExecutionFailedEventAttributes;
+import com.amazonaws.services.simpleworkflow.model.StartChildWorkflowExecutionInitiatedEventAttributes;
+import com.amazonaws.services.simpleworkflow.model.StartTimerDecisionAttributes;
+import com.amazonaws.services.simpleworkflow.model.StartTimerFailedEventAttributes;
+import com.amazonaws.services.simpleworkflow.model.TaskList;
+import com.amazonaws.services.simpleworkflow.model.TimerCanceledEventAttributes;
+import com.amazonaws.services.simpleworkflow.model.TimerStartedEventAttributes;
+
+class DecisionsHelper {
+
+    //    private static final Log log = LogFactory.getLog(DecisionsHelper.class);
+
+    static final int MAXIMUM_DECISIONS_PER_COMPLETION = 100;
+
+    static final String FORCE_IMMEDIATE_DECISION_TIMER = "FORCE_IMMEDIATE_DECISION";
+
+    private final DecisionTask task;
+
+    private long idCounter;
+
+    private final Map<Long, String> activitySchedulingEventIdToActivityId = new HashMap<Long, String>();
+
+    private final Map<Long, String> signalInitiatedEventIdToSignalId = new HashMap<Long, String>();
+

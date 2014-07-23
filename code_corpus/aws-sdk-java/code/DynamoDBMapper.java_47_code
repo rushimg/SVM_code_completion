@@ -1,0 +1,9 @@
+    public <T> PaginatedQueryList<T> query(Class<T> clazz, DynamoDBQueryExpression queryExpression, DynamoDBMapperConfig config) {
+        config = mergeConfig(config);
+
+        QueryRequest queryRequest = createQueryRequestFromExpression(clazz, queryExpression, config);
+
+        QueryResult queryResult = db.query(applyUserAgent(queryRequest));
+        return new PaginatedQueryList<T>(this, clazz, db, queryRequest, queryResult);
+    }
+    

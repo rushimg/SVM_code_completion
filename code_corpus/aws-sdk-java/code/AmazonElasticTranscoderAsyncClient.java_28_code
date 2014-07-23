@@ -1,0 +1,19 @@
+    public Future<CancelJobResult> cancelJobAsync(
+            final CancelJobRequest cancelJobRequest,
+            final AsyncHandler<CancelJobRequest, CancelJobResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<CancelJobResult>() {
+            public CancelJobResult call() throws Exception {
+                CancelJobResult result;
+                try {
+                    result = cancelJob(cancelJobRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(cancelJobRequest, result);
+                   return result;
+            }
+        });
+    }
+    

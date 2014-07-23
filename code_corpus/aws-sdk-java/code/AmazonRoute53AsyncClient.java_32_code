@@ -1,0 +1,19 @@
+    public Future<ListHostedZonesResult> listHostedZonesAsync(
+            final ListHostedZonesRequest listHostedZonesRequest,
+            final AsyncHandler<ListHostedZonesRequest, ListHostedZonesResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ListHostedZonesResult>() {
+            public ListHostedZonesResult call() throws Exception {
+                ListHostedZonesResult result;
+                try {
+                    result = listHostedZones(listHostedZonesRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(listHostedZonesRequest, result);
+                   return result;
+            }
+        });
+    }
+    

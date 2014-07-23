@@ -1,0 +1,19 @@
+    public Future<VerifyDomainDkimResult> verifyDomainDkimAsync(
+            final VerifyDomainDkimRequest verifyDomainDkimRequest,
+            final AsyncHandler<VerifyDomainDkimRequest, VerifyDomainDkimResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<VerifyDomainDkimResult>() {
+            public VerifyDomainDkimResult call() throws Exception {
+                VerifyDomainDkimResult result;
+                try {
+                    result = verifyDomainDkim(verifyDomainDkimRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(verifyDomainDkimRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -1,0 +1,19 @@
+    public Future<GetHostedZoneResult> getHostedZoneAsync(
+            final GetHostedZoneRequest getHostedZoneRequest,
+            final AsyncHandler<GetHostedZoneRequest, GetHostedZoneResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<GetHostedZoneResult>() {
+            public GetHostedZoneResult call() throws Exception {
+                GetHostedZoneResult result;
+                try {
+                    result = getHostedZone(getHostedZoneRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(getHostedZoneRequest, result);
+                   return result;
+            }
+        });
+    }
+    

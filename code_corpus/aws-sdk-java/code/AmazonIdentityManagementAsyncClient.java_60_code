@@ -1,0 +1,19 @@
+    public Future<UploadServerCertificateResult> uploadServerCertificateAsync(
+            final UploadServerCertificateRequest uploadServerCertificateRequest,
+            final AsyncHandler<UploadServerCertificateRequest, UploadServerCertificateResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<UploadServerCertificateResult>() {
+            public UploadServerCertificateResult call() throws Exception {
+                UploadServerCertificateResult result;
+                try {
+                    result = uploadServerCertificate(uploadServerCertificateRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(uploadServerCertificateRequest, result);
+                   return result;
+            }
+        });
+    }
+    

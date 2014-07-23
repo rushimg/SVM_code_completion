@@ -1,0 +1,20 @@
+    public synchronized void setSuccess(Res paramResult) {
+        if (done) return;  //can't mark done twice
+        result = paramResult;
+        done = true;
+        notifyAll();
+        
+        //if we have a callback to call, schedule
+        //it on a different thread. Who knows what this
+        //thread is doing.
+        if ( callback != null && issuingBuffer != null ) {
+            QueueBuffer.executor.submit(new Callable<Void>() {
+                public Void call() throws Exception {
+                    callback.onSuccess(result);
+                    return null;
+                }
+            });
+
+        }
+    }
+

@@ -1,0 +1,19 @@
+    public Future<ListStacksResult> listStacksAsync(
+            final ListStacksRequest listStacksRequest,
+            final AsyncHandler<ListStacksRequest, ListStacksResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ListStacksResult>() {
+            public ListStacksResult call() throws Exception {
+                ListStacksResult result;
+                try {
+                    result = listStacks(listStacksRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(listStacksRequest, result);
+                   return result;
+            }
+        });
+    }
+    

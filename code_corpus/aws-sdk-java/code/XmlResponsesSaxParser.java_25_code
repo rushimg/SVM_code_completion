@@ -1,0 +1,27 @@
+        public AccessControlList getAccessControlList() {
+            return accessControlList;
+        }
+
+        @Override
+        public void startDocument() {
+        }
+
+        @Override
+        public void endDocument() {
+        }
+
+        @Override
+        public void startElement(String uri, String name, String qName, Attributes attrs) {
+            if (name.equals("Owner")) {
+                owner = new Owner();
+            } else if (name.equals("AccessControlList")) {
+                accessControlList = new AccessControlList();
+                accessControlList.setOwner(owner);
+                insideACL = true;
+            } else if (name.equals("Grantee")) {
+                String type = XmlResponsesSaxParser.findAttributeValue( "xsi:type", attrs );
+                if ("AmazonCustomerByEmail".equals(type)) {
+                    currentGrantee = new EmailAddressGrantee(null);
+                } else if ("CanonicalUser".equals(type)) {
+                    currentGrantee = new CanonicalGrantee(null);
+                } else if ("Group".equals(type)) {

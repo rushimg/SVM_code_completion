@@ -1,0 +1,43 @@
+    public void presignRequest(Request<?> request, AWSCredentials credentials, Date expiration) {
+
+        addHostHeader(request);
+
+        // annonymous credentials, don't sign
+        if (credentials instanceof AnonymousAWSCredentials) {
+            return;
+        }
+
+        AWSCredentials sanitizedCredentials = sanitizeCredentials(credentials);
+        if (sanitizedCredentials instanceof AWSSessionCredentials) {
+            addSessionCredentials(request, (AWSSessionCredentials) sanitizedCredentials);
+        }
+
+        long dateMilli = getDateFromRequest(request);
+        final String dateStamp = getDateStamp(dateMilli);
+
+        String scope = getScope(request, dateStamp);
+
+        String signingCredentials = sanitizedCredentials.getAWSAccessKeyId() + "/" + scope;
+        String expirationInSeconds = Long.toString((expiration.getTime() - System.currentTimeMillis()) / 1000L);
+
+        // Add the important parameters for v4 signing
+        long now = System.currentTimeMillis();
+        final String timeStamp = getTimeStamp(now);
+        request.addParameter("X-Amz-Algorithm", "AWS4-HMAC-SHA256");
+        request.addParameter("X-Amz-Date", timeStamp);
+        request.addParameter("X-Amz-SignedHeaders", "Host");
+        request.addParameter("X-Amz-Expires", expirationInSeconds);
+        request.addParameter("X-Amz-Credential", signingCredentials);
+
+        String contentSha256 = "UNSIGNED-PAYLOAD";
+
+        HeaderSigningResult headerSigningResult = computeSignature(
+                request,
+                dateStamp,
+                timeStamp,
+                ALGORITHM,
+                contentSha256,
+                sanitizedCredentials);
+        request.addParameter("X-Amz-Signature", BinaryUtils.toHex(headerSigningResult.getSignature()));
+    }
+

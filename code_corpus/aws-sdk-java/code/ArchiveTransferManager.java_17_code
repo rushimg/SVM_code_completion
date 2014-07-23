@@ -1,0 +1,65 @@
+    private void downloadOneChunk(String accountId, String vaultName, String jobId, RandomAccessFile output, long currentPosition, long endPosition) {
+        TreeHashInputStream  input;
+        int retries = 0;
+        while (true) {
+            try {
+                GetJobOutputResult  jobOutputResult = glacier.getJobOutput(new GetJobOutputRequest()
+                  .withAccountId(accountId)
+                  .withVaultName(vaultName)
+                  .withRange("bytes=" + Long.toString(currentPosition) + "-" + Long.toString(endPosition))
+                  .withJobId(jobId));
+
+                try {
+                    input = new TreeHashInputStream(new BufferedInputStream(jobOutputResult.getBody()));
+                } catch (NoSuchAlgorithmException e) {
+                    throw new AmazonClientException("Unable to compute hash for data integrity: " + e.getMessage(), e);
+                }
+
+                appendToFile(output, input);
+
+                // Only do tree-hash check when the output checksum is returned from Glacier
+                if (null != jobOutputResult.getChecksum()) {
+                    // Checksum does not match
+                    if (!input.getTreeHash().equalsIgnoreCase(jobOutputResult.getChecksum())) {
+                        throw new IOException("Client side computed hash doesn't match server side hash; possible data corruption");
+                    }
+                } else {
+                    log.warn("Cannot validate the downloaded output since no tree-hash checksum is returned from Glacier. "
+                            + "Make sure the InitiateJob and GetJobOutput requests use tree-hash-aligned ranges.");
+                }
+
+                // Successfully download
+                return;
+
+                // We will retry IO exception
+            } catch (IOException ioe) {
+                if (retries < DEFAULT_MAX_RETRIES) {
+                    retries++;
+                    try {
+                        output.seek(currentPosition);
+                    } catch (Exception e) {
+                        throw new AmazonClientException("Unable to download the archive: " + ioe.getMessage(), e);
+                    }
+                } else {
+                    throw new AmazonClientException("Unable to download the archive: " + ioe.getMessage(), ioe);
+                }
+            }
+        }
+    }
+
+    private void appendToFile(RandomAccessFile output, InputStream input) throws IOException {
+        try {
+            int bytesRead = 0;
+            do {
+                bytesRead = input.read(buffer);
+                if (bytesRead < 0)
+                    break;
+                output.write(buffer, 0, bytesRead);
+            } while (bytesRead > 0);
+        } finally {
+            try {input.close();} catch (Exception e) {}
+        }
+    }
+
+
+

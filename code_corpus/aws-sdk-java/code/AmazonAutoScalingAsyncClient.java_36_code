@@ -1,0 +1,19 @@
+    public Future<DescribeNotificationConfigurationsResult> describeNotificationConfigurationsAsync(
+            final DescribeNotificationConfigurationsRequest describeNotificationConfigurationsRequest,
+            final AsyncHandler<DescribeNotificationConfigurationsRequest, DescribeNotificationConfigurationsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeNotificationConfigurationsResult>() {
+            public DescribeNotificationConfigurationsResult call() throws Exception {
+                DescribeNotificationConfigurationsResult result;
+                try {
+                    result = describeNotificationConfigurations(describeNotificationConfigurationsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeNotificationConfigurationsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

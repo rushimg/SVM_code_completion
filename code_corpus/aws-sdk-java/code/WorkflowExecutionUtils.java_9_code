@@ -1,0 +1,20 @@
+    public static String waitForWorkflowInstanceCompletionAcrossGenerations(AmazonSimpleWorkflow service, String domain,
+            WorkflowExecution workflowExecution) throws InterruptedException {
+        try {
+            return waitForWorkflowInstanceCompletionAcrossGenerations(service, domain, workflowExecution, 0L);
+        }
+        catch (TimeoutException e) {
+            throw new Error("should never happen", e);
+        }
+    }
+
+    public static WorkflowExecutionInfo describeWorkflowInstance(AmazonSimpleWorkflow service, String domain,
+            WorkflowExecution workflowExecution) {
+        DescribeWorkflowExecutionRequest describeRequest = new DescribeWorkflowExecutionRequest();
+        describeRequest.setDomain(domain);
+        describeRequest.setExecution(workflowExecution);
+        WorkflowExecutionDetail executionDetail = service.describeWorkflowExecution(describeRequest);
+        WorkflowExecutionInfo instanceMetadata = executionDetail.getExecutionInfo();
+        return instanceMetadata;
+    }
+

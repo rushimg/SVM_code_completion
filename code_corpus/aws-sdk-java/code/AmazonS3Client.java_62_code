@@ -1,0 +1,10 @@
+        request.getHeaders().remove(Headers.CONTENT_LENGTH);
+
+        CopyObjectResultHandler copyObjectResultHandler = null;
+        try {
+            @SuppressWarnings("unchecked")
+            ResponseHeaderHandlerChain<CopyObjectResultHandler> handler = new ResponseHeaderHandlerChain<CopyObjectResultHandler>(
+                    new Unmarshallers.CopyObjectUnmarshaller(),
+                    new ServerSideEncryptionHeaderHandler<CopyObjectResultHandler>(), new S3VersionHeaderHandler(), new ObjectExpirationHeaderHandler<CopyObjectResultHandler>());
+            copyObjectResultHandler = invoke(request, handler, destinationBucketName, destinationKey);
+        } catch (AmazonS3Exception ase) {

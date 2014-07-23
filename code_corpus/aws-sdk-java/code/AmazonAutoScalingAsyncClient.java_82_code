@@ -1,0 +1,19 @@
+    public Future<DescribeMetricCollectionTypesResult> describeMetricCollectionTypesAsync(
+            final DescribeMetricCollectionTypesRequest describeMetricCollectionTypesRequest,
+            final AsyncHandler<DescribeMetricCollectionTypesRequest, DescribeMetricCollectionTypesResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeMetricCollectionTypesResult>() {
+            public DescribeMetricCollectionTypesResult call() throws Exception {
+                DescribeMetricCollectionTypesResult result;
+                try {
+                    result = describeMetricCollectionTypes(describeMetricCollectionTypesRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeMetricCollectionTypesRequest, result);
+                   return result;
+            }
+        });
+    }
+    

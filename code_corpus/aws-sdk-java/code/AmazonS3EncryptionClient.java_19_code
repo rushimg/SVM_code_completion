@@ -1,0 +1,38 @@
+    @Override
+    public CompleteMultipartUploadResult completeMultipartUpload(
+            CompleteMultipartUploadRequest completeMultipartUploadRequest)
+            throws AmazonClientException, AmazonServiceException {
+
+        appendUserAgent(completeMultipartUploadRequest, USER_AGENT);
+
+        String uploadId = completeMultipartUploadRequest.getUploadId();
+        EncryptedUploadContext encryptedUploadContext = currentMultipartUploadSecretKeys.get(uploadId);
+
+        if (encryptedUploadContext.hasFinalPartBeenSeen() == false) {
+            throw new AmazonClientException("Unable to complete an encrypted multipart upload without being told which part was the last.  " +
+                    "Without knowing which part was the last, the encrypted data in Amazon S3 is incomplete and corrupt.");
+        }
+
+        CompleteMultipartUploadResult result = super.completeMultipartUpload(completeMultipartUploadRequest);
+
+        // In InstructionFile mode, we want to write the instruction file only after the whole upload has completed correctly.
+        if (cryptoConfig.getStorageMode() == CryptoStorageMode.InstructionFile) {
+            Cipher symmetricCipher = EncryptionUtils.createSymmetricCipher(
+                    encryptedUploadContext.getEnvelopeEncryptionKey(),
+                    Cipher.ENCRYPT_MODE, cryptoConfig.getCryptoProvider(),
+                    encryptedUploadContext.getFirstInitializationVector());
+
+            EncryptionMaterials encryptionMaterials = encryptionMaterialsProvider.getEncryptionMaterials();
+
+            // Encrypt the envelope symmetric key
+            byte[] encryptedEnvelopeSymmetricKey = EncryptionUtils.getEncryptedSymmetricKey(encryptedUploadContext.getEnvelopeEncryptionKey(), encryptionMaterials, cryptoConfig.getCryptoProvider());
+            EncryptionInstruction instruction = new EncryptionInstruction(encryptionMaterials.getMaterialsDescription(), encryptedEnvelopeSymmetricKey, encryptedUploadContext.getEnvelopeEncryptionKey(), symmetricCipher);
+
+            // Put the instruction file into S3
+            super.putObject(EncryptionUtils.createInstructionPutRequest(encryptedUploadContext.getBucketName(), encryptedUploadContext.getKey(), instruction));
+        }
+
+        currentMultipartUploadSecretKeys.remove(uploadId);
+        return result;
+    }
+

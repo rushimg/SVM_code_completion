@@ -1,0 +1,19 @@
+    public Future<DeleteGatewayResult> deleteGatewayAsync(
+            final DeleteGatewayRequest deleteGatewayRequest,
+            final AsyncHandler<DeleteGatewayRequest, DeleteGatewayResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DeleteGatewayResult>() {
+            public DeleteGatewayResult call() throws Exception {
+                DeleteGatewayResult result;
+                try {
+                    result = deleteGateway(deleteGatewayRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(deleteGatewayRequest, result);
+                   return result;
+            }
+        });
+    }
+    

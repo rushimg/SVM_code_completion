@@ -1,0 +1,29 @@
+    private static long calculateCryptoContentLength(Cipher symmetricCipher, PutObjectRequest request, ObjectMetadata metadata) {
+        long plaintextLength = getUnencryptedContentLength(request, metadata);
+
+        // If we have a zero length object, return zero as the encrypted size
+        if (plaintextLength == 0) return 0;
+
+        // If we don't know the unencrypted size, then report -1
+        if (plaintextLength < 0) return -1;
+
+        long cipherBlockSize = symmetricCipher.getBlockSize();
+        long offset = cipherBlockSize - (plaintextLength % cipherBlockSize);
+        return plaintextLength + offset;
+    }
+
+    public static long calculateCryptoContentLength(Cipher symmetricCipher, UploadPartRequest request) {
+        long plaintextLength;
+        if (request.getFile() != null) {
+            if (request.getPartSize() > 0) plaintextLength = request.getPartSize();
+            else plaintextLength = request.getFile().length();
+        } else if (request.getInputStream() != null) {
+            plaintextLength = request.getPartSize();
+        } else {
+            return -1;
+        }
+        long cipherBlockSize = symmetricCipher.getBlockSize();
+        long offset = cipherBlockSize - (plaintextLength % cipherBlockSize);
+        return plaintextLength + offset;
+    }
+

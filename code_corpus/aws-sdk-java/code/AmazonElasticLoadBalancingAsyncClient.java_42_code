@@ -1,0 +1,19 @@
+    public Future<CreateLoadBalancerPolicyResult> createLoadBalancerPolicyAsync(
+            final CreateLoadBalancerPolicyRequest createLoadBalancerPolicyRequest,
+            final AsyncHandler<CreateLoadBalancerPolicyRequest, CreateLoadBalancerPolicyResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<CreateLoadBalancerPolicyResult>() {
+            public CreateLoadBalancerPolicyResult call() throws Exception {
+                CreateLoadBalancerPolicyResult result;
+                try {
+                    result = createLoadBalancerPolicy(createLoadBalancerPolicyRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(createLoadBalancerPolicyRequest, result);
+                   return result;
+            }
+        });
+    }
+    

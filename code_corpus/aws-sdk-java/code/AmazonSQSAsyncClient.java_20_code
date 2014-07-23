@@ -1,0 +1,18 @@
+    public Future<Void> changeMessageVisibilityAsync(
+            final ChangeMessageVisibilityRequest changeMessageVisibilityRequest,
+            final AsyncHandler<ChangeMessageVisibilityRequest, Void> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<Void>() {
+            public Void call() throws Exception {
+                try {
+                    changeMessageVisibility(changeMessageVisibilityRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(changeMessageVisibilityRequest, null);
+                   return null;
+            }
+        });
+    }
+    

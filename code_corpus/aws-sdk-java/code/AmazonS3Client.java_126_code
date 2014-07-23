@@ -1,0 +1,15 @@
+    private void populateRequestWithMfaDetails(Request<?> request, MultiFactorAuthentication mfa) {
+        if (mfa == null) return;
+
+        String endpoint = request.getEndpoint().toString();
+        if (endpoint.startsWith("http://")) {
+            String httpsEndpoint = endpoint.replace("http://", "https://");
+            request.setEndpoint(URI.create(httpsEndpoint));
+            log.info("Overriding current endpoint to use HTTPS " +
+                    "as required by S3 for requests containing an MFA header");
+        }
+
+        request.addHeader(Headers.S3_MFA,
+                mfa.getDeviceSerialNumber() + " " + mfa.getToken());
+    }
+

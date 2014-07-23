@@ -1,0 +1,19 @@
+    public Future<DescribeEventSubscriptionsResult> describeEventSubscriptionsAsync(
+            final DescribeEventSubscriptionsRequest describeEventSubscriptionsRequest,
+            final AsyncHandler<DescribeEventSubscriptionsRequest, DescribeEventSubscriptionsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeEventSubscriptionsResult>() {
+            public DescribeEventSubscriptionsResult call() throws Exception {
+                DescribeEventSubscriptionsResult result;
+                try {
+                    result = describeEventSubscriptions(describeEventSubscriptionsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeEventSubscriptionsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

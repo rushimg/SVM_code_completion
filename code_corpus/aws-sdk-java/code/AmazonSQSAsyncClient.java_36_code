@@ -1,0 +1,19 @@
+    public Future<ListQueuesResult> listQueuesAsync(
+            final ListQueuesRequest listQueuesRequest,
+            final AsyncHandler<ListQueuesRequest, ListQueuesResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ListQueuesResult>() {
+            public ListQueuesResult call() throws Exception {
+                ListQueuesResult result;
+                try {
+                    result = listQueues(listQueuesRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(listQueuesRequest, result);
+                   return result;
+            }
+        });
+    }
+    

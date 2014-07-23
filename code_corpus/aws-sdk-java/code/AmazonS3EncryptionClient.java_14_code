@@ -1,0 +1,13 @@
+    @Override
+    public PutObjectResult putObject(PutObjectRequest putObjectRequest)
+    throws AmazonClientException, AmazonServiceException {
+
+        appendUserAgent(putObjectRequest, USER_AGENT);
+
+        if (this.cryptoConfig.getStorageMode() == CryptoStorageMode.InstructionFile) {
+            return putObjectUsingInstructionFile(putObjectRequest);
+        } else {
+            return putObjectUsingMetadata(putObjectRequest);
+        }
+    }
+

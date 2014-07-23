@@ -1,0 +1,19 @@
+    public Future<DescribeTagsResult> describeTagsAsync(
+            final DescribeTagsRequest describeTagsRequest,
+            final AsyncHandler<DescribeTagsRequest, DescribeTagsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeTagsResult>() {
+            public DescribeTagsResult call() throws Exception {
+                DescribeTagsResult result;
+                try {
+                    result = describeTags(describeTagsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeTagsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -1,0 +1,41 @@
+    public void setRegion(Region region) throws IllegalArgumentException {
+        if ( region == null ) {
+            throw new IllegalArgumentException("No region provided");
+        }
+
+        String serviceName = getServiceNameIntern();
+        String serviceEndpoint;
+
+        if ( region.isServiceSupported(serviceName) ) {
+
+            serviceEndpoint = region.getServiceEndpoint(serviceName);
+
+            int protocolIdx = serviceEndpoint.indexOf("://");
+            // Strip off the protocol to allow the client config to specify it
+            if ( protocolIdx >= 0 ) {
+                serviceEndpoint =
+                    serviceEndpoint.substring(protocolIdx + "://".length());
+            }
+
+        } else {
+
+            serviceEndpoint = String.format("%s.%s.%s",
+                                            serviceName,
+                                            region.getName(),
+                                            region.getDomain());
+
+            log.info("{" + serviceName + ", " + region.getName() + "} was not "
+                     + "found in region metadata, trying to construct an "
+                     + "endpoint using the standard pattern for this region: '"
+                     + serviceEndpoint + "'.");
+
+        }
+
+        setEndpoint(serviceEndpoint, serviceName, region.getName());
+    }
+
+    public void setConfiguration(ClientConfiguration clientConfiguration) {
+        this.clientConfiguration = clientConfiguration;
+        client = new AmazonHttpClient(clientConfiguration);
+    }
+

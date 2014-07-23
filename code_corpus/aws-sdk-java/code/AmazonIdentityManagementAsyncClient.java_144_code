@@ -1,0 +1,19 @@
+    public Future<ListGroupPoliciesResult> listGroupPoliciesAsync(
+            final ListGroupPoliciesRequest listGroupPoliciesRequest,
+            final AsyncHandler<ListGroupPoliciesRequest, ListGroupPoliciesResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ListGroupPoliciesResult>() {
+            public ListGroupPoliciesResult call() throws Exception {
+                ListGroupPoliciesResult result;
+                try {
+                    result = listGroupPolicies(listGroupPoliciesRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(listGroupPoliciesRequest, result);
+                   return result;
+            }
+        });
+    }
+    

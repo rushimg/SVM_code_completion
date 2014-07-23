@@ -1,0 +1,197 @@
+    ArgumentMarshaller getArgumentMarshaller(final Method getter) {
+
+        synchronized (argumentMarshallerCache) {
+            if ( !argumentMarshallerCache.containsKey(getter) ) {
+                ArgumentMarshaller marshaller = null;
+
+                if ( isCustomMarshaller(getter) ) {
+                    marshaller = new ArgumentMarshaller() {
+
+                        @Override
+                        public AttributeValue marshall(Object obj) {
+                            return getCustomerMarshallerAttributeValue(getter, obj);
+                        }
+                    };
+                } else {
+
+                    Class<?> returnType = getter.getReturnType();
+                    if ( Set.class.isAssignableFrom(returnType) ) {
+                        Type genericType = getter.getGenericReturnType();
+                        if ( genericType instanceof ParameterizedType ) {
+                            if ( ((ParameterizedType) genericType).getActualTypeArguments()[0].toString().equals("byte[]") ) {
+                                returnType = byte[].class;
+                            } else {
+                                returnType = (Class<?>) ((ParameterizedType) genericType).getActualTypeArguments()[0];
+                            }
+                        }
+
+                        if ( Date.class.isAssignableFrom(returnType) ) {
+                            marshaller = new ArgumentMarshaller() {
+
+                                @Override
+                                public AttributeValue marshall(Object obj) {
+                                    List<String> timestamps = new LinkedList<String>();
+                                    for ( Object o : (Set<?>) obj ) {
+                                        timestamps.add(new DateUtils().formatIso8601Date((Date) o));
+                                    }
+                                    return new AttributeValue().withSS(timestamps);
+                                }
+                            };
+                        } else if ( Calendar.class.isAssignableFrom(returnType) ) {
+                            marshaller = new ArgumentMarshaller() {
+
+                                @Override
+                                public AttributeValue marshall(Object obj) {
+                                    List<String> timestamps = new LinkedList<String>();
+                                    for ( Object o : (Set<?>) obj ) {
+                                        timestamps.add(new DateUtils().formatIso8601Date(((Calendar) o).getTime()));
+                                    }
+                                    return new AttributeValue().withSS(timestamps);
+                                }
+                            };
+                        } else if ( boolean.class.isAssignableFrom(returnType)
+                                || Boolean.class.isAssignableFrom(returnType) ) {
+                            marshaller = new ArgumentMarshaller() {
+
+                                @Override
+                                public AttributeValue marshall(Object obj) {
+                                    List<String> booleanAttributes = new ArrayList<String>();
+                                    for ( Object b : (Set<?>) obj ) {
+                                        if ( b == null || !(Boolean) b ) {
+                                            booleanAttributes.add("0");
+                                        } else {
+                                            booleanAttributes.add("1");
+                                        }
+                                    }
+                                    return new AttributeValue().withNS(booleanAttributes);
+                                }
+                            };
+                        } else if ( returnType.isPrimitive() || Number.class.isAssignableFrom(returnType) ) {
+                            marshaller = new ArgumentMarshaller() {
+
+                                @Override
+                                public AttributeValue marshall(Object obj) {
+                                    List<String> attributes = new ArrayList<String>();
+                                    for ( Object o : (Set<?>) obj ) {
+                                        attributes.add(String.valueOf(o));
+                                    }
+                                    return new AttributeValue().withNS(attributes);
+                                }
+                            };
+                        } else if (ByteBuffer.class.isAssignableFrom(returnType)) {
+                        	 marshaller = new ArgumentMarshaller() {
+
+                                 @Override
+                                 public AttributeValue marshall(Object obj) {
+                                     List<ByteBuffer> attributes = new ArrayList<ByteBuffer>();
+                                     for ( Object o : (Set<?>) obj ) {
+                                         attributes.add((ByteBuffer) o);
+                                     }
+                                     return new AttributeValue().withBS(attributes);
+                                 }
+                             };
+                        } else if (byte[].class.isAssignableFrom(returnType)) { 
+                        	 marshaller = new ArgumentMarshaller() {
+
+                                 @Override
+                                 public AttributeValue marshall(Object obj) {
+                                     List<ByteBuffer> attributes = new ArrayList<ByteBuffer>();
+                                     for ( Object o : (Set<?>) obj ) {
+                                         attributes.add(ByteBuffer.wrap((byte[])o));
+                                     }
+                                     return new AttributeValue().withBS(attributes);
+                                 }
+                             };
+                        } else {
+                            marshaller = new ArgumentMarshaller() {
+
+                                @Override
+                                public AttributeValue marshall(Object obj) {
+                                    List<String> attributes = new ArrayList<String>();
+                                    for ( Object o : (Set<?>) obj ) {
+                                        attributes.add(String.valueOf(o));
+                                    }
+                                    return new AttributeValue().withSS(attributes);
+                                }
+                            };
+                        }
+                    } else if ( Collection.class.isAssignableFrom(returnType) ) {
+                        throw new DynamoDBMappingException("Non-set collections aren't supported: "
+                                + (getter.getDeclaringClass() + "." + getter.getName()));
+                    } else {
+                        if ( Date.class.isAssignableFrom(returnType) ) {
+                            marshaller = new ArgumentMarshaller() {
+
+                                @Override
+                                public AttributeValue marshall(Object obj) {
+                                    return new AttributeValue().withS(new DateUtils().formatIso8601Date((Date) obj));
+                                }
+                            };
+                        } else if ( Calendar.class.isAssignableFrom(returnType) ) {
+                            marshaller = new ArgumentMarshaller() {
+
+                                @Override
+                                public AttributeValue marshall(Object obj) {
+                                    return new AttributeValue().withS(new DateUtils()
+                                            .formatIso8601Date(((Calendar) obj).getTime()));
+                                }
+                            };
+                        } else if ( boolean.class.isAssignableFrom(returnType)
+                                || Boolean.class.isAssignableFrom(returnType) ) {
+                            marshaller = new ArgumentMarshaller() {
+
+                                @Override
+                                public AttributeValue marshall(Object obj) {
+                                    if ( obj == null || !(Boolean) obj ) {
+                                        return new AttributeValue().withN("0");
+                                    } else {
+                                        return new AttributeValue().withN("1");
+                                    }
+                                }
+                            };
+                        } else if ( returnType.isPrimitive() || Number.class.isAssignableFrom(returnType) ) {
+                            marshaller = new ArgumentMarshaller() {
+
+                                @Override
+                                public AttributeValue marshall(Object obj) {
+                                    return new AttributeValue().withN(String.valueOf(obj));
+                                }
+                            };
+                        } else if ( returnType == String.class ) {
+                            marshaller = new ArgumentMarshaller() {
+
+                                @Override
+                                public AttributeValue marshall(Object obj) {
+                                    if ( ((String) obj).length() == 0 )
+                                        return null;
+                                    return new AttributeValue().withS(String.valueOf(obj));
+                                }
+                            };
+                        } else if ( returnType == ByteBuffer.class ) {
+                        	marshaller = new ArgumentMarshaller() {
+
+                                @Override
+                                public AttributeValue marshall(Object obj) {
+                                    return new AttributeValue().withB((ByteBuffer)obj);
+                                }
+                            };
+                        } else if ( returnType == byte[].class) {
+                        	 marshaller = new ArgumentMarshaller() {
+
+                                 @Override
+                                 public AttributeValue marshall(Object obj) {
+                                     return new AttributeValue().withB(ByteBuffer.wrap((byte[])obj));
+                                 }
+                             };
+                        } else {
+                            throw new DynamoDBMappingException("Unsupported type: " + returnType + " for " + getter);
+                        }
+                    }
+                }
+                argumentMarshallerCache.put(getter, marshaller);
+            }
+        }
+
+        return argumentMarshallerCache.get(getter);
+    }
+

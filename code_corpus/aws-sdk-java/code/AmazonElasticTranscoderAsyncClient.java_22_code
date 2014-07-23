@@ -1,0 +1,19 @@
+    public Future<ListJobsByStatusResult> listJobsByStatusAsync(
+            final ListJobsByStatusRequest listJobsByStatusRequest,
+            final AsyncHandler<ListJobsByStatusRequest, ListJobsByStatusResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ListJobsByStatusResult>() {
+            public ListJobsByStatusResult call() throws Exception {
+                ListJobsByStatusResult result;
+                try {
+                    result = listJobsByStatus(listJobsByStatusRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(listJobsByStatusRequest, result);
+                   return result;
+            }
+        });
+    }
+    

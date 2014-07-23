@@ -1,0 +1,19 @@
+    public Future<Snapshot> revokeSnapshotAccessAsync(
+            final RevokeSnapshotAccessRequest revokeSnapshotAccessRequest,
+            final AsyncHandler<RevokeSnapshotAccessRequest, Snapshot> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<Snapshot>() {
+            public Snapshot call() throws Exception {
+                Snapshot result;
+                try {
+                    result = revokeSnapshotAccess(revokeSnapshotAccessRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(revokeSnapshotAccessRequest, result);
+                   return result;
+            }
+        });
+    }
+    

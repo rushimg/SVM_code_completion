@@ -1,0 +1,19 @@
+    public Future<ListVolumesResult> listVolumesAsync(
+            final ListVolumesRequest listVolumesRequest,
+            final AsyncHandler<ListVolumesRequest, ListVolumesResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<ListVolumesResult>() {
+            public ListVolumesResult call() throws Exception {
+                ListVolumesResult result;
+                try {
+                    result = listVolumes(listVolumesRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(listVolumesRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -1,0 +1,20 @@
+    private String readResponse(HttpURLConnection connection) throws IOException {
+    	if (connection.getResponseCode() == HttpURLConnection.HTTP_NOT_FOUND)
+    		throw new AmazonClientException("The requested metadata is not found at " + connection.getURL());
+    	
+        InputStream inputStream = connection.getInputStream();
+
+        try {
+            StringBuilder buffer = new StringBuilder();
+            while (true) {
+                int c = inputStream.read();
+                if (c == -1) break;
+                buffer.append((char)c);
+            }
+
+            return buffer.toString();
+        } finally {
+            inputStream.close();
+        }
+    }
+

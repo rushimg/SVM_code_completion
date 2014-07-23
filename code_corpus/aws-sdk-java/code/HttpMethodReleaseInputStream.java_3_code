@@ -1,0 +1,16 @@
+    public HttpMethodReleaseInputStream(HttpEntityEnclosingRequest httpMethod) {
+        this.httpRequest = httpMethod;
+
+        try {
+        	this.inputStream = httpMethod.getEntity().getContent();
+        } catch (IOException e) {
+        	if (log.isWarnEnabled()) {
+        		log.warn("Unable to obtain HttpMethod's response data stream", e);
+        	}
+        	try {
+        		httpMethod.getEntity().getContent().close();
+        	} catch (Exception ex) {}
+            this.inputStream = new ByteArrayInputStream(new byte[] {}); // Empty input stream;
+        }
+    }
+

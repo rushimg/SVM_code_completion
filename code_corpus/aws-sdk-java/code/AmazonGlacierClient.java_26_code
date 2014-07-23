@@ -1,0 +1,25 @@
+    public DescribeVaultResult describeVault(DescribeVaultRequest describeVaultRequest) {
+        ExecutionContext executionContext = createExecutionContext(describeVaultRequest);
+        AWSRequestMetrics awsRequestMetrics = executionContext.getAwsRequestMetrics();
+        awsRequestMetrics.startEvent(Field.ClientExecuteTime);
+        Request<DescribeVaultRequest> request = null;
+        Response<DescribeVaultResult> response = null;
+        try {
+            awsRequestMetrics.startEvent(Field.RequestMarshallTime);
+            try {
+                request = new DescribeVaultRequestMarshaller().marshall(describeVaultRequest);
+                // Binds the request metrics to the current request.
+                request.setAWSRequestMetrics(awsRequestMetrics);
+            } finally {
+                awsRequestMetrics.endEvent(Field.RequestMarshallTime);
+            }
+            Unmarshaller<DescribeVaultResult, JsonUnmarshallerContext> unmarshaller = new DescribeVaultResultJsonUnmarshaller();
+            JsonResponseHandler<DescribeVaultResult> responseHandler = new JsonResponseHandler<DescribeVaultResult>(unmarshaller);
+            
+            response = invoke(request, responseHandler, executionContext);
+            return response.getAwsResponse();
+        } finally {
+            endClientExecution(awsRequestMetrics, request, response);
+        }
+    }
+

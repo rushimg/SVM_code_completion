@@ -1,0 +1,19 @@
+    public Future<GetVaultNotificationsResult> getVaultNotificationsAsync(
+            final GetVaultNotificationsRequest getVaultNotificationsRequest,
+            final AsyncHandler<GetVaultNotificationsRequest, GetVaultNotificationsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<GetVaultNotificationsResult>() {
+            public GetVaultNotificationsResult call() throws Exception {
+                GetVaultNotificationsResult result;
+                try {
+                    result = getVaultNotifications(getVaultNotificationsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(getVaultNotificationsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

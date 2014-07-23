@@ -1,0 +1,40 @@
+    /**
+     * Scans through an Amazon DynamoDB table on logically partitioned segments
+     * in parallel. This method will create a thread pool of the specified size,
+     * and each thread will issue scan requests for its assigned segment,
+     * following the returned continuation token, until the end of its segment.
+     * Callers should be responsible for setting the appropriate number of total
+     * segments. More scan segments would result in better performance but more
+     * consumed capacity of the table. The results are returned in one
+     * unmodifiable list of instantiated objects. The table to scan is
+     * determined by looking at the annotations on the specified class, which
+     * declares where to store the object data in Amazon DynamoDB, and the scan
+     * expression parameter allows the caller to filter results and control how
+     * the scan is executed.
+     * <p>
+     * Callers should be aware that the returned list is unmodifiable, and any
+     * attempts to modify the list will result in an
+     * UnsupportedOperationException.
+     * <p>
+     * You can specify the pagination loading strategy for this parallel scan operation.
+     * By default, the list returned is lazily loaded when possible.
+     *
+     * @param <T>
+     *            The type of the objects being returned.
+     * @param clazz
+     *            The class annotated with DynamoDB annotations describing how
+     *            to store the object data in Amazon DynamoDB.
+     * @param scanExpression
+     *            Details on how to run the scan, including any filters to apply
+     *            to limit results.
+     * @param totalSegments
+     *            Number of total parallel scan segments.
+     *            <b>Range: </b>1 - 4096
+     * @param config
+     *            The configuration to use for this scan, which overrides the
+     *            default provided at object construction.
+     * @return An unmodifiable list of the objects constructed from the results
+     *         of the scan operation.
+     * @see PaginatedParallelScanList
+     * @see PaginationLoadingStrategy
+     */

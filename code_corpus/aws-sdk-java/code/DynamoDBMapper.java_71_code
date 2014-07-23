@@ -1,0 +1,16 @@
+    public Map<String, List<Object>> batchLoad(Map<Class<?>, List<KeyPair>> itemsToGet, DynamoDBMapperConfig config) {
+
+        List<Object> keys = new ArrayList<Object>();
+        if ( itemsToGet != null ) {
+            for ( Class<?> clazz : itemsToGet.keySet() ) {
+                if ( itemsToGet.get(clazz) != null ) {
+                    for ( KeyPair keyPair : itemsToGet.get(clazz) ) {
+                        keys.add(createKeyObject(clazz, keyPair.getHashKey(), keyPair.getRangeKey()));
+                    }
+                }
+            }
+        }
+
+        return batchLoad(keys, config);
+    }
+

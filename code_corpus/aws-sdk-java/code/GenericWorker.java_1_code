@@ -1,0 +1,182 @@
+package com.amazonaws.services.simpleworkflow.flow.worker;
+
+import java.lang.Thread.UncaughtExceptionHandler;
+import java.lang.management.ManagementFactory;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import com.amazonaws.services.simpleworkflow.AmazonSimpleWorkflow;
+import com.amazonaws.services.simpleworkflow.flow.WorkerBase;
+import com.amazonaws.services.simpleworkflow.flow.common.FlowConstants;
+import com.amazonaws.services.simpleworkflow.model.DomainAlreadyExistsException;
+import com.amazonaws.services.simpleworkflow.model.RegisterDomainRequest;
+
+public abstract class GenericWorker implements WorkerBase {
+
+    class ExecutorThreadFactory implements ThreadFactory {
+
+        private AtomicInteger threadIndex = new AtomicInteger();
+
+        private final String threadPrefix;
+
+        public ExecutorThreadFactory(String threadPrefix) {
+            this.threadPrefix = threadPrefix;
+        }
+
+        @Override
+        public Thread newThread(Runnable r) {
+            Thread result = new Thread(r);
+            result.setName(threadPrefix + (threadIndex.incrementAndGet()));
+            result.setUncaughtExceptionHandler(uncaughtExceptionHandler);
+            return result;
+        }
+    }
+
+    private class PollServiceTask implements Runnable {
+
+        private final TaskPoller poller;
+
+        PollServiceTask(TaskPoller poller) {
+            this.poller = poller;
+        }
+
+        @Override
+        public void run() {
+            try {
+                if (log.isDebugEnabled()) {
+                    log.debug("poll task begin");
+                }
+
+                if (pollExecutor.isTerminating()) {
+                    return;
+                }
+                pollBackoffThrottler.throttle();
+                if (pollExecutor.isTerminating()) {
+                    return;
+                }
+                if (pollRateThrottler != null) {
+                    pollRateThrottler.throttle();
+                }
+
+                CountDownLatch suspender = GenericWorker.this.suspendLatch.get();
+                if (suspender != null) {
+                    if (log.isDebugEnabled()) {
+                        log.debug("poll task suspending latchCount=" + suspender.getCount());
+                    }
+                    suspender.await();
+                }
+
+                if (pollExecutor.isTerminating()) {
+                    return;
+                }
+                poller.pollAndProcessSingleTask();
+                pollBackoffThrottler.success();
+            }
+            catch (Throwable e) {
+                pollBackoffThrottler.failure();
+                if (!(e.getCause() instanceof InterruptedException)) {
+                    uncaughtExceptionHandler.uncaughtException(Thread.currentThread(), e);
+                }
+            }
+            finally {
+                // Resubmit itself back to pollExecutor
+                if (!pollExecutor.isShutdown()) {
+                    pollExecutor.execute(this);
+                }
+            }
+        }
+    }
+
+    private static final Log log = LogFactory.getLog(GenericWorker.class);
+
+    protected static final int MAX_IDENTITY_LENGTH = 256;
+
+    protected AmazonSimpleWorkflow service;
+
+    protected String domain;
+
+    protected boolean registerDomain;
+
+    protected long domainRetentionPeriodInDays = FlowConstants.NONE;
+
+    private String taskListToPoll;
+
+    private int maximumPollRateIntervalMilliseconds = 1000;
+
+    private double maximumPollRatePerSecond;
+
+    private double pollBackoffCoefficient = 2;
+
+    private long pollBackoffInitialInterval = 100;
+
+    private long pollBackoffMaximumInterval = 60000;
+
+    private boolean disableTypeRegitrationOnStart;
+
+    private boolean disableServiceShutdownOnStop;
+
+    private ThreadPoolExecutor pollExecutor;
+
+    private String identity = ManagementFactory.getRuntimeMXBean().getName();
+
+    protected final AtomicReference<CountDownLatch> suspendLatch = new AtomicReference<CountDownLatch>();
+
+    private int pollThreadCount = 1;
+
+    private BackoffThrottler pollBackoffThrottler;
+
+    private Throttler pollRateThrottler;
+
+    protected UncaughtExceptionHandler uncaughtExceptionHandler = new UncaughtExceptionHandler() {
+
+        @Override
+        public void uncaughtException(Thread t, Throwable e) {
+            log.error("Failure in thread " + t.getName(), e);
+        }
+    };
+
+    private TaskPoller poller;
+
+    public GenericWorker(AmazonSimpleWorkflow service, String domain, String taskListToPoll) {
+        this.service = service;
+        this.domain = domain;
+        this.taskListToPoll = taskListToPoll;
+    }
+
+    public GenericWorker() {
+        identity = ManagementFactory.getRuntimeMXBean().getName();
+        int length = Math.min(identity.length(), GenericWorker.MAX_IDENTITY_LENGTH);
+        identity = identity.substring(0, length);
+    }
+
+    @Override
+    public AmazonSimpleWorkflow getService() {
+        return service;
+    }
+
+    public void setService(AmazonSimpleWorkflow service) {
+        this.service = service;
+    }
+
+    @Override
+    public String getDomain() {
+        return domain;
+    }
+
+    public void setDomain(String domain) {
+        this.domain = domain;
+    }
+
+    @Override
+    public boolean isRegisterDomain() {
+        return registerDomain;
+    }
+

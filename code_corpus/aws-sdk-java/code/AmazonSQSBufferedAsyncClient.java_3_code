@@ -1,0 +1,276 @@
+    @Override
+    public void setRegion(Region region) throws IllegalArgumentException {
+        realSQS.setRegion(region);
+    }
+
+    public void setQueueAttributes(
+            SetQueueAttributesRequest setQueueAttributesRequest)
+            throws AmazonServiceException, AmazonClientException {
+        ResultConverter.appendUserAgent(setQueueAttributesRequest, USER_AGENT);
+        realSQS.setQueueAttributes(setQueueAttributesRequest);
+    }
+
+    
+    public ChangeMessageVisibilityBatchResult changeMessageVisibilityBatch(
+            ChangeMessageVisibilityBatchRequest changeMessageVisibilityBatchRequest)
+            throws AmazonServiceException, AmazonClientException {
+        ResultConverter.appendUserAgent(changeMessageVisibilityBatchRequest, USER_AGENT);
+        return realSQS.changeMessageVisibilityBatch(changeMessageVisibilityBatchRequest);
+    }
+
+    
+    public void changeMessageVisibility(
+            ChangeMessageVisibilityRequest changeMessageVisibilityRequest)
+            throws AmazonServiceException, AmazonClientException {
+        ResultConverter.appendUserAgent(changeMessageVisibilityRequest, USER_AGENT);
+        QueueBuffer buffer = getQBuffer(changeMessageVisibilityRequest.getQueueUrl());
+        buffer.changeMessageVisibilitySync(changeMessageVisibilityRequest);
+    }
+
+    
+    public SendMessageBatchResult sendMessageBatch(
+            SendMessageBatchRequest sendMessageBatchRequest)
+            throws AmazonServiceException, AmazonClientException {
+        ResultConverter.appendUserAgent(sendMessageBatchRequest, USER_AGENT);
+        return realSQS.sendMessageBatch(sendMessageBatchRequest);
+    }
+
+
+    
+    public SendMessageResult sendMessage(SendMessageRequest sendMessageRequest)
+            throws AmazonServiceException, AmazonClientException {
+        QueueBuffer buffer = getQBuffer(sendMessageRequest.getQueueUrl());
+        ResultConverter.appendUserAgent(sendMessageRequest, USER_AGENT);
+        return buffer.sendMessageSync(sendMessageRequest);
+    }
+
+    
+    public ReceiveMessageResult receiveMessage(
+            ReceiveMessageRequest receiveMessageRequest)
+            throws AmazonServiceException, AmazonClientException {
+        ResultConverter.appendUserAgent(receiveMessageRequest, USER_AGENT);
+        QueueBuffer buffer = getQBuffer(receiveMessageRequest.getQueueUrl());
+        return buffer.receiveMessageSync(receiveMessageRequest);
+    }
+
+    
+    public DeleteMessageBatchResult deleteMessageBatch(
+            DeleteMessageBatchRequest deleteMessageBatchRequest)
+            throws AmazonServiceException, AmazonClientException {
+        ResultConverter.appendUserAgent(deleteMessageBatchRequest, USER_AGENT);
+        return realSQS.deleteMessageBatch(deleteMessageBatchRequest);
+    }
+
+    
+    public void deleteMessage(DeleteMessageRequest deleteMessageRequest)
+            throws AmazonServiceException, AmazonClientException {
+        ResultConverter.appendUserAgent(deleteMessageRequest, USER_AGENT);
+        QueueBuffer buffer = getQBuffer(deleteMessageRequest.getQueueUrl());
+        buffer.deleteMessageSync(deleteMessageRequest);
+    }
+
+    
+    public void shutdown() {
+        for( QueueBuffer buffer : buffers.values() ) {
+            buffer.shutdown();
+        }
+        realSQS.shutdown();
+    }
+
+    
+    public Future<ChangeMessageVisibilityBatchResult> changeMessageVisibilityBatchAsync(
+            ChangeMessageVisibilityBatchRequest changeMessageVisibilityBatchRequest)
+            throws AmazonServiceException, AmazonClientException {
+        ResultConverter.appendUserAgent(changeMessageVisibilityBatchRequest, USER_AGENT);
+        return realSQS.changeMessageVisibilityBatchAsync(changeMessageVisibilityBatchRequest);
+    }
+
+    
+    public Future<Void> changeMessageVisibilityAsync(
+            ChangeMessageVisibilityRequest changeMessageVisibilityRequest)
+            throws AmazonServiceException, AmazonClientException {
+        ResultConverter.appendUserAgent(changeMessageVisibilityRequest, USER_AGENT);
+        QueueBuffer buffer = getQBuffer(changeMessageVisibilityRequest.getQueueUrl());
+        return buffer.changeMessageVisibility(changeMessageVisibilityRequest, null);
+        
+    }
+
+    
+    public Future<SendMessageBatchResult> sendMessageBatchAsync(
+            SendMessageBatchRequest sendMessageBatchRequest)
+            throws AmazonServiceException, AmazonClientException {
+        ResultConverter.appendUserAgent(sendMessageBatchRequest, USER_AGENT);
+        return realSQS.sendMessageBatchAsync(sendMessageBatchRequest);
+    }
+
+    
+    public Future<SendMessageResult> sendMessageAsync(
+            SendMessageRequest sendMessageRequest)
+            throws AmazonServiceException, AmazonClientException {
+        ResultConverter.appendUserAgent(sendMessageRequest, USER_AGENT);
+        QueueBuffer buffer = getQBuffer(sendMessageRequest.getQueueUrl());
+        return buffer.sendMessage(sendMessageRequest, null);
+        
+    }
+
+    
+    public Future<ReceiveMessageResult> receiveMessageAsync(
+            ReceiveMessageRequest receiveMessageRequest)
+            throws AmazonServiceException, AmazonClientException {
+        ResultConverter.appendUserAgent(receiveMessageRequest, USER_AGENT);
+        QueueBuffer buffer = getQBuffer(receiveMessageRequest.getQueueUrl());
+        return buffer.receiveMessage(receiveMessageRequest, null);
+    }
+
+
+    
+    public Future<DeleteMessageBatchResult> deleteMessageBatchAsync(
+            DeleteMessageBatchRequest deleteMessageBatchRequest)
+            throws AmazonServiceException, AmazonClientException {
+        ResultConverter.appendUserAgent(deleteMessageBatchRequest, USER_AGENT);
+        return realSQS.deleteMessageBatchAsync(deleteMessageBatchRequest);
+    }
+
+
+
+    
+    public void setEndpoint(String endpoint) throws IllegalArgumentException {
+        realSQS.setEndpoint(endpoint);
+    }
+
+    
+    public Future<Void> setQueueAttributesAsync(
+            SetQueueAttributesRequest setQueueAttributesRequest)
+            throws AmazonServiceException, AmazonClientException {
+        ResultConverter.appendUserAgent(setQueueAttributesRequest, USER_AGENT);
+        return realSQS.setQueueAttributesAsync(setQueueAttributesRequest);
+    }
+
+    
+    public Future<GetQueueUrlResult> getQueueUrlAsync(
+            GetQueueUrlRequest getQueueUrlRequest)
+            throws AmazonServiceException, AmazonClientException {
+        ResultConverter.appendUserAgent(getQueueUrlRequest, USER_AGENT);
+        return realSQS.getQueueUrlAsync(getQueueUrlRequest);
+    }
+
+    
+    public Future<Void> removePermissionAsync(
+            RemovePermissionRequest removePermissionRequest)
+            throws AmazonServiceException, AmazonClientException {
+        ResultConverter.appendUserAgent(removePermissionRequest, USER_AGENT);
+        return realSQS.removePermissionAsync(removePermissionRequest);
+    }
+
+    
+    public GetQueueUrlResult getQueueUrl(GetQueueUrlRequest getQueueUrlRequest)
+            throws AmazonServiceException, AmazonClientException {
+        ResultConverter.appendUserAgent(getQueueUrlRequest, USER_AGENT);
+        return realSQS.getQueueUrl(getQueueUrlRequest);
+    }
+
+    
+    public void removePermission(RemovePermissionRequest removePermissionRequest)
+            throws AmazonServiceException, AmazonClientException {
+        ResultConverter.appendUserAgent(removePermissionRequest, USER_AGENT);
+        realSQS.removePermission(removePermissionRequest);
+    }
+
+    
+    public Future<GetQueueAttributesResult> getQueueAttributesAsync(
+            GetQueueAttributesRequest getQueueAttributesRequest)
+            throws AmazonServiceException, AmazonClientException {
+        ResultConverter.appendUserAgent(getQueueAttributesRequest, USER_AGENT);
+        return realSQS.getQueueAttributesAsync(getQueueAttributesRequest);
+    }
+
+    
+    public GetQueueAttributesResult getQueueAttributes(
+            GetQueueAttributesRequest getQueueAttributesRequest)
+            throws AmazonServiceException, AmazonClientException {
+        ResultConverter.appendUserAgent(getQueueAttributesRequest, USER_AGENT);
+        return realSQS.getQueueAttributes(getQueueAttributesRequest);
+    }
+
+    
+    public Future<Void> deleteQueueAsync(DeleteQueueRequest deleteQueueRequest)
+            throws AmazonServiceException, AmazonClientException {
+        ResultConverter.appendUserAgent(deleteQueueRequest, USER_AGENT);
+        return realSQS.deleteQueueAsync(deleteQueueRequest);
+    }
+
+    
+    public void deleteQueue(DeleteQueueRequest deleteQueueRequest)
+            throws AmazonServiceException, AmazonClientException {
+        ResultConverter.appendUserAgent(deleteQueueRequest, USER_AGENT);
+        realSQS.deleteQueue(deleteQueueRequest);
+    }
+    
+    
+    public Future<ListQueuesResult> listQueuesAsync(
+            ListQueuesRequest listQueuesRequest) throws AmazonServiceException,
+            AmazonClientException {
+        ResultConverter.appendUserAgent(listQueuesRequest, USER_AGENT);
+        return realSQS.listQueuesAsync(listQueuesRequest);
+    }
+
+    
+    public ListQueuesResult listQueues(ListQueuesRequest listQueuesRequest)
+            throws AmazonServiceException, AmazonClientException {
+        ResultConverter.appendUserAgent(listQueuesRequest, USER_AGENT);
+        return realSQS.listQueues(listQueuesRequest);
+    }
+
+    
+    public Future<CreateQueueResult> createQueueAsync(
+            CreateQueueRequest createQueueRequest)
+            throws AmazonServiceException, AmazonClientException {
+        ResultConverter.appendUserAgent(createQueueRequest, USER_AGENT);
+        return realSQS.createQueueAsync(createQueueRequest);
+    }
+
+    
+    public CreateQueueResult createQueue(CreateQueueRequest createQueueRequest)
+            throws AmazonServiceException, AmazonClientException {
+        ResultConverter.appendUserAgent(createQueueRequest, USER_AGENT);
+        return realSQS.createQueue(createQueueRequest);
+    }
+
+    
+    public Future<Void> addPermissionAsync(
+            AddPermissionRequest addPermissionRequest)
+            throws AmazonServiceException, AmazonClientException {
+        ResultConverter.appendUserAgent(addPermissionRequest, USER_AGENT);
+        return realSQS.addPermissionAsync(addPermissionRequest);
+    }
+
+    
+    public void addPermission(AddPermissionRequest addPermissionRequest)
+            throws AmazonServiceException, AmazonClientException {
+        ResultConverter.appendUserAgent(addPermissionRequest, USER_AGENT);
+        realSQS.addPermission(addPermissionRequest);
+    }
+
+
+    
+    public ListQueuesResult listQueues() throws AmazonServiceException,
+            AmazonClientException {
+        return realSQS.listQueues();
+    }
+
+    
+    public ResponseMetadata getCachedResponseMetadata(
+            AmazonWebServiceRequest request) {
+        ResultConverter.appendUserAgent(request, USER_AGENT);
+        return realSQS.getCachedResponseMetadata(request);
+    }
+
+    
+    public Future<Void> deleteMessageAsync(
+            DeleteMessageRequest deleteMessageRequest)
+            throws AmazonServiceException, AmazonClientException {
+        ResultConverter.appendUserAgent(deleteMessageRequest, USER_AGENT);
+        QueueBuffer buffer = getQBuffer(deleteMessageRequest.getQueueUrl());
+        return buffer.deleteMessage(deleteMessageRequest, null);
+    }
+    

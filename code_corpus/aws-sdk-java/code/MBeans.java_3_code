@@ -1,0 +1,17 @@
+    public static <T> boolean registerMBean(String objectName, T mbean)
+            throws MBeanRegistrationException {
+        MBeanServer server = getMBeanServer();
+        try {
+            server.registerMBean(mbean, new ObjectName(objectName));
+        } catch (MalformedObjectNameException e) {
+            throw new IllegalArgumentException(e);
+        } catch (NotCompliantMBeanException e) {
+            throw new IllegalArgumentException(e);
+        } catch (InstanceAlreadyExistsException e) {
+            LogFactory.getLog(MBeans.class).debug(
+                "Failed to register mbean " + objectName, e);
+            return false;
+        }
+        return true;
+    }
+

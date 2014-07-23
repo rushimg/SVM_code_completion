@@ -1,0 +1,41 @@
+    private static void populateRequestWithCopyObjectParameters(Request<? extends AmazonWebServiceRequest> request, CopyObjectRequest copyObjectRequest) {
+        String copySourceHeader =
+             "/" + HttpUtils.urlEncode(copyObjectRequest.getSourceBucketName(), true)
+           + "/" + HttpUtils.urlEncode(copyObjectRequest.getSourceKey(), true);
+        if (copyObjectRequest.getSourceVersionId() != null) {
+            copySourceHeader += "?versionId=" + copyObjectRequest.getSourceVersionId();
+        }
+        request.addHeader("x-amz-copy-source", copySourceHeader);
+
+        addDateHeader(request, Headers.COPY_SOURCE_IF_MODIFIED_SINCE,
+                copyObjectRequest.getModifiedSinceConstraint());
+        addDateHeader(request, Headers.COPY_SOURCE_IF_UNMODIFIED_SINCE,
+                copyObjectRequest.getUnmodifiedSinceConstraint());
+
+        addStringListHeader(request, Headers.COPY_SOURCE_IF_MATCH,
+                copyObjectRequest.getMatchingETagConstraints());
+        addStringListHeader(request, Headers.COPY_SOURCE_IF_NO_MATCH,
+                copyObjectRequest.getNonmatchingETagConstraints());
+
+        if (copyObjectRequest.getAccessControlList() != null) {
+            addAclHeaders(request, copyObjectRequest.getAccessControlList());
+        } else if (copyObjectRequest.getCannedAccessControlList() != null) {
+            request.addHeader(Headers.S3_CANNED_ACL,
+                    copyObjectRequest.getCannedAccessControlList().toString());
+        }
+
+        if (copyObjectRequest.getStorageClass() != null) {
+            request.addHeader(Headers.STORAGE_CLASS, copyObjectRequest.getStorageClass());
+        }
+
+        if (copyObjectRequest.getRedirectLocation() != null) {
+            request.addHeader(Headers.REDIRECT_LOCATION, copyObjectRequest.getRedirectLocation());
+        }
+
+        ObjectMetadata newObjectMetadata = copyObjectRequest.getNewObjectMetadata();
+        if (newObjectMetadata != null) {
+            request.addHeader(Headers.METADATA_DIRECTIVE, "REPLACE");
+            populateRequestMetadata(request, newObjectMetadata);
+        }
+    }
+

@@ -1,0 +1,19 @@
+    public Future<QueryResult> queryAsync(
+            final QueryRequest queryRequest,
+            final AsyncHandler<QueryRequest, QueryResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<QueryResult>() {
+            public QueryResult call() throws Exception {
+            	QueryResult result;
+                try {
+            		result = query(queryRequest);
+            	} catch (Exception ex) {
+            	    asyncHandler.onError(ex);
+    				throw ex;
+            	}
+            	asyncHandler.onSuccess(queryRequest, result);
+               	return result;
+		    }
+		});
+    }
+    

@@ -1,0 +1,19 @@
+    public Future<DescribeScalingActivitiesResult> describeScalingActivitiesAsync(
+            final DescribeScalingActivitiesRequest describeScalingActivitiesRequest,
+            final AsyncHandler<DescribeScalingActivitiesRequest, DescribeScalingActivitiesResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeScalingActivitiesResult>() {
+            public DescribeScalingActivitiesResult call() throws Exception {
+                DescribeScalingActivitiesResult result;
+                try {
+                    result = describeScalingActivities(describeScalingActivitiesRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeScalingActivitiesRequest, result);
+                   return result;
+            }
+        });
+    }
+    

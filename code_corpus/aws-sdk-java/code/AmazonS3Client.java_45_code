@@ -1,0 +1,32 @@
+    public S3Object getObject(GetObjectRequest getObjectRequest)
+            throws AmazonClientException, AmazonServiceException {
+        assertParameterNotNull(getObjectRequest,
+                "The GetObjectRequest parameter must be specified when requesting an object");
+        assertParameterNotNull(getObjectRequest.getBucketName(),
+                "The bucket name parameter must be specified when requesting an object");
+        assertParameterNotNull(getObjectRequest.getKey(),
+                "The key parameter must be specified when requesting an object");
+
+        Request<GetObjectRequest> request = createRequest(getObjectRequest.getBucketName(), getObjectRequest.getKey(), getObjectRequest, HttpMethodName.GET);
+
+        if (getObjectRequest.getVersionId() != null) {
+            request.addParameter("versionId", getObjectRequest.getVersionId());
+        }
+
+        // Range
+        if (getObjectRequest.getRange() != null) {
+            long[] range = getObjectRequest.getRange();
+            request.addHeader(Headers.RANGE, "bytes=" + Long.toString(range[0]) + "-" + Long.toString(range[1]));
+        }
+
+        addResponseHeaderParameters(request, getObjectRequest.getResponseHeaders());
+
+        addDateHeader(request, Headers.GET_OBJECT_IF_MODIFIED_SINCE,
+                getObjectRequest.getModifiedSinceConstraint());
+        addDateHeader(request, Headers.GET_OBJECT_IF_UNMODIFIED_SINCE,
+                getObjectRequest.getUnmodifiedSinceConstraint());
+        addStringListHeader(request, Headers.GET_OBJECT_IF_MATCH,
+                getObjectRequest.getMatchingETagConstraints());
+        addStringListHeader(request, Headers.GET_OBJECT_IF_NONE_MATCH,
+                getObjectRequest.getNonmatchingETagConstraints());
+

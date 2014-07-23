@@ -1,0 +1,97 @@
+    void cancelWorkflowExecution() {
+        Decision decision = new Decision();
+        CancelWorkflowExecutionDecisionAttributes cancel = new CancelWorkflowExecutionDecisionAttributes();
+        cancel.setDetails(null);
+        decision.setCancelWorkflowExecutionDecisionAttributes(cancel);
+        decision.setDecisionType(DecisionType.CancelWorkflowExecution.toString());
+        DecisionId decisionId = new DecisionId(DecisionTarget.SELF, null);
+        addDecision(decisionId, new CompleteWorkflowStateMachine(decisionId, decision));
+    }
+
+    List<Decision> getDecisions() {
+        List<Decision> result = new ArrayList<Decision>(MAXIMUM_DECISIONS_PER_COMPLETION + 1);
+        for (DecisionStateMachine decisionStateMachine : decisions.values()) {
+            Decision decision = decisionStateMachine.getDecision();
+            if (decision != null) {
+                result.add(decision);
+            }
+        }
+        // Include FORCE_IMMEDIATE_DECISION timer only if there are more then 100 events
+        int size = result.size();
+        if (size > MAXIMUM_DECISIONS_PER_COMPLETION && !isCompletionEvent(result.get(MAXIMUM_DECISIONS_PER_COMPLETION - 2))) {
+            result = result.subList(0, MAXIMUM_DECISIONS_PER_COMPLETION - 1);
+            StartTimerDecisionAttributes attributes = new StartTimerDecisionAttributes();
+            attributes.setStartToFireTimeout("0");
+            attributes.setTimerId(FORCE_IMMEDIATE_DECISION_TIMER);
+            Decision d = new Decision();
+            d.setStartTimerDecisionAttributes(attributes);
+            d.setDecisionType(DecisionType.StartTimer.toString());
+            result.add(d);
+        }
+
+        return result;
+    }
+
+    private boolean isCompletionEvent(Decision decision) {
+        DecisionType type = DecisionType.fromValue(decision.getDecisionType());
+        switch (type) {
+        case CancelWorkflowExecution:
+        case CompleteWorkflowExecution:
+        case FailWorkflowExecution:
+        case ContinueAsNewWorkflowExecution:
+            return true;
+        default:
+            return false;
+        }
+    }
+
+    public void handleDecisionTaskStartedEvent() {
+        int count = 0;
+        Iterator<DecisionStateMachine> iterator = decisions.values().iterator();
+        DecisionStateMachine next = null;
+
+        DecisionStateMachine decisionStateMachine = getNextDecision(iterator);
+        while (decisionStateMachine != null) {
+            next = getNextDecision(iterator);
+            if (++count == MAXIMUM_DECISIONS_PER_COMPLETION && next != null && !isCompletionEvent(next.getDecision())) {
+                break;
+            }
+            decisionStateMachine.handleDecisionTaskStartedEvent();
+            decisionStateMachine = next;
+        }
+        if (next != null && count < MAXIMUM_DECISIONS_PER_COMPLETION) {
+            next.handleDecisionTaskStartedEvent();
+        }
+    }
+
+    private DecisionStateMachine getNextDecision(Iterator<DecisionStateMachine> iterator) {
+        DecisionStateMachine result = null;
+        while (result == null && iterator.hasNext()) {
+            result = iterator.next();
+            if (result.getDecision() == null) {
+                result = null;
+            }
+        }
+        return result;
+    }
+
+    public String toString() {
+        return WorkflowExecutionUtils.prettyPrintDecisions(getDecisions());
+    }
+
+    boolean isWorkflowFailed() {
+        return workflowFailureCause != null;
+    }
+
+    public Throwable getWorkflowFailureCause() {
+        return workflowFailureCause;
+    }
+
+    String getWorkflowContextData() {
+        return workflowContextData;
+    }
+
+    void setWorkflowContextData(String workflowState) {
+        this.workflowContextData = workflowState;
+    }
+

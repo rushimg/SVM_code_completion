@@ -1,0 +1,19 @@
+    public Future<GetQueueUrlResult> getQueueUrlAsync(
+            final GetQueueUrlRequest getQueueUrlRequest,
+            final AsyncHandler<GetQueueUrlRequest, GetQueueUrlResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<GetQueueUrlResult>() {
+            public GetQueueUrlResult call() throws Exception {
+                GetQueueUrlResult result;
+                try {
+                    result = getQueueUrl(getQueueUrlRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(getQueueUrlRequest, result);
+                   return result;
+            }
+        });
+    }
+    

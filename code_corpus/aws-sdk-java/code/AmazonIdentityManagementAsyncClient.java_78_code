@@ -1,0 +1,19 @@
+    public Future<GetUserResult> getUserAsync(
+            final GetUserRequest getUserRequest,
+            final AsyncHandler<GetUserRequest, GetUserResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<GetUserResult>() {
+            public GetUserResult call() throws Exception {
+                GetUserResult result;
+                try {
+                    result = getUser(getUserRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(getUserRequest, result);
+                   return result;
+            }
+        });
+    }
+    

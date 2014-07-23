@@ -1,0 +1,19 @@
+    public Future<DescribeInstanceStatusResult> describeInstanceStatusAsync(
+            final DescribeInstanceStatusRequest describeInstanceStatusRequest,
+            final AsyncHandler<DescribeInstanceStatusRequest, DescribeInstanceStatusResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeInstanceStatusResult>() {
+            public DescribeInstanceStatusResult call() throws Exception {
+                DescribeInstanceStatusResult result;
+                try {
+                    result = describeInstanceStatus(describeInstanceStatusRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeInstanceStatusRequest, result);
+                   return result;
+            }
+        });
+    }
+    

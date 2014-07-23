@@ -1,0 +1,11 @@
+    private boolean containsThrottlingException (List<FailedBatch> failedBatches) {
+        for (FailedBatch failedBatch : failedBatches) {
+           Exception e = failedBatch.getException();
+            if (e instanceof AmazonServiceException
+                    && RetryUtils.isThrottlingException((AmazonServiceException) e)) {
+                return true;
+            }
+        }
+        return false;
+    }
+

@@ -1,0 +1,19 @@
+    public Future<DescribeVTLDevicesResult> describeVTLDevicesAsync(
+            final DescribeVTLDevicesRequest describeVTLDevicesRequest,
+            final AsyncHandler<DescribeVTLDevicesRequest, DescribeVTLDevicesResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeVTLDevicesResult>() {
+            public DescribeVTLDevicesResult call() throws Exception {
+                DescribeVTLDevicesResult result;
+                try {
+                    result = describeVTLDevices(describeVTLDevicesRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeVTLDevicesRequest, result);
+                   return result;
+            }
+        });
+    }
+    

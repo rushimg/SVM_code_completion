@@ -1,0 +1,19 @@
+    public Future<DeleteTableResult> deleteTableAsync(
+            final DeleteTableRequest deleteTableRequest,
+            final AsyncHandler<DeleteTableRequest, DeleteTableResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DeleteTableResult>() {
+            public DeleteTableResult call() throws Exception {
+            	DeleteTableResult result;
+                try {
+            		result = deleteTable(deleteTableRequest);
+            	} catch (Exception ex) {
+            	    asyncHandler.onError(ex);
+    				throw ex;
+            	}
+            	asyncHandler.onSuccess(deleteTableRequest, result);
+               	return result;
+		    }
+		});
+    }
+    

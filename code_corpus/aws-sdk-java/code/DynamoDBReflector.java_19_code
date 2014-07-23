@@ -1,0 +1,67 @@
+    ArgumentMarshaller getVersionedArgumentMarshaller(final Method getter, Object getterReturnResult) {
+
+        synchronized (versionArgumentMarshallerCache) {
+            if ( !versionArgumentMarshallerCache.containsKey(getter) ) {
+
+                ArgumentMarshaller marshaller = null;
+
+                final Class<?> returnType = getter.getReturnType();
+                if ( BigInteger.class.isAssignableFrom(returnType) ) {
+                    marshaller = new ArgumentMarshaller() {
+
+                        @Override
+                        public AttributeValue marshall(Object obj) {
+                            if ( obj == null )
+                                obj = BigInteger.ZERO;
+                            Object newValue = ((BigInteger) obj).add(BigInteger.ONE);
+                            return getArgumentMarshaller(getter).marshall(newValue);
+                        }
+                    };
+
+                } else if ( Integer.class.isAssignableFrom(returnType) ) {
+                    marshaller = new ArgumentMarshaller() {
+
+                        @Override
+                        public AttributeValue marshall(Object obj) {
+                            if ( obj == null )
+                                obj = new Integer(0);
+                            Object newValue = ((Integer) obj).intValue() + 1;
+                            return getArgumentMarshaller(getter).marshall(newValue);
+                        }
+                    };
+
+                } else if ( Byte.class.isAssignableFrom(returnType) ) {
+                    marshaller = new ArgumentMarshaller() {
+
+                        @Override
+                        public AttributeValue marshall(Object obj) {
+                            if ( obj == null )
+                                obj = new Byte((byte) 0);
+                            Object newValue = (byte) ((((Byte) obj).byteValue() + 1) % Byte.MAX_VALUE);
+                            return getArgumentMarshaller(getter).marshall(newValue);
+                        }
+                    };
+
+                } else if ( Long.class.isAssignableFrom(returnType) ) {
+                    marshaller = new ArgumentMarshaller() {
+
+                        @Override
+                        public AttributeValue marshall(Object obj) {
+                            if ( obj == null )
+                                obj = new Long(0);
+                            Object newValue = ((Long) obj).longValue() + 1L;
+                            return getArgumentMarshaller(getter).marshall(newValue);
+                        }
+                    };
+                } else {
+                    throw new DynamoDBMappingException("Unsupported parameter type for "
+                            + DynamoDBVersionAttribute.class + ": " + returnType + ". Must be a whole-number type.");
+                }
+
+                versionArgumentMarshallerCache.put(getter, marshaller);
+            }
+        }
+
+        return versionArgumentMarshallerCache.get(getter);
+    }
+

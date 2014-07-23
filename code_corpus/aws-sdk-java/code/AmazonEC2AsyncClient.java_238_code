@@ -1,0 +1,19 @@
+    public Future<PurchaseReservedInstancesOfferingResult> purchaseReservedInstancesOfferingAsync(
+            final PurchaseReservedInstancesOfferingRequest purchaseReservedInstancesOfferingRequest,
+            final AsyncHandler<PurchaseReservedInstancesOfferingRequest, PurchaseReservedInstancesOfferingResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<PurchaseReservedInstancesOfferingResult>() {
+            public PurchaseReservedInstancesOfferingResult call() throws Exception {
+                PurchaseReservedInstancesOfferingResult result;
+                try {
+                    result = purchaseReservedInstancesOffering(purchaseReservedInstancesOfferingRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(purchaseReservedInstancesOfferingRequest, result);
+                   return result;
+            }
+        });
+    }
+    

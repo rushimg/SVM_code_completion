@@ -1,0 +1,50 @@
+    TimerDecisionStateMachine(DecisionId id, StartTimerDecisionAttributes attributes, DecisionState state) {
+        super(id, state);
+        this.attributes = attributes;
+    }
+    
+    @Override
+    public Decision getDecision() {
+        switch (state) {
+        case CREATED:
+            return createStartTimerDecision();
+        case CANCELED_AFTER_INITIATED:
+            return createCancelTimerDecision();
+        default:
+            return null;
+        }
+    }
+
+    @Override
+    public void handleDecisionTaskStartedEvent() {
+        switch (state) {
+        case CANCELED_AFTER_INITIATED:
+            stateHistory.add("handleDecisionTaskStartedEvent");
+            state = DecisionState.CANCELLATION_DECISION_SENT;
+            stateHistory.add(state.toString());
+            break;
+        default:
+            super.handleDecisionTaskStartedEvent();
+        }
+    }
+
+    @Override
+    public void handleCancellationFailureEvent(HistoryEvent event) {
+        switch (state) {
+        case CANCELLATION_DECISION_SENT:
+            stateHistory.add("handleCancellationFailureEvent");
+            state = DecisionState.INITIATED;
+            stateHistory.add(state.toString());
+            break;
+        default:
+            super.handleCancellationFailureEvent(event);
+        }
+    }
+    
+    @Override
+    public void cancel(Runnable immediateCancellationCallback) {
+        canceled = true;
+        immediateCancellationCallback.run();
+        super.cancel(null);
+    }
+

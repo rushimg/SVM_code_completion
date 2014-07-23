@@ -1,0 +1,14 @@
+    public boolean isMultipartUpload() {
+    	return TransferManagerUtils.shouldUseMultipartUpload(putObjectRequest, configuration);
+    }
+
+    public UploadResult call() throws Exception {
+        upload.setState(TransferState.InProgress);
+        if ( isMultipartUpload() ) {
+            fireProgressEvent(ProgressEvent.STARTED_EVENT_CODE);
+            return uploadInParts();
+        } else {
+            return uploadInOneChunk();
+        }
+    }
+

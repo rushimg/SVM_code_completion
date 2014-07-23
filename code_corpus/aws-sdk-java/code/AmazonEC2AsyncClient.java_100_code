@@ -1,0 +1,19 @@
+    public Future<DescribeVpnConnectionsResult> describeVpnConnectionsAsync(
+            final DescribeVpnConnectionsRequest describeVpnConnectionsRequest,
+            final AsyncHandler<DescribeVpnConnectionsRequest, DescribeVpnConnectionsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeVpnConnectionsResult>() {
+            public DescribeVpnConnectionsResult call() throws Exception {
+                DescribeVpnConnectionsResult result;
+                try {
+                    result = describeVpnConnections(describeVpnConnectionsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeVpnConnectionsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

@@ -1,0 +1,25 @@
+    @Test
+    public void testThroughClient() throws Exception {
+        HelloWorldWorkflowClient workflow = workflowFactory.getClient();
+        Promise<Void> done = workflow.helloWorld("World");
+        assertGreeting(done);
+    }
+
+    @Asynchronous
+    private void assertGreeting(Promise<Void> done) {
+        Assert.assertEquals("Hello World!", activitiesImplementation.getGreeting());
+    }
+
+    @Test
+    public void testThroughClientAssertWithTask() throws Exception {
+        HelloWorldWorkflowClient workflow = workflowFactory.getClient();
+        Promise<Void> done = workflow.helloWorld("AWS");
+        new Task(done) {
+
+            @Override
+            protected void doExecute() throws Throwable {
+                Assert.assertEquals("Hello AWS!", activitiesImplementation.getGreeting());
+            }
+        };
+    }
+

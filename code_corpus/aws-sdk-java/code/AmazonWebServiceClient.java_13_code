@@ -1,0 +1,19 @@
+    @Deprecated
+    protected <T> HttpRequest convertToHttpRequest(Request<T> request, HttpMethodName methodName) {
+        HttpRequest httpRequest = new HttpRequest(methodName);
+        for (Entry<String, String> parameter : request.getParameters().entrySet()) {
+            httpRequest.addParameter(parameter.getKey(), parameter.getValue());
+        }
+
+        for (Entry<String, String> parameter : request.getHeaders().entrySet()) {
+            httpRequest.addHeader(parameter.getKey(), parameter.getValue());
+        }
+
+        httpRequest.setServiceName(request.getServiceName());
+        httpRequest.setEndpoint(request.getEndpoint());
+        httpRequest.setResourcePath(request.getResourcePath());
+        httpRequest.setOriginalRequest(request.getOriginalRequest());
+
+        return httpRequest;
+    }
+

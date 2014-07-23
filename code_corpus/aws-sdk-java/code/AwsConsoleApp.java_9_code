@@ -1,0 +1,13 @@
+                ObjectListing objects = s3.listObjects(bucket.getName());
+                do {
+                    for (S3ObjectSummary objectSummary : objects.getObjectSummaries()) {
+                        totalSize += objectSummary.getSize();
+                        totalItems++;
+                    }
+                    objects = s3.listNextBatchOfObjects(objects);
+                } while (objects.isTruncated());
+            }
+
+            System.out.println("You have " + buckets.size() + " Amazon S3 bucket(s), " +
+                    "containing " + totalItems + " objects with a total size of " + totalSize + " bytes.");
+        } catch (AmazonServiceException ase) {

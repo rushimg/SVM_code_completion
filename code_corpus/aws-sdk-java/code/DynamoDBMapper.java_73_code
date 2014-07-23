@@ -1,0 +1,29 @@
+    private Object safeInvoke(Method method, Object object, Object... arguments) {
+        try {
+            return method.invoke(object, arguments);
+        } catch ( IllegalAccessException e ) {
+            throw new DynamoDBMappingException("Couldn't invoke " + method, e);
+        } catch ( IllegalArgumentException e ) {
+            throw new DynamoDBMappingException("Couldn't invoke " + method, e);
+        } catch ( InvocationTargetException e ) {
+            throw new DynamoDBMappingException("Couldn't invoke " + method, e);
+        }
+    }
+
+    private final class ValueUpdate {
+
+        private Method method;
+        private AttributeValue newValue;
+        private Object target;
+
+        public ValueUpdate(Method method, AttributeValue newValue, Object target) {
+            this.method = method;
+            this.newValue = newValue;
+            this.target = target;
+        }
+
+        public void apply() {
+            setValue(target, method, newValue);
+        }
+    }
+

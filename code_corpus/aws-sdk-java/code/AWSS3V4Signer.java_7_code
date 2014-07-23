@@ -1,0 +1,13 @@
+	@Override
+	protected String calculateContentHash(Request<?> request) {
+		// To be consistent with other service clients using sig-v4,
+		// we just set the header as "required", and AWS4Signer.sign() will be notified
+		// to pick up the header value returned by this method.
+		request.addHeader("x-amz-content-sha256", "required");
+		if (useChunkEncoding(request)) {
+			String contentSha256 = "STREAMING-AWS4-HMAC-SHA256-PAYLOAD";
+			long originalContentLength;
+	    	if (request.getHeaders().containsKey(Headers.CONTENT_LENGTH)) {
+	        	originalContentLength = Long.parseLong(request.getHeaders().get(Headers.CONTENT_LENGTH));
+	    	}
+	    	else {

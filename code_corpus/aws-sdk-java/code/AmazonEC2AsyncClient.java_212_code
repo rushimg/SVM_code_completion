@@ -1,0 +1,19 @@
+    public Future<CopyImageResult> copyImageAsync(
+            final CopyImageRequest copyImageRequest,
+            final AsyncHandler<CopyImageRequest, CopyImageResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<CopyImageResult>() {
+            public CopyImageResult call() throws Exception {
+                CopyImageResult result;
+                try {
+                    result = copyImage(copyImageRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(copyImageRequest, result);
+                   return result;
+            }
+        });
+    }
+    

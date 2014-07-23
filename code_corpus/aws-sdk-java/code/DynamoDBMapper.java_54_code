@@ -1,0 +1,29 @@
+    private DynamoDBMapperConfig mergeConfig(DynamoDBMapperConfig config) {
+        if ( config != this.config )
+            config = new DynamoDBMapperConfig(this.config, config);
+        return config;
+    }
+
+    private ScanRequest createScanRequestFromExpression(Class<?> clazz, DynamoDBScanExpression scanExpression, DynamoDBMapperConfig config) {
+        ScanRequest scanRequest = new ScanRequest();
+        scanRequest.setTableName(getTableName(clazz, config));
+        scanRequest.setScanFilter(scanExpression.getScanFilter());
+        scanRequest.setLimit(scanExpression.getLimit());
+        scanRequest.setExclusiveStartKey(scanExpression.getExclusiveStartKey());
+
+        return scanRequest;
+    }
+
+    private QueryRequest createQueryRequestFromExpression(Class<?> clazz, DynamoDBQueryExpression queryExpression, DynamoDBMapperConfig config) {
+        QueryRequest queryRequest = new QueryRequest();
+        queryRequest.setConsistentRead(queryExpression.isConsistentRead());
+        queryRequest.setTableName(getTableName(clazz, config));
+        queryRequest.setHashKeyValue(queryExpression.getHashKeyValue());
+        queryRequest.setScanIndexForward(queryExpression.isScanIndexForward());
+        queryRequest.setRangeKeyCondition(queryExpression.getRangeKeyCondition());
+        queryRequest.setLimit(queryExpression.getLimit());
+        queryRequest.setExclusiveStartKey(queryExpression.getExclusiveStartKey());
+
+        return queryRequest;
+    }
+

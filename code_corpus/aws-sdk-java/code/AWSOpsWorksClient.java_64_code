@@ -1,0 +1,25 @@
+    public DescribeStackSummaryResult describeStackSummary(DescribeStackSummaryRequest describeStackSummaryRequest) {
+        ExecutionContext executionContext = createExecutionContext(describeStackSummaryRequest);
+        AWSRequestMetrics awsRequestMetrics = executionContext.getAwsRequestMetrics();
+        awsRequestMetrics.startEvent(Field.ClientExecuteTime);
+        Request<DescribeStackSummaryRequest> request = null;
+        Response<DescribeStackSummaryResult> response = null;
+        try {
+            awsRequestMetrics.startEvent(Field.RequestMarshallTime);
+            try {
+                request = new DescribeStackSummaryRequestMarshaller().marshall(describeStackSummaryRequest);
+                // Binds the request metrics to the current request.
+                request.setAWSRequestMetrics(awsRequestMetrics);
+            } finally {
+                awsRequestMetrics.endEvent(Field.RequestMarshallTime);
+            }
+            Unmarshaller<DescribeStackSummaryResult, JsonUnmarshallerContext> unmarshaller = new DescribeStackSummaryResultJsonUnmarshaller();
+            JsonResponseHandler<DescribeStackSummaryResult> responseHandler = new JsonResponseHandler<DescribeStackSummaryResult>(unmarshaller);
+            
+            response = invoke(request, responseHandler, executionContext);
+            return response.getAwsResponse();
+        } finally {
+            endClientExecution(awsRequestMetrics, request, response);
+        }
+    }
+

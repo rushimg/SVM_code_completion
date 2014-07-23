@@ -1,0 +1,19 @@
+    public Future<StopLoggingResult> stopLoggingAsync(
+            final StopLoggingRequest stopLoggingRequest,
+            final AsyncHandler<StopLoggingRequest, StopLoggingResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<StopLoggingResult>() {
+            public StopLoggingResult call() throws Exception {
+                StopLoggingResult result;
+                try {
+                    result = stopLogging(stopLoggingRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(stopLoggingRequest, result);
+                   return result;
+            }
+        });
+    }
+    

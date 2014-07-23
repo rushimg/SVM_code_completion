@@ -1,0 +1,19 @@
+    public Future<DescribeInterconnectsResult> describeInterconnectsAsync(
+            final DescribeInterconnectsRequest describeInterconnectsRequest,
+            final AsyncHandler<DescribeInterconnectsRequest, DescribeInterconnectsResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<DescribeInterconnectsResult>() {
+            public DescribeInterconnectsResult call() throws Exception {
+                DescribeInterconnectsResult result;
+                try {
+                    result = describeInterconnects(describeInterconnectsRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(describeInterconnectsRequest, result);
+                   return result;
+            }
+        });
+    }
+    

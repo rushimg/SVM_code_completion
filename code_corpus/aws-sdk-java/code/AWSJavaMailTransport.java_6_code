@@ -1,0 +1,35 @@
+	private void checkAddresses(Message m, Address[] addresses)
+			throws MessagingException, SendFailedException {
+
+        if ( isNullOrEmpty((Object[]) addresses)
+                && isNullOrEmpty((Object[]) m.getRecipients(Message.RecipientType.TO))
+                && isNullOrEmpty((Object[]) m.getRecipients(Message.RecipientType.CC))
+                && isNullOrEmpty((Object[]) m.getRecipients(Message.RecipientType.BCC)) ) {
+            throw new SendFailedException("No recipient addresses");
+        }
+
+        // Make sure all addresses are internet addresses
+        Set<Address> invalid = new HashSet<Address>();
+        for ( Address[] recipients : new Address[][] {
+                m.getRecipients(Message.RecipientType.TO),
+                m.getRecipients(Message.RecipientType.CC),
+                m.getRecipients(Message.RecipientType.BCC),
+                addresses } ) {
+            if ( !isNullOrEmpty(recipients) ) {
+                for ( Address a : recipients ) {
+                    if ( !(a instanceof InternetAddress) ) {
+                        invalid.add(a);
+                    }
+                }
+            }
+        }
+
+        if ( !invalid.isEmpty() ) {
+            Address[] sent = new Address[0];
+            Address[] unsent = new Address[0];
+            super.notifyTransportListeners(TransportEvent.MESSAGE_NOT_DELIVERED, sent, unsent,
+                    invalid.toArray(new Address[invalid.size()]), m);
+            throw new SendFailedException("AWS Mail Service can only send to InternetAddresses");
+        }
+    }
+

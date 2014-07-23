@@ -1,0 +1,14 @@
+    public void setBucketPolicy(String bucketName, String policyText)
+            throws AmazonClientException, AmazonServiceException {
+        assertParameterNotNull(bucketName,
+            "The bucket name must be specified when setting a bucket policy");
+        assertParameterNotNull(policyText,
+            "The policy text must be specified when setting a bucket policy");
+
+        Request<GenericBucketRequest> request = createRequest(bucketName, null, new GenericBucketRequest(bucketName), HttpMethodName.PUT);
+        request.addParameter("policy", null);
+        request.setContent(new ByteArrayInputStream(ServiceUtils.toByteArray(policyText)));
+
+        invoke(request, voidResponseHandler, bucketName, null);
+    }
+

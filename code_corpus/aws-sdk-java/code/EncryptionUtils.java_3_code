@@ -1,0 +1,14 @@
+    @Deprecated
+    public static PutObjectRequest encryptRequestUsingMetadata(PutObjectRequest request, EncryptionMaterials materials, Provider cryptoProvider) {
+        // Create instruction
+        EncryptionInstruction instruction = EncryptionUtils.generateInstruction(materials, cryptoProvider);
+
+        // Encrypt the object data with the instruction
+        PutObjectRequest encryptedObjectRequest = EncryptionUtils.encryptRequestUsingInstruction(request, instruction);
+
+        // Update the metadata
+        EncryptionUtils.updateMetadataWithEncryptionInstruction( request, instruction );
+
+        return encryptedObjectRequest;
+    }
+

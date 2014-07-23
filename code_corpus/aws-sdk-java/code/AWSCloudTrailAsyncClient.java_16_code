@@ -1,0 +1,19 @@
+    public Future<GetTrailStatusResult> getTrailStatusAsync(
+            final GetTrailStatusRequest getTrailStatusRequest,
+            final AsyncHandler<GetTrailStatusRequest, GetTrailStatusResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<GetTrailStatusResult>() {
+            public GetTrailStatusResult call() throws Exception {
+                GetTrailStatusResult result;
+                try {
+                    result = getTrailStatus(getTrailStatusRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(getTrailStatusRequest, result);
+                   return result;
+            }
+        });
+    }
+    

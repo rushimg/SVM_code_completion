@@ -1,0 +1,21 @@
+    private static InputStream fetchFile(String url) throws IOException {
+
+        HttpParams httpClientParams = new BasicHttpParams();
+        HttpProtocolParams
+            .setUserAgent(httpClientParams, VersionInfoUtils.getUserAgent());
+
+        HttpConnectionParams
+            .setConnectionTimeout(httpClientParams, CONNECTION_TIMEOUT);
+        HttpConnectionParams
+            .setSoTimeout(httpClientParams, SOCKET_TIMEOUT);
+
+        HttpClient httpclient = new DefaultHttpClient(httpClientParams);
+        HttpGet httpget = new HttpGet(url);
+        HttpResponse response = httpclient.execute(httpget);
+        HttpEntity entity = response.getEntity();
+        if ( entity != null ) {
+            return entity.getContent();
+        }
+        return null;
+    }
+    

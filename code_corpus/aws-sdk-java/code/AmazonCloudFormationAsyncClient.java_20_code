@@ -1,0 +1,19 @@
+    public Future<GetTemplateResult> getTemplateAsync(
+            final GetTemplateRequest getTemplateRequest,
+            final AsyncHandler<GetTemplateRequest, GetTemplateResult> asyncHandler)
+                    throws AmazonServiceException, AmazonClientException {
+        return executorService.submit(new Callable<GetTemplateResult>() {
+            public GetTemplateResult call() throws Exception {
+                GetTemplateResult result;
+                try {
+                    result = getTemplate(getTemplateRequest);
+                } catch (Exception ex) {
+                    asyncHandler.onError(ex);
+                    throw ex;
+                }
+                asyncHandler.onSuccess(getTemplateRequest, result);
+                   return result;
+            }
+        });
+    }
+    

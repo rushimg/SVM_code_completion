@@ -1,0 +1,30 @@
+    public static <T> T toObject (Class<T> clazz, String source) throws JSONException {
+    	JSONObject jsonObect = new JSONObject(source);
+    	try {
+			return toObject(clazz, jsonObect);
+		} catch (Exception e) {
+			throw new JSONException(e);
+		}
+    }
+    
+    private static <T> T toObject(Class<T> clazz, JSONObject jsonObject) throws JSONException, IllegalArgumentException, IllegalAccessException {
+    	T newObject;
+    	try {
+    		newObject = createInstance(clazz);
+    	} catch (Exception e){
+    		throw new AmazonClientException("Failed to instantiate class", e);
+    	}
+    	for (Field objectField : clazz.getFields()) {
+    		String fieldName = objectField.getName();
+    		Class<?> fieldType = objectField.getType();
+    		Object fieldValue;
+    		try {
+    			fieldValue = parseField(jsonObject, fieldType, fieldName);
+    		} catch (Exception e) {
+    			fieldValue = parseField(jsonObject, fieldType, fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1));
+    		}
+    		objectField.set(newObject, fieldValue);
+    	}
+    	return newObject;
+    }
+    

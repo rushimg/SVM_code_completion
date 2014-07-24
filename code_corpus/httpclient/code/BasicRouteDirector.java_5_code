@@ -1,0 +1,31 @@
+    protected int directStep(final RouteInfo plan, final RouteInfo fact) {
+
+        if (fact.getHopCount() > 1) {
+            return UNREACHABLE;
+        }
+        if (!plan.getTargetHost().equals(fact.getTargetHost()))
+         {
+            return UNREACHABLE;
+        // If the security is too low, we could now suggest to layer
+        // a secure protocol on the direct connection. Layering on direct
+        // connections has not been supported in HttpClient 3.x, we don't
+        // consider it here until there is a real-life use case for it.
+        }
+
+        // Should we tolerate if security is better than planned?
+        // (plan.isSecure() && !fact.isSecure())
+        if (plan.isSecure() != fact.isSecure()) {
+            return UNREACHABLE;
+        }
+
+        // Local address has to match only if the plan specifies one.
+        if ((plan.getLocalAddress() != null) &&
+            !plan.getLocalAddress().equals(fact.getLocalAddress())
+            ) {
+            return UNREACHABLE;
+        }
+
+        return COMPLETE;
+    }
+
+

@@ -1,0 +1,29 @@
+  @Override
+  public void loadPath(File path, FileFilter filt) {
+    FilePathProcessor.processPath(path, filt, this);
+  }
+
+  public void loadPath(String path, FileFilter filt, String srlFile) {
+    readSRLFile(srlFile);
+    FilePathProcessor.processPath(new File(path), filt, this);
+    srlMap = null;
+  }
+
+  private Map<String,CollectionValuedMap<Integer,String>> srlMap = null;
+
+  private void readSRLFile(String srlFile) {
+    srlMap = Generics.newHashMap();
+    for (String line : ObjectBank.getLineIterator(new File(srlFile))) {
+      String[] bits = line.split("\\s+", 3);
+      String filename = bits[0];
+      int treeNum = Integer.parseInt(bits[1]);
+      String info = bits[2];
+      CollectionValuedMap<Integer,String> cvm = srlMap.get(filename);
+      if (cvm == null) {
+        cvm = new CollectionValuedMap<Integer,String>();
+        srlMap.put(filename, cvm);
+      }
+      cvm.add(treeNum, info);
+    }
+  }
+

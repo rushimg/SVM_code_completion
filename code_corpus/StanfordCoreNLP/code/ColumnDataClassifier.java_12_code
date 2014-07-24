@@ -1,0 +1,21 @@
+  private Datum<String,String> makeDatum(String[] strs) {
+    List<String> theFeatures = new ArrayList<String>();
+    Collection<String> globalFeatures = Generics.newHashSet();
+    if (globalFlags.useClassFeature) {
+      globalFeatures.add("CLASS");
+    }
+    addAllInterningAndPrefixing(theFeatures, globalFeatures, "");
+
+    for (int i = 0; i < flags.length; i++) {
+      Collection<String> featuresC = Generics.newHashSet();//important that this is a hash set to prevent same feature from being added multiple times
+      makeDatum(strs[i], flags[i], featuresC, strs[globalFlags.goldAnswerColumn]);
+      addAllInterningAndPrefixing(theFeatures, featuresC, i + "-");
+    }
+
+    if (globalFlags.printFeatures != null) {
+      printFeatures(strs, theFeatures);
+    }
+    //System.out.println("Features are: " + theFeatures);
+    return new BasicDatum<String,String>(theFeatures, strs[globalFlags.goldAnswerColumn]);
+  }
+

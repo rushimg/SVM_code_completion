@@ -1,0 +1,121 @@
+  public boolean isVerbalAuxiliary(Tree t) {
+    return isVerbalAuxiliary(t, verbalAuxiliaries, true);
+  }
+
+
+  // now overly complex so it deals with coordinations.  Maybe change this class to use tregrex?
+  private boolean hasPassiveProgressiveAuxiliary(Tree[] kids) {
+    if (DEBUG) {
+      System.err.println("Checking for passive/progressive auxiliary");
+    }
+    boolean foundPassiveVP = false;
+    boolean foundPassiveAux = false;
+    for (Tree kid : kids) {
+      if (DEBUG) {
+        System.err.println("  checking in " + kid);
+      }
+      if (isVerbalAuxiliary(kid, passiveAuxiliaries, false)) {
+          foundPassiveAux = true;
+      } else if (kid.isPhrasal()) {
+        Label kidLabel = kid.label();
+        String cat = null;
+        if (kidLabel instanceof HasCategory) {
+          cat = ((HasCategory) kidLabel).category();
+        }
+        if (cat == null) {
+          cat = kid.value();
+        }
+        if ( ! cat.startsWith("VP")) {
+          continue;
+        }
+        if (DEBUG) {
+          System.err.println("hasPassiveProgressiveAuxiliary found VP");
+        }
+        Tree[] kidkids = kid.children();
+        boolean foundParticipleInVp = false;
+        for (Tree kidkid : kidkids) {
+          if (DEBUG) {
+            System.err.println("  hasPassiveProgressiveAuxiliary examining " + kidkid);
+          }
+          if (kidkid.isPreTerminal()) {
+            Label kidkidLabel = kidkid.label();
+            String tag = null;
+            if (kidkidLabel instanceof HasTag) {
+              tag = ((HasTag) kidkidLabel).tag();
+            }
+            if (tag == null) {
+              tag = kidkid.value();
+            }
+            // we allow in VBD because of frequent tagging mistakes
+            if ("VBN".equals(tag) || "VBG".equals(tag) || "VBD".equals(tag)) {
+              foundPassiveVP = true;
+              if (DEBUG) {
+                System.err.println("hasPassiveAuxiliary found VBN/VBG/VBD VP");
+              }
+              break;
+            } else if ("CC".equals(tag) && foundParticipleInVp) {
+              foundPassiveVP = true;
+              if (DEBUG) {
+                System.err.println("hasPassiveAuxiliary [coordination] found (VP (VP[VBN/VBG/VBD] CC");
+              }
+              break;
+            }
+          } else if (kidkid.isPhrasal()) {
+            String catcat = null;
+            if (kidLabel instanceof HasCategory) {
+              catcat = ((HasCategory) kidLabel).category();
+            }
+            if (catcat == null) {
+              catcat = kid.value();
+            }
+            if ("VP".equals(catcat)) {
+              if (DEBUG) {
+                System.err.println("hasPassiveAuxiliary found (VP (VP)), recursing");
+              }
+              foundParticipleInVp = vpContainsParticiple(kidkid);
+            } else if (("CONJP".equals(catcat) || "PRN".equals(catcat)) && foundParticipleInVp) { // occasionally get PRN in CONJ-like structures
+              foundPassiveVP = true;
+              if (DEBUG) {
+                System.err.println("hasPassiveAuxiliary [coordination] found (VP (VP[VBN/VBG/VBD] CONJP");
+              }
+              break;
+            }
+          }
+        }
+      }
+      if (foundPassiveAux && foundPassiveVP) {
+        break;
+      }
+    } // end for (Tree kid : kids)
+    if (DEBUG) {
+      System.err.println("hasPassiveProgressiveAuxiliary returns " + (foundPassiveAux && foundPassiveVP));
+    }
+    return foundPassiveAux && foundPassiveVP;
+  }
+
+  private static boolean vpContainsParticiple(Tree t) {
+    for (Tree kid : t.children()) {
+      if (DEBUG) {
+        System.err.println("vpContainsParticiple examining " + kid);
+      }
+      if (kid.isPreTerminal()) {
+        Label kidLabel = kid.label();
+        String tag = null;
+        if (kidLabel instanceof HasTag) {
+          tag = ((HasTag) kidLabel).tag();
+        }
+        if (tag == null) {
+          tag = kid.value();
+        }
+        if ("VBN".equals(tag) || "VBG".equals(tag) || "VBD".equals(tag)) {
+          if (DEBUG) {
+            System.err.println("vpContainsParticiple found VBN/VBG/VBD VP");
+          }
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+

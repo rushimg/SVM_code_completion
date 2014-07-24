@@ -1,0 +1,53 @@
+    private static URI normalizeSyntax(final URI uri) {
+        if (uri.isOpaque() || uri.getAuthority() == null) {
+            // opaque and file: URIs
+            return uri;
+        }
+        Args.check(uri.isAbsolute(), "Base URI must be absolute");
+        final String path = uri.getPath() == null ? "" : uri.getPath();
+        final String[] inputSegments = path.split("/");
+        final Stack<String> outputSegments = new Stack<String>();
+        for (final String inputSegment : inputSegments) {
+            if ((inputSegment.isEmpty())
+                || (".".equals(inputSegment))) {
+                // Do nothing
+            } else if ("..".equals(inputSegment)) {
+                if (!outputSegments.isEmpty()) {
+                    outputSegments.pop();
+                }
+            } else {
+                outputSegments.push(inputSegment);
+            }
+        }
+        final StringBuilder outputBuffer = new StringBuilder();
+        for (final String outputSegment : outputSegments) {
+            outputBuffer.append('/').append(outputSegment);
+        }
+        if (path.lastIndexOf('/') == path.length() - 1) {
+            // path.endsWith("/") || path.equals("")
+            outputBuffer.append('/');
+        }
+        try {
+            final String scheme = uri.getScheme().toLowerCase(Locale.ROOT);
+            final String auth = uri.getAuthority().toLowerCase(Locale.ROOT);
+            final URI ref = new URI(scheme, auth, outputBuffer.toString(),
+                    null, null);
+            if (uri.getQuery() == null && uri.getFragment() == null) {
+                return ref;
+            }
+            final StringBuilder normalized = new StringBuilder(
+                    ref.toASCIIString());
+            if (uri.getQuery() != null) {
+                // query string passed through unchanged
+                normalized.append('?').append(uri.getRawQuery());
+            }
+            if (uri.getFragment() != null) {
+                // fragment passed through unchanged
+                normalized.append('#').append(uri.getRawFragment());
+            }
+            return URI.create(normalized.toString());
+        } catch (final URISyntaxException e) {
+            throw new IllegalArgumentException(e);
+        }
+    }
+

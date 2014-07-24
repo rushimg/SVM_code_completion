@@ -1,0 +1,48 @@
+public class ModelApplier {
+  MaxentModel _model;
+  ContextGenerator _cg = new BasicContextGenerator(",");
+  int counter = 1;
+
+  // The format for printing percentages
+  public static final DecimalFormat ROUNDED_FORMAT = new DecimalFormat("0.000");
+
+  public ModelApplier(MaxentModel m) {
+    _model = m;
+  }
+
+  private void eval(Event event) {
+    eval(event, false);
+  }
+
+  private void eval(Event event, boolean real) {
+
+    String outcome = event.getOutcome(); // Is ignored
+    String[] context = event.getContext();
+
+    double[] ocs;
+    if (!real) {
+      ocs = _model.eval(context);
+    } else {
+      float[] values = RealValueFileEventStream.parseContexts(context);
+      ocs = _model.eval(context, values);
+    }
+
+    int numOutcomes = ocs.length;
+    DoubleStringPair[] result = new DoubleStringPair[numOutcomes];
+    for (int i=0; i<numOutcomes; i++)
+      result[i] = new DoubleStringPair(ocs[i], _model.getOutcome(i));
+
+    java.util.Arrays.sort(result);
+
+    // Print the most likely outcome first, down to the least likely.
+    for (int i=numOutcomes-1; i>=0; i--)
+      System.out.print(result[i].stringValue + " " + result[i].doubleValue + " ");
+    System.out.println();
+
+  }
+
+  private static void usage() {
+    System.err.println("java ModelApplier [-real] modelFile dataFile");
+    System.exit(1);
+  }
+

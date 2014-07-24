@@ -1,0 +1,26 @@
+public class SetRoots extends SsurgeonEdit {
+  public static final String LABEL = "setRoots";
+  List<String> newRootNames;
+  public SetRoots(List<String> newRootNames) {
+    this.newRootNames = newRootNames;
+  }
+  
+  @Override
+  public void evaluate(SemanticGraph sg, SemgrexMatcher sm) {
+    List<IndexedWord> newRoots = new ArrayList<IndexedWord>();
+    for (String name : newRootNames)
+      newRoots.add(getNamedNode(name, sm));
+    sg.setRoots(newRoots);    
+  }
+
+  @Override
+  public String toEditString() {
+    StringWriter buf = new StringWriter();
+    buf.write(LABEL);
+    for (String name : newRootNames) {
+      buf.write("\t");
+      buf.write(name);
+    }
+    return buf.toString();
+  }
+

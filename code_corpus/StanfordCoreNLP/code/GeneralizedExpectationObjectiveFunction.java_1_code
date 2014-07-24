@@ -1,0 +1,102 @@
+
+public class GeneralizedExpectationObjectiveFunction<L,F> extends AbstractCachingDiffFunction {
+
+  private final GeneralDataset<L,F> labeledDataset;
+  private final List<? extends Datum<L,F>> unlabeledDataList;
+  private final List<F> geFeatures;
+  private final LinearClassifier<L,F> classifier;
+  private double[][] geFeature2EmpiricalDist; //empirical label distributions of each feature. Really final but java won't let us.
+  private List<List<Integer>> geFeature2DatumList; //an inverted list of active unlabeled documents for each feature. Really final but java won't let us.
+
+  private final int numFeatures;
+  private final int numClasses;
+
+
+  @Override
+  public int domainDimension() {
+  }
+
+  int classOf(int index) {
+    return index % numClasses;
+  }
+
+  int featureOf(int index) {
+    return index / numClasses;
+  }
+
+  protected int indexOf(int f, int c) {
+  }
+
+  public double[][] to2D(double[] x) {
+    double[][] x2 = new double[numFeatures][numClasses];
+    for (int i = 0; i < numFeatures; i++) {
+      for (int j = 0; j < numClasses; j++) {
+        x2[i][j] = x[indexOf(i, j)];
+      }
+    }
+    return x2;
+  }
+
+  @Override
+  protected void calculate(double[] x) {
+    classifier.setWeights(to2D(x));
+    if (derivative == null) {
+      derivative = new double[x.length];
+    } else {
+      Arrays.fill(derivative, 0.0);
+    }
+    Counter<Triple<Integer,Integer,Integer>> feature2classPairDerivatives = new ClassicCounter<Triple<Integer,Integer,Integer>>();
+
+    value = 0.0;
+    for(int n = 0; n < geFeatures.size(); n++){
+      //F feature = geFeatures.get(n);
+      double[] modelDist = new double[numClasses];
+      Arrays.fill(modelDist,0);
+
+    //go over the unlabeled active data to compute expectations
+      List<Integer> activeData = geFeature2DatumList.get(n);
+      for (Integer activeDatum : activeData) {
+        Datum<L, F> datum = unlabeledDataList.get(activeDatum);
+        double[] probs = getModelProbs(datum);
+        for (int c = 0; c < numClasses; c++) {
+          modelDist[c] += probs[c];
+        }
+      }
+
+      //now  compute the value (KL-divergence) and the final value of the derivative.
+      if (activeData.size()>0) {
+        for (int c = 0; c < numClasses; c++) {
+          modelDist[c]/= activeData.size();
+        }
+        smoothDistribution(modelDist);
+
+        for(int c = 0; c < numClasses; c++)
+
+        for(int f = 0; f < labeledDataset.featureIndex().size(); f++) {
+          for(int c = 0; c < numClasses; c++) {
+            int wtIndex = indexOf(f,c);
+            for(int cPrime = 0;  cPrime < numClasses; cPrime++){
+            }
+            derivative[wtIndex] /= activeData.size();
+          }
+        } // loop over each feature for derivative computation
+      } //end of if condition
+    } //loop over each GE feature
+  }
+
+
+   private void updateDerivative(Datum<L,F> datum, double[] probs,Counter<Triple<Integer,Integer,Integer>> feature2classPairDerivatives){
+     for (F feature : datum.asFeatures()) {
+       int fID = labeledDataset.featureIndex.indexOf(feature);
+       if (fID >= 0) {
+         for (int c = 0; c < numClasses; c++) {
+           for (int cPrime = 0; cPrime < numClasses; cPrime++) {
+             if (cPrime == c) {
+             } else {
+             }
+           }
+         }
+       }
+     }
+   }
+

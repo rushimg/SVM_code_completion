@@ -1,0 +1,26 @@
+/**
+ * A set of deterministic rules for marking certain entities, to add
+ * categories and to correct for failures of statistical NER taggers.
+ * This is an extremely simple and ungeneralized implementation of
+ * AbstractSequenceClassifier that was written for PASCAL RTE.
+ * It could profitably be extended and generalized.
+ * It marks a NUMBER category based on part-of-speech tags in a
+ * deterministic manner.
+ * It marks an ORDINAL category based on word form in a deterministic manner.
+ * It tags as MONEY currency signs and things tagged CD after a currency sign.
+ * It marks a number before a month name as a DATE.
+ * It marks as a DATE a word of the form xx/xx/xxxx
+ * (where x is a digit from a suitable range).
+ * It marks as a TIME a word of the form x(x):xx (where x is a digit).
+ * It marks everything else tagged "CD" as a NUMBER, and instances
+ * of "and" appearing between CD tags in contexts suggestive of a number.
+ * It requires text to be POS-tagged (have the getString(TagAnnotation.class) attribute).
+ * Effectively these rules assume that
+ * this classifier will be used as a secondary classifier by
+ * code such as ClassifierCombiner: it will mark most CD as NUMBER, and it
+ * is assumed that something else with higher priority is marking ones that
+ * are PERCENT, ADDRESS, etc.
+ *
+ * @author Christopher Manning
+ * @author Mihai (integrated with NumberNormalizer, SUTime)
+ */

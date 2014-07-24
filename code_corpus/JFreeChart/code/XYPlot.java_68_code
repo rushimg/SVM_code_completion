@@ -1,0 +1,15 @@
+    public void setDataset(int index, XYDataset dataset) {
+        XYDataset existing = getDataset(index);
+        if (existing != null) {
+            existing.removeChangeListener(this);
+        }
+        this.datasets.set(index, dataset);
+        if (dataset != null) {
+            dataset.addChangeListener(this);
+        }
+
+        // send a dataset change event to self...
+        DatasetChangeEvent event = new DatasetChangeEvent(this, dataset);
+        datasetChanged(event);
+    }
+

@@ -1,0 +1,131 @@
+  private void getCollocationsList(Tree t, boolean threadSafe) {
+    int leftMostLeaf = Trees.leftEdge(t,qTree);
+    if (t.isPreTerminal()) return;
+    List<Tree> children = t.getChildrenAsList();
+    if (children.isEmpty()) return;
+    //TODO: fix determineHead
+    // - in phrases like "World Trade Organization 's" the head of the parent NP is "POS".
+    // - this is problematic for the collocationFinder which assigns this head
+    // as the POS for the collocation "World_Trade_Organization"!
+    Label headLabel= hf.determineHead(t).label();
+    StringBuffer testString = null;
+    Integer leftSistersBuffer=0;//measures the length of sisters in words when reading
+    for (int i = 0; i < children.size();i++){
+      ArrayList<Integer> childConstituents = new ArrayList<Integer>();
+      childConstituents.add(i);
+      Tree subtree = children.get(i);
+      Integer currWindowLength=0; //measures the length in words of the current collocation.
+      getCollocationsList(subtree, threadSafe); //recursive call to get colls in subtrees.
+      testString = new StringBuffer(160);
+      testString.append(treeAsStemmedCollocation(subtree, threadSafe));
+      testString.append("_");
+      Integer thisSubtreeLength = subtree.yield().size();
+      currWindowLength+=thisSubtreeLength;
+      StringBuffer testStringNonStemmed = new StringBuffer(160);
+      testStringNonStemmed.append(treeAsNonStemmedCollocation(subtree));
+      testStringNonStemmed.append("_");
+
+      //for each subtree i, we iteratively append word yields of succeeding sister
+      //subtrees j and check their wordnet entries.  if they exist we write them to
+      //the global collocationCollector pair by the indices of the leftmost and
+      //rightmost words in the collocation.
+
+      for (int j = i+1; j < children.size(); j++) {
+        Tree sisterNode = children.get(j);
+        childConstituents.add(j);
+        testString.append(treeAsStemmedCollocation(sisterNode, threadSafe));
+        testStringNonStemmed.append(treeAsNonStemmedCollocation(sisterNode));
+        currWindowLength+=sisterNode.yield().size();
+        if (DEBUG) {
+       //   err.println("Testing string w/ reported indices:" + testString.toString()
+         //             + " (" +(leftMostLeaf+leftSistersBuffer)+","+(leftMostLeaf+leftSistersBuffer+currWindowLength-1)+")");
+        }
+        //ignore collocations beginning with "the" or "a"
+        if (StringUtils.lookingAt(testString.toString(), "(?:[Tt]he|THE|[Aa][Nn]?)[ _]")) {
+          if (false) {
+            err.println("CollocationFinder: Not collapsing the/a word: " +
+                testString);
+          }
+        } else if (wordNetContains(testString.toString())) {
+          Pair <Integer, Integer> c = new Pair<Integer,Integer>(leftMostLeaf+leftSistersBuffer,leftMostLeaf+leftSistersBuffer+currWindowLength-1);
+
+          ArrayList<Integer> childConstituentsClone = new ArrayList<Integer>(childConstituents);
+          Collocation col = new Collocation(c,t,childConstituentsClone,testString.toString(),headLabel);
+          collocationCollector.add(col);
+          if (DEBUG) {
+            err.println("Found collocation in wordnet: "+ testString.toString());
+            err.println("  Span of collocation is: " + c +
+                "; childConstituents is: " + c);
+          }
+        }
+        testString.append("_");
+        if (StringUtils.lookingAt(testStringNonStemmed.toString(), "(?:[Tt]he|THE|[Aa][Nn]?)[ _]")) {
+          if (false) {
+            err.println("CollocationFinder: Not collapsing the/a word: " +
+                testStringNonStemmed);
+          }
+        } else if (wordNetContains(testStringNonStemmed.toString())) {
+          Pair <Integer, Integer> c = new Pair<Integer,Integer>(leftMostLeaf+leftSistersBuffer,leftMostLeaf+leftSistersBuffer+currWindowLength-1);
+
+          ArrayList<Integer> childConstituentsClone = new ArrayList<Integer>(childConstituents);
+          Collocation col = new Collocation(c,t,childConstituentsClone,testStringNonStemmed.toString(),headLabel);
+          collocationCollector.add(col);
+          if (DEBUG) {
+            err.println("Found collocation in wordnet: "+ testStringNonStemmed.toString());
+            err.println("  Span of collocation is: " + c +
+                "; childConstituents is: " + c);
+          }
+        }
+        testStringNonStemmed.append("_");
+      }
+      leftSistersBuffer+=thisSubtreeLength;
+    }
+  }
+
+  private static String treeAsStemmedCollocation(Tree t, boolean threadSafe) {
+    List<WordTag> list= getStemmedWordTagsFromTree(t, threadSafe);
+    // err.println(list.size());
+    StringBuffer s = new StringBuffer(160);
+    WordTag firstWord = list.remove(0);
+    s.append(firstWord.word());
+    for(WordTag wt : list) {
+      s.append("_");
+      s.append(wt.word());
+    }
+    //err.println("Expressing this as:"+s.toString());
+    return s.toString();
+  }
+
+  private static String treeAsNonStemmedCollocation(Tree t) {
+    List<WordTag> list= getNonStemmedWordTagsFromTree(t);
+
+    StringBuffer s = new StringBuffer(160);
+    WordTag firstWord = list.remove(0);
+    s.append(firstWord.word());
+    for(WordTag wt : list) {
+      s.append("_");
+      s.append(wt.word());
+    }
+    return s.toString();
+  }
+
+  private static String mergeLeavesIntoCollocatedString(Tree t) {
+    StringBuilder sb = new StringBuilder(160);
+    ArrayList<TaggedWord> sent = t.taggedYield();
+    for (TaggedWord aSent : sent) {
+      sb.append(aSent.word()).append("_");
+    }
+    return sb.substring(0,sb.length() -1);
+  }
+
+  private static String mergeLeavesIntoCollocatedString(Tree[] trees) {
+    StringBuilder sb = new StringBuilder(160);
+    for (Tree t: trees) {
+      ArrayList<TaggedWord> sent = t.taggedYield();
+      for (TaggedWord aSent : sent) {
+        sb.append(aSent.word()).append("_");
+      }
+    }
+    return sb.substring(0,sb.length() -1);
+  }
+

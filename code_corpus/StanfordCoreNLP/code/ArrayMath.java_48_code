@@ -1,0 +1,17 @@
+  public static int sampleFromDistribution(double[] d, Random random) {
+    // sample from the uniform [0,1]
+    double r = random.nextDouble();
+    // now compare its value to cumulative values to find what interval it falls in
+    double total = 0;
+    for (int i = 0; i < d.length - 1; i++) {
+      if (Double.isNaN(d[i])) {
+        throw new RuntimeException("Can't sample from NaN");
+      }
+      total += d[i];
+      if (r < total) {
+        return i;
+      }
+    }
+    return d.length - 1; // in case the "double-math" didn't total to exactly 1.0
+  }
+

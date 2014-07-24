@@ -1,0 +1,122 @@
+    public Object draw(Graphics2D g2, Rectangle2D area, Object params) {
+
+        Rectangle2D target = (Rectangle2D) area.clone();
+        target = trimMargin(target);
+        if (this.backgroundPaint != null) {
+            g2.setPaint(this.backgroundPaint);
+            g2.fill(target);
+        }
+        getFrame().draw(g2, target);
+        getFrame().getInsets().trim(target);
+        target = trimPadding(target);
+        double base = this.axis.getLowerBound();
+        double increment = this.axis.getRange().getLength() / this.subdivisions;
+        Rectangle2D r = new Rectangle2D.Double();
+
+        if (RectangleEdge.isTopOrBottom(getPosition())) {
+            RectangleEdge axisEdge = Plot.resolveRangeAxisLocation(
+                    this.axisLocation, PlotOrientation.HORIZONTAL);
+            if (axisEdge == RectangleEdge.TOP) {
+                for (int i = 0; i < this.subdivisions; i++) {
+                    Paint p = this.scale.getPaint(v);
+                    double vv0 = this.axis.valueToJava2D(v, target,
+                            RectangleEdge.TOP);
+                    double vv1 = this.axis.valueToJava2D(v + increment, target,
+                            RectangleEdge.TOP);
+                    double ww = Math.abs(vv1 - vv0) + 1.0;
+                    r.setRect(Math.min(vv0, vv1), target.getMaxY()
+                            - this.stripWidth, ww, this.stripWidth);
+                    g2.setPaint(p);
+                    g2.fill(r);
+                }
+                if (isStripOutlineVisible()) {
+                    g2.setPaint(this.stripOutlinePaint);
+                    g2.setStroke(this.stripOutlineStroke);
+                    g2.draw(new Rectangle2D.Double(target.getMinX(),
+                            target.getMaxY() - this.stripWidth,
+                            target.getWidth(), this.stripWidth));
+                }
+                this.axis.draw(g2, target.getMaxY() - this.stripWidth
+                        - this.axisOffset, target, target, RectangleEdge.TOP,
+                        null);
+            }
+            else if (axisEdge == RectangleEdge.BOTTOM) {
+                for (int i = 0; i < this.subdivisions; i++) {
+                    Paint p = this.scale.getPaint(v);
+                    double vv0 = this.axis.valueToJava2D(v, target,
+                            RectangleEdge.BOTTOM);
+                    double vv1 = this.axis.valueToJava2D(v + increment, target,
+                            RectangleEdge.BOTTOM);
+                    double ww = Math.abs(vv1 - vv0) + 1.0;
+                    r.setRect(Math.min(vv0, vv1), target.getMinY(), ww,
+                            this.stripWidth);
+                    g2.setPaint(p);
+                    g2.fill(r);
+                }
+                if (isStripOutlineVisible()) {
+                    g2.setPaint(this.stripOutlinePaint);
+                    g2.setStroke(this.stripOutlineStroke);
+                    g2.draw(new Rectangle2D.Double(target.getMinX(),
+                            target.getMinY(), target.getWidth(),
+                            this.stripWidth));
+                }
+                this.axis.draw(g2, target.getMinY() + this.stripWidth
+                        + this.axisOffset, target, target,
+                        RectangleEdge.BOTTOM, null);
+            }
+        }
+        else {
+            RectangleEdge axisEdge = Plot.resolveRangeAxisLocation(
+                    this.axisLocation, PlotOrientation.VERTICAL);
+            if (axisEdge == RectangleEdge.LEFT) {
+                for (int i = 0; i < this.subdivisions; i++) {
+                    Paint p = this.scale.getPaint(v);
+                    double vv0 = this.axis.valueToJava2D(v, target,
+                            RectangleEdge.LEFT);
+                    double vv1 = this.axis.valueToJava2D(v + increment, target,
+                            RectangleEdge.LEFT);
+                    double hh = Math.abs(vv1 - vv0) + 1.0;
+                    r.setRect(target.getMaxX() - this.stripWidth,
+                            Math.min(vv0, vv1), this.stripWidth, hh);
+                    g2.setPaint(p);
+                    g2.fill(r);
+                }
+                if (isStripOutlineVisible()) {
+                    g2.setPaint(this.stripOutlinePaint);
+                    g2.setStroke(this.stripOutlineStroke);
+                    g2.draw(new Rectangle2D.Double(target.getMaxX()
+                            - this.stripWidth, target.getMinY(), this.stripWidth,
+                            target.getHeight()));
+                }
+                this.axis.draw(g2, target.getMaxX() - this.stripWidth
+                        - this.axisOffset, target, target, RectangleEdge.LEFT,
+                        null);
+            }
+            else if (axisEdge == RectangleEdge.RIGHT) {
+                for (int i = 0; i < this.subdivisions; i++) {
+                    Paint p = this.scale.getPaint(v);
+                    double vv0 = this.axis.valueToJava2D(v, target,
+                            RectangleEdge.LEFT);
+                    double vv1 = this.axis.valueToJava2D(v + increment, target,
+                            RectangleEdge.LEFT);
+                    double hh = Math.abs(vv1 - vv0) + 1.0;
+                    r.setRect(target.getMinX(), Math.min(vv0, vv1),
+                            this.stripWidth, hh);
+                    g2.setPaint(p);
+                    g2.fill(r);
+                }
+                if (isStripOutlineVisible()) {
+                    g2.setPaint(this.stripOutlinePaint);
+                    g2.setStroke(this.stripOutlineStroke);
+                    g2.draw(new Rectangle2D.Double(target.getMinX(),
+                            target.getMinY(), this.stripWidth,
+                            target.getHeight()));
+                }
+                this.axis.draw(g2, target.getMinX() + this.stripWidth
+                        + this.axisOffset, target, target, RectangleEdge.RIGHT,
+                        null);
+            }
+        }
+        return null;
+    }
+

@@ -1,0 +1,32 @@
+    public static JFreeChart createStackedAreaChart(String title,
+            String categoryAxisLabel, String valueAxisLabel,
+            CategoryDataset dataset, PlotOrientation orientation,
+            boolean legend, boolean tooltips, boolean urls) {
+
+        if (orientation == null) {
+            throw new IllegalArgumentException("Null 'orientation' argument.");
+        }
+        CategoryAxis categoryAxis = new CategoryAxis(categoryAxisLabel);
+        categoryAxis.setCategoryMargin(0.0);
+        ValueAxis valueAxis = new NumberAxis(valueAxisLabel);
+
+        StackedAreaRenderer renderer = new StackedAreaRenderer();
+        if (tooltips) {
+            renderer.setBaseToolTipGenerator(
+                    new StandardCategoryToolTipGenerator());
+        }
+        if (urls) {
+            renderer.setBaseItemURLGenerator(
+                    new StandardCategoryURLGenerator());
+        }
+
+        CategoryPlot plot = new CategoryPlot(dataset, categoryAxis, valueAxis,
+                renderer);
+        plot.setOrientation(orientation);
+        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT,
+                plot, legend);
+        currentTheme.apply(chart);
+        return chart;
+
+    }
+

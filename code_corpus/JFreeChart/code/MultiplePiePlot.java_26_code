@@ -1,0 +1,41 @@
+    public LegendItemCollection getLegendItems() {
+
+        LegendItemCollection result = new LegendItemCollection();
+        if (this.dataset == null) {
+            return result;
+        }
+
+        List keys = null;
+        prefetchSectionPaints();
+        if (this.dataExtractOrder == TableOrder.BY_ROW) {
+            keys = this.dataset.getColumnKeys();
+        }
+        else if (this.dataExtractOrder == TableOrder.BY_COLUMN) {
+            keys = this.dataset.getRowKeys();
+        }
+
+        if (keys != null) {
+            int section = 0;
+            Iterator iterator = keys.iterator();
+            while (iterator.hasNext()) {
+                Comparable key = (Comparable) iterator.next();
+                String label = key.toString();  // TODO: use a generator here
+                String description = label;
+                Paint paint = (Paint) this.sectionPaints.get(key);
+                LegendItem item = new LegendItem(label, description, null,
+                        null, getLegendItemShape(), paint,
+                        Plot.DEFAULT_OUTLINE_STROKE, paint);
+                item.setDataset(getDataset());
+                result.add(item);
+                section++;
+            }
+        }
+        if (this.limit > 0.0) {
+            result.add(new LegendItem(this.aggregatedItemsKey.toString(),
+                    this.aggregatedItemsKey.toString(), null, null,
+                    getLegendItemShape(), this.aggregatedItemsPaint,
+                    Plot.DEFAULT_OUTLINE_STROKE, this.aggregatedItemsPaint));
+        }
+        return result;
+    }
+

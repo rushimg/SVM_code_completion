@@ -1,0 +1,43 @@
+  public abstract static class Temporal implements Cloneable, Serializable {
+    public String mod;
+    public boolean approx;
+    StandardTemporalType standardTemporalType;
+    public String timeLabel;
+    // Duration after which the time is uncertain (what is there is an estimate)
+    public Duration uncertaintyGranularity;
+
+    public Temporal() {
+    }
+
+    public Temporal(Temporal t) {
+      this.mod = t.mod;
+      this.approx = t.approx;
+      this.uncertaintyGranularity = t.uncertaintyGranularity;
+//      this.standardTimeType = t.standardTimeType;
+//      this.timeLabel = t.timeLabel;
+    }
+
+    public abstract boolean isGrounded();
+
+    // Returns time representation for Temporal (if available)
+    public abstract Time getTime();
+
+    // Returns duration (estimate of how long the temporal expression is for)
+    public abstract Duration getDuration();
+
+    // Returns range (start/end points of temporal, automatic granularity)
+    public Range getRange() {
+      return getRange(RANGE_FLAGS_PAD_AUTO);
+    }
+
+    // Returns range (start/end points of temporal)
+    public Range getRange(int flags) {
+      return getRange(flags, null);
+    }
+
+    // Returns range (start/end points of temporal), using specified flags
+    public abstract Range getRange(int flags, Duration granularity);
+
+    // Returns how often this time would repeat
+    // Ex: friday repeat weekly, hour repeat hourly, hour in a day repeat daily
+    public Duration getPeriod() {

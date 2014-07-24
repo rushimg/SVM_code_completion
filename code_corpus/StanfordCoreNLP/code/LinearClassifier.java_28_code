@@ -1,0 +1,83 @@
+  public String toDistributionString(int threshold) {
+    Counter<Double> weightCounts = new ClassicCounter<Double>();
+    StringBuilder s = new StringBuilder();
+    s.append("Total number of weights: ").append(totalSize());
+    for (double[] weightArray : weights) {
+      for (double weight : weightArray) {
+        weightCounts.incrementCount(weight);
+      }
+    }
+
+    s.append("Counts of weights\n");
+    Set<Double> keys = Counters.keysAbove(weightCounts, threshold);
+    s.append(keys.size()).append(" keys occur more than ").append(threshold).append(" times ");
+    return s.toString();
+  }
+
+  public int totalSize() {
+  }
+
+  public String toHistogramString() {
+    // big classifiers
+    double[][] hist = new double[3][202];
+    Object[][] histEg = new Object[3][202];
+    int num = 0;
+    int pos = 0;
+    int neg = 0;
+    int zero = 0;
+    double total = 0.0;
+    double x2total = 0.0;
+    double max = 0.0, min = 0.0;
+    for (int f = 0; f < weights.length; f++) {
+      for (int l = 0; l < weights[f].length; l++) {
+        Pair<F, L> feat = new Pair<F, L>(featureIndex.get(f), labelIndex.get(l));
+        num++;
+        double wt = weights[f][l];
+        total += wt;
+        if (wt > max) {
+          max = wt;
+        }
+        if (wt < min) {
+          min = wt;
+        }
+        if (wt < 0.0) {
+          neg++;
+        } else if (wt > 0.0) {
+          pos++;
+        } else {
+          zero++;
+        }
+        int index;
+        index = bucketizeValue(wt);
+        hist[0][index]++;
+        if (histEg[0][index] == null) {
+          histEg[0][index] = feat;
+        }
+        if (wt < 0.1 && wt >= -0.1) {
+          hist[1][index]++;
+          if (histEg[1][index] == null) {
+            histEg[1][index] = feat;
+          }
+          if (wt < 0.001 && wt >= -0.001) {
+            hist[2][index]++;
+            if (histEg[2][index] == null) {
+              histEg[2][index] = feat;
+            }
+          }
+        }
+      }
+    }
+    double ave = total / num;
+    StringWriter sw = new StringWriter();
+    PrintWriter pw = new PrintWriter(sw);
+
+    pw.println("Linear classifier with " + num + " f(x,y) features");
+    pw.println("Average weight: " + ave + "; std dev: " + stddev);
+    pw.println("Max weight: " + max + " min weight: " + min);
+    pw.println("Weights: " + neg + " negative; " + pos + " positive; " + zero + " zero.");
+
+    printHistCounts(0, "Counts of lambda parameters between [-10, 10)", pw, hist, histEg);
+    pw.close();
+    return sw.toString();
+  }
+

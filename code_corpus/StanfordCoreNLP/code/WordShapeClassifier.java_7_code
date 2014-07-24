@@ -1,0 +1,83 @@
+  private static String wordShapeDan2(String s, Collection<String> knownLCWords) {
+    StringBuilder sb = new StringBuilder("WT-");
+    char lastM = '~';
+    boolean nonLetters = false;
+    int len = s.length();
+    for (int i = 0; i < len; i++) {
+      char c = s.charAt(i);
+      char m = c;
+      if (Character.isDigit(c)) {
+        m = 'd';
+      } else if (Character.isLowerCase(c) || c == '_') {
+        m = 'x';
+      } else if (Character.isUpperCase(c)) {
+        m = 'X';
+      }
+      if (m != 'x' && m != 'X') {
+        nonLetters = true;
+      }
+      if (m != lastM) {
+        sb.append(m);
+      }
+      lastM = m;
+    }
+    if (len <= 3) {
+      sb.append(':').append(len);
+    }
+    if (knownLCWords != null) {
+      if (!nonLetters && knownLCWords.contains(s.toLowerCase())) {
+        sb.append('k');
+      }
+    }
+    // System.err.println("wordShapeDan2: " + s + " became " + sb);
+    return sb.toString();
+  }
+
+  private static String wordShapeJenny1(String s, Collection<String> knownLCWords) {
+    StringBuilder sb = new StringBuilder("WT-");
+    char lastM = '~';
+    boolean nonLetters = false;
+    for (int i = 0; i < s.length(); i++) {
+      char c = s.charAt(i);
+      char m = c;
+
+      if (Character.isDigit(c)) {
+        m = 'd';
+      } else if (Character.isLowerCase(c)) {
+        m = 'x';
+      } else if (Character.isUpperCase(c)) {
+        m = 'X';
+      }
+
+      for (String gr : greek) {
+        if (s.startsWith(gr, i)) {
+          m = 'g';
+          i = i + gr.length() - 1;
+          //System.out.println(s + "  ::  " + s.substring(i+1));
+          break;
+        }
+      }
+
+      if (m != 'x' && m != 'X') {
+        nonLetters = true;
+      }
+      if (m != lastM) {
+        sb.append(m);
+      }
+      lastM = m;
+
+
+    }
+    if (s.length() <= 3) {
+      sb.append(':').append(s.length());
+    }
+    if (knownLCWords != null) {
+      if ( ! nonLetters && knownLCWords.contains(s.toLowerCase())) {
+        sb.append('k');
+      }
+    }
+    //System.out.println(s+" became "+sb);
+    return sb.toString();
+  }
+
+

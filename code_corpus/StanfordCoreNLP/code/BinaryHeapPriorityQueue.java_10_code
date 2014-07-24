@@ -1,0 +1,37 @@
+  private void heapifyDown(final Entry<E> entry) {
+    Entry<E> bestEntry; // initialized below
+
+    do {
+      bestEntry = entry;
+
+      Entry<E> leftEntry = leftChild(entry);
+      if (leftEntry != null) {
+        if (compare(bestEntry, leftEntry) < 0) {
+          bestEntry = leftEntry;
+        }
+      }
+
+      Entry<E> rightEntry = rightChild(entry);
+      if (rightEntry != null) {
+        if (compare(bestEntry, rightEntry) < 0) {
+          bestEntry = rightEntry;
+        }
+      }
+
+      if (bestEntry != entry) {
+        // Swap min and current
+        swap(bestEntry, entry);
+        // at start of next loop, we set currentIndex to largestIndex
+        // this indexation now holds current, so it is unchanged
+      }
+    } while (bestEntry != entry);
+    // System.err.println("Done with heapify down");
+    // verify();
+  }
+
+  private void heapify(Entry<E> entry) {
+    heapifyUp(entry);
+    heapifyDown(entry);
+  }
+
+

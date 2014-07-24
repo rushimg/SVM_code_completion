@@ -1,0 +1,108 @@
+  private void calculateCL(double[] x) {
+    if (values != null) {
+      rvfcalculate(x);
+    } else if (dataIterable != null) {
+      calculateCLiterable(x);
+    } else {
+      calculateCLbatch(x);
+    }
+  }
+
+
+  private void calculateCLbatch(double[] x) {
+    //System.out.println("Checking at: "+x[0]+" "+x[1]+" "+x[2]);
+    value = 0.0;
+    // [cdm Mar 2014] This next bit seems unnecessary: derivative is allocated by ensure() in AbstractCachingDiffFunction
+    // before calculate() is called; and after the next block, derivativeNumerator is copied into it.
+    // if (derivative == null) {
+    //   derivative = new double[x.length];
+    // } else {
+    //   Arrays.fill(derivative, 0.0);
+    // }
+
+    if (derivativeNumerator == null) {
+      derivativeNumerator = new double[x.length];
+      for (int d = 0; d < data.length; d++) {
+        int[] features = data[d];
+        for (int feature : features) {
+          int i = indexOf(feature, labels[d]);
+          if (dataWeights == null) {
+            derivativeNumerator[i] -= 1;
+          } else {
+            derivativeNumerator[i] -= dataWeights[d];
+          }
+        }
+      }
+    }
+
+    copy(derivative, derivativeNumerator);
+    //    Arrays.fill(derivative, 0.0);
+    double[] sums = new double[numClasses];
+    double[] probs = new double[numClasses];
+    //    double[] counts = new double[numClasses];
+    //    Arrays.fill(counts, 0.0);
+
+    for (int d = 0; d < data.length; d++) {
+      // activation
+      Arrays.fill(sums, 0.0);
+
+      int[] featuresArr = data[d];
+
+      for (int feature : featuresArr) {
+        for (int c = 0; c < numClasses; c++) {
+          int i = indexOf(feature, c);
+          sums[c] += x[i];
+        }
+      }
+      // expectation (slower routine replaced by fast way)
+      // double total = Double.NEGATIVE_INFINITY;
+      // for (int c=0; c<numClasses; c++) {
+      //   total = SloppyMath.logAdd(total, sums[c]);
+      // }
+      double total = ArrayMath.logSum(sums);
+      for (int c = 0; c < numClasses; c++) {
+        probs[c] = Math.exp(sums[c] - total);
+        if (dataWeights != null) {
+        }
+      }
+
+      for (int feature : featuresArr) {
+        for (int c = 0; c < numClasses; c++) {
+          int i = indexOf(feature, c);
+          derivative[i] += probs[c];
+        }
+      }
+
+      int labelindex = labels[d];
+      double dV = sums[labelindex] - total;
+      if (dataWeights != null) {
+      }
+      value -= dV;
+    }
+
+    value += prior.compute(x, derivative);
+  }
+
+
+  private void calculateCLiterable(double[] x) {
+    //System.out.println("Checking at: "+x[0]+" "+x[1]+" "+x[2]);
+    value = 0.0;
+    // [cdm Mar 2014] This next bit seems unnecessary: derivative is allocated by ensure() in AbstractCachingDiffFunction
+    // before calculate() is called; and after the next block, derivativeNumerator is copied into it.
+    // if (derivative == null) {
+    //   derivative = new double[x.length];
+    // } else {
+    //   Arrays.fill(derivative, 0.0);
+    // }
+
+    if (derivativeNumerator == null) {
+      derivativeNumerator = new double[x.length];
+      //use dataIterable if data is null & vice versa
+      //TODO: Make sure this work as expected!!
+      //int index = 0;
+      for (Datum<L, F> datum : dataIterable) {
+        Collection<F> features = datum.asFeatures();
+        for (F feature : features) {
+          int i = indexOf(featureIndex.indexOf(feature), labelIndex.indexOf(datum.label()));
+          if (dataWeights == null) {
+            derivativeNumerator[i] -= 1;

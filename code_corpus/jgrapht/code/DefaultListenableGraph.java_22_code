@@ -1,0 +1,59 @@
+    protected void fireVertexRemoved(V vertex)
+    {
+        GraphVertexChangeEvent<V> e =
+            createGraphVertexChangeEvent(
+                GraphVertexChangeEvent.VERTEX_REMOVED,
+                vertex);
+
+        for (int i = 0; i < vertexSetListeners.size(); i++) {
+            VertexSetListener<V> l = vertexSetListeners.get(i);
+
+            l.vertexRemoved(e);
+        }
+
+        for (int i = 0; i < graphListeners.size(); i++) {
+            GraphListener<V, E> l = graphListeners.get(i);
+
+            l.vertexRemoved(e);
+        }
+    }
+
+    private static <L extends EventListener> void addToListenerList(
+        List<L> list,
+        L l)
+    {
+        if (!list.contains(l)) {
+            list.add(l);
+        }
+    }
+
+    private GraphEdgeChangeEvent<V, E> createGraphEdgeChangeEvent(
+        int eventType,
+        E edge)
+    {
+        if (reuseEvents) {
+            reuseableEdgeEvent.setType(eventType);
+            reuseableEdgeEvent.setEdge(edge);
+
+            return reuseableEdgeEvent;
+        } else {
+            return new GraphEdgeChangeEvent<V, E>(this, eventType, edge);
+        }
+    }
+
+    private GraphVertexChangeEvent<V> createGraphVertexChangeEvent(
+        int eventType,
+        V vertex)
+    {
+        if (reuseEvents) {
+            reuseableVertexEvent.setType(eventType);
+            reuseableVertexEvent.setVertex(vertex);
+
+            return reuseableVertexEvent;
+        } else {
+            return new GraphVertexChangeEvent<V>(this, eventType, vertex);
+        }
+    }
+
+    //~ Inner Classes ----------------------------------------------------------
+

@@ -1,0 +1,258 @@
+    public Arc processArc(Arc a);
+  }
+
+  public static class OutputCombiningProcessor implements ArcProcessor {
+    @Override
+    public Arc processArc(Arc a) {
+      a = new Arc(a);
+      a.setInput(Generics.newPair(a.getInput(), a.getOutput()));
+      a.setOutput(null);
+      return a;
+    }
+  }
+
+  public static class InputSplittingProcessor implements ArcProcessor {
+    @Override
+    public Arc processArc(Arc a) {
+      a = new Arc(a);
+      Pair p = (Pair) a.getInput();
+      a.setInput(p.first);
+      a.setOutput(p.second);
+      return a;
+    }
+  }
+
+  public static class NodeProcessorWrappingArcProcessor implements ArcProcessor {
+    private final NodeProcessor nodeProcessor;
+
+    public NodeProcessorWrappingArcProcessor(NodeProcessor nodeProcessor) {
+      this.nodeProcessor = nodeProcessor;
+    }
+
+    @Override
+    public Arc processArc(Arc a) {
+      a = new Arc(a);
+      a.setSourceNode(nodeProcessor.processNode(a.getSourceNode()));
+      a.setTargetNode(nodeProcessor.processNode(a.getTargetNode()));
+      return a;
+    }
+  }
+
+  public static interface NodeProcessor {
+    public Object processNode(Object node);
+  }
+
+  public static class SetToStringNodeProcessor implements NodeProcessor {
+    private TreebankLanguagePack tlp;
+
+    public SetToStringNodeProcessor(TreebankLanguagePack tlp) {
+      this.tlp = tlp;
+    }
+
+    @Override
+    public Object processNode(Object node) {
+      Set s = null;
+      if (node instanceof Set) {
+        s = (Set) node;
+      } else {
+        if (node instanceof Block) {
+          Block b = (Block) node;
+          s = b.getMembers();
+        } else {
+          throw new RuntimeException("Unexpected node class");
+        }
+      }
+      Object sampleNode = s.iterator().next();
+      if (s.size() == 1) {
+        if (sampleNode instanceof Block) {
+          return processNode(sampleNode);
+        } else {
+          return sampleNode;
+        }
+      }
+      // nope there's a set of things
+      if (sampleNode instanceof String) {
+        String str = (String) sampleNode;
+        if (str.charAt(0) != '@') {
+          // passive category...
+          return tlp.basicCategory(str) + "-" + s.hashCode(); // TODO remove b/c there could be collisions
+          //          return tlp.basicCategory(str) + "-" + System.identityHashCode(s);
+        }
+      }
+      return "@NodeSet-" + s.hashCode(); // TODO remove b/c there could be collisions
+      //      return sampleNode.toString();
+    }
+  }
+
+  public static class ObjectToSetNodeProcessor implements NodeProcessor {
+    @Override
+    public Object processNode(Object node) {
+      return Collections.singleton(node);
+    }
+  }
+
+  public static interface GraphProcessor {
+    public TransducerGraph processGraph(TransducerGraph g);
+  }
+
+
+  public static class NormalizingGraphProcessor implements GraphProcessor {
+    boolean forward = true;
+
+    public NormalizingGraphProcessor(boolean forwardNormalization) {
+      this.forward = forwardNormalization;
+    }
+
+    public TransducerGraph processGraph(TransducerGraph g) {
+      g = new TransducerGraph(g);
+      Set nodes = g.getNodes();
+      for (Object node : nodes) {
+        Set<Arc> myArcs = null;
+        if (forward) {
+          myArcs = g.getArcsBySource(node);
+        } else {
+          myArcs = g.getArcsByTarget(node);
+        }
+        // compute a total
+        double total = 0.0;
+        for (Arc a : myArcs) {
+          total += ((Double) a.getOutput()).doubleValue();
+        }
+        // divide each by total
+        for (Arc a : myArcs) {
+          a.setOutput(new Double(Math.log(((Double) a.getOutput()).doubleValue() / total)));
+        }
+      }
+      return g;
+    }
+  }
+
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    depthFirstSearch(true, sb);
+    return sb.toString();
+  }
+
+
+  private boolean dotWeightInverted = false;
+
+  private void setDotWeightingInverted(boolean inverted) {
+    dotWeightInverted = true;
+  }
+
+  public String asDOTString() {
+    NumberFormat nf = NumberFormat.getNumberInstance();
+    nf.setMaximumFractionDigits(3);
+    nf.setMinimumFractionDigits(1);
+    StringBuilder result = new StringBuilder();
+    Set nodes = getNodes();
+    result.append("digraph G {\n");
+    //    result.append("page = \"8.5,11\";\n");
+    //    result.append("margin = \"0.25\";\n");
+    // Heuristic number of pages
+    int sz = arcs.size();
+    int ht = 105;
+    int mag = 250;
+    while (sz > mag) {
+      ht += 105;
+    }
+    int wd = 8;
+    mag = 500;
+    while (sz > mag) {
+      wd += 8;
+    }
+    double htd = ht / 10.0;
+    result.append("size = \"" + wd + "," + htd + "\";\n");
+    result.append("graph [rankdir = \"LR\"];\n");
+    result.append("graph [ranksep = \"0.2\"];\n");
+    for (Object node : nodes) {
+      String cleanString = StringUtils.fileNameClean(node.toString());
+      result.append(cleanString);
+      result.append(" [ ");
+      //      if (getEndNodes().contains(node)) {
+      //        result.append("label=\"" + node.toString() + "\", style=filled, ");
+      //      } else
+      result.append("label=\"" + node.toString() + "\"");
+      result.append("height=\"0.3\", width=\"0.3\"");
+      result.append(" ];\n");
+      for (Arc arc : getArcsBySource(node)) {
+        result.append(StringUtils.fileNameClean(arc.getSourceNode().toString()));
+        result.append(" -> ");
+        result.append(StringUtils.fileNameClean(arc.getTargetNode().toString()));
+        result.append(" [ ");
+        result.append("label=\"");
+        result.append(arc.getInput());
+        result.append(" : ");
+        // result.append(arc.getOutput());
+        Object output = arc.getOutput();
+        String wt = "";
+        if (output instanceof Number) {
+          double dd = ((Number) output).doubleValue();
+          if (dd == -0.0d) {
+            result.append(nf.format(0.0d));
+          } else {
+            result.append(nf.format(output));
+          }
+          int weight;
+          if (dotWeightInverted) {
+            weight = (int) (20.0 - dd);
+          } else {
+            weight = (int) dd;
+          }
+          if (weight > 0) {
+            wt = ", weight = \"" + weight + "\"";
+          }
+          if (dotWeightInverted && dd <= 2.0 || (!dotWeightInverted) && dd >= 20.0) {
+            wt += ", style=bold";
+          }
+        } else {
+          result.append(output);
+        }
+        result.append("\"");
+        result.append(wt);
+        // result.append("fontsize = 14 ");
+        if (arc.getInput().toString().equals("EPSILON")) {
+          result.append(", style = \"dashed\" ");
+        } else {
+          result.append(", style = \"solid\" ");
+        }
+        // result.append(", weight = \"" + arc.getOutput() + "\" ");
+        result.append("];\n");
+      }
+    }
+    result.append("}\n");
+    return result.toString();
+  }
+
+  public double inFlow(Object node) {
+    Set<Arc> arcs = getArcsByTarget(node);
+    return sumOutputs(arcs);
+  }
+
+  public double outFlow(Object node) {
+    Set<Arc> arcs = getArcsBySource(node);
+    return sumOutputs(arcs);
+  }
+
+  private static double sumOutputs(Set<Arc> arcs) {
+    double sum = 0.0;
+    for (Arc arc : arcs) {
+      sum += ((Double) arc.getOutput()).doubleValue();
+    }
+    return sum;
+  }
+
+  private double getSourceTotal(Object node) {
+    double result = 0.0;
+    Set<Arc> arcs = getArcsBySource(node);
+    if (arcs.isEmpty()) {
+      System.err.println("No outbound arcs from node.");
+      return result;
+    }
+    for (Arc arc : arcs) {
+      result += ((Double) arc.getOutput()).doubleValue();
+    }
+    return result;
+  }
+

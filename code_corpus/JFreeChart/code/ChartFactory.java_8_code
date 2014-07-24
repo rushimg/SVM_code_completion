@@ -1,0 +1,86 @@
+    public static JFreeChart createPieChart(String title,
+                                            PieDataset dataset,
+                                            PieDataset previousDataset,
+                                            int percentDiffForMaxScale,
+                                            boolean greenForIncrease,
+                                            boolean legend,
+                                            boolean tooltips,
+                                            boolean urls,
+                                            boolean subTitle,
+                                            boolean showDifference) {
+
+        PiePlot plot = new PiePlot(dataset);
+        plot.setLabelGenerator(new StandardPieSectionLabelGenerator());
+        plot.setInsets(new RectangleInsets(0.0, 5.0, 5.0, 5.0));
+
+        if (tooltips) {
+            plot.setToolTipGenerator(new StandardPieToolTipGenerator());
+        }
+        if (urls) {
+            plot.setURLGenerator(new StandardPieURLGenerator());
+        }
+
+        List keys = dataset.getKeys();
+        DefaultPieDataset series = null;
+        if (showDifference) {
+            series = new DefaultPieDataset();
+        }
+
+        double colorPerPercent = 255.0 / percentDiffForMaxScale;
+        for (Iterator it = keys.iterator(); it.hasNext();) {
+            Comparable key = (Comparable) it.next();
+            Number newValue = dataset.getValue(key);
+            Number oldValue = previousDataset.getValue(key);
+
+            if (oldValue == null) {
+                if (greenForIncrease) {
+                    plot.setSectionPaint(key, Color.green);
+                }
+                else {
+                    plot.setSectionPaint(key, Color.red);
+                }
+                if (showDifference) {
+                    series.setValue(key + " (+100%)", newValue);
+                }
+            }
+            else {
+                double percentChange = (newValue.doubleValue()
+                double shade
+                    = (Math.abs(percentChange) >= percentDiffForMaxScale ? 255
+                if (greenForIncrease
+                        && newValue.doubleValue() > oldValue.doubleValue()
+                        || !greenForIncrease && newValue.doubleValue()
+                        < oldValue.doubleValue()) {
+                    plot.setSectionPaint(key, new Color(0, (int) shade, 0));
+                }
+                else {
+                    plot.setSectionPaint(key, new Color((int) shade, 0, 0));
+                }
+                if (showDifference) {
+                    series.setValue(key + " (" + (percentChange >= 0 ? "+" : "")
+                            + NumberFormat.getPercentInstance().format(
+                            percentChange / 100.0) + ")", newValue);
+                }
+            }
+        }
+
+        if (showDifference) {
+            plot.setDataset(series);
+        }
+
+        JFreeChart chart =  new JFreeChart(title,
+                JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
+
+        if (subTitle) {
+            TextTitle subtitle = null;
+            subtitle = new TextTitle("Bright " + (greenForIncrease ? "red"
+                    : "green") + "=change >=-" + percentDiffForMaxScale
+                    + "%, Bright " + (!greenForIncrease ? "red" : "green")
+                    + "=change >=+" + percentDiffForMaxScale + "%",
+                    new Font("SansSerif", Font.PLAIN, 10));
+            chart.addSubtitle(subtitle);
+        }
+        currentTheme.apply(chart);
+        return chart;
+    }
+

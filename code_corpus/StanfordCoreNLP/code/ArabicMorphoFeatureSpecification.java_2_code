@@ -1,0 +1,108 @@
+  @Override
+  public MorphoFeatures strToFeatures(String spec) {
+    MorphoFeatures features = new ArabicMorphoFeatures();
+
+    // Check for the boundary symbol
+    if(spec == null || spec.equals("")) {
+      return features;
+    }
+    //Possessiveness
+    if(isActive(MorphoFeatureType.POSS) && spec.contains("POSS")) {
+      features.addFeature(MorphoFeatureType.POSS,possVals[0]);
+    }
+
+    //Nominals and pronominals. Mona ignores Pronominals in ERTS, but they seem to help...
+    // NSUFF -- declinable nominals
+    // VSUFF -- enclitic pronominals
+    // PRON -- ordinary pronominals
+    if(spec.contains("NSUFF") || spec.contains("NOUN") || spec.contains("ADJ")) {
+      // Nominal phi feature indicators are different than the indicators
+      // that we process with processInflectionalFeatures()
+      if(isActive(MorphoFeatureType.NGEN)) {
+        if(spec.contains("FEM")) {
+          features.addFeature(MorphoFeatureType.NGEN, genVals[1]);
+        } else if(spec.contains("MASC") || !pNounNoMorph.matcher(spec).find()) {
+          features.addFeature(MorphoFeatureType.NGEN, genVals[0]);
+        }
+      }
+
+      // WSGDEBUG -- Number for nominals only
+      if(isActive(MorphoFeatureType.NNUM)) {
+        if(spec.contains("DU")) {
+          features.addFeature(MorphoFeatureType.NNUM, numVals[1]);
+        } else if(spec.contains("PL")) {
+          features.addFeature(MorphoFeatureType.NNUM, numVals[2]);
+        } else if (!pNounNoMorph.matcher(spec).find()){ // (spec.contains("SG"))
+          features.addFeature(MorphoFeatureType.NNUM, numVals[0]);
+        }
+      }
+
+      //Definiteness
+      if(isActive(MorphoFeatureType.DEF)) {
+        if (spec.contains("DET")) {
+          features.addFeature(MorphoFeatureType.DEF, defVals[1]);
+        } else if (!pNounNoMorph.matcher(spec).find()){
+          features.addFeature(MorphoFeatureType.DEF, defVals[0]);
+        }
+      }
+
+      // Proper nouns (probably a stupid feature)
+      if (isActive(MorphoFeatureType.PROP)) {
+        if (spec.contains("PROP")) {
+          features.addFeature(MorphoFeatureType.PROP,"");
+        }
+      }
+
+    } else if(spec.contains("PRON") || (spec.contains("VSUFF_DO") && !pVerbMood.matcher(spec).find())) {
+      if(spec.contains("DEM_PRON")) {
+        features.addFeature(MorphoFeatureType.DEF, defVals[0]);
+        Matcher m = pDemPronounFeatures.matcher(spec);
+        if (m.find()) {
+          spec = m.group(1);
+          processInflectionalFeaturesHelper(features, spec);
+        }
+
+      } else {
+        processInflectionalFeatures(features, spec);
+      }
+
+    // Verbs (marked for tense)
+    } else if(pVerbTenseMarker.matcher(spec).find()) {
+
+      // Tense feature
+      if(isActive(MorphoFeatureType.TENSE)) {
+        if(spec.contains("PV"))
+          features.addFeature(MorphoFeatureType.TENSE, tenseVals[0]);
+        else if(spec.contains("IV"))
+          features.addFeature(MorphoFeatureType.TENSE, tenseVals[1]);
+        else if(spec.contains("CV"))
+          features.addFeature(MorphoFeatureType.TENSE, tenseVals[2]);
+      }
+
+      // Inflectional features
+      processInflectionalFeatures(features, spec);
+
+      if(isActive(MorphoFeatureType.MOOD)) {
+        Matcher moodMatcher = pMood.matcher(spec);
+        if(moodMatcher.find()) {
+          String moodStr = moodMatcher.group(1);
+          if(moodStr.equals("I"))
+            features.addFeature(MorphoFeatureType.MOOD, moodVals[0]);
+          else if(moodStr.equals("S"))
+            features.addFeature(MorphoFeatureType.MOOD, moodVals[1]);
+          else if(moodStr.equals("J"))
+            features.addFeature(MorphoFeatureType.MOOD, moodVals[2]);
+        }
+      }
+
+      if(isActive(MorphoFeatureType.VOICE)) {
+        if(spec.contains("PASS")) {
+          features.addFeature(MorphoFeatureType.VOICE, voiceVals[1]);
+        } else {
+          features.addFeature(MorphoFeatureType.VOICE, voiceVals[0]);
+        }
+      }
+    }
+    return features;
+  }
+

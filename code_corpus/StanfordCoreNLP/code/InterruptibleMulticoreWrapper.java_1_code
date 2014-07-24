@@ -1,0 +1,36 @@
+  public List<I> joinWithTimeout() {
+    if (timeout < 0) {
+      join();
+      return null;
+    }
+    // Make blocking calls to the last processes that are running
+    if ( ! threadPool.isShutdown()) {
+      try {
+        List<I> leftover = null;
+        int i;
+        for (i = nThreads; i > 0; --i) {
+          if (idleProcessors.poll(timeout, TimeUnit.MILLISECONDS) == null) {
+            leftover = shutdownNow();
+            break;
+          }
+        }
+        // if the poll hit a timeout, retake the remaining processors
+        // so join() can guarantee the threads are finished
+        if (i > 0) {
+          for ( ; i > leftover.size(); --i) {
+            idleProcessors.take();
+          }
+          return leftover;
+        } else {
+          threadPool.shutdown();
+          // Sanity check. The threadpool should be done after iterating over
+          // the processors.
+          threadPool.awaitTermination(10, TimeUnit.SECONDS);
+        }
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e);
+      }
+    }
+    return null;
+  }
+

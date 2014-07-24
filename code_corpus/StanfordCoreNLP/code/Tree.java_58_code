@@ -1,0 +1,19 @@
+  private static Label makeDependencyLabel(Label oldLabel, boolean copyLabel, boolean copyIndex, boolean copyPosTag) {
+    if ( ! copyLabel)
+      return oldLabel;
+
+    String wordForm = (oldLabel instanceof HasWord) ? ((HasWord) oldLabel).word() : oldLabel.value();
+    Label newLabel = oldLabel.labelFactory().newLabel(wordForm);
+    if (newLabel instanceof HasWord) ((HasWord) newLabel).setWord(wordForm);
+    if (copyPosTag && newLabel instanceof HasTag && oldLabel instanceof HasTag) {
+      String tag = ((HasTag) oldLabel).tag();
+      ((HasTag) newLabel).setTag(tag);
+    }
+    if (copyIndex && newLabel instanceof HasIndex && oldLabel instanceof HasIndex) {
+      int index = ((HasIndex) oldLabel).index();
+      ((HasIndex) newLabel).setIndex(index);
+    }
+
+    return newLabel;
+  }
+

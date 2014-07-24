@@ -1,0 +1,19 @@
+  public static Class<?> getRawArrayComponentType(List<Type> context, Type componentType) {
+    if (componentType instanceof TypeVariable<?>) {
+      componentType = Types.resolveTypeVariable(context, (TypeVariable<?>) componentType);
+    }
+    if (componentType instanceof GenericArrayType) {
+      Class<?> raw = getRawArrayComponentType(context, Types.getArrayComponentType(componentType));
+      return Array.newInstance(raw, 0).getClass();
+    }
+    if (componentType instanceof Class<?>) {
+      return (Class<?>) componentType;
+    }
+    if (componentType instanceof ParameterizedType) {
+      return Types.getRawClass((ParameterizedType) componentType);
+    }
+    Preconditions.checkArgument(
+        componentType == null, "wildcard type is not supported: %s", componentType);
+    return Object.class;
+  }
+

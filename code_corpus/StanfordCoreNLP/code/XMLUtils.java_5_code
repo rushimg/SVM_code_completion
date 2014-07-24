@@ -1,0 +1,50 @@
+  public static String stripTags(Reader r, List<Integer> mapBack, boolean markLineBreaks) {
+    if (mapBack != null) {
+      mapBack.clear(); // just in case it has something in it!
+    }
+    StringBuilder result = new StringBuilder();
+    String text;
+    String tag;
+    int position = 0;
+    try {
+      do {
+        text = XMLUtils.readUntilTag(r); // will do nothing if the next thing is a tag
+        if (text.length() > 0) {
+          // add offsets to the map back
+          for (int i = 0; i < text.length(); i++) {
+            result.append(text.charAt(i));
+            if (mapBack != null) {
+              mapBack.add(Integer.valueOf(position + i));
+            }
+          }
+          position += text.length();
+        }
+        //        System.out.println(position + " got text: " + text);
+        tag = XMLUtils.readTag(r);
+        if (tag == null) {
+          break;
+        }
+        if (markLineBreaks && XMLUtils.isBreaking(parseTag(tag))) {
+          result.append("\n");
+          if (mapBack != null) {
+            mapBack.add(Integer.valueOf(-position));
+          }
+        }
+        position += tag.length();
+        //        System.out.println(position + " got tag: " + tag);
+      } while (true);
+    } catch (IOException e) {
+      System.err.println("Error reading string");
+      e.printStackTrace();
+    }
+    return result.toString();
+  }
+
+  public static boolean isBreaking(String tag) {
+    return breakingTags.contains(tag);
+  }
+
+  public static boolean isBreaking(XMLTag tag) {
+    return breakingTags.contains(tag.name);
+  }
+

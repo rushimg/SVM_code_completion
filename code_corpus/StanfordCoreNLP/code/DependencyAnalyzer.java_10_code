@@ -1,0 +1,92 @@
+  public DependencyAnalyzer(String filename) throws IOException {
+    BufferedReader input = new BufferedReader(new FileReader(filename));
+
+    String line;
+    Identifier curPackage = null;
+    Identifier curClass = null;
+
+    while ((line = input.readLine()) != null) {
+
+      Matcher matcher = pkgLine.matcher(line);
+      String name;
+      if (matcher.matches()) {
+        name = matcher.group(1);
+        curPackage = canonicalIdentifier(name);
+        curClass = null;
+        //System.err.println("Found package " + curPackage.name);
+      } else {
+        matcher = classLine.matcher(line);
+        if (matcher.matches()) {
+          name = prependPackage(curPackage.name, matcher.group(1));
+          curClass = canonicalIdentifier(name);
+          curClass.isClass = true;
+          //curPackage.classes.add(curClass);
+          //System.err.println("Found class " + curClass.name);
+        } else {
+          matcher = memberLine.matcher(line);
+          if (matcher.matches()) {
+            name = curClass.name + "." + matcher.group(1);
+            //System.err.println("Found member: " + name );
+          } else {
+            matcher = inDepLine.matcher(line);
+            if (matcher.matches()) {
+              name = matcher.group(1);
+              Identifier inDep = canonicalIdentifier(name);
+              if (curClass != null) {
+                curClass.ingoingDependencies.add(inDep);
+              }
+              //System.err.println("Found ingoing depedency: " +
+              //    name);
+            } else {
+              matcher = outDepLine.matcher(line);
+              if (matcher.matches()) {
+                name = matcher.group(1);
+                Identifier outDep = canonicalIdentifier(name);
+                if (curClass != null) {
+                  curClass.outgoingDependencies.add(outDep);
+                }
+                //System.err.println("Found outgoing dependency: " +
+                //    name);
+              } else {
+                matcher = bothDepLine.matcher(line);
+                if (matcher.matches()) {
+                  name = matcher.group(1);
+                  Identifier dep = canonicalIdentifier(name);
+                  if (curClass != null) {
+                    curClass.ingoingDependencies.add(dep);
+                    curClass.outgoingDependencies.add(dep);
+                  }
+                } else {
+                  System.err.println("Found unmatching line: " + line);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // After reading the dependencies, as a post-processing step we
+    // connect all inner classes and outer classes with each other.
+    for (String className : identifiers.keySet()) {
+      Identifier classId = identifiers.get(className);
+      if (!classId.isClass) {
+        continue;
+      }
+      int baseIndex = className.indexOf("$");
+      if (baseIndex < 0) {
+        continue;
+      }
+      String baseName = className.substring(0, baseIndex);
+      Identifier baseId = identifiers.get(baseName);
+      if (baseId == null) {
+        continue;
+      }
+      baseId.ingoingDependencies.add(classId);
+      baseId.outgoingDependencies.add(classId);
+      classId.ingoingDependencies.add(baseId);
+      classId.outgoingDependencies.add(baseId);
+    }
+
+  }
+

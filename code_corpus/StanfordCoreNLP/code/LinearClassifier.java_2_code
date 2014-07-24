@@ -1,0 +1,50 @@
+  private double[][] weights;
+  private Index<L> labelIndex;
+  private Index<F> featureIndex;
+  public boolean intern = false;   // variable should be deleted when breaking serialization anyway....
+  private double[] thresholds = null;
+
+  private static final long serialVersionUID = 8499574525453275255L;
+
+  private static final int MAX_FEATURE_ALIGN_WIDTH = 50;
+
+  public static final String TEXT_SERIALIZATION_DELIMITER = "\t";
+
+  @Override
+  public Collection<L> labels() {
+    return labelIndex.objectsList();
+  }
+
+  public Collection<F> features() {
+    return featureIndex.objectsList();
+  }
+
+  public Index<L> labelIndex() {
+    return labelIndex;
+  }
+
+  public Index<F> featureIndex() {
+    return featureIndex;
+  }
+
+  private double weight(int iFeature, int iLabel) {
+    if (iFeature < 0) {
+      //System.err.println("feature not seen ");
+      return 0.0;
+    }
+    assert iFeature < weights.length;
+    assert iLabel < weights[iFeature].length;
+    return weights[iFeature][iLabel];
+  }
+
+  private double weight(F feature, int iLabel) {
+    int f = featureIndex.indexOf(feature);
+    return weight(f, iLabel);
+  }
+
+  public double weight(F feature, L label) {
+    int f = featureIndex.indexOf(feature);
+    int iLabel = labelIndex.indexOf(label);
+    return weight(f, iLabel);
+  }
+

@@ -1,0 +1,62 @@
+  public static void cp(File source, File target, boolean recursive) throws IOException {
+    // Error checks
+    if (source.isDirectory() && !recursive) {
+      // cp a b -- a is a directory
+      throw new IOException("cp: omitting directory: " + source);
+    }
+    if (!target.getParentFile().exists()) {
+      // cp a b/c/d/e -- b/c/d doesn't exist
+      throw new IOException("cp: cannot copy to directory: " + recursive + " (parent doesn't exist)");
+    }
+    if (!target.getParentFile().isDirectory()) {
+      // cp a b/c/d/e -- b/c/d is a regular file
+      throw new IOException("cp: cannot copy to directory: " + recursive + " (parent isn't a directory)");
+    }
+    // Get true target
+    File trueTarget;
+    if (target.exists() && target.isDirectory()) {
+      trueTarget = new File(target.getPath() + File.separator + source.getName());
+    } else {
+      trueTarget = target;
+    }
+    // Copy
+    if (source.isFile()) {
+      // Case: copying a file
+      copyFile(source, trueTarget);
+    } else if (source.isDirectory()) {
+      // Case: copying a directory
+      File[] children = source.listFiles();
+      if (children == null) { throw new IOException("cp: could not list files in source: " + source); }
+
+      if (target.exists()) {
+        // Case: cp -r a b -- b exists
+        if (!target.isDirectory()) {
+          // cp -r a b -- b is a regular file
+          throw new IOException("cp: cannot copy directory into regular file: " + target);
+        }
+        if (trueTarget.exists() && !trueTarget.isDirectory()) {
+          // cp -r a b -- b/a is not a directory
+          throw new IOException("cp: overwriting a file with a directory: " + trueTarget);
+        }
+        if (!trueTarget.exists() && !trueTarget.mkdir()) {
+          // cp -r a b -- b/a cannot be created
+          throw new IOException("cp: could not create directory: " + trueTarget);
+        }
+      } else {
+        // Case: cp -r a b -- b does not exist
+        assert trueTarget == target;
+        if (!trueTarget.mkdir()) {
+          // cp -r a b -- canot create b as a directory
+          throw new IOException("cp: could not create target directory: " + trueTarget);
+        }
+      }
+      // Actually do the copy
+      for (File child : children) {
+        File childTarget = new File(trueTarget.getPath() + File.separator + child.getName());
+        cp(child, childTarget, recursive);
+      }
+    } else {
+      throw new IOException("cp: unknown file type: " + source);
+    }
+  }
+

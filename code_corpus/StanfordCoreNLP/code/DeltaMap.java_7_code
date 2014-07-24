@@ -1,0 +1,72 @@
+  @Override
+  public Set<Map.Entry<K,V>> entrySet() {
+    return new AbstractSet<Map.Entry<K,V>>() {
+      @Override
+      public Iterator<Map.Entry<K,V>> iterator() {
+        Filter<Map.Entry<K,V>> filter1 = new Filter<Map.Entry<K,V>>() {
+          private static final long serialVersionUID = 1L;
+
+          // only accepts stuff not overwritten by deltaMap
+          public boolean accept(Map.Entry<K,V> e) {
+            K key = e.getKey();
+            return ! deltaMap.containsKey(key);
+          }
+        };
+
+        Iterator<Map.Entry<K, V>> iter1 = new FilteredIterator<Map.Entry<K, V>>(originalMap.entrySet().iterator(), filter1);
+
+        Filter<Map.Entry<K,V>> filter2 = new Filter<Map.Entry<K,V>>() {
+          private static final long serialVersionUID = 1L;
+          // only accepts stuff not overwritten by deltaMap
+          public boolean accept(Map.Entry<K,V> e) {
+            Object value = e.getValue();
+            if (value == removedValue) {
+              return false;
+            }
+            return true;
+          }
+        };
+
+        class NullingIterator<K, V> implements Iterator<Map.Entry<K,V>> {
+          private Iterator<Map.Entry<K, V>> i;
+
+          public NullingIterator(Iterator<Map.Entry<K, V>> i) {
+            this.i = i;
+          }
+
+          public boolean hasNext() {
+            return i.hasNext();
+          }
+
+          public Map.Entry<K, V> next() {
+            Map.Entry<K,V> e = i.next();
+            Object o = e.getValue();
+            if (o == nullValue) {
+              return new SimpleEntry<K,V>(e.getKey(), null);
+            }
+            return e;
+          }
+
+          public void remove() {
+            throw new UnsupportedOperationException();
+          }
+        }
+
+        Iterator<Entry<K, V>> iter2 = new FilteredIterator<Entry<K,V>>(new NullingIterator<K, V>(deltaMap.entrySet().iterator()), filter2);
+
+        return new ConcatenationIterator<Entry<K,V>>(iter1, iter2);
+      }
+
+      @Override
+      public int size() {
+        int size = 0;
+        for (Entry<K, V> kvEntry : this) {
+          ErasureUtils.noop(kvEntry);
+          size++;
+        }
+        return size;
+      }
+    };
+  }
+
+

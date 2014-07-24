@@ -1,0 +1,35 @@
+  public static boolean checkOffsets(CoreMap docAnnotation)
+  {
+    boolean okay = true;
+    String docText = docAnnotation.get(CoreAnnotations.TextAnnotation.class);
+    String docId = docAnnotation.get(CoreAnnotations.DocIDAnnotation.class);
+    List<CoreLabel> docTokens = docAnnotation.get(CoreAnnotations.TokensAnnotation.class);
+    List<CoreMap> sentences = docAnnotation.get(CoreAnnotations.SentencesAnnotation.class);
+    for (CoreMap sentence:sentences) {
+      String sentText = sentence.get(CoreAnnotations.TextAnnotation.class);
+      List<CoreLabel> sentTokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
+      int sentBeginChar = sentence.get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);
+      int sentEndChar = sentence.get(CoreAnnotations.CharacterOffsetEndAnnotation.class);
+      int sentBeginToken = sentence.get(CoreAnnotations.TokenBeginAnnotation.class);
+      int sentEndToken = sentence.get(CoreAnnotations.TokenEndAnnotation.class);
+      String docTextSpan = docText.substring(sentBeginChar, sentEndChar);
+      List<CoreLabel> docTokenSpan = new ArrayList<CoreLabel>(docTokens.subList(sentBeginToken, sentEndToken));
+      logger.finer("Checking Document " + docId + " span (" + sentBeginChar + "," + sentEndChar + ") ");
+      if (!docTextSpan.equals(sentText) ) {
+        okay = false;
+        logger.finer("WARNING: Document " + docId + " span does not match sentence");
+        logger.finer("DocSpanText: " + docTextSpan);
+        logger.finer("SentenceText: " + sentText);
+      }
+      String sentTokenStr = getTokenText(sentTokens, CoreAnnotations.TextAnnotation.class);
+      String docTokenStr = getTokenText(docTokenSpan, CoreAnnotations.TextAnnotation.class);
+      if (!docTokenStr.equals(sentTokenStr) ) {
+        okay = false;
+        logger.finer("WARNING: Document " + docId + " tokens does not match sentence");
+        logger.finer("DocSpanTokens: " + docTokenStr);
+        logger.finer("SentenceTokens: " + sentTokenStr);
+      }
+    }
+    return okay;
+  }
+

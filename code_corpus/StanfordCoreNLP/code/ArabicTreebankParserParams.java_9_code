@@ -1,0 +1,110 @@
+  private static class AddEquivalencedNodeFunctionVar implements SerializableFunction<TregexMatcher,String> {
+
+    private String annotationMark;
+    private String key;
+
+    public AddEquivalencedNodeFunctionVar(String annotationMark, String key) {
+      this.annotationMark = annotationMark;
+      this.key = key;
+    }
+
+    public String apply(TregexMatcher m) {
+      String node = m.getNode(key).label().value();
+      // We also tried if (node.startsWith("V")) [var2] and if (node.startsWith("V") || node.startsWith("S")) [var3]. Both seemed markedly worse than the basic function or this var form (which seems a bit better than the basic equiv option).
+      if (node.startsWith("S") || node.startsWith("V") || node.startsWith("A")) {
+        return annotationMark + "VSA";
+      } else {
+        return "";
+      }
+    }
+
+    @Override
+    public String toString() { return "AddEquivalencedNodeFunctionVar[" + annotationMark + ',' + key + ']'; }
+
+    private static final long serialVersionUID = 1L;
+  }
+
+  private static class AnnotatePunctuationFunction2 implements SerializableFunction<TregexMatcher,String> {
+    static final String key = "term";
+
+    private static final Pattern quote = Pattern.compile("^\"$");
+
+    public String apply(TregexMatcher m) {
+
+      final String punc = m.getNode(key).value();
+
+      if (punc.equals("."))
+        return "-fs";
+      else if (punc.equals("?"))
+        return "-quest";
+      else if (punc.equals(","))
+        return "-comma";
+      else if (punc.equals(":") || punc.equals(";"))
+        return "-colon";
+      else if (punc.equals("-LRB-"))
+        return "-lrb";
+      else if (punc.equals("-RRB-"))
+        return "-rrb";
+      else if (punc.equals("-PLUS-"))
+        return "-plus";
+      else if (punc.equals("-"))
+        return "-dash";
+      else if (quote.matcher(punc).matches())
+        return "-quote";
+      //      else if(punc.equals("/"))
+      //        return "-slash";
+      //      else if(punc.equals("%"))
+      //        return "-perc";
+      //      else if(punc.contains(".."))
+      //        return "-ellipses";
+      return "";
+    }
+
+    @Override
+    public String toString() { return "AnnotatePunctuationFunction2"; }
+
+    private static final long serialVersionUID = 1L;
+  }
+
+
+  private static class AddEquivalencedConjNode implements SerializableFunction<TregexMatcher,String> {
+
+    private String annotationMark;
+    private String key;
+
+    private static final String nnTags = "DTNN DTNNP DTNNPS DTNNS NN NNP NNS NNPS";
+    private static final Set<String> nnTagClass = Collections.unmodifiableSet(Generics.newHashSet(Arrays.asList(nnTags.split("\\s+"))));
+
+    private static final String jjTags = "ADJ_NUM DTJJ DTJJR JJ JJR";
+    private static final Set<String> jjTagClass = Collections.unmodifiableSet(Generics.newHashSet(Arrays.asList(jjTags.split("\\s+"))));
+
+    private static final String vbTags = "VBD VBP";
+    private static final Set<String> vbTagClass = Collections.unmodifiableSet(Generics.newHashSet(Arrays.asList(vbTags.split("\\s+"))));
+
+    private static final TreebankLanguagePack tlp = new ArabicTreebankLanguagePack();
+
+    public AddEquivalencedConjNode(String annotationMark, String key) {
+      this.annotationMark = annotationMark;
+      this.key = key;
+    }
+
+    public String apply(TregexMatcher m) {
+      String node = m.getNode(key).value();
+      String eqClass = tlp.basicCategory(node);
+
+      if(nnTagClass.contains(eqClass))
+        eqClass = "noun";
+      else if(jjTagClass.contains(eqClass))
+        eqClass = "adj";
+      else if(vbTagClass.contains(eqClass))
+        eqClass = "vb";
+
+      return annotationMark + eqClass;
+    }
+
+    @Override
+    public String toString() { return "AddEquivalencedConjNode[" + annotationMark + ',' + key + ']'; }
+
+    private static final long serialVersionUID = 1L;
+  }
+

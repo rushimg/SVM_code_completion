@@ -1,0 +1,95 @@
+  @Override
+  public void calculate(double[] x) {
+
+    double prob = 0.0; // the log prob of the sequence given the model, which is the negation of value at this point
+    // final double[][] weights = to2D(x);
+    to2D(x, weights);
+    setWeights(weights);
+
+    // the expectations over counts
+    // first index is feature index, second index is of possible labeling
+    // double[][] E = empty2D();
+    clear2D(E);
+
+    prob = regularGradientAndValue();
+
+    if (Double.isNaN(prob)) { // shouldn't be the case
+      throw new RuntimeException("Got NaN for prob in CRFLogConditionalObjectiveFunction.calculate()" +
+              " - this may well indicate numeric underflow due to overly long documents.");
+    }
+
+    // because we minimize -L(\theta)
+    value = -prob;
+    if (VERBOSE) {
+      System.err.println("value is " + Math.exp(-value));
+    }
+
+    // compute the partial derivative for each feature by comparing expected counts to empirical counts
+    int index = 0;
+    for (int i = 0; i < E.length; i++) {
+      for (int j = 0; j < E[i].length; j++) {
+        // because we minimize -L(\theta)
+        derivative[index] = (E[i][j] - Ehat[i][j]);
+        if (VERBOSE) {
+          System.err.println("deriv(" + i + "," + j + ") = " + E[i][j] + " - " + Ehat[i][j] + " = " + derivative[index]);
+        }
+        index++;
+      }
+    }
+
+    applyPrior(x, 1.0);
+
+    // System.err.println("\nfuncVal: " + value);
+  }
+
+  @Override
+  public int dataDimension() {
+    return data.length;
+  }
+
+  @Override
+  public void calculateStochastic(double[] x, double [] v, int[] batch) {
+    double prob = 0.0; // the log prob of the sequence given the model, which is the negation of value at this point
+    to2D(x, weights);
+    setWeights(weights);
+
+    double batchScale = ((double) batch.length)/((double) this.dataDimension());
+
+    // the expectations over counts
+    // first index is feature index, second index is of possible labeling
+    // double[][] E = empty2D();
+
+    // iterate over all the documents
+    List<Integer> docIDs = new ArrayList<Integer>(batch.length);
+    for (int m=0; m < batch.length; m++) docIDs.add(batch[m]);
+    prob = multiThreadGradient(docIDs, false); 
+
+    if (Double.isNaN(prob)) { // shouldn't be the case
+      throw new RuntimeException("Got NaN for prob in CRFLogConditionalObjectiveFunction.calculate()");
+    }
+
+    value = -prob;
+
+    // compute the partial derivative for each feature by comparing expected counts to empirical counts
+    int index = 0;
+    for (int i = 0; i < E.length; i++) {
+      for (int j = 0; j < E[i].length; j++) {
+        // real gradient should be empirical-expected;
+        // but since we minimize -L(\theta), the gradient is -(empirical-expected)
+        if (VERBOSE) {
+          System.err.println("deriv(" + i + "," + j + ") = " + E[i][j] + " - " + Ehat[i][j] + " = " + derivative[index - 1]);
+        }
+      }
+    }
+
+    applyPrior(x, batchScale);
+  }
+
+  // re-initialization is faster than Arrays.fill(arr, 0)
+  // private void clearUpdateEs() {
+  //   for (int i = 0; i < eHat4Update.length; i++)
+  //     eHat4Update[i] = new double[eHat4Update[i].length];
+  //   for (int i = 0; i < e4Update.length; i++)
+  //     e4Update[i] = new double[e4Update[i].length];
+  // }
+

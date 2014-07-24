@@ -1,0 +1,33 @@
+        protected void encounterVertexAgain(V vertex, E edge)
+        {
+            super.encounterVertexAgain(vertex, edge);
+
+            int i;
+
+            if (root != null) {
+                // For rooted detection, the path must either
+                // double back to the root, or to a node of a cycle
+                // which has already been detected.
+                if (vertex.equals(root)) {
+                    i = 0;
+                } else if ((cycleSet != null) && cycleSet.contains(vertex)) {
+                    i = 0;
+                } else {
+                    return;
+                }
+            } else {
+                i = path.indexOf(vertex);
+            }
+
+            if (i > -1) {
+                if (cycleSet == null) {
+                    // we're doing yes/no cycle detection
+                    throw new CycleDetectedException();
+                } else {
+                    for (; i < path.size(); ++i) {
+                        cycleSet.add(path.get(i));
+                    }
+                }
+            }
+        }
+

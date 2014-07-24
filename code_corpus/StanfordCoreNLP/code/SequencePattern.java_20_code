@@ -1,0 +1,26 @@
+  static class GroupStartState extends State {
+
+    private final int captureGroupId;
+
+    public GroupStartState(int captureGroupId, State startState)
+    {
+      this.captureGroupId = captureGroupId;
+      add(startState);
+    }
+
+    @Override
+    protected <T> boolean match(int bid, SequenceMatcher.MatchedStates<T> matchedStates, boolean consume, State prevState)
+    {
+      // We only mark start when about to consume elements
+      if (consume) {
+        // Start of group, mark start
+        matchedStates.setGroupStart(bid, captureGroupId);
+        return super.match(bid, matchedStates, consume, prevState);
+      } else {
+        // Not consuming, just add this state back to list of states to be processed
+        matchedStates.addState(bid, this);
+        return false;
+      }
+    }
+  }
+

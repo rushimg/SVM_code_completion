@@ -1,0 +1,49 @@
+    List<CoreLabel> labels = new ArrayList<CoreLabel>();
+    List<Tree> tokenList = completeTree.getLeaves();
+    for (Tree tree : tokenList) {
+      Word word = new Word(tree.label());
+      CoreLabel label = new CoreLabel();
+      label.set(CoreAnnotations.TextAnnotation.class, word.value());
+      if (addAnswerAnnotation) {
+        label.set(CoreAnnotations.AnswerAnnotation.class,
+            SeqClassifierFlags.DEFAULT_BACKGROUND_SYMBOL);
+      }
+      label.set(CoreAnnotations.PartOfSpeechAnnotation.class, tree.parent(completeTree).label().value());
+      labels.add(label);
+    }
+    // use the token CoreLabels not the parser data => more robust
+    List<CoreLabel> labels = new ArrayList<CoreLabel>();
+    for(CoreLabel l: sentence.get(CoreAnnotations.TokensAnnotation.class)){
+      CoreLabel nl = new CoreLabel(l);
+      if (addAnswerAnnotation) {
+        nl.set(CoreAnnotations.AnswerAnnotation.class, SeqClassifierFlags.DEFAULT_BACKGROUND_SYMBOL);
+      }
+      labels.add(nl);
+    }
+
+    // Add AnswerAnnotation from the types of the entity mentions
+    if (addAnswerAnnotation) {
+      List<EntityMention> entities = sentence.get(MachineReadingAnnotations.EntityMentionsAnnotation.class);
+      if(entities != null){
+        for (EntityMention entity : entities) {
+          // is this a type that we should skip?
+          if(annotationsToSkip != null && annotationsToSkip.contains(entity.getType())) continue;
+          // is this a valid mention type?
+          if(mentionTypesToUse != null && ! mentionTypesToUse.contains(entity.getMentionType())) continue;
+
+          // ignore entities without head span
+          if(entity.getHead() != null){
+            for(int i = entity.getHeadTokenStart(); i < entity.getHeadTokenEnd(); i ++){
+              String tag = entity.getType();
+              if(useSubTypes && entity.getSubType() != null) tag += "-" + entity.getSubType();
+              if(useBIO){
+                if(i == entity.getHeadTokenStart()) tag = "B-" + tag;
+                else tag = "I-" + tag;
+              }
+              labels.get(i).set(CoreAnnotations.AnswerAnnotation.class, tag);
+            }
+          }
+        }
+      }
+    }
+

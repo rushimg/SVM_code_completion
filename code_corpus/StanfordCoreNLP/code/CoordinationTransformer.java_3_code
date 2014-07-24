@@ -1,0 +1,66 @@
+
+  public Tree changeSbarToPP(Tree t) {
+    if (t == null) {
+      return null;
+    }
+    return Tsurgeon.processPattern(changeSbarToPPTregex, changeSbarToPPTsurgeon, t);
+  }
+
+  private static TregexPattern findFlatConjpTregex =
+    // TODO: add more patterns, perhaps ignore case
+    // for example, what should we do with "and not"?  Is it right to
+    // generally add the "not" to the following tree with moveRB, or
+    // should we make "and not" a CONJP?
+    // also, perhaps look at ADVP
+    TregexPattern.compile("/^(S|PP|VP)/ < (/^(S|PP|VP)/ $++ (CC=start $+ (RB|ADVP $+ /^(S|PP|VP)/) " + 
+                          "[ (< and $+ (RB=end < yet)) | " +  // TODO: what should be the head of "and yet"?
+                          "  (< and $+ (RB=end < so)) | " + 
+                          "  (< and $+ (ADVP=end < (RB|IN < so))) ] ))"); // TODO: this structure needs a dependency
+
+  private static TsurgeonPattern addConjpTsurgeon =
+    Tsurgeon.parseOperation("createSubtree CONJP start end");
+
+  public Tree combineConjp(Tree t) {
+    if (t == null) {
+      return null;
+    }
+    return Tsurgeon.processPattern(findFlatConjpTregex, addConjpTsurgeon, t);
+  }
+
+  private static TregexPattern moveRBTregex[] = {
+    TregexPattern.compile("/^S|PP|VP|NP/ < (/^(S|PP|VP|NP)/ $++ (/^(,|CC|CONJP)$/ [ $+ (RB=adv [ < not | < then ]) | $+ (ADVP=adv <: RB) ])) : (=adv $+ /^(S|PP|VP|NP)/=dest) "),
+    TregexPattern.compile("/^ADVP/ < (/^ADVP/ $++ (/^(,|CC|CONJP)$/ [$+ (RB=adv [ < not | < then ]) | $+ (ADVP=adv <: RB)])) : (=adv $+ /^NP-ADV|ADVP|PP/=dest)"),
+    TregexPattern.compile("/^FRAG/ < (ADVP|RB=adv $+ VP=dest)"),
+  };
+
+  private static TsurgeonPattern moveRBTsurgeon =
+    Tsurgeon.parseOperation("move adv >0 dest");
+
+  public Tree moveRB(Tree t) {
+    if (t == null) {
+      return null;
+    }
+    for (TregexPattern pattern : moveRBTregex) {
+      t = Tsurgeon.processPattern(pattern, moveRBTsurgeon, t);
+    }
+    return t;
+  }
+
+  // Matches to be questions if the question starts with WHNP, such as
+  // Who, What, if there is an SQ after the WH question.
+  //
+  // TODO: maybe we want to catch more complicated tree structures
+  // with something in between the WH and the actual question.
+  private static TregexPattern flattenSQTregex = 
+    TregexPattern.compile("SBARQ < ((WHNP=what < WP) $+ (SQ=sq < (/^VB/=verb < " + EnglishGrammaticalRelations.copularWordRegex + ") " + 
+                          // match against "is running" if the verb is under just a VBG
+                          " !< (/^VB/ < !" + EnglishGrammaticalRelations.copularWordRegex + ") " + 
+                          // match against "is running" if the verb is under a VP - VBG
+                          " !< (/^V/ < /^VB/ < !" + EnglishGrammaticalRelations.copularWordRegex + ") " + 
+                          // match against "What is on the test?"
+                          " !< (PP $- =verb) " + 
+                          // match against "is there"
+                          " !<, (/^VB/ < " + EnglishGrammaticalRelations.copularWordRegex + " $+ (NP < (EX < there)))))");
+
+  private static TsurgeonPattern flattenSQTsurgeon = Tsurgeon.parseOperation("excise sq sq");
+  

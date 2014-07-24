@@ -1,0 +1,203 @@
+  @Override
+  public void printAnswers(List<IN> list, PrintWriter out) {
+    String style = null;
+    if (flags != null) {
+      style = flags.outputFormat;
+    }
+    if (style == null || style.isEmpty()) {
+      style = "slashTags";
+    }
+    OutputStyle outputStyle = OutputStyle.fromShortName(style);
+    printAnswers(list, out, outputStyle, !"slashTags".equals(style));
+  }
+
+  public String getAnswers(List<IN> l,
+                           OutputStyle outputStyle, boolean preserveSpacing) {
+    StringWriter sw = new StringWriter();
+    PrintWriter pw = new PrintWriter(sw);
+    printAnswers(l, pw, outputStyle, preserveSpacing);
+    pw.flush();
+    return sw.toString();
+  }
+
+  public void printAnswers(List<IN> l, PrintWriter out,
+                           OutputStyle outputStyle, boolean preserveSpacing) {
+    switch (outputStyle) {
+    case SLASH_TAGS:
+      if (preserveSpacing) {
+        printAnswersAsIsText(l, out);
+      } else {
+        printAnswersTokenizedText(l, out);
+      }
+      break;
+    case XML:
+      if (preserveSpacing) {
+        printAnswersXML(l, out);
+      } else {
+        printAnswersTokenizedXML(l, out);
+      }
+      break;
+    case INLINE_XML:
+      if (preserveSpacing) {
+        printAnswersInlineXML(l, out);
+      } else {
+        printAnswersTokenizedInlineXML(l, out);
+      }
+      break;
+    default:
+      throw new IllegalArgumentException(outputStyle +
+                                         " is an unsupported OutputStyle");
+    }
+  }
+
+  private static <IN extends CoreMap> void printAnswersTokenizedText(List<IN> l, PrintWriter out) {
+    for (IN wi : l) {
+      out.print(StringUtils.getNotNullString(wi.get(CoreAnnotations.TextAnnotation.class)));
+      out.print('/');
+      out.print(StringUtils.getNotNullString(wi.get(CoreAnnotations.AnswerAnnotation.class)));
+      out.print(' ');
+    }
+    out.println(); // put a single newline at the end [added 20091024].
+  }
+
+  private static <IN extends CoreMap> void printAnswersAsIsText(List<IN> l, PrintWriter out) {
+    for (IN wi : l) {
+      out.print(StringUtils.getNotNullString(wi.get(CoreAnnotations.BeforeAnnotation.class)));
+      out.print(StringUtils.getNotNullString(wi.get(CoreAnnotations.TextAnnotation.class)));
+      out.print('/');
+      out.print(StringUtils.getNotNullString(wi.get(CoreAnnotations.AnswerAnnotation.class)));
+      out.print(StringUtils.getNotNullString(wi.get(CoreAnnotations.AfterAnnotation.class)));
+    }
+  }
+
+  private static <IN extends CoreMap> void printAnswersXML(List<IN> doc, PrintWriter out) {
+    int num = 0;
+    for (IN wi : doc) {
+      String prev = StringUtils.getNotNullString(wi.get(CoreAnnotations.BeforeAnnotation.class));
+      out.print(prev);
+      out.print("<wi num=\"");
+      // tag.append(wi.get("position"));
+      out.print(num++);
+      out.print("\" entity=\"");
+      out.print(StringUtils.getNotNullString(wi.get(CoreAnnotations.AnswerAnnotation.class)));
+      out.print("\">");
+      out.print(XMLUtils.escapeXML(StringUtils.getNotNullString(wi.get(CoreAnnotations.TextAnnotation.class))));
+      out.print("</wi>");
+      String after = StringUtils.getNotNullString(wi.get(CoreAnnotations.AfterAnnotation.class));
+      out.print(after);
+    }
+  }
+
+  private static <IN extends CoreMap> void printAnswersTokenizedXML(List<IN> doc, PrintWriter out) {
+    int num = 0;
+    for (IN wi : doc) {
+      out.print("<wi num=\"");
+      // tag.append(wi.get("position"));
+      out.print(num++);
+      out.print("\" entity=\"");
+      out.print(StringUtils.getNotNullString(wi.get(CoreAnnotations.AnswerAnnotation.class)));
+      out.print("\">");
+      out.print(XMLUtils.escapeXML(StringUtils.getNotNullString(wi.get(CoreAnnotations.TextAnnotation.class))));
+      out.println("</wi>");
+    }
+  }
+
+  private void printAnswersInlineXML(List<IN> doc, PrintWriter out) {
+    final String background = flags.backgroundSymbol;
+    String prevTag = background;
+    for (Iterator<IN> wordIter = doc.iterator(); wordIter.hasNext();) {
+      IN wi = wordIter.next();
+      String tag = StringUtils.getNotNullString(wi.get(CoreAnnotations.AnswerAnnotation.class));
+
+      String before = StringUtils.getNotNullString(wi.get(CoreAnnotations.BeforeAnnotation.class));
+
+      String current = StringUtils.getNotNullString(wi.get(CoreAnnotations.OriginalTextAnnotation.class));
+      if (!tag.equals(prevTag)) {
+        if (!prevTag.equals(background) && !tag.equals(background)) {
+          out.print("</");
+          out.print(prevTag);
+          out.print('>');
+          out.print(before);
+          out.print('<');
+          out.print(tag);
+          out.print('>');
+        } else if (!prevTag.equals(background)) {
+          out.print("</");
+          out.print(prevTag);
+          out.print('>');
+          out.print(before);
+        } else if (!tag.equals(background)) {
+          out.print(before);
+          out.print('<');
+          out.print(tag);
+          out.print('>');
+        }
+      } else {
+        out.print(before);
+      }
+      out.print(current);
+      String afterWS = StringUtils.getNotNullString(wi.get(CoreAnnotations.AfterAnnotation.class));
+
+      if (!tag.equals(background) && !wordIter.hasNext()) {
+        out.print("</");
+        out.print(tag);
+        out.print('>');
+        prevTag = background;
+      } else {
+        prevTag = tag;
+      }
+      out.print(afterWS);
+    }
+  }
+
+  private void printAnswersTokenizedInlineXML(List<IN> doc, PrintWriter out) {
+    final String background = flags.backgroundSymbol;
+    String prevTag = background;
+    boolean first = true;
+    for (Iterator<IN> wordIter = doc.iterator(); wordIter.hasNext();) {
+      IN wi = wordIter.next();
+      String tag = StringUtils.getNotNullString(wi.get(CoreAnnotations.AnswerAnnotation.class));
+      if (!tag.equals(prevTag)) {
+        if (!prevTag.equals(background) && !tag.equals(background)) {
+          out.print("</");
+          out.print(prevTag);
+          out.print("> <");
+          out.print(tag);
+          out.print('>');
+        } else if (!prevTag.equals(background)) {
+          out.print("</");
+          out.print(prevTag);
+          out.print("> ");
+        } else if (!tag.equals(background)) {
+          if (!first) {
+            out.print(' ');
+          }
+          out.print('<');
+          out.print(tag);
+          out.print('>');
+        }
+      } else {
+        if (!first) {
+          out.print(' ');
+        }
+      }
+      first = false;
+      out.print(StringUtils.getNotNullString(wi.get(CoreAnnotations.OriginalTextAnnotation.class)));
+
+      if (!wordIter.hasNext()) {
+        if (!tag.equals(background)) {
+          out.print("</");
+          out.print(tag);
+          out.print('>');
+        }
+        out.print(' ');
+        prevTag = background;
+      } else {
+        prevTag = tag;
+      }
+    }
+    out.println();
+  }
+
+}
+

@@ -1,0 +1,26 @@
+public class Gale2007ChineseSegmenterFeatureFactory<IN extends CoreLabel> extends FeatureFactory<IN> {
+
+  private static final int DEBUG = 0;
+
+  private transient TagAffixDetector taDetector; // = null;
+  private transient CorpusDictionary outDict; // = null;
+
+  @Override
+  public void init(SeqClassifierFlags flags) {
+    super.init(flags);
+  }
+
+  private synchronized void createTADetector() {
+    if (taDetector == null) {
+      taDetector = new TagAffixDetector(flags);
+    }
+  }
+
+  private synchronized void createOutDict() {
+    if (outDict == null) {
+      System.err.println("reading "+flags.outDict2+" as a seen lexicon");
+      outDict = new CorpusDictionary(flags.outDict2);
+    }
+  }
+
+

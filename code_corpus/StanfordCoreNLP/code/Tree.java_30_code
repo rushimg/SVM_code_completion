@@ -1,0 +1,26 @@
+  private int constituents(Set<Constituent> constituentsSet, int left, ConstituentFactory cf, boolean charLevel, Filter<Tree> filter, int maxDepth, int depth) {
+
+    if(isPreTerminal())
+      return left + ((charLevel) ? firstChild().value().length() : 1);
+
+    int position = left;
+
+    // System.err.println("In bracketing trees left is " + left);
+    // System.err.println("  label is " + label() +
+    //                       "; num daughters: " + children().length);
+    Tree[] kids = children();
+    for (Tree kid : kids) {
+      position = kid.constituents(constituentsSet, position, cf, charLevel, filter, maxDepth, depth + 1);
+      // System.err.println("  position went to " + position);
+    }
+
+    if ((filter == null || filter.accept(this)) &&
+        (maxDepth < 0 || depth <= maxDepth)) {
+      //Compute span of entire tree at the end of recursion
+      constituentsSet.add(cf.newConstituent(left, position - 1, label(), score()));
+    }
+    // System.err.println("  added " + label());
+    return position;
+  }
+
+

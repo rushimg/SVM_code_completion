@@ -1,0 +1,16 @@
+  public List<String> getHeaderStringValues(String name) {
+    Object value = get(name.toLowerCase());
+    if (value == null) {
+      return Collections.emptyList();
+    }
+    Class<? extends Object> valueClass = value.getClass();
+    if (value instanceof Iterable<?> || valueClass.isArray()) {
+      List<String> values = new ArrayList<String>();
+      for (Object repeatedValue : Types.iterableOf(value)) {
+        values.add(toStringValue(repeatedValue));
+      }
+      return Collections.unmodifiableList(values);
+    }
+    return Collections.singletonList(toStringValue(value));
+  }
+

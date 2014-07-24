@@ -1,0 +1,28 @@
+  private static void saveCorefChains(Map<Integer, CorefChain> chains, PrintWriter pw) {
+    if(chains == null) {
+      pw.println();
+      return;
+    }
+
+    // how many clusters
+    pw.println(chains.size());
+
+    // save each cluster
+    for(Integer cid: chains.keySet()) {
+      // cluster id + how many mentions in the cluster
+      CorefChain cluster = chains.get(cid);
+      saveCorefChain(pw, cid, cluster);
+    }
+
+    // an empty line at end
+    pw.println();
+  }
+
+  private static int countMentions(CorefChain cluster) {
+    int count = 0;
+    for(IntPair mid: cluster.getMentionMap().keySet()) {
+      count += cluster.getMentionMap().get(mid).size();
+    }
+    return count;
+  }
+

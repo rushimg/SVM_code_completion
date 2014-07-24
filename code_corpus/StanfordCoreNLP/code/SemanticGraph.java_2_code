@@ -1,0 +1,68 @@
+  private Collection<IndexedWord> roots;
+
+  private final DirectedMultiGraph<IndexedWord, SemanticGraphEdge> graph;
+
+  public int edgeCount() {
+    return graph.getNumEdges();
+  }
+
+  public int outDegree(IndexedWord vertex) {
+    return graph.getOutDegree(vertex);
+  }
+
+  public int inDegree(IndexedWord vertex) {
+    return graph.getInDegree(vertex);
+  }
+
+  // public int outDegreeOf(IndexedWord vertex) {
+  //   return graph.outDegreeOf(vertex);
+  // }
+
+  // public int inDegreeOf(IndexedWord vertex) {
+  //   return graph.inDegreeOf(vertex);
+  // }
+
+  // public List<SemanticGraphEdge> outgoingEdgesOf(IndexedWord vertex) {
+  //   return graph.outgoingEdgesOf(vertex);
+  // }
+
+  // public List<SemanticGraphEdge> incomingEdgesOf(IndexedWord vertex) {
+  //   return graph.incomingEdgesOf(vertex);
+  // }
+
+  public List<SemanticGraphEdge> getAllEdges(IndexedWord gov,
+                                             IndexedWord dep) {
+    return graph.getEdges(gov, dep);
+  }
+
+  // TODO: this is a bad method to use because there can be multiple
+  // edges.  All users of this method should be switched to iterating
+  // over getAllEdges.  This has already been done for all uses
+  // outside RTE.
+  public SemanticGraphEdge getEdge(IndexedWord gov, IndexedWord dep) {
+    List<SemanticGraphEdge> edges = graph.getEdges(gov, dep);
+    if (edges == null || edges.isEmpty())
+      return null;
+    return edges.get(0);
+  }
+
+  public void addVertex(IndexedWord vertex) {
+    graph.addVertex(vertex);
+  }
+
+  public boolean containsVertex(IndexedWord vertex) {
+    return graph.containsVertex(vertex);
+  }
+
+  public boolean containsEdge(IndexedWord source, IndexedWord target) {
+    return graph.isEdge(source, target);
+  }
+
+  public boolean containsEdge(SemanticGraphEdge edge) {
+    return containsEdge(edge.getSource(), edge.getTarget());
+  }
+
+  public Set<IndexedWord> vertexSet() {
+    return graph.getAllVertices();
+  }
+

@@ -1,0 +1,70 @@
+  public void addListener(ListSelectionListener l) {
+    list.addListSelectionListener(l);
+  }
+
+  private void sendToListeners() {
+    for (MatchesPanelListener l : listeners) {
+      l.matchesChanged();
+    }
+  }
+
+  private class MatchCellRenderer extends JLabel implements ListCellRenderer {
+
+    public MatchCellRenderer() {
+      setOpaque(true);
+    }
+
+    public Component getListCellRendererComponent(JList list, Object value,
+        int index, boolean isSelected, boolean cellHasFocus) {
+      JTextField l = ((TreeFromFile) value).getLabel();
+      l.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 0));
+      l.setOpaque(true);
+      if(cellHasFocus || isSelected) {
+        l.setBackground(highlightColor);
+      } else {
+        l.setBackground(Color.WHITE);
+      }
+      return l;
+    }
+
+  }
+
+  private static class TreeTransferHandler extends TransferHandler {
+    public TreeTransferHandler() {
+      super();
+    }
+    private static String exportString(JComponent c) {
+      JList list = (JList)c;
+      Object[] values = list.getSelectedValues();
+      StringBuilder sb = new StringBuilder();
+      for (int i = 0; i < values.length; i++) {
+        TreeFromFile val = (TreeFromFile) values[i];
+        Highlighter h = val.getLabel().getHighlighter();
+        Highlight[] highlights = h.getHighlights();
+        if(highlights == null || highlights.length == 0) {
+          sb.append(val.getLabel().getText());
+        } else {
+          //we have a highlight
+          for(int j = 0; i < highlights.length; i++) {
+            sb.append(val.getLabel().getText().substring(highlights[j].getStartOffset(), highlights[j].getEndOffset()));
+          }
+        }
+      }
+      return sb.toString();
+    }
+
+    @Override
+    protected Transferable createTransferable(JComponent c) {
+      return new StringSelection(exportString(c));
+    }
+
+    @Override
+    public int getSourceActions(JComponent c) {
+      return COPY_OR_MOVE;
+    }
+  }
+
+  public Map<TreeFromFile, List<Tree>> getMatchedParts() {
+    return matchedParts;
+  }
+

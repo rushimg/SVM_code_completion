@@ -1,0 +1,68 @@
+  // private AceToken mPhrase;
+
+  public AceCharSeq(String text, int start, int end) {
+    mText = text;
+    mByteOffset = new Span(start, end);
+    mTokenOffset = null;
+    // mPhrase = null;
+  }
+
+  public String toXml(String label, int offset) {
+    StringBuffer buffer = new StringBuffer();
+    AceElement.appendOffset(buffer, offset);
+    buffer.append("<" + label + ">\n");
+
+    AceElement.appendOffset(buffer, offset + 2);
+    buffer.append("<charseq START=\"" + mByteOffset.start() + "\" END=\"" + mByteOffset.end() + "\">" + mText
+        + "</charseq>");
+    buffer.append("\n");
+
+    AceElement.appendOffset(buffer, offset);
+    buffer.append("</" + label + ">");
+    return buffer.toString();
+  }
+
+  public String toXml(int offset) {
+    StringBuffer buffer = new StringBuffer();
+
+    AceElement.appendOffset(buffer, offset + 2);
+    buffer.append("<charseq START=\"" + mByteOffset.start() + "\" END=\"" + mByteOffset.end() + "\">" + mText
+        + "</charseq>");
+
+    return buffer.toString();
+  }
+
+  public String getText() {
+    return mText;
+  }
+
+  public int getByteStart() {
+    return mByteOffset.start();
+  }
+
+  public int getByteEnd() {
+    return mByteOffset.end();
+  }
+
+  public Span getByteOffset() {
+    return mByteOffset;
+  }
+
+  public int getTokenStart() {
+    if (mTokenOffset == null)
+      return -1;
+    return mTokenOffset.start();
+  }
+
+  public int getTokenEnd() {
+    if (mTokenOffset == null)
+      return -1;
+    return mTokenOffset.end();
+  }
+
+  public Span getTokenOffset() {
+    return mTokenOffset;
+  }
+
+  // public AceToken getPhrase() { return mPhrase; }
+

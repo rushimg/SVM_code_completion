@@ -1,0 +1,42 @@
+  public String readUTF() throws java.io.IOException {
+    return dataReader.readUTF();
+  }
+
+  public AbstractModel getModel() throws IOException {
+    checkModelType();
+    return constructModel();
+  }
+
+  public abstract void checkModelType() throws java.io.IOException;
+
+  public abstract AbstractModel constructModel() throws java.io.IOException;
+
+  protected String[] getOutcomes() throws java.io.IOException {
+      int numOutcomes = readInt();
+      String[] outcomeLabels = new String[numOutcomes];
+      for (int i=0; i<numOutcomes; i++) outcomeLabels[i] = readUTF();
+      return outcomeLabels;
+  }
+
+  protected int[][] getOutcomePatterns() throws java.io.IOException {
+      int numOCTypes = readInt();
+      int[][] outcomePatterns = new int[numOCTypes][];
+      for (int i=0; i<numOCTypes; i++) {
+          StringTokenizer tok = new StringTokenizer(readUTF(), " ");
+          int[] infoInts = new int[tok.countTokens()];
+          for (int j = 0; tok.hasMoreTokens(); j++) {
+              infoInts[j] = Integer.parseInt(tok.nextToken());
+          }
+          outcomePatterns[i] = infoInts;
+      }
+      return outcomePatterns;
+  }
+
+  protected String[] getPredicates() throws java.io.IOException {
+      NUM_PREDS = readInt();
+      String[] predLabels = new String[NUM_PREDS];
+      for (int i=0; i<NUM_PREDS; i++)
+          predLabels[i] = readUTF();
+      return predLabels;
+  }
+

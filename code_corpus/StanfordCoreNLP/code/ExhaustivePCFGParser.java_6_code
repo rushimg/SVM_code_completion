@@ -1,0 +1,26 @@
+  // No longer needed: extracBestParse restores unaries as it goes
+  protected void restoreUnaries(Tree t) {
+    //System.out.println("In restoreUnaries...");
+    for (Tree node : t) {
+      System.err.println("Doing node: "+node.label());
+      if (node.isLeaf() || node.isPreTerminal() || node.numChildren() != 1) {
+        //System.out.println("Skipping node: "+node.label());
+        continue;
+      }
+      //System.out.println("Not skipping node: "+node.label());
+      Tree parent = node;
+      Tree child = node.children()[0];
+      List path = ug.getBestPath(stateIndex.indexOf(parent.label().value()), stateIndex.indexOf(child.label().value()));
+      System.err.println("Got path: "+path);
+      int pos = 1;
+      while (pos < path.size() - 1) {
+        int interState = ((Integer) path.get(pos)).intValue();
+        Tree intermediate = tf.newTreeNode(new StringLabel(stateIndex.get(interState)), parent.getChildrenAsList());
+        parent.setChildren(Collections.singletonList(intermediate));
+        pos++;
+      }
+      //System.out.println("Done with node: "+node.label());
+    }
+  }
+
+

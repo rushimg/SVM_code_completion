@@ -1,0 +1,36 @@
+  private String stripAnnotationsAndClassing(String word) {
+    String w = word;
+    final int wLen = w.length();
+
+    if (wLen > 1) {  // only for two or more letter words
+      Matcher m2 = pEnt.matcher(w);
+      if (m2.matches()) {
+        if ( ! warnedEntityEscaping) {
+          System.err.printf("%s: Removing IBM MT-style classing: %s --> %s\n", this.getClass().getName(), m2.group(0), m2.group(1));
+          warnedEntityEscaping = true;
+        }
+        w = m2.replaceAll("$1");
+
+      } else if (w.charAt(0) == '+') {
+        if ( ! warnedProcliticEnclitic) {
+          warnedProcliticEnclitic = true;
+          System.err.printf("%s: Removing IBM MT-style proclitic/enclitic indicators\n",this.getClass().getName());
+        }
+        w = w.substring(1);
+
+      } else if (w.charAt(wLen - 1) == '#') {
+        if ( ! warnedProcliticEnclitic) {
+          warnedProcliticEnclitic = true;
+          System.err.printf("%s: Removing IBM MT-style proclitic/enclitic indicators\n",this.getClass().getName());
+        }
+        w = w.substring(0, wLen - 1);
+      }
+    }
+
+    //Don't map a word to null
+    if(w.length() == 0)
+      return word;
+    return w;
+  }
+
+

@@ -1,0 +1,18 @@
+  public KNNClassifier<K,V> train(Collection<Counter<V>> vectors, Map<V, K> labelMap) {
+    KNNClassifier<K, V> classifier = new KNNClassifier<K, V>(k, weightedVotes, l2NormalizeVectors);
+    Collection<RVFDatum<K, V>> instances = new ArrayList<RVFDatum<K, V>>();
+    for (Counter<V> vector : vectors) {
+      K label = labelMap.get(vector);
+      RVFDatum<K, V> datum;
+      if (l2NormalizeVectors) { 
+        datum = new RVFDatum<K, V>(Counters.L2Normalize(new ClassicCounter<V>(vector)), label);
+      } else {
+        datum = new RVFDatum<K, V>(vector, label);
+      }
+      instances.add(datum);
+    }
+
+    classifier.addInstances(instances);
+    return classifier;
+  }
+

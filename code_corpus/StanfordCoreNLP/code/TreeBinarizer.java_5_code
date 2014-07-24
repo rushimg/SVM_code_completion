@@ -1,0 +1,38 @@
+  private static Label makeSyntheticLabel1(Tree t, int left, int right, int headLoc, int markovOrder) {
+    String topCat = t.label().value();
+    Tree[] children = t.children();
+    String leftString;
+    if (left == 0) {
+      leftString = "[ ";
+    } else {
+      leftString = " ";
+    }
+    String rightString;
+    if (right == children.length - 1) {
+      rightString = " ]";
+    } else {
+      rightString = " ";
+    }
+    for (int i = 0; i < markovOrder; i++) {
+      if (left < headLoc) {
+        leftString = leftString + children[left].label().value() + " ";
+        left++;
+      } else if (right > headLoc) {
+        rightString = " " + children[right].label().value() + rightString;
+        right--;
+      } else {
+        break;
+      }
+    }
+    if (right > headLoc) {
+      rightString = "..." + rightString;
+    }
+    if (left < headLoc) {
+      leftString = leftString + "...";
+    }
+    String labelStr = "@" + topCat + "| " + leftString + "[" + t.getChild(headLoc).label().value() + "]" + rightString; // the head in brackets
+    String word = ((HasWord) t.label()).word();
+    String tag = ((HasTag) t.label()).tag();
+    return new CategoryWordTag(labelStr, word, tag);
+  }
+

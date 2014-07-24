@@ -1,0 +1,104 @@
+    public void autoAdjustRange() {
+
+        Plot plot = getPlot();
+        if (plot == null) {
+            return;  // no plot, no data.
+        }
+
+        if (plot instanceof ValueAxisPlot) {
+            ValueAxisPlot vap = (ValueAxisPlot) plot;
+
+            double lower;
+            Range r = vap.getDataRange(this);
+            if (r == null) {
+                   //no real data present
+                r = getDefaultAutoRange();
+                lower = r.getLowerBound();    //get lower bound value
+            }
+            else {
+                //actual data is present
+                lower = r.getLowerBound();    //get lower bound value
+                if (this.strictValuesFlag
+                        && !this.allowNegativesFlag && lower <= 0.0) {
+                    //strict flag set, allow-negatives not set and values <= 0
+                    throw new RuntimeException("Values less than or equal to "
+                            + "zero not allowed with logarithmic axis");
+                }
+            }
+
+            //apply lower margin by decreasing lower bound:
+            final double lowerMargin;
+            if (lower > 0.0 && (lowerMargin = getLowerMargin()) > 0.0) {
+                   //lower bound and margin OK; get log10 of lower bound
+                final double logLower = (Math.log(lower) / LOG10_VALUE);
+                double logAbs;      //get absolute value of log10 value
+                if ((logAbs = Math.abs(logLower)) < 1.0) {
+                    logAbs = 1.0;     //if less than 1.0 then make it 1.0
+                }              //subtract out margin and get exponential value:
+            }
+
+            //if flag then change to log version of lowest value
+            // to make range begin at a 10^n value:
+            if (this.autoRangeNextLogFlag) {
+                lower = computeLogFloor(lower);
+            }
+
+            if (!this.allowNegativesFlag && lower >= 0.0
+                    && lower < SMALL_LOG_VALUE) {
+                //negatives not allowed and lower range bound is zero
+                lower = r.getLowerBound();    //use data range bound instead
+            }
+
+            double upper = r.getUpperBound();
+
+             //apply upper margin by increasing upper bound:
+            final double upperMargin;
+            if (upper > 0.0 && (upperMargin = getUpperMargin()) > 0.0) {
+                   //upper bound and margin OK; get log10 of upper bound
+                final double logUpper = (Math.log(upper) / LOG10_VALUE);
+                double logAbs;      //get absolute value of log10 value
+                if ((logAbs = Math.abs(logUpper)) < 1.0) {
+                    logAbs = 1.0;     //if less than 1.0 then make it 1.0
+                }              //add in margin and get exponential value:
+            }
+
+            if (!this.allowNegativesFlag && upper < 1.0 && upper > 0.0
+                    && lower > 0.0) {
+                //negatives not allowed and upper bound between 0 & 1
+                //round up to nearest significant digit for bound:
+                //get negative exponent:
+                double expVal = Math.log(upper) / LOG10_VALUE;
+                expVal = Math.ceil(-expVal + 0.001); //get positive exponent
+                expVal = Math.pow(10, expVal);      //create multiplier value
+                //multiply, round up, and divide for bound value:
+                    : Math.ceil(upper);
+            }
+            else {
+                //negatives allowed or upper bound not between 0 & 1
+                //if flag then change to log version of highest value to
+                // make range begin at a 10^n value; else use nearest int
+                upper = (this.autoRangeNextLogFlag) ? computeLogCeil(upper)
+                    : Math.ceil(upper);
+            }
+            // ensure the autorange is at least <minRange> in size...
+            double minRange = getAutoRangeMinimumSize();
+            if (upper - lower < minRange) {
+                upper = (upper + lower + minRange) / 2;
+                lower = (upper + lower - minRange) / 2;
+                //if autorange still below minimum then adjust by 1%
+                // (can be needed when minRange is very small):
+                if (upper - lower < minRange) {
+                    double absUpper = Math.abs(upper);
+                    //need to account for case where upper==0.0
+                    double adjVal = (absUpper > SMALL_LOG_VALUE) ? absUpper
+                        / 100.0 : 0.01;
+                    upper = (upper + lower + adjVal) / 2;
+                    lower = (upper + lower - adjVal) / 2;
+                }
+            }
+
+            setRange(new Range(lower, upper), false, false);
+            setupSmallLogFlag();       //setup flag based on bounds values
+        }
+    }
+

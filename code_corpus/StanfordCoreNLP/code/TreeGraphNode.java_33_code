@@ -1,0 +1,34 @@
+  @Override
+  public void percolateHeads(HeadFinder hf) {
+    if (isLeaf()) {
+      TreeGraphNode hwn = headWordNode();
+      if (hwn == null) {
+        setHeadWordNode(this);
+      }
+    } else {
+      for (Tree child : children()) {
+        child.percolateHeads(hf);
+      }
+      TreeGraphNode head = safeCast(hf.determineHead(this,parent));
+      if (head != null) {
+
+        TreeGraphNode hwn = head.headWordNode();
+        if (hwn == null && head.isLeaf()) { // below us is a leaf
+          setHeadWordNode(head);
+        } else {
+          setHeadWordNode(hwn);
+        }
+
+        TreeGraphNode htn = head.headTagNode();
+        if (htn == null && head.isLeaf()) { // below us is a leaf
+          setHeadTagNode(this);
+        } else {
+          setHeadTagNode(htn);
+        }
+
+      } else {
+        System.err.println("Head is null: " + this);
+      }
+    }
+  }
+

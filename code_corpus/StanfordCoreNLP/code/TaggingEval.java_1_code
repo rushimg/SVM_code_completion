@@ -1,0 +1,113 @@
+public class TaggingEval extends AbstractEval {
+
+  private final Lexicon lex;
+
+  private static boolean doCatLevelEval = false;
+  private Counter<String> precisions;
+  private Counter<String> recalls;
+  private Counter<String> f1s;
+
+  private Counter<String> precisions2;
+  private Counter<String> recalls2;
+  private Counter<String> pnums2;
+  private Counter<String> rnums2;
+
+  private Counter<String> percentOOV;
+  private Counter<String> percentOOV2;
+
+  public TaggingEval(String str) {
+    this(str, true, null);
+  }
+
+  public TaggingEval(String str, boolean runningAverages, Lexicon lex) {
+    super(str, runningAverages);
+    this.lex = lex;
+
+    if(doCatLevelEval) {
+      precisions = new ClassicCounter<String>();
+      recalls = new ClassicCounter<String>();
+      f1s = new ClassicCounter<String>();
+
+      precisions2 = new ClassicCounter<String>();
+      recalls2 = new ClassicCounter<String>();
+      pnums2 = new ClassicCounter<String>();
+      rnums2 = new ClassicCounter<String>();
+
+      percentOOV = new ClassicCounter<String>();
+      percentOOV2 = new ClassicCounter<String>();
+    }
+  }
+
+  @Override
+  protected Set<HasTag> makeObjects(Tree tree) {
+    return (tree == null) ? Generics.<HasTag>newHashSet() : Generics.<HasTag>newHashSet(tree.taggedLabeledYield());
+  }
+
+  private static Map<String,Set<Label>> makeObjectsByCat(Tree t) {
+    Map<String,Set<Label>> catMap = Generics.newHashMap();
+    List<CoreLabel> tly = t.taggedLabeledYield();
+
+    for(CoreLabel label : tly) {
+      if(catMap.containsKey(label.value()))
+        catMap.get(label.value()).add(label);
+      else {
+        Set<Label> catSet = Generics.newHashSet();
+        catSet.add(label);
+        catMap.put(label.value(), catSet);
+      }
+    }
+    return catMap;
+  }
+
+  @Override
+  public void evaluate(Tree guess, Tree gold, PrintWriter pw) {
+    if(gold == null || guess == null) {
+      System.err.printf("%s: Cannot compare against a null gold or guess tree!\n",this.getClass().getName());
+      return;
+    }
+
+    //Do regular evaluation
+    super.evaluate(guess, gold, pw);
+
+    if(doCatLevelEval) {
+      final Map<String,Set<Label>> guessCats = makeObjectsByCat(guess);
+      final Map<String,Set<Label>> goldCats = makeObjectsByCat(gold);
+      final Set<String> allCats = Generics.newHashSet();
+      allCats.addAll(guessCats.keySet());
+      allCats.addAll(goldCats.keySet());
+
+      for(final String cat : allCats) {
+        Set<Label> thisGuessCats = guessCats.get(cat);
+        Set<Label> thisGoldCats = goldCats.get(cat);
+
+        if (thisGuessCats == null)
+          thisGuessCats = Generics.newHashSet();
+        if (thisGoldCats == null)
+          thisGoldCats = Generics.newHashSet();
+
+        double currentPrecision = precision(thisGuessCats, thisGoldCats);
+        double currentRecall = precision(thisGoldCats, thisGuessCats);
+
+        double currentF1 = (currentPrecision > 0.0 && currentRecall > 0.0 ? 2.0 / (1.0 / currentPrecision + 1.0 / currentRecall) : 0.0);
+
+        precisions.incrementCount(cat, currentPrecision);
+        recalls.incrementCount(cat, currentRecall);
+        f1s.incrementCount(cat, currentF1);
+
+        pnums2.incrementCount(cat, thisGuessCats.size());
+
+        rnums2.incrementCount(cat, thisGoldCats.size());
+
+        if(lex != null) measureOOV(guess,gold);
+
+        if (pw != null && runningAverages) {
+          double cF1 = 2.0 / (rnums2.getCount(cat) / recalls2.getCount(cat) + pnums2.getCount(cat) / precisions2.getCount(cat));
+          pw.println(emit);
+        }
+      }
+      if (pw != null && runningAverages) {
+        pw.println("========================================");
+      }
+    }
+  }
+

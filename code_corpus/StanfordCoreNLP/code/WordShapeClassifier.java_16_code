@@ -1,0 +1,70 @@
+  private static String wordShapeCluster1(String s) {
+    boolean digit = true;
+    for (int i = 0; i < s.length(); i++) {
+      char c = s.charAt(i);
+      if ( ! (Character.isDigit(c) || c == '.' || c == ',' || (i == 0 && (c == '-' || c == '+')))) {
+        digit = false;
+      }
+    }
+    if (digit) {
+      return "NUMBER";
+    } else {
+      String cluster = DistributionalClusters.cluster1.get(s);
+      if (cluster == null) {
+        cluster = "NULL";
+      }
+      return cluster;
+    }
+  }
+
+  private static String wordShapeChinese(final String s) {
+    return ChineseUtils.shapeOf(s, true, true);
+  }
+
+
+  private static class DistributionalClusters {
+
+    private DistributionalClusters() {}
+
+    public static Map<String,String> cluster1  = loadWordClusters("/u/nlp/data/pos_tags_are_useless/egw.bnc.200",
+                                                           "alexClark");
+
+    private static class LcMap<K,V> extends HashMap<K,V> {
+
+      private static final long serialVersionUID = -457913281600751901L;
+
+      @Override
+      public V get(Object key) {
+        return super.get(key.toString().toLowerCase());
+      }
+    }
+
+    public static Map<String,String> loadWordClusters(String file, String format) {
+      Timing.startDoing("Loading distsim lexicon from " + file);
+      Map<String,String> lexicon = new LcMap<String, String>();
+      if ("terryKoo".equals(format)) {
+        for (String line : ObjectBank.getLineIterator(file)) {
+          String[] bits = line.split("\\t");
+          String word = bits[1];
+          // for now, always lowercase, but should revisit this
+          word = word.toLowerCase();
+          String wordClass = bits[0];
+          lexicon.put(word, wordClass);
+        }
+      } else {
+        // "alexClark"
+        for (String line : ObjectBank.getLineIterator(file)) {
+          String[] bits = line.split("\\s+");
+          String word = bits[0];
+          // for now, always lowercase, but should revisit this
+          word = word.toLowerCase();
+          lexicon.put(word, bits[1]);
+        }
+      }
+      Timing.endDoing();
+      return lexicon;
+    }
+
+  }
+
+

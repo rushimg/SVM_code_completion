@@ -1,0 +1,14 @@
+  public Counter<L> logProbabilityOf(int[] features) {
+    Counter<L> scores = scoresOf(features);
+    Counters.logNormalizeInPlace(scores);
+    return scores;
+  }
+
+  public Counter<L> probabilityOf(int [] features) {
+    Counter<L> scores = logProbabilityOf(features);
+    for (L label : scores.keySet()) {
+      scores.setCount(label, Math.exp(scores.getCount(label)));
+    }
+    return scores;
+  }
+

@@ -1,0 +1,44 @@
+    public void drawItem(Graphics2D g2, XYItemRendererState state,
+            Rectangle2D dataArea, PlotRenderingInfo info, XYPlot plot,
+            ValueAxis domainAxis, ValueAxis rangeAxis, XYDataset dataset,
+            int series, int item, CrosshairState crosshairState, int pass) {
+
+        double x = dataset.getXValue(series, item);
+        double y = dataset.getYValue(series, item);
+        double z = 0.0;
+        if (dataset instanceof XYZDataset) {
+            z = ((XYZDataset) dataset).getZValue(series, item);
+        }
+        Paint p = this.paintScale.getPaint(z);
+        double xx0 = domainAxis.valueToJava2D(x + this.xOffset, dataArea,
+                plot.getDomainAxisEdge());
+        double yy0 = rangeAxis.valueToJava2D(y + this.yOffset, dataArea,
+                plot.getRangeAxisEdge());
+        double xx1 = domainAxis.valueToJava2D(x + this.blockWidth
+                + this.xOffset, dataArea, plot.getDomainAxisEdge());
+        double yy1 = rangeAxis.valueToJava2D(y + this.blockHeight
+                + this.yOffset, dataArea, plot.getRangeAxisEdge());
+        Rectangle2D block;
+        PlotOrientation orientation = plot.getOrientation();
+        if (orientation.equals(PlotOrientation.HORIZONTAL)) {
+            block = new Rectangle2D.Double(Math.min(yy0, yy1),
+                    Math.min(xx0, xx1), Math.abs(yy1 - yy0),
+                    Math.abs(xx0 - xx1));
+        }
+        else {
+            block = new Rectangle2D.Double(Math.min(xx0, xx1),
+                    Math.min(yy0, yy1), Math.abs(xx1 - xx0),
+                    Math.abs(yy1 - yy0));
+        }
+        g2.setPaint(p);
+        g2.fill(block);
+        g2.setStroke(new BasicStroke(1.0f));
+        g2.draw(block);
+
+        EntityCollection entities = state.getEntityCollection();
+        if (entities != null) {
+            addEntity(entities, block, dataset, series, item, 0.0, 0.0);
+        }
+
+    }
+

@@ -1,0 +1,18 @@
+  public boolean replaceGoldArgsWithPredicted(List<EntityMention> predictedMentions) {
+  	List<ExtractionObject> newArgs = new ArrayList<ExtractionObject>();
+  	for(ExtractionObject arg: args){
+  		if(! (arg instanceof EntityMention)){
+  			continue;
+  		}
+  		EntityMention goldEnt = (EntityMention) arg;
+  		EntityMention newArg = null;
+  		for(EntityMention pred: predictedMentions){
+  			if(goldEnt.textEquals(pred)){
+  				newArg = pred;
+  				break;
+  			}
+  		}
+  		if(newArg != null){
+  			newArgs.add(newArg);
+  			logger.info("Replacing relation argument: [" + goldEnt + "] with predicted mention [" + newArg + "]");
+  		} else {

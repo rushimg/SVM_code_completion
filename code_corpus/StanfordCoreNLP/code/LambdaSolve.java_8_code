@@ -1,0 +1,33 @@
+  private boolean ASSUME_BINARY = false;
+
+  private double[] aux;  // auxiliary array used by some procedures for computing objective functions and their derivatives
+  private double[][] sum;// auxiliary array
+  private double[][] sub;// auxiliary array
+  public boolean weightRanks = false;
+  private boolean convertValues = false;
+
+
+  public LambdaSolve(Problem p1, double eps1, double nerr1) {
+    p = p1;
+    eps = eps1;
+    // newtonerr = nerr1;
+    // lambda = new double[p.fSize];
+    probConds = new double[p.data.xSize][];
+    System.err.println("xSize is " + p.data.xSize);
+
+    for (int i = 0; i < p.data.xSize; i++) {
+      probConds[i] = new double[p.data.numY(i)];
+    }
+    fnumArr = new byte[p.data.xSize][];
+    for (int i = 0; i < p.data.xSize; i++) {
+      fnumArr[i] = new byte[p.data.numY(i)];
+    }
+
+    zlambda = new double[p.data.xSize];
+    ftildeArr = new double[p.fSize];
+    initCondsZlambdaEtc();
+    if (convertValues) {
+      transformValues();
+    }
+  }
+

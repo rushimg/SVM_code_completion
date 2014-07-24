@@ -1,0 +1,170 @@
+@SuppressWarnings("serial")
+public class TregexGUI extends JFrame implements ActionListener, MatchesPanelListener {
+
+  private static TregexGUI instance; // = null;
+
+  private JMenuItem preferences;
+  private JMenuItem loadFiles;
+  private JMenuItem saveMatches;
+  private JMenuItem saveSentences;
+  private JMenuItem saveHistory;
+  private JMenuItem loadTsurgeon;
+  private JMenuItem tDiff;
+  private JMenuItem quit;//for when we're not running on a mac
+  private JMenuItem copy;
+  private JMenuItem searchMenuItem;
+  private JMenuItem prevMatch;
+  private JMenuItem nextMatch;
+  private JMenuItem prevTreeMatch;
+  private JMenuItem nextTreeMatch;
+  private JMenuItem clearFileList;
+
+  //file choosing components for loading trees
+  private JFileChooser chooser; // = null;
+  private static File chooserFile;
+
+  final TreeTransformer transformer;
+
+  //preferences, about panel so that we don't have to remake each time
+  private PreferencesPanel preferenceDialog; // = null;
+  private JDialog aboutBox; // = null;
+
+  private static final String TRANSFORMER = "transformer";
+
+  private JMenuBar getMenu() {
+    JMenuBar mbar = new JMenuBar();
+
+    //make file menu
+    JMenu file = new JMenu("File");
+    loadFiles = new JMenuItem("Load trees...");
+    loadFiles.addActionListener(this);
+    saveMatches = new JMenuItem("Save matched trees...");
+    saveMatches.addActionListener(this);
+    saveMatches.setEnabled(false);
+    saveSentences = new JMenuItem("Save matched sentences...");
+    saveSentences.addActionListener(this);
+    saveSentences.setEnabled(false);
+    saveHistory = new JMenuItem("Save statistics...");
+    saveHistory.addActionListener(this);
+    saveHistory.setEnabled(false);
+    loadTsurgeon = new JMenuItem("Load Tsurgeon script...");
+    loadTsurgeon.addActionListener(this);
+    clearFileList = new JMenuItem("Clear tree file list");
+    clearFileList.addActionListener(this);
+    clearFileList.setEnabled(false);
+    quit = new JMenuItem("Exit");
+    quit.addActionListener(this);
+
+    file.add(loadFiles);
+    file.add(loadTsurgeon);
+    file.addSeparator();
+    file.add(clearFileList);
+    file.addSeparator();
+    file.add(saveMatches);
+    file.add(saveSentences);
+    file.add(saveHistory);
+    if ( ! isMacOSX()) {
+      file.addSeparator();
+      file.addSeparator();
+      file.add(quit);
+    }
+
+    //make edit menu
+    JMenu edit = new JMenu("Edit");
+    copy = new JMenuItem("Copy");
+    copy.setActionCommand((String)TransferHandler.getCopyAction().
+        getValue(Action.NAME));
+    copy.addActionListener(new TransferActionListener());
+    edit.add(copy);
+
+    JMenu search = new JMenu("Search");
+    searchMenuItem = new JMenuItem("Search");
+    searchMenuItem.addActionListener(this);
+    search.add(searchMenuItem);
+    prevMatch = new JMenuItem("Display previous match");
+    prevMatch.addActionListener(this);
+    search.add(prevMatch);
+    nextMatch = new JMenuItem("Display next match");
+    nextMatch.addActionListener(this);
+    search.add(nextMatch);
+    search.addSeparator();
+    prevTreeMatch = new JMenuItem("Show previous match within tree");
+    prevTreeMatch.addActionListener(this);
+    search.add(prevTreeMatch);
+    nextTreeMatch = new JMenuItem("Show next match within tree");
+    nextTreeMatch.addActionListener(this);
+    search.add(nextTreeMatch);
+
+    preferences = new JMenuItem("Options...");
+    preferences.addActionListener(this);
+    tDiff = new JCheckBoxMenuItem("Tdiff");
+    tDiff.addActionListener(this);
+
+    JMenu tools = new JMenu("Tools");
+    if ( ! isMacOSX()) {
+      tools.add(preferences);
+    }
+    tools.add(tDiff);
+
+    mbar.add(file);
+    mbar.add(edit);
+    mbar.add(search);
+    mbar.add(tools);
+
+    setShortcutKeys(); //sets for appropriate operating system
+
+    loadPreferences();
+
+    return mbar;
+  }
+
+  private void setShortcutKeys() {
+    if (isMacOSX()) {
+      setMacShortcutKeys();
+    } else {
+      setWindowsShortcutKeys();
+    }
+  }
+
+  private void setMacShortcutKeys() {
+    preferences.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_COMMA, InputEvent.META_MASK));
+    loadFiles.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_O, InputEvent.META_MASK));
+    saveMatches.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_S, InputEvent.META_MASK));
+    saveHistory.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_S, InputEvent.SHIFT_MASK+InputEvent.META_MASK));
+    quit.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Q, InputEvent.META_MASK));
+    copy.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_C, InputEvent.META_MASK));
+
+    searchMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, InputEvent.META_MASK));
+    prevMatch.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_UP, InputEvent.META_MASK));
+    nextMatch.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_DOWN, InputEvent.META_MASK));
+    prevTreeMatch.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_UP, InputEvent.SHIFT_MASK | InputEvent.META_DOWN_MASK));
+    nextTreeMatch.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_DOWN, InputEvent.SHIFT_MASK | InputEvent.META_MASK));
+
+  }
+
+  private void setWindowsShortcutKeys() {
+    // preferences.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_COMMA, Event.CTRL_MASK)); // cdm: just skip this, I don't think Windows ever uses comma like this
+    loadFiles.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_O, InputEvent.CTRL_MASK));
+    saveMatches.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_S, InputEvent.CTRL_MASK));
+    saveHistory.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_S, InputEvent.SHIFT_MASK+InputEvent.CTRL_MASK));
+    quit.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Q, InputEvent.CTRL_MASK)); // cdm: maybe should be Control or Alt F4
+    copy.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_C, InputEvent.CTRL_MASK));
+
+    searchMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, InputEvent.CTRL_MASK));
+    prevMatch.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_UP, InputEvent.CTRL_MASK));
+    nextMatch.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_DOWN, InputEvent.CTRL_MASK));
+    prevTreeMatch.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_UP, InputEvent.SHIFT_MASK | InputEvent.CTRL_MASK));
+    nextTreeMatch.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_DOWN, InputEvent.SHIFT_MASK | InputEvent.CTRL_MASK));
+
+  }
+
+  private void initAboutBox() {
+    aboutBox = new JDialog(this, "About Tregex");
+    aboutBox.getContentPane().setLayout(new BorderLayout());
+    aboutBox.getContentPane().add(new JLabel("<html><b>Tregex and Tsurgeon</b></html>", SwingConstants.CENTER), BorderLayout.NORTH);
+
+    aboutBox.getContentPane().add(new JLabel("<html>Tregex by Galen Andrew and Roger Levy<br>Tsurgeon by Roger Levy<br>Graphical interface by Anna Rafferty<br>Additional features and development by Chris Manning<br></html>", SwingConstants.CENTER), BorderLayout.CENTER);
+    aboutBox.getContentPane().add(new JLabel("<html><font size=2>\u00A92007 The Board of Trustees of The Leland Stanford Junior University.<br>Distributed under the GNU General Public License</font></html>", SwingConstants.CENTER), BorderLayout.SOUTH);
+
+  }
+

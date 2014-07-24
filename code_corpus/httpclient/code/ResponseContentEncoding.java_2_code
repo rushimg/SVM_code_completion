@@ -1,0 +1,24 @@
+@Immutable
+public class ResponseContentEncoding implements HttpResponseInterceptor {
+
+    public static final String UNCOMPRESSED = "http.client.response.uncompressed";
+
+    private final static InputStreamFactory GZIP = new InputStreamFactory() {
+
+        @Override
+        public InputStream create(final InputStream instream) throws IOException {
+            return new GZIPInputStream(instream);
+        }
+    };
+
+    private final static InputStreamFactory DEFLATE = new InputStreamFactory() {
+
+        @Override
+        public InputStream create(final InputStream instream) throws IOException {
+            return new DeflateInputStream(instream);
+        }
+
+    };
+
+    private final Lookup<InputStreamFactory> decoderRegistry;
+

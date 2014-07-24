@@ -1,0 +1,110 @@
+  public static Triple<Treebank, Treebank, Treebank> getAnnotatedBinaryTreebankFromTreebank(Treebank trainTreebank,
+      Treebank secondaryTreebank,
+      Treebank tuneTreebank,
+      Options op) {
+    // setup tree transforms
+    TreebankLangParserParams tlpParams = op.tlpParams;
+    TreebankLanguagePack tlp = tlpParams.treebankLanguagePack();
+
+    if (op.testOptions.verbose) {
+      PrintWriter pwErr = tlpParams.pw(System.err);
+      pwErr.print("Training ");
+      pwErr.println(trainTreebank.textualSummary(tlp));
+      if (secondaryTreebank != null) {
+        pwErr.print("Secondary training ");
+        pwErr.println(secondaryTreebank.textualSummary(tlp));
+      }
+    }
+
+    System.err.print("Binarizing trees...");
+
+    TreeAnnotatorAndBinarizer binarizer = buildTrainBinarizer(op);
+    CompositeTreeTransformer trainTransformer = buildTrainTransformer(op, binarizer);
+
+    Treebank wholeTreebank;
+    if (secondaryTreebank == null) {
+      wholeTreebank = trainTreebank;
+    } else {
+      wholeTreebank = new CompositeTreebank(trainTreebank, secondaryTreebank);
+    }
+
+    if (op.trainOptions.selectiveSplit) {
+      op.trainOptions.splitters = ParentAnnotationStats.getSplitCategories(wholeTreebank, op.trainOptions.tagSelectiveSplit, 0, op.trainOptions.selectiveSplitCutOff, op.trainOptions.tagSelectiveSplitCutOff, tlp);
+      removeDeleteSplittersFromSplitters(tlp, op);
+      if (op.testOptions.verbose) {
+        List<String> list = new ArrayList<String>(op.trainOptions.splitters);
+        Collections.sort(list);
+        System.err.println("Parent split categories: " + list);
+      }
+    }
+
+    if (op.trainOptions.selectivePostSplit) {
+      // Do all the transformations once just to learn selective splits on annotated categories
+      TreeTransformer myTransformer = new TreeAnnotator(tlpParams.headFinder(), tlpParams, op);
+      wholeTreebank = wholeTreebank.transform(myTransformer);
+      op.trainOptions.postSplitters = ParentAnnotationStats.getSplitCategories(wholeTreebank, true, 0, op.trainOptions.selectivePostSplitCutOff, op.trainOptions.tagSelectivePostSplitCutOff, tlp);
+      if (op.testOptions.verbose) {
+        System.err.println("Parent post annotation split categories: " + op.trainOptions.postSplitters);
+      }
+    }
+    if (op.trainOptions.hSelSplit) {
+      // We run through all the trees once just to gather counts for hSelSplit!
+      int ptt = op.trainOptions.printTreeTransformations;
+      op.trainOptions.printTreeTransformations = 0;
+      binarizer.setDoSelectiveSplit(false);
+      for (Tree tree : wholeTreebank) {
+        trainTransformer.transformTree(tree);
+      }
+      binarizer.setDoSelectiveSplit(true);
+      op.trainOptions.printTreeTransformations = ptt;
+    }
+    // we've done all the setup now. here's where the train treebank is transformed.
+    trainTreebank = trainTreebank.transform(trainTransformer);
+    if (secondaryTreebank != null) {
+      secondaryTreebank = secondaryTreebank.transform(trainTransformer);
+    }
+    if (op.trainOptions.printAnnotatedStateCounts) {
+      binarizer.printStateCounts();
+    }
+    if (op.trainOptions.printAnnotatedRuleCounts) {
+      binarizer.printRuleCounts();
+    }
+
+    if (tuneTreebank != null) {
+      tuneTreebank = tuneTreebank.transform(trainTransformer);
+    }
+
+    Timing.tick("done.");
+    if (op.testOptions.verbose) {
+      binarizer.dumpStats();
+    }
+
+    return new Triple<Treebank, Treebank, Treebank>(trainTreebank, secondaryTreebank, tuneTreebank);
+  }
+
+  private static void removeDeleteSplittersFromSplitters(TreebankLanguagePack tlp, Options op) {
+    if (op.trainOptions.deleteSplitters != null) {
+      List<String> deleted = new ArrayList<String>();
+      for (String del : op.trainOptions.deleteSplitters) {
+        String baseDel = tlp.basicCategory(del);
+        boolean checkBasic = del.equals(baseDel);
+        for (Iterator<String> it = op.trainOptions.splitters.iterator(); it.hasNext(); ) {
+          String elem = it.next();
+          String baseElem = tlp.basicCategory(elem);
+          boolean delStr = checkBasic && baseElem.equals(baseDel) || elem.equals(del);
+          if (delStr) {
+            it.remove();
+            deleted.add(elem);
+          }
+        }
+      }
+      if (op.testOptions.verbose) {
+        System.err.println("Removed from vertical splitters: " + deleted);
+      }
+    }
+  }
+
+
+  // TODO: Make below method work with arbitrarily large secondary treebank via iteration
+  // TODO: Have weight implemented for training lexicon
+

@@ -1,0 +1,22 @@
+  public NameFinderEventStream(ObjectStream<NameSample> dataStream, String type, NameContextGenerator contextGenerator, SequenceCodec codec) {
+    super(dataStream);
+
+    this.codec = codec;
+
+    if (codec == null) {
+      this.codec = new BioCodec();
+    }
+
+    this.contextGenerator = contextGenerator;
+    this.contextGenerator.addFeatureGenerator(new WindowFeatureGenerator(additionalContextFeatureGenerator, 8, 8));
+
+    if (type != null)
+      this.type = type;
+    else
+      this.type = "default";
+  }
+
+  public NameFinderEventStream(ObjectStream<NameSample> dataStream) {
+    this(dataStream, null, new DefaultNameContextGenerator(), null);
+  }
+

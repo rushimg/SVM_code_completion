@@ -1,0 +1,34 @@
+  public static final String DEFAULT_TYPE = "default";
+
+  public NameSample(String id, String[] sentence, Span[] names,
+      String[][] additionalContext, boolean clearAdaptiveData) {
+
+    this.id = id;
+
+    if (sentence == null) {
+      throw new IllegalArgumentException("sentence must not be null!");
+    }
+
+    if (names == null) {
+      names = new Span[0];
+    }
+
+    this.sentence = Collections.unmodifiableList(new ArrayList<String>(Arrays.asList(sentence)));
+    this.names = Collections.unmodifiableList(new ArrayList<Span>(Arrays.asList(names)));
+
+    if (additionalContext != null) {
+      this.additionalContext = new String[additionalContext.length][];
+
+      for (int i = 0; i < additionalContext.length; i++) {
+        this.additionalContext[i] = new String[additionalContext[i].length];
+        System.arraycopy(additionalContext[i], 0, this.additionalContext[i], 0, additionalContext[i].length);
+      }
+    }
+    else {
+      this.additionalContext = null;
+    }
+    isClearAdaptiveData = clearAdaptiveData;
+
+    // TODO: Check that name spans are not overlapping, otherwise throw exception
+  }
+

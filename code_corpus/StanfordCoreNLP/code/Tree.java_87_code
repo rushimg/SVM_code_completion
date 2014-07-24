@@ -1,0 +1,25 @@
+  public Tree prune(Filter<Tree> filter, TreeFactory tf) {
+    // is the current node to be pruned?
+    if ( ! filter.accept(this)) {
+      return null;
+    }
+    // if not, recurse over all children
+    List<Tree> l = new ArrayList<Tree>();
+    Tree[] kids = children();
+    for (Tree kid : kids) {
+      Tree prunedChild = kid.prune(filter, tf);
+      if (prunedChild != null) {
+        l.add(prunedChild);
+      }
+    }
+    // and check if this node has lost all its children
+    if (l.isEmpty() && !(kids.length == 0)) {
+      return null;
+    }
+    // if we're still ok, copy the node
+    if (isLeaf()) {
+      return tf.newLeaf(label());
+    }
+    return tf.newTreeNode(label(), l);
+  }
+

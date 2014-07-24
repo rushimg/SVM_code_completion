@@ -1,0 +1,107 @@
+    protected void drawQuadrants(Graphics2D g2, Rectangle2D area) {
+        //  0 | 1
+        //  --+--
+        //  2 | 3
+        boolean somethingToDraw = false;
+
+        ValueAxis xAxis = getDomainAxis();
+        if (xAxis == null) {  // we can't draw quadrants without a valid x-axis
+            return;
+        }
+        double x = xAxis.getRange().constrain(this.quadrantOrigin.getX());
+        double xx = xAxis.valueToJava2D(x, area, getDomainAxisEdge());
+
+        ValueAxis yAxis = getRangeAxis();
+        if (yAxis == null) {  // we can't draw quadrants without a valid y-axis
+            return;
+        }
+        double y = yAxis.getRange().constrain(this.quadrantOrigin.getY());
+        double yy = yAxis.valueToJava2D(y, area, getRangeAxisEdge());
+
+        double xmin = xAxis.getLowerBound();
+        double xxmin = xAxis.valueToJava2D(xmin, area, getDomainAxisEdge());
+
+        double xmax = xAxis.getUpperBound();
+        double xxmax = xAxis.valueToJava2D(xmax, area, getDomainAxisEdge());
+
+        double ymin = yAxis.getLowerBound();
+        double yymin = yAxis.valueToJava2D(ymin, area, getRangeAxisEdge());
+
+        double ymax = yAxis.getUpperBound();
+        double yymax = yAxis.valueToJava2D(ymax, area, getRangeAxisEdge());
+
+        Rectangle2D[] r = new Rectangle2D[] {null, null, null, null};
+        if (this.quadrantPaint[0] != null) {
+            if (x > xmin && y < ymax) {
+                if (this.orientation == PlotOrientation.HORIZONTAL) {
+                    r[0] = new Rectangle2D.Double(Math.min(yymax, yy),
+                            Math.min(xxmin, xx), Math.abs(yy - yymax),
+                            Math.abs(xx - xxmin));
+                }
+                else {  // PlotOrientation.VERTICAL
+                    r[0] = new Rectangle2D.Double(Math.min(xxmin, xx),
+                            Math.min(yymax, yy), Math.abs(xx - xxmin),
+                            Math.abs(yy - yymax));
+                }
+                somethingToDraw = true;
+            }
+        }
+        if (this.quadrantPaint[1] != null) {
+            if (x < xmax && y < ymax) {
+                if (this.orientation == PlotOrientation.HORIZONTAL) {
+                    r[1] = new Rectangle2D.Double(Math.min(yymax, yy),
+                            Math.min(xxmax, xx), Math.abs(yy - yymax),
+                            Math.abs(xx - xxmax));
+                }
+                else {  // PlotOrientation.VERTICAL
+                    r[1] = new Rectangle2D.Double(Math.min(xx, xxmax),
+                            Math.min(yymax, yy), Math.abs(xx - xxmax),
+                            Math.abs(yy - yymax));
+                }
+                somethingToDraw = true;
+            }
+        }
+        if (this.quadrantPaint[2] != null) {
+            if (x > xmin && y > ymin) {
+                if (this.orientation == PlotOrientation.HORIZONTAL) {
+                    r[2] = new Rectangle2D.Double(Math.min(yymin, yy),
+                            Math.min(xxmin, xx), Math.abs(yy - yymin),
+                            Math.abs(xx - xxmin));
+                }
+                else {  // PlotOrientation.VERTICAL
+                    r[2] = new Rectangle2D.Double(Math.min(xxmin, xx),
+                            Math.min(yymin, yy), Math.abs(xx - xxmin),
+                            Math.abs(yy - yymin));
+                }
+                somethingToDraw = true;
+            }
+        }
+        if (this.quadrantPaint[3] != null) {
+            if (x < xmax && y > ymin) {
+                if (this.orientation == PlotOrientation.HORIZONTAL) {
+                    r[3] = new Rectangle2D.Double(Math.min(yymin, yy),
+                            Math.min(xxmax, xx), Math.abs(yy - yymin),
+                            Math.abs(xx - xxmax));
+                }
+                else {  // PlotOrientation.VERTICAL
+                    r[3] = new Rectangle2D.Double(Math.min(xx, xxmax),
+                            Math.min(yymin, yy), Math.abs(xx - xxmax),
+                            Math.abs(yy - yymin));
+                }
+                somethingToDraw = true;
+            }
+        }
+        if (somethingToDraw) {
+            Composite originalComposite = g2.getComposite();
+            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER,
+                    getBackgroundAlpha()));
+            for (int i = 0; i < 4; i++) {
+                if (this.quadrantPaint[i] != null && r[i] != null) {
+                    g2.setPaint(this.quadrantPaint[i]);
+                    g2.fill(r[i]);
+                }
+            }
+            g2.setComposite(originalComposite);
+        }
+    }
+

@@ -1,0 +1,14 @@
+  private List<I> shutdownNow() {
+    List<I> orphans = new ArrayList<I>();
+    List<Runnable> runnables = threadPool.shutdownNow();
+    for (Runnable runnable : runnables) {
+      if (!(runnable instanceof NamedTask)) {
+        throw new AssertionError("Should have gotten NamedTask");
+      }
+      @SuppressWarnings("unchecked")
+      NamedTask<I, O, ?> task = (NamedTask<I, O, ?>) runnable;
+      orphans.add(task.item);
+    }
+    return orphans;
+  }
+

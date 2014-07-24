@@ -1,0 +1,46 @@
+  public static <E> Counter<E> powNormalized(Counter<E> c, double temp) {
+    Counter<E> d = c.getFactory().create();
+    double total = c.totalCount();
+    for (E e : c.keySet()) {
+      d.setCount(e, Math.pow(c.getCount(e) / total, temp));
+    }
+    return d;
+  }
+
+  public static <T> Counter<T> pow(Counter<T> c, double temp) {
+    Counter<T> d = c.getFactory().create();
+    for (T t : c.keySet()) {
+      d.setCount(t, Math.pow(c.getCount(t), temp));
+    }
+    return d;
+  }
+
+  public static <T> void powInPlace(Counter<T> c, double temp) {
+    for (T t : c.keySet()) {
+      c.setCount(t, Math.pow(c.getCount(t), temp));
+    }
+  }
+
+  public static <T> Counter<T> exp(Counter<T> c) {
+    Counter<T> d = c.getFactory().create();
+    for (T t : c.keySet()) {
+      d.setCount(t, Math.exp(c.getCount(t)));
+    }
+    return d;
+  }
+
+  public static <T> void expInPlace(Counter<T> c) {
+    for (T t : c.keySet()) {
+      c.setCount(t, Math.exp(c.getCount(t)));
+    }
+  }
+
+  public static <T> Counter<T> diff(Counter<T> goldFeatures, Counter<T> guessedFeatures) {
+    Counter<T> result = goldFeatures.getFactory().create();
+    for (T key : Sets.union(goldFeatures.keySet(), guessedFeatures.keySet())) {
+      result.setCount(key, goldFeatures.getCount(key) - guessedFeatures.getCount(key));
+    }
+    retainNonZeros(result);
+    return result;
+  }
+

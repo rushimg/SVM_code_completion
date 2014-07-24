@@ -1,0 +1,56 @@
+  private static boolean isWHQ(Tree t, Tree parent) {
+    if (t == null) {
+      return false;
+    }
+    boolean toReturn = false;
+    if (t.value().startsWith("SQ")) {
+      if (parent != null && parent.value().equals("SBARQ")) {
+        Tree[] kids = parent.children();
+        for (Tree kid : kids) {
+          if (kid.value().startsWith("WH")) {
+            toReturn = true;
+          }
+        }
+      }
+    }
+
+    if (DEBUG) {
+      System.err.println("in isWH, decision: " + toReturn + " for node " + t);
+    }
+
+    return toReturn;
+  }
+
+  private boolean isVerbalAuxiliary(Tree preterminal, Set<String> verbalSet, boolean allowJustTagMatch) {
+    if (preterminal.isPreTerminal()) {
+      Label kidLabel = preterminal.label();
+      String tag = null;
+      if (kidLabel instanceof HasTag) {
+        tag = ((HasTag) kidLabel).tag();
+      }
+      if (tag == null) {
+        tag = preterminal.value();
+      }
+      Label wordLabel = preterminal.firstChild().label();
+      String word = null;
+      if (wordLabel instanceof HasWord) {
+        word = ((HasWord) wordLabel).word();
+      }
+      if (word == null) {
+        word = wordLabel.value();
+      }
+
+      if (DEBUG) {
+        System.err.println("Checking " + preterminal.value() + " head is " + word + '/' + tag);
+      }
+      String lcWord = word.toLowerCase();
+      if (allowJustTagMatch && unambiguousAuxiliaryTags.contains(tag) || verbalTags.contains(tag) && verbalSet.contains(lcWord)) {
+        if (DEBUG) {
+          System.err.println("isAuxiliary found desired type of aux");
+        }
+        return true;
+      }
+    }
+    return false;
+  }
+

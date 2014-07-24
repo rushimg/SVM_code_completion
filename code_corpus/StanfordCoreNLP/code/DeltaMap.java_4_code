@@ -1,0 +1,23 @@
+  @Override
+  @SuppressWarnings("unchecked")
+  public V put(K key, V value) {
+    if (value == null) {
+      return put(key, (V)nullValue);
+    }
+    // key could be not in original or in deltaMap
+    // key could be not in original but in deltaMap
+    // key could be in original but removed from deltaMap
+    // key could be in original but mapped to something else in deltaMap
+    V result = deltaMap.put(key, value);
+    if (result == null) {
+      return originalMap.get(key);
+    }
+    if (result == nullValue) {
+      return null;
+    }
+    if (result == removedValue) {
+      return null;
+    }
+    return result;
+  }
+

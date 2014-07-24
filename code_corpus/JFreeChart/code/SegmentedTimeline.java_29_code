@@ -1,0 +1,28 @@
+    public void setBaseTimeline(SegmentedTimeline baseTimeline) {
+
+        // verify that baseTimeline is compatible with us
+        if (baseTimeline != null) {
+            if (baseTimeline.getSegmentSize() < this.segmentSize) {
+                throw new IllegalArgumentException(
+                        "baseTimeline.getSegmentSize() "
+                        + "is smaller than segmentSize");
+            }
+            else if (baseTimeline.getStartTime() > this.startTime) {
+                throw new IllegalArgumentException(
+                        "baseTimeline.getStartTime() is after startTime");
+            }
+            else if ((baseTimeline.getSegmentSize() % this.segmentSize) != 0) {
+                throw new IllegalArgumentException(
+                        "baseTimeline.getSegmentSize() is not multiple of "
+                        + "segmentSize");
+            }
+            else if (((this.startTime
+                    - baseTimeline.getStartTime()) % this.segmentSize) != 0) {
+                throw new IllegalArgumentException(
+                        "baseTimeline is not aligned");
+            }
+        }
+
+        this.baseTimeline = baseTimeline;
+    }
+

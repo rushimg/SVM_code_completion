@@ -1,0 +1,47 @@
+  public String putSpacesAroundTargetString(String text, String targetString)
+  {
+    return markTargetString(text, targetString, " ", " ", true);
+  }
+
+  protected String markTargetString(String text, String targetString, String beginMark, String endMark, boolean markOnlyIfSpace)
+  {
+    StringBuilder sb = new StringBuilder(text);
+    int i = sb.indexOf(targetString);
+    while (i >= 0) {
+      boolean matched = true;
+      boolean markBefore = !markOnlyIfSpace;
+      boolean markAfter = !markOnlyIfSpace;
+      if (i > 0) {
+        char charBefore = sb.charAt(i-1);
+        if (Character.isLetterOrDigit(charBefore)) {
+          matched = false;
+        } else if (!Character.isWhitespace(charBefore)) {
+          markBefore = true;
+        }
+      }
+      if (i + targetString.length() < sb.length()) {
+        char charAfter = sb.charAt(i+targetString.length());
+        if (Character.isLetterOrDigit(charAfter)) {
+          matched = false;
+        } else if (!Character.isWhitespace(charAfter)) {
+          markAfter = true;
+        }
+      }
+      if (matched) {
+        if (markBefore) {
+          sb.insert(i, beginMark);
+          i += beginMark.length();
+        }
+        i = i + targetString.length();
+        if (markAfter) {
+          sb.insert(i, endMark);
+          i += endMark.length();
+        }
+      } else {
+        i++;
+      }
+      i = sb.indexOf(targetString, i);
+    }
+    return sb.toString();
+  }
+

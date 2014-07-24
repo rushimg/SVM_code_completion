@@ -1,0 +1,70 @@
+  @Override
+  public int setOptionFlag(String[] args, int i) {
+    //lang. specific options
+    if (args[i].equalsIgnoreCase("-nodeCleanup")) {
+      nodeCleanup = Integer.parseInt(args[i + 1]);
+      i += 2;
+    } else if (args[i].equalsIgnoreCase("-leaveGF")) {
+      ((NegraPennLanguagePack) treebankLanguagePack()).setLeaveGF(true);
+      treeNormalizerLeaveGF = true;
+      i++;
+    } else if (args[i].equalsIgnoreCase("-gfCharacter")) {
+      String gfChar = args[i + 1];
+      if(gfChar.length() > 1)
+        System.out.println("Warning! gfCharacter argument ignored; must specify a character, not a String");
+      treebankLanguagePack().setGfCharacter(gfChar.charAt(0));
+      i+=2;
+    } else if (args[i].equalsIgnoreCase("-markZuVP")) {
+      markZuVP = true;
+      i++;
+    } else if (args[i].equalsIgnoreCase("-markRC")) {
+      markRC = true;
+      i++;
+    } else if (args[i].equalsIgnoreCase("-insertNPinPP")) {
+      treeNormalizerInsertNPinPP = true;
+      i++;
+    } else if (args[i].equalsIgnoreCase("-markLP")) {
+      markLP = true;
+      i++;
+    } else if (args[i].equalsIgnoreCase("-markColon")) {
+      markColon = true;
+      i++;
+    } else if (args[i].equalsIgnoreCase("-markKonjParent")) {
+      markKonjParent = true;
+      i++;
+    } else if (args[i].equalsIgnoreCase("-markHDParent")) {
+      markHDParent = true;
+      i++;
+    } else if (args[i].equalsIgnoreCase("-markContainsV")) {
+      markContainsV = true;
+      i++;
+    } else if (args[i].equalsIgnoreCase("-evalGF")) {
+      this.setEvalGF(Boolean.parseBoolean(args[i + 1]));
+      i+=2;
+    } else if (args[i].equalsIgnoreCase("-headFinder") && (i + 1 < args.length)) {
+      try {
+        headFinder = (HeadFinder) Class.forName(args[i + 1]).newInstance();
+      } catch (Exception e) {
+        System.err.println(e);
+        System.err.println(this.getClass().getName() + ": Could not load head finder " + args[i + 1]);
+      }
+      i+=2;
+    }
+    return i;
+  }
+
+  @Override
+  public void display() {
+    System.err.println("NegraPennTreebankParserParams");
+    System.err.println("  markZuVP=" + markZuVP);
+    System.err.println("  insertNPinPP=" + treeNormalizerInsertNPinPP);
+    System.err.println("  leaveGF=" + treeNormalizerLeaveGF);
+    System.out.println("markLP=" + markLP);
+    System.out.println("markColon=" + markColon);
+  }
+
+
+  private String basicCat(String str) {
+    return treebankLanguagePack().basicCategory(str);
+  }
+

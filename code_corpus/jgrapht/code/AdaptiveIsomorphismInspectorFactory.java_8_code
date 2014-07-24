@@ -1,0 +1,32 @@
+    protected static <V, E> GraphIsomorphismInspector
+    createAppropriateConcreteInspector(
+        int graphType,
+        Graph<V, E> graph1,
+        Graph<V, E> graph2,
+        EquivalenceComparator<V, Graph<V, E>> vertexChecker,
+        EquivalenceComparator<E, Graph<V, E>> edgeChecker)
+    {
+        assertUnsupportedGraphTypes(graph1);
+        assertUnsupportedGraphTypes(graph2);
+        GraphIsomorphismInspector currentInspector = null;
+
+        switch (graphType) {
+        case GRAPH_TYPE_PLANAR:
+        case GRAPH_TYPE_TREE:
+        case GRAPH_TYPE_ARBITRARY:
+            currentInspector =
+                createTopologicalExhaustiveInspector(
+                    graph1,
+                    graph2,
+                    vertexChecker,
+                    edgeChecker);
+            break;
+
+        default:
+
+            throw new IllegalArgumentException(
+                "The type was not one of the supported types.");
+        }
+        return currentInspector;
+    }
+

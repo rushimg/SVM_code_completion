@@ -1,0 +1,85 @@
+  public String toBiggestWeightFeaturesString(boolean useMagnitude,
+      int numFeatures,
+      boolean printDescending) {
+    // this used to try to use a treeset, but that was WRONG....
+    edu.stanford.nlp.util.PriorityQueue<Pair<Integer,Integer>> biggestKeys =
+      new FixedPrioritiesPriorityQueue<Pair<Integer,Integer>>();
+
+    // locate biggest keys
+    for (int feat = 0; feat < weights.length; feat++) {
+      for (int lab = 0; lab < weights[feat].length; lab++) {
+        double thisWeight;
+        // reverse the weight, so get smallest first
+        if (useMagnitude) {
+          thisWeight = -Math.abs(weights[feat][lab]);
+        } else {
+          thisWeight = -weights[feat][lab];
+        }
+        if (biggestKeys.size() == numFeatures) {
+          // have enough features, add only if bigger
+          double lowest = biggestKeys.getPriority();
+          if (thisWeight < lowest) {
+            // remove smallest
+            biggestKeys.removeFirst();
+            biggestKeys.add(new Pair<Integer, Integer>(feat, lab), thisWeight);
+          }
+        } else {
+          // always add it if don't have enough features yet
+          biggestKeys.add(new Pair<Integer, Integer>(feat, lab), thisWeight);
+        }
+      }
+    }
+
+    // Put in List either reversed or not
+    // (Note: can't repeatedly iterate over PriorityQueue.)
+    int actualSize = biggestKeys.size();
+    Pair<Integer, Integer>[] bigArray = ErasureUtils.<Pair<Integer, Integer>>mkTArray(Pair.class,actualSize);
+    // System.err.println("biggestKeys is " + biggestKeys);
+    if (printDescending) {
+      for (int j = actualSize - 1; j >= 0; j--) {
+        bigArray[j] = biggestKeys.removeFirst();
+      }
+    } else {
+      for (int j = 0; j < actualSize; j--) {
+        bigArray[j] = biggestKeys.removeFirst();
+      }
+    }
+    List<Pair<Integer, Integer>> bigColl = Arrays.asList(bigArray);
+    // System.err.println("bigColl is " + bigColl);
+
+    // find longest key length (for pretty printing) with a limit
+    int maxLeng = 0;
+    for (Pair<Integer,Integer> p : bigColl) {
+      String key = "(" + featureIndex.get(p.first) + "," + labelIndex.get(p.second) + ")";
+      int leng = key.length();
+      if (leng > maxLeng) {
+        maxLeng = leng;
+      }
+    }
+    maxLeng = Math.min(64, maxLeng);
+
+    // set up pretty printing of weights
+    NumberFormat nf = NumberFormat.getNumberInstance();
+    nf.setMinimumFractionDigits(4);
+    nf.setMaximumFractionDigits(4);
+    if (nf instanceof DecimalFormat) {
+      ((DecimalFormat) nf).setPositivePrefix(" ");
+    }
+
+    //print high weight features to a String
+    StringBuilder sb = new StringBuilder("LinearClassifier [printing top " + numFeatures + " features]\n");
+    for (Pair<Integer, Integer> p : bigColl) {
+      String key = "(" + featureIndex.get(p.first) + "," + labelIndex.get(p.second) + ")";
+      sb.append(StringUtils.pad(key, maxLeng));
+      sb.append(" ");
+      double cnt = weights[p.first][p.second];
+      if (Double.isInfinite(cnt)) {
+        sb.append(cnt);
+      } else {
+        sb.append(nf.format(cnt));
+      }
+      sb.append("\n");
+    }
+    return sb.toString();
+  }
+

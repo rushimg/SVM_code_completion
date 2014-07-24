@@ -1,0 +1,46 @@
+  public static class SimpleCachedExpression<T> extends SimpleExpression<T> {
+    Value evaluated;
+    boolean disableCaching = false;
+
+    protected SimpleCachedExpression(String typename, T value, String... tags) {
+      super(typename, value, tags);
+    }
+
+    protected Value doEvaluation(Env env, Object... args) {
+      throw new UnsupportedOperationException("Cannot evaluate type: " + typename);
+    }
+
+    public Value evaluate(Env env, Object... args) {
+      if (args != null) {
+        return doEvaluation(env, args);
+      }
+      if (evaluated == null || disableCaching) {
+        evaluated = doEvaluation(env, args);
+      }
+      return evaluated;
+    }
+
+    public boolean hasValue() {
+      return (evaluated != null);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (!(o instanceof SimpleCachedExpression)) return false;
+
+      SimpleCachedExpression that = (SimpleCachedExpression) o;
+
+      if (disableCaching != that.disableCaching) return false;
+      if (evaluated != null ? !evaluated.equals(that.evaluated) : that.evaluated != null) return false;
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      int result = evaluated != null ? evaluated.hashCode() : 0;
+      return result;
+    }
+  }
+

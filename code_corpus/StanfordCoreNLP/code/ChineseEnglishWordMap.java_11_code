@@ -1,0 +1,21 @@
+  public Map<String, Set<String>> getReverseMap() {
+    Set<Map.Entry<String,Set<String>>> entries = map.entrySet();
+    Map<String, Set<String>> rMap = Generics.newHashMap(entries.size());
+    for (Map.Entry<String,Set<String>> me : entries) {
+      String k = me.getKey();
+      Set<String> transList = me.getValue();
+      for (String trans : transList) {
+        Set<String> entry = rMap.get(trans);
+        if (entry == null) {
+          // reduce default size as most will be small
+          Set<String> toAdd = new LinkedHashSet<String>(6);
+          toAdd.add(k);
+          rMap.put(trans, toAdd);
+        } else {
+          entry.add(k);
+        }
+      }
+    }
+    return rMap;
+  }
+

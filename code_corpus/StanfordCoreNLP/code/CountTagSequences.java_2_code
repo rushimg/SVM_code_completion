@@ -1,0 +1,67 @@
+  private CountTagSequences() {
+  }
+
+  private static void addBigrams(List ts) {
+    Iterator it = ts.iterator();
+    if (!it.hasNext()) {
+      System.err.println("Bung!");
+      System.exit(0);
+    }
+    Label t1 = (Label) it.next();
+    while (it.hasNext()) {
+      Label t2 = (Label) it.next();
+      int i = numb.indexOf(t1, true);
+      int j = numb.indexOf(t2, true);
+      counts[i][j]++;
+      rowcounts[i]++;
+      t1 = t2;
+    }
+  }
+
+
+  private static void printBigrams() {
+    int max = numb.size();
+
+    System.out.println("Tag bigram counts (t1\\t2)");
+    System.out.println("==========================");
+
+    System.out.print(StringUtils.pad("", FIELDLENG));
+    for (int j = 0; j < max; j++) {
+      System.out.print(StringUtils.padLeft(numb.get(j), FIELDLENG));
+    }
+    System.out.println(StringUtils.padLeft("Total", FIELDLENG));
+    for (int i = 0; i < max; i++) {
+      System.out.print(StringUtils.pad(numb.get(i), FIELDLENG));
+      for (int j = 0; j < max; j++) {
+        System.out.print(StringUtils.padLeft(Integer.toString(counts[i][j]), FIELDLENG));
+      }
+      System.out.println(StringUtils.padLeft(Integer.toString(rowcounts[i]), FIELDLENG));
+    }
+
+    NumberFormat nf = NumberFormat.getNumberInstance();
+    nf.setMaximumFractionDigits(1);
+    nf.setMinimumFractionDigits(1);
+    System.out.println();
+    System.out.println("Tag bigram percentages (stochastic matrix)");
+    System.out.println("==========================================");
+
+    System.out.print(StringUtils.pad("", FIELDLENG));
+    for (int j = 0; j < max; j++) {
+      System.out.print(StringUtils.padLeft(numb.get(j), FIELDLENG));
+    }
+    System.out.println();
+    for (int i = 0; i < max; i++) {
+      System.out.print(StringUtils.pad(numb.get(i), FIELDLENG));
+      for (int j = 0; j < max; j++) {
+        if (rowcounts[i] == 0) {
+          System.out.print(StringUtils.padLeft("-", FIELDLENG));
+        } else {
+          System.out.print(StringUtils.padLeft(nf.format(percent), FIELDLENG));
+        }
+      }
+      System.out.println();
+    }
+
+
+  }
+

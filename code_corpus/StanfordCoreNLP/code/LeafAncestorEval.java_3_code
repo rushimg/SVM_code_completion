@@ -1,0 +1,129 @@
+  private static int editDistance(final List<CoreLabel> l1, final List<CoreLabel> l2) {
+    int[][] m = new int[l1.size()+1][l2.size()+1];
+    for(int i = 1; i <= l1.size(); i++)
+      m[i][0] = i;
+    for(int j = 1; j <= l2.size(); j++)
+      m[0][j] = j;
+
+    for(int i = 1; i <= l1.size(); i++) {
+      for(int j = 1; j <= l2.size(); j++) {
+        m[i][j] = Math.min(m[i-1][j-1] + ((l1.get(i-1).equals(l2.get(j-1))) ? 0 : 1), m[i-1][j] + 1);
+        m[i][j] = Math.min(m[i][j], m[i][j-1] + 1);
+      }
+    }
+
+    return m[l1.size()][l2.size()];
+  }
+
+  private static String toString(final List<CoreLabel> lineage) {
+    StringBuilder sb = new StringBuilder();
+    for(CoreLabel cl : lineage) {
+      sb.append(cl.value());
+      sb.append(" <-- ");
+    }
+
+    return sb.toString();
+  }
+
+  public void display(boolean verbose, PrintWriter pw) {
+    final Random rand = new Random();
+
+    double corpusLevel = corpusAvg / corpusNum;
+    double sentLevel = sentAvg / sentNum;
+
+    if(verbose) {
+      Map<Double,List<CoreLabel>> avgMap = new TreeMap<Double,List<CoreLabel>>();
+      for (List<CoreLabel> lineage : catAvg.keySet()) {
+        double avg = catAvg.get(lineage) / catNum.get(lineage);
+        if(new Double(avg).equals(Double.NaN)) avg = -1.0;
+        if(avgMap.containsKey(avg))
+          avgMap.put(avg + (rand.nextDouble()/10000.0), lineage);
+        else
+          avgMap.put(avg, lineage);
+      }
+
+      pw.println("============================================================");
+      pw.println("Leaf Ancestor Metric" + "(" + name + ") -- final statistics");
+      pw.println("============================================================");
+      pw.println("#Sentences: " + (int) sentNum);
+      pw.println();
+      pw.println("Sentence-level (macro-averaged)");
+      pw.printf(" Avg: %.3f%n", sentLevel);
+      pw.printf(" Exact: %.2f%%%n", sentEx);
+      pw.println();
+      pw.println("Corpus-level (micro-averaged)");
+      pw.printf(" Avg: %.3f%n", corpusLevel);
+      pw.println("============================================================");
+
+      for (List<CoreLabel> lineage : avgMap.values()) {
+        if(catNum.get(lineage) < 30.0) continue;
+        double avg = catAvg.get(lineage) / catNum.get(lineage);
+        pw.printf(" %.3f\t%d\t%s\n",avg, (int) ((double)catNum.get(lineage)),toString(lineage));
+      }
+
+      pw.println("============================================================");
+
+    } else {
+      pw.printf("%s summary: corpus: %.3f sent: %.3f sent-ex: %.2f%n", name,corpusLevel,sentLevel,sentEx);
+    }
+  }
+
+
+  private static final String USAGE =
+    String.format("Usage: java %s [OPTS] goldFile guessFile%n%nOptions:%n  -l lang   : Language name %s%n" +
+            "  -y num    : Skip gold trees with yields longer than num.%n  -v        : Verbose output%n",
+            LeafAncestorEval.class.getName(),
+            Languages.listOfLanguages());
+
+  private static final int MIN_ARGS = 2;
+
+  //Command line options
+  private static boolean VERBOSE = false;
+  private static Language LANGUAGE = Language.English;
+  private static int MAX_GOLD_YIELD = Integer.MAX_VALUE;
+
+  private static File guessFile = null;
+  private static File goldFile = null;
+
+  public static final Map<String,Integer> optionArgDefs = Generics.newHashMap();
+  static {
+    optionArgDefs.put("-y", 1);
+    optionArgDefs.put("-l", 1);
+    optionArgDefs.put("-v", 0);
+  }
+
+  private static boolean validateCommandLine(String[] args) {
+    Map<String, String[]> argsMap = StringUtils.argsToMap(args,optionArgDefs);
+
+    for(Map.Entry<String, String[]> opt : argsMap.entrySet()) {
+      String key = opt.getKey();
+      if(key == null) {
+        continue;
+
+      } else if(key.equals("-y")) {
+        MAX_GOLD_YIELD = Integer.valueOf(opt.getValue()[0]);
+
+      } else if(key.equals("-l")) {
+        LANGUAGE = Language.valueOf(opt.getValue()[0]);
+
+      } else if(key.equals("-v")) {
+        VERBOSE = true;
+
+      } else {
+        return false;
+      }
+    }
+
+    //Regular arguments
+    String[] rest = argsMap.get(null);
+    if(rest == null || rest.length != MIN_ARGS) {
+      return false;
+    } else {
+      goldFile = new File(rest[0]);
+      guessFile = new File(rest[1]);
+    }
+
+    return true;
+  }
+
+

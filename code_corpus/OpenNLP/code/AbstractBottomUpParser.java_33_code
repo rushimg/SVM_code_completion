@@ -1,0 +1,70 @@
+  protected Parse[] advanceChunks(final Parse p, double minChunkScore) {
+    // chunk
+    Parse[] children = p.getChildren();
+    String words[] = new String[children.length];
+    String ptags[] = new String[words.length];
+    double probs[] = new double[words.length];
+    Parse sp = null;
+    for (int i = 0, il = children.length; i < il; i++) {
+      sp = children[i];
+      words[i] = sp.getHead().getCoveredText();
+      ptags[i] = sp.getType();
+    }
+    //System.err.println("adjusted mcs = "+(minChunkScore-p.getProb()));
+    Sequence[] cs = chunker.topKSequences(words, ptags,minChunkScore-p.getProb());
+    Parse[] newParses = new Parse[cs.length];
+    for (int si = 0, sl = cs.length; si < sl; si++) {
+      newParses[si] = (Parse) p.clone(); //copies top level
+      if (createDerivationString) newParses[si].getDerivation().append(si).append(".");
+      String[] tags = cs[si].getOutcomes().toArray(new String[words.length]);
+      cs[si].getProbs(probs);
+      int start = -1;
+      int end = 0;
+      String type = null;
+      //System.err.print("sequence "+si+" ");
+      for (int j = 0; j <= tags.length; j++) {
+        //if (j != tags.length) {System.err.println(words[j]+" "+ptags[j]+" "+tags[j]+" "+probs.get(j));}
+        if (j != tags.length) {
+          newParses[si].addProb(Math.log(probs[j]));
+        }
+        if (j != tags.length && tags[j].startsWith(CONT)) { // if continue just update end chunking tag don't use contTypeMap
+          end = j;
+        }
+        else { //make previous constituent if it exists
+          if (type != null) {
+            //System.err.println("inserting tag "+tags[j]);
+            Parse p1 = p.getChildren()[start];
+            Parse p2 = p.getChildren()[end];
+            //System.err.println("Putting "+type+" at "+start+","+end+" for "+j+" "+newParses[si].getProb());
+            Parse[] cons = new Parse[end - start + 1];
+            cons[0] = p1;
+            //cons[0].label="Start-"+type;
+            if (end - start != 0) {
+              cons[end - start] = p2;
+              //cons[end-start].label="Cont-"+type;
+              for (int ci = 1; ci < end - start; ci++) {
+                cons[ci] = p.getChildren()[ci + start];
+                //cons[ci].label="Cont-"+type;
+              }
+            }
+            Parse chunk = new Parse(p1.getText(), new Span(p1.getSpan().getStart(), p2.getSpan().getEnd()), type, 1, headRules.getHead(cons, type));
+            chunk.isChunk(true);
+            newParses[si].insert(chunk);
+          }
+          if (j != tags.length) { //update for new constituent
+            if (tags[j].startsWith(START)) { // don't use startTypeMap these are chunk tags
+              type = tags[j].substring(START.length());
+              start = j;
+              end = j;
+            }
+            else { // other
+              type = null;
+            }
+          }
+        }
+      }
+      //newParses[si].show();System.out.println();
+    }
+    return newParses;
+  }
+

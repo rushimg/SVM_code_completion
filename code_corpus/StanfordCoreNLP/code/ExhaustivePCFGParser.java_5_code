@@ -1,0 +1,134 @@
+  protected Tree extractBestParse(String goalStr, int start, int end) {
+    return extractBestParse(stateIndex.indexOf(goalStr), start, end);
+  }
+
+  private Tree extractBestParse(int goal, int start, int end) {
+    // find source of inside score
+    // no backtraces so we can speed up the parsing for its primary use
+    double bestScore = iScore[start][end][goal];
+    double normBestScore = op.testOptions.lengthNormalization ? (bestScore / wordsInSpan[start][end][goal]) : bestScore;
+    String goalStr = stateIndex.get(goal);
+
+    // check tags
+    if (end - start <= op.testOptions.maxSpanForTags && tagIndex.contains(goalStr)) {
+      if (op.testOptions.maxSpanForTags > 1) {
+        Tree wordNode = null;
+        if (sentence != null) {
+          StringBuilder word = new StringBuilder();
+          for (int i = start; i < end; i++) {
+            if (sentence.get(i) instanceof HasWord) {
+              HasWord cl = (HasWord) sentence.get(i);
+              word.append(cl.word());
+            } else {
+              word.append(sentence.get(i).toString());
+            }
+          }
+          wordNode = tf.newLeaf(word.toString());
+
+        } else if (lr != null) {
+          List<LatticeEdge> latticeEdges = lr.getEdgesOverSpan(start, end);
+          for (LatticeEdge edge : latticeEdges) {
+            IntTaggedWord itw = new IntTaggedWord(edge.word, stateIndex.get(goal), wordIndex, tagIndex);
+
+            float tagScore = (floodTags) ? -1000.0f : lex.score(itw, start, edge.word, null);
+            if (matches(bestScore, tagScore + (float) edge.weight)) {
+              wordNode = tf.newLeaf(edge.word);
+              if(wordNode.label() instanceof CoreLabel) {
+              	CoreLabel cl = (CoreLabel) wordNode.label();
+              	cl.setBeginPosition(start);
+              	cl.setEndPosition(end);
+              }
+              break;
+            }
+          }
+          if (wordNode == null) {
+            throw new RuntimeException("could not find matching word from lattice in parse reconstruction");
+          }
+
+        } else {
+          throw new RuntimeException("attempt to get word when sentence and lattice are null!");
+        }
+        Tree tagNode = tf.newTreeNode(goalStr, Collections.singletonList(wordNode));
+        tagNode.setScore(bestScore);
+        if (originalTags[start] != null) {
+          tagNode.label().setValue(originalTags[start].tag());
+        }
+        return tagNode;
+      } else {  // normal lexicon is single words case
+        IntTaggedWord tagging = new IntTaggedWord(words[start], tagIndex.indexOf(goalStr));
+        String contextStr = getCoreLabel(start).originalText();
+        float tagScore = lex.score(tagging, start, wordIndex.get(words[start]), contextStr);
+        if (tagScore > Float.NEGATIVE_INFINITY || floodTags) {
+          // return a pre-terminal tree
+          CoreLabel terminalLabel = getCoreLabel(start);
+
+          Tree wordNode = tf.newLeaf(terminalLabel);
+          Tree tagNode = tf.newTreeNode(goalStr, Collections.singletonList(wordNode));
+          tagNode.setScore(bestScore);
+          if (terminalLabel.tag() != null) {
+            tagNode.label().setValue(terminalLabel.tag());
+          }
+          if (tagNode.label() instanceof HasTag) {
+            ((HasTag) tagNode.label()).setTag(tagNode.label().value());
+          }
+          return tagNode;
+        }
+      }
+    }
+    // check binaries first
+    for (int split = start + 1; split < end; split++) {
+      for (Iterator<BinaryRule> binaryI = bg.ruleIteratorByParent(goal); binaryI.hasNext(); ) {
+        BinaryRule br = binaryI.next();
+        double score = br.score + iScore[start][split][br.leftChild] + iScore[split][end][br.rightChild];
+        boolean matches;
+        if (op.testOptions.lengthNormalization) {
+          double normScore = score / (wordsInSpan[start][split][br.leftChild] + wordsInSpan[split][end][br.rightChild]);
+          matches = matches(normScore, normBestScore);
+        } else {
+          matches = matches(score, bestScore);
+        }
+        if (matches) {
+          // build binary split
+          Tree leftChildTree = extractBestParse(br.leftChild, start, split);
+          Tree rightChildTree = extractBestParse(br.rightChild, split, end);
+          List<Tree> children = new ArrayList<Tree>();
+          children.add(leftChildTree);
+          children.add(rightChildTree);
+          Tree result = tf.newTreeNode(goalStr, children);
+          result.setScore(score);
+          // System.err.println("    Found Binary node: "+result);
+          return result;
+        }
+      }
+    }
+    // check unaries
+    // note that even though we parse with the unary-closed grammar, we can
+    // extract the best parse with the non-unary-closed grammar, since all
+    // the intermediate states in the chain must have been built, and hence
+    // we can exploit the sparser space and reconstruct the full tree as we go.
+    // for (Iterator<UnaryRule> unaryI = ug.closedRuleIteratorByParent(goal); unaryI.hasNext(); ) {
+    for (Iterator<UnaryRule> unaryI = ug.ruleIteratorByParent(goal); unaryI.hasNext(); ) {
+      UnaryRule ur = unaryI.next();
+      // System.err.println("  Trying " + ur + " dtr score: " + iScore[start][end][ur.child]);
+      double score = ur.score + iScore[start][end][ur.child];
+      boolean matches;
+      if (op.testOptions.lengthNormalization) {
+        double normScore = score / wordsInSpan[start][end][ur.child];
+        matches = matches(normScore, normBestScore);
+      } else {
+        matches = matches(score, bestScore);
+      }
+      if (ur.child != ur.parent && matches) {
+        // build unary
+        Tree childTree = extractBestParse(ur.child, start, end);
+        Tree result = tf.newTreeNode(goalStr, Collections.singletonList(childTree));
+        // System.err.println("    Matched!  Unary node: "+result);
+        result.setScore(score);
+        return result;
+      }
+    }
+    System.err.println("Warning: no parse found in ExhaustivePCFGParser.extractBestParse: failing on: [" + start + ", " + end + "] looking for " + goalStr);
+    return null;
+  }
+
+

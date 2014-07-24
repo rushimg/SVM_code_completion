@@ -1,0 +1,68 @@
+@ThreadSafe
+public class PoolingHttpClientConnectionManager
+    implements HttpClientConnectionManager, ConnPoolControl<HttpRoute>, Closeable {
+
+    private final Log log = LogFactory.getLog(getClass());
+
+    private final ConfigData configData;
+    private final CPool pool;
+    private final HttpClientConnectionOperator connectionOperator;
+    private final AtomicBoolean isShutDown;
+
+    private static Registry<ConnectionSocketFactory> getDefaultRegistry() {
+        return RegistryBuilder.<ConnectionSocketFactory>create()
+                .register("http", PlainConnectionSocketFactory.getSocketFactory())
+                .register("https", SSLConnectionSocketFactory.getSocketFactory())
+                .build();
+    }
+
+    public PoolingHttpClientConnectionManager() {
+        this(getDefaultRegistry());
+    }
+
+    public PoolingHttpClientConnectionManager(final long timeToLive, final TimeUnit tunit) {
+        this(getDefaultRegistry(), null, null ,null, timeToLive, tunit);
+    }
+
+    public PoolingHttpClientConnectionManager(
+            final Registry<ConnectionSocketFactory> socketFactoryRegistry) {
+        this(socketFactoryRegistry, null, null);
+    }
+
+    public PoolingHttpClientConnectionManager(
+            final Registry<ConnectionSocketFactory> socketFactoryRegistry,
+            final DnsResolver dnsResolver) {
+        this(socketFactoryRegistry, null, dnsResolver);
+    }
+
+    public PoolingHttpClientConnectionManager(
+            final Registry<ConnectionSocketFactory> socketFactoryRegistry,
+            final HttpConnectionFactory<HttpRoute, ManagedHttpClientConnection> connFactory) {
+        this(socketFactoryRegistry, connFactory, null);
+    }
+
+    public PoolingHttpClientConnectionManager(
+            final HttpConnectionFactory<HttpRoute, ManagedHttpClientConnection> connFactory) {
+        this(getDefaultRegistry(), connFactory, null);
+    }
+
+    public PoolingHttpClientConnectionManager(
+            final Registry<ConnectionSocketFactory> socketFactoryRegistry,
+            final HttpConnectionFactory<HttpRoute, ManagedHttpClientConnection> connFactory,
+            final DnsResolver dnsResolver) {
+        this(socketFactoryRegistry, connFactory, null, dnsResolver, -1, TimeUnit.MILLISECONDS);
+    }
+
+    public PoolingHttpClientConnectionManager(
+            final Registry<ConnectionSocketFactory> socketFactoryRegistry,
+            final HttpConnectionFactory<HttpRoute, ManagedHttpClientConnection> connFactory,
+            final SchemePortResolver schemePortResolver,
+            final DnsResolver dnsResolver,
+            final long timeToLive, final TimeUnit tunit) {
+        this(
+            new DefaultHttpClientConnectionOperator(socketFactoryRegistry, schemePortResolver, dnsResolver),
+            connFactory,
+            timeToLive, tunit
+        );
+    }
+

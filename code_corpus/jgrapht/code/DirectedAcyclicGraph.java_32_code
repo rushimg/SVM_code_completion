@@ -1,0 +1,48 @@
+        private static final long serialVersionUID = 1L;
+
+        private final List<V> topoToVertex = new ArrayList<V>();
+        private final Map<V, Integer> vertexToTopo = new HashMap<V, Integer>();
+
+        public void putVertex(Integer index, V vertex)
+        {
+            int translatedIndex = translateIndex(index);
+
+            // grow topoToVertex as needed to accommodate elements
+            while ((translatedIndex + 1) > topoToVertex.size()) {
+                topoToVertex.add(null);
+            }
+
+            topoToVertex.set(translatedIndex, vertex);
+            vertexToTopo.put(vertex, index);
+        }
+
+        public V getVertex(Integer index)
+        {
+            return topoToVertex.get(translateIndex(index));
+        }
+
+        public Integer getTopologicalIndex(V vertex)
+        {
+            return vertexToTopo.get(vertex);
+        }
+
+        public Integer removeVertex(V vertex)
+        {
+            Integer topoIndex = vertexToTopo.remove(vertex);
+            if (topoIndex != null) {
+                topoToVertex.set(translateIndex(topoIndex), null);
+            }
+            return topoIndex;
+        }
+
+        public void removeAllVertices()
+        {
+            vertexToTopo.clear();
+            topoToVertex.clear();
+        }
+
+        public TopoOrderMapping<V> getTopoOrderMapping()
+        {
+            return this;
+        }
+

@@ -1,0 +1,52 @@
+  private String stem(int del, String add, String affix) {
+    int stem_length = yylength() - del;
+    int i = 0;
+
+    String result=yytext().substring(0,stem_length); 
+
+    if (option(change_case)) { result=result.toLowerCase(); }
+    if (!(add.length()==0)) result+=add;
+
+    if(option(print_affixes)) { result+=("+"+affix); }
+
+    return result;
+  }
+
+
+  private String semi_reg_stem(int del, String add) {
+    int stem_length = 0;
+    int i = 0;
+    String affix="";
+ 
+    char[] yytext=yytext().toCharArray();
+    int yyleng=yylength(); 
+
+     if (yytext[yyleng-1] == 's' || yytext[yyleng-1] == 'S') {
+       stem_length = yyleng - 2 - del; 
+       affix = "s"; 
+     }
+     if (yytext[yyleng-1] == 'd' || yytext[yyleng-1] == 'D') {
+       stem_length = yyleng - 2 - del; 
+       affix = "ed"; 
+     }
+     if (yytext[yyleng-1] == 'g' || yytext[yyleng-1] == 'G') {
+       stem_length = yyleng - 3 - del; 
+       affix = "ing"; 
+     }
+
+    String result=yytext().substring(0,stem_length);
+
+    if(option(change_case)){
+      result=result.toLowerCase();
+    }
+
+    result+=add;
+    if (option(print_affixes)) {
+      result+="+"+affix; 
+    }
+ 
+    return result;
+   }
+
+
+

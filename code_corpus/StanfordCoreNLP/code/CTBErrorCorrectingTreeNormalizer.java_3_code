@@ -1,0 +1,38 @@
+    public boolean accept(Tree t) {
+      Tree[] kids = t.children();
+      Label l = t.label();
+      if ((l != null) && l.value() != null && // there appears to be a mistake in CTB3 where the label "-NONE-1" is used once
+              // presumably it should be "-NONE-" and be spliced out here.
+        // Delete empty/trace nodes (ones marked '-NONE-')
+        if ( ! l.value().equals("-NONE-")) {
+          EncodingPrintWriter.err.println("Deleting errant node " + l.value() + " as if -NONE-: " + t, ChineseTreebankLanguagePack.ENCODING);
+        }
+        return false;
+      }
+      return true;
+    }
+
+  }
+
+  private final Filter<Tree> chineseEmptyFilter = new ChineseEmptyFilter();
+
+  private static final TregexPattern[] splitPuncTregex = {
+    TregexPattern.compile("PU=punc < 她｛")
+  };
+  private static final TsurgeonPattern[] splitPuncTsurgeon = {
+    Tsurgeon.parseOperation("replace punc (PN 她) (PU ｛)")
+  };
+
+  static {
+    if (splitPuncTregex.length != splitPuncTsurgeon.length) {
+      throw new AssertionError("splitPuncTregex and splitPuncTsurgeon have different lengths in CTBErrorCorrectingTreeNormalizer.java");
+    }
+  }
+
+  @Override
+  public Tree normalizeWholeTree(Tree tree, TreeFactory tf) {
+    Tree newTree = tree.prune(chineseEmptyFilter, tf).spliceOut(aOverAFilter);
+
+    // Report non-unary initial rewrites & fix 'obvious ones'
+    Tree[] kids = newTree.children();
+    if (kids.length > 1) {

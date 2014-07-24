@@ -1,0 +1,23 @@
+    private static Object clone(Object object) {
+        if (object == null) {
+            return null;
+        }
+        Class c = object.getClass();
+        Object result = null;
+        try {
+            Method m = c.getMethod("clone", (Class[]) null);
+            if (Modifier.isPublic(m.getModifiers())) {
+                try {
+                    result = m.invoke(object, (Object[]) null);
+                }
+                catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        catch (NoSuchMethodException e) {
+            result = object;
+        }
+        return result;
+    }
+

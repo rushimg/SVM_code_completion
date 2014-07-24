@@ -1,0 +1,19 @@
+  public static String objectToColumnString(Object object, String delimiter, String[] fieldNames)
+          throws IllegalAccessException, NoSuchFieldException, NoSuchMethodException, InvocationTargetException
+  {
+    StringBuilder sb = new StringBuilder();
+    for (String fieldName : fieldNames) {
+      if (sb.length() > 0) {
+        sb.append(delimiter);
+      }
+      try {
+        Field field = object.getClass().getDeclaredField(fieldName);
+        sb.append(field.get(object));
+      } catch (IllegalAccessException ex) {
+        Method method = object.getClass().getDeclaredMethod("get" + StringUtils.capitalize(fieldName));
+        sb.append(method.invoke(object));
+      }
+    }
+    return sb.toString();
+  }
+

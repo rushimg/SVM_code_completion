@@ -1,0 +1,34 @@
+    public void setChart(JFreeChart chart) {
+
+        // stop listening for changes to the existing chart
+        if (this.chart != null) {
+            this.chart.removeChangeListener(this);
+            this.chart.removeProgressListener(this);
+        }
+
+        // add the new chart
+        this.chart = chart;
+        if (chart != null) {
+            this.chart.addChangeListener(this);
+            this.chart.addProgressListener(this);
+            Plot plot = chart.getPlot();
+            this.domainZoomable = false;
+            this.rangeZoomable = false;
+            if (plot instanceof Zoomable) {
+                Zoomable z = (Zoomable) plot;
+                this.domainZoomable = z.isDomainZoomable();
+                this.rangeZoomable = z.isRangeZoomable();
+                this.orientation = z.getOrientation();
+            }
+        }
+        else {
+            this.domainZoomable = false;
+            this.rangeZoomable = false;
+        }
+        if (this.useBuffer) {
+            this.refreshBuffer = true;
+        }
+        repaint();
+
+    }
+

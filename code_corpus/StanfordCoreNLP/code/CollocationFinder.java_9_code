@@ -1,0 +1,22 @@
+  private static List<WordTag> getStemmedWordTagsFromTree(Tree t, boolean threadSafe) {
+    List<WordTag> stemmedWordTags = Generics.newArrayList();
+    ArrayList<TaggedWord> s = t.taggedYield();
+    for (TaggedWord w : s) {
+      WordTag wt = threadSafe ? Morphology.stemStaticSynchronized(w.word(), w.tag())
+              : Morphology.stemStatic(w.word(), w.tag());
+      stemmedWordTags.add(wt);
+    }
+    return stemmedWordTags;
+  }
+
+  private static List<WordTag> getNonStemmedWordTagsFromTree(Tree t) {
+    List<WordTag> wordTags = Generics.newArrayList();
+    ArrayList<TaggedWord> s = t.taggedYield();
+    for (TaggedWord w : s) {
+      WordTag wt = new WordTag(w.word(), w.tag());
+      wordTags.add(wt);
+    }
+    return wordTags;
+  }
+
+  // Convert arg from StringBuffer to String - EY 02/02/07

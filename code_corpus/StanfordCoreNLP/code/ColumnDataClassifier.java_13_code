@@ -1,0 +1,48 @@
+  private RVFDatum<String,String> makeRVFDatum(String[] strs) {
+    ClassicCounter<String> theFeatures = new ClassicCounter<String>();
+    ClassicCounter<String> globalFeatures = new ClassicCounter<String>();
+    if (globalFlags.useClassFeature) {
+      globalFeatures.setCount("CLASS",1.0);
+    }
+    addAllInterningAndPrefixingRVF(theFeatures, globalFeatures, "");
+
+    for (int i = 0; i < flags.length; i++) {
+      ClassicCounter<String> featuresC = new ClassicCounter<String>();
+      makeDatum(strs[i], flags[i], featuresC, strs[globalFlags.goldAnswerColumn]);
+      addAllInterningAndPrefixingRVF(theFeatures, featuresC, i + "-");
+    }
+
+    if (globalFlags.printFeatures != null) {
+      printFeatures(strs, theFeatures);
+    }
+    //System.out.println("Features are: " + theFeatures);
+    return new RVFDatum<String,String>(theFeatures, strs[globalFlags.goldAnswerColumn]);
+  }
+
+  private void addAllInterningAndPrefixingRVF(ClassicCounter<String> accumulator, ClassicCounter<String> addend, String prefix) {
+    assert prefix != null;
+    for (String protoFeat : addend.keySet()) {
+      double count = addend.getCount(protoFeat);
+      if ( ! prefix.isEmpty()) {
+        protoFeat = prefix + protoFeat;
+      }
+      if (globalFlags.intern) {
+        protoFeat = protoFeat.intern();
+      }
+      accumulator.incrementCount(protoFeat,count);
+    }
+  }
+
+  private void addAllInterningAndPrefixing(Collection<String> accumulator, Collection<String> addend, String prefix) {
+    assert prefix != null;
+    for (String protoFeat : addend) {
+      if ( ! prefix.isEmpty()) {
+        protoFeat = prefix + protoFeat;
+      }
+      if (globalFlags.intern) {
+        protoFeat = protoFeat.intern();
+      }
+      accumulator.add(protoFeat);
+    }
+  }
+

@@ -1,0 +1,47 @@
+/**
+ * A <code>FileSequentialCollection</code> maintains a read-only
+ * collection of <code>Files</code>.  (It's a list, but we don't
+ * make it a List or else one needs an iterator that can go backwards.)
+ * It is built from a Collection of paths, or just from a single path.
+ * Optionally one can also provide a <code>FileFilter</code> which is
+ * applied over the files in a recursive traversal, or else
+ * an extension and whether to do recursive traversal, which are used to
+ * construct a filter.
+ * Note that the Collection argument constructor will behave 'normally'
+ * iff none of the Collection elements are directories.  If they are
+ * directories they will be recursed and files in them added.  To get the
+ * behavior of putting just directories in the collection one needs to
+ * use the constructor
+ * <code>FileSequentialCollection(c, failFilt, true)</code>,
+ * where <code>failFilt</code>
+ * is a user-supplied <code>FileFilter</code> that accepts no files.
+ * The <code>FileSequentialCollection</code> builds from these
+ * constructor arguments a collection of <code>Files</code>, which can be
+ * iterated over, etc.  This class does runtime expansion of paths.
+ * That is, it is optimized for iteration and not for random access.
+ * It is also an unmodifiable Collection.
+ * <p/>
+ * The class provides some additional constructors beyond the two recommended
+ * by the Collections package, to allow specifying a <code>FileFilter</code>
+ * and similar options.  Nevertheless, so as to avoid overburdening the
+ * the API, not every possibly useful constructor has been provided where
+ * these can be easily synthesized using standard Collections package
+ * facilities.  Useful idioms to know are:
+ * <ul>
+ * <li>To make a <code>FileSequentialCollection</code> from an array of
+ * <code>Files</code> or <code>Strings</code> <code>arr</code>:<br>
+ * <code>FileSequentialCollection fcollect = new FileSequentialCollection(Arrays.asList(arr));
+ * </code></li>
+ * <li>To make a <code>FileSequentialCollection</code> from a single
+ * <code>File</code> or <code>String</code> fi:<br>
+ * <code>FileSequentialCollection fcollect =
+ * new FileSequentialCollection(Collections.singletonList(fi));</code></li>
+ * </ul>
+ * This class will throw an <code>IllegalArgumentException</code> if there
+ * are things that are not existing Files or String paths to existing files
+ * in the input collection (from the Iterator).
+ *
+ * @author Christopher Manning
+ * @version 1.0, August 2002
+ * @see FileArrayList
+ */

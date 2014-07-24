@@ -1,0 +1,37 @@
+  public boolean matches()
+  {
+    matched = false;
+    matchingCompleted = false;
+    boolean status = findMatchStart(0, true);
+    if (status) {
+      // Check if entire region is matched
+      status = ((matchedGroups[0].matchBegin == regionStart) && (matchedGroups[0].matchEnd == regionEnd));
+    }
+    matchingCompleted = true;
+    matched = status;
+    return status;
+  }
+
+  private void clearMatched()
+  {
+    for (int i = 0; i < matchedGroups.length; i++) {
+      matchedGroups[i] = null;
+    }
+    if (matchedResults != null) {
+      for (int i = 0; i < matchedResults.length; i++) {
+        matchedResults[i] = null;
+      }
+    }
+  }
+
+  private String getStateMessage()
+  {
+    if (!matchingCompleted) {
+      return "Matching not completed";
+    } else if (!matched) {
+      return "No match found";
+    } else {
+      return "Match successful";
+    }
+  }
+

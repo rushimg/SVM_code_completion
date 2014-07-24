@@ -1,0 +1,18 @@
+  @Override
+  public List<CoreLabel> classify(List<CoreLabel> document) {
+    return classifyWithGlobalInformation(document, null, null);
+  }
+
+  @Override
+  public List<CoreLabel> classifyWithGlobalInformation(List<CoreLabel> tokens, final CoreMap document, final CoreMap sentence) {
+    if(useSUTime) return classifyWithSUTime(tokens, document, sentence);
+    return classifyOld(tokens);
+  }
+
+  public void finalizeClassification(final CoreMap document) {
+    if (useSUTime) {
+      timexExtractor.finalize(document);
+    }
+  }
+
+  // todo [cdm, 2013]: Where does this call NumberNormalizer?  Is it the call buried in SUTime's TimeExpressionExtractorImpl?

@@ -1,0 +1,28 @@
+  public static void convertToCoreLabels(Tree tree) {
+    Label l = tree.label();
+    if(! (l instanceof CoreLabel)){
+      CoreLabel cl = new CoreLabel();
+      cl.setValue(l.value());
+      tree.setLabel(cl);
+    }
+
+    for (Tree kid : tree.children()) {
+      convertToCoreLabels(kid);
+    }
+  }
+
+  private static String printTree(Tree tree) {
+    StringBuilder sb = new StringBuilder();
+    return tree.toStringBuilder(sb, true).toString();
+  }
+
+  private Tree safeHead(Tree top) {
+    Tree head = top.headTerminal(headFinder);
+    if (head != null) return head;
+    // if no head found return the right-most leaf
+    List<Tree> leaves = top.getLeaves();
+    if(leaves.size() > 0) return leaves.get(leaves.size() - 1);
+    // fallback: return top
+    return top;
+  }
+

@@ -1,0 +1,24 @@
+  public Contingency getContingency(U positiveLabel) {
+    int tp = 0;
+    int fp = 0;
+    int tn = 0;
+    int fn = 0;
+    for (Pair<U, U> pair : confTable.keySet()) {
+      int count = confTable.get(pair);
+      U guess = pair.first();
+      U gold = pair.second();
+      boolean guessP = guess.equals(positiveLabel);
+      boolean goldP = gold.equals(positiveLabel);
+      if (guessP && goldP) {
+        tp += count;
+      } else if (!guessP && goldP) {
+        fn += count;
+      } else if (guessP && !goldP) {
+        fp += count;
+      } else {
+        tn += count;
+      }
+    }
+    return new Contingency(tp, fp, tn, fn);
+  }
+  

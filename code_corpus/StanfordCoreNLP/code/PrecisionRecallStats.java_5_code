@@ -1,0 +1,19 @@
+  public PrecisionRecallStats() {
+    this(0, 0, 0);
+  }
+
+  public <L,F> PrecisionRecallStats(Classifier<L,F> classifier,Dataset<L,F> data,L positiveClass)
+  {
+    for (int i=0; i < data.size(); ++i)
+    {
+      Datum<L,F> d = data.getDatum(i);
+      L guess = classifier.classOf(d);
+      L label = d.label();
+      boolean guessPositive = guess.equals(positiveClass);
+      boolean isPositive    = label.equals(positiveClass);
+      if (isPositive && guessPositive) tpCount++;
+      if (isPositive && !guessPositive) fnCount++;
+      if (!isPositive && guessPositive) fpCount++;
+    }
+  }
+

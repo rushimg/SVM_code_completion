@@ -1,0 +1,44 @@
+  public boolean skipThisMention(Document document, Mention m1, CorefCluster c, Dictionaries dict) {
+    boolean skip = false;
+
+    // only do for the first mention in its cluster
+    if(!flags.USE_EXACTSTRINGMATCH && !flags.USE_ROLEAPPOSITION && !flags.USE_PREDICATENOMINATIVES
+        && !flags.USE_ACRONYM && !flags.USE_APPOSITION && !flags.USE_RELATIVEPRONOUN
+        && !c.getFirstMention().equals(m1)) {
+      return true;
+    }
+
+    if(Constants.USE_DISCOURSE_SALIENCE)  {
+      SieveCoreferenceSystem.logger.finest("DOING COREF FOR:\t" + m1.spanToString());
+      if(m1.appositions == null && m1.predicateNominatives == null
+          && (m1.lowercaseNormalizedSpanString().startsWith("a ") || m1.lowercaseNormalizedSpanString().startsWith("an "))
+          && !flags.USE_EXACTSTRINGMATCH)  {
+        skip = true; // A noun phrase starting with an indefinite article - unlikely to have an antecedent (e.g. "A commission" was set up to .... )
+      }
+      if(dict.indefinitePronouns.contains(m1.lowercaseNormalizedSpanString()))  {
+        skip = true; // An indefinite pronoun - unlikely to have an antecedent (e.g. "Some" say that... )
+      }
+      for(String indef : dict.indefinitePronouns){
+        if(m1.lowercaseNormalizedSpanString().startsWith(indef + " ")) {
+          skip = true; // A noun phrase starting with an indefinite adjective - unlikely to have an antecedent (e.g. "Another opinion" on the topic is...)
+          break;
+        }
+      }
+
+      if(skip) {
+        SieveCoreferenceSystem.logger.finest("MENTION SKIPPED:\t" + m1.spanToString() + "(" + m1.sentNum + ")"+"\toriginalRef: "+m1.originalRef + " in discourse "+m1.headWord.get(CoreAnnotations.UtteranceAnnotation.class));
+      }
+    }
+
+    return skip;
+  }
+
+  public boolean checkEntityMatch(
+          Document document,
+          CorefCluster mentionCluster,
+          CorefCluster potentialAntecedent,
+          Dictionaries dict,
+          Set<Mention> roleSet)
+  {
+    return false;
+  }

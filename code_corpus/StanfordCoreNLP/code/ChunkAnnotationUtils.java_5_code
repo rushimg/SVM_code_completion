@@ -1,0 +1,64 @@
+  public static boolean fixChunkTokenBoundaries(CoreMap docAnnotation, List<IntPair> chunkCharOffsets)
+  {
+    // First identify any tokens that need to be fixed
+    String text = docAnnotation.get(CoreAnnotations.TextAnnotation.class);
+    List<CoreLabel> tokens = docAnnotation.get(CoreAnnotations.TokensAnnotation.class);
+    List<CoreLabel> output = new ArrayList<CoreLabel>(tokens.size());
+    int i = 0;
+    CoreLabel token = tokens.get(i);
+    for (IntPair offsets:chunkCharOffsets) {
+      assert(token.beginPosition() >= 0);
+      assert(token.endPosition() >= 0);
+      int offsetBegin = offsets.getSource();
+      int offsetEnd = offsets.getTarget();
+      // Find tokens where token begins after chunk starts
+      // and token ends after chunk starts
+      while (offsetBegin < token.get(CoreAnnotations.CharacterOffsetBeginAnnotation.class)
+              || offsetBegin >= token.get(CoreAnnotations.CharacterOffsetEndAnnotation.class)) {
+        output.add(token);
+        i++;
+        if (i >= tokens.size()) { return false; }
+        token = tokens.get(i);
+      }
+      // offsetBegin is now >= token begin and < token end
+      // go until we find a token that starts after our chunk has ended
+      while (offsetEnd > token.get(CoreAnnotations.CharacterOffsetBeginAnnotation.class)) {
+        // Check if chunk includes token
+        if (offsetBegin > token.get(CoreAnnotations.CharacterOffsetBeginAnnotation.class)) {
+          // Chunk starts in the middle of the token
+          if (offsetEnd < token.get(CoreAnnotations.CharacterOffsetEndAnnotation.class)) {
+            output.add(tokenFactory.makeToken(text.substring(token.beginPosition(), offsetBegin),
+                    token.beginPosition(), offsetBegin-token.beginPosition()));
+            output.add(tokenFactory.makeToken(text.substring(offsetBegin,offsetEnd),
+                    offsetBegin, offsetEnd-offsetBegin));
+            output.add(tokenFactory.makeToken(text.substring(offsetEnd,token.endPosition()),
+                    offsetEnd, token.endPosition()-offsetEnd));
+          } else {
+            output.add(tokenFactory.makeToken(text.substring(token.beginPosition(), offsetBegin),
+                    token.beginPosition(), offsetBegin-token.beginPosition()));
+            output.add(tokenFactory.makeToken(text.substring(offsetBegin,token.endPosition()),
+                    offsetBegin, token.endPosition()-offsetBegin));
+          }
+        } else if (offsetEnd < token.get(CoreAnnotations.CharacterOffsetEndAnnotation.class)) {
+          output.add(tokenFactory.makeToken(text.substring(token.beginPosition(),offsetEnd),
+                  token.beginPosition(), offsetEnd-token.beginPosition()));
+          output.add(tokenFactory.makeToken(text.substring(offsetEnd,token.endPosition()), offsetEnd,
+                  token.endPosition()-offsetEnd));
+        } else {
+          // success!  chunk contains token
+          output.add(token);
+        }
+        i++;
+        if (i >= tokens.size()) { return false; }
+        token = tokens.get(i);
+      }
+    }
+    // Add rest of the tokens
+    for (; i < tokens.size(); i++) {
+      token = tokens.get(i);
+      output.add(token);
+    }
+    docAnnotation.set(CoreAnnotations.TokensAnnotation.class, output);
+    return true;
+  }
+

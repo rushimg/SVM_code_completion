@@ -1,0 +1,20 @@
+  public static <E> String toVerticalString(Counter<E> c, int k, String fmt, boolean swap) {
+    PriorityQueue<E> q = Counters.toPriorityQueue(c);
+    List<E> sortedKeys = q.toSortedList();
+    StringBuilder sb = new StringBuilder();
+    int i = 0;
+    for (Iterator<E> keyI = sortedKeys.iterator(); keyI.hasNext() && i < k; i++) {
+      E key = keyI.next();
+      double val = q.getPriority(key);
+      if (swap) {
+        sb.append(String.format(fmt, key, val));
+      } else {
+        sb.append(String.format(fmt, val, key));
+      }
+      if (keyI.hasNext()) {
+        sb.append('\n');
+      }
+    }
+    return sb.toString();
+  }
+

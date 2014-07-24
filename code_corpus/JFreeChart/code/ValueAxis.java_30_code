@@ -1,0 +1,26 @@
+    protected float[] calculateAnchorPoint(ValueTick tick,
+                                           double cursor,
+                                           Rectangle2D dataArea,
+                                           RectangleEdge edge) {
+
+        RectangleInsets insets = getTickLabelInsets();
+        float[] result = new float[2];
+        if (edge == RectangleEdge.TOP) {
+            result[0] = (float) valueToJava2D(tick.getValue(), dataArea, edge);
+            result[1] = (float) (cursor - insets.getBottom() - 2.0);
+        }
+        else if (edge == RectangleEdge.BOTTOM) {
+            result[0] = (float) valueToJava2D(tick.getValue(), dataArea, edge);
+            result[1] = (float) (cursor + insets.getTop() + 2.0);
+        }
+        else if (edge == RectangleEdge.LEFT) {
+            result[0] = (float) (cursor - insets.getLeft() - 2.0);
+            result[1] = (float) valueToJava2D(tick.getValue(), dataArea, edge);
+        }
+        else if (edge == RectangleEdge.RIGHT) {
+            result[0] = (float) (cursor + insets.getRight() + 2.0);
+            result[1] = (float) valueToJava2D(tick.getValue(), dataArea, edge);
+        }
+        return result;
+    }
+

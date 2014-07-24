@@ -1,0 +1,87 @@
+  @Override
+  protected void collapseDependencies(List<TypedDependency> list, boolean CCprocess, boolean includeExtras) {
+    if (DEBUG) {
+      printListSorted("collapseDependencies: CCproc: " + CCprocess + " includeExtras: " + includeExtras, list);
+    }
+    correctDependencies(list);
+    if (DEBUG) {
+      printListSorted("After correctDependencies:", list);
+    }
+
+    eraseMultiConj(list);
+    if (DEBUG) {
+      printListSorted("After collapse multi conj:", list);
+    }
+
+    collapse2WP(list);
+    if (DEBUG) {
+      printListSorted("After collapse2WP:", list);
+    }
+
+    collapseFlatMWP(list);
+    if (DEBUG) {
+      printListSorted("After collapseFlatMWP:", list);
+    }
+
+    collapse2WPbis(list);
+    if (DEBUG) {
+      printListSorted("After collapse2WPbis:", list);
+    }
+
+    collapse3WP(list);
+    if (DEBUG) {
+      printListSorted("After collapse3WP:", list);
+    }
+
+    collapsePrepAndPoss(list);
+    if (DEBUG) {
+      printListSorted("After PrepAndPoss:", list);
+    }
+
+    collapseConj(list);
+    if (DEBUG) {
+      printListSorted("After conj:", list);
+    }
+
+    if (includeExtras) {
+      addRef(list);
+      if (DEBUG) {
+        printListSorted("After adding ref:", list);
+      }
+
+      collapseReferent(list);
+      if (DEBUG) {
+        printListSorted("After collapse referent:", list);
+      }
+    }
+
+    if (CCprocess) {
+      treatCC(list);
+      if (DEBUG) {
+        printListSorted("After treatCC:", list);
+      }
+    }
+
+    if (includeExtras) {
+      addXSubj(list);
+      if (DEBUG) {
+        printListSorted("After adding xsubj:", list);
+      }
+    }
+
+    removeDep(list);
+    if (DEBUG) {
+      printListSorted("After remove dep:", list);
+    }
+
+    Collections.sort(list);
+    if (DEBUG) {
+      printListSorted("After all collapse:", list);
+    }
+  }
+
+  @Override
+  protected void collapseDependenciesTree(List<TypedDependency> list) {
+    collapseDependencies(list, false, false);
+  }
+

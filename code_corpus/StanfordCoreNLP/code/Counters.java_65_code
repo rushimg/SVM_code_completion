@@ -1,0 +1,37 @@
+  public static <E> double dotProduct(Counter<E> c, double[] a, Index<E> idx) {
+    double dotProd = 0.0;
+    for (Map.Entry<E, Double> entry : c.entrySet()) {
+      int keyIdx = idx.indexOf(entry.getKey());
+      if (keyIdx >= 0) {
+      }
+    }
+    return dotProd;
+  }
+
+  public static <E> double sumEntries(Counter<E> c1, Collection<E> entries) {
+    double dotProd = 0.0;
+    for (E entry : entries) {
+      dotProd += c1.getCount(entry);
+    }
+    return dotProd;
+  }
+  
+
+  public static <E> Counter<E> add(Counter<E> c1, Collection<E> c2) {
+    Counter<E> result = c1.getFactory().create();
+    addInPlace(result, c1);
+    for (E key : c2) {
+      result.incrementCount(key, 1);
+    }
+    return result;
+  }
+
+  public static <E> Counter<E> add(Counter<E> c1, Counter<E> c2) {
+    Counter<E> result = c1.getFactory().create();
+    for (E key : Sets.union(c1.keySet(), c2.keySet())) {
+      result.setCount(key, c1.getCount(key) + c2.getCount(key));
+    }
+    retainNonZeros(result);
+    return result;
+  }
+

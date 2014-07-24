@@ -1,0 +1,38 @@
+  private Set<Map.Entry<Object,Double>> entrySet(Set<Map.Entry<Object,Double>> s, Object[] key, boolean useLists) {
+    if (depth == 1) {
+      //System.out.println("key is long enough to add to set");
+      Set<K> keys = map.keySet();
+      for (K finalKey: keys) {
+        // array doesn't escape
+        K[] newKey = ErasureUtils.<K>mkTArray(Object.class,key.length + 1);
+        if (key.length > 0) {
+          System.arraycopy(key, 0, newKey, 0, key.length);
+        }
+        newKey[key.length] = finalKey;
+        MutableDouble value = (MutableDouble) map.get(finalKey);
+        Double value1 = new Double(value.doubleValue());
+        if (useLists) {
+          s.add(new Entry<Object,Double>(Arrays.asList(newKey), value1));
+        } else {
+          s.add(new Entry<Object,Double>(newKey[0], value1));
+        }
+
+      }
+    } else {
+      Set<K> keys = map.keySet();
+      //System.out.println("key length " + key.length);
+      //System.out.println("keyset level " + depth + " " + keys);
+      for (K o: keys) {
+        Object[] newKey = new Object[key.length + 1];
+        if (key.length > 0) {
+          System.arraycopy(key, 0, newKey, 0, key.length);
+        }
+        newKey[key.length] = o;
+        //System.out.println("level " + key.length + " current key " + Arrays.asList(newKey));
+        conditionalizeHelper(o).entrySet(s, newKey, true);
+      }
+    }
+    //System.out.println("leaving key length " + key.length);
+    return s;
+  }
+

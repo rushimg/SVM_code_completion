@@ -1,0 +1,21 @@
+     the nodes that have been pushed since the node was opened are
+     made children of the conditional node, which is then pushed
+     on to the stack.  If the condition is false the node is not
+  public void closeNodeScope(Node n, boolean condition) {
+    if (condition) {
+      int a = nodeArity();
+      mk = marks.remove(marks.size()-1);
+      while (a-- > 0) {
+        Node c = popNode();
+        c.jjtSetParent(n);
+        n.jjtAddChild(c, a);
+      }
+      n.jjtClose();
+      pushNode(n);
+      node_created = true;
+    } else {
+      mk = marks.remove(marks.size()-1);
+      node_created = false;
+    }
+  }
+}

@@ -1,0 +1,44 @@
+  public static Iterable<File> iterFilesRecursive(final File dir,
+                                                  final Pattern pattern) {
+    return new Iterable<File>() {
+      public Iterator<File> iterator() {
+        return new AbstractIterator<File>() {
+          private final Queue<File> files = new LinkedList<File>(Collections
+                  .singleton(dir));
+          private File file = this.findNext();
+
+          @Override
+          public boolean hasNext() {
+            return this.file != null;
+          }
+
+          @Override
+          public File next() {
+            File result = this.file;
+            if (result == null) {
+              throw new NoSuchElementException();
+            }
+            this.file = this.findNext();
+            return result;
+          }
+
+          private File findNext() {
+            File next = null;
+            while (!this.files.isEmpty() && next == null) {
+              next = this.files.remove();
+              if (next.isDirectory()) {
+                files.addAll(Arrays.asList(next.listFiles()));
+                next = null;
+              } else if (pattern != null) {
+                if (!pattern.matcher(next.getPath()).find()) {
+                  next = null;
+                }
+              }
+            }
+            return next;
+          }
+        };
+      }
+    };
+  }
+

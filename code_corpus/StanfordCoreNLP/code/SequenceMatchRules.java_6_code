@@ -1,0 +1,40 @@
+  public static class ListExtractRule<I,O> implements ExtractRule<I,O>
+  {
+    List<ExtractRule<I,O>> rules;
+
+    public ListExtractRule(Collection<ExtractRule<I,O>> rules)
+    {
+      this.rules = new ArrayList<ExtractRule<I,O>>(rules);
+    }
+
+    public ListExtractRule(ExtractRule<I,O>... rules)
+    {
+      this.rules = new ArrayList<ExtractRule<I,O>>(rules.length);
+      for (ExtractRule<I,O> rule:rules) {
+        this.rules.add(rule);
+      }
+    }
+
+    public boolean extract(I in, List<O> out) {
+      boolean extracted = false;
+      for (ExtractRule<I,O> rule:rules) {
+        if (rule.extract(in,out)) {
+          extracted = true;
+        }
+      }
+      return extracted;
+    }
+
+    public void addRules(ExtractRule<I,O>... rules)
+    {
+      for (ExtractRule<I,O> rule:rules) {
+        this.rules.add(rule);
+      }
+    }
+
+    public void addRules(Collection<ExtractRule<I,O>> rules)
+    {
+      this.rules.addAll(rules);
+    }
+  }
+

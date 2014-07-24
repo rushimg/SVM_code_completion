@@ -1,0 +1,62 @@
+  public int numRules() {
+    int accumulated = 0;
+    for (int w = 0, tot = wordIndex.size(); w < tot; w++) {
+      Iterator<IntTaggedWord> iter = ruleIteratorByWord(w, 0, null);
+      while (iter.hasNext()) {
+        iter.next();
+        accumulated++;
+      }
+    }
+    return accumulated;
+  }
+
+  private String getTag(String word) {
+    int iW = wordIndex.indexOf(word, true);
+    ensureProbs(iW, false);
+    return Counters.argmax(logProbs);
+  }
+
+
+  private void verbose(String s) {
+    if (verbose) {
+      System.err.println(s);
+    }
+  }
+
+  public ChineseMaxentLexicon(Options op, Index<String> wordIndex, Index<String> tagIndex, int featureLevel) {
+    this.op = op;
+    this.tlpParams = op.tlpParams;
+    this.ctlp = op.tlpParams.treebankLanguagePack();;
+    this.wordIndex = wordIndex;
+    this.tagIndex = tagIndex;
+    this.featureLevel = featureLevel;
+    if (fixUnkFunctionWords) {
+      String filename = "unknown_function_word-simple.gb";
+      try {
+        BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(filename), "GB18030"));
+        for (String line = in.readLine(); line != null; line = in.readLine()) {
+          String[] parts = line.split("\\s+", 2);
+          functionWordTags.put(parts[0], parts[1]);
+        }
+      } catch (IOException e) {
+        throw new RuntimeException("Couldn't read function word file " + filename);
+      }
+    }
+  }
+
+  // only used at training time
+  transient IntCounter<TaggedWord> datumCounter;
+
+  @Override
+  public void initializeTraining(double numTrees) {
+    verbose("Training ChineseMaxentLexicon.");
+    verbose("trainOnLowCount = " + trainOnLowCount + ", trainByType = " + trainByType + ", featureLevel = " + featureLevel + ", tuneSigma = " + tuneSigma);
+    verbose("Making dataset...");
+
+    if (featExtractor == null) {
+      featExtractor = new ChineseWordFeatureExtractor(featureLevel);
+    }
+
+    this.datumCounter = new IntCounter<TaggedWord>();
+  }
+

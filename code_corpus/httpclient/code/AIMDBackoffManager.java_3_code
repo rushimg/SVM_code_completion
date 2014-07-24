@@ -1,0 +1,55 @@
+    public AIMDBackoffManager(final ConnPoolControl<HttpRoute> connPerRoute) {
+        this(connPerRoute, new SystemClock());
+    }
+
+    AIMDBackoffManager(final ConnPoolControl<HttpRoute> connPerRoute, final Clock clock) {
+        this.clock = clock;
+        this.connPerRoute = connPerRoute;
+        this.lastRouteProbes = new HashMap<HttpRoute,Long>();
+        this.lastRouteBackoffs = new HashMap<HttpRoute,Long>();
+    }
+
+    @Override
+    public void backOff(final HttpRoute route) {
+        synchronized(connPerRoute) {
+            final int curr = connPerRoute.getMaxPerRoute(route);
+            final Long lastUpdate = getLastUpdate(lastRouteBackoffs, route);
+            final long now = clock.getCurrentTime();
+            if (now - lastUpdate.longValue() < coolDown) {
+                return;
+            }
+            connPerRoute.setMaxPerRoute(route, getBackedOffPoolSize(curr));
+            lastRouteBackoffs.put(route, Long.valueOf(now));
+        }
+    }
+
+    private int getBackedOffPoolSize(final int curr) {
+        if (curr <= 1) {
+            return 1;
+        }
+    }
+
+    @Override
+    public void probe(final HttpRoute route) {
+        synchronized(connPerRoute) {
+            final int curr = connPerRoute.getMaxPerRoute(route);
+            final int max = (curr >= cap) ? cap : curr + 1;
+            final Long lastProbe = getLastUpdate(lastRouteProbes, route);
+            final Long lastBackoff = getLastUpdate(lastRouteBackoffs, route);
+            final long now = clock.getCurrentTime();
+            if (now - lastProbe.longValue() < coolDown || now - lastBackoff.longValue() < coolDown) {
+                return;
+            }
+            connPerRoute.setMaxPerRoute(route, max);
+            lastRouteProbes.put(route, Long.valueOf(now));
+        }
+    }
+
+    private Long getLastUpdate(final Map<HttpRoute,Long> updates, final HttpRoute route) {
+        Long lastUpdate = updates.get(route);
+        if (lastUpdate == null) {
+            lastUpdate = Long.valueOf(0L);
+        }
+        return lastUpdate;
+    }
+

@@ -1,0 +1,24 @@
+      //CategoryWordTag label = (CategoryWordTag) t.label();
+      // binarize without the last kid and then add it back to the top tree
+      Tree lastKid = (Tree)newChildren.remove(newChildren.size()-1);
+      Tree tempTree = tf.newTreeNode(label, newChildren);
+      tempTree = binarizeLocalTree(tempTree, headNum, result.head);
+      newChildren = tempTree.getChildrenAsList();
+      newChildren.add(lastKid); // add it back
+      result = tf.newTreeNode(t.label(), newChildren); // label shouldn't have changed
+    } else {
+//      CategoryWordTag headLabel = (CategoryWordTag) headChild.label();
+      String word = ((HasWord) headChild.label()).word();
+      String tag = ((HasTag) headChild.label()).tag();
+      Label label = new CategoryWordTag(cat, word, tag);
+      result = tf.newTreeNode(label, newChildren);
+      // cdm Mar 2005: invent a head so I don't have to rewrite all this
+      // code, but with the removal of TreeHeadPair, some of the rest of
+      // this should probably be rewritten too to not use this head variable
+      TaggedWord head = new TaggedWord(word, tag);
+      result = binarizeLocalTree(result, headNum, head);
+    }
+    return result;
+  }
+
+

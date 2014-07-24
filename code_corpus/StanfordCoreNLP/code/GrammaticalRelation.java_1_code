@@ -1,0 +1,19 @@
+public class GrammaticalRelation implements Comparable<GrammaticalRelation>, Serializable {
+
+  private static final long serialVersionUID = 892618003417550128L;
+
+  private static final boolean DEBUG = System.getProperty("GrammaticalRelation", null) != null;
+
+  public abstract static class GrammaticalRelationAnnotation implements CoreAnnotation<Set<TreeGraphNode>> {
+    @Override
+    @SuppressWarnings({"unchecked", "RedundantCast"})
+    public Class<Set<TreeGraphNode>> getType() {  return (Class) Set.class; }
+  }
+
+  private static final Map<Class<? extends GrammaticalRelationAnnotation>, GrammaticalRelation>
+    annotationsToRelations = Generics.newHashMap();
+  private static final Map<GrammaticalRelation, Class<? extends GrammaticalRelationAnnotation>>
+    relationsToAnnotations = Generics.newHashMap();
+  private static final EnumMap<Language, Map<String, GrammaticalRelation>>
+    stringsToRelations = new EnumMap<Language, Map<String, GrammaticalRelation>>(Language.class);
+

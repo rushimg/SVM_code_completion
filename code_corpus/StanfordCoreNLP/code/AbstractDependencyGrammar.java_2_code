@@ -1,0 +1,126 @@
+  public void tune(Collection<Tree> trees) {
+  }
+
+  public int numTagBins() {
+    return numTagBins;
+  }
+
+  public int tagBin(int tag) {
+    if (tag < 0) {
+      return tag;
+    } else {
+      return tagBin[tag];
+    }
+  }
+
+  public boolean rootTW(IntTaggedWord rTW) {
+    // System.out.println("rootTW: checking if " + rTW.toString("verbose") +
+    // " == " + Lexicon.BOUNDARY_TAG + "[" +
+    // tagIndex.indexOf(Lexicon.BOUNDARY_TAG) + "]" + ": " +
+    // (rTW.tag == tagIndex.indexOf(Lexicon.BOUNDARY_TAG)));
+    return rTW.tag == tagIndex.indexOf(Lexicon.BOUNDARY_TAG);
+  }
+
+  protected short valenceBin(int distance) {
+    if (!useDistance) {
+      return 0;
+    }
+    if (distance < 0) {
+      return -1;
+    }
+    if (distance == 0) {
+      return 0;
+    }
+    return 1;
+  }
+
+  public int numDistBins() {
+    return useCoarseDistance ? 4 : 5;
+  }
+
+  public short distanceBin(int distance) {
+    if (!useDistance) {
+      return 0;
+    } else if (useCoarseDistance) {
+      return coarseDistanceBin(distance);
+    } else {
+      return regDistanceBin(distance);
+    }
+  }
+
+  public short regDistanceBin(int distance) {
+    for(short i=0; i<regDistanceBins.length; ++i)
+      if (distance <= regDistanceBins[i])
+        return i;
+    return (short) regDistanceBins.length;
+  }
+
+  public short coarseDistanceBin(int distance) {
+    for(short i=0; i<coarseDistanceBins.length; ++i)
+      if (distance <= coarseDistanceBins[i])
+        return i;
+    return (short) coarseDistanceBins.length;
+  }
+
+  void setCoarseDistanceBins(int[] bins) {
+    assert(bins.length == 3);
+    coarseDistanceBins = bins;
+  }
+
+  void setRegDistanceBins(int[] bins) {
+    assert(bins.length == 4);
+    regDistanceBins = bins;
+  }
+
+  protected void initTagBins() {
+    Index<String> tagBinIndex = new HashIndex<String>();
+    if (DEBUG) {
+      System.err.println();
+      System.err.println("There are " + tagIndex.size() + " tags.");
+    }
+    tagBin = new int[tagIndex.size()];
+    for (int t = 0; t < tagBin.length; t++) {
+      String tagStr = tagIndex.get(t);
+      String binStr;
+      if (tagProjection == null) {
+        binStr = tagStr;
+      } else {
+        binStr = tagProjection.project(tagStr);
+      }
+      tagBin[t] = tagBinIndex.indexOf(binStr, true);
+      if (DEBUG) {
+        System.err.println("initTagBins: Mapped " + tagStr + " (" + t +
+                           ") to " + binStr + " (" + tagBin[t] + ")");
+      }
+    }
+    numTagBins = tagBinIndex.size();
+    if (DEBUG) {
+      System.err.println("initTagBins: tags " + tagBin.length + " bins " +
+                         numTagBins);
+      System.err.println("tagBins: " + tagBinIndex);
+    }
+  }
+
+  public double score(IntDependency dependency) {
+    return scoreTB(dependency.head.word, tagBin(dependency.head.tag), dependency.arg.word, tagBin(dependency.arg.tag), dependency.leftHeaded, dependency.distance);
+  }
+
+  // currently unused
+  public double score(int headWord, int headTag, int argWord, int argTag, boolean leftHeaded, int dist) {
+    IntDependency tempDependency = new IntDependency(headWord, headTag, argWord, argTag, leftHeaded, dist);
+    return score(tempDependency); // this method tag bins
+  }
+
+  public double scoreTB(int headWord, int headTag, int argWord, int argTag, boolean leftHeaded, int dist) {
+    IntDependency tempDependency = new IntDependency(headWord, headTag, argWord, argTag, leftHeaded, dist);
+    return scoreTB(tempDependency);
+  }
+
+  private void readObject(ObjectInputStream ois)
+    throws IOException, ClassNotFoundException
+  {
+    ois.defaultReadObject();
+    // reinitialize the transient objects
+    itwInterner = new Interner<IntTaggedWord>();
+  }
+

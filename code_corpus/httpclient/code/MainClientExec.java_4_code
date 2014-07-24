@@ -1,0 +1,70 @@
+    void establishRoute(
+            final AuthState proxyAuthState,
+            final HttpClientConnection managedConn,
+            final HttpRoute route,
+            final HttpRequest request,
+            final HttpClientContext context) throws HttpException, IOException {
+        final RequestConfig config = context.getRequestConfig();
+        final int timeout = config.getConnectTimeout();
+        final RouteTracker tracker = new RouteTracker(route);
+        int step;
+        do {
+            final HttpRoute fact = tracker.toRoute();
+            step = this.routeDirector.nextStep(route, fact);
+
+            switch (step) {
+
+            case HttpRouteDirector.CONNECT_TARGET:
+                this.connManager.connect(
+                        managedConn,
+                        route,
+                        timeout > 0 ? timeout : 0,
+                        context);
+                tracker.connectTarget(route.isSecure());
+                break;
+            case HttpRouteDirector.CONNECT_PROXY:
+                this.connManager.connect(
+                        managedConn,
+                        route,
+                        timeout > 0 ? timeout : 0,
+                        context);
+                final HttpHost proxy  = route.getProxyHost();
+                tracker.connectProxy(proxy, false);
+                break;
+            case HttpRouteDirector.TUNNEL_TARGET: {
+                final boolean secure = createTunnelToTarget(
+                        proxyAuthState, managedConn, route, request, context);
+                this.log.debug("Tunnel to target created.");
+                tracker.tunnelTarget(secure);
+            }   break;
+
+            case HttpRouteDirector.TUNNEL_PROXY: {
+                // The most simple example for this case is a proxy chain
+                // of two proxies, where P1 must be tunnelled to P2.
+                // route: Source -> P1 -> P2 -> Target (3 hops)
+                // fact:  Source -> P1 -> Target       (2 hops)
+                final int hop = fact.getHopCount()-1; // the hop to establish
+                final boolean secure = createTunnelToProxy(route, hop, context);
+                this.log.debug("Tunnel to proxy created.");
+                tracker.tunnelProxy(route.getHopTarget(hop), secure);
+            }   break;
+
+            case HttpRouteDirector.LAYER_PROTOCOL:
+                this.connManager.upgrade(managedConn, route, context);
+                tracker.layerProtocol(route.isSecure());
+                break;
+
+            case HttpRouteDirector.UNREACHABLE:
+                throw new HttpException("Unable to establish route: " +
+                        "planned = " + route + "; current = " + fact);
+            case HttpRouteDirector.COMPLETE:
+                this.connManager.routeComplete(managedConn, route, context);
+                break;
+            default:
+                throw new IllegalStateException("Unknown step indicator "
+                        + step + " from RouteDirector.");
+            }
+
+        } while (step > HttpRouteDirector.COMPLETE);
+    }
+

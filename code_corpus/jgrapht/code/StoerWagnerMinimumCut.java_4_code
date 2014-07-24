@@ -1,0 +1,31 @@
+    public StoerWagnerMinimumCut(WeightedGraph<V, E> graph)
+    {
+        //get a version of this graph where each vertex is wrapped with a list
+        workingGraph =
+            new SimpleWeightedGraph<Set<V>, DefaultWeightedEdge>(
+                DefaultWeightedEdge.class);
+        Map<V, Set<V>> vertexMap = new HashMap<V, Set<V>>();
+        for (V v : graph.vertexSet()) {
+            Set<V> list = new HashSet<V>();
+            list.add(v);
+            vertexMap.put(v, list);
+            workingGraph.addVertex(list);
+        }
+        for (E e : graph.edgeSet()) {
+            V s = graph.getEdgeSource(e);
+            Set<V> sNew = vertexMap.get(s);
+            V t = graph.getEdgeTarget(e);
+            Set<V> tNew = vertexMap.get(t);
+            DefaultWeightedEdge eNew = workingGraph.addEdge(sNew, tNew);
+            workingGraph.setEdgeWeight(eNew, graph.getEdgeWeight(e));
+        }
+
+        //arbitrary vertex used to seed the algorithm.
+        Set<V> a = workingGraph.vertexSet().iterator().next();
+        while (workingGraph.vertexSet().size() > 2) {
+            minimumCutPhase(a);
+        }
+    }
+
+    //~ Methods ----------------------------------------------------------------
+

@@ -1,0 +1,20 @@
+  public static SemgrexPattern compile(String semgrex) {
+    try {
+      SemgrexParser parser = new SemgrexParser(new StringReader(semgrex + "\n"));
+      SemgrexPattern newPattern = parser.Root();
+      newPattern.patternString = semgrex;
+      return newPattern;
+    } catch (ParseException ex) {
+      throw new SemgrexParseException("Error parsing semgrex pattern " + semgrex, ex);
+    } catch (TokenMgrError er) {
+      throw new SemgrexParseException("Error parsing semgrex pattern " + semgrex, er);
+    }
+  }
+
+  public String pattern() {
+    return patternString;
+  }
+
+  // printing methods
+  // -----------------------------------------------------------
+

@@ -1,0 +1,30 @@
+
+public class AnnotationPipeline implements Annotator {
+
+  protected static final boolean TIME = true;
+
+  private final List<Annotator> annotators;
+  private List<MutableLong> accumulatedTime;
+
+  public AnnotationPipeline(List<Annotator> annotators) {
+    this.annotators = annotators;
+    if (TIME) {
+      int num = annotators.size();
+      accumulatedTime = new ArrayList<MutableLong>(num);
+      for (int i = 0; i < num; i++) {
+        accumulatedTime.add(new MutableLong());
+      }
+    }
+  }
+
+  public AnnotationPipeline() {
+    this(new ArrayList<Annotator>());
+  }
+
+  public void addAnnotator(Annotator annotator) {
+    annotators.add(annotator);
+    if (TIME) {
+      accumulatedTime.add(new MutableLong());
+    }
+  }
+

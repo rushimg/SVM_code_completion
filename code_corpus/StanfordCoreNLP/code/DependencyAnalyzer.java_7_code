@@ -1,0 +1,41 @@
+  void addStartingClasses(LinkedList<Identifier> depQueue,
+                          Set<Identifier> closure,
+                          List<String> startingClasses) {
+    // build patterns out of the given class names
+    Pattern[] startingPatterns = new Pattern[startingClasses.size()];
+    boolean[] matched = new boolean[startingClasses.size()];
+    for (int i = 0; i < startingClasses.size(); ++i) {
+      String startingClass = startingClasses.get(i);
+      startingClass = startingClass.replaceAll("\\.", "\\\\\\.");
+      startingClass = startingClass.replaceAll("\\$", "\\\\\\$");
+      startingPatterns[i] = Pattern.compile(startingClass);
+
+      matched[i] = false;
+    }
+
+    // must iterate over every identifier, since we don't know which
+    // ones will match any given expression
+    for (Identifier id : identifiers.values()) {
+      if (!id.isClass)
+        continue;
+      for (int i = 0; i < startingClasses.size(); ++i) {
+        if (startingPatterns[i].matcher(id.name).matches()) {
+          depQueue.addLast(id);
+          closure.add(id);
+          matched[i] = true;
+          if (VERBOSE) {
+            System.err.println("Starting class: " + id.name);
+          }
+          break;
+        }
+      }
+    }
+
+    for (int i = 0; i < startingClasses.size(); ++i) {
+      if (!matched[i]) {
+        System.err.println("Warning: pattern " + startingClasses.get(i) +
+                           " matched nothing");
+      }
+    }
+  }
+

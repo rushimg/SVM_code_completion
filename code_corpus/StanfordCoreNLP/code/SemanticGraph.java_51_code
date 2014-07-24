@@ -1,0 +1,24 @@
+  public SemanticGraph(SemanticGraph g,
+                       Map<IndexedWord, IndexedWord> prevToNewMap) {
+    graph = new DirectedMultiGraph<IndexedWord, SemanticGraphEdge>();
+    Collection<IndexedWord> oldRoots =
+      new ArrayList<IndexedWord>(g.getRoots());
+    if (prevToNewMap == null)
+      prevToNewMap = Generics.newHashMap();
+    Set<IndexedWord> vertexes = g.vertexSet();
+    for (IndexedWord vertex : vertexes) {
+      IndexedWord newVertex = new IndexedWord(vertex);
+      addVertex(newVertex);
+      prevToNewMap.put(vertex, newVertex);
+    }
+    roots = Generics.newHashSet();
+    for (IndexedWord oldRoot : oldRoots) {
+      roots.add(prevToNewMap.get(oldRoot));
+    }
+    for (SemanticGraphEdge edge : g.edgeIterable()) {
+      IndexedWord newGov = prevToNewMap.get(edge.getGovernor());
+      IndexedWord newDep = prevToNewMap.get(edge.getDependent());
+      addEdge(newGov, newDep, edge.getRelation(), edge.getWeight(), edge.isExtra());
+    }
+  }
+

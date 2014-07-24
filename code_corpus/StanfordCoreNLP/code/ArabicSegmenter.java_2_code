@@ -1,0 +1,39 @@
+  public ArabicSegmenter(Properties props) {
+    isTokenized = props.containsKey(optTokenized);
+    tokenizerOptions = props.getProperty(optTokenizer, null);
+    tedEvalPrefix = props.getProperty(optTedEval, null);
+    hasDomainLabels = props.containsKey(optWithDomains);
+    domain = props.getProperty(optDomain, "atb");
+    noRewrites = props.containsKey(optNoRewrites);
+    tf = getTokenizerFactory();
+
+    prefixMarker = props.getProperty(optPrefix, "");
+    suffixMarker = props.getProperty(optSuffix, "");
+
+    if (props.containsKey(optLocalFeaturesOnly)) {
+      if (props.containsKey(optFeatureFactory))
+        throw new RuntimeException("Cannot use custom feature factory with localFeaturesOnly flag--" +
+            "have your custom feature factory extend ArabicSegmenterFeatureFactory instead of " +
+            "StartAndEndArabicSegmenterFeatureFactory and remove the localFeaturesOnly flag.");
+      
+      props.put(optFeatureFactory, localOnlyFeatureFactory);
+    }
+    if (!props.containsKey(optFeatureFactory))
+      props.put(optFeatureFactory, defaultFeatureFactory);
+    
+    // Remove all command-line properties that are specific to ArabicSegmenter
+    props.remove(optTokenizer);
+    props.remove(optTokenized);
+    props.remove(optPrefix);
+    props.remove(optSuffix);
+    props.remove(optThreads);
+    props.remove(optTedEval);
+    props.remove(optWithDomains);
+    props.remove(optDomain);
+    props.remove(optNoRewrites);
+    props.remove(optLocalFeaturesOnly);
+
+    flags = new SeqClassifierFlags(props);
+    classifier = new CRFClassifier<CoreLabel>(flags);
+  }
+

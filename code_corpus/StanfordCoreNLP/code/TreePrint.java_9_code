@@ -1,0 +1,55 @@
+  public void printTrees(final List<ScoredObject<Tree>> trees, final String id, final PrintWriter pw) {
+    final boolean inXml = propertyToBoolean(options, "xml");
+    int ii = 0;  // incremented before used, so first tree is numbered 1
+    for (ScoredObject<Tree> tp : trees) {
+      ii++;
+      Tree t = tp.object();
+      double score = tp.score();
+
+      if (t == null) {
+        // Parsing didn't succeed.
+        if (inXml) {
+          pw.print("<s");
+          if (id != null && ! "".equals(id)) {
+            pw.print(" id=\"" + XMLUtils.escapeXML(id) + '\"');
+          }
+          pw.print(" n=\"");
+          pw.print(ii);
+          pw.print('\"');
+          pw.print(" score=\"" + score + '\"');
+          pw.println(" skipped=\"true\"/>");
+          pw.println();
+        } else {
+          pw.println("SENTENCE_SKIPPED_OR_UNPARSABLE Parse #" + ii + " with score " + score);
+        }
+      } else {
+        if (inXml) {
+          pw.print("<s");
+          if (id != null && ! "".equals(id)) {
+            pw.print(" id=\"");
+            pw.print(XMLUtils.escapeXML(id));
+            pw.print('\"');
+          }
+          pw.print(" n=\"");
+          pw.print(ii);
+          pw.print('\"');
+          pw.print(" score=\"");
+          pw.print(score);
+          pw.print('\"');
+          pw.println(">");
+        } else {
+          pw.print("# Parse ");
+          pw.print(ii);
+          pw.print(" with score ");
+          pw.println(score);
+        }
+        printTreeInternal(t, pw, inXml);
+        if (inXml) {
+          pw.println("</s>");
+          pw.println();
+        }
+      }
+    }
+  }
+
+

@@ -1,0 +1,38 @@
+  public void train() {
+    if (flags.trainFiles != null) {
+      train(flags.baseTrainDir, flags.trainFiles, defaultReaderAndWriter);
+    } else if (flags.trainFileList != null) {
+      String[] files = flags.trainFileList.split(",");
+      train(files, defaultReaderAndWriter);
+    } else {
+      train(flags.trainFile, defaultReaderAndWriter);
+    }
+  }
+
+  public void train(String filename) {
+    train(filename, defaultReaderAndWriter);
+  }
+
+  public void train(String filename,
+                    DocumentReaderAndWriter<IN> readerAndWriter) {
+    // only for the OCR data does this matter
+    flags.ocrTrain = true;
+    train(makeObjectBankFromFile(filename, readerAndWriter), readerAndWriter);
+  }
+
+  public void train(String baseTrainDir, String trainFiles,
+                    DocumentReaderAndWriter<IN> readerAndWriter) {
+    // only for the OCR data does this matter
+    flags.ocrTrain = true;
+    train(makeObjectBankFromFiles(baseTrainDir, trainFiles, readerAndWriter),
+          readerAndWriter);
+  }
+
+  public void train(String[] trainFileList,
+                    DocumentReaderAndWriter<IN> readerAndWriter) {
+    // only for the OCR data does this matter
+    flags.ocrTrain = true;
+    train(makeObjectBankFromFiles(trainFileList, readerAndWriter),
+          readerAndWriter);
+  }
+

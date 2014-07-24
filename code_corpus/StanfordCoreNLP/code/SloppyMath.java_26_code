@@ -1,0 +1,41 @@
+  public static double oneTailedFishersExact(int k, int n, int r, int m) {
+    if (k < 0 || k < (m + r) - n || k > r || k > m || r > n || m > n) {
+      throw new IllegalArgumentException("Invalid Fisher's exact: " + "k=" + k + " n=" + n + " r=" + r + " m=" + m + " k<0=" + (k < 0) + " k<(m+r)-n=" + (k < (m + r) - n) + " k>r=" + (k > r) + " k>m=" + (k > m) + " r>n=" + (r > n) + "m>n=" + (m > n));
+    }
+    // exploit symmetry of problem
+    if (m > n / 2) {
+      m = n - m;
+      k = r - k;
+    }
+    if (r > n / 2) {
+      r = n - r;
+      k = m - k;
+    }
+    if (m > r) {
+      int temp = m;
+      m = r;
+      r = temp;
+    }
+    // now we have that k <= m <= r <= n/2
+
+    double total = 0.0;
+    if (k > m / 2) {
+      // sum from k to m
+      for (int k0 = k; k0 <= m; k0++) {
+        // System.out.println("Calling hypg(" + k0 + "; " + n +
+        // 		   ", " + r + ", " + m + ")");
+        total += SloppyMath.hypergeometric(k0, n, r, m);
+      }
+    } else {
+      // sum from max(0, (m+r)-n) to k-1, and then subtract from 1
+      int min = Math.max(0, (m + r) - n);
+      for (int k0 = min; k0 < k; k0++) {
+        // System.out.println("Calling hypg(" + k0 + "; " + n +
+        // 		   ", " + r + ", " + m + ")");
+        total += SloppyMath.hypergeometric(k0, n, r, m);
+      }
+      total = 1.0 - total;
+    }
+    return total;
+  }
+

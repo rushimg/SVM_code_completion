@@ -1,0 +1,57 @@
+  protected String production(Parse p, boolean includePunctuation) {
+    StringBuilder production = new StringBuilder(20);
+    production.append(p.getType()).append("->");
+    Parse[] children = AbstractBottomUpParser.collapsePunctuation(p.getChildren(),punctSet);
+    for (int ci = 0; ci < children.length; ci++) {
+      production.append(children[ci].getType());
+      if (ci+1 != children.length) {
+        production.append(",");
+        Collection<Parse> nextPunct = children[ci].getNextPunctuationSet();
+        if (includePunctuation && nextPunct != null) {
+          //TODO: make sure multiple punctuation comes out the same
+          for (Iterator<Parse> pit=nextPunct.iterator();pit.hasNext();) {
+            Parse punct = pit.next();
+            production.append(punct.getType()).append(",");
+          }
+        }
+      }
+    }
+    return production.toString();
+  }
+
+  protected void cons2(List<String> features, Cons c0, Cons c1, Collection<Parse> punct1s, boolean bigram) {
+    if (punct1s != null) {
+      for (Iterator<Parse> pi = punct1s.iterator();pi.hasNext();) {
+        Parse p = pi.next();
+//        String punct = punct(p,c1.index);
+        String punctbo = punctbo(p,c1.index <= 0 ? c1.index -1 : c1.index);
+
+        //punctbo(1);
+        features.add(punctbo);
+        if (c0.index == 0) { //TODO look at removing case
+          //cons(0)punctbo(1)
+          if (c0.unigram) features.add(c0.cons+","+punctbo);
+          features.add(c0.consbo+","+punctbo);
+        }
+        if (c1.index == 0) { //TODO look at removing case
+          //punctbo(1)cons(1)
+          if (c1.unigram) features.add(punctbo+","+c1.cons);
+          features.add(punctbo+","+c1.consbo);
+        }
+
+        //cons(0)punctbo(1)cons(1)
+        if (bigram) features.add(c0.cons+","+punctbo+","+c1.cons);
+        if (c1.unigram)  features.add(c0.consbo+","+punctbo+","+c1.cons);
+        if (c0.unigram)  features.add(c0.cons+","+punctbo+","+c1.consbo);
+        features.add(c0.consbo+","+punctbo+","+c1.consbo);
+      }
+    }
+    else {
+      //cons(0),cons(1)
+      if (bigram) features.add(c0.cons + "," + c1.cons);
+      if (c1.unigram)  features.add(c0.consbo + "," + c1.cons);
+      if (c0.unigram)  features.add(c0.cons + "," + c1.consbo);
+      features.add(c0.consbo + "," + c1.consbo);
+    }
+  }
+

@@ -1,0 +1,41 @@
+  public Set<Dependency<Label, Label, Object>> dependencies(Filter<Dependency<Label, Label, Object>> f, boolean isConcrete, boolean copyLabel, boolean copyPosTag) {
+    Set<Dependency<Label, Label, Object>> deps = Generics.newHashSet();
+    for (Tree node : this) {
+      // Skip leaves and unary re-writes
+      if (node.isLeaf() || node.children().length < 2) {
+        continue;
+      }
+      // Create the head label (percolateHeads has already been executed)
+      Label headLabel = makeDependencyLabel(node.label(), copyLabel, isConcrete, copyPosTag);
+      String headWord = ((HasWord) headLabel).word();
+      if (headWord == null) {
+        headWord = headLabel.value();
+      }
+      int headIndex = (isConcrete && (headLabel instanceof HasIndex)) ? ((HasIndex) headLabel).index() : -1;
+
+      // every child with a different (or repeated) head is an argument
+      boolean seenHead = false;
+      for (Tree child : node.children()) {
+        Label depLabel = makeDependencyLabel(child.label(), copyLabel, isConcrete, copyPosTag);
+        String depWord = ((HasWord) depLabel).word();
+        if (depWord == null) {
+          depWord = depLabel.value();
+        }
+        int depIndex = (isConcrete && (depLabel instanceof HasIndex)) ? ((HasIndex) depLabel).index() : -1;
+
+        if (!seenHead && headIndex == depIndex && headWord.equals(depWord)) {
+          seenHead = true;
+        } else {
+          Dependency<Label, Label, Object> dependency = (isConcrete && depIndex != headIndex) ?
+              new UnnamedConcreteDependency(headLabel, depLabel) :
+              new UnnamedDependency(headLabel, depLabel);
+
+          if (f.accept(dependency)) {
+            deps.add(dependency);
+          }
+        }
+      }
+    }
+    return deps;
+  }
+

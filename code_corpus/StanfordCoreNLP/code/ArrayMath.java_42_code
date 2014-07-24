@@ -1,0 +1,124 @@
+  public static float logSum(float[] logInputs) {
+    int leng = logInputs.length;
+    if (leng == 0) {
+      throw new IllegalArgumentException();
+    }
+    int maxIdx = 0;
+    float max = logInputs[0];
+    for (int i = 1; i < leng; i++) {
+      if (logInputs[i] > max) {
+        maxIdx = i;
+        max = logInputs[i];
+      }
+    }
+    boolean haveTerms = false;
+    double intermediate = 0.0f;
+    float cutoff = max - SloppyMath.LOGTOLERANCE_F;
+    // we avoid rearranging the array and so test indices each time!
+    for (int i = 0; i < leng; i++) {
+      if (i != maxIdx && logInputs[i] > cutoff) {
+        haveTerms = true;
+        intermediate += Math.exp(logInputs[i] - max);
+      }
+    }
+    if (haveTerms) {
+      return max + (float) Math.log(1.0 + intermediate);
+    } else {
+      return max;
+    }
+  }
+
+  // LINEAR ALGEBRAIC FUNCTIONS
+
+  public static double innerProduct(double[] a, double[] b) {
+    double result = 0.0;
+    int len = Math.min(a.length, b.length);
+    for (int i = 0; i < len; i++) {
+    }
+    return result;
+  }
+
+  public static double innerProduct(float[] a, float[] b) {
+    double result = 0.0;
+    int len = Math.min(a.length, b.length);
+    for (int i = 0; i < len; i++) {
+    }
+    return result;
+  }
+
+  // UTILITIES
+
+  public static int[] subArray(int[] a, int from, int to) {
+    int[] result = new int[to-from];
+    System.arraycopy(a, from, result, 0, to-from);
+    return result;
+  }
+
+  public static double[][] load2DMatrixFromFile(String filename) throws IOException {
+    String s = IOUtils.slurpFile(filename);
+    String[] rows = s.split("[\r\n]+");
+    double[][] result = new double[rows.length][];
+    for (int i=0; i<result.length; i++) {
+      String[] columns = rows[i].split("\\s+");
+      result[i] = new double[columns.length];
+      for (int j=0; j<result[i].length; j++) {
+        result[i][j] = Double.parseDouble(columns[j]);
+      }
+    }
+    return result;
+  }
+
+  public static Integer[] box(int[] assignment) {
+    Integer[] result = new Integer[assignment.length];
+    for (int i=0; i<assignment.length; i++) {
+      result[i] = Integer.valueOf(assignment[i]);
+    }
+    return result;
+  }
+
+  public static int[] unboxToInt(Collection<Integer> list) {
+    int[] result = new int[list.size()];
+    int i = 0;
+    for (int v : list) {
+      result[i++] = v;
+    }
+    return result;
+  }
+
+  public static Double[] box(double[] assignment) {
+    Double[] result = new Double[assignment.length];
+    for (int i=0; i<assignment.length; i++) {
+      result[i] = Double.valueOf(assignment[i]);
+    }
+    return result;
+  }
+
+  public static double[] unbox(Collection<Double> list) {
+    double[] result = new double[list.size()];
+    int i = 0;
+    for (double v : list) {
+      result[i++] = v;
+    }
+    return result;
+  }
+
+  public static int indexOf(int n, int[] a) {
+    for (int i=0; i<a.length; i++) {
+      if (a[i]==n) return i;
+    }
+    return -1;
+  }
+
+  public static int[][] castToInt(double[][] doubleCounts) {
+    int[][] result = new int[doubleCounts.length][];
+    for (int i=0; i<doubleCounts.length; i++) {
+      result[i] = new int[doubleCounts[i].length];
+      for (int j=0; j<doubleCounts[i].length; j++) {
+        result[i][j] = (int) doubleCounts[i][j];
+      }
+    }
+    return result;
+  }
+
+  // PROBABILITY FUNCTIONS
+

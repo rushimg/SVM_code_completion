@@ -1,0 +1,31 @@
+  private void deEndify(List<CoreLabel> tokens) {
+    if (flags.retainEntitySubclassification) {
+      return;
+    }
+    tokens = new PaddedList<CoreLabel>(tokens, new CoreLabel());
+    int k = tokens.size();
+    String[] newAnswers = new String[k];
+    for (int i = 0; i < k; i++) {
+      CoreLabel c = tokens.get(i);
+      CoreLabel p = tokens.get(i - 1);
+      if (c.get(CoreAnnotations.AnswerAnnotation.class).length() > 1 && c.get(CoreAnnotations.AnswerAnnotation.class).charAt(1) == '-') {
+        String base = c.get(CoreAnnotations.AnswerAnnotation.class).substring(2);
+        String pBase = (p.get(CoreAnnotations.AnswerAnnotation.class).length() <= 2 ? p.get(CoreAnnotations.AnswerAnnotation.class) : p.get(CoreAnnotations.AnswerAnnotation.class).substring(2));
+        boolean isSecond = (base.equals(pBase));
+        boolean isStart = (c.get(CoreAnnotations.AnswerAnnotation.class).charAt(0) == 'B' || c.get(CoreAnnotations.AnswerAnnotation.class).charAt(0) == 'S');
+        if (isSecond && isStart) {
+          newAnswers[i] = intern("B-" + base);
+        } else {
+          newAnswers[i] = intern("I-" + base);
+        }
+      } else {
+        newAnswers[i] = c.get(CoreAnnotations.AnswerAnnotation.class);
+      }
+    }
+    for (int i = 0; i < k; i++) {
+      CoreLabel c = tokens.get(i);
+      c.set(CoreAnnotations.AnswerAnnotation.class, newAnswers[i]);
+    }
+  }
+
+

@@ -1,0 +1,35 @@
+abstract class AbstractExhaustiveIsomorphismInspector<V, E>
+    implements GraphIsomorphismInspector<IsomorphismRelation>
+{
+    //~ Static fields/initializers ---------------------------------------------
+
+    public static EquivalenceComparator<Object, Object>
+        edgeDefaultIsomorphismComparator =
+            new UniformEquivalenceComparator<Object, Object>();
+    public static EquivalenceComparator<Object, Object>
+        vertexDefaultIsomorphismComparator =
+            new UniformEquivalenceComparator<Object, Object>();
+
+    //~ Instance fields --------------------------------------------------------
+
+    protected EquivalenceComparator<? super E, ? super Graph<V, ? super E>>
+        edgeComparator;
+    protected EquivalenceComparator<? super V, ? super Graph<? super V, E>>
+        vertexComparator;
+
+    protected Graph<V, E> graph1;
+    protected Graph<V, E> graph2;
+
+    private PrefetchIterator<IsomorphismRelation> nextSupplier;
+
+    // kept as member, to ease computations
+    private GraphOrdering lableGraph1;
+    private LinkedHashSet<V> graph1VertexSet;
+    private LinkedHashSet<E> graph2EdgeSet;
+    private CollectionPermutationIter<V> vertexPermuteIter;
+    private Set<V> currVertexPermutation; // filled every iteration, used in the
+
+    //~ Constructors -----------------------------------------------------------
+
+    // result relation.
+

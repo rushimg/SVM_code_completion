@@ -1,0 +1,26 @@
+  public static Options getOptions(StanfordCoreNLP pipeline) {
+    Options options = new Options();
+    options.relationsBeam = pipeline.getBeamPrintingOption();
+    options.constituentTreePrinter = pipeline.getConstituentTreePrinter();
+    options.encoding = pipeline.getEncoding();
+    options.printSingletons = pipeline.getPrintSingletons();
+    return options;
+  }
+
+  public static void xmlPrint(Annotation annotation, OutputStream os) throws IOException {
+    xmlPrint(annotation, os, DEFAULT_OPTIONS);
+  }
+
+  public static void xmlPrint(Annotation annotation, OutputStream os, StanfordCoreNLP pipeline) throws IOException {
+    xmlPrint(annotation, os, getOptions(pipeline));
+  }
+
+  public static void xmlPrint(Annotation annotation, OutputStream os, Options options) throws IOException {
+    Document xmlDoc = annotationToDoc(annotation, options);
+    Serializer ser = new Serializer(os, options.encoding);
+    ser.setIndent(2);
+    ser.setMaxLength(0);
+    ser.write(xmlDoc);
+    ser.flush();
+  }
+

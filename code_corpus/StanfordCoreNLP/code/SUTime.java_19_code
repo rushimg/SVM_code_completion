@@ -1,0 +1,153 @@
+  public abstract static class Duration extends Temporal implements FuzzyInterval.FuzzyComparable<Duration> {
+
+    public Duration() {
+    }
+
+    public Duration(Duration d) {
+      super(d);
+    }
+
+    public static Duration getDuration(ReadablePeriod p) {
+      return new DurationWithFields(p);
+    }
+
+    public static Duration getDuration(org.joda.time.Duration d) {
+      return new DurationWithMillis(d);
+    }
+
+    public static Duration getInexactDuration(ReadablePeriod p) {
+      return new InexactDuration(p);
+    }
+
+    public static Duration getInexactDuration(org.joda.time.Duration d) {
+      return new InexactDuration(d.toPeriod());
+    }
+
+    // Returns the inexact version of the duration
+    public InexactDuration makeInexact() {
+      return new InexactDuration(getJodaTimePeriod());
+    }
+
+    public DateTimeFieldType[] getDateTimeFields() {
+      return null;
+    }
+
+    @Override
+    public boolean isGrounded() {
+      return false;
+    }
+
+    @Override
+    public Time getTime() {
+      return null;
+    } // There is no time associated with a duration?
+
+    public Time toTime(Time refTime) {
+      return toTime(refTime, 0);
+    }
+
+    public Time toTime(Time refTime, int flags) {
+      // if ((flags & (DUR_RESOLVE_FROM_AS_REF | DUR_RESOLVE_TO_AS_REF)) == 0)
+      {
+        Partial p = refTime.getJodaTimePartial();
+        if (p != null) {
+          // For durations that have corresponding date time fields
+          // this = current time without more specific fields than the duration
+          DateTimeFieldType[] dtFieldTypes = getDateTimeFields();
+          if (dtFieldTypes != null) {
+            Time t = null;
+            for (DateTimeFieldType dtft : dtFieldTypes) {
+              if (p.isSupported(dtft)) {
+                t = new PartialTime(JodaTimeUtils.discardMoreSpecificFields(p, dtft));
+              }
+            }
+            if (t == null) {
+              Instant instant = refTime.getJodaTimeInstant();
+              if (instant != null) {
+                for (DateTimeFieldType dtft : dtFieldTypes) {
+                  if (instant.isSupported(dtft)) {
+                    Partial p2 = JodaTimeUtils.getPartial(instant, p.with(dtft, 1));
+                    t = new PartialTime(JodaTimeUtils.discardMoreSpecificFields(p2, dtft));
+                  }
+                }
+              }
+            }
+            if (t != null) {
+              if ((flags & RESOLVE_TO_PAST) != 0) {
+                // Check if this time is in the past, if not, subtract duration
+                if (t.compareTo(refTime) >= 0) {
+                  return t.subtract(this);
+                }
+              } else if ((flags & RESOLVE_TO_FUTURE) != 0) {
+                // Check if this time is in the future, if not, subtract
+                // duration
+                if (t.compareTo(refTime) <= 0) {
+                  return t.add(this);
+                }
+              }
+            }
+            return t;
+          }
+        }
+      }
+      Time minTime = refTime.subtract(this);
+      Time maxTime = refTime.add(this);
+      Range likelyRange = null;
+      if ((flags & (DUR_RESOLVE_FROM_AS_REF | RESOLVE_TO_FUTURE)) != 0) {
+        likelyRange = new Range(refTime, maxTime, this);
+      } else if ((flags & (DUR_RESOLVE_TO_AS_REF | RESOLVE_TO_PAST)) != 0) {
+        likelyRange = new Range(minTime, refTime, this);
+      } else {
+        Duration halfDuration = this.divideBy(2);
+        likelyRange = new Range(refTime.subtract(halfDuration), refTime.add(halfDuration), this);
+      }
+      if ((flags & (RESOLVE_TO_FUTURE | RESOLVE_TO_PAST)) != 0) {
+        return new TimeWithRange(likelyRange);
+      }
+      Range r = new Range(minTime, maxTime, this.multiplyBy(2));
+      return new InexactTime(new TimeWithRange(likelyRange), this, r);
+    }
+
+    @Override
+    public Duration getDuration() {
+      return this;
+    }
+
+    @Override
+    public Range getRange(int flags, Duration granularity) {
+      return new Range(null, null, this);
+    } // Unanchored range
+
+    @Override
+    public TimexType getTimexType() {
+      return TimexType.DURATION;
+    }
+
+    public abstract Period getJodaTimePeriod();
+
+    public abstract org.joda.time.Duration getJodaTimeDuration();
+
+    @Override
+    public String toFormattedString(int flags) {
+      if (getTimeLabel() != null) {
+        return getTimeLabel();
+      }
+      Period p = getJodaTimePeriod();
+      String s = (p != null) ? p.toString() : "PXX";
+      if ((flags & (FORMAT_ISO | FORMAT_TIMEX3_VALUE)) == 0) {
+        String m = getMod();
+        if (m != null) {
+          try {
+            TimexMod tm = TimexMod.valueOf(m);
+            if (tm.getSymbol() != null) {
+              s = tm.getSymbol() + s;
+            }
+          } catch (Exception ex) {
+          }
+        }
+      }
+      return s;
+    }
+
+    @Override
+    public Duration getPeriod() {

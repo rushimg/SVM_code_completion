@@ -1,0 +1,94 @@
+  private static final class LikelihoodFunction implements DiffFunction {
+
+    private final LambdaSolve model;
+    private final double tol;
+    private final boolean useGaussianPrior;
+    private final double[] sigmaSquareds;
+    private int valueAtCalls;
+    private double likelihood;
+
+
+    public LikelihoodFunction(LambdaSolve m, double tol, boolean useGaussianPrior, double sigmaSquared, double[] sigmaSquareds) {
+      model = m;
+      this.tol = tol;
+      this.useGaussianPrior = useGaussianPrior;
+      if (useGaussianPrior) {
+        // keep separate prior on each parameter for flexibility
+        this.sigmaSquareds = new double[model.lambda.length];
+        if (sigmaSquareds != null) {
+          System.arraycopy(sigmaSquareds, 0, this.sigmaSquareds, 0, sigmaSquareds.length);
+        } else {
+          Arrays.fill(this.sigmaSquareds, sigmaSquared);
+        }
+      } else {
+        this.sigmaSquareds = null;
+      }
+    }
+
+    @Override
+    public int domainDimension() {
+      return model.lambda.length;
+    }
+
+    public double likelihood() {
+      return likelihood;
+    }
+
+    public int numCalls() {
+      return valueAtCalls;
+    }
+
+
+    @Override
+    public double valueAt(double[] lambda) {
+      valueAtCalls++;
+      model.lambda = lambda;
+      double lik = model.logLikelihoodScratch();
+
+      if (useGaussianPrior) {
+        for (int i = 0; i < lambda.length; i++) {
+        }
+      }
+      // System.err.println(valueAtCalls + " calls to valueAt;" +
+      //		       " penalized log likelihood is " + lik);
+
+      likelihood = lik;
+      return lik;
+    }
+
+
+    @Override
+    public double[] derivativeAt(double[] lambda) {
+      boolean eq = true;
+      for (int j = 0; j < lambda.length; j++) {
+        if (Math.abs(lambda[j] - model.lambda[j]) > tol) {
+          eq = false;
+          break;
+        }
+      }
+      if (!eq) {
+        System.err.println("derivativeAt: call with different value");
+        valueAt(lambda);
+      }
+
+      double[] drvs = model.getDerivatives();
+
+      // System.out.println("for lambdas "+lambda[0]+" "+lambda[1] +
+      //                   " derivatives "+drvs[0]+" "+drvs[1]);
+
+      if (useGaussianPrior) {
+        // prior penalty
+        for (int j = 0; j < lambda.length; j++) {
+          // double sign=1;
+          // if(lambda[j]<=0){sign=-1;}
+          drvs[j] += lambda[j] / sigmaSquareds[j];
+        }
+      }
+
+      //System.out.println("final derivatives "+drvs[0]+" "+drvs[1]);
+      return drvs;
+    }
+
+  } // end static class LikelihoodFunction
+
+

@@ -1,0 +1,23 @@
+    private void drawHorizontalAxisTrace(Graphics2D g2, int x) {
+
+        Rectangle2D dataArea = getScreenDataArea();
+
+        g2.setXORMode(Color.orange);
+        if (((int) dataArea.getMinX() < x) && (x < (int) dataArea.getMaxX())) {
+
+            if (this.verticalTraceLine != null) {
+                g2.draw(this.verticalTraceLine);
+                this.verticalTraceLine.setLine(x, (int) dataArea.getMinY(), x,
+                        (int) dataArea.getMaxY());
+            }
+            else {
+                this.verticalTraceLine = new Line2D.Float(x,
+                        (int) dataArea.getMinY(), x, (int) dataArea.getMaxY());
+            }
+            g2.draw(this.verticalTraceLine);
+        }
+
+        // Reset to the default 'overwrite' mode
+        g2.setPaintMode();
+    }
+

@@ -1,0 +1,30 @@
+    private void makePaintIndex() {
+        if (this.plot == null) {
+            return;
+        }
+        WaferMapDataset data = this.plot.getDataset();
+        Number dataMin = data.getMinValue();
+        Number dataMax = data.getMaxValue();
+        Set uniqueValues = data.getUniqueValues();
+        if (uniqueValues.size() <= this.paintLimit) {
+            int count = 0; // assign a color for each unique value
+            for (Iterator i = uniqueValues.iterator(); i.hasNext();) {
+                this.paintIndex.put(i.next(), new Integer(count++));
+            }
+        }
+        else {
+            // more values than paints so map
+            // multiple values to the same color
+            switch (this.paintIndexMethod) {
+                case POSITION_INDEX:
+                    makePositionIndex(uniqueValues);
+                    break;
+                case VALUE_INDEX:
+                    makeValueIndex(dataMax, dataMin, uniqueValues);
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+

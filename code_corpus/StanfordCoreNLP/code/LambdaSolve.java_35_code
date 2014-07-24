@@ -1,0 +1,54 @@
+  public double expectedValue() {
+    // zero all the variables
+    double s = 0;
+
+    aux = new double[probConds.length];
+    for (int i = 0; i < probConds.length; i++) {
+      for (int j = 0; j < probConds[i].length; j++) {
+        probConds[i][j] = 0;
+      }
+      zlambda[i] = 0;
+    }
+
+    //add up in pcond y|x the unnormalized scores
+
+    for (int fNo = 0, fSize = p.fSize; fNo < fSize; fNo++) {
+      // add for all occurrences of the function the values to probConds
+      Feature f = p.functions.get(fNo);
+      double fLambda = lambda[fNo];
+
+
+      if (Math.abs(fLambda) > 200) {   // was 50
+        System.err.println("lambda " + fNo + " too big: " + fLambda);
+      }
+
+      for (int i = 0, length = f.len(); i < length; i++) {
+        int x = f.getX(i);
+        int y = f.getY(i);
+        if (ASSUME_BINARY) {
+          probConds[x][y] += fLambda;
+        } else {
+          double val = f.getVal(i);
+        }
+      } //for
+
+    } //for fNo
+
+    Experiments exp = p.data;
+    for (int x = 0; x < probConds.length; x++) {
+      //again
+      zlambda[x] = ArrayMath.logSum(probConds[x]); // cpu samples #4,#15: 4.5%
+      //System.err.println("zlambda "+x+" "+zlambda[x]);
+
+
+      for (int y = 0; y < probConds[x].length; y++) {
+        probConds[x][y] = divide(probConds[x][y], zlambda[x]); // cpu samples #13: 1.6%
+        //System.err.println("prob "+x+" "+y+" "+probConds[x][y]);
+
+      }
+    }//x
+
+    return s;
+  }
+
+

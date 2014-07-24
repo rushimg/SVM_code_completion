@@ -1,0 +1,50 @@
+  public static TrainerType getTrainerType(Map<String, String> trainParams){
+
+    String alogrithmValue = trainParams.get(AbstractTrainer.ALGORITHM_PARAM);
+
+    // Check if it is defaulting to the MAXENT trainer
+    if (alogrithmValue == null) {
+      return TrainerType.EVENT_MODEL_TRAINER;
+    }
+
+    Class<?> trainerClass = BUILTIN_TRAINERS.get(alogrithmValue);
+
+    if(trainerClass != null) {
+
+      if (EventTrainer.class.isAssignableFrom(trainerClass)) {
+        return TrainerType.EVENT_MODEL_TRAINER;
+      }
+      else if (EventModelSequenceTrainer.class.isAssignableFrom(trainerClass)) {
+        return TrainerType.EVENT_MODEL_SEQUENCE_TRAINER;
+      }
+      else if (SequenceTrainer.class.isAssignableFrom(trainerClass)) {
+        return TrainerType.SEQUENCE_TRAINER;
+      }
+    }
+
+    // Try to load the different trainers, and return the type on success
+
+    try {
+      ExtensionLoader.instantiateExtension(EventTrainer.class, alogrithmValue);
+      return TrainerType.EVENT_MODEL_TRAINER;
+    }
+    catch (ExtensionNotLoadedException e) {
+    }
+
+    try {
+      ExtensionLoader.instantiateExtension(EventModelSequenceTrainer.class, alogrithmValue);
+      return TrainerType.EVENT_MODEL_SEQUENCE_TRAINER;
+    }
+    catch (ExtensionNotLoadedException e) {
+    }
+
+    try {
+      ExtensionLoader.instantiateExtension(SequenceTrainer.class, alogrithmValue);
+      return TrainerType.SEQUENCE_TRAINER;
+    }
+    catch (ExtensionNotLoadedException e) {
+    }
+
+    return null;
+  }
+

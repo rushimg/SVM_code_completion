@@ -1,0 +1,45 @@
+    @Override
+    Iterator<Tree> searchNodeIterator(final Tree t,
+                                      final TregexMatcher matcher) {
+      return new SearchNodeIterator() {
+        @Override
+        void initialize() {
+          next = matcher.getParent(t);
+        }
+
+        @Override
+        public void advance() {
+          if (unbrokenCategoryDominates.pathMatchesNode(next)) {
+            next = matcher.getParent(next);
+          } else {
+            next = null;
+          }
+        }
+      };
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof UnbrokenCategoryIsDominatedBy)) {
+        return false;
+      }
+      if (!super.equals(o)) {
+        return false;
+      }
+
+      final UnbrokenCategoryIsDominatedBy unbrokenCategoryIsDominatedBy = (UnbrokenCategoryIsDominatedBy) o;
+
+      return unbrokenCategoryDominates.equals(unbrokenCategoryIsDominatedBy.unbrokenCategoryDominates);
+    }
+
+    @Override
+    public int hashCode() {
+      int result = super.hashCode();
+      return result;
+    }
+  }
+
+

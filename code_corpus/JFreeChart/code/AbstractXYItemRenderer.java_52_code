@@ -1,0 +1,32 @@
+    protected void drawItemLabel(Graphics2D g2, PlotOrientation orientation,
+            XYDataset dataset, int series, int item, double x, double y,
+            boolean negative) {
+
+        XYItemLabelGenerator generator = getItemLabelGenerator(series, item);
+        if (generator != null) {
+            Font labelFont = getItemLabelFont(series, item);
+            Paint paint = getItemLabelPaint(series, item);
+            g2.setFont(labelFont);
+            g2.setPaint(paint);
+            String label = generator.generateLabel(dataset, series, item);
+
+            // get the label position..
+            ItemLabelPosition position = null;
+            if (!negative) {
+                position = getPositiveItemLabelPosition(series, item);
+            }
+            else {
+                position = getNegativeItemLabelPosition(series, item);
+            }
+
+            // work out the label anchor point...
+            Point2D anchorPoint = calculateLabelAnchorPoint(
+                    position.getItemLabelAnchor(), x, y, orientation);
+            TextUtilities.drawRotatedString(label, g2,
+                    (float) anchorPoint.getX(), (float) anchorPoint.getY(),
+                    position.getTextAnchor(), position.getAngle(),
+                    position.getRotationAnchor());
+        }
+
+    }
+

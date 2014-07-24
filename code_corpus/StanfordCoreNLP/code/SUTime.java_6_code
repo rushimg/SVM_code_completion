@@ -1,0 +1,307 @@
+          return resolved;
+        } else {
+          throw new UnsupportedOperationException("PREV not implemented for arg1=" + arg1.getClass() + ", arg2=" + arg2.getClass());
+        }
+      }
+    },
+    // This past week/friday
+    PREV_IMMEDIATE {
+      @Override
+      public Temporal apply(Temporal arg1, Temporal arg2, int flags) {
+        if (arg1 == null) {
+          return new RelativeTime(PREV_IMMEDIATE, arg2);
+        }
+        if (arg2 == null) {
+          return arg1;
+        }
+        // Temporal arg2Prev = arg2.prev();
+        // if (arg1 == null || arg2Prev == null) { return arg2Prev; }
+        if (arg1 instanceof Time) {
+          Time t = (Time) arg1;
+          if (arg2 instanceof Duration) {
+            return ((Duration) arg2).toTime(t, flags | RESOLVE_TO_PAST);
+          } else {
+            // TODO: flags?
+            Temporal resolvedThis = arg2.resolve(t, RESOLVE_TO_PAST);
+            if (resolvedThis != null) {
+              if (resolvedThis instanceof Time) {
+                if (((Time) resolvedThis).compareTo(t) >= 0) {
+                  return PREV.apply(arg1, arg2);
+                }
+              }
+            }
+            return resolvedThis;
+          }
+        } else {
+          throw new UnsupportedOperationException("PREV_IMMEDIATE not implemented for arg1=" + arg1.getClass() + ", arg2=" + arg2.getClass());
+        }
+      }
+    },
+    UNION {
+      @Override
+      public Temporal apply(Temporal arg1, Temporal arg2, int flags) {
+        if (arg1 == null) {
+          return arg2;
+        }
+        if (arg2 == null) {
+          return arg1;
+        }
+        // return arg1.union(arg2);
+        throw new UnsupportedOperationException("UNION not implemented for arg1=" + arg1.getClass() + ", arg2=" + arg2.getClass());
+      }
+    },
+    INTERSECT {
+      @Override
+      public Temporal apply(Temporal arg1, Temporal arg2, int flags) {
+        if (arg1 == null) {
+          return arg2;
+        }
+        if (arg2 == null) {
+          return arg1;
+        }
+        Temporal t = arg1.intersect(arg2);
+        if (t == null) {
+          t = arg2.intersect(arg1);
+        }
+        return t;
+        // throw new
+        // UnsupportedOperationException("INTERSECT not implemented for arg1=" +
+        // arg1.getClass() + ", arg2="+arg2.getClass());
+      }
+    },
+    // arg2 is "in" arg1, composite datetime
+    IN {
+      @Override
+      public Temporal apply(Temporal arg1, Temporal arg2, int flags) {
+        if (arg1 == null) {
+          return arg2;
+        }
+        if (arg1 instanceof Time) {
+          // TODO: flags?
+          return arg2.intersect((Time) arg1);
+        } else {
+          throw new UnsupportedOperationException("IN not implemented for arg1=" + arg1.getClass() + ", arg2=" + arg2.getClass());
+        }
+      }
+    },
+    OFFSET {
+      // There is inexact offset where we remove anything from the result that is more granular than the duration
+      @Override
+      public Temporal apply(Temporal arg1, Temporal arg2, int flags) {
+        if (arg1 == null) {
+          return new RelativeTime(OFFSET, arg2);
+        }
+        if (arg1 instanceof Time && arg2 instanceof Duration) {
+          return ((Time) arg1).offset((Duration) arg2, flags | RELATIVE_OFFSET_INEXACT);
+        } else if (arg1 instanceof Range && arg2 instanceof Duration) {
+          return ((Range) arg1).offset((Duration) arg2, flags | RELATIVE_OFFSET_INEXACT);
+        } else {
+          throw new UnsupportedOperationException("OFFSET not implemented for arg1=" + arg1.getClass() + ", arg2=" + arg2.getClass());
+        }
+      }
+    },
+    MINUS {
+      @Override
+      public Temporal apply(Temporal arg1, Temporal arg2, int flags) {
+        if (arg1 == null) {
+          return arg2;
+        }
+        if (arg2 == null) {
+          return arg1;
+        }
+        if (arg1 instanceof Duration && arg2 instanceof Duration) {
+          return ((Duration) arg1).subtract((Duration) arg2);
+        } else if (arg1 instanceof Time && arg2 instanceof Duration) {
+          return ((Time) arg1).subtract((Duration) arg2);
+        } else if (arg1 instanceof Range && arg2 instanceof Duration) {
+          return ((Range) arg1).subtract((Duration) arg2);
+        } else {
+          throw new UnsupportedOperationException("MINUS not implemented for arg1=" + arg1.getClass() + ", arg2=" + arg2.getClass());
+        }
+      }
+    },
+    PLUS {
+      @Override
+      public Temporal apply(Temporal arg1, Temporal arg2, int flags) {
+        if (arg1 == null) {
+          return arg2;
+        }
+        if (arg2 == null) {
+          return arg1;
+        }
+        if (arg1 instanceof Duration && arg2 instanceof Duration) {
+          return ((Duration) arg1).add((Duration) arg2);
+        } else if (arg1 instanceof Time && arg2 instanceof Duration) {
+          return ((Time) arg1).add((Duration) arg2);
+        } else if (arg1 instanceof Range && arg2 instanceof Duration) {
+          return ((Range) arg1).add((Duration) arg2);
+        } else {
+          throw new UnsupportedOperationException("PLUS not implemented for arg1=" + arg1.getClass() + ", arg2=" + arg2.getClass());
+        }
+      }
+    },
+    MIN {
+      @Override
+      public Temporal apply(Temporal arg1, Temporal arg2, int flags) {
+        if (arg1 == null) {
+          return arg2;
+        }
+        if (arg2 == null) {
+          return arg1;
+        }
+        if (arg1 instanceof Time && arg2 instanceof Time) {
+          return Time.min((Time) arg1, (Time) arg2);
+        } else if (arg1 instanceof Duration && arg2 instanceof Duration) {
+          return Duration.min((Duration) arg1, (Duration) arg2);
+        } else {
+          throw new UnsupportedOperationException("MIN not implemented for arg1=" + arg1.getClass() + ", arg2=" + arg2.getClass());
+        }
+      }
+    },
+    MAX {
+      @Override
+      public Temporal apply(Temporal arg1, Temporal arg2, int flags) {
+        if (arg1 == null) {
+          return arg2;
+        }
+        if (arg2 == null) {
+          return arg1;
+        }
+        if (arg1 instanceof Time && arg2 instanceof Time) {
+          return Time.max((Time) arg1, (Time) arg2);
+        } else if (arg1 instanceof Duration && arg2 instanceof Duration) {
+          return Duration.max((Duration) arg1, (Duration) arg2);
+        } else {
+          throw new UnsupportedOperationException("MAX not implemented for arg1=" + arg1.getClass() + ", arg2=" + arg2.getClass());
+        }
+      }
+    },
+    MULTIPLY {
+      public Temporal apply(Duration d, int scale) {
+        if (d == null)
+          return null;
+        if (scale == 1) return d;
+        return d.multiplyBy(scale);
+      }
+
+      public Temporal apply(PeriodicTemporalSet d, int scale) {
+        if (d == null)
+          return null;
+        if (scale == 1) return d;
+        return d.multiplyDurationBy(scale);
+      }
+
+      @Override
+      public Temporal apply(Object... args) {
+        if (args.length == 2) {
+          if (args[0] instanceof Duration && (args[1] instanceof Integer || args[1] instanceof Long)) {
+            return apply((Duration) args[0], ((Number) args[1]).intValue());
+          }
+          if (args[0] instanceof PeriodicTemporalSet && (args[1] instanceof Integer || args[1] instanceof Long)) {
+            return apply((PeriodicTemporalSet) args[0], ((Number) args[1]).intValue());
+          }
+        }
+        throw new UnsupportedOperationException("apply(Object...) not implemented for TemporalOp " + this);
+      }
+    },
+    DIVIDE {
+      public Temporal apply(Duration d, int scale) {
+        if (d == null)
+          return null;
+        if (scale == 1) return d;
+        return d.divideBy(scale);
+      }
+      public Temporal apply(PeriodicTemporalSet d, int scale) {
+        if (d == null)
+          return null;
+        if (scale == 1) return d;
+        return d.divideDurationBy(scale);
+      }
+
+      @Override
+      public Temporal apply(Object... args) {
+        if (args.length == 2) {
+          if (args[0] instanceof Duration && (args[1] instanceof Integer || args[1] instanceof Long)) {
+            return apply((Duration) args[0], ((Number) args[1]).intValue());
+          }
+          if (args[0] instanceof PeriodicTemporalSet && (args[1] instanceof Integer || args[1] instanceof Long)) {
+            return apply((PeriodicTemporalSet) args[0], ((Number) args[1]).intValue());
+          }
+        }
+        throw new UnsupportedOperationException("apply(Object...) not implemented for TemporalOp " + this);
+      }
+    },
+    CREATE {
+      public Temporal apply(TimeUnit tu, int n) {
+        return tu.createTemporal(n);
+      }
+
+      @Override
+      public Temporal apply(Object... args) {
+        if (args.length == 2) {
+          if (args[0] instanceof TimeUnit && args[1] instanceof Number) {
+            return apply((TimeUnit) args[0], ((Number) args[1]).intValue());
+          }
+          else if (args[0] instanceof StandardTemporalType && args[1] instanceof Number) {
+            return ((StandardTemporalType) args[0]).createTemporal(((Number) args[1]).intValue());
+          }
+          else if (args[0] instanceof Temporal && args[1] instanceof Number) {
+            return new OrdinalTime((Temporal) args[0], ((Number) args[1]).intValue());
+          }
+        }
+        throw new UnsupportedOperationException("apply(Object...) not implemented for TemporalOp " + this);
+      }
+    },
+    ADD_MODIFIER {
+      public Temporal apply(Temporal t, String modifier) {
+        return t.addMod(modifier);
+      }
+
+      @Override
+      public Temporal apply(Object... args) {
+        if (args.length == 2) {
+          if (args[0] instanceof Temporal && args[1] instanceof String) {
+            return apply((Temporal) args[0], (String) args[1]);
+          }
+        }
+        throw new UnsupportedOperationException("apply(Object...) not implemented for TemporalOp " + this);
+      }
+    },
+    OFFSET_EXACT {
+      // There is exact offset (more granular parts than the duration are kept)
+      @Override
+      public Temporal apply(Temporal arg1, Temporal arg2, int flags) {
+        if (arg1 == null) {
+          return new RelativeTime(OFFSET_EXACT, arg2);
+        }
+        if (arg1 instanceof Time && arg2 instanceof Duration) {
+          return ((Time) arg1).offset((Duration) arg2, flags);
+        } else if (arg1 instanceof Range && arg2 instanceof Duration) {
+          return ((Range) arg1).offset((Duration) arg2, flags);
+        } else {
+          throw new UnsupportedOperationException("OFFSET_EXACT not implemented for arg1=" + arg1.getClass() + ", arg2=" + arg2.getClass());
+        }
+      }
+    };
+
+
+    public Temporal apply(Temporal arg1, Temporal arg2, int flags) {
+      throw new UnsupportedOperationException("apply(Temporal, Temporal, int) not implemented for TemporalOp " + this);
+    }
+
+    public Temporal apply(Temporal arg1, Temporal arg2) {
+      return apply(arg1, arg2, 0);
+    }
+
+    public Temporal apply(Temporal... args) {
+      if (args.length == 2) {
+        return apply(args[0], args[1]);
+      }
+      throw new UnsupportedOperationException("apply(Temporal...) not implemented for TemporalOp " + this);
+    }
+
+    public Temporal apply(Object... args) {
+      throw new UnsupportedOperationException("apply(Object...) not implemented for TemporalOp " + this);
+    }
+  }
+

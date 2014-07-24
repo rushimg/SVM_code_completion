@@ -1,0 +1,20 @@
+          }
+        } catch (Exception ex) {
+          logger.log(Level.WARNING, "Error extracting annotation from " + te, ex);
+        }
+      }
+    }
+    expressions.removeAll(toDiscard);
+  }
+
+  private void annotateExpressions(List<? extends CoreMap> chunks, List<T> expressions)
+  {
+    // TODO: Logging can be excessive
+    List<MatchedExpression> toDiscard = new ArrayList<MatchedExpression>();
+    for (MatchedExpression te:expressions) {
+      // Add attributes and all
+      try {
+        boolean extractOkay = te.extractAnnotation(env, chunks);
+        if (!extractOkay) {
+          // Things didn't turn out so well
+          toDiscard.add(te);

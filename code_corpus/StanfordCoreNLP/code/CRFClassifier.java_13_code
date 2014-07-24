@@ -1,0 +1,39 @@
+  public List<Triple<int[][][], int[], double[][][]>> documentsToDataAndLabelsList(Collection<List<IN>> documents) {
+    int numDatums = 0;
+
+    List<Triple<int[][][], int[], double[][][]>> docList = new ArrayList<Triple<int[][][], int[], double[][][]>>();
+    for (List<IN> doc : documents) {
+      Triple<int[][][], int[], double[][][]> docTriple = documentToDataAndLabels(doc);
+      docList.add(docTriple);
+      numDatums += doc.size();
+    }
+
+    System.err.println("numClasses: " + classIndex.size() + ' ' + classIndex);
+    System.err.println("numDocuments: " + docList.size());
+    System.err.println("numDatums: " + numDatums);
+    System.err.println("numFeatures: " + featureIndex.size());
+    return docList;
+  }
+
+  protected void printFeatures() {
+    if (flags.printFeatures == null) {
+      return;
+    }
+    try {
+      String enc = flags.inputEncoding;
+      if (flags.inputEncoding == null) {
+        System.err.println("flags.inputEncoding doesn't exist, using UTF-8 as default");
+        enc = "UTF-8";
+      }
+
+      PrintWriter pw = new PrintWriter(new OutputStreamWriter(new FileOutputStream("features-" + flags.printFeatures
+          + ".txt"), enc), true);
+      for (String feat : featureIndex) {
+        pw.println(feat);
+      }
+      pw.close();
+    } catch (IOException ioe) {
+      ioe.printStackTrace();
+    }
+  }
+

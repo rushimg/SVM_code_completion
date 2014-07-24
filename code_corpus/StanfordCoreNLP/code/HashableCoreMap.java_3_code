@@ -1,0 +1,17 @@
+  @SuppressWarnings("unchecked")
+  public HashableCoreMap(ArrayCoreMap other, Set<Class<? extends TypesafeMap.Key<?>>> hashkey) {
+    super(other);
+    
+    int keyHashcode = 0;
+    int valueHashcode = 0;
+    
+    for (Class<? extends TypesafeMap.Key<?>> key : hashkey) {
+      // NB it is important to compose these hashcodes in an order-independent
+      // way, so we just add them all here.
+      keyHashcode += key.hashCode();
+      valueHashcode += super.get((Class)key).hashCode();
+    }
+    
+    this.immutableKeys = hashkey;
+  }
+  

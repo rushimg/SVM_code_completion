@@ -1,0 +1,110 @@
+  public static <E> CRFCliqueTree<E> getCalibratedCliqueTree(double[] weights, double wscale, int[][] weightIndices,
+      int[][][] data, List<Index<CRFLabel>> labelIndices, int numClasses, Index<E> classIndex, E backgroundSymbol) {
+
+    FactorTable[] factorTables = new FactorTable[data.length];
+    FactorTable[] messages = new FactorTable[data.length - 1];
+
+    for (int i = 0; i < data.length; i++) {
+
+      factorTables[i] = getFactorTable(weights, wscale, weightIndices, data[i], labelIndices, numClasses);
+
+      if (i > 0) {
+        messages[i - 1] = factorTables[i - 1].sumOutFront();
+        factorTables[i].multiplyInFront(messages[i - 1]);
+      }
+    }
+
+    for (int i = factorTables.length - 2; i >= 0; i--) {
+
+      FactorTable summedOut = factorTables[i + 1].sumOutEnd();
+      summedOut.divideBy(messages[i]);
+      factorTables[i].multiplyInEnd(summedOut);
+    }
+
+    return new CRFCliqueTree<E>(factorTables, classIndex, backgroundSymbol);
+  }
+
+  private static FactorTable getFactorTable(double[] weights, double wscale, int[][] weightIndices, int[][] data,
+      List<Index<CRFLabel>> labelIndices, int numClasses) {
+
+    FactorTable factorTable = null;
+
+    for (int j = 0, sz = labelIndices.size(); j < sz; j++) {
+      Index labelIndex = labelIndices.get(j);
+      FactorTable ft = new FactorTable(numClasses, j + 1);
+
+      // ... and each possible labeling for that clique
+      for (int k = 0, liSize = labelIndex.size(); k < liSize; k++) {
+        int[] label = ((CRFLabel) labelIndex.get(k)).getLabel();
+        double weight = 0.0;
+        for (int m = 0; m < data[j].length; m++) {
+          int wi = weightIndices[data[j][m]][k];
+        }
+        // try{
+        ft.setValue(label, weight);
+        // } catch (Exception e) {
+        // System.out.println("CRFCliqueTree::getFactorTable");
+        // System.out.println("NumClasses: " + numClasses + " j+1: " + (j+1));
+        // System.out.println("k: " + k+" label: " +label+" labelIndexSize: " +
+        // labelIndex.size());
+        // throw new RunTimeException(e.toString());
+        // }
+
+      }
+      if (j > 0) {
+        ft.multiplyInEnd(factorTable);
+      }
+      factorTable = ft;
+
+    }
+
+    return factorTable;
+  }
+
+  // static FactorTable getFactorTable(double[][] weights, int[][] data, List<Index<CRFLabel>> labelIndices, int numClasses, int posInSent) {
+  //   CliquePotentialFunction cliquePotentialFunc = new LinearCliquePotentialFunction(weights);
+  //   return getFactorTable(data, labelIndices, numClasses, cliquePotentialFunc, null, posInSent);
+  // }
+
+  static FactorTable getFactorTable(int[][] data, List<Index<CRFLabel>> labelIndices, int numClasses,
+      CliquePotentialFunction cliquePotentialFunc, double[][] featureValByCliqueSize, int posInSent) {
+    FactorTable factorTable = null;
+
+    for (int j = 0, sz = labelIndices.size(); j < sz; j++) {
+      Index labelIndex = labelIndices.get(j);
+      FactorTable ft = new FactorTable(numClasses, j + 1);
+      double[] featureVal = null;
+      if (featureValByCliqueSize != null)
+        featureVal = featureValByCliqueSize[j];
+
+      // ... and each possible labeling for that clique
+      for (int k = 0, liSize = labelIndex.size(); k < liSize; k++) {
+        int[] label = ((CRFLabel) labelIndex.get(k)).getLabel();
+        double cliquePotential = cliquePotentialFunc.computeCliquePotential(j+1, k, data[j], featureVal, posInSent);
+        // for (int m = 0; m < data[j].length; m++) {
+        //   weight += weights[data[j][m]][k];
+        // }
+        // try{
+        ft.setValue(label, cliquePotential);
+        // } catch (Exception e) {
+        // System.out.println("CRFCliqueTree::getFactorTable");
+        // System.out.println("NumClasses: " + numClasses + " j+1: " + (j+1));
+        // System.out.println("k: " + k+" label: " +label+" labelIndexSize: " +
+        // labelIndex.size());
+        // throw new RunTimeException(e.toString());
+        // }
+
+      }
+      if (j > 0) {
+        ft.multiplyInEnd(factorTable);
+      }
+      factorTable = ft;
+
+    }
+
+    return factorTable;
+  }
+
+
+  // SEQUENCE MODEL METHODS
+

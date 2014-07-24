@@ -1,0 +1,89 @@
+         if (tp.getProb() < bestComplete) { //this parse and the ones which follow will never win, stop advancing.
+         break;
+         }
+        if (guess == null && derivationStage == 2) {
+          guess = tp;
+        }
+        if (debugOn) {
+          System.out.print(derivationStage + " " + derivationRank + " "+tp.getProb());
+          tp.show();
+          System.out.println();
+        }
+        Parse[] nd;
+        if (0 == derivationStage) {
+          nd = advanceTags(tp);
+        }
+        else if (1 == derivationStage) {
+          if (ndh.size() < K) {
+            //System.err.println("advancing ts "+j+" "+ndh.size()+" < "+K);
+            nd = advanceChunks(tp,bestComplete);
+          }
+          else {
+            //System.err.println("advancing ts "+j+" prob="+((Parse) ndh.last()).getProb());
+            nd = advanceChunks(tp,(ndh.last()).getProb());
+          }
+        }
+        else { // i > 1
+          nd = advanceParses(tp, Q);
+        }
+        if (nd != null) {
+          for (int k = 0, kl = nd.length; k < kl; k++) {
+            if (nd[k].complete()) {
+              advanceTop(nd[k]);
+              if (nd[k].getProb() > bestComplete) {
+                bestComplete = nd[k].getProb();
+              }
+              if (nd[k].getProb() < minComplete) {
+                minComplete = nd[k].getProb();
+              }
+              completeParses.add(nd[k]);
+            }
+            else {
+              ndh.add(nd[k]);
+            }
+          }
+        }
+        else {
+          if (reportFailedParse) {
+            System.err.println("Couldn't advance parse "+derivationStage+" stage "+derivationRank+"!\n");
+          }
+          advanceTop(tp);
+          completeParses.add(tp);
+        }
+      }
+      derivationStage++;
+      odh = ndh;
+    }
+    if (completeParses.size() == 0) {
+      if (reportFailedParse) System.err.println("Couldn't find parse for: " + tokens);
+      //Parse r = (Parse) odh.first();
+      //r.show();
+      //System.out.println();
+      return new Parse[] {guess};
+    }
+    else if (numParses == 1){
+      return new Parse[] {completeParses.first()};
+    }
+    else {
+      List<Parse> topParses = new ArrayList<Parse>(numParses);
+      while(!completeParses.isEmpty() && topParses.size() < numParses) {
+        Parse tp = completeParses.extract();
+        topParses.add(tp);
+        //parses.remove(tp);
+      }
+      return topParses.toArray(new Parse[topParses.size()]);
+    }
+  }
+
+  public Parse parse(Parse tokens) {
+
+    if (tokens.getChildCount() > 0) {
+      Parse p = parse(tokens,1)[0];
+      setParents(p);
+      return p;
+    }
+    else {
+      return tokens;
+    }
+  }
+

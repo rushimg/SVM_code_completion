@@ -1,0 +1,104 @@
+  private void writeAnswer(String[] strs, String clAnswer, Distribution<String> cntr, Counter<String> contingency, Classifier<String,String> c, double sim) {
+    String goldAnswer = strs[globalFlags.goldAnswerColumn];
+    String printedText = "";
+    if (globalFlags.displayedColumn >= 0) {
+      printedText = strs[globalFlags.displayedColumn];
+    }
+    String results;
+    if (globalFlags.displayAllAnswers) {
+      // sort the labels by probability
+      TreeSet<Pair<Double,String>> sortedLabels = new TreeSet<Pair<Double,String>>();
+      for (String key : cntr.keySet()) {
+        sortedLabels.add(new Pair<Double,String>(cntr.probabilityOf(key), key));
+      }
+      StringBuilder builder = new StringBuilder();
+      for (Pair<Double,String> pair : sortedLabels.descendingSet()) {
+        if (builder.length() > 0) {
+          builder.append("\t");
+        }
+        builder.append(pair.first().toString()).append('\t').append(pair.second());
+      }
+      results = builder.toString();
+    } else {
+      results = clAnswer + '\t' + nf.format(cntr.probabilityOf(clAnswer)) + '\t' + nf.format(cntr.probabilityOf(goldAnswer));
+    }
+
+    String line;
+    if (printedText.isEmpty()) {
+      line = goldAnswer + '\t' + results;
+     } else {
+      line = printedText + '\t' + goldAnswer + '\t' + results;
+    }
+    System.out.println(line);
+    // NB: This next bit judges correctness by surface String equality, not our internal indices, so strs has to be right even for svmlightFormat
+    for (String next : c.labels()) {
+      if (next.equals(goldAnswer)) {
+        if (next.equals(clAnswer)) {
+          contingency.incrementCount(next + "|TP");
+        } else {
+          contingency.incrementCount(next + "|FN");
+        }
+      } else {
+        if (next.equals(clAnswer)) {
+          contingency.incrementCount(next + "|FP");
+        } else {
+          contingency.incrementCount(next + "|TN");
+        }
+      }
+    }
+    if (globalFlags.groupingColumn >= 0 && globalFlags.rankingAccuracyClass != null) {
+      String group = strs[globalFlags.groupingColumn];
+      // System.err.println("Group is " + group);
+      if (group.equals(lastGroup)) {
+        numInGroup++;
+        double prob = cntr.probabilityOf(globalFlags.rankingAccuracyClass);
+        // System.err.println("  same group; prob is " + prob);
+        if (prob > bestProb) {
+          bestProb = prob;
+          bestSim = sim;
+          // System.err.println("  better prob than before");
+          currentHighestProbCorrect = goldAnswer.equals(globalFlags.rankingAccuracyClass);
+        }
+        if (globalFlags.rankingAccuracyClass.equals(goldAnswer)) {
+          foundAnswerInGroup = true;
+        }
+      } else {
+        finishRanking(contingency, bestSim);
+        numGroups++;
+        lastGroup = group;
+        bestProb = cntr.probabilityOf(globalFlags.rankingAccuracyClass);
+        bestSim = sim;
+        // System.err.println("  different; prob is " + bestProb);
+        numInGroup = 1;
+        currentHighestProbCorrect = goldAnswer.equals(globalFlags.rankingAccuracyClass);
+        foundAnswerInGroup = globalFlags.rankingAccuracyClass.equals(goldAnswer);
+      }
+    }
+  }
+
+
+  private void finishRanking(Counter<String> contingency, double sim) {
+    if (numInGroup > 0) {
+      if (globalFlags.justify) {
+        System.err.print("Previous group of " + numInGroup + ": ");
+        if (!foundAnswerInGroup) {
+          System.err.print("no correct answer; ");
+        }
+        System.err.print("highest ranked guess was: " + ((currentHighestProbCorrect ? "correct" : "incorrect")));
+        System.err.println(" (sim. = " + nf.format(sim) + ')');
+      }
+      if (currentHighestProbCorrect) {
+        contingency.incrementCount("Ranking|Correct");
+      } else {
+        contingency.incrementCount("Ranking|Error");
+      }
+      if (foundAnswerInGroup) {
+        contingency.incrementCount("Ranking|Covered");
+      } else {
+        contingency.incrementCount("Ranking|Uncovered");
+      }
+      contingency.incrementCount("Ranking|Score", sim);
+    }
+  }
+
+

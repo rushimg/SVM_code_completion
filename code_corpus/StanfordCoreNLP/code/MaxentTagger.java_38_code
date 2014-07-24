@@ -1,0 +1,218 @@
+  private void runTagger()
+    throws IOException, ClassNotFoundException,
+           NoSuchMethodException, IllegalAccessException,
+           java.lang.reflect.InvocationTargetException
+  {
+    String[] xmlInput = config.getXMLInput();
+    if (xmlInput.length > 0) {
+      if(xmlInput.length > 1 || !xmlInput[0].equals("null")) {
+        tagFromXML();
+        return;
+      }
+    }
+
+    BufferedWriter writer = null;
+    BufferedReader br = null;
+    try {
+      String outFile = config.getOutputFile();
+      if (outFile.length() > 0) {
+        writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outFile), config.getEncoding()));
+      } else {
+        writer = new BufferedWriter(new OutputStreamWriter(System.out, config.getEncoding()));
+      }
+
+      //Now determine if we're tagging from stdin or from a file,
+      //construct a reader accordingly
+      boolean stdin = config.useStdin();
+      OutputStyle outputStyle = OutputStyle.fromShortName(config.getOutputFormat());
+      if (!stdin) {
+        String filename = config.getFile();
+        if (formatPattern.matcher(filename).find()) {
+          TaggedFileRecord record = TaggedFileRecord.createRecord(config, filename);
+          runTagger(record.reader(), writer, outputStyle);
+        } else {
+          br = IOUtils.readerFromString(config.getFile(), config.getEncoding());
+          runTagger(br, writer, config.getTagInside(), outputStyle);
+        }
+      } else {
+        System.err.println("Type some text to tag, then EOF.");
+        System.err.println("  (For EOF, use Return, Ctrl-D on Unix; Enter, Ctrl-Z, Enter on Windows.)");
+        br = new BufferedReader(new InputStreamReader(System.in));
+
+        runTaggerStdin(br, writer, outputStyle);
+      }
+    } finally {
+      IOUtils.closeIgnoringExceptions(br);
+      IOUtils.closeIgnoringExceptions(writer);
+    }
+  }
+
+  public void runTaggerStdin(BufferedReader reader, BufferedWriter writer, OutputStyle outputStyle)
+    throws IOException
+  {
+    final TokenizerFactory<? extends HasWord> tokenizerFactory = chooseTokenizerFactory();
+
+    //Counts
+    long totalMillis = 0;
+    int numWords = 0;
+    int numSentences = 0;
+
+    boolean outputVerbosity = config.getOutputVerbosity();
+    boolean outputLemmas = config.getOutputLemmas();
+    Morphology morpha = (outputLemmas) ? new Morphology() : null;
+
+    if (outputStyle == OutputStyle.XML ||
+        outputStyle == OutputStyle.INLINE_XML) {
+      writer.write("<?xml version=\"1.0\" encoding=\"" +
+                   config.getEncoding() + "\"?>\n");
+      writer.write("<pos>\n");
+    }
+
+    String sentenceDelimiter = config.getSentenceDelimiter();
+    if (sentenceDelimiter != null && sentenceDelimiter.equals("newline")) {
+      sentenceDelimiter = "\n";
+    }
+
+    while (true) {
+      //Now we do everything through the doc preprocessor
+      final DocumentPreprocessor docProcessor;
+      String line = reader.readLine();
+      // this happens when we reach end of file
+      if (line == null)
+        break;
+      docProcessor = new DocumentPreprocessor(new StringReader(line));
+      docProcessor.setTokenizerFactory(tokenizerFactory);
+      docProcessor.setSentenceDelimiter(sentenceDelimiter);
+      if (config.keepEmptySentences()) {
+        docProcessor.setKeepEmptySentences(true);
+      }
+
+      for (List<HasWord> sentence : docProcessor) {
+        numWords += sentence.size();
+
+        Timing t = new Timing();
+        tagAndOutputSentence(sentence, outputLemmas, morpha, outputStyle,
+                             outputVerbosity, numSentences, "", writer);
+
+        totalMillis += t.stop();
+        writer.newLine();
+        writer.flush();
+        numSentences++;
+      }
+    }
+
+    if (outputStyle == OutputStyle.XML ||
+        outputStyle == OutputStyle.INLINE_XML) {
+      writer.write("</pos>\n");
+    }
+
+    writer.flush();
+    printErrWordsPerSec(totalMillis, numWords);
+  }
+
+  public void runTaggerSGML(BufferedReader reader, BufferedWriter writer, OutputStyle outputStyle)
+    throws IOException
+  {
+    Timing t = new Timing();
+
+    //Counts
+    int numWords = 0;
+    int numSentences = 0;
+
+    if (outputStyle == OutputStyle.XML ||
+        outputStyle == OutputStyle.INLINE_XML) {
+      writer.write("<?xml version=\"1.0\" encoding=\"" +
+                   config.getEncoding() + "\"?>\n");
+      writer.write("<pos>\n");
+    }
+
+    // this uses NER codebase technology to read/write SGML-ish files
+    PlainTextDocumentReaderAndWriter<CoreLabel> readerAndWriter = new PlainTextDocumentReaderAndWriter<CoreLabel>();
+    ObjectBank<List<CoreLabel>> ob = new ObjectBank<List<CoreLabel>>(new ReaderIteratorFactory(reader), readerAndWriter);
+    PrintWriter pw = new PrintWriter(writer);
+    for (List<CoreLabel> sentence : ob) {
+      List<CoreLabel> s = Generics.newArrayList();
+      numWords += s.size();
+      List<TaggedWord> taggedSentence = tagSentence(s, false);
+      Iterator<CoreLabel> origIter = sentence.iterator();
+      for (TaggedWord tw : taggedSentence) {
+        CoreLabel cl = origIter.next();
+        cl.set(CoreAnnotations.AnswerAnnotation.class, tw.tag());
+      }
+      readerAndWriter.printAnswers(sentence, pw, outputStyle, true);
+      ++numSentences;
+    }
+
+    if (outputStyle == OutputStyle.XML ||
+        outputStyle == OutputStyle.INLINE_XML) {
+      writer.write("</pos>\n");
+    }
+
+    writer.flush();
+    long millis = t.stop();
+    printErrWordsPerSec(millis, numWords);
+  }
+
+  public <X extends HasWord> void runTagger(Iterable<List<X>> document,
+                                            BufferedWriter writer,
+                                            OutputStyle outputStyle)
+    throws IOException
+  {
+    Timing t = new Timing();
+
+    //Counts
+    int numWords = 0;
+    int numSentences = 0;
+
+    boolean outputVerbosity = config.getOutputVerbosity();
+    boolean outputLemmas = config.getOutputLemmas();
+
+    if (outputStyle == OutputStyle.XML ||
+        outputStyle == OutputStyle.INLINE_XML) {
+      writer.write("<?xml version=\"1.0\" encoding=\"" +
+                   config.getEncoding() + "\"?>\n");
+      writer.write("<pos>\n");
+    }
+
+
+    if (config.getNThreads() != 1) {
+      MulticoreWrapper<List<? extends HasWord>, List<? extends HasWord>> wrapper = new MulticoreWrapper<List<? extends HasWord>, List<? extends HasWord>>(config.getNThreads(), new SentenceTaggingProcessor(this, outputLemmas));
+      for (List<X> sentence : document) {
+        wrapper.put(sentence);
+        while (wrapper.peek()) {
+          List<? extends HasWord> taggedSentence = wrapper.poll();
+          numWords += taggedSentence.size();
+          outputTaggedSentence(taggedSentence, outputLemmas, outputStyle, outputVerbosity, numSentences, "\n", writer);
+          numSentences++;
+        }
+      }
+      wrapper.join();
+      while (wrapper.peek()) {
+        List<? extends HasWord> taggedSentence = wrapper.poll();
+        numWords += taggedSentence.size();
+        outputTaggedSentence(taggedSentence, outputLemmas, outputStyle, outputVerbosity, numSentences, "\n", writer);
+        numSentences++;
+      }
+    } else {
+      Morphology morpha = (outputLemmas) ? new Morphology() : null;
+      for (List<X> sentence : document) {
+        numWords += sentence.size();
+
+        tagAndOutputSentence(sentence, outputLemmas, morpha, outputStyle,
+                             outputVerbosity, numSentences, "\n", writer);
+
+        numSentences++;
+      }
+    }
+
+    if (outputStyle == OutputStyle.XML ||
+        outputStyle == OutputStyle.INLINE_XML) {
+      writer.write("</pos>\n");
+    }
+
+    writer.flush();
+    long millis = t.stop();
+    printErrWordsPerSec(millis, numWords);
+  }
+
+

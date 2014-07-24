@@ -1,0 +1,70 @@
+    public void add(Number mean, Number standardDeviation,
+                    Comparable rowKey, Comparable columnKey) {
+        MeanAndStandardDeviation item = new MeanAndStandardDeviation(
+                mean, standardDeviation);
+        this.data.addObject(item, rowKey, columnKey);
+
+        double m = Double.NaN;
+        double sd = Double.NaN;
+        if (mean != null) {
+            m = mean.doubleValue();
+        }
+        if (standardDeviation != null) {
+            sd = standardDeviation.doubleValue();
+        }
+
+        // update cached range values
+        int r = this.data.getColumnIndex(columnKey);
+        int c = this.data.getRowIndex(rowKey);
+        if ((r == this.maximumRangeValueRow && c
+                == this.maximumRangeValueColumn) || (r
+                == this.maximumRangeValueIncStdDevRow && c
+                == this.maximumRangeValueIncStdDevColumn) || (r
+                == this.minimumRangeValueRow && c
+                == this.minimumRangeValueColumn) || (r
+                == this.minimumRangeValueIncStdDevRow && c
+                == this.minimumRangeValueIncStdDevColumn)) {
+
+            // iterate over all data items and update mins and maxes
+            updateBounds();
+        }
+        else {
+            if (!Double.isNaN(m)) {
+                if (Double.isNaN(this.maximumRangeValue)
+                        || m > this.maximumRangeValue) {
+                    this.maximumRangeValue = m;
+                    this.maximumRangeValueRow = r;
+                    this.maximumRangeValueColumn = c;
+                }
+            }
+
+            if (!Double.isNaN(m + sd)) {
+                if (Double.isNaN(this.maximumRangeValueIncStdDev)
+                        || (m + sd) > this.maximumRangeValueIncStdDev) {
+                    this.maximumRangeValueIncStdDev = m + sd;
+                    this.maximumRangeValueIncStdDevRow = r;
+                    this.maximumRangeValueIncStdDevColumn = c;
+                }
+            }
+
+            if (!Double.isNaN(m)) {
+                if (Double.isNaN(this.minimumRangeValue)
+                        || m < this.minimumRangeValue) {
+                    this.minimumRangeValue = m;
+                    this.minimumRangeValueRow = r;
+                    this.minimumRangeValueColumn = c;
+                }
+            }
+
+            if (!Double.isNaN(m - sd)) {
+                if (Double.isNaN(this.minimumRangeValueIncStdDev)
+                        || (m - sd) < this.minimumRangeValueIncStdDev) {
+                    this.minimumRangeValueIncStdDev = m - sd;
+                    this.minimumRangeValueIncStdDevRow = r;
+                    this.minimumRangeValueIncStdDevColumn = c;
+                }
+            }
+        }
+        fireDatasetChanged();
+    }
+

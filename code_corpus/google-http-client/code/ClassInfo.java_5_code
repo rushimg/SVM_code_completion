@@ -1,0 +1,16 @@
+  public static ClassInfo of(Class<?> underlyingClass, boolean ignoreCase) {
+    if (underlyingClass == null) {
+      return null;
+    }
+    final Map<Class<?>, ClassInfo> cache = ignoreCase ? CACHE_IGNORE_CASE : CACHE;
+    ClassInfo classInfo;
+    synchronized (cache) {
+      classInfo = cache.get(underlyingClass);
+      if (classInfo == null) {
+        classInfo = new ClassInfo(underlyingClass, ignoreCase);
+        cache.put(underlyingClass, classInfo);
+      }
+    }
+    return classInfo;
+  }
+

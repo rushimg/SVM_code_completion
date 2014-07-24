@@ -1,0 +1,30 @@
+  @Override
+  public void readData(BufferedReader in) throws IOException {
+    final String SEEN = "SEEN";
+    String line;
+    int lineNum = 1;
+    // all lines have one tagging with raw count per line
+    line = in.readLine();
+    while (line != null && line.length() > 0) {
+      try {
+        Matcher m = p.matcher(line);
+        if (m.matches()) {
+          int i = Integer.parseInt(m.group(1));
+          smooth[i] = Double.parseDouble(m.group(2));
+        } else {
+          // split on spaces, quote with doublequote, and escape with backslash
+          String[] fields = StringUtils.splitOnCharWithQuoting(line, ' ', '\"', '\\');
+          // System.out.println("fields:\n" + fields[0] + "\n" + fields[1] +
+          // "\n" + fields[2] + "\n" + fields[3] + "\n" + fields[4]);
+          boolean seen = fields[3].equals(SEEN);
+          addTagging(seen, new IntTaggedWord(fields[2], fields[0], wordIndex, tagIndex), Double.parseDouble(fields[4]));
+        }
+      } catch (RuntimeException e) {
+        throw new IOException("Error on line " + lineNum + ": " + line, e);
+      }
+      lineNum++;
+      line = in.readLine();
+    }
+    initRulesWithWord();
+  }
+

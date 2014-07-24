@@ -1,0 +1,34 @@
+  public DoccatModel(String languageCode, MaxentModel doccatModel) {
+    this(languageCode, doccatModel, null);
+  }
+
+  public DoccatModel(InputStream in) throws IOException, InvalidFormatException {
+    super(COMPONENT_NAME, in);
+  }
+
+  public DoccatModel(File modelFile) throws IOException, InvalidFormatException {
+    super(COMPONENT_NAME, modelFile);
+  }
+
+  public DoccatModel(URL modelURL) throws IOException, InvalidFormatException {
+    super(COMPONENT_NAME, modelURL);
+  }
+
+  @Override
+  protected void validateArtifactMap() throws InvalidFormatException {
+    super.validateArtifactMap();
+
+    if (!(artifactMap.get(DOCCAT_MODEL_ENTRY_NAME) instanceof AbstractModel)) {
+      throw new InvalidFormatException("Doccat model is incomplete!");
+    }
+  }
+
+  public DoccatFactory getFactory() {
+    return (DoccatFactory) this.toolFactory;
+  }
+
+  @Override
+  protected Class<? extends BaseToolFactory> getDefaultFactory() {
+    return DoccatFactory.class;
+  }
+

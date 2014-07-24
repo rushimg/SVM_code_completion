@@ -1,0 +1,243 @@
+  @Override
+  public int numRules() {
+    return chineseLexicon.numRules();
+  }
+
+  @Override
+  public void initializeTraining(double numTrees) {
+    chineseLexicon.initializeTraining(numTrees);
+    wordSegmenter.initializeTraining(numTrees);
+  }
+
+  @Override
+  public void train(Collection<Tree> trees) {
+    train(trees, 1.0);
+  }
+
+  @Override
+  public void train(Collection<Tree> trees, double weight) {
+    for (Tree tree : trees) {
+      train(tree, weight);
+    }
+  }
+
+  @Override
+  public void train(Tree tree) {
+    train(tree, 1.0);
+  }
+
+  @Override
+  public void train(Tree tree, double weight) {
+    train(tree.taggedYield(), weight);
+  }
+
+  @Override
+  public void train(List<TaggedWord> sentence) {
+    train(sentence, 1.0);
+  }
+
+  @Override
+  public void train(List<TaggedWord> sentence, double weight) {
+    chineseLexicon.train(sentence, weight);
+    wordSegmenter.train(sentence);
+  }
+
+  @Override
+  public void trainUnannotated(List<TaggedWord> sentence, double weight) {
+    // TODO: for now we just punt on these
+    throw new UnsupportedOperationException("This version of the parser does not support non-tree training data");
+  }
+
+  @Override
+  public void incrementTreesRead(double weight) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void train(TaggedWord tw, int loc, double weight) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void finishTraining() {
+    chineseLexicon.finishTraining();
+    wordSegmenter.finishTraining();
+  }
+
+  @Override
+  public float score(IntTaggedWord iTW, int loc, String word, String featureSpec) {
+    return chineseLexicon.score(iTW, loc, word, null);
+  } // end score()
+
+
+  @Override
+  public void loadSegmenter(String filename) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void readData(BufferedReader in) throws IOException {
+    chineseLexicon.readData(in);
+  }
+
+  @Override
+  public void writeData(Writer w) throws IOException {
+    chineseLexicon.writeData(w);
+  }
+
+  // the data & functions below are for standalone segmenter. -pichuan
+  private Options op;
+  // helper function
+  private static int numSubArgs(String[] args, int index) {
+    int i = index;
+    while (i + 1 < args.length && args[i + 1].charAt(0) != '-') {
+      i++;
+    }
+    return i - index;
+  }
+
+  private ChineseLexiconAndWordSegmenter(Treebank trainTreebank, Options op, Index<String> wordIndex, Index<String> tagIndex) {
+    ChineseLexiconAndWordSegmenter cs = getSegmenterDataFromTreebank(trainTreebank, op, wordIndex, tagIndex);
+    chineseLexicon = cs.chineseLexicon;
+    wordSegmenter = cs.wordSegmenter;
+  }
+
+  private static ChineseLexiconAndWordSegmenter getSegmenterDataFromTreebank(Treebank trainTreebank, Options op, Index<String> wordIndex, Index<String> tagIndex) {
+    System.out.println("Currently " + new Date());
+    //    printOptions(true, op);
+    Timing.startTime();
+    // setup tree transforms
+    TreebankLangParserParams tlpParams = op.tlpParams;
+    if (op.testOptions.verbose) {
+      System.out.print("Training ");
+      System.out.println(trainTreebank.textualSummary());
+    }
+
+    System.out.print("Binarizing trees...");
+    TreeAnnotatorAndBinarizer binarizer; // initialized below
+    if (!op.trainOptions.leftToRight) {
+      binarizer = new TreeAnnotatorAndBinarizer(tlpParams, op.forceCNF, !op.trainOptions.outsideFactor(), true, op);
+    } else {
+      binarizer = new TreeAnnotatorAndBinarizer(tlpParams.headFinder(), new LeftHeadFinder(), tlpParams, op.forceCNF, !op.trainOptions.outsideFactor(), true, op);
+    }
+    CollinsPuncTransformer collinsPuncTransformer = null;
+    if (op.trainOptions.collinsPunc) {
+      collinsPuncTransformer = new CollinsPuncTransformer(tlpParams.treebankLanguagePack());
+    }
+    List<Tree> binaryTrainTrees = new ArrayList<Tree>();
+    // List<Tree> binaryTuneTrees = new ArrayList<Tree>();
+
+    if (op.trainOptions.selectiveSplit) {
+      op.trainOptions.splitters = ParentAnnotationStats.getSplitCategories(trainTreebank, true, 0, op.trainOptions.selectiveSplitCutOff, op.trainOptions.tagSelectiveSplitCutOff, tlpParams.treebankLanguagePack());
+      if (op.testOptions.verbose) {
+        System.err.println("Parent split categories: " + op.trainOptions.splitters);
+      }
+    }
+    if (op.trainOptions.selectivePostSplit) {
+      TreeTransformer myTransformer = new TreeAnnotator(tlpParams.headFinder(), tlpParams, op);
+      Treebank annotatedTB = trainTreebank.transform(myTransformer);
+      op.trainOptions.postSplitters = ParentAnnotationStats.getSplitCategories(annotatedTB, true, 0, op.trainOptions.selectivePostSplitCutOff, op.trainOptions.tagSelectivePostSplitCutOff, tlpParams.treebankLanguagePack());
+      if (op.testOptions.verbose) {
+        System.err.println("Parent post annotation split categories: " + op.trainOptions.postSplitters);
+      }
+    }
+    if (op.trainOptions.hSelSplit) {
+      binarizer.setDoSelectiveSplit(false);
+      for (Tree tree : trainTreebank) {
+        if (op.trainOptions.collinsPunc) {
+          tree = collinsPuncTransformer.transformTree(tree);
+        }
+        tree = binarizer.transformTree(tree);
+      }
+      binarizer.setDoSelectiveSplit(true);
+    }
+    for (Tree tree : trainTreebank) {
+      if (op.trainOptions.collinsPunc) {
+        tree = collinsPuncTransformer.transformTree(tree);
+      }
+      tree = binarizer.transformTree(tree);
+      binaryTrainTrees.add(tree);
+    }
+
+    Timing.tick("done.");
+    if (op.testOptions.verbose) {
+      binarizer.dumpStats();
+    }
+    System.out.print("Extracting Lexicon...");
+    ChineseLexiconAndWordSegmenter clex = (ChineseLexiconAndWordSegmenter) op.tlpParams.lex(op, wordIndex, tagIndex);
+    clex.initializeTraining(binaryTrainTrees.size());
+    clex.train(binaryTrainTrees);
+    clex.finishTraining();
+    Timing.tick("done.");
+    return clex;
+  }
+
+  private static void printArgs(String[] args, PrintStream ps) {
+    ps.print("ChineseLexiconAndWordSegmenter invoked with arguments:");
+    for (int i = 0; i < args.length; i++) {
+      ps.print(" " + args[i]);
+    }
+    ps.println();
+  }
+
+  static void saveSegmenterDataToSerialized(ChineseLexiconAndWordSegmenter cs, String filename) {
+    try {
+      System.err.print("Writing segmenter in serialized format to file " + filename + " ");
+      ObjectOutputStream out = IOUtils.writeStreamFromString(filename);
+
+      out.writeObject(cs);
+      out.close();
+      System.err.println("done.");
+    } catch (IOException ioe) {
+      ioe.printStackTrace();
+    }
+  }
+
+
+  static void saveSegmenterDataToText(ChineseLexiconAndWordSegmenter cs, String filename) {
+    try {
+      System.err.print("Writing parser in text grammar format to file " + filename);
+      OutputStream os;
+      if (filename.endsWith(".gz")) {
+        // it's faster to do the buffering _outside_ the gzipping as here
+        os = new BufferedOutputStream(new GZIPOutputStream(new FileOutputStream(filename)));
+      } else {
+        os = new BufferedOutputStream(new FileOutputStream(filename));
+      }
+      PrintWriter out = new PrintWriter(os);
+      String prefix = "BEGIN ";
+      //      out.println(prefix + "OPTIONS");
+      //      if (pd.pt != null) {
+      //        pd.pt.writeData(out);
+      //      }
+      //      out.println();
+      //      System.err.print(".");
+      out.println(prefix + "LEXICON");
+      if (cs != null) {
+        cs.writeData(out);
+      }
+      out.println();
+      System.err.print(".");
+      out.flush();
+      out.close();
+      System.err.println("done.");
+    } catch (IOException e) {
+      System.err.println("Trouble saving segmenter data to ASCII format.");
+      e.printStackTrace();
+    }
+  }
+
+  private static Treebank makeTreebank(String treebankPath, Options op, FileFilter filt) {
+    System.err.println("Training a segmenter from treebank dir: " + treebankPath);
+    Treebank trainTreebank = op.tlpParams.memoryTreebank();
+    System.err.print("Reading trees...");
+    if (filt == null) {
+      trainTreebank.loadPath(treebankPath);
+    } else {
+      trainTreebank.loadPath(treebankPath, filt);
+    }
+
+    Timing.tick("done [read " + trainTreebank.size() + " trees].");
+    return trainTreebank;
+  }
+

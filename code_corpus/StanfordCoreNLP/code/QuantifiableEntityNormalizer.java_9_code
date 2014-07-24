@@ -1,0 +1,59 @@
+  private static <E extends CoreMap> List<E> detectTwoSidedRangeModifier(E firstDate, List<E> list, int beforeIndex, int afterIndex, boolean concatenate) {
+    E prev = (beforeIndex >= 0) ? list.get(beforeIndex) : null;
+    //E cur = list.get(0);
+    int sz = list.size();
+    E next = (afterIndex < sz) ? list.get(afterIndex) : null;
+    E next2 = (afterIndex + 1 < sz) ? list.get(afterIndex + 1) : null;
+    List<E> toRemove = new ArrayList<E>();
+
+    String curNER = (firstDate == null ? "" : firstDate.get(CoreAnnotations.NamedEntityTagAnnotation.class));
+    if(curNER == null) curNER = "";
+    if(firstDate == null || firstDate.get(CoreAnnotations.NormalizedNamedEntityTagAnnotation.class) == null) return toRemove;
+    //TODO: make ranges actually work
+    //first check if it's of the form "between <date> and <date>"/etc
+
+    if (prev != null) {
+      for (Pair<String, String> ranges : dateRangeBeforePairedOneWord) {
+        if (prev.get(CoreAnnotations.TextAnnotation.class).matches(ranges.first())) {
+          if (next != null && next2 != null) {
+            String nerNext2 = next2.get(CoreAnnotations.NamedEntityTagAnnotation.class);
+            if (next.get(CoreAnnotations.TextAnnotation.class).matches(ranges.second()) && nerNext2 != null && nerNext2.equals(curNER)) {
+              //Add rest in
+              prev.set(CoreAnnotations.PartOfSpeechAnnotation.class, "QUANT_MOD");
+              String rangeString;
+              if(curNER.equals("DATE")) {
+                ISODateInstance c = new ISODateInstance(new ISODateInstance(firstDate.get(CoreAnnotations.NormalizedNamedEntityTagAnnotation.class)),
+                    new ISODateInstance(next2.get(CoreAnnotations.NormalizedNamedEntityTagAnnotation.class)));
+                rangeString = c.getDateString();
+              } else {
+                rangeString = firstDate.get(CoreAnnotations.NormalizedNamedEntityTagAnnotation.class) + '-' + next2.get(CoreAnnotations.NormalizedNamedEntityTagAnnotation.class);
+              }
+              if (DEBUG) {
+                System.err.println("#1: Changing normalized NER from " + firstDate.get(CoreAnnotations.NormalizedNamedEntityTagAnnotation.class) + " to " + rangeString + " at index " + beforeIndex);
+              }
+              firstDate.set(CoreAnnotations.NormalizedNamedEntityTagAnnotation.class, rangeString);
+              if (DEBUG) {
+                System.err.println("#2: Changing normalized NER from " + next2.get(CoreAnnotations.NormalizedNamedEntityTagAnnotation.class) + " to " + rangeString + " at index " + afterIndex);
+              }
+              next2.set(CoreAnnotations.NormalizedNamedEntityTagAnnotation.class, rangeString);
+              next.set(CoreAnnotations.NamedEntityTagAnnotation.class, nerNext2);
+              if (DEBUG) {
+                System.err.println("#3: Changing normalized NER from " + next.get(CoreAnnotations.NormalizedNamedEntityTagAnnotation.class) + " to " + rangeString + " at index " + (afterIndex + 1));
+              }
+              next.set(CoreAnnotations.NormalizedNamedEntityTagAnnotation.class, rangeString);
+              if (concatenate) {
+                List<E> numberWords = new ArrayList<E>();
+                numberWords.add(firstDate);
+                numberWords.add(next);
+                numberWords.add(next2);
+                concatenateNumericString(numberWords, toRemove);
+
+              }
+            }
+          }
+        }
+      }
+    }
+    return toRemove;
+  }
+

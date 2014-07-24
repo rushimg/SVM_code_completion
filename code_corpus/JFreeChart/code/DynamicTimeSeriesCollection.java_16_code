@@ -1,0 +1,33 @@
+    public DynamicTimeSeriesCollection(int nSeries,
+                                       int nMoments,
+                                       RegularTimePeriod timeSample,
+                                       TimeZone zone) {
+
+        // the first initialization must precede creation of the ValueSet array:
+        this.maximumItemCount = nMoments;  // establishes length of each array
+        this.historyCount = nMoments;
+        this.seriesKeys = new Comparable[nSeries];
+        // initialize the members of "seriesNames" array so they won't be null:
+        for (int i = 0; i < nSeries; i++) {
+            this.seriesKeys[i] = "";
+        }
+        this.newestAt = nMoments - 1;
+        this.valueHistory = new ValueSequence[nSeries];
+        this.timePeriodClass = timeSample.getClass();
+
+        /// Expand the following for all defined TimePeriods:
+        if (this.timePeriodClass == Second.class) {
+            this.pointsInTime = new Second[nMoments];
+        }
+        else if (this.timePeriodClass == Minute.class) {
+            this.pointsInTime = new Minute[nMoments];
+        }
+        else if (this.timePeriodClass == Hour.class) {
+            this.pointsInTime = new Hour[nMoments];
+        }
+        ///  .. etc....
+        this.workingCalendar = Calendar.getInstance(zone);
+        this.position = START;
+        this.domainIsPointsInTime = true;
+    }
+

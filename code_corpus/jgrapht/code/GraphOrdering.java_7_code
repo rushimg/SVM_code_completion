@@ -1,0 +1,48 @@
+    public GraphOrdering(
+        Graph<V, E> regularGraph,
+        Set<V> vertexSet,
+        Set<E> edgeSet)
+    {
+        init(regularGraph, vertexSet, edgeSet);
+    }
+
+    //~ Methods ----------------------------------------------------------------
+
+    private void init(Graph<V, E> g, Set<V> vertexSet, Set<E> edgeSet)
+    {
+        // create a map between vertex value to its order(1st,2nd,etc)
+        // "CAT"=1 "DOG"=2 "RHINO"=3
+
+        this.mapVertexToOrder = new HashMap<V, Integer>(vertexSet.size());
+
+        int counter = 0;
+        for (V vertex : vertexSet) {
+            mapVertexToOrder.put(vertex, new Integer(counter));
+            counter++;
+        }
+
+        // create a friendlier representation of an edge
+        // by order, like 2nd->3rd instead of B->A
+        // use the map to convert vertex to order
+        // on directed graph, edge A->B must be (A,B)
+        // on undirected graph, edge A-B can be (A,B) or (B,A)
+
+        this.labelsEdgesSet = new HashSet<LabelsEdge>(edgeSet.size());
+        for (E edge : edgeSet) {
+            V sourceVertex = g.getEdgeSource(edge);
+            Integer sourceOrder = mapVertexToOrder.get(sourceVertex);
+            int sourceLabel = sourceOrder.intValue();
+            int targetLabel =
+                (mapVertexToOrder.get(g.getEdgeTarget(edge))).intValue();
+
+            LabelsEdge lablesEdge = new LabelsEdge(sourceLabel, targetLabel);
+            this.labelsEdgesSet.add(lablesEdge);
+
+            if (g instanceof UndirectedGraph<?, ?>) {
+                LabelsEdge oppositeEdge =
+                    new LabelsEdge(targetLabel, sourceLabel);
+                this.labelsEdgesSet.add(oppositeEdge);
+            }
+        }
+    }
+

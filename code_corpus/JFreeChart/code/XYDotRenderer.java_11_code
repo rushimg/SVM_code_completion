@@ -1,0 +1,50 @@
+    public void drawItem(Graphics2D g2,
+                         XYItemRendererState state,
+                         Rectangle2D dataArea,
+                         PlotRenderingInfo info,
+                         XYPlot plot,
+                         ValueAxis domainAxis,
+                         ValueAxis rangeAxis,
+                         XYDataset dataset,
+                         int series,
+                         int item,
+                         CrosshairState crosshairState,
+                         int pass) {
+
+        // do nothing if item is not visible
+        if (!getItemVisible(series, item)) {
+            return;
+        }
+
+        // get the data point...
+        double x = dataset.getXValue(series, item);
+        double y = dataset.getYValue(series, item);
+        double adjx = (this.dotWidth - 1) / 2.0;
+        double adjy = (this.dotHeight - 1) / 2.0;
+        if (!Double.isNaN(y)) {
+            RectangleEdge xAxisLocation = plot.getDomainAxisEdge();
+            RectangleEdge yAxisLocation = plot.getRangeAxisEdge();
+            double transX = domainAxis.valueToJava2D(x, dataArea,
+                    xAxisLocation) - adjx;
+            double transY = rangeAxis.valueToJava2D(y, dataArea, yAxisLocation)
+                    - adjy;
+
+            g2.setPaint(getItemPaint(series, item));
+            PlotOrientation orientation = plot.getOrientation();
+            if (orientation == PlotOrientation.HORIZONTAL) {
+                g2.fillRect((int) transY, (int) transX, this.dotHeight,
+                        this.dotWidth);
+            }
+            else if (orientation == PlotOrientation.VERTICAL) {
+                g2.fillRect((int) transX, (int) transY, this.dotWidth,
+                        this.dotHeight);
+            }
+
+            int domainAxisIndex = plot.getDomainAxisIndex(domainAxis);
+            int rangeAxisIndex = plot.getRangeAxisIndex(rangeAxis);
+            updateCrosshairValues(crosshairState, x, y, domainAxisIndex,
+                    rangeAxisIndex, transX, transY, orientation);
+        }
+
+    }
+

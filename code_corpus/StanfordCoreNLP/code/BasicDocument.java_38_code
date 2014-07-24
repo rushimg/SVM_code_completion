@@ -1,0 +1,19 @@
+  public <OUT> Document<L, Word, OUT> blankDocument() {
+    BasicDocument<L> bd;
+
+    // tries to instantiate by reflection, settles for direct instantiation
+    try {
+      bd = ErasureUtils.<BasicDocument<L>>uncheckedCast(getClass().newInstance());
+    } catch (Exception e) {
+      bd = new BasicDocument<L>();
+    }
+
+    // copies over basic meta-data
+    bd.setTitle(title());
+    bd.setLabels(labels());
+    bd.setTokenizerFactory(tokenizerFactory);
+
+    // cast to the new output type
+    return ErasureUtils.<Document<L, Word, OUT>>uncheckedCast(bd);
+  }
+

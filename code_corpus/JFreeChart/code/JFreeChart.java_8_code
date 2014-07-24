@@ -1,0 +1,56 @@
+    public JFreeChart(String title, Font titleFont, Plot plot,
+                      boolean createLegend) {
+
+        if (plot == null) {
+            throw new NullPointerException("Null 'plot' argument.");
+        }
+
+        // create storage for listeners...
+        this.progressListeners = new EventListenerList();
+        this.changeListeners = new EventListenerList();
+        this.notify = true;  // default is to notify listeners when the
+                             // chart changes
+
+        this.renderingHints = new RenderingHints(
+                RenderingHints.KEY_ANTIALIASING,
+                RenderingHints.VALUE_ANTIALIAS_ON);
+
+        this.borderVisible = false;
+        this.borderStroke = new BasicStroke(1.0f);
+        this.borderPaint = Color.black;
+
+        this.padding = RectangleInsets.ZERO_INSETS;
+
+        this.plot = plot;
+        plot.addChangeListener(this);
+
+        this.subtitles = new ArrayList();
+
+        // create a legend, if requested...
+        if (createLegend) {
+            LegendTitle legend = new LegendTitle(this.plot);
+            legend.setMargin(new RectangleInsets(1.0, 1.0, 1.0, 1.0));
+            legend.setFrame(new LineBorder());
+            legend.setBackgroundPaint(Color.white);
+            legend.setPosition(RectangleEdge.BOTTOM);
+            this.subtitles.add(legend);
+            legend.addChangeListener(this);
+        }
+
+        // add the chart title, if one has been specified...
+        if (title != null) {
+            if (titleFont == null) {
+                titleFont = DEFAULT_TITLE_FONT;
+            }
+            this.title = new TextTitle(title, titleFont);
+            this.title.addChangeListener(this);
+        }
+
+        this.backgroundPaint = DEFAULT_BACKGROUND_PAINT;
+
+        this.backgroundImage = DEFAULT_BACKGROUND_IMAGE;
+        this.backgroundImageAlignment = DEFAULT_BACKGROUND_IMAGE_ALIGNMENT;
+        this.backgroundImageAlpha = DEFAULT_BACKGROUND_IMAGE_ALPHA;
+
+    }
+

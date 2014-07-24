@@ -1,0 +1,49 @@
+  public RegexNERSequenceClassifier(BufferedReader reader,
+                                    boolean ignoreCase,
+                                    boolean overwriteMyLabels,
+                                    String validPosRegex) {
+    super(new Properties());
+    if (validPosRegex != null && !validPosRegex.equals("")) {
+      validPosPattern = Pattern.compile(validPosRegex);
+    } else {
+      validPosPattern = null;
+    }
+    try {
+      entries = readEntries(reader, ignoreCase);
+    } catch (IOException e) {
+      throw new RuntimeIOException("Couldn't read RegexNER from reader", e);
+    }
+
+    this.ignoreCase = ignoreCase;
+    myLabels = Generics.newHashSet();
+    // Can always override background or none.
+    myLabels.add(flags.backgroundSymbol);
+    myLabels.add(null);
+    if (overwriteMyLabels) {
+      for (Entry entry: entries) myLabels.add(entry.type);
+    }
+    // System.err.println("RegexNER using labels: " + myLabels);
+  }
+
+  private static class Entry implements Comparable<Entry> {
+    public List<Pattern> regex; // the regex, tokenized by splitting on white space
+    public List<String> exact = new ArrayList<String>();
+    public String type; // the associated type
+    public Set<String> overwritableTypes;
+    public double priority;
+
+    public Entry(List<Pattern> regex, String type, Set<String> overwritableTypes, double priority) {
+      this.regex = regex;
+      this.type = type.intern();
+      this.overwritableTypes = overwritableTypes;
+      this.priority = priority;
+      // Efficiency shortcut
+      for (Pattern p : regex) {
+        if (p.toString().matches("[a-zA-Z0-9]+")) {
+          exact.add(p.toString());
+        } else {
+          exact.add(null);
+        }
+      }
+    }
+

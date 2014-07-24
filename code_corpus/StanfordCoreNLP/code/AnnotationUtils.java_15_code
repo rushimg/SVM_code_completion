@@ -1,0 +1,58 @@
+  public static String getTextContent(CoreMap sent, Span span) {
+    List<CoreLabel> tokens = sent.get(CoreAnnotations.TokensAnnotation.class);
+    StringBuffer buf = new StringBuffer();
+    assert(span != null);
+    for(int i = span.start(); i < span.end(); i ++){
+      if(i > span.start()) buf.append(" ");
+      buf.append(tokens.get(i).word());
+    }
+    return buf.toString();
+  }
+
+  public static String sentenceToString(CoreMap sent) {
+    StringBuilder sb = new StringBuilder(512);
+    List<CoreLabel> tokens = sent.get(CoreAnnotations.TokensAnnotation.class);
+    sb.append("\"" + StringUtils.join(tokens, " ") + "\"");
+    sb.append("\n");
+
+    List<RelationMention> relationMentions = sent.get(MachineReadingAnnotations.RelationMentionsAnnotation.class);
+    if(relationMentions != null){
+      for (RelationMention rel : relationMentions) {
+        sb.append("\n");
+        sb.append(rel);
+      }
+    }
+
+    // TODO: add entity and event mentions
+
+    return sb.toString();
+  }
+
+  public static String tokensAndNELabelsToString(CoreMap sentence) {
+    StringBuffer os = new StringBuffer();
+    List<CoreLabel> tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
+    if(tokens != null){
+      boolean first = true;
+      for(CoreLabel token: tokens) {
+        if(! first) os.append(" ");
+        os.append(token.word());
+        if(token.ner() != null && ! token.ner().equals("O")){
+          os.append("/" + token.ner());
+        }
+        first = false;
+      }
+    }
+    return os.toString();
+  }
+
+  public static String datasetToString(CoreMap dataset){
+    List<CoreMap> sents = dataset.get(CoreAnnotations.SentencesAnnotation.class);
+    StringBuffer b = new StringBuffer();
+    if(sents != null){
+      for(CoreMap sent: sents){
+        b.append(sentenceToString(sent));
+      }
+    }
+    return b.toString();
+  }
+

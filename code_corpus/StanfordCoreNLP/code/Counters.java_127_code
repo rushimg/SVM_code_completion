@@ -1,0 +1,38 @@
+  public static<E> void retainTopMass(Counter<E> counter, double thresholdCount){
+    PriorityQueue<E> queue = Counters.toPriorityQueue(counter);
+    counter.clear();
+    
+    double mass = 0;
+    while (mass < thresholdCount && !queue.isEmpty()) {
+      double value = queue.getPriority();
+      E key = queue.removeFirst();  
+      counter.setCount(key, value);
+      mass += value;
+    }
+  }
+
+  public static<A,B> void divideInPlace(TwoDimensionalCounter<A, B> counter, double divisor) {
+    for(Entry<A, ClassicCounter<B>> c: counter.entrySet()){
+      Counters.divideInPlace(c.getValue(), divisor);
+    }
+    counter.recomputeTotal();
+  }
+  
+  public static<E> double pearsonsCorrelationCoefficient(Counter<E> x, Counter<E> y){
+    double stddevX = Counters.standardDeviation(x);
+    double stddevY = Counters.standardDeviation(y);
+    double meanX = Counters.mean(x);
+    double meanY = Counters.mean(y);
+    Counter<E> t1 = Counters.add(x, -meanX);
+    Counter<E> t2 = Counters.add(y, -meanY);
+    Counters.divideInPlace(t1, stddevX);
+    Counters.divideInPlace(t2, stddevY);
+    return Counters.dotProduct(t1, t2)/ (double)(x.size() -1);
+  }
+  
+  public static<E> double spearmanRankCorrelation(Counter<E> x, Counter<E> y){
+    Counter<E> xrank = Counters.toTiedRankCounter(x);
+    Counter<E> yrank = Counters.toTiedRankCounter(y);
+    return Counters.pearsonsCorrelationCoefficient(xrank, yrank);
+  }
+  

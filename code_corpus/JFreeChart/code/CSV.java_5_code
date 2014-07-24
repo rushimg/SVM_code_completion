@@ -1,0 +1,21 @@
+    public CategoryDataset readCategoryDataset(Reader in) throws IOException {
+
+        DefaultCategoryDataset dataset = new DefaultCategoryDataset();
+        BufferedReader reader = new BufferedReader(in);
+        List columnKeys = null;
+        int lineIndex = 0;
+        String line = reader.readLine();
+        while (line != null) {
+            if (lineIndex == 0) {  // first line contains column keys
+                columnKeys = extractColumnKeys(line);
+            }
+            else {  // remaining lines contain a row key and data values
+                extractRowKeyAndData(line, dataset, columnKeys);
+            }
+            line = reader.readLine();
+            lineIndex++;
+        }
+        return dataset;
+
+    }
+

@@ -1,0 +1,93 @@
+  public double[][] toMatrix(List<K1> firstKeys, List<K2> secondKeys) {
+    double[][] counts = new double[firstKeys.size()][secondKeys.size()];
+    for (int i = 0; i < firstKeys.size(); i++) {
+      for (int j = 0; j < secondKeys.size(); j++) {
+        counts[i][j] = getCount(firstKeys.get(i), secondKeys.get(j));
+      }
+    }
+    return counts;
+  }
+
+  @SuppressWarnings( { "unchecked" })
+  public String toCSVString(NumberFormat nf) {
+    List<K1> firstKeys = new ArrayList<K1>(firstKeySet());
+    List<K2> secondKeys = new ArrayList<K2>(secondKeySet());
+    Collections.sort((List<? extends Comparable>) firstKeys);
+    Collections.sort((List<? extends Comparable>) secondKeys);
+    StringBuilder b = new StringBuilder();
+    String[] headerRow = new String[secondKeys.size() + 1];
+    headerRow[0] = "";
+    for (int j = 0; j < secondKeys.size(); j++) {
+      headerRow[j + 1] = secondKeys.get(j).toString();
+    }
+    b.append(StringUtils.toCSVString(headerRow)).append("\n");
+    for (K1 rowLabel : firstKeys) {
+      String[] row = new String[secondKeys.size() + 1];
+      row[0] = rowLabel.toString();
+      for (int j = 0; j < secondKeys.size(); j++) {
+        K2 colLabel = secondKeys.get(j);
+        row[j + 1] = nf.format(getCount(rowLabel, colLabel));
+      }
+      b.append(StringUtils.toCSVString(row)).append("\n");
+    }
+    return b.toString();
+  }
+
+  public Set<K2> secondKeySet() {
+    Set<K2> result = Generics.newHashSet();
+    for (K1 k1 : firstKeySet()) {
+      for (K2 k2 : getCounter(k1).keySet()) {
+        result.add(k2);
+      }
+    }
+    return result;
+  }
+
+  public boolean isEmpty() {
+    return map.isEmpty();
+  }
+
+  public ClassicCounter<Pair<K1, K2>> flatten() {
+    ClassicCounter<Pair<K1, K2>> result = new ClassicCounter<Pair<K1, K2>>();
+    result.setDefaultReturnValue(defaultValue);
+    for (K1 key1 : firstKeySet()) {
+      ClassicCounter<K2> inner = getCounter(key1);
+      for (K2 key2 : inner.keySet()) {
+        result.setCount(new Pair<K1, K2>(key1, key2), inner.getCount(key2));
+      }
+    }
+    return result;
+  }
+
+  public void addAll(TwoDimensionalCounterInterface<K1, K2> c) {
+    for (K1 key : c.firstKeySet()) {
+      Counter<K2> inner = c.getCounter(key);
+      ClassicCounter<K2> myInner = getCounter(key);
+      Counters.addInPlace(myInner, inner);
+      total += inner.totalCount();
+    }
+  }
+
+  public void addAll(K1 key, Counter<K2> c) {
+    ClassicCounter<K2> myInner = getCounter(key);
+    Counters.addInPlace(myInner, c);
+    total += c.totalCount();
+  }
+
+  public void subtractAll(K1 key, Counter<K2> c) {
+    ClassicCounter<K2> myInner = getCounter(key);
+    Counters.subtractInPlace(myInner, c);
+    total -= c.totalCount();
+  }
+
+  public void subtractAll(TwoDimensionalCounterInterface<K1, K2> c, boolean removeKeys) {
+    for (K1 key : c.firstKeySet()) {
+      Counter<K2> inner = c.getCounter(key);
+      ClassicCounter<K2> myInner = getCounter(key);
+      Counters.subtractInPlace(myInner, inner);
+      if (removeKeys)
+        Counters.retainNonZeros(myInner);
+      total -= inner.totalCount();
+    }
+  }
+

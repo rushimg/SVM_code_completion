@@ -1,0 +1,16 @@
+  public static void run(ProcessBuilder builder, Writer output, Writer error) {
+    try {
+      Process process = builder.start();
+      consume(process, output, error);
+      int result = process.waitFor();
+      if (result != 0) {
+        String msg = "process %s exited with value %d";
+        throw new ProcessException(String.format(msg, builder.command(), result));
+      }
+    } catch (InterruptedException e) {
+      throw new ProcessException(e);
+    } catch (IOException e) {
+      throw new ProcessException(e);
+    }
+  }
+  

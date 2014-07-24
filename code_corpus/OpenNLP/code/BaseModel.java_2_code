@@ -1,0 +1,42 @@
+public abstract class BaseModel implements ArtifactProvider {
+
+  private static int MODEL_BUFFER_SIZE_LIMIT = Integer.MAX_VALUE;
+
+  protected static final String MANIFEST_ENTRY = "manifest.properties";
+  protected static final String FACTORY_NAME = "factory";
+
+  private static final String MANIFEST_VERSION_PROPERTY = "Manifest-Version";
+  private static final String COMPONENT_NAME_PROPERTY = "Component-Name";
+  private static final String VERSION_PROPERTY = "OpenNLP-Version";
+  private static final String TIMESTAMP_PROPERTY = "Timestamp";
+  private static final String LANGUAGE_PROPERTY = "Language";
+
+  public static final String TRAINING_CUTOFF_PROPERTY = "Training-Cutoff";
+  public static final String TRAINING_ITERATIONS_PROPERTY = "Training-Iterations";
+  public static final String TRAINING_EVENTHASH_PROPERTY = "Training-Eventhash";
+
+  private static String SERIALIZER_CLASS_NAME_PREFIX = "serializer-class-";
+
+  private Map<String, ArtifactSerializer> artifactSerializers =
+      new HashMap<String, ArtifactSerializer>();
+
+  protected final Map<String, Object> artifactMap = new HashMap<String, Object>();
+
+  protected BaseToolFactory toolFactory;
+
+  private final String componentName;
+
+  private boolean subclassSerializersInitiated = false;
+  private boolean finishedLoadingArtifacts = false;
+
+  private final boolean isLoadedFromSerialized;
+
+  private BaseModel(String componentName, boolean isLoadedFromSerialized) {
+    this.isLoadedFromSerialized = isLoadedFromSerialized;
+
+    if (componentName == null)
+      throw new IllegalArgumentException("componentName must not be null!");
+
+    this.componentName = componentName;
+  }
+

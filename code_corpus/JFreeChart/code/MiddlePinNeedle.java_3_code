@@ -1,0 +1,38 @@
+    protected void drawNeedle(Graphics2D g2, Rectangle2D plotArea,
+                              Point2D rotate, double angle) {
+
+        Area shape;
+        GeneralPath pointer = new GeneralPath();
+
+        int minY = (int) (plotArea.getMinY());
+        //int maxX = (int) (plotArea.getMaxX());
+        int maxY = (int) (plotArea.getMaxY());
+        int midY = ((maxY - minY) / 2) + minY;
+
+        int midX = (int) (plotArea.getMinX() + (plotArea.getWidth() / 2));
+        //int midY = (int) (plotArea.getMinY() + (plotArea.getHeight() / 2));
+        int lenX = (int) (plotArea.getWidth() / 10);
+        if (lenX < 2) {
+            lenX = 2;
+        }
+
+        pointer.moveTo(midX - lenX, midY - lenX);
+        pointer.lineTo(midX + lenX, midY - lenX);
+        pointer.lineTo(midX, minY);
+        pointer.closePath();
+
+        Ellipse2D circle = new Ellipse2D.Double(midX - lenX / 2,
+                                                midY - lenX, lenX, lenX);
+
+        shape = new Area(circle);
+        shape.add(new Area(pointer));
+        if ((rotate != null) && (angle != 0)) {
+            /// we have rotation
+            getTransform().setToRotation(angle, rotate.getX(), rotate.getY());
+            shape.transform(getTransform());
+        }
+
+        defaultDisplay(g2, shape);
+
+    }
+

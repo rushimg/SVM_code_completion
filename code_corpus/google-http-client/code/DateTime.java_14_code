@@ -1,0 +1,51 @@
+  public static DateTime parseRfc3339(String str) throws NumberFormatException {
+    Matcher matcher = RFC3339_PATTERN.matcher(str);
+    if (!matcher.matches()) {
+      throw new NumberFormatException("Invalid date/time format: " + str);
+    }
+
+    int year = Integer.parseInt(matcher.group(1)); // yyyy
+    int month = Integer.parseInt(matcher.group(2)) - 1; // MM
+    int day = Integer.parseInt(matcher.group(3)); // dd
+    boolean isTimeGiven = matcher.group(4) != null; // 'T'HH:mm:ss.milliseconds
+    String tzShiftRegexGroup = matcher.group(9); // 'Z', or time zone shift HH:mm following '+'/'-'
+    boolean isTzShiftGiven = tzShiftRegexGroup != null;
+    int hourOfDay = 0;
+    int minute = 0;
+    int second = 0;
+    int milliseconds = 0;
+    Integer tzShiftInteger = null;
+
+    if (isTzShiftGiven && !isTimeGiven) {
+      throw new NumberFormatException("Invalid date/time format, cannot specify time zone shift" +
+            " without specifying time: " + str);
+    }
+
+    if (isTimeGiven) {
+      hourOfDay = Integer.parseInt(matcher.group(5)); // HH
+      minute = Integer.parseInt(matcher.group(6)); // mm
+      second = Integer.parseInt(matcher.group(7)); // ss
+      if (matcher.group(8) != null) { // contains .milliseconds?
+        milliseconds = Integer.parseInt(matcher.group(8).substring(1)); // milliseconds
+      }
+    }
+    Calendar dateTime = new GregorianCalendar(GMT);
+    dateTime.set(year, month, day, hourOfDay, minute, second);
+    dateTime.set(Calendar.MILLISECOND, milliseconds);
+    long value = dateTime.getTimeInMillis();
+
+    if (isTimeGiven && isTzShiftGiven) {
+      int tzShift;
+      if (Character.toUpperCase(tzShiftRegexGroup.charAt(0)) == 'Z') {
+        tzShift = 0;
+      } else {
+            + Integer.parseInt(matcher.group(12)); // time zone shift mm
+        if (matcher.group(10).charAt(0) == '-') { // time zone shift + or -
+          tzShift = -tzShift;
+        }
+      }
+      tzShiftInteger = tzShift;
+    }
+    return new DateTime(!isTimeGiven, value, tzShiftInteger);
+  }
+

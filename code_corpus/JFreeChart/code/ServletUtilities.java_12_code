@@ -1,0 +1,18 @@
+    protected static void registerChartForDeletion(File tempFile,
+            HttpSession session) {
+
+        //  Add chart to deletion list in session
+        if (session != null) {
+            ChartDeleter chartDeleter
+                = (ChartDeleter) session.getAttribute("JFreeChart_Deleter");
+            if (chartDeleter == null) {
+                chartDeleter = new ChartDeleter();
+                session.setAttribute("JFreeChart_Deleter", chartDeleter);
+            }
+            chartDeleter.addChart(tempFile.getName());
+        }
+        else {
+            System.out.println("Session is null - chart will not be deleted");
+        }
+    }
+

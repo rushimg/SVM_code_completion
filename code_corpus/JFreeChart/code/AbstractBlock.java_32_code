@@ -1,0 +1,51 @@
+    protected RectangleConstraint toContentConstraint(RectangleConstraint c) {
+        if (c == null) {
+            throw new IllegalArgumentException("Null 'c' argument.");
+        }
+        if (c.equals(RectangleConstraint.NONE)) {
+            return c;
+        }
+        double w = c.getWidth();
+        Range wr = c.getWidthRange();
+        double h = c.getHeight();
+        Range hr = c.getHeightRange();
+        double ww = trimToContentWidth(w);
+        double hh = trimToContentHeight(h);
+        Range wwr = trimToContentWidth(wr);
+        Range hhr = trimToContentHeight(hr);
+        return new RectangleConstraint(
+            ww, wwr, c.getWidthConstraintType(),
+            hh, hhr, c.getHeightConstraintType()
+        );
+    }
+
+    private Range trimToContentWidth(Range r) {
+        if (r == null) {
+            return null;
+        }
+        double lowerBound = 0.0;
+        double upperBound = Double.POSITIVE_INFINITY;
+        if (r.getLowerBound() > 0.0) {
+            lowerBound = trimToContentWidth(r.getLowerBound());
+        }
+        if (r.getUpperBound() < Double.POSITIVE_INFINITY) {
+            upperBound = trimToContentWidth(r.getUpperBound());
+        }
+        return new Range(lowerBound, upperBound);
+    }
+
+    private Range trimToContentHeight(Range r) {
+        if (r == null) {
+            return null;
+        }
+        double lowerBound = 0.0;
+        double upperBound = Double.POSITIVE_INFINITY;
+        if (r.getLowerBound() > 0.0) {
+            lowerBound = trimToContentHeight(r.getLowerBound());
+        }
+        if (r.getUpperBound() < Double.POSITIVE_INFINITY) {
+            upperBound = trimToContentHeight(r.getUpperBound());
+        }
+        return new Range(lowerBound, upperBound);
+    }
+

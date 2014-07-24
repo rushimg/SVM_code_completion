@@ -1,0 +1,36 @@
+  public static <K,V> CacheMap<K,V> create(int numEntries, float loadFactor,
+                                boolean accessOrder, String file,
+                                boolean useFileParams) {
+    try {
+      ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file));
+      CacheMap<K, V> c = ErasureUtils.uncheckedCast(ois.readObject());
+      System.err.println("Read cache from " + file + ", contains " + c.size() + " entries.  Backing file is " + c.backingFile);
+      if (!useFileParams) {
+        c.backingFile = file;
+        c.hits = c.misses = c.puts = 0;
+        c.CACHE_ENTRIES = numEntries;
+      }
+
+      return c;
+    } catch (FileNotFoundException ex) {
+      System.err.println("Cache file " + file + " has not been created yet.  Making new one.");
+      return new CacheMap<K, V>(numEntries, loadFactor, accessOrder, file);
+    } catch (Exception ex) {
+      System.err.println("Error reading cache file " + file + ".  Making a new cache and NOT backing to file.");
+      return new CacheMap<K, V>(numEntries, loadFactor, accessOrder);
+    }
+  }
+
+  public static <K,V> CacheMap<K,V> create(int numEntries, float loadFactor, String file,
+                                boolean useFileParams) {
+    return create(numEntries, loadFactor, false, file, useFileParams);
+  }
+
+  public static <K,V> CacheMap<K,V> create(int numEntries, String file, boolean useFileParams) {
+    return create(numEntries, .75f, false, file, useFileParams);
+  }
+
+  public static <K,V> CacheMap<K,V> create(String file, boolean useFileParams) {
+    return create(1000, .75f, false, file, useFileParams);
+  }
+

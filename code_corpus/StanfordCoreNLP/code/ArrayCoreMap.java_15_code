@@ -1,0 +1,33 @@
+  @Override
+  public String toString() {
+    IdentityHashSet<CoreMap> calledSet = toStringCalled.get();
+    boolean createdCalledSet = calledSet.isEmpty();
+
+    if (calledSet.contains(this)) {
+      return "[...]";
+    }
+
+    calledSet.add(this);
+
+    StringBuilder s = new StringBuilder("[");
+    for (int i = 0; i < size; i++) {
+      s.append(keys[i].getSimpleName());
+      s.append('=');
+      s.append(values[i]);
+      if (i < size-1) {
+        s.append(' ');
+      }
+    }
+    s.append(']');
+
+    if (createdCalledSet) {
+      toStringCalled.remove();
+    } else {
+      // Remove the object from the already called set so that
+      // potential later calls in this object graph have something
+      // more description than [...]
+      calledSet.remove(this);
+    }
+    return s.toString();
+  }
+

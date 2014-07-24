@@ -1,0 +1,16 @@
+  public ChineseDocumentToSentenceProcessor(String normalizationTableFile) {
+    // this.normalizationTableFile = normalizationTableFile;
+    if (normalizationTableFile != null) {
+      normalizationTable = new ArrayList<Pair<String,String>>();
+      for (String line : ObjectBank.getLineIterator(new File(normalizationTableFile), encoding)) {
+        Matcher pairMatcher = PAIR_PATTERN.matcher(line);
+        if (pairMatcher.find()) {
+          normalizationTable.add(new Pair<String,String>(pairMatcher.group(1),pairMatcher.group(2)));
+        } else {
+          System.err.println("Didn't match: "+line);
+        }
+      }
+    } else {
+      normalizationTable = null;
+    }
+  }

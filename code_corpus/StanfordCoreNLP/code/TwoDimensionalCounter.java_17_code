@@ -1,0 +1,26 @@
+  public Counter<K1> sumInnerCounter() {
+    Counter<K1> summed = new ClassicCounter<K1>();
+    for (K1 key : this.firstKeySet()) {
+      summed.incrementCount(key, this.getCounter(key).totalCount());
+    }
+    return summed;
+  }
+
+  public void removeZeroCounts() {
+    Set<K1> firstKeySet = Generics.newHashSet(firstKeySet());
+    for (K1 k1 : firstKeySet) {
+      ClassicCounter<K2> c = getCounter(k1);
+      Counters.retainNonZeros(c);
+      if (c.size() == 0)
+        map.remove(k1); // it's empty, get rid of it!
+    }
+  }
+
+  public void remove(K1 key) {
+    ClassicCounter<K2> counter = map.get(key);
+    if (counter != null) {
+      total -= counter.totalCount();
+    }
+    map.remove(key);
+  }
+

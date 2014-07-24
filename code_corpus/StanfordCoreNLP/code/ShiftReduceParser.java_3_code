@@ -1,0 +1,84 @@
+  public void copyWeights(ShiftReduceParser other) {
+    transitionIndex.clear();
+    for (Transition transition : other.transitionIndex) {
+      transitionIndex.add(transition);
+    }
+
+    knownStates.clear();
+    knownStates.addAll(other.knownStates);
+
+    featureWeights.clear();
+    for (String feature : other.featureWeights.keySet()) {
+      featureWeights.put(feature, new Weight(other.featureWeights.get(feature)));
+    }
+  }
+
+  public static ShiftReduceParser averageScoredModels(Collection<ScoredObject<ShiftReduceParser>> scoredModels) {
+    if (scoredModels.size() == 0) {
+      throw new IllegalArgumentException("Cannot average empty models");
+    }
+
+    System.err.print("Averaging models with scores");
+    for (ScoredObject<ShiftReduceParser> model : scoredModels) {
+      System.err.print(" " + NF.format(model.score()));
+    }
+    System.err.println();
+
+    List<ShiftReduceParser> models = CollectionUtils.transformAsList(scoredModels, new Function<ScoredObject<ShiftReduceParser>, ShiftReduceParser>() { public ShiftReduceParser apply(ScoredObject<ShiftReduceParser> object) { return object.object(); }});
+    return averageModels(models);
+
+  }
+
+  public static ShiftReduceParser averageModels(Collection<ShiftReduceParser> models) {
+    ShiftReduceParser firstModel = models.iterator().next();
+    ShiftReduceParser copy = new ShiftReduceParser(firstModel.op, firstModel.featureFactory);
+
+    for (Transition transition : firstModel.transitionIndex) {
+      copy.transitionIndex.add(transition);
+    }
+    
+    for (ShiftReduceParser model : models) {
+      if (!model.transitionIndex.equals(copy.transitionIndex)) {
+        throw new IllegalArgumentException("Can only average models with the same transition index");
+      }
+    }
+
+    Set<String> features = Generics.newHashSet();
+    for (ShiftReduceParser model : models) {
+      for (String feature : model.featureWeights.keySet()) {
+        features.add(feature);
+      }
+    }
+
+    for (String feature : features) {
+      copy.featureWeights.put(feature, new Weight());
+    }
+    
+    int numModels = models.size();
+    for (String feature : features) {
+      for (ShiftReduceParser model : models) {
+        if (!model.featureWeights.containsKey(feature)) {
+          continue;
+        }
+        copy.featureWeights.get(feature).addScaled(model.featureWeights.get(feature), 1.0f / numModels);
+      }
+    }
+
+    return copy;
+  }
+
+  @Override
+  public ParserQuery parserQuery() {
+    return new ShiftReduceParserQuery(this);
+  }
+
+  @Override
+  public Tree apply(List<? extends HasWord> sentence) {
+    ShiftReduceParserQuery pq = new ShiftReduceParserQuery(this);
+    if (pq.parse(sentence)) {
+      return pq.getBestParse();
+    }
+    return ParserUtils.xTree(sentence);
+  }
+
+

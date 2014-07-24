@@ -1,0 +1,19 @@
+  @Deprecated
+  public static boolean isSupportEvent(Map<String, String> trainParams) {
+
+    String trainerType = trainParams.get(AbstractTrainer.TRAINER_TYPE_PARAM);
+
+    if (trainerType == null) {
+      String alogrithmValue = trainParams.get(AbstractTrainer.ALGORITHM_PARAM);
+      if (alogrithmValue != null) {
+        trainerType = getPluggableTrainerType(trainParams.get(AbstractTrainer.ALGORITHM_PARAM));
+      }
+    }
+
+    if (trainerType != null) {
+      return EventTrainer.EVENT_VALUE.equals(trainerType);
+    }
+
+    return true;
+  }
+

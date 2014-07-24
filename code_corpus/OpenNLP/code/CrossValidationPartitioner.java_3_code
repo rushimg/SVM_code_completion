@@ -1,0 +1,34 @@
+  private static class TestSampleStream<E> implements ObjectStream<E> {
+
+    private ObjectStream<E> sampleStream;
+
+    private final int numberOfPartitions;
+
+    private final int testIndex;
+
+    private int index;
+
+    private boolean isPoisened;
+
+    private TestSampleStream(ObjectStream<E> sampleStream, int numberOfPartitions, int testIndex) {
+      this.numberOfPartitions = numberOfPartitions;
+      this.sampleStream = sampleStream;
+      this.testIndex = testIndex;
+    }
+
+    public E read() throws IOException {
+      if (isPoisened) {
+        throw new IllegalStateException();
+      }
+
+      // skip training samples
+      while (index % numberOfPartitions != testIndex) {
+        sampleStream.read();
+        index++;
+      }
+
+      index++;
+
+      return sampleStream.read();
+    }
+

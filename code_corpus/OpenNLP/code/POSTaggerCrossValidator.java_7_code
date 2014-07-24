@@ -1,0 +1,64 @@
+  public void evaluate(ObjectStream<POSSample> samples, int nFolds) throws IOException {
+
+    CrossValidationPartitioner<POSSample> partitioner = new CrossValidationPartitioner<POSSample>(
+        samples, nFolds);
+
+    while (partitioner.hasNext()) {
+
+      CrossValidationPartitioner.TrainingSampleStream<POSSample> trainingSampleStream = partitioner
+          .next();
+
+      if (this.factory == null) {
+        this.factory = POSTaggerFactory.create(this.factoryClassName, null,
+            null);
+      }
+
+      Dictionary ngramDict = this.factory.getDictionary();
+      if (ngramDict == null) {
+        if(this.ngramCutoff != null) {
+          System.err.print("Building ngram dictionary ... ");
+          ngramDict = POSTaggerME.buildNGramDictionary(trainingSampleStream,
+              this.ngramCutoff);
+          trainingSampleStream.reset();
+          System.err.println("done");
+        }
+        this.factory.setDictionary(ngramDict);
+      }
+
+      if (this.tagDictionaryFile != null
+          && this.factory.getTagDictionary() == null) {
+        this.factory.setTagDictionary(this.factory
+            .createTagDictionary(tagDictionaryFile));
+      }
+      if (this.tagdicCutoff != null) {
+        TagDictionary dict = this.factory.getTagDictionary();
+        if (dict == null) {
+          dict = this.factory.createEmptyTagDictionary();
+          this.factory.setTagDictionary(dict);
+        }
+        if (dict instanceof MutableTagDictionary) {
+          POSTaggerME.populatePOSDictionary(trainingSampleStream, (MutableTagDictionary)dict,
+              this.tagdicCutoff);
+        } else {
+          throw new IllegalArgumentException(
+              "Can't extend a TagDictionary that does not implement MutableTagDictionary.");
+        }
+        trainingSampleStream.reset();
+      }
+
+      POSModel model = POSTaggerME.train(languageCode, trainingSampleStream,
+          params, this.factory);
+
+      POSEvaluator evaluator = new POSEvaluator(new POSTaggerME(model), listeners);
+
+      evaluator.evaluate(trainingSampleStream.getTestSampleStream());
+
+      wordAccuracy.add(evaluator.getWordAccuracy(), evaluator.getWordCount());
+
+      if (this.tagdicCutoff != null) {
+        this.factory.setTagDictionary(null);
+      }
+
+    }
+  }
+

@@ -1,0 +1,20 @@
+    public long getTime(Date date) {
+        long result = date.getTime();
+        if (this.adjustForDaylightSaving) {
+            this.workingCalendar.setTime(date);
+            this.workingCalendarNoDST.set(
+                    this.workingCalendar.get(Calendar.YEAR),
+                    this.workingCalendar.get(Calendar.MONTH),
+                    this.workingCalendar.get(Calendar.DATE),
+                    this.workingCalendar.get(Calendar.HOUR_OF_DAY),
+                    this.workingCalendar.get(Calendar.MINUTE),
+                    this.workingCalendar.get(Calendar.SECOND));
+            this.workingCalendarNoDST.set(Calendar.MILLISECOND,
+                    this.workingCalendar.get(Calendar.MILLISECOND));
+            Date revisedDate = this.workingCalendarNoDST.getTime();
+            result = revisedDate.getTime();
+        }
+
+        return result;
+    }
+

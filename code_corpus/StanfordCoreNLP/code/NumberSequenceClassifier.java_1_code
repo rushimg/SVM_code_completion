@@ -1,0 +1,33 @@
+public class NumberSequenceClassifier extends AbstractSequenceClassifier<CoreLabel> {
+
+  private static final boolean DEBUG = false;
+
+  private final boolean useSUTime;
+
+  public static final boolean USE_SUTIME_DEFAULT = TimeExpressionExtractorFactory.DEFAULT_EXTRACTOR_PRESENT;
+  public static final String USE_SUTIME_PROPERTY = "ner.useSUTime";
+
+  private final TimeExpressionExtractor timexExtractor;
+
+  public NumberSequenceClassifier() {
+    this(new Properties(), USE_SUTIME_DEFAULT, new Properties());
+    if (! CURRENCY_WORD_PATTERN.matcher("pounds").matches()) {
+      System.err.println("NumberSequence: Currency pattern broken");
+    }
+  }
+
+  public NumberSequenceClassifier(boolean useSUTime) {
+    this(new Properties(), useSUTime, new Properties());
+  }
+
+  public NumberSequenceClassifier(Properties props,
+                                  boolean useSUTime, Properties sutimeProps) {
+    super(props);
+    this.useSUTime = useSUTime;
+    if(this.useSUTime) {
+      this.timexExtractor = TimeExpressionExtractorFactory.createExtractor("sutime", sutimeProps);
+    } else {
+      this.timexExtractor = null;
+    }
+  }
+

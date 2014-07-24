@@ -1,0 +1,39 @@
+  public List<Word> process(List<? extends Word> in) {
+    List<Word> out = new ArrayList<Word>();
+    boolean justInsertedNewline = false; // to prevent contiguous newlines
+    for (Word w : in) {
+      String ws = w.word();
+      if (ws.startsWith("<") && ws.endsWith(">")) {
+        if (markLineBreaks && !justInsertedNewline) {
+          // finds start and end of tag name (ignores brackets and /)
+          // e.g. <p>, <br/>, or </table>
+          //       se   s e        s    e
+
+          int tagStartIndex = 1;
+          while (tagStartIndex < ws.length() && !Character.isLetter(ws.charAt(tagStartIndex))) {
+            tagStartIndex++;
+          }
+          if (tagStartIndex == ws.length()) {
+            continue; // no tag text
+          }
+
+          int tagEndIndex = ws.length() - 1;
+          while (tagEndIndex > tagStartIndex && !Character.isLetterOrDigit(ws.charAt(tagEndIndex))) {
+            tagEndIndex--;
+          }
+
+          // looks up tag name in list of known block-level tags
+          String tagName = ws.substring(tagStartIndex, tagEndIndex + 1).toLowerCase();
+          if (blockTags.contains(tagName)) {
+            out.add(new Word("\n")); // mark newline for block-level tags
+            justInsertedNewline = true;
+          }
+        }
+      } else {
+        out.add(w); // normal word
+        justInsertedNewline = false;
+      }
+    }
+    return out;
+  }
+

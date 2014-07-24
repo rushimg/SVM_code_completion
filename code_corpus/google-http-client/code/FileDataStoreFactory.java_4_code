@@ -1,0 +1,32 @@
+    private final File dataFile;
+
+    FileDataStore(FileDataStoreFactory dataStore, File dataDirectory, String id)
+        throws IOException {
+      super(dataStore, id);
+      this.dataFile = new File(dataDirectory, id);
+      // error if it is a symbolic link
+      if (IOUtils.isSymbolicLink(dataFile)) {
+        throw new IOException("unable to use a symbolic link: " + dataFile);
+      }
+      // create new file (if necessary)
+      if (dataFile.createNewFile()) {
+        keyValueMap = Maps.newHashMap();
+        // save the credentials to create a new file
+        save();
+      } else {
+        // load credentials from existing file
+        keyValueMap = IOUtils.deserialize(new FileInputStream(dataFile));
+      }
+    }
+
+    @Override
+    void save() throws IOException {
+      IOUtils.serialize(keyValueMap, new FileOutputStream(dataFile));
+    }
+
+    @Override
+    public FileDataStoreFactory getDataStoreFactory() {
+      return (FileDataStoreFactory) super.getDataStoreFactory();
+    }
+  }
+

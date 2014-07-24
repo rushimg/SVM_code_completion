@@ -1,0 +1,26 @@
+    public void drawRangeTickBands(Graphics2D g2, Rectangle2D dataArea,
+                                   List ticks) {
+        Paint bandPaint = getRangeTickBandPaint();
+        if (bandPaint != null) {
+            boolean fillBand = false;
+            ValueAxis axis = getRangeAxis();
+            double previous = axis.getLowerBound();
+            Iterator iterator = ticks.iterator();
+            while (iterator.hasNext()) {
+                ValueTick tick = (ValueTick) iterator.next();
+                double current = tick.getValue();
+                if (fillBand) {
+                    getRenderer().fillRangeGridBand(g2, this, axis, dataArea,
+                            previous, current);
+                }
+                previous = current;
+                fillBand = !fillBand;
+            }
+            double end = axis.getUpperBound();
+            if (fillBand) {
+                getRenderer().fillRangeGridBand(g2, this, axis, dataArea,
+                        previous, end);
+            }
+        }
+    }
+

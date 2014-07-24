@@ -1,0 +1,46 @@
+  private class LoadParserThread extends Thread {
+    final String zipFilename;
+    final String filename;
+
+    LoadParserThread(String filename) {
+      this.filename = filename;
+      this.zipFilename = null;
+    }
+
+    LoadParserThread(String zipFilename, String filename) {
+      this.zipFilename = zipFilename;
+      this.filename = filename;
+    }
+
+    @Override
+    public void run() {
+      try {
+        if (zipFilename != null) {
+          parser = LexicalizedParser.loadModelFromZip(zipFilename, filename);
+        } else {
+          parser = LexicalizedParser.loadModel(filename);
+        }
+      } catch (Exception ex) {
+        JOptionPane.showMessageDialog(ParserPanel.this, "Error loading parser: " + filename, null, JOptionPane.ERROR_MESSAGE);
+        setStatus("Error loading parser");
+        parser = null;
+      } catch (OutOfMemoryError e) {
+        JOptionPane.showMessageDialog(ParserPanel.this, "Could not load parser. Out of memory.", null, JOptionPane.ERROR_MESSAGE);
+        setStatus("Error loading parser");
+        parser = null;
+      }
+
+      stopProgressMonitor();
+      if (parser != null) {
+        setStatus("Loaded parser.");
+        parserFileLabel.setText("Parser: " + filename);
+        parseButton.setEnabled(true);
+        parseNextButton.setEnabled(true);
+        saveOutputButton.setEnabled(true);
+
+        tlp = parser.getOp().langpack();
+        encoding = tlp.getEncoding();
+      }
+    }
+  }
+

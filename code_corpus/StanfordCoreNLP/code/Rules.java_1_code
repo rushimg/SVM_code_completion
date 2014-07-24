@@ -1,0 +1,242 @@
+  public static boolean entityHaveIncompatibleModifier(CorefCluster mentionCluster, CorefCluster potentialAntecedent) {
+    for(Mention m : mentionCluster.corefMentions){
+      for(Mention ant : potentialAntecedent.corefMentions){
+        if(entityHaveIncompatibleModifier(m, ant)) return true;
+      }
+    }
+    return false;
+  }
+  public static boolean entityIsRoleAppositive(CorefCluster mentionCluster, CorefCluster potentialAntecedent, Mention m1, Mention m2, Dictionaries dict) {
+    if(!entityAttributesAgree(mentionCluster, potentialAntecedent)) return false;
+    return m1.isRoleAppositive(m2, dict) || m2.isRoleAppositive(m1, dict);
+  }
+  public static boolean entityIsRelativePronoun(Mention m1, Mention m2) {
+      return m1.isRelativePronoun(m2) || m2.isRelativePronoun(m1);
+  }
+
+  public static boolean entityIsAcronym(Document document, CorefCluster mentionCluster, CorefCluster potentialAntecedent) {
+    int minId = Math.min(mentionCluster.clusterID, potentialAntecedent.clusterID);
+    int maxId = Math.max(mentionCluster.clusterID, potentialAntecedent.clusterID);
+    if(!document.acronymCache.contains(minId, maxId)) {
+      boolean isAcronym = false;
+      for(Mention m : mentionCluster.corefMentions){
+        if(m.isPronominal()) continue;
+        for(Mention ant : potentialAntecedent.corefMentions){
+          if(isAcronym(m.originalSpan, ant.originalSpan)) isAcronym = true;
+        }
+      }
+      document.acronymCache.put(minId, maxId, isAcronym);
+    }
+    return document.acronymCache.get(minId, maxId);
+  }
+
+  public static boolean isAcronym(List<CoreLabel> first, List<CoreLabel> second) {
+    if (first.size() > 1 && second.size() > 1) {
+      return false;
+    }
+    if (first.size() == 0 && second.size() == 0) { return false; }
+    List<CoreLabel> longer;
+    List<CoreLabel> shorter;
+    
+    if (first.size() == second.size()) {
+      String firstWord = first.get(0).get(CoreAnnotations.TextAnnotation.class);
+      String secondWord = second.get(0).get(CoreAnnotations.TextAnnotation.class);
+      longer = (firstWord.length() > secondWord.length()) ? first : second;
+      shorter = (firstWord.length() > secondWord.length()) ? second : first;
+    } else {
+      longer = (first.size() > 0 && first.size() > second.size()) ? first : second;
+      shorter = (second.size() > 0 && first.size() > second.size()) ? second : first;
+    }
+
+    String acronym = shorter.size() > 0 ? shorter.get(0).get(CoreAnnotations.TextAnnotation.class) : "<UNK>";
+    // This check is not strictly necessary, but it saves a chunk of
+    // time iterating through the text of the longer mention
+    for (int acronymPos = 0; acronymPos < acronym.length(); ++acronymPos) {
+      if (acronym.charAt(acronymPos) < 'A' || acronym.charAt(acronymPos) > 'Z') {
+        return false;
+      }
+    }
+    int acronymPos = 0;
+    for (int wordNum = 0; wordNum < longer.size(); ++wordNum) {
+      String word = longer.get(wordNum).get(CoreAnnotations.TextAnnotation.class);
+      for (int charNum = 0; charNum < word.length(); ++charNum) {
+        if (word.charAt(charNum) >= 'A' && word.charAt(charNum) <= 'Z') {
+          // This triggers if there were more "acronym" characters in
+          // the longer mention than in the shorter mention
+          if (acronymPos >= acronym.length()) {
+            return false;
+          }
+          if (acronym.charAt(acronymPos) != word.charAt(charNum)) {
+            return false;
+          }
+          ++acronymPos;
+        }
+      }
+    }
+    if (acronymPos != acronym.length()) {
+      return false;
+    }
+    for (int i = 0; i < longer.size(); ++i) {
+      if (longer.get(i).get(CoreAnnotations.TextAnnotation.class).contains(acronym)) {
+        return false;
+      }
+    }
+    
+    return true;
+  }
+
+  public static boolean entityIsPredicateNominatives(CorefCluster mentionCluster, CorefCluster potentialAntecedent, Mention m1, Mention m2) {
+    if(!entityAttributesAgree(mentionCluster, potentialAntecedent)) return false;
+    if ((m1.startIndex <= m2.startIndex && m1.endIndex >= m2.endIndex)
+            || (m1.startIndex >= m2.startIndex && m1.endIndex <= m2.endIndex)) {
+      return false;
+    }
+    return m1.isPredicateNominatives(m2) || m2.isPredicateNominatives(m1);
+  }
+
+  public static boolean entityIsApposition(CorefCluster mentionCluster, CorefCluster potentialAntecedent, Mention m1, Mention m2) {
+    if(!entityAttributesAgree(mentionCluster, potentialAntecedent)) return false;
+    if(m1.mentionType==MentionType.PROPER && m2.mentionType==MentionType.PROPER) return false;
+    if(m1.nerString.equals("LOCATION")) return false;
+    return m1.isApposition(m2) || m2.isApposition(m1);
+  }
+
+  public static boolean entityAttributesAgree(CorefCluster mentionCluster, CorefCluster potentialAntecedent){
+    return entityAttributesAgree(mentionCluster, potentialAntecedent, false);
+  }
+
+  public static boolean entityAttributesAgree(CorefCluster mentionCluster, CorefCluster potentialAntecedent, boolean ignoreGender){
+    
+    boolean hasExtraAnt = false;
+    boolean hasExtraThis = false;
+
+    // number
+    if(!mentionCluster.numbers.contains(Number.UNKNOWN)){
+      for(Number n : potentialAntecedent.numbers){
+        if(n!=Number.UNKNOWN && !mentionCluster.numbers.contains(n)) {
+          hasExtraAnt = true;
+          break;
+        }
+      }
+    }
+    if(!potentialAntecedent.numbers.contains(Number.UNKNOWN)){
+      for(Number n : mentionCluster.numbers){
+        if(n!=Number.UNKNOWN && !potentialAntecedent.numbers.contains(n)) {
+          hasExtraThis = true;
+          break;
+        }
+      }
+    }
+
+    if(hasExtraAnt && hasExtraThis) return false;
+
+    // gender
+    hasExtraAnt = false;
+    hasExtraThis = false;
+
+    if (!ignoreGender) {
+      if(!mentionCluster.genders.contains(Gender.UNKNOWN)){
+        for(Gender g : potentialAntecedent.genders){
+          if(g!=Gender.UNKNOWN && !mentionCluster.genders.contains(g)) {
+            hasExtraAnt = true;
+            break;
+          }
+        }
+      }
+      if(!potentialAntecedent.genders.contains(Gender.UNKNOWN)){
+        for(Gender g : mentionCluster.genders){
+          if(g!=Gender.UNKNOWN && !potentialAntecedent.genders.contains(g)) {
+            hasExtraThis = true;
+            break;
+          }
+        }
+      }
+    }
+    if(hasExtraAnt && hasExtraThis) return false;
+
+    // animacy
+    hasExtraAnt = false;
+    hasExtraThis = false;
+
+    if(!mentionCluster.animacies.contains(Animacy.UNKNOWN)){
+      for(Animacy a : potentialAntecedent.animacies){
+        if(a!=Animacy.UNKNOWN && !mentionCluster.animacies.contains(a)) {
+          hasExtraAnt = true;
+          break;
+        }
+      }
+    }
+    if(!potentialAntecedent.animacies.contains(Animacy.UNKNOWN)){
+      for(Animacy a : mentionCluster.animacies){
+        if(a!=Animacy.UNKNOWN && !potentialAntecedent.animacies.contains(a)) {
+          hasExtraThis = true;
+          break;
+        }
+      }
+    }
+    if(hasExtraAnt && hasExtraThis) return false;
+
+    // NE type
+    hasExtraAnt = false;
+    hasExtraThis = false;
+
+    if(!mentionCluster.nerStrings.contains("O") && !mentionCluster.nerStrings.contains("MISC")){
+      for(String ne : potentialAntecedent.nerStrings){
+        if(!ne.equals("O") && !ne.equals("MISC") && !mentionCluster.nerStrings.contains(ne)) {
+          hasExtraAnt = true;
+          break;
+        }
+      }
+    }
+    if(!potentialAntecedent.nerStrings.contains("O") && !potentialAntecedent.nerStrings.contains("MISC")){
+      for(String ne : mentionCluster.nerStrings){
+        if(!ne.equals("O") && !ne.equals("MISC") && !potentialAntecedent.nerStrings.contains(ne)) {
+          hasExtraThis = true;
+          break;
+        }
+      }
+    }
+    return ! (hasExtraAnt && hasExtraThis);
+  }
+
+  public static boolean entityRelaxedHeadsAgreeBetweenMentions(CorefCluster mentionCluster, CorefCluster potentialAntecedent, Mention m, Mention ant) {
+    if(m.isPronominal() || ant.isPronominal()) return false;
+    if(m.headsAgree(ant)) return true;
+    return false;
+  }
+
+  public static boolean entityHeadsAgree(CorefCluster mentionCluster, CorefCluster potentialAntecedent, Mention m, Mention ant, Dictionaries dict) {
+    boolean headAgree = false;
+    if(m.isPronominal() || ant.isPronominal()
+        || dict.allPronouns.contains(m.lowercaseNormalizedSpanString())
+        || dict.allPronouns.contains(ant.lowercaseNormalizedSpanString())) return false;
+    for(Mention a : potentialAntecedent.corefMentions){
+      if(a.headString.equals(m.headString)) headAgree= true;
+    }
+    return headAgree;
+  }
+
+  public static boolean entityExactStringMatch(CorefCluster mentionCluster, CorefCluster potentialAntecedent, Dictionaries dict, Set<Mention> roleSet){
+    boolean matched = false;
+    for(Mention m : mentionCluster.corefMentions){
+      if(roleSet.contains(m)) return false;
+      if(m.isPronominal()) {
+        continue;
+      }
+      String mSpan = m.lowercaseNormalizedSpanString();
+      if(dict.allPronouns.contains(mSpan)) {
+        continue;
+      }
+      for(Mention ant : potentialAntecedent.corefMentions){
+        if(ant.isPronominal()) {
+          continue;
+        }
+        String antSpan = ant.lowercaseNormalizedSpanString();
+        if(dict.allPronouns.contains(antSpan)) continue;
+        if(mSpan.equals(antSpan)) matched = true;
+        if(mSpan.equals(antSpan+" 's") || antSpan.equals(mSpan+" 's")) matched = true;
+      }
+    }
+    return matched;
+  }
+

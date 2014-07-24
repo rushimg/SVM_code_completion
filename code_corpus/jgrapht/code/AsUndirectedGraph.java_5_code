@@ -1,0 +1,19 @@
+    public Set<E> getAllEdges(V sourceVertex, V targetVertex)
+    {
+        Set<E> forwardList = super.getAllEdges(sourceVertex, targetVertex);
+
+        if (sourceVertex.equals(targetVertex)) {
+            // avoid duplicating loops
+            return forwardList;
+        }
+
+        Set<E> reverseList = super.getAllEdges(targetVertex, sourceVertex);
+        Set<E> list =
+            new ArrayUnenforcedSet<E>(
+                forwardList.size() + reverseList.size());
+        list.addAll(forwardList);
+        list.addAll(reverseList);
+
+        return list;
+    }
+

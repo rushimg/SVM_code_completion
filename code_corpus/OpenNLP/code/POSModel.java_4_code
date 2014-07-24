@@ -1,0 +1,70 @@
+  public POSModel(String languageCode, MaxentModel posModel,
+      POSDictionary tagDictionary, Dictionary ngramDict) {
+    this(languageCode, posModel, POSTaggerME.DEFAULT_BEAM_SIZE, null, new POSTaggerFactory(ngramDict,
+        tagDictionary));
+  }
+
+  public POSModel(String languageCode, SequenceClassificationModel<String> posModel,
+      Map<String, String> manifestInfoEntries, POSTaggerFactory posFactory) {
+
+    super(COMPONENT_NAME, languageCode, manifestInfoEntries, posFactory);
+
+    if (posModel == null)
+        throw new IllegalArgumentException("The maxentPosModel param must not be null!");
+
+    artifactMap.put(POS_MODEL_ENTRY_NAME, posModel);
+    // TODO: This fails probably for the sequence model ... ?!
+    // checkArtifactMap();
+  }
+
+  public POSModel(String languageCode, MaxentModel posModel,
+      Map<String, String> manifestInfoEntries, POSTaggerFactory posFactory) {
+    this(languageCode, posModel, POSTaggerME.DEFAULT_BEAM_SIZE, manifestInfoEntries, posFactory);
+  }
+
+  public POSModel(String languageCode, MaxentModel posModel, int beamSize,
+      Map<String, String> manifestInfoEntries, POSTaggerFactory posFactory) {
+
+    super(COMPONENT_NAME, languageCode, manifestInfoEntries, posFactory);
+
+    if (posModel == null)
+        throw new IllegalArgumentException("The maxentPosModel param must not be null!");
+
+    artifactMap.put(POS_MODEL_ENTRY_NAME, posModel);
+    checkArtifactMap();
+  }
+
+  public POSModel(InputStream in) throws IOException, InvalidFormatException {
+    super(COMPONENT_NAME, in);
+  }
+
+  public POSModel(File modelFile) throws IOException, InvalidFormatException {
+    super(COMPONENT_NAME, modelFile);
+  }
+
+  public POSModel(URL modelURL) throws IOException, InvalidFormatException {
+    super(COMPONENT_NAME, modelURL);
+  }
+
+  @Override
+  protected Class<? extends BaseToolFactory> getDefaultFactory() {
+    return POSTaggerFactory.class;
+  }
+
+  @Override
+  @SuppressWarnings("rawtypes")
+  protected void createArtifactSerializers(
+      Map<String, ArtifactSerializer> serializers) {
+
+    super.createArtifactSerializers(serializers);
+  }
+
+  @Override
+  protected void validateArtifactMap() throws InvalidFormatException {
+    super.validateArtifactMap();
+
+    if (!(artifactMap.get(POS_MODEL_ENTRY_NAME) instanceof MaxentModel)) {
+      throw new InvalidFormatException("POS model is incomplete!");
+    }
+  }
+

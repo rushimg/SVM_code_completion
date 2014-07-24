@@ -1,0 +1,75 @@
+  private Tree extractBestParse(int start, int end, int hWord, int hTag) {
+    if (DEBUG) {
+      System.err.println("Span "+start+" to "+end+" word "+wordIndex.get(words[hWord])+"/"+hWord+" tag "+tagIndex.get(hTag)+"/"+hTag+" score "+iScore(start, end, hWord, hTag));
+    }
+    String headWordStr = wordIndex.get(words[hWord]);
+    String headTagStr = tagIndex.get(hTag);
+    Label headLabel = new CategoryWordTag(headWordStr, headWordStr, headTagStr);
+    int numTags = tagIndex.size();
+
+    // deal with span 1
+    if (end - start == 1) {
+      Tree leaf = tf.newLeaf(new Word(headWordStr));
+      return tf.newTreeNode(headLabel, Collections.singletonList(leaf));
+    }
+    // find backtrace
+    List<Tree> children = new ArrayList<Tree>();
+    double bestScore = iScore(start, end, hWord, hTag);
+    for (int split = start + 1; split < end; split++) {
+      int binD = binDistance[hWord][split];
+      if (hWord < split) {
+        for (int aWord = split; aWord < end; aWord++) {
+          for (int aTag = 0; aTag < numTags; aTag++) {
+            if (matches(iScore(start, split, hWord, hTag) + iScore(split, end, aWord, aTag) + headScore[binD][hWord][dg.tagBin(hTag)][aWord][dg.tagBin(aTag)] + headStop[aWord][dg.tagBin(aTag)][split] + headStop[aWord][dg.tagBin(aTag)][end], bestScore)) {
+              if (DEBUG) {
+                String argWordStr = wordIndex.get(words[aWord]);
+                String argTagStr = tagIndex.get(aTag);
+                System.err.println(headWordStr+"|"+headTagStr+" -> "+argWordStr+"|"+argTagStr+" "+bestScore);
+              }
+              // build it
+              children.add(extractBestParse(start, split, hWord, hTag));
+              children.add(extractBestParse(split, end, aWord, aTag));
+              return tf.newTreeNode(headLabel, children);
+            }
+          }
+        }
+      } else {
+        for (int aWord = start; aWord < split; aWord++) {
+          for (int aTag = 0; aTag < numTags; aTag++) {
+            if (matches(iScore(start, split, aWord, aTag) + iScore(split, end, hWord, hTag) + headScore[binD][hWord][dg.tagBin(hTag)][aWord][dg.tagBin(aTag)] + headStop[aWord][dg.tagBin(aTag)][start] + headStop[aWord][dg.tagBin(aTag)][split], bestScore)) {
+              if (DEBUG) {
+                String argWordStr = wordIndex.get(words[aWord]);
+                String argTagStr = tagIndex.get(aTag);
+                System.err.println(headWordStr+"|"+headTagStr+" -> "+argWordStr+"|"+argTagStr+" "+bestScore);
+              }
+              children.add(extractBestParse(start, split, aWord, aTag));
+              children.add(extractBestParse(split, end, hWord, hTag));
+              // build it
+              return tf.newTreeNode(headLabel, children);
+            }
+          }
+        }
+      }
+    }
+    System.err.println("Problem in ExhaustiveDependencyParser::extractBestParse");
+    return null;
+  }
+
+  private Tree flatten(Tree tree) {
+    if (tree.isLeaf() || tree.isPreTerminal()) {
+      return tree;
+    }
+    List<Tree> newChildren = new ArrayList<Tree>();
+    Tree[] children = tree.children();
+    for (Tree child : children) {
+      Tree newChild = flatten(child);
+      if (!newChild.isPreTerminal() && newChild.label().toString().equals(tree.label().toString())) {
+        newChildren.addAll(newChild.getChildrenAsList());
+      } else {
+        newChildren.add(newChild);
+      }
+    }
+    return tf.newTreeNode(tree.label(), newChildren);
+  }
+
+

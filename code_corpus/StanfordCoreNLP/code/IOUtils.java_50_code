@@ -1,0 +1,38 @@
+  public static String slurpURL(URL u, String encoding) throws IOException {
+    String lineSeparator = System.getProperty("line.separator");
+    URLConnection uc = u.openConnection();
+    uc.setReadTimeout(30000);
+    InputStream is;
+    try {
+      is = uc.getInputStream();
+    } catch (SocketTimeoutException e) {
+      // e.printStackTrace();
+      System.err.println("Time out. Return empty string");
+      return "";
+    }
+    BufferedReader br = new BufferedReader(new InputStreamReader(is, encoding));
+    String temp;
+    StringBuilder buff = new StringBuilder(SLURP_BUFFER_SIZE); // make biggish
+    while ((temp = br.readLine()) != null) {
+      buff.append(temp);
+      buff.append(lineSeparator);
+    }
+    br.close();
+    return buff.toString();
+  }
+
+  public static String getUrlEncoding(URLConnection connection) {
+    String contentType = connection.getContentType();
+    String[] values = contentType.split(";");
+    String charset = defaultEncoding;  // might or might not be right....
+
+    for (String value : values) {
+      value = value.trim();
+      if (value.toLowerCase(Locale.ENGLISH).startsWith("charset=")) {
+        charset = value.substring("charset=".length());
+      }
+    }
+    return charset;
+  }
+
+

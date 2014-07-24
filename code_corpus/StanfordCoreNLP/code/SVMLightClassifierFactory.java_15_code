@@ -1,0 +1,45 @@
+  public void crossValidateSetC(GeneralDataset<L, F> dataset, int numFolds, final Scorer<L> scorer, LineSearcher minimizer) {
+    System.out.println("in Cross Validate");
+
+    useAlphaFile = true;
+    boolean oldUseSigmoid = useSigmoid;
+    useSigmoid = false;
+
+    final CrossValidator<L, F> crossValidator = new CrossValidator<L, F>(dataset,numFolds);
+    final Function<Triple<GeneralDataset<L, F>,GeneralDataset<L, F>,CrossValidator.SavedState>,Double> score =
+      new Function<Triple<GeneralDataset<L, F>,GeneralDataset<L, F>,CrossValidator.SavedState>,Double> ()
+      {
+        public Double apply (Triple<GeneralDataset<L, F>,GeneralDataset<L, F>,CrossValidator.SavedState> fold) {
+          GeneralDataset<L, F> trainSet = fold.first();
+          GeneralDataset<L, F> devSet = fold.second();
+          alphaFile = (File)fold.third().state;
+          //train(trainSet,true,true);
+          SVMLightClassifier<L, F> classifier = trainClassifierBasic(trainSet);
+          fold.third().state = alphaFile;
+          return scorer.score(classifier,devSet);
+        }
+      };
+
+    Function<Double,Double> negativeScorer =
+      new Function<Double,Double> ()
+      {
+        public Double apply(Double cToTry) {
+          C = cToTry;
+          if (verbose) { System.out.print("C = "+cToTry+" "); }
+          Double averageScore = crossValidator.computeAverage(score);
+          if (verbose) { System.out.println(" -> average Score: "+averageScore); }
+          return -averageScore;
+        }
+      };
+
+    C = minimizer.minimize(negativeScorer);
+
+    useAlphaFile = false;
+    useSigmoid = oldUseSigmoid;
+  }
+
+  public void heldOutSetC(GeneralDataset<L, F> train, double percentHeldOut, final Scorer<L> scorer, LineSearcher minimizer) {
+    Pair<GeneralDataset<L, F>, GeneralDataset<L, F>> data = train.split(percentHeldOut);
+    heldOutSetC(data.first(), data.second(), scorer, minimizer);
+  }
+

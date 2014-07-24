@@ -1,0 +1,20 @@
+    public void sortByKeys(SortOrder order) {
+        final int size = this.keys.size();
+        final DefaultKeyedValue[] data = new DefaultKeyedValue[size];
+
+        for (int i = 0; i < size; i++) {
+            data[i] = new DefaultKeyedValue((Comparable) this.keys.get(i),
+                    (Number) this.values.get(i));
+        }
+
+        Comparator comparator = new KeyedValueComparator(
+                KeyedValueComparatorType.BY_KEY, order);
+        Arrays.sort(data, comparator);
+        clear();
+
+        for (int i = 0; i < data.length; i++) {
+            final DefaultKeyedValue value = data[i];
+            addValue(value.getKey(), value.getValue());
+        }
+    }
+

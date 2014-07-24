@@ -1,0 +1,27 @@
+  public static int leftEdge(Tree t, Tree root) {
+    MutableInteger i = new MutableInteger(0);
+    if (leftEdge(t, root, i)) {
+      return i.intValue();
+    } else {
+      throw new RuntimeException("Tree is not a descendant of root.");
+//      return -1;
+    }
+  }
+
+  static boolean leftEdge(Tree t, Tree t1, MutableInteger i) {
+    if (t == t1) {
+      return true;
+    } else if (t1.isLeaf()) {
+      int j = t1.yield().size(); // so that empties don't add size
+      i.set(i.intValue() + j);
+      return false;
+    } else {
+      for (Tree kid : t1.children()) {
+        if (leftEdge(t, kid, i)) {
+          return true;
+        }
+      }
+      return false;
+    }
+  }
+

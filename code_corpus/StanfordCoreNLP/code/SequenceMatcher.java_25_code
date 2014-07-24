@@ -1,0 +1,100 @@
+    matchStateCount = new LinkedHashMap<SequencePattern.State, Pair<Integer,Boolean>>(parent.matchStateCount);
+        if (parent.matchStateInfo != null) {
+          matchStateInfo = new LinkedHashMap<SequencePattern.State, Object>(parent.matchStateInfo);
+        }
+        if (parent.bidsToCollapse != null) {
+          bidsToCollapse = new ArraySet<Integer>(parent.bidsToCollapse.size());
+          bidsToCollapse.addAll(parent.bidsToCollapse);
+        }
+        if (parent.collapsedBids != null) {
+          collapsedBids = new ArraySet<Integer>(parent.collapsedBids.size());
+          collapsedBids.addAll(parent.collapsedBids);
+        }
+      }
+    }
+
+    // Add to list of related branch ids that we would like to keep...
+    private void updateKeepBids(Set<Integer> bids) {
+      if (matchStateInfo != null) {
+        // TODO: Make values of matchStateInfo more organized (implement some interface) so we don't
+        // need this kind of specialized code
+        for (SequencePattern.State s:matchStateInfo.keySet()) {
+          if (s instanceof SequencePattern.ConjStartState) {
+            SequencePattern.ConjMatchStateInfo info = (SequencePattern.ConjMatchStateInfo) matchStateInfo.get(s);
+            info.updateKeepBids(bids);
+          }
+        }
+      }
+    }
+
+    private void addBidsToCollapse(int[] bids)
+    {
+      if (bidsToCollapse == null) {
+        bidsToCollapse = new ArraySet<Integer>(bids.length);
+      }
+      for (int b:bids) {
+        if (b != bid) {
+          bidsToCollapse.add(b);
+        }
+      }
+    }
+
+    private void addMatchedGroups(Map<Integer,MatchedGroup> g)
+    {
+      for (Integer k:g.keySet()) {
+        if (!matchedGroups.containsKey(k)) {
+          matchedGroups.put(k, g.get(k));
+        }
+      }
+    }
+
+    private void addMatchedResults(Map<Integer,Object> res)
+    {
+      if (res != null) {
+        for (Integer k:res.keySet()) {
+          if (!matchedResults.containsKey(k)) {
+            matchedResults.put(k, res.get(k));
+          }
+        }
+      }
+    }
+  }
+
+  private static class State
+  {
+    int bid;
+    SequencePattern.State tstate;
+
+    public State(int bid, SequencePattern.State tstate) {
+      this.bid = bid;
+      this.tstate = tstate;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+
+      State state = (State) o;
+
+      if (bid != state.bid) {
+        return false;
+      }
+      if (tstate != null ? !tstate.equals(state.tstate) : state.tstate != null) {
+        return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      int result = bid;
+      return result;
+    }
+  }
+

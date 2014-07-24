@@ -1,0 +1,28 @@
+    public DijkstraShortestPath(
+        Graph<V, E> graph,
+        V startVertex,
+        V endVertex,
+        double radius)
+    {
+        if (!graph.containsVertex(endVertex)) {
+            throw new IllegalArgumentException(
+                "graph must contain the end vertex");
+        }
+
+        ClosestFirstIterator<V, E> iter =
+            new ClosestFirstIterator<V, E>(graph, startVertex, radius);
+
+        while (iter.hasNext()) {
+            V vertex = iter.next();
+
+            if (vertex.equals(endVertex)) {
+                createEdgeList(graph, iter, startVertex, endVertex);
+                return;
+            }
+        }
+
+        path = null;
+    }
+
+    //~ Methods ----------------------------------------------------------------
+

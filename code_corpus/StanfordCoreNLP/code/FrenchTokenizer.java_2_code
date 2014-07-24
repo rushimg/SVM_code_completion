@@ -1,0 +1,35 @@
+  public FrenchTokenizer(Reader r, LexedTokenFactory<T> tf, Properties lexerProperties, boolean splitCompounds) {
+    lexer = new FrenchLexer(r, tf, lexerProperties);
+    this.splitCompounds = splitCompounds;
+    if (splitCompounds) compoundBuffer = Generics.newLinkedList();
+  }
+
+  @Override
+  @SuppressWarnings("unchecked")
+  protected T getNext() {
+    try {
+      T nextToken = null;
+      // Depending on the orthographic normalization options,
+      // some tokens can be obliterated. In this case, keep iterating
+      // until we see a non-zero length token.
+      do {
+        nextToken = (splitCompounds && compoundBuffer.size() > 0) ?
+            (T) compoundBuffer.remove(0) :
+              (T) lexer.next();
+      } while (nextToken != null && nextToken.word().length() == 0);
+
+      // Check for compounds to split
+      if (splitCompounds && nextToken instanceof CoreLabel) {
+        CoreLabel cl = (CoreLabel) nextToken;
+        if (cl.containsKey(ParentAnnotation.class) && cl.get(ParentAnnotation.class).equals(FrenchLexer.COMPOUND_ANNOTATION)) {
+          nextToken = (T) processCompound(cl);
+        }
+      }
+
+      return nextToken;
+
+    } catch (IOException e) {
+      throw new RuntimeIOException(e);
+    }
+  }
+

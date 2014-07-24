@@ -1,0 +1,179 @@
+public class MemoryMonitor {
+
+  public static final int MAX_SWAPS = 50;
+
+  protected long lastPoll;
+  protected long pollEvery;
+  protected int freeMem;
+  protected int usedSwap;
+  protected int swaps;
+  protected Runtime r;
+
+  public MemoryMonitor() {
+    this(60000); // 1 min default
+  }
+
+  public MemoryMonitor(long millis) {
+    lastPoll = 0;
+    pollEvery = millis;
+    freeMem = 0;
+    usedSwap = 0;
+    swaps = 0;
+    r = Runtime.getRuntime();
+    pollVMstat(true);
+  }
+
+  // TODO I don't think anyone uses this
+  public void pollAtMostEvery(long millis) {
+    pollEvery = millis;
+  }
+
+  public int getMaxMemory() {
+    return (int) (r.maxMemory() / 1024);
+  }
+
+  public int getMaxAvailableMemory() {
+    return getMaxAvailableMemory(false);
+  }
+
+  // kilobytes
+  public int getMaxAvailableMemory(boolean accurate) {
+    if (accurate) {
+      System.gc();
+    }
+    return (int) ((r.maxMemory() - r.totalMemory() + r.freeMemory()) / 1024);
+  }
+
+  public int getUsedMemory() {
+    return getUsedMemory(false);
+  }
+
+  public int getUsedMemory(boolean accurate) {
+    if (accurate) {
+      System.gc();
+    }
+    return (int) ((r.totalMemory() - r.freeMemory()) / 1024);
+  }
+
+  public int getSystemFreeMemory(boolean accurate) {
+    if (accurate) {
+      System.gc();
+    }
+    pollVMstat(false);
+    return freeMem;
+  }
+
+  public int getSystemUsedSwap() {
+    pollVMstat(false);
+    return usedSwap;
+  }
+
+  public double getSystemSwapsPerSec() {
+    pollVMstat(false);
+    return swaps;
+  }
+
+  protected static ArrayList<String> parseFields(BufferedReader br, String splitStr,
+      int[] lineNums, int[] positions) throws IOException {
+    int currLine = 0;
+    int processed = 0;
+    ArrayList<String> found = new ArrayList<String>();
+    while (br.ready()) {
+      String[] fields = br.readLine().split(splitStr);
+      currLine++;
+      if (currLine == lineNums[processed]) {
+        int currPosition = 0;
+        for (String f : fields) {
+          if (f.length() > 0) {
+            currPosition++;
+            if (currPosition == positions[processed]) {
+              found.add(f);
+              processed++;
+              if (processed == positions.length) {
+                break;
+              }
+            }
+          }
+        }
+      }
+    }
+    return found;
+  }
+
+  public void pollFree(boolean force) {
+    if (!force) {
+      long time = System.currentTimeMillis();
+      if (time - lastPoll < pollEvery) {
+        return;
+      }
+    }
+
+    Process p = null;
+    int[] freeLines = { 2, 4 };
+    int[] freePositions = { 4, 3 };
+
+    lastPoll = System.currentTimeMillis();
+    try {
+      p = r.exec("free");
+      p.waitFor();
+      BufferedReader bri = new BufferedReader(new InputStreamReader(p.getInputStream()));
+      ArrayList<String> l = parseFields(bri, " ", freeLines, freePositions);
+      freeMem = Integer.parseInt(l.get(1));
+      usedSwap = Integer.parseInt(l.get(2));
+    } catch (Exception e) {
+      System.err.println(e);
+    } finally {
+      if (p != null) {
+        p.destroy();
+      }
+    }
+  }
+
+  public void pollVMstat(boolean force) {
+    if (!force) {
+      long time = System.currentTimeMillis();
+      if (time - lastPoll < pollEvery) {
+        return;
+      }
+    }
+
+    Process p = null;
+    int[] lines = { 4, 4, 4, 4 };
+    int[] positions = { 3, 4, 7, 8 };
+
+    try {
+      p = r.exec("vmstat 1 2");
+      p.waitFor();
+      long time = System.currentTimeMillis();
+      BufferedReader bri = new BufferedReader(new InputStreamReader(p.getInputStream()));
+      ArrayList<String> l = parseFields(bri, " ", lines, positions);
+      usedSwap = Integer.parseInt(l.get(0));
+      freeMem = Integer.parseInt(l.get(1));
+      swaps = Integer.parseInt(l.get(2)) + Integer.parseInt(l.get(3));
+      lastPoll = time;
+    } catch (Exception e) {
+      e.printStackTrace();
+    } finally {
+      if (p != null) {
+        p.destroy();
+      }
+    }
+  }
+
+  public boolean systemIsSwapping() {
+    return (getSystemSwapsPerSec() > MAX_SWAPS);
+  }
+
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append("lastPoll:").append(lastPoll);
+    sb.append(" pollEvery:").append(pollEvery);
+    sb.append(" freeMem:").append(freeMem);
+    sb.append(" usedSwap:").append(usedSwap);
+    sb.append(" swaps:").append(swaps);
+    sb.append(" maxAvailable:").append(getMaxAvailableMemory(false));
+    sb.append(" used:").append(getUsedMemory(false));
+    return sb.toString();
+  }
+

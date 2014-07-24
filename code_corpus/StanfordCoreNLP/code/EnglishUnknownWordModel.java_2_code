@@ -1,0 +1,25 @@
+  @Override
+  public double scoreProbTagGivenWordSignature(IntTaggedWord iTW, int loc, double smooth, String word) {
+    // iTW.tag = nullTag;
+    // double c_W = ((BaseLexicon) l).getCount(iTW);
+    // iTW.tag = tag;
+
+    // unknown word model for P(T|S)
+
+    int wordSig = getSignatureIndex(iTW.word, loc, word);
+    IntTaggedWord temp = new IntTaggedWord(wordSig, iTW.tag);
+    double c_TS = unSeenCounter.getCount(temp);
+    temp = new IntTaggedWord(wordSig, nullTag);
+    double c_S = unSeenCounter.getCount(temp);
+    double c_U = unSeenCounter.getCount(NULL_ITW);
+    temp = new IntTaggedWord(nullWord, iTW.tag);
+    double c_T = unSeenCounter.getCount(temp);
+
+    double p_T_U = c_T / c_U;
+    if (unknownLevel == 0) {
+      c_TS = 0;
+      c_S = 0;
+    }
+  }
+
+

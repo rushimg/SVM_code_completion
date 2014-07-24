@@ -1,0 +1,41 @@
+public class BinarizerAnnotator implements Annotator {
+  private static final String DEFAULT_TLPP_CLASS = "edu.stanford.nlp.parser.lexparser.EnglishTreebankParserParams";
+  
+  final TreeBinarizer binarizer;
+  final String tlppClass;
+
+  public BinarizerAnnotator(String annotatorName, Properties props) {
+    this.tlppClass = props.getProperty(annotatorName + ".tlppClass", DEFAULT_TLPP_CLASS);
+    TreebankLangParserParams tlpp = ReflectionLoading.loadByReflection(tlppClass);
+    this.binarizer = new TreeBinarizer(tlpp.headFinder(), tlpp.treebankLanguagePack(),
+                                       false, false, 0, false, false, 0.0, false, true, true);
+  }
+
+  public static String signature(String annotatorName, Properties props) {
+    String tlppClass = props.getProperty(annotatorName + ".tlppClass", DEFAULT_TLPP_CLASS);
+    return tlppClass;
+  }
+
+  @Override
+  public void annotate(Annotation annotation) {
+    if (annotation.containsKey(CoreAnnotations.SentencesAnnotation.class)) {
+      for (CoreMap sentence : annotation.get(CoreAnnotations.SentencesAnnotation.class)) {
+        doOneSentence(sentence);
+      }
+    } else {
+      throw new RuntimeException("unable to find sentences in: " + annotation);
+    }
+  }
+
+  private void doOneSentence(CoreMap sentence) {
+    Tree tree = sentence.get(TreeCoreAnnotations.TreeAnnotation.class);
+    Tree binarized;
+    if (isBinarized(tree)) {
+      binarized = tree;
+    } else {
+      binarized = binarizer.transformTree(tree);
+    }
+    Trees.convertToCoreLabels(binarized);
+    sentence.set(TreeCoreAnnotations.BinarizedTreeAnnotation.class, binarized);
+  }  
+

@@ -1,0 +1,27 @@
+  @Override
+  public void removeZeroDegreeNodes() {
+    List<V> toDelete = new ArrayList<V>();
+    for (V vertex : outgoingEdges.keySet()) {
+      if (outgoingEdges.get(vertex).isEmpty() && incomingEdges.get(vertex).isEmpty()) {
+        toDelete.add(vertex);
+      }
+    }
+    for (V vertex : toDelete) {
+      outgoingEdges.remove(vertex);
+      incomingEdges.remove(vertex);
+    }
+  }
+
+  @Override
+  public List<E> getEdges(V source, V dest) {
+    Map<V, List<E>> childrenMap = outgoingEdges.get(source);
+    if (childrenMap == null) {
+      return Collections.emptyList();
+    }
+    List<E> edges = childrenMap.get(dest);
+    if (edges == null) {
+      return Collections.emptyList();
+    }
+    return Collections.unmodifiableList(edges);
+  }
+

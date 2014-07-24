@@ -1,0 +1,31 @@
+    protected Ellipse2D getWaferEdge(Rectangle2D plotArea) {
+        Ellipse2D edge = new Ellipse2D.Double();
+        double diameter = plotArea.getWidth();
+        double upperLeftX = plotArea.getX();
+        double upperLeftY = plotArea.getY();
+        //get major dimension
+        if (plotArea.getWidth() != plotArea.getHeight()) {
+            double major = 0d;
+            double minor = 0d;
+            if (plotArea.getWidth() > plotArea.getHeight()) {
+                major = plotArea.getWidth();
+                minor = plotArea.getHeight();
+            }
+            else {
+                major = plotArea.getHeight();
+                minor = plotArea.getWidth();
+            }
+            //ellipse diameter is the minor dimension
+            diameter = minor;
+            //set upperLeft point
+            if (plotArea.getWidth() == minor) { // x is minor
+                upperLeftY = plotArea.getY() + (major - minor) / 2;
+            }
+            else { // y is minor
+                upperLeftX = plotArea.getX() + (major - minor) / 2;
+            }
+        }
+        edge.setFrame(upperLeftX, upperLeftY, diameter, diameter);
+        return edge;
+    }
+

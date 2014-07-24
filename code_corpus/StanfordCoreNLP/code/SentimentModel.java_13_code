@@ -1,0 +1,108 @@
+  public SentimentModel(RNNOptions op, List<Tree> trainingTrees) {
+    this.op = op;
+    rand = new Random(op.randomSeed);
+
+    if (op.randomWordVectors) {
+      initRandomWordVectors(trainingTrees);
+    } else {
+      readWordVectors();
+    }
+    if (op.numHid > 0) {
+      this.numHid = op.numHid;
+    } else {
+      int size = 0;
+      for (SimpleMatrix vector : wordVectors.values()) {
+        size = vector.getNumElements();
+        break;
+      }
+      this.numHid = size;
+    }
+
+    TwoDimensionalSet<String, String> binaryProductions = TwoDimensionalSet.hashSet();
+    if (op.simplifiedModel) {
+      binaryProductions.add("", "");
+    } else {
+      // TODO
+      // figure out what binary productions we have in these trees
+      // Note: the current sentiment training data does not actually
+      // have any constituent labels
+      throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    Set<String> unaryProductions = Generics.newHashSet();
+    if (op.simplifiedModel) {
+      unaryProductions.add("");
+    } else {
+      // TODO
+      // figure out what unary productions we have in these trees (preterminals only, after the collapsing)
+      throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    this.numClasses = op.numClasses;
+
+    identity = SimpleMatrix.identity(numHid);
+
+    binaryTransform = TwoDimensionalMap.treeMap();
+    binaryTensors = TwoDimensionalMap.treeMap();
+    binaryClassification = TwoDimensionalMap.treeMap();
+    
+    // When making a flat model (no symantic untying) the
+    // basicCategory function will return the same basic category for
+    // all labels, so all entries will map to the same matrix
+    for (Pair<String, String> binary : binaryProductions) {
+      String left = basicCategory(binary.first);
+      String right = basicCategory(binary.second);
+      if (binaryTransform.contains(left, right)) {
+        continue;
+      }
+      binaryTransform.put(left, right, randomTransformMatrix());
+      if (op.useTensors) {
+        binaryTensors.put(left, right, randomBinaryTensor());
+      }
+      if (!op.combineClassification) {
+        binaryClassification.put(left, right, randomClassificationMatrix());
+      }
+    }
+    numBinaryMatrices = binaryTransform.size();
+    if (op.useTensors) {
+    } else {
+      binaryTensorSize = 0;
+    }
+
+    unaryClassification = Generics.newTreeMap();
+    
+    // When making a flat model (no symantic untying) the
+    // basicCategory function will return the same basic category for
+    // all labels, so all entries will map to the same matrix
+    for (String unary : unaryProductions) {
+      unary = basicCategory(unary);
+      if (unaryClassification.containsKey(unary)) {
+        continue;
+      }
+      unaryClassification.put(unary, randomClassificationMatrix());
+    }
+    numUnaryMatrices = unaryClassification.size();
+
+    // System.err.println("Binary transform matrices:");
+    // System.err.println(binaryTransform);
+    // System.err.println("Binary classification matrices:");
+    // System.err.println(binaryClassification);
+    // System.err.println("Unary classification matrices:");
+    // System.err.println(unaryClassification);
+  }
+
+  SimpleTensor randomBinaryTensor() {
+    return tensor.scale(op.trainOptions.scalingForInit);
+  }
+  
+  SimpleMatrix randomTransformMatrix() {
+    // bias column values are initialized zero
+    binary.insertIntoThis(0, 0, randomTransformBlock());
+    binary.insertIntoThis(0, numHid, randomTransformBlock());
+    return binary.scale(op.trainOptions.scalingForInit);
+  }
+
+  SimpleMatrix randomTransformBlock() {
+    return SimpleMatrix.random(numHid,numHid,-range,range,rand).plus(identity);
+  }
+

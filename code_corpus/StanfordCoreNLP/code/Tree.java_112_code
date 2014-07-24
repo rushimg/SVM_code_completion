@@ -1,0 +1,29 @@
+  public int rightCharEdge(Tree node) {
+    List<Tree> s = getLeaves();
+    int length = 0;
+    for (Tree leaf : s) {
+      length += leaf.label().value().length();
+    }
+    MutableInteger i = new MutableInteger(length);
+    if (rightCharEdge(node, i)) {
+      return i.intValue();
+    }
+    return -1;
+  }
+
+  private boolean rightCharEdge(Tree node, MutableInteger i) {
+    if (this == node) {
+      return true;
+    } else if (isLeaf()) {
+      i.set(i.intValue() - label().value().length());
+      return false;
+    } else {
+      for (int j = children().length - 1; j >= 0; j--) {
+        if (children()[j].rightCharEdge(node, i)) {
+          return true;
+        }
+      }
+      return false;
+    }
+  }
+

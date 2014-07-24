@@ -1,0 +1,23 @@
+public class UnknownGTTrainer {
+  ClassicCounter<Pair<String,String>> wtCount = new ClassicCounter<Pair<String,String>>();
+  ClassicCounter<String> tagCount = new ClassicCounter<String>();
+  ClassicCounter<String> r1 = new ClassicCounter<String>(); // for each tag, # of words seen once
+  ClassicCounter<String> r0 = new ClassicCounter<String>(); // for each tag, # of words not seen
+  Set<String> seenWords = Generics.newHashSet();
+  
+  double tokens = 0;
+  
+  Map<String,Float> unknownGT = Generics.newHashMap();
+  
+  public void train(Collection<Tree> trees) {
+    train(trees, 1.0);
+  }
+
+  public void train(Collection<Tree> trees, double weight) {
+    for (Tree t : trees) {
+      train(t, weight);
+    }
+  }
+
+
+  public void train(Tree tree, double weight) {

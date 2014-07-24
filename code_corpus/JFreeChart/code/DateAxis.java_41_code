@@ -1,0 +1,33 @@
+    public double valueToJava2D(double value, Rectangle2D area,
+                                RectangleEdge edge) {
+
+        value = this.timeline.toTimelineValue((long) value);
+
+        DateRange range = (DateRange) getRange();
+        double axisMin = this.timeline.toTimelineValue(range.getLowerMillis());
+        double axisMax = this.timeline.toTimelineValue(range.getUpperMillis());
+        double result = 0.0;
+        if (RectangleEdge.isTopOrBottom(edge)) {
+            double minX = area.getX();
+            double maxX = area.getMaxX();
+            if (isInverted()) {
+                result = maxX + ((value - axisMin) / (axisMax - axisMin))
+            }
+            else {
+                result = minX + ((value - axisMin) / (axisMax - axisMin))
+            }
+        }
+        else if (RectangleEdge.isLeftOrRight(edge)) {
+            double minY = area.getMinY();
+            double maxY = area.getMaxY();
+            if (isInverted()) {
+                result = minY + (((value - axisMin) / (axisMax - axisMin))
+            }
+            else {
+                result = maxY - (((value - axisMin) / (axisMax - axisMin))
+            }
+        }
+        return result;
+
+    }
+

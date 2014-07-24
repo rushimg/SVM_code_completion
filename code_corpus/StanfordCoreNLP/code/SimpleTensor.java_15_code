@@ -1,0 +1,19 @@
+  public SimpleMatrix bilinearProducts(SimpleMatrix in) {
+    if (in.numCols() != 1) {
+      throw new AssertionError("Expected a column vector");
+    }
+    if (in.numRows() != numCols) {
+      throw new AssertionError("Number of rows in the input does not match number of columns in tensor");
+    }
+    if (numRows != numCols) {
+      throw new AssertionError("Can only perform this operation on a SimpleTensor with square slices");
+    }
+    SimpleMatrix inT = in.transpose();
+    SimpleMatrix out = new SimpleMatrix(numSlices, 1);
+    for (int slice = 0; slice < numSlices; ++slice) {
+      double result = inT.mult(slices[slice]).mult(in).get(0);
+      out.set(slice, result);
+    }
+    return out;
+  }
+

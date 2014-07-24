@@ -1,0 +1,10 @@
+  public CoreNLPProtos.Token toProto(CoreLabel coreLabel) {
+    Set<Class<?>> keysToSerialize = new HashSet<Class<?>>(coreLabel.keySet());
+    CoreNLPProtos.Token.Builder builder = toProtoBuilder(coreLabel, keysToSerialize);
+    // Completeness check
+    if (enforceLosslessSerialization && !keysToSerialize.isEmpty()) {
+      throw new LossySerializationException("Keys are not being serialized: " + StringUtils.join(keysToSerialize));
+    }
+    return builder.build();
+  }
+

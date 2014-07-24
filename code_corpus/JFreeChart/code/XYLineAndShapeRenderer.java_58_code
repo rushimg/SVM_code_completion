@@ -1,0 +1,45 @@
+    public void drawItem(Graphics2D g2,
+                         XYItemRendererState state,
+                         Rectangle2D dataArea,
+                         PlotRenderingInfo info,
+                         XYPlot plot,
+                         ValueAxis domainAxis,
+                         ValueAxis rangeAxis,
+                         XYDataset dataset,
+                         int series,
+                         int item,
+                         CrosshairState crosshairState,
+                         int pass) {
+
+        // do nothing if item is not visible
+        if (!getItemVisible(series, item)) {
+            return;
+        }
+
+        // first pass draws the background (lines, for instance)
+        if (isLinePass(pass)) {
+            if (getItemLineVisible(series, item)) {
+                if (this.drawSeriesLineAsPath) {
+                    drawPrimaryLineAsPath(state, g2, plot, dataset, pass,
+                            series, item, domainAxis, rangeAxis, dataArea);
+                }
+                else {
+                    drawPrimaryLine(state, g2, plot, dataset, pass, series,
+                            item, domainAxis, rangeAxis, dataArea);
+                }
+            }
+        }
+        // second pass adds shapes where the items are ..
+        else if (isItemPass(pass)) {
+
+            // setup for collecting optional entity info...
+            EntityCollection entities = null;
+            if (info != null) {
+                entities = info.getOwner().getEntityCollection();
+            }
+
+            drawSecondaryPass(g2, plot, dataset, pass, series, item,
+                    domainAxis, dataArea, rangeAxis, crosshairState, entities);
+        }
+    }
+

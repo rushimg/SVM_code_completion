@@ -1,0 +1,219 @@
+  @Override
+  public void train(Tree tree, double weight) {
+    trainingSentences.add(tree.taggedYield());
+  }
+
+  @Override
+  public void trainUnannotated(List<TaggedWord> sentence, double weight) {
+    // TODO: for now we just punt on these
+    throw new UnsupportedOperationException("This version of the parser does not support non-tree training data");
+  }
+
+  @Override
+  public void incrementTreesRead(double weight) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void train(TaggedWord tw, int loc, double weight) {
+    throw new UnsupportedOperationException();
+  }
+
+
+  @Override
+  public void train(List<TaggedWord> sentence, double weight) {
+    trainingSentences.add(sentence);
+  }
+
+  @Override
+  public void finishTraining() {
+    Timing.tick("Counting characters...");
+    ClassicCounter<Symbol> charCounter = new ClassicCounter<Symbol>();
+
+    // first find all chars that occur only once
+    for (List<TaggedWord> labels : trainingSentences) {
+      for (TaggedWord label : labels) {
+        String word = label.word();
+        if (word.equals(BOUNDARY)) {
+          continue;
+        }
+        for (int j = 0, length = word.length(); j < length; j++) {
+          Symbol sym = Symbol.cannonicalSymbol(word.charAt(j));
+          charCounter.incrementCount(sym);
+        }
+        charCounter.incrementCount(Symbol.END_WORD);
+      }
+    }
+
+    Set<Symbol> singletons = Counters.keysBelow(charCounter, 1.5);
+    knownChars = Generics.newHashSet(charCounter.keySet());
+
+    Timing.tick("Counting nGrams...");
+    GeneralizedCounter[] POSspecificCharNGrams = new GeneralizedCounter[CONTEXT_LENGTH + 1];
+    for (int i = 0; i <= CONTEXT_LENGTH; i++) {
+      POSspecificCharNGrams[i] = new GeneralizedCounter(i + 2);
+    }
+
+    ClassicCounter<String> POSCounter = new ClassicCounter<String>();
+    List<Serializable> context = new ArrayList<Serializable>(CONTEXT_LENGTH + 1);
+    for (List<TaggedWord> words : trainingSentences) {
+      for (TaggedWord taggedWord : words) {
+        String word = taggedWord.word();
+        String tag = taggedWord.tag();
+        tagIndex.add(tag);
+        if (word.equals(BOUNDARY)) {
+          continue;
+        }
+        POSCounter.incrementCount(tag);
+        for (int i = 0, size = word.length(); i <= size; i++) {
+          Symbol sym;
+          Symbol unknownCharClass = null;
+          context.clear();
+          context.add(tag);
+          if (i < size) {
+            char thisCh = word.charAt(i);
+            sym = Symbol.cannonicalSymbol(thisCh);
+            if (singletons.contains(sym)) {
+              unknownCharClass = unknownCharClass(sym);
+              charCounter.incrementCount(unknownCharClass);
+            }
+          } else {
+            sym = Symbol.END_WORD;
+          }
+          POSspecificCharNGrams[0].incrementCount(context, sym); // POS-specific 1-gram
+          if (unknownCharClass != null) {
+            POSspecificCharNGrams[0].incrementCount(context, unknownCharClass); // for unknown ch model
+          }
+
+          // context is constructed incrementally:
+          // tag prevChar prevPrevChar
+          // this could be made faster using .sublist like in score
+          for (int j = 1; j <= CONTEXT_LENGTH; j++) { // poly grams
+            if (i - j < 0) {
+              context.add(Symbol.BEGIN_WORD);
+              POSspecificCharNGrams[j].incrementCount(context, sym);
+              if (unknownCharClass != null) {
+                POSspecificCharNGrams[j].incrementCount(context, unknownCharClass); // for unknown ch model
+              }
+              break;
+            } else {
+              Symbol prev = Symbol.cannonicalSymbol(word.charAt(i - j));
+              if (singletons.contains(prev)) {
+                context.add(unknownCharClass(prev));
+              } else {
+                context.add(prev);
+              }
+              POSspecificCharNGrams[j].incrementCount(context, sym);
+              if (unknownCharClass != null) {
+                POSspecificCharNGrams[j].incrementCount(context, unknownCharClass); // for unknown ch model
+              }
+            }
+          }
+        }
+      }
+    }
+
+    POSDistribution = Distribution.getDistribution(POSCounter);
+    Timing.tick("Creating character prior distribution...");
+
+    charDistributions = Generics.newHashMap();
+    //    charDistributions = Generics.newHashMap();  // 1.5
+    //    charCounter.incrementCount(Symbol.UNKNOWN, singletons.size());
+    int numberOfKeys = charCounter.size() + singletons.size();
+    Distribution<Symbol> prior = Distribution.goodTuringSmoothedCounter(charCounter, numberOfKeys);
+    charDistributions.put(Collections.EMPTY_LIST, prior);
+
+    for (int i = 0; i <= CONTEXT_LENGTH; i++) {
+      Set<Map.Entry<List<Serializable>, ClassicCounter<Symbol>>> counterEntries = POSspecificCharNGrams[i].lowestLevelCounterEntrySet();
+      Timing.tick("Creating " + counterEntries.size() + " character " + (i + 1) + "-gram distributions...");
+      for (Map.Entry<List<Serializable>, ClassicCounter<Symbol>> entry : counterEntries) {
+        context = entry.getKey();
+        ClassicCounter<Symbol> c = entry.getValue();
+        Distribution<Symbol> thisPrior = charDistributions.get(context.subList(0, context.size() - 1));
+        double priorWeight = thisPrior.getNumberOfKeys() / 200.0;
+        Distribution<Symbol> newDist = Distribution.dynamicCounterWithDirichletPrior(c, thisPrior, priorWeight);
+        charDistributions.put(context, newDist);
+      }
+    }
+  }
+
+  public Distribution<String> getPOSDistribution() {
+    return POSDistribution;
+  }
+
+  public static boolean isForeign(String s) {
+    for (int i = 0; i < s.length(); i++) {
+      int num = Character.getNumericValue(s.charAt(i));
+      if (num < 10 || num > 35) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private Symbol unknownCharClass(Symbol ch) {
+    if (useUnknownCharacterModel) {
+      return new Symbol(Character.toString(RadicalMap.getRadical(ch.getCh()))).intern();
+    } else {
+      return Symbol.UNKNOWN;
+    }
+  }
+
+  @Override
+  public float score(IntTaggedWord iTW, int loc, String word, String featureSpec) {
+    String tag = tagIndex.get(iTW.tag);
+    assert !word.equals(BOUNDARY);
+    char[] chars = word.toCharArray();
+    List<Serializable> charList = new ArrayList<Serializable>(chars.length + CONTEXT_LENGTH + 1); // this starts of storing Symbol's and then starts storing String's. Clean this up someday!
+
+    // charList is constructed backward
+    // END_WORD char[length-1] char[length-2] ... char[0] BEGIN_WORD BEGIN_WORD
+    charList.add(Symbol.END_WORD);
+    for (int i = chars.length - 1; i >= 0; i--) {
+      Symbol ch = Symbol.cannonicalSymbol(chars[i]);
+      if (knownChars.contains(ch)) {
+        charList.add(ch);
+      } else {
+        charList.add(unknownCharClass(ch));
+      }
+    }
+    for (int i = 0; i < CONTEXT_LENGTH; i++) {
+      charList.add(Symbol.BEGIN_WORD);
+    }
+
+    double score = 0.0;
+    for (int i = 0, size = charList.size(); i < size - CONTEXT_LENGTH; i++) {
+      Symbol nextChar = (Symbol) charList.get(i);
+      charList.set(i, tag);
+      double charScore = getBackedOffDist(charList.subList(i, i + CONTEXT_LENGTH + 1)).probabilityOf(nextChar);
+      score += Math.log(charScore);
+    }
+
+    switch (penaltyType) {
+      case 0:
+        break;
+
+      case 1:
+        break;
+
+      case 2:
+        break;
+    }
+    return (float) score;
+  }
+
+
+  // this is where we do backing off for unseen contexts
+  // (backing off for rarely seen contexts is done implicitly
+  // because the distributions are smoothed)
+  private Distribution<Symbol> getBackedOffDist(List<Serializable> context) {
+    // context contains [tag prevChar prevPrevChar]
+    for (int i = CONTEXT_LENGTH + 1; i >= 0; i--) {
+      List<Serializable> l = context.subList(0, i);
+      if (charDistributions.containsKey(l)) {
+        return charDistributions.get(l);
+      }
+    }
+    throw new RuntimeException("OOPS... no prior distribution...?");
+  }
+

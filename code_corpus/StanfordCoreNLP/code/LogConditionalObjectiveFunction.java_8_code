@@ -1,0 +1,420 @@
+              derivativeNumerator[i] -= dataWeights[index];
+        }
+      }
+    }
+
+    copy(derivative, derivativeNumerator);
+    //    Arrays.fill(derivative, 0.0);
+    double[] sums = new double[numClasses];
+    double[] probs = new double[numClasses];
+    //    double[] counts = new double[numClasses];
+    //    Arrays.fill(counts, 0.0);
+
+    for (Datum<L, F> datum : dataIterable) {
+      // activation
+      Arrays.fill(sums, 0.0);
+      Collection<F> features = datum.asFeatures();
+      for (F feature : features) {
+        for (int c = 0; c < numClasses; c++) {
+          int i = indexOf(featureIndex.indexOf(feature), c);
+          sums[c] += x[i];
+        }
+      }
+      // expectation (slower routine replaced by fast way)
+      // double total = Double.NEGATIVE_INFINITY;
+      // for (int c=0; c<numClasses; c++) {
+      //   total = SloppyMath.logAdd(total, sums[c]);
+      // }
+      double total = ArrayMath.logSum(sums);
+      for (int c = 0; c < numClasses; c++) {
+        probs[c] = Math.exp(sums[c] - total);
+      }
+
+      for (F feature : features) {
+        for (int c = 0; c < numClasses; c++) {
+          int i = indexOf(featureIndex.indexOf(feature), c);
+          derivative[i] += probs[c];
+        }
+      }
+
+      int label = this.labelIndex.indexOf(datum.label());
+      double dV = sums[label] - total;
+      value -= dV;
+    }
+
+    value += prior.compute(x, derivative);
+  }
+
+
+  public void calculateStochasticFiniteDifference(double[] x,double[] v, double h, int[] batch){
+    //  THOUGHTS:
+    //  does applying the renormalization (g(x+hv)-g(x)) / h at each step along the way
+    //  introduce too much error to makes this method numerically accurate?
+    //  akleeman Feb 23 2007
+
+    //  Answer to my own question:     Feb 25th
+    //      Doesn't look like it!!  With h = 1e-4 it seems like the Finite Difference makes almost
+    //     exactly the same step as the exact hessian vector product calculated through AD.
+    //     That said it's probably (in the case of the Log Conditional Objective function) logical
+    //     to only use finite difference.  Unless of course the function is somehow nearly singular,
+    //     in which case finite difference could turn what is a convex problem into a singular proble... NOT GOOD.
+
+    if (values != null) {
+      rvfcalculate(x);
+      return;
+    }
+
+    value = 0.0;
+
+    if (priorDerivative == null) {
+      priorDerivative = new double[x.length];
+    }
+
+
+    derivative = ArrayMath.multiply(x,priorFactor);
+    HdotV = ArrayMath.multiply(v,priorFactor);
+
+    //Arrays.fill(derivative, 0.0);
+    double[] sums = new double[numClasses];
+    double[] sumsV = new double[numClasses];
+    double[] probs = new double[numClasses];
+    double[] probsV = new double[numClasses];
+
+    for (int m : batch) {
+
+      //Sets the index based on the current batch
+      int[] features = data[m];
+      // activation
+
+      Arrays.fill(sums, 0.0);
+      Arrays.fill(sumsV, 0.0);
+
+      for (int c = 0; c < numClasses; c++) {
+        for (int feature : features) {
+          int i = indexOf(feature, c);
+          sums[c] += x[i];
+        }
+      }
+
+      double total = ArrayMath.logSum(sums);
+      double totalV = ArrayMath.logSum(sumsV);
+
+      for (int c = 0; c < numClasses; c++) {
+        probs[c] = Math.exp(sums[c] - total);
+        probsV[c] = Math.exp(sumsV[c] - totalV);
+
+        if (dataWeights != null) {
+        }
+        for (int feature : features) {
+          int i = indexOf(feature, c);
+          //derivative[i] += (-1);
+          derivative[i] += probs[c];
+          HdotV[i] += (probsV[c] - probs[c]) / h;
+          if (c == labels[m]) {
+            derivative[i] -= 1;
+          }
+
+        }
+      }
+
+      double dV = sums[labels[m]] - total;
+      if (dataWeights != null) {
+      }
+      value -= dV;
+    }
+
+    //Why was this being copied?  -akleeman
+    //double[] tmpDeriv = new double[derivative.length];
+    //System.arraycopy(derivative,0,tmpDeriv,0,derivative.length);
+  }
+
+
+
+
+  public void calculateStochasticGradientLocal(double[] x, int[] batch) {
+    if (values != null) {
+      rvfcalculate(x);
+      return;
+    }
+
+    value = 0.0;
+
+    int batchSize = batch.length;
+
+    if (priorDerivative == null) {
+      priorDerivative = new double[x.length];
+    }
+
+
+    derivative = ArrayMath.multiply(x,priorFactor);
+
+    //Arrays.fill(derivative, 0.0);
+    double[] sums = new double[numClasses];
+    //double[] sumsV = new double[numClasses];
+    double[] probs = new double[numClasses];
+    //double[] probsV = new double[numClasses];
+
+    for (int m : batch) {
+
+      //Sets the index based on the current batch
+      int[] features = data[m];
+      // activation
+
+      Arrays.fill(sums, 0.0);
+      //Arrays.fill(sumsV,0.0);
+
+      for (int c = 0; c < numClasses; c++) {
+        for (int feature : features) {
+          int i = indexOf(feature, c);
+          sums[c] += x[i];
+        }
+      }
+
+      double total = ArrayMath.logSum(sums);
+      //double totalV = ArrayMath.logSum(sumsV);
+
+      for (int c = 0; c < numClasses; c++) {
+        probs[c] = Math.exp(sums[c] - total);
+        //probsV[c] = Math.exp(sumsV[c]- totalV);
+
+        if (dataWeights != null) {
+        }
+        for (int feature : features) {
+          int i = indexOf(feature, c);
+          //derivative[i] += (-1);
+          derivative[i] += probs[c];
+          if (c == labels[m]) {
+            derivative[i] -= 1;
+          }
+
+        }
+      }
+
+      double dV = sums[labels[m]] - total;
+      if (dataWeights != null) {
+      }
+      value -= dV;
+    }
+
+  }
+
+  @Override
+  public double valueAt(double[] x, double xscale, int[] batch) {
+    value = 0.0;
+    double[] sums = new double[numClasses];
+
+    for (int m : batch) {
+      //Sets the index based on the current batch
+      int[] features = data[m];
+      Arrays.fill(sums, 0.0);
+
+      for (int c = 0; c < numClasses; c++) {
+        for (int f = 0; f < features.length; f++) {
+          int i = indexOf(features[f], c);
+          if (values != null) {
+          } else {
+          }
+        }
+      }
+
+      double total = ArrayMath.logSum(sums);
+      double dV = sums[labels[m]] - total;
+      if (dataWeights != null) {
+      }
+      value -= dV;
+    }
+    return value;
+  }
+
+  @Override
+  public double calculateStochasticUpdate(double[] x, double xscale, int[] batch, double gain) {
+    value = 0.0;
+
+    double[] sums = new double[numClasses];
+    double[] probs = new double[numClasses];
+
+    for (int m : batch) {
+
+      // Sets the index based on the current batch
+      int[] features = data[m];
+      // activation
+
+      Arrays.fill(sums, 0.0);
+
+      for (int c = 0; c < numClasses; c++) {
+        for (int f = 0; f < features.length; f++) {
+          int i = indexOf(features[f], c);
+          if (values != null) {
+          } else {
+          }
+        }
+      }
+
+      for (int f = 0; f < features.length; f++) {
+        int i = indexOf(features[f], labels[m]);
+        double v = (values != null) ? values[m][f] : 1;
+      }
+
+      double total = ArrayMath.logSum(sums);
+
+      for (int c = 0; c < numClasses; c++) {
+        probs[c] = Math.exp(sums[c] - total);
+
+        if (dataWeights != null) {
+        }
+        for (int f = 0; f < features.length; f++) {
+          int i = indexOf(features[f], c);
+          double v = (values != null) ? values[m][f] : 1;
+        }
+      }
+
+      double dV = sums[labels[m]] - total;
+      if (dataWeights != null) {
+      }
+      value -= dV;
+    }
+    return value;
+  }
+
+  @Override
+  public void calculateStochasticGradient(double[] x, int[] batch) {
+    if (derivative == null) {
+      derivative = new double[domainDimension()];
+    }
+    Arrays.fill(derivative, 0.0);
+    double[] sums = new double[numClasses];
+    double[] probs = new double[numClasses];
+    double[] counts = new double[numClasses];
+    Arrays.fill(counts, 0.0);
+    for (int d : batch) {
+
+      //Sets the index based on the current batch
+      int[] features = data[d];
+      // activation
+      Arrays.fill(sums, 0.0);
+      for (int c = 0; c < numClasses; c++) {
+        for (int feature : features) {
+          int i = indexOf(feature, c);
+          sums[c] += x[i];
+        }
+      }
+      // expectation (slower routine replaced by fast way)
+      // double total = Double.NEGATIVE_INFINITY;
+      // for (int c=0; c<numClasses; c++) {
+      //   total = SloppyMath.logAdd(total, sums[c]);
+      // }
+      double total = ArrayMath.logSum(sums);
+      int ld = labels[d];
+      for (int c = 0; c < numClasses; c++) {
+        probs[c] = Math.exp(sums[c] - total);
+        for (int feature : features) {
+          int i = indexOf(feature, c);
+        }
+      }
+      // observed
+      for (int feature : features) {
+        int i = indexOf(feature, labels[d]);
+        derivative[i] -= probs[ld];
+      }
+    }
+  }
+
+
+  protected void calculateStochasticAlgorithmicDifferentiation(double[] x, double[] v, int[] batch) {
+
+
+    //Initialize
+    value = 0.0;
+
+    //initialize any variables
+    DoubleAD[] derivativeAD = new DoubleAD[x.length];
+    for (int i = 0; i < x.length;i++) {
+      derivativeAD[i] = new DoubleAD(0.0,0.0);
+    }
+
+    DoubleAD[] xAD = new DoubleAD[x.length];
+    for (int i = 0; i < x.length;i++){
+      xAD[i] = new DoubleAD(x[i],v[i]);
+    }
+
+    // Initialize the sums
+    DoubleAD[] sums = new DoubleAD[numClasses];
+    for (int c = 0; c<numClasses;c++){
+      sums[c] = new DoubleAD(0,0);
+    }
+
+    DoubleAD[] probs = new DoubleAD[numClasses];
+    for (int c = 0; c<numClasses;c++) {
+      probs[c] = new DoubleAD(0,0);
+    }
+
+    //long curTime = System.currentTimeMillis();
+    for (int i = 0; i < x.length;i++){
+      xAD[i].set(x[i],v[i]);
+      derivativeAD[i].set(0.0,0.0);
+    }
+
+    //System.err.print(System.currentTimeMillis() - curTime + " - ");
+    //curTime = System.currentTimeMillis();
+
+    for (int d = 0; d <batch.length ; d++) {
+
+      //Sets the index based on the current batch
+      int m = (curElement + d) % data.length;
+
+      int[] features = data[m];
+
+      for (int c = 0; c<numClasses;c++){
+        sums[c].set(0.0,0.0);
+      }
+
+
+      for (int c = 0; c < numClasses; c++) {
+        for (int feature : features) {
+          int i = indexOf(feature, c);
+          sums[c] = ADMath.plus(sums[c], xAD[i]);
+        }
+      }
+
+      DoubleAD total = ADMath.logSum(sums);
+
+      for (int c = 0; c < numClasses; c++) {
+        probs[c] = ADMath.exp( ADMath.minus(sums[c], total) );
+        if (dataWeights != null) {
+          probs[c] = ADMath.multConst(probs[c], dataWeights[d]);
+        }
+        for (int feature : features) {
+          int i = indexOf(feature, c);
+          if (c == labels[m]) {
+            derivativeAD[i].plusEqualsConst(-1.0);
+          }
+          derivativeAD[i].plusEquals(probs[c]);
+        }
+      }
+
+      double dV = sums[labels[m]].getval() - total.getval();
+      if (dataWeights != null) {
+      }
+      value -= dV;
+    }
+
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    // DANGEROUS!!!!!!! Divide by Zero possible!!!!!!!!!!
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    // Need to modify the prior class to handle AD  -akleeman
+
+    //System.err.print(System.currentTimeMillis() - curTime + " - ");
+    //curTime = System.currentTimeMillis();
+
+    double[] tmp = new double[x.length];
+    for(int i = 0; i < x.length; i++){
+      tmp[i] = derivativeAD[i].getval();
+      derivative[i] = derivativeAD[i].getval();
+      HdotV[i] = derivativeAD[i].getdot();
+    }
+
+    //System.err.print(System.currentTimeMillis() - curTime + " - ");
+    //System.err.println("");
+  }
+
+

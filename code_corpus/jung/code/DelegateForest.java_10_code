@@ -1,0 +1,23 @@
+	public List<V> getPath(V child) {
+        if (!delegate.containsVertex(child))
+            return null;
+		List<V> list = new ArrayList<V>();
+		list.add(child);
+		V parent = getParent(child);
+		while(parent != null) {
+			list.add(list.size(), parent);
+			parent = getParent(parent);
+		}
+		return list;
+	}
+
+	public V getParent(V child) {
+        if (!delegate.containsVertex(child))
+            return null;
+		Collection<V> parents = delegate.getPredecessors(child);
+		if(parents.size() > 0) {
+			return parents.iterator().next();
+		}
+		return null;
+	}
+

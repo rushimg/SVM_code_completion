@@ -1,0 +1,41 @@
+    public void draw(Graphics2D g2, Rectangle2D area) {
+
+        area = trimMargin(area);
+        drawBorder(g2, area);
+        area = trimBorder(area);
+        area = trimPadding(area);
+
+        if (this.lineVisible) {
+            Point2D location = RectangleAnchor.coordinates(area,
+                    this.shapeLocation);
+            Shape aLine = ShapeUtilities.createTranslatedShape(getLine(),
+                    this.shapeAnchor, location.getX(), location.getY());
+            g2.setPaint(this.linePaint);
+            g2.setStroke(this.lineStroke);
+            g2.draw(aLine);
+        }
+
+        if (this.shapeVisible) {
+            Point2D location = RectangleAnchor.coordinates(area,
+                    this.shapeLocation);
+
+            Shape s = ShapeUtilities.createTranslatedShape(this.shape,
+                    this.shapeAnchor, location.getX(), location.getY());
+            if (this.shapeFilled) {
+                Paint p = this.fillPaint;
+                if (p instanceof GradientPaint) {
+                    GradientPaint gp = (GradientPaint) this.fillPaint;
+                    p = this.fillPaintTransformer.transform(gp, s);
+                }
+                g2.setPaint(p);
+                g2.fill(s);
+            }
+            if (this.shapeOutlineVisible) {
+                g2.setPaint(this.outlinePaint);
+                g2.setStroke(this.outlineStroke);
+                g2.draw(s);
+            }
+        }
+
+    }
+

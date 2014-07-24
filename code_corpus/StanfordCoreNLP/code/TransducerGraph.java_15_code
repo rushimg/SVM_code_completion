@@ -1,0 +1,22 @@
+  public List sampleUniformPathFromGraph() {
+    List list = new ArrayList();
+    Object node = this.getStartNode();
+    Set endNodes = this.getEndNodes();
+    while (!endNodes.contains(node)) {
+      List<Arc> arcs = new ArrayList<Arc>(this.getArcsBySource(node));
+      TransducerGraph.Arc arc = arcs.get(r.nextInt(arcs.size()));
+      list.add(arc.getInput());
+      node = arc.getTargetNode();
+    }
+    return list;
+  }
+
+  private Map<List, Double> samplePathsFromGraph(int numPaths) {
+    Map<List, Double> result = Generics.newHashMap();
+    for (int i = 0; i < numPaths; i++) {
+      List l = sampleUniformPathFromGraph();
+      result.put(l, new Double(getOutputOfPathInGraph(l)));
+    }
+    return result;
+  }
+

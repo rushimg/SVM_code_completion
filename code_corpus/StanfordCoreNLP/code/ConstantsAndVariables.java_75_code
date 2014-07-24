@@ -1,0 +1,240 @@
+  @Option(name="saveSentencesSerDir")
+  public String saveSentencesSerDir = null;
+  
+  public boolean usingDirForSentsInIndex = false;
+  
+  // @Option(name = "wekaOptions")
+  // public String wekaOptions = "";
+
+  String backgroundSymbol = "O";
+  
+  int wordShaper = WordShapeClassifier.WORDSHAPECHRIS2;
+  private Map<String, String> wordShapeCache = new HashMap<String, String>();
+  
+  public InvertedIndexByTokens invertedIndex;
+  
+  public static String extremedebug = "extremePatDebug";
+  public static String minimaldebug = "minimaldebug";
+  
+  Properties props;
+
+  @SuppressWarnings("rawtypes")
+  public void setUp(Properties props) throws IOException {
+    if (alreadySetUp) {
+      return;
+    }
+
+    if (wordIgnoreRegex != null && !wordIgnoreRegex.isEmpty())
+      ignoreWordRegex = Pattern.compile(wordIgnoreRegex);
+    for (String label : labelDictionary.keySet()) {
+      env.put(label, TokenSequencePattern.getNewEnv());
+      // env.get(label).bind("answer", answerClass.get(label));
+      for (Entry<String, Class<? extends Key<String>>> en : this.answerClass
+          .entrySet()) {
+        env.get(label).bind(en.getKey(), en.getValue());
+      }
+      for (Entry<String, Class> en : generalizeClasses.entrySet())
+        env.get(label).bind(en.getKey(), en.getValue());
+    }
+    Redwood.log(Redwood.DBG, channelNameLogger, "Running with debug output");
+    stopWords = new HashSet<String>();
+    Redwood.log(ConstantsAndVariables.minimaldebug, channelNameLogger, "Reading stop words from "
+        + stopWordsPatternFiles);
+    for (String stopwfile : stopWordsPatternFiles.split("[;,]"))
+      stopWords.addAll(IOUtils.linesFromFile(stopwfile));
+
+    englishWords = new HashSet<String>();
+    System.out.println("Reading english words from " + englishWordsFiles);
+    for (String englishWordsFile : englishWordsFiles.split("[;,]"))
+      englishWords.addAll(IOUtils.linesFromFile(englishWordsFile));
+
+    if (commonWordsPatternFiles != null) {
+      commonEngWords = Collections.synchronizedSet(new HashSet<String>());
+      for (String file : commonWordsPatternFiles.split("[;,]"))
+        commonEngWords.addAll(IOUtils.linesFromFile(file));
+    }
+
+    if (otherSemanticClassesFiles != null) {
+      if (otherSemanticClasses == null)
+        otherSemanticClasses = Collections
+            .synchronizedSet(new HashSet<String>());
+      for (String file : otherSemanticClassesFiles.split("[;,]")) {
+        for (String w : IOUtils.linesFromFile(file)) {
+
+          String[] t = w.split("\\s+");
+          if (t.length <= this.numWordsCompound)
+            otherSemanticClasses.add(w);
+
+        }
+      }
+
+      System.out.println("Size of othersemantic class variables is "
+          + otherSemanticClasses.size());
+    } else {
+      otherSemanticClasses = Collections.synchronizedSet(new HashSet<String>());
+      System.out.println("Size of othersemantic class variables is " + 0);
+    }
+
+    String stopStr = "/";
+    int i = 0;
+    for (String s : stopWords) {
+      if (i > 0)
+        stopStr += "|";
+      stopStr += Pattern.quote(s.replaceAll("\\\\", "\\\\\\\\"));
+      i++;
+    }
+    stopStr += "/";
+    for (String label : labelDictionary.keySet()) {
+      env.get(label).bind("$FILLER",
+          "/" + StringUtils.join(fillerWords, "|") + "/");
+      env.get(label).bind("$STOPWORD", stopStr);
+      if (matchLowerCaseContext)
+        env.get(label).setDefaultStringPatternFlags(Pattern.CASE_INSENSITIVE);
+      env.get(label).bind("OTHERSEM",
+          PatternsAnnotations.OtherSemanticLabel.class);
+      env.get(label).bind("grandparentparsetag", CoreAnnotations.GrandparentAnnotation.class);
+    }
+
+    if (wordClassClusterFile != null) {
+      wordClassClusters = new HashMap<String, Integer>();
+      for (String line : IOUtils.readLines(wordClassClusterFile)) {
+        String[] t = line.split("\t");
+        wordClassClusters.put(t[0], Integer.parseInt(t[1]));
+      }
+    }
+
+    if (generalWordClassClusterFile != null) {
+      setGeneralWordClassClusters(new HashMap<String, Integer>());
+      for (String line : IOUtils.readLines(generalWordClassClusterFile)) {
+        String[] t = line.split("\t");
+        getGeneralWordClassClusters().put(t[0], Integer.parseInt(t[1]));
+      }
+    }
+
+    if(targetAllowedTagsInitialsStr!= null){
+      allowedTagsInitials = new HashMap<String, Set<String>>();
+      for(String labelstr : targetAllowedTagsInitialsStr.split(";")){
+        String[] t = labelstr.split(",");
+        Set<String> st = new HashSet<String>();
+        for(int j = 1; j < t.length; j++)
+          st.add(t[j]);
+        allowedTagsInitials.put(t[0], st);    
+      }      
+    }
+    
+    if(useTargetNERRestriction && targetAllowedNERs !=null){
+      allowedNERsforLabels = new HashMap<String, Set<String>>();
+      for(String labelstr : targetAllowedNERs.split(";")){
+        String[] t = labelstr.split(",");
+        Set<String> st = new HashSet<String>();
+        for(int j = 1; j < t.length; j++)
+          st.add(t[j]);
+        allowedNERsforLabels.put(t[0], st);
+        
+      }
+    }
+    alreadySetUp = true;
+  }
+
+  public Map<String, Counter<String>> getWordShapesForLabels() {
+    return wordShapesForLabels;
+  }
+
+  public void setWordShapesForLabels(Map<String, Counter<String>> wordShapesForLabels) {
+    this.wordShapesForLabels = wordShapesForLabels;
+  }
+  public void addGeneralizeClasses(Map<String, Class> gen) {
+    this.generalizeClasses.putAll(gen);
+  }
+
+  public Map<String, Class> getGeneralizeClasses() {
+    return this.generalizeClasses;
+  }
+
+  public Set<String> getStopWords() {
+    return stopWords;
+  }
+
+  public void addWordShapes(String label, Set<String> words){
+    if(!this.wordShapesForLabels.containsKey(label)){
+      this.wordShapesForLabels.put(label, new ClassicCounter<String>());
+    }
+    for(String w: words){
+      String ws = null;
+      if(wordShapeCache.containsKey(w))
+        ws = wordShapeCache.get(w);
+      else{
+       ws = WordShapeClassifier.wordShape(w, wordShaper);
+       wordShapeCache.put(w, ws);
+      }
+      
+      wordShapesForLabels.get(label).incrementCount(ws);
+      
+    }
+  }
+  
+  public void setLabelDictionary(Map<String, Set<String>> seedSets) {
+    this.labelDictionary = seedSets;
+    
+    if(usePhraseEvalWordShape || usePatternEvalWordShape){
+      this.wordShapesForLabels.clear();
+     for(Entry<String, Set<String>> en: seedSets.entrySet())
+       addWordShapes(en.getKey(), en.getValue()); 
+    }
+  }
+
+  public Map<String, Set<String>> getLabelDictionary() {
+    return this.labelDictionary;
+  }
+  
+  public void addLabelDictionary(String label, Set<String> words) {
+    this.labelDictionary.get(label).addAll(words);
+    
+    if(usePhraseEvalWordShape || usePatternEvalWordShape)
+      addWordShapes(label, words); 
+  }
+
+  public Set<String> getEnglishWords() {
+    return this.englishWords;
+  }
+
+  public Set<String> getCommonEngWords() {
+    return this.commonEngWords;
+  }
+
+  public Set<String> getOtherSemanticClasses() {
+    return this.otherSemanticClasses;
+  }
+
+  public void setOtherSemanticClasses(Set<String> other) {
+    this.otherSemanticClasses = other;
+  }
+
+  public Map<String, Integer> getWordClassClusters() {
+    return this.wordClassClusters;
+  }
+
+  private Pair<String, Double> getEditDist(Set<String> words, String ph) {
+    double minD = editDistMax;
+    String minPh = ph;
+    for (String e : words) {
+      if (e.equals(ph))
+        return new Pair<String, Double>(ph, 0.0);
+
+      double d = EditDistanceDamerauLevenshteinLike.editDistance(e, ph, 3);
+
+      if (d == 1)
+        return new Pair<String, Double>(e, d);
+      if (d == -1)
+        d = editDistMax;
+      if (d < minD) {
+        minD = d;
+        minPh = e;
+      }
+    }
+    return new Pair<String, Double>(minPh, minD);
+
+  }
+
+  double editDistMax = 100;
+

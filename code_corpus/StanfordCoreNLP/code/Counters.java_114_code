@@ -1,0 +1,116 @@
+  public static <T> Counter<T> unmodifiableCounter(final Counter<T> counter) {
+
+    return new AbstractCounter<T>() {
+
+      public void clear() {
+        throw new UnsupportedOperationException();
+      }
+
+      public boolean containsKey(T key) {
+        return counter.containsKey(key);
+      }
+
+      public double getCount(Object key) {
+        return counter.getCount(key);
+      }
+
+      public Factory<Counter<T>> getFactory() {
+        return counter.getFactory();
+      }
+
+      public double remove(T key) {
+        throw new UnsupportedOperationException();
+      }
+
+      public void setCount(T key, double value) {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public double incrementCount(T key, double value) {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public double incrementCount(T key) {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public double logIncrementCount(T key, double value) {
+        throw new UnsupportedOperationException();
+      }
+
+      public int size() {
+        return counter.size();
+      }
+
+      public double totalCount() {
+        return counter.totalCount();
+      }
+
+      public Collection<Double> values() {
+        return counter.values();
+      }
+
+      public Set<T> keySet() {
+        return Collections.unmodifiableSet(counter.keySet());
+      }
+
+      public Set<Entry<T, Double>> entrySet() {
+        return Collections.unmodifiableSet(new AbstractSet<Map.Entry<T, Double>>() {
+          @Override
+          public Iterator<Entry<T, Double>> iterator() {
+            return new Iterator<Entry<T, Double>>() {
+              final Iterator<Entry<T, Double>> inner = counter.entrySet().iterator();
+
+              public boolean hasNext() {
+                return inner.hasNext();
+              }
+
+              public Entry<T, Double> next() {
+                return new Map.Entry<T, Double>() {
+                  final Entry<T, Double> e = inner.next();
+
+                  @Override
+                  public T getKey() {
+                    return e.getKey();
+                  }
+
+                  @Override
+                  @SuppressWarnings( { "UnnecessaryBoxing", "UnnecessaryUnboxing" })
+                  public Double getValue() {
+                    return Double.valueOf(e.getValue().doubleValue());
+                  }
+
+                  @Override
+                  public Double setValue(Double value) {
+                    throw new UnsupportedOperationException();
+                  }
+                };
+              }
+
+              @Override
+              public void remove() {
+                throw new UnsupportedOperationException();
+              }
+            };
+          }
+
+          @Override
+          public int size() {
+            return counter.size();
+          }
+        });
+      }
+
+      @Override
+      public void setDefaultReturnValue(double rv) {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public double defaultReturnValue() {
+        return counter.defaultReturnValue();
+      }
+

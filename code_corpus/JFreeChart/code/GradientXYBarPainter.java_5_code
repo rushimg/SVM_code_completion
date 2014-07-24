@@ -1,0 +1,88 @@
+    public void paintBar(Graphics2D g2, XYBarRenderer renderer, int row,
+            int column, RectangularShape bar, RectangleEdge base) {
+
+        Paint itemPaint = renderer.getItemPaint(row, column);
+
+        Color c0, c1;
+        if (itemPaint instanceof Color) {
+            c0 = (Color) itemPaint;
+            c1 = c0.brighter();
+        }
+        else if (itemPaint instanceof GradientPaint) {
+            GradientPaint gp = (GradientPaint) itemPaint;
+            c0 = gp.getColor1();
+            c1 = gp.getColor2();
+        }
+        else {
+            c0 = Color.blue;
+            c1 = Color.blue.brighter();
+        }
+
+        // as a special case, if the bar colour has alpha == 0, we draw
+        // nothing.
+        if (c0.getAlpha() == 0) {
+            return;
+        }
+
+        if (base == RectangleEdge.TOP || base == RectangleEdge.BOTTOM) {
+            Rectangle2D[] regions = splitVerticalBar(bar, this.g1, this.g2,
+                    this.g3);
+            GradientPaint gp = new GradientPaint((float) regions[0].getMinX(),
+                    0.0f, c0, (float) regions[0].getMaxX(), 0.0f, Color.white);
+            g2.setPaint(gp);
+            g2.fill(regions[0]);
+
+            gp = new GradientPaint((float) regions[1].getMinX(), 0.0f,
+                    Color.white, (float) regions[1].getMaxX(), 0.0f, c0);
+            g2.setPaint(gp);
+            g2.fill(regions[1]);
+
+            gp = new GradientPaint((float) regions[2].getMinX(), 0.0f, c0,
+                    (float) regions[2].getMaxX(), 0.0f, c1);
+            g2.setPaint(gp);
+            g2.fill(regions[2]);
+
+            gp = new GradientPaint((float) regions[3].getMinX(), 0.0f, c1,
+                     (float) regions[3].getMaxX(), 0.0f, c0);
+            g2.setPaint(gp);
+            g2.fill(regions[3]);
+        }
+        else if (base == RectangleEdge.LEFT || base == RectangleEdge.RIGHT) {
+            Rectangle2D[] regions = splitHorizontalBar(bar, this.g1, this.g2,
+                    this.g3);
+            GradientPaint gp = new GradientPaint(0.0f,
+                    (float) regions[0].getMinY(), c0, 0.0f,
+                    (float) regions[0].getMaxX(), Color.white);
+            g2.setPaint(gp);
+            g2.fill(regions[0]);
+
+            gp = new GradientPaint(0.0f, (float) regions[1].getMinY(),
+                    Color.white, 0.0f, (float) regions[1].getMaxY(), c0);
+            g2.setPaint(gp);
+            g2.fill(regions[1]);
+
+            gp = new GradientPaint(0.0f, (float) regions[2].getMinY(), c0,
+                    0.0f, (float) regions[2].getMaxY(), c1);
+            g2.setPaint(gp);
+            g2.fill(regions[2]);
+
+            gp = new GradientPaint(0.0f, (float) regions[3].getMinY(), c1,
+                     0.0f, (float) regions[3].getMaxY(), c0);
+            g2.setPaint(gp);
+            g2.fill(regions[3]);
+
+        }
+
+        // draw the outline...
+        if (renderer.isDrawBarOutline()) {
+            Stroke stroke = renderer.getItemOutlineStroke(row, column);
+            Paint paint = renderer.getItemOutlinePaint(row, column);
+            if (stroke != null && paint != null) {
+                g2.setStroke(stroke);
+                g2.setPaint(paint);
+                g2.draw(bar);
+            }
+        }
+
+    }
+

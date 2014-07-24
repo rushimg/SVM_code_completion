@@ -1,0 +1,36 @@
+  public GeneralDataset<L,F> mapDataset(GeneralDataset<L,F> dataset){
+    GeneralDataset<L,F> newDataset;
+    if(dataset instanceof RVFDataset)
+      newDataset = new RVFDataset<L,F>(this.featureIndex,this.labelIndex);
+    else newDataset = new Dataset<L,F>(this.featureIndex,this.labelIndex);
+    this.featureIndex.lock();
+    this.labelIndex.lock();
+    //System.out.println("inside mapDataset: dataset size:"+dataset.size());
+    for(int i = 0; i < dataset.size(); i++)
+      //System.out.println("inside mapDataset: adding datum number"+i);
+      newDataset.add(dataset.getDatum(i));
+
+    //System.out.println("old Dataset stats: numData:"+dataset.size()+" numfeatures:"+dataset.featureIndex().size()+" numlabels:"+dataset.labelIndex.size());
+    //System.out.println("new Dataset stats: numData:"+newDataset.size()+" numfeatures:"+newDataset.featureIndex().size()+" numlabels:"+newDataset.labelIndex.size());
+    //System.out.println("this dataset stats: numData:"+size()+" numfeatures:"+featureIndex().size()+" numlabels:"+labelIndex.size());
+
+    this.featureIndex.unlock();
+    this.labelIndex.unlock();
+    return newDataset;
+  }
+
+  public static <L,L2,F> Datum<L2,F> mapDatum(Datum<L,F> d, Map<L,L2> labelMapping, L2 defaultLabel) {
+    // TODO: How to copy datum?
+    L2 newLabel = labelMapping.get(d.label());
+    if (newLabel == null) {
+      newLabel = defaultLabel;
+    }
+
+    if (d instanceof RVFDatum) {
+      return new RVFDatum<L2,F>( ((RVFDatum<L,F>) d).asFeaturesCounter(), newLabel );
+    } else {
+      return new BasicDatum<L2,F>( d.asFeatures(), newLabel );
+    }
+  }
+
+

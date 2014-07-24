@@ -1,0 +1,24 @@
+  public SentenceDetectorME(SentenceModel model, Factory factory) {
+    this.model = model.getMaxentModel();
+    // if the model has custom EOS characters set, use this to get the context
+    // generator and the EOS scanner; otherwise use language-specific defaults
+    char[] customEOSCharacters = model.getEosCharacters();
+    if (customEOSCharacters == null) {
+      cgen = factory.createSentenceContextGenerator(model.getLanguage(),
+          getAbbreviations(model.getAbbreviations()));
+      scanner = factory.createEndOfSentenceScanner(model.getLanguage());
+    } else {
+      cgen = factory.createSentenceContextGenerator(
+          getAbbreviations(model.getAbbreviations()), customEOSCharacters);
+      scanner = factory.createEndOfSentenceScanner(customEOSCharacters);
+    }
+    useTokenEnd = model.useTokenEnd();
+  }
+
+  private static Set<String> getAbbreviations(Dictionary abbreviations) {
+    if(abbreviations == null) {
+      return Collections.<String>emptySet();
+    }
+    return abbreviations.asStringSet();
+  }
+

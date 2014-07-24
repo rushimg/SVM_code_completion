@@ -1,0 +1,37 @@
+    public XYItemRendererState initialise(Graphics2D g2,
+                                          Rectangle2D dataArea,
+                                          XYPlot plot,
+                                          XYDataset dataset,
+                                          PlotRenderingInfo info) {
+
+        // calculate the maximum allowed candle width from the axis...
+        ValueAxis axis = plot.getDomainAxis();
+        double x1 = axis.getLowerBound();
+        double x2 = x1 + this.maxCandleWidthInMilliseconds;
+        RectangleEdge edge = plot.getDomainAxisEdge();
+        double xx1 = axis.valueToJava2D(x1, dataArea, edge);
+        double xx2 = axis.valueToJava2D(x2, dataArea, edge);
+        this.maxCandleWidth = Math.abs(xx2 - xx1);
+            // Absolute value, since the relative x
+            // positions are reversed for horizontal orientation
+
+        // calculate the highest volume in the dataset...
+        if (this.drawVolume) {
+            OHLCDataset highLowDataset = (OHLCDataset) dataset;
+            this.maxVolume = 0.0;
+            for (int series = 0; series < highLowDataset.getSeriesCount();
+                 series++) {
+                for (int item = 0; item < highLowDataset.getItemCount(series);
+                     item++) {
+                    double volume = highLowDataset.getVolumeValue(series, item);
+                    if (volume > this.maxVolume) {
+                        this.maxVolume = volume;
+                    }
+
+                }
+            }
+        }
+
+        return new XYItemRendererState(info);
+    }
+

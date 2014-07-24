@@ -1,0 +1,83 @@
+  protected double getStopProb(IntDependency dependency) {
+    short binDistance = distanceBin(dependency.distance);
+    IntTaggedWord unknownHead = new IntTaggedWord(-1, dependency.head.tag);
+    IntTaggedWord anyHead = new IntTaggedWord(ANY_WORD_INT, dependency.head.tag);
+
+    IntDependency temp = new IntDependency(dependency.head, stopTW, dependency.leftHeaded, binDistance);
+    double c_stop_hTWds = stopCounter.getCount(temp);
+    temp = new IntDependency(unknownHead, stopTW, dependency.leftHeaded, binDistance);
+    double c_stop_hTds = stopCounter.getCount(temp);
+    temp = new IntDependency(dependency.head, wildTW, dependency.leftHeaded, binDistance);
+    double c_hTWds = stopCounter.getCount(temp);
+    temp = new IntDependency(anyHead, wildTW, dependency.leftHeaded, binDistance);
+    double c_hTds = stopCounter.getCount(temp);
+
+    double p_stop_hTds = (c_hTds > 0.0 ? c_stop_hTds / c_hTds : 1.0);
+
+
+    if (verbose) {
+      System.out.println("  c_stop_hTWds: " + c_stop_hTWds + "; c_hTWds: " + c_hTWds + "; c_stop_hTds: " + c_stop_hTds + "; c_hTds: " + c_hTds);
+      System.out.println("  Generate STOP prob: " + pb_stop_hTWds);
+    }
+    return pb_stop_hTWds;
+  }
+
+  private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
+    stream.defaultReadObject();
+//    System.err.println("Before decompression:");
+//    System.err.println("arg size: " + argCounter.size() + "  total: " + argCounter.totalCount());
+//    System.err.println("stop size: " + stopCounter.size() + "  total: " + stopCounter.totalCount());
+
+    ClassicCounter<IntDependency> compressedArgC = argCounter;
+    argCounter = new ClassicCounter<IntDependency>();
+    ClassicCounter<IntDependency> compressedStopC = stopCounter;
+    stopCounter = new ClassicCounter<IntDependency>();
+    for (IntDependency d : compressedArgC.keySet()) {
+      double count = compressedArgC.getCount(d);
+      expandArg(d, d.distance, count);
+    }
+
+    for (IntDependency d : compressedStopC.keySet()) {
+      double count = compressedStopC.getCount(d);
+      expandStop(d, d.distance, count, false);
+    }
+
+//    System.err.println("After decompression:");
+//    System.err.println("arg size: " + argCounter.size() + "  total: " + argCounter.totalCount());
+//    System.err.println("stop size: " + stopCounter.size() + "  total: " + stopCounter.totalCount());
+
+    expandDependencyMap = null;
+  }
+
+  private void writeObject(ObjectOutputStream stream) throws IOException {
+//    System.err.println("\nBefore compression:");
+//    System.err.println("arg size: " + argCounter.size() + "  total: " + argCounter.totalCount());
+//    System.err.println("stop size: " + stopCounter.size() + "  total: " + stopCounter.totalCount());
+
+    ClassicCounter<IntDependency> fullArgCounter = argCounter;
+    argCounter = new ClassicCounter<IntDependency>();
+    for (IntDependency dependency : fullArgCounter.keySet()) {
+      if (dependency.head != wildTW && dependency.arg != wildTW &&
+              dependency.head.word != -1 && dependency.arg.word != -1) {
+        argCounter.incrementCount(dependency, fullArgCounter.getCount(dependency));
+      }
+    }
+
+    ClassicCounter<IntDependency> fullStopCounter = stopCounter;
+    stopCounter = new ClassicCounter<IntDependency>();
+    for (IntDependency dependency : fullStopCounter.keySet()) {
+      if (dependency.head.word != -1) {
+        stopCounter.incrementCount(dependency, fullStopCounter.getCount(dependency));
+      }
+    }
+
+//    System.err.println("After compression:");
+//    System.err.println("arg size: " + argCounter.size() + "  total: " + argCounter.totalCount());
+//    System.err.println("stop size: " + stopCounter.size() + "  total: " + stopCounter.totalCount());
+
+    stream.defaultWriteObject();
+
+    argCounter = fullArgCounter;
+    stopCounter = fullStopCounter;
+  }
+

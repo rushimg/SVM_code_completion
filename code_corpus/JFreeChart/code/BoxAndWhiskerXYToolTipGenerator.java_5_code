@@ -1,0 +1,25 @@
+    protected Object[] createItemArray(XYDataset dataset, int series,
+                                       int item) {
+        Object[] result = new Object[8];
+        result[0] = dataset.getSeriesKey(series).toString();
+        Number x = dataset.getX(series, item);
+        if (getXDateFormat() != null) {
+            result[1] = getXDateFormat().format(new Date(x.longValue()));
+        }
+        else {
+            result[1] = getXFormat().format(x);
+        }
+        NumberFormat formatter = getYFormat();
+
+        if (dataset instanceof BoxAndWhiskerXYDataset) {
+            BoxAndWhiskerXYDataset d = (BoxAndWhiskerXYDataset) dataset;
+            result[2] = formatter.format(d.getMeanValue(series, item));
+            result[3] = formatter.format(d.getMedianValue(series, item));
+            result[4] = formatter.format(d.getMinRegularValue(series, item));
+            result[5] = formatter.format(d.getMaxRegularValue(series, item));
+            result[6] = formatter.format(d.getQ1Value(series, item));
+            result[7] = formatter.format(d.getQ3Value(series, item));
+        }
+        return result;
+    }
+

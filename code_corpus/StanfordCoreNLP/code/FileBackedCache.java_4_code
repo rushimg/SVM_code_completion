@@ -1,0 +1,19 @@
+  public FileBackedCache(File directoryToCacheIn, int maxFiles) {
+    // Ensure directory exists
+    if (!directoryToCacheIn.exists()) {
+      if (!directoryToCacheIn.mkdirs()) {
+        throw new IllegalArgumentException("Could not create cache directory: " + directoryToCacheIn);
+      }
+    }
+    // Ensure directory is directory
+    if (!directoryToCacheIn.isDirectory()) {
+      throw new IllegalArgumentException("Cache directory must be a directory: " + directoryToCacheIn);
+    }
+    // Ensure directory is writable
+    if (!directoryToCacheIn.canRead()) {
+      throw new IllegalArgumentException("Cannot read cache directory: " + directoryToCacheIn);
+    }
+    // Save cache directory
+    this.cacheDir = directoryToCacheIn;
+    this.maxFiles = maxFiles;
+    // Start cache cleaner

@@ -1,0 +1,19 @@
+  protected abstract void advanceTop(Parse p);
+
+  public Parse[] parse(Parse tokens, int numParses) {
+    if (createDerivationString) tokens.setDerivation(new StringBuffer(100));
+    odh.clear();
+    ndh.clear();
+    completeParses.clear();
+    int derivationStage = 0; //derivation length
+    odh.add(tokens);
+    Parse guess = null;
+    double minComplete = 2;
+    double bestComplete = -100000; //approximating -infinity/0 in ln domain
+    while (odh.size() > 0 && (completeParses.size() < M || (odh.first()).getProb() < minComplete) && derivationStage < maxDerivationLength) {
+      ndh = new ListHeap<Parse>(K);
+
+      int derivationRank = 0;
+      for (Iterator<Parse> pi = odh.iterator(); pi.hasNext() && derivationRank < K; derivationRank++) { // forearch derivation
+        Parse tp = pi.next();
+        //TODO: Need to look at this for K-best parsing cases

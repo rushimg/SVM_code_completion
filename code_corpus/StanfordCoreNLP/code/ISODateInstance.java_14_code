@@ -1,0 +1,56 @@
+  public boolean extractFields(String inputDate) {
+
+    if (tokens.size() < 2) {
+      tokenizeDate(inputDate);
+    }
+    if (DEBUG) {
+      System.err.println("Extracting date: " + inputDate);
+    }
+    //first we see if it's a hyphen and two parseable dates - if not, we treat it as one date
+    Pair<String, String> dateEndpoints = getRangeDates(inputDate);
+    if (dateEndpoints != null) {
+      ISODateInstance date1 = new ISODateInstance(dateEndpoints.first());
+      if (dateEndpoints.first().contains(" ") && !dateEndpoints.second().contains(" ")) {
+        //consider whether it's a leading modifier; e.g., "June 8-10" will be split into June 8, and 10 when really we'd like June 8 and June 10
+        String date = dateEndpoints.first().substring(0, dateEndpoints.first().indexOf(' ')) + ' ' + dateEndpoints.second();
+        ISODateInstance date2 = new ISODateInstance(date);
+        if (!date1.isUnparseable() && !date2.isUnparseable()) {
+          isoDate = (new ISODateInstance(date1, date2)).getDateString();
+          return true;
+        }
+      }
+
+      ISODateInstance date2 = new ISODateInstance(dateEndpoints.second());
+      if (!date1.isUnparseable() && !date2.isUnparseable()) {
+        isoDate = (new ISODateInstance(date1, date2)).getDateString();
+        return true;
+      }
+    }
+
+    if (extractYYYYMMDD(inputDate)) {
+      return true;
+    }
+    if (extractMMDDYY(inputDate)) {
+      return true;
+    }
+    boolean passed = false;
+    passed = extractYear(inputDate) || passed;
+    passed = extractMonth(inputDate) || passed;
+    passed = extractDay(inputDate) || passed;
+
+    //slightly hacky, but check for some common modifiers that get grouped into the date
+    passed = addExtraRanges(inputDate) || passed;
+
+    if (!passed) {//couldn't parse
+      //try one more trick
+      unparseable = true;
+      boolean weekday = extractWeekday(inputDate);
+      if (!weekday) {
+        isoDate = inputDate;
+      }
+    }
+    return passed;
+  }
+
+  private static String[] rangeIndicators = {"--", "-"};
+

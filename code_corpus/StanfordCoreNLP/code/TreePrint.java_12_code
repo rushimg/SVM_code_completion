@@ -1,0 +1,67 @@
+  public static void main(String[] args) {
+    String format = "penn";
+    String options = "";
+    String tlpName = "edu.stanford.nlp.trees.PennTreebankLanguagePack";
+    String hfName = null;
+    Map<String,Integer> flagMap = Generics.newHashMap();
+    flagMap.put("-format", 1);
+    flagMap.put("-options", 1);
+    flagMap.put("-tLP", 1);
+    flagMap.put("-hf", 1);
+    Map<String,String[]> argsMap = StringUtils.argsToMap(args,flagMap);
+    args = argsMap.get(null);
+    if(argsMap.keySet().contains("-format")) {
+      format = argsMap.get("-format")[0];
+    }
+    if(argsMap.keySet().contains("-options")) {
+      options = argsMap.get("-options")[0];
+    }
+    if (argsMap.keySet().contains("-tLP")) {
+      tlpName = argsMap.get("-tLP")[0];
+    }
+    if (argsMap.keySet().contains("-hf")) {
+      hfName = argsMap.get("-hf")[0];
+    }
+    TreebankLanguagePack tlp;
+    try {
+      tlp = (TreebankLanguagePack) Class.forName(tlpName).newInstance();
+    } catch (Exception e) {
+      e.printStackTrace();
+      return;
+    }
+    HeadFinder hf;
+    if (hfName != null) {
+      try {
+        hf = (HeadFinder) Class.forName(hfName).newInstance();
+      } catch (Exception e) {
+        e.printStackTrace();
+        return;
+      }
+    } else {
+      hf = tlp.headFinder();
+    }
+    TreePrint print = new TreePrint(format, options, tlp, (hf == null) ? tlp.headFinder(): hf, tlp.typedDependencyHeadFinder());
+    Iterator<Tree> i; // initialized below
+    if (args.length > 0) {
+      Treebank trees; // initialized below
+      TreeReaderFactory trf;
+      if (argsMap.keySet().contains("-useTLPTreeReader")) {
+        trf = tlp.treeReaderFactory();
+      } else {
+        trf = new TreeReaderFactory() {
+          public TreeReader newTreeReader(Reader in) {
+            return new PennTreeReader(in, new LabeledScoredTreeFactory(new StringLabelFactory()), new TreeNormalizer());
+          }
+        };
+      }
+      trees = new DiskTreebank(trf);
+      trees.loadPath(args[0]);
+      i = trees.iterator();
+    } else {
+      i = tlp.treeTokenizerFactory().getTokenizer(new BufferedReader(new InputStreamReader(System.in)));
+    }
+    while(i.hasNext()) {
+      print.printTree(i.next());
+    }
+  }
+

@@ -1,0 +1,33 @@
+  public static class RefreshTokenHandler implements HttpUnsuccessfulResponseHandler {
+    public boolean handleResponse(
+        HttpRequest request, HttpResponse response, boolean retrySupported) throws IOException {
+      if (response.getStatusCode() == HttpStatusCodes.STATUS_CODE_UNAUTHORIZED) {
+        refreshToken();
+      }
+      return false;
+    }
+  }
+  public static HttpRequestFactory createRequestFactory(HttpTransport transport) {
+    final RefreshTokenHandler handler = new RefreshTokenHandler();
+    return transport.createRequestFactory(new HttpRequestInitializer() {
+      public void initialize(HttpRequest request) {
+        request.setUnsuccessfulResponseHandler(handler);
+      }
+    });
+  }
+  public static HttpRequestFactory createRequestFactory2(HttpTransport transport) {
+    final RefreshTokenHandler handler = new RefreshTokenHandler();
+    return transport.createRequestFactory(new HttpRequestInitializer() {
+      public void initialize(HttpRequest request) {
+        request.setUnsuccessfulResponseHandler(new HttpUnsuccessfulResponseHandler() {
+          public boolean handleResponse(
+              HttpRequest request, HttpResponse response, boolean retrySupported)
+              throws IOException {
+            return handler.handleResponse(request, response, retrySupported);
+          }
+        });
+      }
+    });
+  }
+public interface HttpUnsuccessfulResponseHandler {
+

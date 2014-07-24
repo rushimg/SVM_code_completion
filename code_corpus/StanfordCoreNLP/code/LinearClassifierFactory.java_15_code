@@ -1,0 +1,18 @@
+  public Classifier<L, F> trainClassifierSemiSup(GeneralDataset<L, F> data, GeneralDataset<L, F> biasedData, double[][] confusionMatrix, double[] initial) {
+    double[][] weights =  trainWeightsSemiSup(data, biasedData, confusionMatrix, initial);
+    LinearClassifier<L, F> classifier = new LinearClassifier<L, F>(weights, data.featureIndex(), data.labelIndex());
+    return classifier;
+  }
+
+  public double[][] trainWeightsSemiSup(GeneralDataset<L, F> data, GeneralDataset<L, F> biasedData, double[][] confusionMatrix, double[] initial) {
+    Minimizer<DiffFunction> minimizer = getMinimizer();
+    LogConditionalObjectiveFunction<L, F> objective = new LogConditionalObjectiveFunction<L, F>(data, new LogPrior(LogPrior.LogPriorType.NULL));
+    BiasedLogConditionalObjectiveFunction biasedObjective = new BiasedLogConditionalObjectiveFunction(biasedData, confusionMatrix, new LogPrior(LogPrior.LogPriorType.NULL));
+    SemiSupervisedLogConditionalObjectiveFunction semiSupObjective = new SemiSupervisedLogConditionalObjectiveFunction(objective, biasedObjective, logPrior);
+    if (initial == null) {
+      initial = objective.initial();
+    }
+    double[] weights = minimizer.minimize(semiSupObjective, TOL, initial);
+    return objective.to2D(weights);
+  }
+

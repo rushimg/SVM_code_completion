@@ -1,0 +1,30 @@
+  public boolean textEquals(EntityMention otherEnt) {
+    //
+    // we attempt three comparisons:
+    // a) if syntactic heads are defined we consider two texts similar if they have the same syntactic head
+    //    (this is necessary because in NFL we compare entities with different spans but same heads, e.g. "49ers" vs "San Francisco 49ers"
+    // b) if head spans are defined we consider two texts similar if they have the same head span
+    // c) if extent spans are defined we consider two texts similar if they have the same extent span
+    //
+    if(syntacticHeadTokenPosition != -1 && otherEnt.syntacticHeadTokenPosition != -1){
+      if(syntacticHeadTokenPosition == otherEnt.syntacticHeadTokenPosition) return true;
+      return false;
+    }
+
+    if(headTokenSpan != null && otherEnt.headTokenSpan != null){
+      if(headTokenSpan.equals(otherEnt.headTokenSpan)) return true;
+      return false;
+    }
+
+    if(extentTokenSpan != null && otherEnt.extentTokenSpan != null){
+      if(extentTokenSpan.equals(otherEnt.extentTokenSpan)) return true;
+      return false;
+    }
+
+    if (!this.getExtentString().equals(otherEnt.getExtentString())) {
+      return false;
+    }
+
+    return false;
+  }
+

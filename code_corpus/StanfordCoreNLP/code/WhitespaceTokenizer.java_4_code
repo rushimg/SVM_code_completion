@@ -1,0 +1,22 @@
+  @SuppressWarnings("unchecked")
+  @Override
+  protected T getNext() {
+    T token = null;
+    if (lexer == null) {
+      return token;
+    }
+    try {
+      token = (T) lexer.next();
+      while (token != null && token.word().equals(WhitespaceLexer.NEWLINE)) {
+        if (eolIsSignificant) {
+          return token;
+        } else {
+          token = (T) lexer.next();
+        }
+      }
+    } catch (IOException e) {
+      // do nothing, return null
+    }
+    return token;
+  }
+

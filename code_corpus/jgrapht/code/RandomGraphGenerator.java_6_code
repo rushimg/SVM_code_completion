@@ -1,0 +1,45 @@
+    public void generateGraph(
+        Graph<V, E> target,
+        VertexFactory<V> vertexFactory,
+        Map<String, V> resultMap)
+    {
+        resetRandomSeed();
+
+        // key = generation order (1st,2nd,3rd,...) value=vertex Object
+        // will be used later
+        Map<Integer, V> orderToVertexMap =
+            new HashMap<Integer, V>(this.numOfVertexes);
+
+        for (int i = 0; i < this.numOfVertexes; i++) {
+            V currVertex = vertexFactory.createVertex();
+            target.addVertex(currVertex);
+            orderToVertexMap.put(Integer.valueOf(i), currVertex);
+        }
+
+        if (target.vertexSet().size() != numOfVertexes) {
+            throw new IllegalArgumentException(
+                "Vertex factory did not produce " + numOfVertexes
+                + " distinct vertices.");
+        }
+
+        // use specific type of edge factory, depending of the graph type
+        // and edge density
+        EdgeTopologyFactory<V, E> edgesFactory =
+            edgeTopologyFactoryChooser(target, numOfEdges);
+        if (!edgesFactory.isNumberOfEdgesValid(target, numOfEdges)) {
+            throw new IllegalArgumentException(
+                "numOfEdges is not valid for the graph type "
+                + "\n-> Invalid number Of Edges=" + numOfEdges + " for:"
+                + " graph type=" + target.getClass()
+                + " ,number Of Vertexes=" + this.numOfVertexes
+                + "\n-> Advice: For the Max value , check the javadoc for"
+                + " org.jgrapht.generate.RandomGraphGenerator.DefaultEdgeTopologyFactory");
+        }
+
+        edgesFactory.createEdges(
+            target,
+            orderToVertexMap,
+            this.numOfEdges,
+            this.randomizer);
+    }
+

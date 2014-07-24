@@ -1,0 +1,63 @@
+  private static <E extends CoreMap> String detectTimeOfDayModifier(List<E> list, int beforeIndex, int afterIndex) {
+    String prev = (beforeIndex >= 0) ? list.get(beforeIndex).get(CoreAnnotations.TextAnnotation.class).toLowerCase() : "";
+    String prev2 = (beforeIndex - 1 >= 0) ? list.get(beforeIndex - 1).get(CoreAnnotations.TextAnnotation.class).toLowerCase() : "";
+    String prev3 = (beforeIndex - 2 >= 0) ? list.get(beforeIndex - 2).get(CoreAnnotations.TextAnnotation.class).toLowerCase() : "";
+    int sz = list.size();
+    String next = (afterIndex < sz) ? list.get(afterIndex).get(CoreAnnotations.TextAnnotation.class).toLowerCase() : "";
+    String next2 = (afterIndex + 1 < sz) ? list.get(afterIndex + 1).get(CoreAnnotations.TextAnnotation.class).toLowerCase() : "";
+    String next3 = (afterIndex + 2 < sz) ? list.get(afterIndex + 2).get(CoreAnnotations.TextAnnotation.class).toLowerCase() : "";
+
+    String longPrev = prev3 + ' ' + prev2 + ' ' + prev;
+    if (longPrev.matches(earlyThreeWords)) {
+      return "E";
+    }
+    else if (longPrev.matches(lateThreeWords)) {
+      return "L";
+    }
+    else if (longPrev.matches(middleThreeWords)) {
+      return "M";
+    }
+
+    longPrev = prev2 + ' ' + prev;
+    if (longPrev.matches(earlyTwoWords)) {
+      return "E";
+    }
+    else if (longPrev.matches(lateTwoWords)) {
+      return "L";
+    }
+    else if (longPrev.matches(middleTwoWords)) {
+      return "M";
+    }
+
+    if (prev.matches(earlyOneWord) || prev2.matches(earlyOneWord)) {
+      return "E";
+    }
+    else if (prev.matches(lateOneWord) || prev2.matches(lateOneWord)) {
+      return "L";
+    }
+
+    String longNext = next3 + ' ' + next2 + ' ' + next;
+    if (longNext.matches(pmThreeWords)) {
+      return "pm";
+    }
+    if (longNext.matches(amThreeWords)) {
+      return "am";
+    }
+
+    longNext = next2 + ' ' + next;
+    if (longNext.matches(pmTwoWords)) {
+      return "pm";
+    }
+
+    if (next.matches(amOneWord) || next2.matches("morning") || next3.matches("morning")) {
+      return "am";
+    }
+    if (next.matches(pmOneWord) || next2.matches("afternoon") || next3.matches("afternoon")
+        || next2.matches("night") || next3.matches("night")
+        || next2.matches("evening") || next3.matches("evening")) {
+      return "pm";
+    }
+
+    return "";
+  }
+

@@ -1,0 +1,55 @@
+    @Override
+    protected Set<?> makeObjects(Tree tree) {
+      return null;
+    }
+
+    private static List<String> myMakeObjects(Tree tree) {
+      List<String> cats = new LinkedList<String>();
+      for (Tree st : tree.subTreeList()) {
+        cats.add(st.value());
+      }
+      return cats;
+    }
+
+    @Override
+    public void evaluate(Tree t1, Tree t2, PrintWriter pw) {
+      List<String> s1 = myMakeObjects(t1);
+      List<String> s2 = myMakeObjects(t2);
+      List<String> del2 = new LinkedList<String>(s2);
+      // we delete out as we find them so we can score correctly a cat with
+      // a certain cardinality in a tree.
+      for (String o1 : s1) {
+        if ( ! del2.remove(o1)) {
+          over.incrementCount(o1);
+        }
+      }
+      for (String o2 : s2) {
+        if (! s1.remove(o2)) {
+          under.incrementCount(o2);
+        }
+      }
+    }
+
+    private static <T> void display(ClassicCounter<T> c, PrintWriter pw) {
+      List<T> cats = new ArrayList<T>(c.keySet());
+      Collections.sort(cats, Counters.toComparatorDescending(c));
+      for (T ob : cats) {
+        pw.println(ob + " " + c.getCount(ob));
+      }
+    }
+
+    @Override
+    public void display(boolean verbose, PrintWriter pw) {
+      pw.println("Most frequently underproposed categories:");
+      display(under, pw);
+      pw.println("Most frequently overproposed categories:");
+      display(over, pw);
+    }
+
+    public CatErrorEval(String str) {
+      super(str);
+    }
+
+  } // end class CatErrorEval
+
+

@@ -1,0 +1,41 @@
+  public Feature(Experiments e, double[] vals, Index<IntPair> instanceIndex) {
+    this.instanceIndex = instanceIndex;
+    Map<Integer, Double> setNonZeros = Generics.newHashMap();
+    for (int i = 0; i < vals.length; i++) {
+      if (vals[i] != 0.0) {
+        Double oldVal = setNonZeros.put(in, Double.valueOf(vals[i]));
+        if (oldVal != null && oldVal.doubleValue() != vals[i]) {
+          throw new IllegalStateException("Incorrect function specification: Feature has two values at one point: " + oldVal + " and " + vals[i]);
+        }
+      }//if
+    }// for
+    Integer[] keys = setNonZeros.keySet().toArray(new Integer[setNonZeros.keySet().size()]);
+    indexedValues = new int[keys.length];
+    valuesI = new double[keys.length];
+    for (int j = 0; j < keys.length; j++) {
+      indexedValues[j] = keys[j].intValue();
+      valuesI[j] = setNonZeros.get(keys[j]).doubleValue();
+    } // for
+    domain = e;
+  }
+
+
+  int indexOf(int x, int y) {
+    IntPair iP = new IntPair(x, y);
+    return instanceIndex.indexOf(iP);
+  }
+
+  IntPair getPair(int index) {
+    return instanceIndex.get(index);
+  }
+
+  int getXInstance(int index) {
+    IntPair iP = getPair(index);
+    return iP.get(0);
+  }
+
+  int getYInstance(int index) {
+    IntPair iP = getPair(index);
+    return iP.get(1);
+  }
+

@@ -1,0 +1,89 @@
+  @Override
+  protected Set<Constituent> makeObjects(Tree tree) {
+    Set<Constituent> set = Generics.newHashSet();
+    if(tree != null) set.addAll(tree.constituents(cf));
+    return set;
+  }
+
+  @Override
+  public void evaluate(Tree guess, Tree gold, PrintWriter pw) {
+    if(gold == null || guess == null) {
+      System.err.printf("%s: Cannot compare against a null gold or guess tree!\n",this.getClass().getName());
+      return;
+
+    } else if (guess.yield().size() != gold.yield().size()) {
+      System.err.println("Warning: yield differs:");
+      System.err.println("Guess: " + Sentence.listToString(guess.yield()));
+      System.err.println("Gold:  " + Sentence.listToString(gold.yield()));
+    }
+
+    super.evaluate(guess, gold, pw);
+  }
+
+
+  public static class CBEval extends Evalb {
+
+    private double cb = 0.0;
+    private double num = 0.0;
+    private double zeroCB = 0.0;
+
+    protected void checkCrossing(Set<Constituent> s1, Set<Constituent> s2) {
+      double c = 0.0;
+      for (Constituent constit : s1) {
+        if (constit.crosses(s2)) {
+          c += 1.0;
+        }
+      }
+      if (c == 0.0) {
+        zeroCB += 1.0;
+      }
+      cb += c;
+      num += 1.0;
+    }
+
+    @Override
+    public void evaluate(Tree t1, Tree t2, PrintWriter pw) {
+      Set<Constituent> b1 = makeObjects(t1);
+      Set<Constituent> b2 = makeObjects(t2);
+      checkCrossing(b1, b2);
+      if (pw != null && runningAverages) {
+      }
+    }
+
+    @Override
+    public void display(boolean verbose, PrintWriter pw) {
+    }
+
+    public CBEval(String str, boolean runningAverages) {
+      super(str, runningAverages);
+    }
+  }
+
+
+  private static final int minArgs = 2;
+  private static String usage() {
+    StringBuilder sb = new StringBuilder();
+    String nl = System.getProperty("line.separator");
+    sb.append(String.format("Usage: java %s [OPTS] gold guess%n%n",Evalb.class.getName()));
+    sb.append("Options:").append(nl);
+    sb.append("  -v         : Verbose mode.").append(nl);
+    sb.append("  -l lang    : Select language settings from ").append(Languages.listOfLanguages()).append(nl);
+    sb.append("  -y num     : Skip gold trees with yields longer than num.").append(nl);
+    sb.append("  -s num     : Sort the trees by F1 and output the num lowest F1 trees.").append(nl);
+    sb.append("  -c         : Compute LP/LR/F1 by category.").append(nl);
+    sb.append("  -f regex   : Compute category level evaluation for categories that match this regex.").append(nl);
+    sb.append("  -e         : Input encoding.").append(nl);
+    return sb.toString();
+  }
+  private static Map<String,Integer> optionArgDefs() {
+    Map<String,Integer> optionArgDefs = Generics.newHashMap();
+    optionArgDefs.put("v", 0);
+    optionArgDefs.put("l", 1);
+    optionArgDefs.put("y", 1);
+    optionArgDefs.put("s", 1);
+    optionArgDefs.put("c", 0);
+    optionArgDefs.put("e", 0);
+    optionArgDefs.put("f", 1);
+    return optionArgDefs;
+  }
+

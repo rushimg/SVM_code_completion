@@ -1,0 +1,81 @@
+  public LinearClassifier(double[][] weights, Index<F> featureIndex, Index<L> labelIndex) {
+    this.featureIndex = featureIndex;
+    this.labelIndex = labelIndex;
+    this.weights = weights;
+    thresholds = new double[labelIndex.size()];
+    Arrays.fill(thresholds, 0.0);
+  }
+
+  // todo: This is unused and seems broken (ignores passed in thresholds)
+  public LinearClassifier(double[][] weights, Index<F> featureIndex, Index<L> labelIndex,
+      double[] thresholds) throws Exception {
+    this.featureIndex = featureIndex;
+    this.labelIndex = labelIndex;
+    this.weights = weights;
+    if (thresholds.length != labelIndex.size())
+      throw new Exception("Number of thresholds and number of labels do not match.");
+    thresholds = new double[thresholds.length];
+    int curr = 0;
+    for (double tval : thresholds) {
+      thresholds[curr++] = tval;
+    }
+    Arrays.fill(thresholds, 0.0);
+  }
+
+  private static <F, L> Counter<Pair<F, L>> makeWeightCounter(double[] weights, Index<Pair<F, L>> weightIndex) {
+    Counter<Pair<F,L>> weightCounter = new ClassicCounter<Pair<F,L>>();
+    for (int i = 0; i < weightIndex.size(); i++) {
+      if (weights[i] == 0) {
+        continue; // no need to save 0 weights
+      }
+      weightCounter.setCount(weightIndex.get(i), weights[i]);
+    }
+    return weightCounter;
+  }
+
+  public LinearClassifier(double[] weights, Index<Pair<F, L>> weightIndex) {
+    this(makeWeightCounter(weights, weightIndex));
+  }
+
+  public LinearClassifier(Counter<? extends Pair<F, L>> weightCounter) {
+    this(weightCounter, new ClassicCounter<L>());
+  }
+
+  public LinearClassifier(Counter<? extends Pair<F, L>> weightCounter, Counter<L> thresholdsC) {
+    Collection<? extends Pair<F, L>> keys = weightCounter.keySet();
+    featureIndex = new HashIndex<F>();
+    labelIndex = new HashIndex<L>();
+    for (Pair<F, L> p : keys) {
+      featureIndex.add(p.first());
+      labelIndex.add(p.second());
+    }
+    thresholds = new double[labelIndex.size()];
+    for (L label : labelIndex) {
+      thresholds[labelIndex.indexOf(label)] = thresholdsC.getCount(label);
+    }
+    weights = new double[featureIndex.size()][labelIndex.size()];
+    Pair<F, L> tempPair = new Pair<F, L>();
+    for (int f = 0; f < weights.length; f++) {
+      for (int l = 0; l < weights[f].length; l++) {
+        tempPair.first = featureIndex.get(f);
+        tempPair.second = labelIndex.get(l);
+        weights[f][l] = weightCounter.getCount(tempPair);
+      }
+    }
+  }
+
+
+  public void adaptWeights(Dataset<L, F> adapt,LinearClassifierFactory<L, F> lcf) {
+    System.err.println("before adapting, weights size="+weights.length);
+    weights = lcf.adaptWeights(weights,adapt);
+    System.err.println("after adapting, weights size="+weights.length);
+  }
+
+  public double[][] weights() {
+    return weights;
+  }
+
+  public void setWeights(double[][] newWeights) {
+    weights = newWeights;
+  }
+

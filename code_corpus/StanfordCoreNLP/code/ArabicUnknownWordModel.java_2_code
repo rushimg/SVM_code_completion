@@ -1,0 +1,35 @@
+  public ArabicUnknownWordModel(Options op, Lexicon lex,
+                                Index<String> wordIndex,
+                                Index<String> tagIndex) {
+    this(op, lex, wordIndex, tagIndex, new ClassicCounter<IntTaggedWord>());
+  }
+
+  @Override
+  public float score(IntTaggedWord iTW, int loc, double c_Tseen, double total, double smooth, String word) {
+    double pb_W_T; // always set below
+
+    //  unknown word model for P(T|S)
+
+    int wordSig = getSignatureIndex(iTW.word, loc, word);
+    IntTaggedWord temp = new IntTaggedWord(wordSig, iTW.tag);
+    double c_TS = unSeenCounter.getCount(temp);
+    temp = new IntTaggedWord(wordSig, nullTag);
+    double c_S = unSeenCounter.getCount(temp);
+    double c_U = unSeenCounter.getCount(NULL_ITW);
+    temp = new IntTaggedWord(nullWord, iTW.tag);
+    double c_T = unSeenCounter.getCount(temp);
+
+    double p_T_U = c_T / c_U;
+
+    if (unknownLevel == 0) {
+      c_TS = 0;
+      c_S = 0;
+    }
+
+    double p_T = (c_Tseen / total);
+    double p_W = 1.0 / total;
+
+    return (float) pb_W_T;
+  }
+
+

@@ -1,0 +1,59 @@
+  private void readObject(ObjectInputStream in)
+    throws IOException, ClassNotFoundException 
+  {
+    ObjectInputStream.GetField fields = in.readFields();
+    transitionIndex = ErasureUtils.uncheckedCast(fields.get("transitionIndex", null));
+    op = ErasureUtils.uncheckedCast(fields.get("op", null));
+    featureFactory = ErasureUtils.uncheckedCast(fields.get("featureFactory", null));
+    featureWeights = Generics.newHashMap();
+    Map<String, List<ScoredObject<Integer>>> oldWeights = ErasureUtils.uncheckedCast(fields.get("featureWeights", null));
+    for (String feature : oldWeights.keySet()) {
+      List<ScoredObject<Integer>> oldFeature = oldWeights.get(feature);
+      Weight newFeature = new Weight();
+      for (int i = 0; i < oldFeature.size(); ++i) {
+        newFeature.updateWeight(oldFeature.get(i).object(), (float) oldFeature.get(i).score());
+      }
+      featureWeights.put(feature, newFeature);
+    }
+  }
+
+  @Override
+  public Options getOp() {
+    return op;
+  }
+
+  @Override
+  public TreebankLangParserParams getTLPParams() { 
+    return op.tlpParams; 
+  }
+
+  @Override
+  public TreebankLanguagePack treebankLanguagePack() {
+    return getTLPParams().treebankLanguagePack();
+  }
+
+  private final static String[] BEAM_FLAGS = { "-beamSize", "4" };
+
+  @Override
+  public String[] defaultCoreNLPFlags() {
+    if (op.trainOptions().beamSize > 1) {
+      return ArrayUtils.concatenate(getTLPParams().defaultCoreNLPFlags(), BEAM_FLAGS);
+    } else {
+      // TODO: this may result in some options which are useless for
+      // this model, such as -retainTmpSubcategories
+      return getTLPParams().defaultCoreNLPFlags();
+    }
+  }
+
+  @Override
+  public boolean requiresTags() {
+    return true;
+  }
+
+  public ShiftReduceParser deepCopy() {
+    // TODO: should we deep copy the options / factory?  seems wasteful
+    ShiftReduceParser copy = new ShiftReduceParser(op, featureFactory);
+    copy.copyWeights(this);
+    return copy;
+  }
+

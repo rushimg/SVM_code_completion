@@ -1,0 +1,80 @@
+          // do value of parent with info gain -- yet to finish this
+          for (Iterator it = nr.entrySet().iterator(); it.hasNext(); ) {
+              Map.Entry pair = (Map.Entry) it.next();
+              String node = (String) pair.getKey();
+              Counter cntr = (Counter) pair.getValue();
+              double support = (cntr.totalCount());
+              ArrayList dtrs = new ArrayList();
+              for (Iterator it2 = pr.entrySet().iterator(); it2.hasNext();) {
+                  HashMap annotated = new HashMap();
+                  Map.Entry pair2 = (Map.Entry) it2.next();
+                  List node2 = (List) pair2.getKey();
+                  Counter cntr2 = (Counter) pair2.getValue();
+                  if (node2.get(0).equals(node)) {   // only do it if they match
+                      annotated.put(node2, cntr2);
+                  }
+              }
+
+              // upto
+
+              List answers = new ArrayList();
+              Collections.sort(answers,
+                               new Comparator() {
+                                   public int compare(Object o1, Object o2) {
+                                       Pair p1 = (Pair) o1;
+                                       Pair p2 = (Pair) o2;
+                                       Double p12 = (Double) p1.second();
+                                       Double p22 = (Double) p2.second();
+                                       return p22.compareTo(p12);
+                                   }
+                               });
+              for (int i = 0, size = answers.size(); i < size; i++) {
+                  Pair p = (Pair) answers.get(i);
+                  double psd = ((Double) p.second()).doubleValue();
+                  if (psd >= cutOff) {
+                      List lst = (List) p.first();
+                      String nd = (String) lst.get(0);
+                      String par = (String) lst.get(1);
+                      String name = nd + "^" + par;
+                      splitters.add(name);
+                  }
+              }
+          }
+
+    // do value of grandparent
+    for (List<String> node : pr.keySet()) {
+      ArrayList<Pair<List<String>,Double>> answers = Generics.newArrayList();
+      ClassicCounter<List<String>> cntr = pr.get(node);
+      double support = (cntr.totalCount());
+      if (support < SUPPCUTOFF) {
+        continue;
+      }
+      for (List<String> key : gpr.keySet()) {
+        if (key.get(0).equals(node.get(0)) && key.get(1).equals(node.get(1))) {
+          // only do it if they match
+          ClassicCounter<List<String>> cntr2 = gpr.get(key);
+          double support2 = (cntr2.totalCount());
+          double kl = Counters.klDivergence(cntr2, cntr);
+        }
+      }
+      Collections.sort(answers, new Comparator<Pair<List<String>, Double>>() {
+          public int compare(Pair<List<String>, Double> o1, Pair<List<String>, Double> o2) {
+            return o2.second().compareTo(o1.second());
+          }
+        });
+      for (int i = 0, size = answers.size(); i < size; i++) {
+        Pair p = (Pair) answers.get(i);
+        double psd = ((Double) p.second()).doubleValue();
+        if (psd >= cutOff) {
+          List lst = (List) p.first();
+          String nd = (String) lst.get(0);
+          String par = (String) lst.get(1);
+          String gpar = (String) lst.get(2);
+          String name = nd + "^" + par + "~" + gpar;
+          splitters.add(name);
+        }
+      }
+    }
+  }
+
+

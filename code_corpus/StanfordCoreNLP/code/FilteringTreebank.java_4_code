@@ -1,0 +1,16 @@
+  @Override
+  public void apply(TreeVisitor tv) {
+    if (VERBOSE) {
+      System.out.println("Applying " + tv + " to treebank");
+    }
+    for (Tree t : treebank) {
+      if (!filter.accept(t)) {
+        if (VERBOSE) System.out.println("  Skipping " + t);
+        continue;
+      }
+      Tree tmpT = t.deepCopy();
+      if (VERBOSE) System.out.println("  Applying to " + tmpT);
+      tv.visitTree(tmpT);
+    }
+  }
+

@@ -1,0 +1,20 @@
+    public void add(TaskSeries series) {
+        if (series == null) {
+            throw new IllegalArgumentException("Null 'series' argument.");
+        }
+        this.data.add(series);
+        series.addChangeListener(this);
+
+        // look for any keys that we don't already know about...
+        Iterator iterator = series.getTasks().iterator();
+        while (iterator.hasNext()) {
+            Task task = (Task) iterator.next();
+            String key = task.getDescription();
+            int index = this.keys.indexOf(key);
+            if (index < 0) {
+                this.keys.add(key);
+            }
+        }
+        fireDatasetChanged();
+    }
+

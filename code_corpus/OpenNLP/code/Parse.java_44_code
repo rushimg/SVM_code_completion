@@ -1,0 +1,40 @@
+  public void setChild(int index, String label) {
+    Parse newChild = (Parse) (parts.get(index)).clone();
+    newChild.setLabel(label);
+    parts.set(index,newChild);
+  }
+
+  public void add(Parse daughter, HeadRules rules) {
+    if (daughter.prevPunctSet != null) {
+      parts.addAll(daughter.prevPunctSet);
+    }
+    parts.add(daughter);
+    this.span = new Span(span.getStart(),daughter.getSpan().getEnd());
+    this.head = rules.getHead(getChildren(),type);
+    if (head == null) {
+      System.err.println(parts);
+    }
+    this.headIndex = head.headIndex;
+  }
+
+  public void remove(int index) {
+    parts.remove(index);
+    if(! parts.isEmpty()) {
+        if (index == 0 || index == parts.size()) { //size is orig last element
+            span = new Span((parts.get(0)).span.getStart(),(parts.get(parts.size()-1)).span.getEnd());
+          }
+    }
+  }
+
+  public Parse adjoinRoot(Parse node, HeadRules rules, int parseIndex) {
+    Parse lastChild = parts.get(parseIndex);
+    Parse adjNode = new Parse(this.text,new Span(lastChild.getSpan().getStart(),node.getSpan().getEnd()),lastChild.getType(),1,rules.getHead(new Parse[]{lastChild,node},lastChild.getType()));
+    adjNode.parts.add(lastChild);
+    if (node.prevPunctSet != null) {
+      adjNode.parts.addAll(node.prevPunctSet);
+    }
+    adjNode.parts.add(node);
+    parts.set(parseIndex,adjNode);
+    return adjNode;
+  }
+

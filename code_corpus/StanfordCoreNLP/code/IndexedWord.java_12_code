@@ -1,0 +1,22 @@
+  public int compareTo(IndexedWord w) {
+    if (this.equals(IndexedWord.NO_WORD)) {
+      if (w.equals(IndexedWord.NO_WORD)) {
+        return 0;
+      } else {
+        return -1;
+      }
+    }
+    if (w.equals(IndexedWord.NO_WORD)) {
+      return 1;
+    }
+
+    String docID = this.getString(CoreAnnotations.DocIDAnnotation.class);
+    int docComp = docID.compareTo(w.getString(CoreAnnotations.DocIDAnnotation.class));
+    if (docComp != 0) return docComp;
+
+    int sentComp = sentIndex() - w.sentIndex();
+    if (sentComp != 0) return sentComp;
+
+    return index() - w.index();
+  }
+

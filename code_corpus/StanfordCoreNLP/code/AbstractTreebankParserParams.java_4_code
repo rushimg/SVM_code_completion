@@ -1,0 +1,41 @@
+  protected class RemoveGFSubcategoryStripper implements TreeTransformer {
+
+    protected TreeFactory tf = new LabeledScoredTreeFactory();
+
+    @Override
+    public Tree transformTree(Tree tree) {
+      Label lab = tree.label();
+      if (tree.isLeaf()) {
+        Tree leaf = tf.newLeaf(lab);
+        leaf.setScore(tree.score());
+        return leaf;
+      }
+      String s = lab.value();
+      s = treebankLanguagePack().basicCategory(s);
+      s = treebankLanguagePack().stripGF(s);
+      int numKids = tree.numChildren();
+      List<Tree> children = new ArrayList<Tree>(numKids);
+      for (int cNum = 0; cNum < numKids; cNum++) {
+        Tree child = tree.getChild(cNum);
+        Tree newChild = transformTree(child);
+        children.add(newChild);
+      }
+      CategoryWordTag newLabel = new CategoryWordTag(lab);
+      newLabel.setCategory(s);
+      if (lab instanceof HasTag) {
+        String tag = ((HasTag) lab).tag();
+        tag = treebankLanguagePack().basicCategory(tag);
+        tag = treebankLanguagePack().stripGF(tag);
+
+        newLabel.setTag(tag);
+      }
+      Tree node = tf.newTreeNode(newLabel, children);
+      node.setScore(tree.score());
+      return node;
+    }
+  } // end class RemoveGFSubcategoryStripper
+
+  protected String inputEncoding;
+  protected String outputEncoding;
+  protected TreebankLanguagePack tlp;
+

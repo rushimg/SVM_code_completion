@@ -1,0 +1,24 @@
+  private void makeResultsPrinters(String[] args) {
+    entityResultsPrinterSet = makeResultsPrinters(MachineReadingProperties.entityResultsPrinters, args);
+    setRelationResultsPrinterSet(makeResultsPrinters(MachineReadingProperties.relationResultsPrinters, args));
+    eventResultsPrinterSet = makeResultsPrinters(MachineReadingProperties.eventResultsPrinters, args);
+  }
+  
+  private Set<ResultsPrinter> makeResultsPrinters(String classes, String [] args) {
+    MachineReadingProperties.logger.info("Making result printers from " + classes);
+    HashSet<ResultsPrinter> printers = new HashSet<ResultsPrinter>();
+    for (String printerClassName : printerClassNames) {
+      if(printerClassName.length() == 0) continue;
+      ResultsPrinter rp;
+      try {
+        rp = (ResultsPrinter) Class.forName(printerClassName).getConstructor().newInstance();
+        printers.add(rp);
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+      //Execution.fillOptions(ResultsPrinterProps.class, args);
+      //Arguments.parse(args,rp);
+    }
+    return printers;
+  }
+  

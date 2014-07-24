@@ -1,0 +1,20 @@
+    private double calculatePathLength(V vertex, E edge)
+    {
+        assertNonNegativeEdge(edge);
+
+        V otherVertex = Graphs.getOppositeVertex(getGraph(), edge, vertex);
+        FibonacciHeapNode<QueueEntry<V, E>> otherEntry =
+            getSeenData(otherVertex);
+
+        return otherEntry.getKey()
+            + getGraph().getEdgeWeight(edge);
+    }
+
+    private void checkRadiusTraversal(boolean crossComponentTraversal)
+    {
+        if (crossComponentTraversal && (radius != Double.POSITIVE_INFINITY)) {
+            throw new IllegalArgumentException(
+                "radius may not be specified for cross-component traversal");
+        }
+    }
+

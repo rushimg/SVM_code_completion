@@ -1,0 +1,51 @@
+    private void encounterStartVertex()
+    {
+        RankingPathElementList<V, E> data =
+            new RankingPathElementList<V, E>(
+                this.graph,
+                this.k,
+                new RankingPathElement<V, E>(
+                    this.startVertex));
+
+        this.seenDataContainer.put(this.startVertex, data);
+        this.prevSeenDataContainer.put(this.startVertex, data);
+
+        // initially the only vertex whose value is considered to have changed
+        // is the start vertex
+        this.prevImprovedVertices.add(this.startVertex);
+
+        this.startVertexEncountered = true;
+    }
+
+    private void savePassData(Set<V> improvedVertices)
+    {
+        for (Iterator<V> iter = improvedVertices.iterator(); iter.hasNext();) {
+            V vertex = iter.next();
+
+            RankingPathElementList<V, E> pathElementList =
+                this.seenDataContainer.get(vertex);
+
+            RankingPathElementList<V, E> improvedPaths =
+                new RankingPathElementList<V, E>(
+                    this.graph,
+                    pathElementList.maxSize,
+                    vertex);
+
+            for (
+                Iterator<RankingPathElement<V, E>> pathIter =
+                    pathElementList.iterator();
+                pathIter.hasNext();)
+            {
+                RankingPathElement<V, E> path = pathIter.next();
+                if (path.getHopCount() == this.passNumber) {
+                    // the path has just been computed.
+                    improvedPaths.pathElements.add(path);
+                }
+            }
+
+            this.prevSeenDataContainer.put(vertex, improvedPaths);
+        }
+
+        this.prevImprovedVertices = improvedVertices;
+    }
+

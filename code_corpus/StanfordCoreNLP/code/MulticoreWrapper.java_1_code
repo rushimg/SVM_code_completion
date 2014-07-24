@@ -1,0 +1,16 @@
+public class MulticoreWrapper<I,O> {
+
+  final int nThreads;
+  int submittedItemCounter = 0;
+  // Which id was the last id returned.  Only meaningful in the case
+  // of a queue where output order matters.
+  private int returnedItemCounter = -1;
+  private final boolean orderResults;
+
+  private final Map<Integer,O> outputQueue;
+  final ThreadPoolExecutor threadPool;
+//  private final ExecutorCompletionService<Integer> queue;
+  final BlockingQueue<Integer> idleProcessors;
+  private final List<ThreadsafeProcessor<I,O>> processorList;
+  private final JobCallback<O> callback;
+

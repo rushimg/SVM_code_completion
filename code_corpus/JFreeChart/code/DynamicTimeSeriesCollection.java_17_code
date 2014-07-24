@@ -1,0 +1,22 @@
+    public synchronized long setTimeBase(RegularTimePeriod start) {
+
+        if (this.pointsInTime[0] == null) {
+            this.pointsInTime[0] = start;
+            for (int i = 1; i < this.historyCount; i++) {
+                this.pointsInTime[i] = this.pointsInTime[i - 1].next();
+            }
+        }
+        long oldestL = this.pointsInTime[0].getFirstMillisecond(
+            this.workingCalendar
+        );
+        long nextL = this.pointsInTime[1].getFirstMillisecond(
+            this.workingCalendar
+        );
+        this.deltaTime = nextL - oldestL;
+        this.oldestAt = 0;
+        this.newestAt = this.historyCount - 1;
+        findDomainLimits();
+        return this.deltaTime;
+
+    }
+

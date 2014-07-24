@@ -1,0 +1,199 @@
+  public Map<String,List<List<String>>> extractPaths(String path, int low, int high, boolean annotate) {
+
+    // setup tree transforms
+    Treebank trainTreebank = op.tlpParams.memoryTreebank(); // this is a new one
+    TreebankLanguagePack tlp = op.langpack();
+
+    trainTreebank.loadPath(path, new NumberRangeFileFilter(low, high, true));
+
+    if (op.trainOptions.selectiveSplit) {
+      op.trainOptions.splitters = ParentAnnotationStats.getSplitCategories(trainTreebank, op.trainOptions.selectiveSplitCutOff, op.tlpParams.treebankLanguagePack());
+    }
+    if (op.trainOptions.selectivePostSplit) {
+      TreeTransformer myTransformer = new TreeAnnotator(op.tlpParams.headFinder(), op.tlpParams, op);
+      Treebank annotatedTB = trainTreebank.transform(myTransformer);
+      op.trainOptions.postSplitters = ParentAnnotationStats.getSplitCategories(annotatedTB, op.trainOptions.selectivePostSplitCutOff, op.tlpParams.treebankLanguagePack());
+    }
+
+    List<Tree> trainTrees = new ArrayList<Tree>();
+    HeadFinder hf = null;
+    if (op.trainOptions.leftToRight) {
+      hf = new LeftHeadFinder();
+    } else {
+      hf = op.tlpParams.headFinder();
+    }
+    TreeTransformer annotator = new TreeAnnotator(hf, op.tlpParams, op);
+    for (Tree tree : trainTreebank) {
+      if (annotate) {
+        tree = annotator.transformTree(tree);
+      }
+      trainTrees.add(tree);
+    }
+    Extractor<Map<String,List<List<String>>>> pExtractor = new PathExtractor(hf, op);
+    Map<String,List<List<String>>> allPaths = pExtractor.extract(trainTrees);
+    return allPaths;
+  }
+
+
+  public static void main(String[] args) {
+    new GrammarCompactionTester().runTest(args);
+  }
+
+  public void runTest(String[] args) {
+    System.out.println("Currently " + new Date());
+    System.out.print("Invoked with arguments:");
+    for (int i = 0; i < args.length; i++) {
+      System.out.print(" " + args[i]);
+    }
+
+    System.out.println();
+
+    int i = 0;
+    while (i < args.length && args[i].startsWith("-")) {
+      if (args[i].equalsIgnoreCase("-path") && (i + 1 < args.length)) {
+        path = args[i + 1];
+        i += 2;
+      } else if (args[i].equalsIgnoreCase("-saveToAscii") && (i + 1 < args.length)) {
+        asciiOutputPath = args[i + 1];
+        i += 2;
+      } else if (args[i].equalsIgnoreCase("-train") && (i + 2 < args.length)) {
+        trainLow = Integer.parseInt(args[i + 1]);
+        trainHigh = Integer.parseInt(args[i + 2]);
+        i += 3;
+      } else if (args[i].equalsIgnoreCase("-test") && (i + 2 < args.length)) {
+        testLow = Integer.parseInt(args[i + 1]);
+        testHigh = Integer.parseInt(args[i + 2]);
+        i += 3;
+      } else if (args[i].equalsIgnoreCase("-index") && (i + 2 < args.length)) {
+        indexRangeLow = Integer.parseInt(args[i + 1]);
+        indexRangeHigh = Integer.parseInt(args[i + 2]);
+        i += 3;
+      } else if (args[i].equalsIgnoreCase("-outputFile")) {
+        outputFile = args[i + 1];
+        i += 2;
+      } else if (args[i].equalsIgnoreCase("-inputFile")) {
+        inputFile = args[i + 1];
+        i += 2;
+      } else if (args[i].equalsIgnoreCase("-suffixOrder")) {
+        suffixOrderString = args[i + 1];
+        i += 2;
+      } else if (args[i].equalsIgnoreCase("-minArcNum")) {
+        minArcNumString = args[i + 1];
+        i += 2;
+      } else if (args[i].equalsIgnoreCase("-maxMergeCost")) {
+        maxMergeCostString = args[i + 1];
+        i += 2;
+      } else if (args[i].equalsIgnoreCase("-sizeCutoff")) {
+        sizeCutoffString = args[i + 1];
+        i += 2;
+      } else if (args[i].equalsIgnoreCase("-minPortionArcs")) {
+        minPortionArcsString = args[i + 1];
+        i += 2;
+      } else if (args[i].equalsIgnoreCase("-ignoreUnsupportedSuffixes")) {
+        ignoreUnsupportedSuffixesString = args[i + 1];
+        i += 2;
+      } else if (args[i].equalsIgnoreCase("-trainThreshold")) {
+        trainThresholdString = args[i + 1];
+        i += 2;
+      } else if (args[i].equalsIgnoreCase("-heldoutThreshold")) {
+        heldoutThresholdString = args[i + 1];
+        i += 2;
+      } else if (args[i].equalsIgnoreCase("-minArcCost")) {
+        minArcCostString = args[i + 1];
+        i += 2;
+      } else if (args[i].equalsIgnoreCase("-splitParam")) {
+        splitParamString = args[i + 1];
+        i += 2;
+      } else if (args[i].equalsIgnoreCase("-costModel")) {
+        costModelString = args[i + 1];
+        i += 2;
+      } else if (args[i].equalsIgnoreCase("-scoringData")) {
+        scoringData = args[i + 1];
+        i += 2;
+      } else if (args[i].equalsIgnoreCase("-verbose")) {
+        verboseString = args[i + 1];
+        i += 2;
+      } else if (args[i].equalsIgnoreCase("-allowEpsilons")) {
+        allowEpsilonsString = args[i + 1];
+        i += 2;
+      } else if (args[i].equalsIgnoreCase("-saveGraphs")) {
+        saveGraphs = true;
+        i++;
+      } else if (args[i].equalsIgnoreCase("-toy")) {
+        toy = true;
+        i++;
+      } else if (args[i].equalsIgnoreCase("-markovOrder")) {
+        markovOrder = Integer.parseInt(args[i + 1]);
+        i += 2;
+      } else if (args[i].equalsIgnoreCase("-smoothParam")) {
+        smoothParamString = args[i + 1];
+        i += 2;
+      } else {
+        i = op.setOptionOrWarn(args, i);
+      }
+    }
+
+    op.trainOptions.sisterSplitters = Generics.newHashSet(Arrays.asList(op.tlpParams.sisterSplitters()));
+    if (op.trainOptions.compactGrammar() == 4) {
+      System.out.println("Instantiating fsm.LossyGrammarCompactor");
+      try {
+        Class[] argTypes = new Class[13];
+        Class strClass = String.class;
+        for (int j = 0; j < argTypes.length; j++) {
+          argTypes[j] = strClass;
+        }
+        Object[] cArgs = new Object[13];
+        cArgs[0] = suffixOrderString;
+        cArgs[1] = minArcNumString;
+        cArgs[2] = trainThresholdString;
+        cArgs[3] = heldoutThresholdString;
+        cArgs[4] = sizeCutoffString;
+        cArgs[5] = minPortionArcsString;
+        cArgs[6] = splitParamString;
+        cArgs[7] = ignoreUnsupportedSuffixesString;
+        cArgs[8] = minArcCostString;
+        cArgs[9] = smoothParamString;
+        cArgs[10] = costModelString;
+        cArgs[11] = scoringData;
+        cArgs[12] = verboseString;
+        compactor = (GrammarCompactor) Class.forName("fsm.LossyGrammarCompactor").getConstructor(argTypes).newInstance(cArgs);
+      } catch (Exception e) {
+        System.err.println("Couldn't instantiate GrammarCompactor: " + e);
+        e.printStackTrace();
+      }
+    } else if (op.trainOptions.compactGrammar() == 5) {
+      System.out.println("Instantiating fsm.CategoryMergingGrammarCompactor");
+      try {
+        Class[] argTypes = new Class[6];
+        Class strClass = String.class;
+        for (int j = 0; j < argTypes.length; j++) {
+          argTypes[j] = strClass;
+        }
+        Object[] cArgs = new Object[6];
+        cArgs[0] = splitParamString;
+        cArgs[1] = trainThresholdString;
+        cArgs[2] = heldoutThresholdString;
+        cArgs[3] = minArcCostString;
+        cArgs[4] = ignoreUnsupportedSuffixesString;
+        cArgs[5] = smoothParamString;
+        compactor = (GrammarCompactor) Class.forName("fsm.CategoryMergingGrammarCompactor").getConstructor(argTypes).newInstance(cArgs);
+      } catch (Exception e) {
+        throw new RuntimeException("Couldn't instantiate CategoryMergingGrammarCompactor." + e);
+      }
+    } else if (op.trainOptions.compactGrammar() == 3) {
+      System.out.println("Instantiating fsm.ExactGrammarCompactor");
+      compactor = new ExactGrammarCompactor(op, saveGraphs, true);
+    } else if (op.trainOptions.compactGrammar() > 0) {
+    }
+
+    if (markovOrder >= 0) {
+      op.trainOptions.markovOrder = markovOrder;
+      op.trainOptions.hSelSplit = false;
+    }
+    if (toy) {
+      buildAndCompactToyGrammars();
+    } else {
+      testGrammarCompaction();
+    }
+  }
+

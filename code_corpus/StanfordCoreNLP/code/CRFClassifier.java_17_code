@@ -1,0 +1,153 @@
+  public List<IN> classifyMaxEnt(List<IN> document) {
+    if (document.isEmpty()) {
+      return document;
+    }
+
+    SequenceModel model = getSequenceModel(document);
+    return classifyMaxEnt(document, model);
+  }
+
+  private List<IN> classifyMaxEnt(List<IN> document, Triple<int[][][], int[], double[][][]> documentDataAndLabels) {
+    if (document.isEmpty()) {
+      return document;
+    }
+    SequenceModel model = getSequenceModel(documentDataAndLabels, document);
+    return classifyMaxEnt(document, model);
+  }
+
+  private List<IN> classifyMaxEnt(List<IN> document, SequenceModel model) {
+    if (document.isEmpty()) {
+      return document;
+    }
+
+    if (flags.inferenceType == null) {
+      flags.inferenceType = "Viterbi";
+    }
+
+    BestSequenceFinder tagInference;
+    if (flags.inferenceType.equalsIgnoreCase("Viterbi")) {
+      tagInference = new ExactBestSequenceFinder();
+    } else if (flags.inferenceType.equalsIgnoreCase("Beam")) {
+      tagInference = new BeamBestSequenceFinder(flags.beamSize);
+    } else {
+      throw new RuntimeException("Unknown inference type: " + flags.inferenceType + ". Your options are Viterbi|Beam.");
+    }
+
+    int[] bestSequence = tagInference.bestSequence(model);
+
+    if (flags.useReverse) {
+      Collections.reverse(document);
+    }
+    for (int j = 0, docSize = document.size(); j < docSize; j++) {
+      IN wi = document.get(j);
+      String guess = classIndex.get(bestSequence[j + windowSize - 1]);
+      wi.set(CoreAnnotations.AnswerAnnotation.class, guess);
+    }
+    if (flags.useReverse) {
+      Collections.reverse(document);
+    }
+    return document;
+  }
+
+  public List<IN> classifyGibbs(List<IN> document) throws ClassNotFoundException, SecurityException,
+      NoSuchMethodException, IllegalArgumentException, InstantiationException, IllegalAccessException,
+      InvocationTargetException {
+    Triple<int[][][], int[], double[][][]> p = documentToDataAndLabels(document);
+    return classifyGibbs(document, p);
+  }
+
+  public List<IN> classifyGibbs(List<IN> document, Triple<int[][][], int[], double[][][]> documentDataAndLabels)
+      throws ClassNotFoundException, SecurityException, NoSuchMethodException, IllegalArgumentException,
+      InstantiationException, IllegalAccessException, InvocationTargetException {
+    // System.err.println("Testing using Gibbs sampling.");
+    List<IN> newDocument = document; // reversed if necessary
+    if (flags.useReverse) {
+      Collections.reverse(document);
+      newDocument = new ArrayList<IN>(document);
+      Collections.reverse(document);
+    }
+
+    CRFCliqueTree<? extends CharSequence> cliqueTree = getCliqueTree(documentDataAndLabels);
+
+    SequenceModel model = cliqueTree;
+    SequenceListener listener = cliqueTree;
+
+    SequenceModel priorModel = null;
+    SequenceListener priorListener = null;
+
+    if (flags.useNERPrior) {
+      EntityCachingAbstractSequencePrior<IN> prior = new EmpiricalNERPrior<IN>(flags.backgroundSymbol, classIndex,
+          newDocument);
+      // SamplingNERPrior prior = new SamplingNERPrior(flags.backgroundSymbol,
+      // classIndex, newDocument);
+      priorModel = prior;
+      priorListener = prior;
+    } else if (flags.useNERPriorBIO) {
+      EntityCachingAbstractSequencePriorBIO<IN> prior = new EmpiricalNERPriorBIO<IN>(flags.backgroundSymbol, classIndex, tagIndex, newDocument, entityMatrices, flags);
+      priorModel = prior;
+      priorListener = prior;
+    } else if (flags.useAcqPrior) {
+      EntityCachingAbstractSequencePrior<IN> prior = new AcquisitionsPrior<IN>(flags.backgroundSymbol, classIndex,
+          newDocument);
+      priorModel = prior;
+      priorListener = prior;
+    } else if (flags.useSemPrior) {
+      EntityCachingAbstractSequencePrior<IN> prior = new SeminarsPrior<IN>(flags.backgroundSymbol, classIndex,
+          newDocument);
+      priorModel = prior;
+      priorListener = prior;
+    } else if (flags.useUniformPrior) {
+      // System.err.println("Using uniform prior!");
+      UniformPrior<IN> uniPrior = new UniformPrior<IN>(flags.backgroundSymbol, classIndex, newDocument);
+      priorModel = uniPrior;
+      priorListener = uniPrior;
+    } else {
+      throw new RuntimeException("no prior specified");
+    }
+
+    model = new FactoredSequenceModel(model, priorModel);
+    listener = new FactoredSequenceListener(listener, priorListener);
+
+    SequenceGibbsSampler sampler = new SequenceGibbsSampler(0, 0, listener);
+    int[] sequence = new int[cliqueTree.length()];
+
+    if (flags.initViterbi) {
+      TestSequenceModel testSequenceModel = new TestSequenceModel(cliqueTree);
+      ExactBestSequenceFinder tagInference = new ExactBestSequenceFinder();
+      int[] bestSequence = tagInference.bestSequence(testSequenceModel);
+      System.arraycopy(bestSequence, windowSize - 1, sequence, 0, sequence.length);
+    } else {
+      int[] initialSequence = SequenceGibbsSampler.getRandomSequence(model);
+      System.arraycopy(initialSequence, 0, sequence, 0, sequence.length);
+    }
+
+    sampler.verbose = 0;
+
+    if (flags.annealingType.equalsIgnoreCase("linear")) {
+      sequence = sampler.findBestUsingAnnealing(model, CoolingSchedule.getLinearSchedule(1.0, flags.numSamples),
+          sequence);
+    } else if (flags.annealingType.equalsIgnoreCase("exp") || flags.annealingType.equalsIgnoreCase("exponential")) {
+      sequence = sampler.findBestUsingAnnealing(model, CoolingSchedule.getExponentialSchedule(1.0, flags.annealingRate,
+          flags.numSamples), sequence);
+    } else {
+      throw new RuntimeException("No annealing type specified");
+    }
+
+    if (flags.useReverse) {
+      Collections.reverse(document);
+    }
+
+    for (int j = 0, dsize = newDocument.size(); j < dsize; j++) {
+      IN wi = document.get(j);
+      if (wi == null) throw new RuntimeException("");
+      if (classIndex == null) throw new RuntimeException("");
+      wi.set(CoreAnnotations.AnswerAnnotation.class, classIndex.get(sequence[j]));
+    }
+
+    if (flags.useReverse) {
+      Collections.reverse(document);
+    }
+
+    return document;
+  }
+

@@ -1,0 +1,39 @@
+  private static class BranchState
+  {
+    // Branch id
+    int bid;
+    // Parent branch state
+    BranchState parent;
+    // Map of group id to matched group
+    Map<Integer,MatchedGroup> matchedGroups;
+    // Map of sequence index id to matched node result
+    Map<Integer,Object> matchedResults;
+    // Map of state to object storing information about the state for this branch of execution
+    // Used for states corresponding to
+    //    repeating patterns: key is RepeatState, object is Pair<Integer,Boolean>
+    //                        pair indicates sequence index and whether the match was complete
+    //    multinode patterns: key is MultiNodePatternState, object is Interval<Integer>
+    //                        the interval indicates the start and end node indices for the multinode pattern
+    //    conjunction patterns: key is ConjStartState, object is ConjMatchStateInfo
+    Map<SequencePattern.State, Object> matchStateInfo;
+    //Map<SequencePattern.State, Pair<Integer,Boolean>> matchStateCount;
+    Set<Integer> bidsToCollapse; // Branch ids to collapse together with this branch
+                                 // Used for conjunction states, which requires multiple paths
+                                 // through the NFA to hold
+    Set<Integer> collapsedBids;  // Set of Branch ids that has already been collapsed ...
+                                // assumes that after being collapsed no more collapsing required
+
+    public BranchState(int bid) {
+      this(bid, null);
+    }
+
+    public BranchState(int bid, BranchState parent) {
+      this.bid = bid;
+      this.parent = parent;
+      if (parent != null) {
+        if (parent.matchedGroups != null) {
+          matchedGroups = new LinkedHashMap<Integer,MatchedGroup>(parent.matchedGroups);
+        }
+        if (parent.matchedResults != null) {
+          matchedResults = new LinkedHashMap<Integer,Object>(parent.matchedResults);
+        }

@@ -1,0 +1,37 @@
+    private void lazyCalculatePaths()
+    {
+        // already we have calculated it once.
+        if (paths != null) {
+            return;
+        }
+
+        lazyCalculateMatrix();
+
+        Map<VertexPair<V>, GraphPath<V, E>> sps =
+            new HashMap<VertexPair<V>, GraphPath<V, E>>();
+        int n = vertices.size();
+
+        nShortestPaths = 0;
+        for (int i = 0; i < n; i++) {
+            V v_i = vertices.get(i);
+            for (int j = 0; j < n; j++) {
+                // don't count this.
+                if (i == j) {
+                    continue;
+                }
+
+                V v_j = vertices.get(j);
+
+                GraphPath<V, E> path = getShortestPathImpl(v_i, v_j);
+
+                // we got a path
+                if (path != null) {
+                    sps.put(new VertexPair<V>(v_i, v_j), path);
+                    nShortestPaths++;
+                }
+            }
+        }
+
+        this.paths = sps;
+    }
+

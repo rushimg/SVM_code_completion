@@ -1,0 +1,34 @@
+  private void makeAnswerArraysAndTagIndex(Collection<List<IN>> docs) {
+    if (answerArrays == null) {
+      answerArrays = Generics.newHashSet();
+    }
+    if (classIndex == null) {
+      classIndex = new HashIndex<String>();
+    }
+
+    for (List<IN> doc : docs) {
+      if (flags.useReverse) {
+        Collections.reverse(doc);
+      }
+
+      int leng = doc.size();
+      for (int start = 0; start < leng; start++) {
+        for (int diff = 1; diff <= flags.maxLeft && start + diff <= leng; diff++) {
+          String[] seq = new String[diff];
+          for (int i = start; i < start + diff; i++) {
+            seq[i - start] = doc.get(i).get(CoreAnnotations.AnswerAnnotation.class);
+          }
+          answerArrays.add(Arrays.asList(seq));
+        }
+      }
+      for (int i = 0; i < leng; i++) {
+        CoreLabel wordInfo = doc.get(i);
+        classIndex.add(wordInfo.get(CoreAnnotations.AnswerAnnotation.class));
+      }
+
+      if (flags.useReverse) {
+        Collections.reverse(doc);
+      }
+    }
+  }
+

@@ -1,0 +1,69 @@
+  public double sampleSequenceForward(final SequenceModel model, final int[] sequence, final double temperature, Set<Integer> onlySampleThesePositions) {
+    double returnScore = Double.NEGATIVE_INFINITY;
+    // System.err.println("Sampling forward");
+    if (onlySampleThesePositions != null) {
+      for (int pos: onlySampleThesePositions) {
+        returnScore = samplePosition(model, sequence, pos, temperature);
+      }
+    } else {
+      if (samplingStyle == SEQUENTIAL_SAMPLING) {
+        for (int pos=0; pos<sequence.length; pos++) {
+          returnScore = samplePosition(model, sequence, pos, temperature);
+        }
+      } else if (samplingStyle == RANDOM_SAMPLING) {
+        for (int itr=0; itr<sequence.length; itr++) {
+          int pos = random.nextInt(sequence.length);
+          returnScore = samplePosition(model, sequence, pos, temperature);
+        }
+      } else if (samplingStyle == CHROMATIC_SAMPLING) {
+        // make copies of the sequences and merge at the end
+        List<Pair<Integer, Integer>> results = new ArrayList<Pair<Integer, Integer>>();
+        for (List<Integer> indieList: partition) {
+          if (indieList.size() <= chromaticSize) {
+            for (int pos: indieList) {
+              Pair<Integer, Double> newPosProb = samplePositionHelper(model, sequence, pos, temperature); 
+              sequence[pos] = newPosProb.first();
+            }
+          } else {
+            MulticoreWrapper<List<Integer>, List<Pair<Integer, Integer>>> wrapper = new MulticoreWrapper<List<Integer>, List<Pair<Integer, Integer>>>(chromaticSize, 
+                new ThreadsafeProcessor<List<Integer>, List<Pair<Integer, Integer>>>() {
+              @Override
+              public List<Pair<Integer, Integer>> process(List<Integer> posList) {
+                List<Pair<Integer, Integer>> allPos = new ArrayList<Pair<Integer, Integer>>(posList.size());
+                Pair<Integer, Double> newPosProb = null;
+                for (int pos: posList) {
+                  newPosProb = samplePositionHelper(model, sequence, pos, temperature); 
+                  // returns the position to sample in first place and new label in second place
+                  allPos.add(new Pair<Integer, Integer>(pos, newPosProb.first()));
+                }
+                return allPos;
+              }
+              @Override
+              public ThreadsafeProcessor<List<Integer>, List<Pair<Integer, Integer>>> newInstance() {
+                return this;
+              }
+            });
+            results.clear();
+            int interval = Math.max(1, indieList.size() / chromaticSize);
+            for (int begin = 0, end = 0, indieListSize = indieList.size(); end < indieListSize; begin += interval) {
+              end = Math.min(begin + interval, indieListSize);
+              wrapper.put(indieList.subList(begin, end));
+              while (wrapper.peek()) {
+                results.addAll(wrapper.poll());
+              }
+            }
+            wrapper.join();
+            while (wrapper.peek()) {
+              results.addAll(wrapper.poll());
+            }
+            for(Pair<Integer, Integer> posVal : results) {
+              sequence[posVal.first()] = posVal.second();
+            }
+          }
+        }
+        returnScore = model.scoreOf(sequence);
+      }
+    }
+    return returnScore;
+  }
+

@@ -1,0 +1,27 @@
+  public class OAuthSigner implements HttpExecuteInterceptor {
+    public void intercept(HttpRequest request) throws IOException {
+      // sign request...
+    }
+  }
+  public static HttpRequestFactory createRequestFactory(HttpTransport transport) {
+    final OAuthSigner signer = new OAuthSigner(...);
+    return transport.createRequestFactory(new HttpRequestInitializer() {
+      public void initialize(HttpRequest request) {
+        request.setInterceptor(signer);
+      }
+    });
+  }
+  public static HttpRequestFactory createRequestFactory2(HttpTransport transport) {
+    final OAuthSigner signer = new OAuthSigner(...);
+    return transport.createRequestFactory(new HttpRequestInitializer() {
+      public void initialize(HttpRequest request) {
+        request.setInterceptor(new HttpExecuteInterceptor() {
+          public void intercept(HttpRequest request) throws IOException {
+            signer.intercept(request);
+          }
+        });
+      }
+    });
+  }
+public interface HttpExecuteInterceptor {
+

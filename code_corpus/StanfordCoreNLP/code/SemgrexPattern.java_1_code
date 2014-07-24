@@ -1,0 +1,52 @@
+public abstract class SemgrexPattern implements Serializable {
+
+  private static final long serialVersionUID = 1722052832350596732L;
+  private boolean neg = false;
+  private boolean opt = false;
+  private String patternString; // conceptually final, but can't do because of parsing
+
+  // package private constructor
+  SemgrexPattern() {
+  }
+
+  // NodePattern will return its one child, CoordinationPattern will
+  // return the list of children it conjuncts or disjuncts
+  abstract List<SemgrexPattern> getChildren();
+
+  abstract String localString();
+
+  abstract void setChild(SemgrexPattern child);
+
+  void negate() {
+    if (opt) {
+      throw new RuntimeException("Node cannot be both negated and optional.");
+    }
+    neg = true;
+  }
+
+  void makeOptional() {
+    if (neg) {
+      throw new RuntimeException("Node cannot be both negated and optional.");
+    }
+    opt = true;
+  }
+
+  boolean isNegated() {
+    return neg;
+  }
+
+  boolean isOptional() {
+    return opt;
+  }
+
+  // matcher methods
+  // ------------------------------------------------------------
+
+  // These get implemented in semgrex.CoordinationMatcher and NodeMatcher
+  abstract SemgrexMatcher matcher(SemanticGraph sg, IndexedWord node, Map<String, IndexedWord> namesToNodes,
+      Map<String, String> namesToRelations, VariableStrings variableStrings, boolean ignoreCase);
+
+  abstract SemgrexMatcher matcher(SemanticGraph sg, Alignment alignment, SemanticGraph sg_align, boolean hypToText,
+      IndexedWord node, Map<String, IndexedWord> namesToNodes, Map<String, String> namesToRelations,
+      VariableStrings variableStrings, boolean ignoreCase);
+

@@ -1,0 +1,21 @@
+  private PTBTokenizer(final Reader r,
+                       final boolean tokenizeNLs,
+                       final boolean invertible,
+                       final boolean suppressEscaping,
+                       final LexedTokenFactory<T> tokenFactory) {
+    StringBuilder options = new StringBuilder();
+    if (suppressEscaping) {
+      options.append("ptb3Escaping=false");
+    } else {
+      options.append("ptb3Escaping=true"); // i.e., turn on all the historical PTB normalizations
+    }
+    if (tokenizeNLs) {
+      options.append(",tokenizeNLs");
+    }
+    if (invertible) {
+      options.append(",invertible");
+    }
+    lexer = new PTBLexer(r, tokenFactory, options.toString());
+  }
+
+

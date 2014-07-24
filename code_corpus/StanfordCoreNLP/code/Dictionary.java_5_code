@@ -1,0 +1,35 @@
+  public void printAmbiguous() {
+    String[] arr = dict.keySet().toArray(new String[dict.keySet().size()]);
+    try {
+      int countAmbiguous = 0;
+      int countUnAmbiguous = 0;
+      int countAmbDisamb = 0;
+      for (String word : arr) {
+        if (word.indexOf('|') == -1) {
+          continue;
+        }
+        TagCount count = get(word);
+        if (count.numTags() > 1) {
+          System.out.print(word);
+          countAmbiguous++;
+          tC.print();
+          System.out.println();
+        } else {
+          String wordA = word.substring(0, word.indexOf('|'));
+          if (get(wordA).numTags() > 1) {
+            System.out.print(word);
+            countAmbDisamb++;
+            countUnAmbiguous++;
+            tC.print();
+            System.out.println();
+          } else {
+            countUnAmbiguous++;
+          }
+        }// else
+      }
+      System.out.println(" ambg " + countAmbiguous + " unambg " + countUnAmbiguous + " disamb " + countAmbDisamb);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+

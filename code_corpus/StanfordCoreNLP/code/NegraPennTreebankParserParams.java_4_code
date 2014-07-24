@@ -1,0 +1,16 @@
+  @Override
+  public Lexicon lex(Options op, Index<String> wordIndex, Index<String> tagIndex) {
+    if (op.lexOptions.uwModelTrainer == null) {
+      op.lexOptions.uwModelTrainer = "edu.stanford.nlp.parser.lexparser.GermanUnknownWordModelTrainer";
+    }
+    return new BaseLexicon(op, wordIndex, tagIndex);
+  }
+
+  private NegraPennTreeReaderFactory treeReaderFactory;
+
+  public TreeReaderFactory treeReaderFactory() {
+    if(treeReaderFactory == null)
+      treeReaderFactory = new NegraPennTreeReaderFactory(nodeCleanup, treeNormalizerInsertNPinPP, treeNormalizerLeaveGF, treebankLanguagePack());
+    return treeReaderFactory;
+  }
+

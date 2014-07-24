@@ -1,0 +1,37 @@
+	public static Graph<String,Number> createDirectedAcyclicGraph(
+		int layers,
+		int maxNodesPerLayer,
+		double linkprob) {
+
+		DirectedGraph<String,Number> dag = new DirectedSparseMultigraph<String,Number>();
+		Set<String> previousLayers = new HashSet<String>();
+		Set<String> inThisLayer = new HashSet<String>();
+		for (int i = 0; i < layers; i++) {
+
+			for (int j = 0; j < nodesThisLayer; j++) {
+                String v = i+":"+j;
+				dag.addVertex(v);
+				inThisLayer.add(v);
+				// for each previous node...
+                for(String v2 : previousLayers) {
+					if (Math.random() < linkprob) {
+                        Double de = new Double(Math.random());
+						dag.addEdge(de, v, v2);
+					}
+				}
+			}
+
+			previousLayers.addAll(inThisLayer);
+			inThisLayer.clear();
+		}
+		return dag;
+	}
+	
+	private static void createEdge(
+			Graph<String, Number> g,
+			String v1Label,
+			String v2Label,
+			int weight) {
+			g.addEdge(new Double(Math.random()), v1Label, v2Label);
+	}
+	

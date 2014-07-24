@@ -1,0 +1,45 @@
+  public static CRFClassifier<? extends CoreMap> getClassifier(InputStream in) throws IOException, ClassCastException,
+      ClassNotFoundException {
+    CRFClassifier<? extends CoreMap> crf = new CRFClassifier<CoreMap>();
+    crf.loadClassifier(in);
+    return crf;
+  }
+
+  public static CRFClassifier<CoreLabel> getClassifierNoExceptions(String loadPath) {
+    CRFClassifier<CoreLabel> crf = new CRFClassifier<CoreLabel>();
+    crf.loadClassifierNoExceptions(loadPath);
+    return crf;
+  }
+
+  public static CRFClassifier<CoreLabel> getClassifier(String loadPath) throws IOException, ClassCastException,
+      ClassNotFoundException {
+    CRFClassifier<CoreLabel> crf = new CRFClassifier<CoreLabel>();
+    crf.loadClassifier(loadPath);
+    return crf;
+  }
+
+  public static CRFClassifier<? extends CoreMap> getClassifier(String loadPath, Properties props) throws IOException, ClassCastException,
+      ClassNotFoundException {
+    CRFClassifier<? extends CoreMap> crf = new CRFClassifier<CoreMap>();
+    crf.loadClassifier(loadPath, props);
+    return crf;
+  }
+
+  private static CRFClassifier<CoreLabel> chooseCRFClassifier(SeqClassifierFlags flags) {
+    CRFClassifier<CoreLabel> crf; // initialized in if/else
+    if (flags.useFloat) {
+      crf = new CRFClassifierFloat<CoreLabel>(flags);
+    } else if (flags.nonLinearCRF) {
+      crf = new CRFClassifierNonlinear<CoreLabel>(flags);
+    } else if (flags.numLopExpert > 1) {
+      crf = new CRFClassifierWithLOP<CoreLabel>(flags);
+    } else if (flags.priorType.equals("DROPOUT")) {
+      crf = new CRFClassifierWithDropout<CoreLabel>(flags);
+    } else if (flags.useNoisyLabel) {
+      crf = new CRFClassifierNoisyLabel<CoreLabel>(flags);
+    } else {
+      crf = new CRFClassifier<CoreLabel>(flags);
+    }
+    return crf;
+  }
+

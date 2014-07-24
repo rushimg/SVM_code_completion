@@ -1,0 +1,116 @@
+  private double[] normalize(double[] x) {
+    double[] x1 = new double[x.length];
+    copy(x1, x);
+    //the priors
+    double[] sums = new double[numClasses];
+    for (int c = 0; c < numClasses; c++) {
+      int priorc = indexOf(c);
+      sums[c] += x[priorc];
+    }
+    double total = ArrayMath.logSum(sums);
+    for (int c = 0; c < numClasses; c++) {
+      int priorc = indexOf(c);
+      x1[priorc] -= total;
+    }
+    //the features
+    for (int c = 0; c < numClasses; c++) {
+      for (int f = 0; f < numFeatures; f++) {
+        double[] vals = new double[numValues[f]];
+        for (int val = 0; val < numValues[f]; val++) {
+          int index = indexOf(f, c, val);
+          vals[val] = x[index];
+        }
+        total = ArrayMath.logSum(vals);
+        for (int val = 0; val < numValues[f]; val++) {
+          int index = indexOf(f, c, val);
+          x1[index] -= total;
+        }
+      }
+    }
+    return x1;
+  }
+
+  @Override
+  protected void calculate(double[] x1) {
+
+    double[] x = normalize(x1);
+    double[] xExp = new double[x.length];
+    for (int i = 0; i < x.length; i++) {
+      xExp[i] = Math.exp(x[i]);
+    }
+    value = 0.0;
+    Arrays.fill(derivative, 0.0);
+    double[] sums = new double[numClasses];
+    double[] probs = new double[numClasses];
+    double[] counts = new double[numClasses];
+    Arrays.fill(counts, 0.0);
+    for (int d = 0; d < data.length; d++) {
+      int[] features = data[d];
+      // activation
+      Arrays.fill(sums, 0.0);
+      for (int c = 0; c < numClasses; c++) {
+        int priorc = indexOf(c);
+        sums[c] += x[priorc];
+        for (int f = 0; f < features.length; f++) {
+          int i = indexOf(f, c, features[f]);
+          sums[c] += x[i];
+        }
+      }
+      // expectation (slower routine replaced by fast way)
+      // double total = Double.NEGATIVE_INFINITY;
+      // for (int c=0; c<numClasses; c++) {
+      //   total = SloppyMath.logAdd(total, sums[c]);
+      // }
+      double total = ArrayMath.logSum(sums);
+      for (int c = 0; c < numClasses; c++) {
+        probs[c] = Math.exp(sums[c] - total);
+        int priorc = indexOf(c);
+        derivative[priorc] += probs[c];
+        for (int f = 0; f < features.length; f++) {
+          for (int val = 0; val < numValues[f]; val++) {
+            int i = indexOf(f, c, val);
+            double thetha = xExp[i];
+            if (labels[d] == c) {
+              derivative[i] += thetha;
+            }
+          }
+        }
+      }
+      // observed
+      for (int f = 0; f < features.length; f++) {
+        int i = indexOf(f, labels[d], features[f]);
+        derivative[i] -= 1.0;
+        for (int c = 0; c < numClasses; c++) {
+          int i1 = indexOf(f, c, features[f]);
+          derivative[i1] += probs[c];
+        }
+      }
+      value -= sums[labels[d]] - total;
+      int priorc = indexOf(labels[d]);
+      derivative[priorc] -= 1;
+    }
+    // priors
+    if (prior == QUADRATIC_PRIOR) {
+      for (int i = 0; i < x1.length; i++) {
+        double k = 1.0;
+        double w = x1[i];
+      }
+    } else if (prior == HUBER_PRIOR) {
+      for (int i = 0; i < x1.length; i++) {
+        double w = x1[i];
+        double wabs = Math.abs(w);
+        if (wabs < epsilon) {
+          derivative[i] += w / epsilon / sigmaSq;
+        } else {
+          value += (wabs - epsilon / 2) / sigmaSq;
+          derivative[i] += ((w < 0.0) ? -1.0 : 1.0) / sigmaSq;
+        }
+      }
+    } else if (prior == QUARTIC_PRIOR) {
+      for (int i = 0; i < x.length; i++) {
+        double k = 1.0;
+        double w = x1[i];
+      }
+    }
+    // else no prior
+

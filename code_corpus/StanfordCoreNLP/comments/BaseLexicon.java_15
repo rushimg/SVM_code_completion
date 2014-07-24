@@ -1,0 +1,29 @@
+  /**
+   * Get the score of this word with this tag (as an IntTaggedWord) at this
+   * location. (Presumably an estimate of P(word | tag).)
+   * <p>
+   * <i>Implementation documentation:</i>
+   * Seen:
+   * c_W = count(W)      c_TW = count(T,W)
+   * c_T = count(T)      c_Tunseen = count(T) among new words in 2nd half
+   * total = count(seen words)   totalUnseen = count("unseen" words)
+   * p_T_U = Pmle(T|"unseen")
+   * pb_T_W = P(T|W). If (c_W &gt; smoothInUnknownsThreshold) = c_TW/c_W
+   * Else (if not smart mutation) pb_T_W = bayes prior smooth[1] with p_T_U
+   * p_T= Pmle(T)          p_W = Pmle(W)
+   * pb_W_T = log(pb_T_W * p_W / p_T) [Bayes rule]
+   * Note that this doesn't really properly reserve mass to unknowns.
+   *
+   * Unseen:
+   * c_TS = count(T,Sig|Unseen)      c_S = count(Sig)   c_T = count(T|Unseen)
+   * c_U = totalUnseen above
+   * p_T_U = Pmle(T|Unseen)
+   * pb_T_S = Bayes smooth of Pmle(T|S) with P(T|Unseen) [smooth[0]]
+   * pb_W_T = log(P(W|T)) inverted
+   *
+   * @param iTW An IntTaggedWord pairing a word and POS tag
+   * @param loc The position in the sentence. <i>In the default implementation
+   *          this is used only for unknown words to change their probability
+   *          distribution when sentence initial</i>
+   * @return A float score, usually, log P(word|tag)
+   */

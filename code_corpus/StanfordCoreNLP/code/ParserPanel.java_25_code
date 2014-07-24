@@ -1,0 +1,62 @@
+  private class ParseThread extends Thread {
+
+    List<? extends HasWord> sentence;
+
+    public ParseThread(List<? extends HasWord> sentence) {
+      this.sentence = sentence;
+    }
+
+    @Override
+    public void run() {
+      boolean successful;
+      ParserQuery parserQuery = parser.parserQuery();
+      try {
+        successful = parserQuery.parse(sentence);
+      } catch (Exception e) {
+        stopProgressMonitor();
+        JOptionPane.showMessageDialog(ParserPanel.this, "Could not parse selected sentence\n(sentence probably too long)", null, JOptionPane.ERROR_MESSAGE);
+        setStatus("Error parsing");
+        return;
+      }
+
+      stopProgressMonitor();
+      setStatus("Done");
+      if (successful) {
+        // display the best parse
+        Tree tree = parserQuery.getBestParse();
+        //tree.pennPrint();
+        treePanel.setTree(tree);
+        clearButton.setEnabled(true);
+      } else {
+        JOptionPane.showMessageDialog(ParserPanel.this, "Could not parse selected sentence", null, JOptionPane.ERROR_MESSAGE);
+        setStatus("Error parsing");
+        treePanel.setTree(null);
+        clearButton.setEnabled(false);
+      }
+      if (scrollWhenDone) {
+        scrollForward();
+      }
+    }
+  }
+
+  private static class JFileChooserLocation implements AncestorListener {
+    Point location;
+
+    JFileChooser jfc;
+
+    JFileChooserLocation(JFileChooser jfc) {
+      this.jfc = jfc;
+      jfc.addAncestorListener(this);
+    }
+
+    public void ancestorAdded(AncestorEvent event) {
+      location = jfc.getTopLevelAncestor().getLocationOnScreen();
+    }
+
+    public void ancestorMoved(AncestorEvent event) {
+      location = jfc.getTopLevelAncestor().getLocationOnScreen();
+    }
+
+    public void ancestorRemoved(AncestorEvent event) { }
+  }
+

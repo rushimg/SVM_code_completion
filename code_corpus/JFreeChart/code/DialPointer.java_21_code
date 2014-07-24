@@ -1,0 +1,20 @@
+        public void draw(Graphics2D g2, DialPlot plot, Rectangle2D frame,
+            Rectangle2D view) {
+
+            g2.setPaint(this.paint);
+            g2.setStroke(this.stroke);
+            Rectangle2D arcRect = DialPlot.rectangleByRadius(frame,
+                    this.radius, this.radius);
+
+            double value = plot.getValue(this.datasetIndex);
+            DialScale scale = plot.getScaleForDataset(this.datasetIndex);
+            double angle = scale.valueToAngle(value);
+
+            Arc2D arc = new Arc2D.Double(arcRect, angle, 0, Arc2D.OPEN);
+            Point2D pt = arc.getEndPoint();
+
+            Line2D line = new Line2D.Double(frame.getCenterX(),
+                    frame.getCenterY(), pt.getX(), pt.getY());
+            g2.draw(line);
+        }
+

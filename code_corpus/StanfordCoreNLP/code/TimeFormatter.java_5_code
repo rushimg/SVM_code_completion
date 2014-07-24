@@ -1,0 +1,85 @@
+  private static String parseToken(String pattern, int[] indexRef) {
+    StringBuffer buf = new StringBuffer();
+
+    int i = indexRef[0];
+    int length = pattern.length();
+
+    char c = pattern.charAt(i);
+    if (c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z') {
+      // Scan a run of the same character, which indicates a time
+      // pattern.
+      buf.append(c);
+
+      while (i + 1 < length) {
+        char peek = pattern.charAt(i + 1);
+        if (peek == c) {
+          buf.append(c);
+          i++;
+        } else {
+          break;
+        }
+      }
+    } else if (isSpecialRegexChar(c)) {
+      buf.append(c);
+      if (c == '[') {
+        // Look for end ']'
+        // Assume no nesting
+        i++;
+        for (; i < length; i++) {
+          c = pattern.charAt(i);
+          buf.append(c);
+          if (c == ']') {
+            break;
+          }
+        }
+      } else if (c == '{') {
+        // Look for end '}'
+        // Assume no nesting
+        i++;
+        for (; i < length; i++) {
+          c = pattern.charAt(i);
+          buf.append(c);
+          if (c == '}') {
+            break;
+          }
+        }
+      } else if (c == '\\') {
+        // Used to escape characters
+        i++;
+        if (i < length) {
+          c = pattern.charAt(i);
+          buf.append(c);
+        }
+      }
+    } else {
+      // This will identify token as text.
+      buf.append('\'');
+
+      boolean inLiteral = false;
+
+      for (; i < length; i++) {
+        c = pattern.charAt(i);
+
+        if (c == '\'') {
+          if (i + 1 < length && pattern.charAt(i + 1) == '\'') {
+            // '' is treated as escaped '
+            i++;
+            buf.append(c);
+          } else {
+            inLiteral = !inLiteral;
+          }
+        } else if (!inLiteral &&
+                (isSpecialRegexChar(c) ||
+                (c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z'))) {
+          i--;
+          break;
+        } else {
+          buf.append(c);
+        }
+      }
+    }
+
+    indexRef[0] = i;
+    return buf.toString();
+  }
+

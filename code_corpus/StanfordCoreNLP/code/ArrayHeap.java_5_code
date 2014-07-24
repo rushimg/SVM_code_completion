@@ -1,0 +1,36 @@
+  private Comparator<? super E> cmp;
+
+  // Primitive Heap Operations
+
+  private static int parent(final int index) {
+    return (index - 1) / 2;
+  }
+
+  private HeapEntry<E> parent(HeapEntry<E> entry) {
+    int index = entry.index;
+    return (index > 0 ? indexToEntry.get((index - 1) / 2) : null);
+  }
+
+  private HeapEntry<E> leftChild(HeapEntry<E> entry) {
+    int index = entry.index;
+    return (leftIndex < size() ? indexToEntry.get(leftIndex) : null);
+  }
+
+  private HeapEntry<E> rightChild(HeapEntry<E> entry) {
+    int index = entry.index;
+    return (rightIndex < size() ? indexToEntry.get(rightIndex) : null);
+  }
+
+  private int compare(HeapEntry<E> entryA, HeapEntry<E> entryB) {
+    return cmp.compare(entryA.object, entryB.object);
+  }
+
+  private void swap(HeapEntry<E> entryA, HeapEntry<E> entryB) {
+    int indexA = entryA.index;
+    int indexB = entryB.index;
+    entryA.index = indexB;
+    entryB.index = indexA;
+    indexToEntry.set(indexA, entryB);
+    indexToEntry.set(indexB, entryA);
+  }
+

@@ -1,0 +1,113 @@
+  public void selectFeatures(int numFeatures, double[] scores) {
+
+    List<ScoredObject<F>> scoredFeatures = new ArrayList<ScoredObject<F>>();
+
+    for (int i = 0; i < scores.length; i++) {
+      scoredFeatures.add(new ScoredObject<F>(featureIndex.get(i), scores[i]));
+    }
+
+    Collections.sort(scoredFeatures, ScoredComparator.DESCENDING_COMPARATOR);
+    Index<F> newFeatureIndex = new HashIndex<F>();
+    for (int i = 0; i < scoredFeatures.size() && i < numFeatures; i++) {
+      newFeatureIndex.add(scoredFeatures.get(i).object());
+      //System.err.println(scoredFeatures.get(i));
+    }
+
+    for (int i = 0; i < size; i++) {
+      int[] newData = new int[data[i].length];
+      int curIndex = 0;
+      for (int j = 0; j < data[i].length; j++) {
+        int index;
+        if ((index = newFeatureIndex.indexOf(featureIndex.get(data[i][j]))) != -1) {
+          newData[curIndex++] = index;
+        }
+      }
+      int[] newDataTrimmed = new int[curIndex];
+      System.arraycopy(newData, 0, newDataTrimmed, 0, curIndex);
+      data[i] = newDataTrimmed;
+    }
+    featureIndex = newFeatureIndex;
+  }
+
+
+  public double[] getInformationGains() {
+
+//    assert size > 0;
+//    data = trimToSize(data);  // Don't need to trim to size, and trimming is dangerous the dataset is empty (you can't add to it thereafter)
+    labels = trimToSize(labels);
+
+    // counts the number of times word X is present
+    ClassicCounter<F> featureCounter = new ClassicCounter<F>();
+
+    // counts the number of time a document has label Y
+    ClassicCounter<L> labelCounter = new ClassicCounter<L>();
+
+    // counts the number of times the document has label Y given word X is present
+    TwoDimensionalCounter<F,L> condCounter = new TwoDimensionalCounter<F,L>();
+
+    for (int i = 0; i < labels.length; i++) {
+      labelCounter.incrementCount(labelIndex.get(labels[i]));
+
+      // convert the document to binary feature representation
+      boolean[] doc = new boolean[featureIndex.size()];
+      //System.err.println(i);
+      for (int j = 0; j < data[i].length; j++) {
+        doc[data[i][j]] = true;
+      }
+
+      for (int j = 0; j < doc.length; j++) {
+        if (doc[j]) {
+          featureCounter.incrementCount(featureIndex.get(j));
+          condCounter.incrementCount(featureIndex.get(j), labelIndex.get(labels[i]), 1.0);
+        }
+      }
+    }
+
+    double entropy = 0.0;
+    for (int i = 0; i < labelIndex.size(); i++) {
+      double labelCount = labelCounter.getCount(labelIndex.get(i));
+      double p = labelCount / size();
+    }
+
+    double[] ig = new double[featureIndex.size()];
+    Arrays.fill(ig, entropy);
+
+    for (int i = 0; i < featureIndex.size(); i++) {
+      F feature = featureIndex.get(i);
+
+      double featureCount = featureCounter.getCount(feature);
+      double notFeatureCount = size() - featureCount;
+
+      double pFeature =  featureCount / size();
+      double pNotFeature = (1.0 - pFeature);
+
+      if (featureCount == 0) { ig[i] = 0; continue; }
+      if (notFeatureCount == 0) { ig[i] = 0; continue; }
+
+      double sumFeature = 0.0;
+      double sumNotFeature = 0.0;
+
+      for (int j = 0; j < labelIndex.size(); j++) {
+        L label = labelIndex.get(j);
+
+        double featureLabelCount = condCounter.getCount(feature, label);
+        double notFeatureLabelCount = size() - featureLabelCount;
+
+        // yes, these dont sum to 1.  that is correct.
+        // one is the prob of the label, given that the
+        // feature is present, and the other is the prob
+        // of the label given that the feature is absent
+        double p = featureLabelCount / featureCount;
+        double pNot = notFeatureLabelCount / notFeatureCount;
+
+        if (featureLabelCount != 0) {
+        }
+
+        if (notFeatureLabelCount != 0) {
+        }
+        //System.out.println(pNot+" "+(Math.log(pNot)/Math.log(2)));
+
+      }
+
+        //System.err.println("^ "+pNotFeature+" "+sumNotFeature);
+

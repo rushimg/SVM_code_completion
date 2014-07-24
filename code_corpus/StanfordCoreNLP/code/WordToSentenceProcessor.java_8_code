@@ -1,0 +1,55 @@
+  @SuppressWarnings("OverlyStrongTypeCast")
+  private boolean isForcedEndToken(IN o) {
+    if (o instanceof CoreMap) {
+      Boolean forcedEndValue =
+              ((CoreMap)o).get(CoreAnnotations.ForcedSentenceEndAnnotation.class);
+      return forcedEndValue != null && forcedEndValue;
+    } else {
+      return false;
+    }
+  }
+
+  @SuppressWarnings("OverlyStrongTypeCast")
+  private String getString(IN o) {
+    if (o instanceof HasWord) {
+      HasWord h = (HasWord) o;
+      return h.word();
+    } else if (o instanceof String) {
+      return (String) o;
+    } else if (o instanceof CoreMap) {
+      return ((CoreMap) o).get(CoreAnnotations.TextAnnotation.class);
+    } else {
+      throw new RuntimeException("Expected token to be either Word or String.");
+    }
+  }
+
+  private static boolean matches(List<Pattern> patterns, String word) {
+    for(Pattern p: patterns){
+      Matcher m = p.matcher(word);
+      if (m.matches()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private boolean matchesXmlBreakElementToDiscard(String word) {
+    return matches(xmlBreakElementsToDiscard, word);
+  }
+
+  private boolean matchesTokenPatternsToDiscard(String word) {
+    return matches(tokenPatternsToDiscard, word);
+  }
+
+  @Override
+  public List<List<IN>> process(List<? extends IN> words) {
+    if (isOneSentence) {
+      // put all the words in one sentence
+      List<List<IN>> sentences = Generics.newArrayList();
+      sentences.add(new ArrayList<IN>(words));
+      return sentences;
+    } else {
+      return wordsToSentences(words);
+    }
+  }
+

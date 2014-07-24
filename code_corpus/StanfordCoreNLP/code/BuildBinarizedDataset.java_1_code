@@ -1,0 +1,72 @@
+  public static void setUnknownLabels(Tree tree, Integer defaultLabel) {
+    if (tree.isLeaf()) {
+      return;
+    }
+
+    for (Tree child : tree.children()) {
+      setUnknownLabels(child, defaultLabel);
+    }
+
+    tree.label().setValue(defaultLabel.toString());
+  }  
+
+  public static void setPredictedLabels(Tree tree) {
+    if (tree.isLeaf()) {
+      return;
+    }
+
+    for (Tree child : tree.children()) {
+      setPredictedLabels(child);
+    }
+
+    tree.label().setValue(Integer.toString(RNNCoreAnnotations.getPredictedClass(tree)));
+  }
+  
+  public static void extractLabels(Map<Pair<Integer, Integer>, String> spanToLabels, List<HasWord> tokens, String line) {
+    String[] pieces = line.trim().split("\\s+");
+    if (pieces.length == 0) {
+      return;
+    }
+    if (pieces.length == 1) {
+      String error = "Found line with label " + line + " but no tokens to associate with that line";
+      System.err.println(error);
+      throw new RuntimeException(error);
+    }
+
+    //TODO: BUG: The pieces are tokenized differently than the splitting, e.g. on possessive markers as in "actors' expenses" 
+    for (int i = 0; i < tokens.size() - pieces.length + 2; ++i) {
+      boolean found = true;
+      for (int j = 1; j < pieces.length; ++j) {
+        if (!tokens.get(i + j - 1).word().equals(pieces[j])) {
+          found = false;
+          break;
+        }
+      }
+      if (found) {
+        spanToLabels.put(new Pair<Integer, Integer>(i, i + pieces.length - 1), pieces[0]);
+      }
+    }
+  }
+
+  public static boolean setSpanLabel(Tree tree, Pair<Integer, Integer> span, String value) {
+    if (!(tree.label() instanceof CoreLabel)) {
+      throw new AssertionError("Expected CoreLabels");
+    }
+    CoreLabel label = (CoreLabel) tree.label();
+    if (label.get(CoreAnnotations.BeginIndexAnnotation.class) == span.first &&
+        label.get(CoreAnnotations.EndIndexAnnotation.class) == span.second) {
+      label.setValue(value);
+      return true;
+    }
+    if (label.get(CoreAnnotations.BeginIndexAnnotation.class) > span.first &&
+        label.get(CoreAnnotations.EndIndexAnnotation.class) < span.second) {
+      return false;
+    }
+    for (Tree child : tree.children()) {
+      if (setSpanLabel(child, span, value)) {
+        return true;
+      }
+    }
+    return false;
+  }
+

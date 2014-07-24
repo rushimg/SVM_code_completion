@@ -1,0 +1,37 @@
+  public static InputStream getInputStreamFromURLOrClasspathOrFileSystem(String textFileOrUrl)
+    throws IOException
+  {
+    InputStream in;
+      URL u = new URL(textFileOrUrl);
+      URLConnection uc = u.openConnection();
+      in = uc.getInputStream();
+    } else {
+      try {
+        in = findStreamInClasspathOrFileSystem(textFileOrUrl);
+      } catch (FileNotFoundException e) {
+        try {
+          // Maybe this happens to be some other format of URL?
+          URL u = new URL(textFileOrUrl);
+          URLConnection uc = u.openConnection();
+          in = uc.getInputStream();
+        } catch (IOException e2) {
+          // Don't make the original exception a cause, since it is almost certainly bogus
+          throw new IOException("Unable to resolve \"" +
+                  textFileOrUrl + "\" as either " +
+                  "class path, filename or URL"); // , e2);
+        }
+      }
+    }
+
+    if (textFileOrUrl.endsWith(".gz")) {
+      // gunzip it if necessary. Since a GZIPInputStream has a buffer in it, don't need a second level of buffering
+      in = new GZIPInputStream(in, GZIP_FILE_BUFFER_SIZE);
+    } else {
+      // buffer this stream
+      in = new BufferedInputStream(in);
+    }
+
+    return in;
+  }
+
+

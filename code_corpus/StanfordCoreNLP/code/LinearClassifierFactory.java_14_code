@@ -1,0 +1,55 @@
+  public double[][] adaptWeights(double[][] origWeights, GeneralDataset<L, F> adaptDataset) {
+    Minimizer<DiffFunction> minimizer = getMinimizer();
+    System.err.println("adaptWeights in LinearClassifierFactory. increase weight dim only");
+    double[][] newWeights = new double[adaptDataset.featureIndex.size()][adaptDataset.labelIndex.size()];
+
+    System.arraycopy(origWeights,0,newWeights,0,origWeights.length);
+
+    AdaptedGaussianPriorObjectiveFunction<L, F> objective = new AdaptedGaussianPriorObjectiveFunction<L, F>(adaptDataset, logPrior,newWeights);
+
+    double[] initial = objective.initial();
+
+    double[] weights = minimizer.minimize(objective, TOL, initial);
+    return objective.to2D(weights);
+
+    //Question: maybe the adaptWeights can be done just in LinearClassifier ?? (pichuan)
+  }
+
+  @Override
+  public double[][] trainWeights(GeneralDataset<L, F> dataset) {
+    return trainWeights(dataset, null);
+  }
+
+  public double[][] trainWeights(GeneralDataset<L, F> dataset, double[] initial) {
+    return trainWeights(dataset, initial, false);
+  }
+
+  public double[][] trainWeights(GeneralDataset<L, F> dataset, double[] initial, boolean bypassTuneSigma) {
+    return trainWeights(dataset, initial, bypassTuneSigma, null);
+  }
+
+  public double[][] trainWeights(GeneralDataset<L, F> dataset, double[] initial, boolean bypassTuneSigma, Minimizer<DiffFunction> minimizer) {
+    if (minimizer == null) minimizer = getMinimizer();
+    if(dataset instanceof RVFDataset)
+      ((RVFDataset<L,F>)dataset).ensureRealValues();
+    double[] interimWeights = null;
+    if(! bypassTuneSigma) {
+      if (tuneSigmaHeldOut) {
+        interimWeights = heldOutSetSigma(dataset); // the optimum interim weights from held-out training data have already been found.
+      } else if (tuneSigmaCV) {
+        crossValidateSetSigma(dataset,folds); // TODO: assign optimum interim weights as part of this process.
+      }
+    }
+    LogConditionalObjectiveFunction<L, F> objective = new LogConditionalObjectiveFunction<L, F>(dataset, logPrior);
+    if(initial == null && interimWeights != null && ! retrainFromScratchAfterSigmaTuning) {
+      //System.err.println("## taking advantage of interim weights as starting point.");
+      initial = interimWeights;
+    }
+    if (initial == null) {
+      initial = objective.initial();
+    }
+
+    double[] weights = minimizer.minimize(objective, TOL, initial);
+    return objective.to2D(weights);
+  }
+

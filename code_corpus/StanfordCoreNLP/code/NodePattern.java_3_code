@@ -1,0 +1,54 @@
+    private SemgrexMatcher childMatcher;
+    private boolean matchedOnce = false;
+    private boolean committedVariables = false;
+
+    private String nextMatchReln = null;
+    private IndexedWord nextMatch = null;
+
+    private boolean namedFirst = false;
+    private boolean relnNamedFirst = false;
+
+    private boolean ignoreCase = false;
+
+    // universal: childMatcher is null if and only if
+    // myNode.child == null OR resetChild has never been called
+
+    public NodeMatcher(NodePattern n, SemanticGraph sg, Alignment alignment, SemanticGraph sg_align, boolean hyp,
+        IndexedWord node, Map<String, IndexedWord> namesToNodes, Map<String, String> namesToRelations,
+        VariableStrings variableStrings, boolean ignoreCase) {
+      super(sg, alignment, sg_align, hyp, node, namesToNodes, namesToRelations, variableStrings);
+      myNode = n;
+      this.ignoreCase = ignoreCase;
+      resetChildIter();
+    }
+
+    @Override
+    void resetChildIter() {
+      nodeMatchCandidateIterator = myNode.reln.searchNodeIterator(node, hyp ? sg : sg_aligned);
+      if (myNode.reln instanceof GraphRelation.ALIGNMENT)
+        ((GraphRelation.ALIGNMENT) myNode.reln).setAlignment(alignment, hyp,
+            (GraphRelation.SearchNodeIterator) nodeMatchCandidateIterator);
+      finished = false;
+      if (nextMatch != null) {
+        decommitVariableGroups();
+        decommitNamedNodes();
+        decommitNamedRelations();
+      }
+      nextMatch = null;
+
+    }
+
+    private void resetChild() {
+      if (childMatcher == null) {
+        if (myNode.child == null) {
+          matchedOnce = false;
+        } else {
+          childMatcher = myNode.child.matcher(sg, alignment, sg_aligned,
+              (myNode.reln instanceof GraphRelation.ALIGNMENT) ? !hyp : hyp, nextMatch, namesToNodes, namesToRelations,
+              variableStrings, ignoreCase);
+        }
+      } else {
+        childMatcher.resetChildIter(nextMatch);
+      }
+    }
+

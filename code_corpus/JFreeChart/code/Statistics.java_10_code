@@ -1,0 +1,38 @@
+    public static double calculateMedian(List values, int start, int end,
+                                         boolean copyAndSort) {
+
+        double result = Double.NaN;
+        if (copyAndSort) {
+            List working = new ArrayList(end - start + 1);
+            for (int i = start; i <= end; i++) {
+                working.add(values.get(i));
+            }
+            Collections.sort(working);
+            result = calculateMedian(working, false);
+        }
+        else {
+            int count = end - start + 1;
+            if (count > 0) {
+                if (count % 2 == 1) {
+                    if (count > 1) {
+                        Number value
+                            = (Number) values.get(start + (count - 1) / 2);
+                        result = value.doubleValue();
+                    }
+                    else {
+                        Number value = (Number) values.get(start);
+                        result = value.doubleValue();
+                    }
+                }
+                else {
+                    Number value1 = (Number) values.get(start + count / 2 - 1);
+                    Number value2 = (Number) values.get(start + count / 2);
+                    result
+                        = (value1.doubleValue() + value2.doubleValue()) / 2.0;
+                }
+            }
+        }
+        return result;
+
+    }
+

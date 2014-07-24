@@ -1,0 +1,37 @@
+    public HttpHost getTarget() {
+        return target;
+    }
+
+    @Override
+    public String toString() {
+        return getRequestLine() + " " + this.headergroup;
+    }
+
+    static class HttpEntityEnclosingRequestWrapper extends HttpRequestWrapper
+        implements HttpEntityEnclosingRequest {
+
+        private HttpEntity entity;
+
+        HttpEntityEnclosingRequestWrapper(final HttpEntityEnclosingRequest request, final HttpHost target) {
+            super(request, target);
+            this.entity = request.getEntity();
+        }
+
+        @Override
+        public HttpEntity getEntity() {
+            return this.entity;
+        }
+
+        @Override
+        public void setEntity(final HttpEntity entity) {
+            this.entity = entity;
+        }
+
+        @Override
+        public boolean expectContinue() {
+            final Header expect = getFirstHeader(HTTP.EXPECT_DIRECTIVE);
+            return expect != null && HTTP.EXPECT_CONTINUE.equalsIgnoreCase(expect.getValue());
+        }
+
+    }
+

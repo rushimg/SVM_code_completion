@@ -1,0 +1,90 @@
+    public boolean isCutpoint(V vertex)
+    {
+        if (!this.graph.vertexSet().contains(vertex)) {
+            throw new IllegalArgumentException("No such vertex in the graph!");
+        }
+
+        return this.cutpoints.contains(vertex);
+    }
+
+    private void biconnectedComponentFinished(V s, V n)
+    {
+        this.cutpoints.add(s);
+
+        Set<V> vertexComponent = new HashSet<V>();
+        Set<BCGEdge> edgeComponent = new HashSet<BCGEdge>();
+        BCGEdge edge = this.stack.removeLast();
+        while (
+            (getNumOrder(edge.getSource()) >= getNumOrder(n))
+            && !this.stack.isEmpty())
+        {
+            edgeComponent.add(edge);
+
+            vertexComponent.add(edge.getSource());
+            vertexComponent.add(edge.getTarget());
+
+            edge = this.stack.removeLast();
+        }
+        edgeComponent.add(edge);
+        // edgeComponent is an equivalence class.
+
+        vertexComponent.add(edge.getSource());
+        vertexComponent.add(edge.getTarget());
+
+        VertexComponentForbiddenFunction mask =
+            new VertexComponentForbiddenFunction(
+                vertexComponent);
+        UndirectedGraph<V, E> biconnectedSubgraph =
+            new UndirectedMaskSubgraph<V, E>(
+                this.graph,
+                mask);
+        for (Iterator<V> iter = vertexComponent.iterator(); iter.hasNext();) {
+            V vertex = iter.next();
+            this.vertex2block.put(vertex, biconnectedSubgraph);
+            getBiconnectedSubgraphs(vertex).add(biconnectedSubgraph);
+        }
+        addVertex(biconnectedSubgraph);
+    }
+
+    private int dfsVisit(V s, V father)
+    {
+        this.numOrder++;
+        int minS = this.numOrder;
+        setNumOrder(s, this.numOrder);
+
+        for (
+            Iterator<E> iter = this.graph.edgesOf(s).iterator();
+            iter.hasNext();)
+        {
+            E edge = iter.next();
+            V n = Graphs.getOppositeVertex(this.graph, edge, s);
+            if (getNumOrder(n) == 0) {
+                this.dfsTree.addVertex(n);
+                BCGEdge dfsEdge = new BCGEdge(s, n);
+                this.dfsTree.addEdge(s, n, dfsEdge);
+
+                this.stack.add(dfsEdge);
+
+                // minimum of the traverse orders of the "attach points" of
+                // the vertex n.
+                int minN = dfsVisit(n, s);
+                minS = Math.min(minN, minS);
+                if (minN >= getNumOrder(s)) {
+                    // s is a cutpoint.
+                    // it has a son whose "attach depth" is greater or equal.
+                    biconnectedComponentFinished(s, n);
+                }
+            } else if ((getNumOrder(n) < getNumOrder(s)) && !n.equals(father)) {
+                BCGEdge backwardEdge = new BCGEdge(s, n);
+                this.stack.add(backwardEdge);
+
+                // n is an "attach point" of s. {s->n} is a backward edge.
+                minS = Math.min(getNumOrder(n), minS);
+            }
+        }
+
+        // minimum of the traverse orders of the "attach points" of
+        // the vertex s.
+        return minS;
+    }
+

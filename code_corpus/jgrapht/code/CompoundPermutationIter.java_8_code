@@ -1,0 +1,40 @@
+    public int [] getNext()
+    {
+        if (this.iterCounter == 0) {
+            // just return it , without change
+            this.iterCounter++;
+            return getPermAsArray();
+        }
+
+        int firstGroupCapableOfAdvancing = -1;
+        int currGroupIndex = 0; //
+        while (firstGroupCapableOfAdvancing == -1) {
+            IntegerPermutationIter currGroup = this.permArray[currGroupIndex];
+
+            if (currGroup.hasNext()) {
+                currGroup.getNext();
+
+                // restart all that we passed on
+                for (int i = 0; i < currGroupIndex; i++) {
+                    restartPermutationGroup(i);
+                }
+                firstGroupCapableOfAdvancing = currGroupIndex;
+            }
+
+            currGroupIndex++;
+            if (currGroupIndex >= this.permArray.length) {
+                break;
+            }
+        }
+
+        this.iterCounter++;
+
+        if (firstGroupCapableOfAdvancing == -1) {
+            // nothing found. we finished all iterations
+            return null;
+        } else {
+            int [] tempArray = getPermAsArray();
+            return tempArray;
+        }
+    }
+

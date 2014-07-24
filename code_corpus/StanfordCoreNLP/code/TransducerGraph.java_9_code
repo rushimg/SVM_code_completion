@@ -1,0 +1,17 @@
+  public Arc getArc(Object source, Object target) {
+    Set arcsFromSource = arcsBySource.get(source);
+    Set arcsToTarget = arcsByTarget.get(target);
+    Set result = Generics.newHashSet();
+    result.addAll(arcsFromSource);
+    result.retainAll(arcsToTarget); // intersection
+    if (result.size() < 1) {
+      return null;
+    }
+    if (result.size() > 1) {
+      throw new RuntimeException("Problem in TransducerGraph data structures.");
+    }
+    // get the only member
+    Iterator iterator = result.iterator();
+    return (Arc) iterator.next();
+  }
+

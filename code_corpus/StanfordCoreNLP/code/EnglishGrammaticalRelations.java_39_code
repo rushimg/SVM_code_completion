@@ -1,0 +1,14 @@
+  public static final GrammaticalRelation NOUN_COMPOUND_MODIFIER =
+    new GrammaticalRelation(Language.English, "nn", "nn modifier",
+        NounCompoundModifierGRAnnotation.class, MODIFIER, "(?:WH)?(?:NP|NX|NAC|NML|ADVP|ADJP)(?:-TMP|-ADV)?", tregexCompiler,
+        new String[] {
+          // added AFX: can't really tell it's natural POS; this seems the best one can do
+          // The check for POS is to eliminate conflicts with poss relations
+          "/^(?:WH)?(?:NP|NX|NAC|NML)(?:-TMP|-ADV)?$/ < (NP|NML|NN|NNS|NNP|NNPS|FW|AFX=target $++ NN|NNS|NNP|NNPS|FW|CD=sister !<<- POS !<<- (VBZ < /^\'s$/) !$- /^,$/ !$++ (POS $++ =sister))",
+          "/^(?:WH)?(?:NP|NX|NAC|NML)(?:-TMP|-ADV)?$/ < JJ|JJR|JJS=sister < (NP|NML|NN|NNS|NNP|NNPS|FW=target !<<- POS !<<- (VBZ < /^\'s$/) $+ =sister) <# NN|NNS|NNP|NNPS !<<- POS !<<- (VBZ < /^\'s$/) ",
+          // in vitro, in vivo, etc., in Genia
+          // matches against "etc etc"
+          "ADJP|ADVP < (FW [ $- (FW=target !< /^(?i:etc)$/) | $- (IN=target < in|In) ] )",
+        });
+  public static class NounCompoundModifierGRAnnotation extends GrammaticalRelationAnnotation { }
+

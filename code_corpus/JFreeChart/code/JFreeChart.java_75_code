@@ -1,0 +1,32 @@
+    public Object clone() throws CloneNotSupportedException {
+        JFreeChart chart = (JFreeChart) super.clone();
+
+        chart.renderingHints = (RenderingHints) this.renderingHints.clone();
+        // private boolean borderVisible;
+        // private transient Stroke borderStroke;
+        // private transient Paint borderPaint;
+
+        if (this.title != null) {
+            chart.title = (TextTitle) this.title.clone();
+            chart.title.addChangeListener(chart);
+        }
+
+        chart.subtitles = new ArrayList();
+        for (int i = 0; i < getSubtitleCount(); i++) {
+            Title subtitle = (Title) getSubtitle(i).clone();
+            chart.subtitles.add(subtitle);
+            subtitle.addChangeListener(chart);
+        }
+
+        if (this.plot != null) {
+            chart.plot = (Plot) this.plot.clone();
+            chart.plot.addChangeListener(chart);
+        }
+
+        chart.progressListeners = new EventListenerList();
+        chart.changeListeners = new EventListenerList();
+        return chart;
+    }
+
+}
+

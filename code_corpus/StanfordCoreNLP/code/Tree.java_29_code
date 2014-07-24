@@ -1,0 +1,26 @@
+  private int constituentsNodes(int left) {
+    if (isLeaf()) {
+      if (label() instanceof CoreLabel) {
+        ((CoreLabel) label()).set(CoreAnnotations.SpanAnnotation.class, new IntPair(left, left));
+      } else {
+        throw new UnsupportedOperationException("Can only set spans on trees which use CoreLabel");
+      }
+      return (left + 1);
+    }
+    int position = left;
+
+    // enumerate through daughter trees
+    Tree[] kids = children();
+    for (Tree kid : kids)
+      position = kid.constituentsNodes(position);
+
+    //Parent span
+    if (label() instanceof CoreLabel) {
+      ((CoreLabel) label()).set(CoreAnnotations.SpanAnnotation.class, new IntPair(left, position - 1));
+    } else {
+      throw new UnsupportedOperationException("Can only set spans on trees which use CoreLabel");
+    }
+
+    return position;
+  }
+

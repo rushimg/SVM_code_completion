@@ -1,0 +1,119 @@
+    public DefaultAxisEditor(Axis axis) {
+
+        this.labelFont = axis.getLabelFont();
+        this.labelPaintSample = new PaintSample(axis.getLabelPaint());
+        this.tickLabelFont = axis.getTickLabelFont();
+        this.tickLabelPaintSample = new PaintSample(axis.getTickLabelPaint());
+
+        // Insets values
+        this.tickLabelInsets = axis.getTickLabelInsets();
+        this.labelInsets = axis.getLabelInsets();
+
+        setLayout(new BorderLayout());
+
+        JPanel general = new JPanel(new BorderLayout());
+        general.setBorder(
+            BorderFactory.createTitledBorder(
+                BorderFactory.createEtchedBorder(),
+                localizationResources.getString("General")
+            )
+        );
+
+        JPanel interior = new JPanel(new LCBLayout(5));
+        interior.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 5));
+        interior.add(new JLabel(localizationResources.getString("Label")));
+        this.label = new JTextField(axis.getLabel());
+        interior.add(this.label);
+        interior.add(new JPanel());
+
+        interior.add(new JLabel(localizationResources.getString("Font")));
+        this.labelFontField = new FontDisplayField(this.labelFont);
+        interior.add(this.labelFontField);
+        JButton b = new JButton(localizationResources.getString("Select..."));
+        b.setActionCommand("SelectLabelFont");
+        b.addActionListener(this);
+        interior.add(b);
+
+        interior.add(new JLabel(localizationResources.getString("Paint")));
+        interior.add(this.labelPaintSample);
+        b = new JButton(localizationResources.getString("Select..."));
+        b.setActionCommand("SelectLabelPaint");
+        b.addActionListener(this);
+        interior.add(b);
+
+//        interior.add(
+//            new JLabel(localizationResources.getString("Label_Insets"))
+//        );
+//        b = new JButton(localizationResources.getString("Edit..."));
+//        b.setActionCommand("LabelInsets");
+//        b.addActionListener(this);
+//        this.labelInsetsTextField = new InsetsTextField(this.labelInsets);
+//        interior.add(this.labelInsetsTextField);
+//        interior.add(b);
+//
+//        interior.add(
+//            new JLabel(localizationResources.getString("Tick_Label_Insets"))
+//        );
+//        b = new JButton(localizationResources.getString("Edit..."));
+//        b.setActionCommand("TickLabelInsets");
+//        b.addActionListener(this);
+//        this.tickLabelInsetsTextField
+//            = new InsetsTextField(this.tickLabelInsets);
+//        interior.add(this.tickLabelInsetsTextField);
+//        interior.add(b);
+
+        general.add(interior);
+
+        add(general, BorderLayout.NORTH);
+
+        this.slot1 = new JPanel(new BorderLayout());
+
+        JPanel other = new JPanel(new BorderLayout());
+        other.setBorder(BorderFactory.createTitledBorder(
+                             BorderFactory.createEtchedBorder(),
+                             localizationResources.getString("Other")));
+
+        this.otherTabs = new JTabbedPane();
+        this.otherTabs.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 5));
+
+        JPanel ticks = new JPanel(new LCBLayout(3));
+        ticks.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
+
+        this.showTickLabelsCheckBox = new JCheckBox(
+            localizationResources.getString("Show_tick_labels"),
+            axis.isTickLabelsVisible()
+        );
+        ticks.add(this.showTickLabelsCheckBox);
+        ticks.add(new JPanel());
+        ticks.add(new JPanel());
+
+        ticks.add(
+            new JLabel(localizationResources.getString("Tick_label_font"))
+        );
+        this.tickLabelFontField = new FontDisplayField(this.tickLabelFont);
+        ticks.add(this.tickLabelFontField);
+        b = new JButton(localizationResources.getString("Select..."));
+        b.setActionCommand("SelectTickLabelFont");
+        b.addActionListener(this);
+        ticks.add(b);
+
+        this.showTickMarksCheckBox = new JCheckBox(
+            localizationResources.getString("Show_tick_marks"),
+            axis.isTickMarksVisible()
+        );
+        ticks.add(this.showTickMarksCheckBox);
+        ticks.add(new JPanel());
+        ticks.add(new JPanel());
+
+        this.otherTabs.add(localizationResources.getString("Ticks"), ticks);
+
+        other.add(this.otherTabs);
+
+        this.slot1.add(other);
+
+        this.slot2 = new JPanel(new BorderLayout());
+        this.slot2.add(this.slot1, BorderLayout.NORTH);
+        add(this.slot2);
+
+    }
+

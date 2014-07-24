@@ -1,0 +1,101 @@
+  public static class ExplicitTemporalSet extends TemporalSet {
+    private final Set<Temporal> temporals;
+
+    public ExplicitTemporalSet(Temporal... temporals) {
+      this.temporals = CollectionUtils.asSet(temporals);
+    }
+
+    public ExplicitTemporalSet(Set<Temporal> temporals) {
+      this.temporals = temporals;
+    }
+
+    public ExplicitTemporalSet(ExplicitTemporalSet p, Set<Temporal> temporals) {
+      super(p);
+      this.temporals = temporals;
+    }
+
+    @Override
+    public ExplicitTemporalSet setTimeZone(DateTimeZone tz) {
+      Set<Temporal> tzTemporals = Generics.newHashSet(temporals.size());
+      for (Temporal t:temporals) {
+        tzTemporals.add(Temporal.setTimeZone(t, tz));
+      }
+      return new ExplicitTemporalSet(this, tzTemporals);
+    }
+
+    @Override
+    public boolean isGrounded() {
+      return false;
+    }
+
+    @Override
+    public Time getTime() {
+      return null;
+    }
+
+    @Override
+    public Duration getDuration() {
+      // TODO: Return difference between min/max of set
+      return null;
+    }
+
+    @Override
+    public Range getRange(int flags, Duration granularity) {
+      // TODO: Return min/max of set
+      return null;
+    }
+
+    @Override
+    public Temporal resolve(Time refTime, int flags) {
+      Temporal[] newTemporals = new Temporal[temporals.size()];
+      int i = 0;
+      for (Temporal t : temporals) {
+        newTemporals[i] = t.resolve(refTime, flags);
+        i++;
+      }
+      return new ExplicitTemporalSet(newTemporals);
+    }
+
+    @Override
+    public String toFormattedString(int flags) {
+      if (getTimeLabel() != null) {
+        return getTimeLabel();
+      }
+      if ((flags & FORMAT_ISO) != 0) {
+        // TODO: is there iso standard?
+        return null;
+      }
+      if ((flags & FORMAT_TIMEX3_VALUE) != 0) {
+        // TODO: is there timex3 standard?
+        return null;
+      }
+      return "{" + StringUtils.join(temporals, ", ") + "}";
+    }
+
+    @Override
+    public Temporal intersect(Temporal other) {
+      if (other == null)
+        return this;
+      if (other == TIME_UNKNOWN || other == DURATION_UNKNOWN)
+        return this;
+      Set<Temporal> newTemporals = Generics.newHashSet();
+      for (Temporal t : temporals) {
+        Temporal t2 = t.intersect(other);
+        if (t2 != null)
+          newTemporals.add(t2);
+      }
+      return new ExplicitTemporalSet(newTemporals);
+    }
+
+    private static final long serialVersionUID = 1;
+  }
+
+
+  public static final PeriodicTemporalSet HOURLY = new PeriodicTemporalSet(null, HOUR, "EVERY", "P1X");
+  public static final PeriodicTemporalSet NIGHTLY = new PeriodicTemporalSet(NIGHT, DAY, "EVERY", "P1X");
+  public static final PeriodicTemporalSet DAILY = new PeriodicTemporalSet(null, DAY, "EVERY", "P1X");
+  public static final PeriodicTemporalSet MONTHLY = new PeriodicTemporalSet(null, MONTH, "EVERY", "P1X");
+  public static final PeriodicTemporalSet QUARTERLY = new PeriodicTemporalSet(null, QUARTER, "EVERY", "P1X");
+  public static final PeriodicTemporalSet YEARLY = new PeriodicTemporalSet(null, YEAR, "EVERY", "P1X");
+  public static final PeriodicTemporalSet WEEKLY = new PeriodicTemporalSet(null, WEEK, "EVERY", "P1X");
+

@@ -1,0 +1,16 @@
+    if (op.testOptions.verbose) {
+//      printOptions(false, op);
+    }
+    if (testTreebank != null || (argIndex < args.length && args[argIndex].equalsIgnoreCase("-treebank"))) {
+      // test parser on treebank
+      if (testTreebank == null) {
+        // the next argument is the treebank path and range for testing
+        testTreebank = tlpParams.testMemoryTreebank();
+        if (args.length < argIndex + 4) {
+          testTreebank.loadPath(args[argIndex + 1]);
+        } else {
+          int testlow = Integer.parseInt(args[argIndex + 2]);
+          int testhigh = Integer.parseInt(args[argIndex + 3]);
+          testTreebank.loadPath(args[argIndex + 1], new NumberRangeFileFilter(testlow, testhigh, true));
+        }
+      }

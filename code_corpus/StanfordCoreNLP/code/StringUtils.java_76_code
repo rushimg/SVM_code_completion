@@ -1,0 +1,18 @@
+  public static LinkedHashMap<String, String> propFileToLinkedHashMap(String filename, Map<String, String> existingArgs) {
+
+    LinkedHashMap<String, String> result = new LinkedHashMap<String, String>();
+    result.putAll(existingArgs);
+    for (String l : IOUtils.readLines(filename)) {
+      l = l.trim();
+      if (l.isEmpty() || l.startsWith("#"))
+        continue;
+      int index = l.indexOf('=');
+
+      if (index == -1)
+        result.put(l, "true");
+      else
+        result.put(l.substring(0, index).trim(), l.substring(index + 1).trim());
+    }
+    return result;
+  }
+

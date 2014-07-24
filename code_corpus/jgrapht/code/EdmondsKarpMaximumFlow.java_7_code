@@ -1,0 +1,84 @@
+    public void calculateMaximumFlow(
+        V source,
+        V sink)
+    {
+        if (!network.containsVertex(source)) {
+            throw new IllegalArgumentException(
+                "invalid source (null or not from this network)");
+        }
+        if (!network.containsVertex(sink)) {
+            throw new IllegalArgumentException(
+                "invalid sink (null or not from this network)");
+        }
+
+        if (source.equals(sink)) {
+            throw new IllegalArgumentException("source is equal to sink");
+        }
+
+        currentSource = indexer.get(source);
+        currentSink = indexer.get(sink);
+
+        for (int i = 0; i < numNodes; i++) {
+            for (Arc currentArc : nodes.get(i).outgoingArcs) {
+                currentArc.flow = 0.0;
+            }
+        }
+        maximumFlowValue = 0.0;
+        for (;;) {
+            breadthFirstSearch();
+            if (!nodes.get(currentSink).visited) {
+                maximumFlow = new HashMap<E, Double>();
+                for (int i = 0; i < numNodes; i++) {
+                    for (Arc currentArc : nodes.get(i).outgoingArcs) {
+                        if (currentArc.prototype != null) {
+                            maximumFlow.put(
+                                currentArc.prototype,
+                                currentArc.flow);
+                        }
+                    }
+                }
+                return;
+            }
+            augmentFlow();
+        }
+    }
+
+    private void breadthFirstSearch()
+    {
+        for (int i = 0; i < numNodes; i++) {
+            nodes.get(i).visited = false;
+        }
+        Queue<Integer> queue = new LinkedList<Integer>();
+        queue.offer(currentSource);
+        nodes.get(currentSource).visited = true;
+        nodes.get(currentSource).flowAmount = Double.POSITIVE_INFINITY;
+        while (queue.size() != 0) {
+            int currentNode = queue.poll();
+            for (Arc currentArc : nodes.get(currentNode).outgoingArcs) {
+                if ((currentArc.flow + epsilon) < currentArc.capacity) {
+                    if (!nodes.get(currentArc.head).visited) {
+                        nodes.get(currentArc.head).visited = true;
+                        nodes.get(currentArc.head).flowAmount =
+                            Math.min(
+                                nodes.get(currentNode).flowAmount,
+                                currentArc.capacity - currentArc.flow);
+                        nodes.get(currentArc.head).lastArc = currentArc;
+                        queue.add(currentArc.head);
+                    }
+                }
+            }
+        }
+    }
+
+    private void augmentFlow()
+    {
+        double deltaFlow = nodes.get(currentSink).flowAmount;
+        maximumFlowValue += deltaFlow;
+        int currentNode = currentSink;
+        while (currentNode != currentSource) {
+            nodes.get(currentNode).lastArc.flow += deltaFlow;
+            nodes.get(currentNode).lastArc.reversed.flow -= deltaFlow;
+            currentNode = nodes.get(currentNode).lastArc.tail;
+        }
+    }
+

@@ -1,0 +1,49 @@
+  /**
+   * Returns an attempt at a "gold" transition given the current state
+   * while parsing a known gold tree.
+   *
+   * Tree is passed in by index so the oracle can precompute various
+   * statistics about the tree.
+   *
+   * If we already finalized, then the correct transition is to idle.
+   *
+   * If the stack is empty, shift is the only possible answer.
+   *
+   * If the first item on the stack is a correct span, correctly
+   * labeled, and it has unaries transitions above it, then if we are
+   * not doing compound unaries, the next unary up is the correct
+   * answer.  If we are doing compound unaries, and the state does not
+   * already have a transition, then the correct answer is a compound
+   * unary transition to the top of the unary chain.
+   *
+   * If the first item is the entire tree, with no remaining unary
+   * transitions, then we need to finalize.  
+   *
+   * If the first item is a correct span, with or without a correct
+   * label, and there are no unary transitions to be added, then we
+   * must look at the next parent.  If it has the same left side, then
+   * we return a shift transition.  If it has the same right side,
+   * then we look at the next subtree on the stack (which must exist).
+   * If it is also correct, then the transition is to combine the two
+   * subtrees with the correct label and side.  
+   *
+   * TODO: suppose the correct label is not either child label and the
+   * children are binarized states?  We should see what the
+   * debinarizer does in that case.  Perhaps a post-processing step 
+   *
+   * If the previous stack item is too small, then any binary reduce
+   * action is legal, with no gold transition.  TODO: can this be improved?
+   *
+   * If the previous stack item is too large, perhaps because of
+   * incorrectly attached PP/SBAR, for example, we still need to
+   * binary reduce.  TODO: is that correct?  TODO: we could look back
+   * further in the stack to find hints at a label that would work
+   * better, for example
+   *
+   * If the current item is an incorrect span, then look at the
+   * containing item.  If it has the same left side, shift.  If it has
+   * the same right side, binary reduce (producing an exact span if
+   * possible).  If neither edge is correct, then any of shift or
+   * binary reduce are acceptable, with no gold transition.  TODO: can
+   * this be improved?
+   */

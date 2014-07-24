@@ -1,0 +1,31 @@
+  public static void endTrack(final String title){
+    if(isClosed){ return; }
+    //--Make Task
+    final long timestamp = System.currentTimeMillis();
+    Runnable endTrack = new Runnable(){
+      @Override
+      public void run(){
+        assert !isThreaded || control.isHeldByCurrentThread();
+        String expected = titleStack.pop();
+        //(check name match)
+        if (!isThreaded && !expected.equalsIgnoreCase(title)){
+          throw new IllegalArgumentException("Track names do not match: expected: " + expected + " found: " + title);
+        }
+        //(decrement depth)
+        depth -= 1;
+        //(send signal)
+        handlers.process(null, MessageType.END_TRACK, depth, timestamp);
+        assert !isThreaded || control.isHeldByCurrentThread();
+      }
+    };
+    //--Run Task
+    if(isThreaded){
+      //(case: multithreaded)
+      long threadId = Thread.currentThread().getId();
+      attemptThreadControl( threadId, endTrack );
+    } else {
+      //(case: no threading)
+      endTrack.run();
+    }
+  }
+

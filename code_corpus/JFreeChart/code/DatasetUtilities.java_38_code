@@ -1,0 +1,59 @@
+    public static Range iterateToFindDomainBounds(XYDataset dataset,
+            List visibleSeriesKeys, boolean includeInterval) {
+
+        if (dataset == null) {
+            throw new IllegalArgumentException("Null 'dataset' argument.");
+        }
+        if (visibleSeriesKeys == null) {
+            throw new IllegalArgumentException(
+                    "Null 'visibleSeriesKeys' argument.");
+        }
+
+        double minimum = Double.POSITIVE_INFINITY;
+        double maximum = Double.NEGATIVE_INFINITY;
+
+        if (includeInterval && dataset instanceof IntervalXYDataset) {
+            // handle special case of IntervalXYDataset
+            IntervalXYDataset ixyd = (IntervalXYDataset) dataset;
+            Iterator iterator = visibleSeriesKeys.iterator();
+            while (iterator.hasNext()) {
+                Comparable seriesKey = (Comparable) iterator.next();
+                int series = dataset.indexOf(seriesKey);
+                int itemCount = dataset.getItemCount(series);
+                for (int item = 0; item < itemCount; item++) {
+                    double lvalue = ixyd.getStartXValue(series, item);
+                    double uvalue = ixyd.getEndXValue(series, item);
+                    if (!Double.isNaN(lvalue)) {
+                        minimum = Math.min(minimum, lvalue);
+                    }
+                    if (!Double.isNaN(uvalue)) {
+                        maximum = Math.max(maximum, uvalue);
+                    }
+                }
+            }
+        }
+        else {
+            // standard case - plain XYDataset
+            Iterator iterator = visibleSeriesKeys.iterator();
+            while (iterator.hasNext()) {
+                Comparable seriesKey = (Comparable) iterator.next();
+                int series = dataset.indexOf(seriesKey);
+                int itemCount = dataset.getItemCount(series);
+                for (int item = 0; item < itemCount; item++) {
+                    double x = dataset.getXValue(series, item);
+                    if (!Double.isNaN(x)) {
+                        minimum = Math.min(minimum, x);
+                        maximum = Math.max(maximum, x);
+                    }
+                }
+            }
+        }
+
+        if (minimum == Double.POSITIVE_INFINITY) {
+            return null;
+        }
+        else {
+            return new Range(minimum, maximum);
+        }
+    }
+

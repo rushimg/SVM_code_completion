@@ -1,0 +1,26 @@
+  public Tree joinNode(Tree t1, Tree t2) {
+    if (!contains(t1) || !contains(t2)) {
+      return null;
+    }
+    if (this == t1 || this == t2) {
+      return this;
+    }
+    Tree joinNode = null;
+    List<Tree> t1DomPath = dominationPath(t1);
+    List<Tree> t2DomPath = dominationPath(t2);
+    if (t1DomPath == null || t2DomPath == null) {
+      return null;
+    }
+    Iterator<Tree> it1 = t1DomPath.iterator();
+    Iterator<Tree> it2 = t2DomPath.iterator();
+    while (it1.hasNext() && it2.hasNext()) {
+      Tree n1 = it1.next();
+      Tree n2 = it2.next();
+      if (n1 != n2) {
+        break;
+      }
+      joinNode = n1;
+    }
+    return joinNode;
+  }
+

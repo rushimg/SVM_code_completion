@@ -1,0 +1,55 @@
+    public static Month parseMonth(String s) {
+        Month result = null;
+        if (s == null) {
+            return result;
+        }
+        // trim whitespace from either end of the string
+        s = s.trim();
+        int i = Month.findSeparator(s);
+        String s1, s2;
+        boolean yearIsFirst;
+        // if there is no separator, we assume the first four characters
+        // are YYYY
+        if (i == -1) {
+            yearIsFirst = true;
+            s1 = s.substring(0, 5);
+            s2 = s.substring(5);
+        }
+        else {
+            s1 = s.substring(0, i).trim();
+            s2 = s.substring(i + 1, s.length()).trim();
+            // now it is trickier to determine if the month or year is first
+            Year y1 = Month.evaluateAsYear(s1);
+            if (y1 == null) {
+                yearIsFirst = false;
+            }
+            else {
+                Year y2 = Month.evaluateAsYear(s2);
+                if (y2 == null) {
+                    yearIsFirst = true;
+                }
+                else {
+                    yearIsFirst = (s1.length() > s2.length());
+                }
+            }
+        }
+        Year year;
+        int month;
+        if (yearIsFirst) {
+            year = Month.evaluateAsYear(s1);
+            month = SerialDate.stringToMonthCode(s2);
+        }
+        else {
+            year = Month.evaluateAsYear(s2);
+            month = SerialDate.stringToMonthCode(s1);
+        }
+        if (month == -1) {
+            throw new TimePeriodFormatException("Can't evaluate the month.");
+        }
+        if (year == null) {
+            throw new TimePeriodFormatException("Can't evaluate the year.");
+        }
+        result = new Month(month, year);
+        return result;
+    }
+

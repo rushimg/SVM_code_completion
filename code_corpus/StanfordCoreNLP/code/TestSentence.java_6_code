@@ -1,0 +1,40 @@
+  protected void writeTagsAndErrors(String[] finalTags, PrintFile pf, boolean verboseResults) {
+    StringWriter sw = new StringWriter(200);
+    for (int i = 0; i < correctTags.length; i++) {
+      sw.write(toNice(sent.get(i)));
+      sw.write(tagSeparator);
+      sw.write(finalTags[i]);
+      sw.write(' ');
+      if (pf != null) {
+        pf.print(toNice(sent.get(i)));
+        pf.print(tagSeparator);
+        pf.print(finalTags[i]);
+      }
+      if ((correctTags[i]).equals(finalTags[i])) {
+        numRight++;
+      } else {
+        numWrong++;
+        if (pf != null) pf.print('|' + correctTags[i]);
+        if (verboseResults) {
+          EncodingPrintWriter.err.println((maxentTagger.dict.isUnknown(sent.get(i)) ? "Unk" : "") + "Word: " + sent.get(i) + "; correct: " + correctTags[i] + "; guessed: " + finalTags[i], encoding);
+        }
+
+        if (maxentTagger.dict.isUnknown(sent.get(i))) {
+          numWrongUnknown++;
+        }// if
+      }// else
+      if (pf != null) pf.print(' ');
+    }// for
+    if (pf != null) pf.println();
+
+    if (verboseResults) {
+      PrintWriter pw;
+      try {
+        pw = new PrintWriter(new OutputStreamWriter(System.out, encoding), true);
+      } catch (UnsupportedEncodingException uee) {
+        pw = new PrintWriter(new OutputStreamWriter(System.out), true);
+      }
+      pw.println(sw);
+    }
+  }
+

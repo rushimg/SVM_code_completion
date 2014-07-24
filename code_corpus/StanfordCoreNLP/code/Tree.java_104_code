@@ -1,0 +1,34 @@
+  public List<Tree> dominationPath(Tree t) {
+    //Tree[] result = dominationPathHelper(t, 0);
+    Tree[] result = dominationPath(t, 0);
+    if (result == null) {
+      return null;
+    }
+    return Arrays.asList(result);
+  }
+
+  private Tree[] dominationPathHelper(Tree t, int depth) {
+    Tree[] kids = children();
+    for (int i = kids.length - 1; i >= 0; i--) {
+      Tree t1 = kids[i];
+      if (t1 == null) {
+        return null;
+      }
+      Tree[] result;
+      if ((result = t1.dominationPath(t, depth + 1)) != null) {
+        result[depth] = this;
+        return result;
+      }
+    }
+    return null;
+  }
+
+  private Tree[] dominationPath(Tree t, int depth) {
+    if (this == t) {
+      Tree[] result = new Tree[depth + 1];
+      result[depth] = this;
+      return result;
+    }
+    return dominationPathHelper(t, depth);
+  }
+

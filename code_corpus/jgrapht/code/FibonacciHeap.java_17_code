@@ -1,0 +1,120 @@
+    protected void cascadingCut(FibonacciHeapNode<T> y)
+    {
+        FibonacciHeapNode<T> z = y.parent;
+
+        // if there's a parent...
+        if (z != null) {
+            // if y is unmarked, set it marked
+            if (!y.mark) {
+                y.mark = true;
+            } else {
+                // it's marked, cut it from parent
+                cut(y, z);
+
+                // cut its parent as well
+                cascadingCut(z);
+            }
+        }
+    }
+
+    // cascadingCut
+
+    protected void consolidate()
+    {
+        int arraySize =
+
+        List<FibonacciHeapNode<T>> array =
+            new ArrayList<FibonacciHeapNode<T>>(arraySize);
+
+        // Initialize degree array
+        for (int i = 0; i < arraySize; i++) {
+            array.add(null);
+        }
+
+        // Find the number of root nodes.
+        int numRoots = 0;
+        FibonacciHeapNode<T> x = minNode;
+
+        if (x != null) {
+            numRoots++;
+            x = x.right;
+
+            while (x != minNode) {
+                numRoots++;
+                x = x.right;
+            }
+        }
+
+        // For each node in root list do...
+        while (numRoots > 0) {
+            // Access this node's degree..
+            int d = x.degree;
+            FibonacciHeapNode<T> next = x.right;
+
+            // ..and see if there's another of the same degree.
+            for (;;) {
+                FibonacciHeapNode<T> y = array.get(d);
+                if (y == null) {
+                    // Nope.
+                    break;
+                }
+
+                // There is, make one of the nodes a child of the other.
+                // Do this based on the key value.
+                if (x.key > y.key) {
+                    FibonacciHeapNode<T> temp = y;
+                    y = x;
+                    x = temp;
+                }
+
+                // FibonacciHeapNode<T> y disappears from root list.
+                link(y, x);
+
+                // We've handled this degree, go to next one.
+                array.set(d, null);
+                d++;
+            }
+
+            // Save this node for later when we might encounter another
+            // of the same degree.
+            array.set(d, x);
+
+            // Move forward through list.
+            x = next;
+            numRoots--;
+        }
+
+        // Set min to null (effectively losing the root list) and
+        // reconstruct the root list from the array entries in array[].
+        minNode = null;
+
+        for (int i = 0; i < arraySize; i++) {
+            FibonacciHeapNode<T> y = array.get(i);
+            if (y == null) {
+                continue;
+            }
+
+            // We've got a live one, add it to root list.
+            if (minNode != null) {
+                // First remove node from root list.
+                y.left.right = y.right;
+                y.right.left = y.left;
+
+                // Now add to root list, again.
+                y.left = minNode;
+                y.right = minNode.right;
+                minNode.right = y;
+                y.right.left = y;
+
+                // Check if this is a new min.
+                if (y.key < minNode.key) {
+                    minNode = y;
+                }
+            } else {
+                minNode = y;
+            }
+        }
+    }
+
+    // consolidate
+

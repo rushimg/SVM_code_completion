@@ -1,0 +1,94 @@
+  private Set<Map.Entry<Object, ClassicCounter<K>>> lowestLevelCounterEntrySet(Set<Map.Entry<Object, ClassicCounter<K>>> s, Object[] key, boolean useLists) {
+    Set<K> keys = map.keySet();
+    if (depth == 2) {
+      // add these counters to set
+      for (K finalKey: keys) {
+        K[] newKey = ErasureUtils.<K>mkTArray(Object.class,key.length + 1);
+        if (key.length > 0) {
+          System.arraycopy(key, 0, newKey, 0, key.length);
+        }
+        newKey[key.length] = finalKey;
+        ClassicCounter<K> c = conditionalizeHelper(finalKey).oneDimensionalCounterView();
+        if (useLists) {
+          s.add(new Entry<Object,ClassicCounter<K>>(Arrays.asList(newKey), c));
+        } else {
+          s.add(new Entry<Object,ClassicCounter<K>>(newKey[0], c));
+        }
+      }
+    } else {
+      //System.out.println("key length " + key.length);
+      //System.out.println("keyset level " + depth + " " + keys);
+      for (K o: keys) {
+        Object[] newKey = new Object[key.length + 1];
+        if (key.length > 0) {
+          System.arraycopy(key, 0, newKey, 0, key.length);
+        }
+        newKey[key.length] = o;
+        //System.out.println("level " + key.length + " current key " + Arrays.asList(newKey));
+        conditionalizeHelper(o).lowestLevelCounterEntrySet(s, newKey, true);
+      }
+    }
+    //System.out.println("leaving key length " + key.length);
+    return s;
+  }
+
+  private static class Entry<K, V> implements Map.Entry<K, V> {
+    private K key;
+    private V value;
+
+    Entry(K key, V value) {
+      this.key = key;
+      this.value = value;
+    }
+
+    public K getKey() {
+      return key;
+    }
+
+    public V getValue() {
+      return value;
+    }
+
+    public V setValue(V value) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof Entry)) {
+        return false;
+      }
+      Entry<K,V> e = ErasureUtils.<Entry<K,V>>uncheckedCast(o);
+
+      Object key1 = e.getKey();
+      if (!(key != null && key.equals(key1))) {
+        return false;
+      }
+
+      Object value1 = e.getValue();
+      if (!(value != null && value.equals(value1))) {
+        return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      if (key == null || value == null) {
+        return 0;
+      }
+      return key.hashCode() ^ value.hashCode();
+    }
+
+    @Override
+    public String toString() {
+      return key.toString() + "=" + value.toString();
+    }
+
+  } // end static class Entry
+
+

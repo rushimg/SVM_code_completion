@@ -1,0 +1,105 @@
+
+	private boolean unicode2Buckwalter = false;
+	private final Map<Character,Character> u2bMap;
+	private final Map<Character,Character> b2uMap;
+	private ClassicCounter<String> unmappable;
+
+	private static boolean DEBUG = false;
+	private static final boolean PASS_ASCII_IN_UNICODE = true;
+	private static boolean SUPPRESS_DIGIT_MAPPING_IN_B2A = true;
+	private static boolean SUPPRESS_PUNC_MAPPING_IN_B2A = true;
+
+	//wsg: I have included _ in this list, which actually maps to tatweel.
+	//In practice we strip tatweel as part of orthographic normalization,
+	//so any instances of _ in the Buckwalter should actually be treated as
+	//punctuation.
+	private static final Pattern latinPunc = Pattern.compile("[\"\\?%,-;\\._]+");
+
+	public Buckwalter() {
+		if (arabicChars.length != buckChars.length)
+			throw new RuntimeException(this.getClass().getName() + ": Inconsistent u2b/b2u arrays.");
+
+		u2bMap = Generics.newHashMap(arabicChars.length);
+		b2uMap = Generics.newHashMap(buckChars.length);
+		for (int i = 0; i < arabicChars.length; i++) {
+			Character charU = Character.valueOf(arabicChars[i]);
+			Character charB = Character.valueOf(buckChars[i]);
+			u2bMap.put(charU, charB);
+			b2uMap.put(charB, charU);
+		}
+
+		if (DEBUG) unmappable = new ClassicCounter<String>();
+	}
+
+	public Buckwalter(boolean unicodeToBuckwalter) {
+		this();
+		unicode2Buckwalter = unicodeToBuckwalter;
+	}
+
+	public void suppressBuckDigitConversion(boolean b) { SUPPRESS_DIGIT_MAPPING_IN_B2A = b; }
+
+	public void suppressBuckPunctConversion(boolean b) { SUPPRESS_PUNC_MAPPING_IN_B2A = b; }
+
+	public String apply(String in) { return convert(in, unicode2Buckwalter); }
+
+	public String buckwalterToUnicode(String in) { return convert(in, false);	}
+
+	public String unicodeToBuckwalter(String in) { return convert(in, true); }
+
+	private String convert(String in, boolean unicodeToBuckwalter) {
+		final StringTokenizer st = new StringTokenizer(in);
+		final StringBuilder result = new StringBuilder(in.length());
+
+		while(st.hasMoreTokens()) {
+			final String token = st.nextToken();
+			for (int i = 0; i < token.length(); i++) {
+				if(ATBTreeUtils.reservedWords.contains(token)) {
+					result.append(token);
+					break;
+				}
+
+				final Character inCh = Character.valueOf(token.charAt(i));
+				Character outCh = null;
+
+				if (unicodeToBuckwalter) {
+					outCh = (PASS_ASCII_IN_UNICODE && inCh.charValue() < 127) ? inCh : u2bMap.get(inCh);
+
+				} else if((SUPPRESS_DIGIT_MAPPING_IN_B2A && Character.isDigit(inCh)) ||
+						(SUPPRESS_PUNC_MAPPING_IN_B2A && latinPunc.matcher(inCh.toString()).matches())) {
+					outCh = inCh;
+
+				} else {
+					outCh = b2uMap.get(inCh);
+				}
+
+				if (outCh == null) {
+					if (DEBUG) {
+						String key = inCh + "[U+" +
+						StringUtils.padLeft(Integer.toString(inCh, 16).toUpperCase(), 4, '0') + ']';
+						unmappable.incrementCount(key);
+					}
+					result.append(inCh);  // pass through char
+
+				} else if(outputUnicodeValues) {
+					result.append("\\u").append(StringUtils.padLeft(Integer.toString(inCh, 16).toUpperCase(), 4, '0'));
+
+				} else {
+					result.append(outCh);
+				}
+			}
+			result.append(" ");
+		}
+
+		return result.toString().trim();
+	}
+
+
+	private static final StringBuilder usage = new StringBuilder();
+	static {
+		usage.append("Usage: java Buckwalter [OPTS] file   (or < file)\n");
+		usage.append("Options:\n");
+		usage.append("          -u2b : Unicode -> Buckwalter (default is Buckwalter -> Unicode).\n");
+		usage.append("          -d   : Debug mode.\n");
+		usage.append("          -o   : Output unicode values.\n");	
+	}
+

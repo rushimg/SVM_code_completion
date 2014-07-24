@@ -1,0 +1,29 @@
+    public void setValue(Number value, Comparable rowKey,
+                         Comparable columnKey) {
+
+        DefaultKeyedValues row;
+        int rowIndex = getRowIndex(rowKey);
+
+        if (rowIndex >= 0) {
+            row = (DefaultKeyedValues) this.rows.get(rowIndex);
+        }
+        else {
+            row = new DefaultKeyedValues();
+            if (this.sortRowKeys) {
+                rowIndex = -rowIndex - 1;
+                this.rowKeys.add(rowIndex, rowKey);
+                this.rows.add(rowIndex, row);
+            }
+            else {
+                this.rowKeys.add(rowKey);
+                this.rows.add(row);
+            }
+        }
+        row.setValue(columnKey, value);
+
+        int columnIndex = this.columnKeys.indexOf(columnKey);
+        if (columnIndex < 0) {
+            this.columnKeys.add(columnKey);
+        }
+    }
+

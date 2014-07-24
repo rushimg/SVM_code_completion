@@ -1,0 +1,28 @@
+    public void drawRadialGridLines(Graphics2D g2,
+                                    PolarPlot plot,
+                                    ValueAxis radialAxis,
+                                    List ticks,
+                                    Rectangle2D dataArea) {
+
+        g2.setFont(radialAxis.getTickLabelFont());
+        g2.setPaint(plot.getRadiusGridlinePaint());
+        g2.setStroke(plot.getRadiusGridlineStroke());
+
+        double axisMin = radialAxis.getLowerBound();
+        Point center = plot.translateValueThetaRadiusToJava2D(axisMin, axisMin,
+                dataArea);
+
+        Iterator iterator = ticks.iterator();
+        while (iterator.hasNext()) {
+            NumberTick tick = (NumberTick) iterator.next();
+            Point p = plot.translateValueThetaRadiusToJava2D(90.0,
+                    tick.getNumber().doubleValue(), dataArea);
+            int r = p.x - center.x;
+            int upperLeftX = center.x - r;
+            int upperLeftY = center.y - r;
+            Ellipse2D ring = new Ellipse2D.Double(upperLeftX, upperLeftY, d, d);
+            g2.setPaint(plot.getRadiusGridlinePaint());
+            g2.draw(ring);
+        }
+    }
+

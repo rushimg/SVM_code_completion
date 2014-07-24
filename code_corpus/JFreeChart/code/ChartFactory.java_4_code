@@ -1,0 +1,21 @@
+    public static void setChartTheme(ChartTheme theme) {
+        if (theme == null) {
+            throw new IllegalArgumentException("Null 'theme' argument.");
+        }
+        currentTheme = theme;
+
+        // here we do a check to see if the user is installing the "Legacy"
+        // theme, and reset the bar painters in that case...
+        if (theme instanceof StandardChartTheme) {
+            StandardChartTheme sct = (StandardChartTheme) theme;
+            if (sct.getName().equals("Legacy")) {
+                BarRenderer.setDefaultBarPainter(new StandardBarPainter());
+                XYBarRenderer.setDefaultBarPainter(new StandardXYBarPainter());
+            }
+            else {
+                BarRenderer.setDefaultBarPainter(new GradientBarPainter());
+                XYBarRenderer.setDefaultBarPainter(new GradientXYBarPainter());
+            }
+        }
+    }
+

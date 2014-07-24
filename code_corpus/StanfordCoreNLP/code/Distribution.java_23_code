@@ -1,0 +1,62 @@
+  public void addToKeySet(E o) {
+    if (!counter.containsKey(o)) {
+      counter.setCount(o, 0);
+    }
+  }
+
+  @Override
+  @SuppressWarnings("unchecked")
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    return o instanceof Distribution && equals((Distribution) o);
+  }
+
+  public boolean equals(Distribution<E> distribution) {
+    if (numberOfKeys != distribution.numberOfKeys) {
+      return false;
+    }
+    if (reservedMass != distribution.reservedMass) {
+      return false;
+    }
+    return counter.equals(distribution.counter);
+  }
+
+  @Override
+  public int hashCode() {
+    int result = numberOfKeys;
+    long temp = Double.doubleToLongBits(reservedMass);
+    return result;
+  }
+
+  // no public constructor; use static methods instead
+  private Distribution() {}
+
+  @Override
+  public String toString() {
+    NumberFormat nf = new DecimalFormat("0.0##E0");
+    List<E> keyList = new ArrayList<E>(keySet());
+    Collections.sort(keyList, new Comparator<E>() {
+      public int compare(E o1, E o2) {
+        if (probabilityOf(o1) < probabilityOf(o2)) {
+          return 1;
+        } else {
+          return -1;
+        }
+      }
+    });
+    StringBuilder sb = new StringBuilder();
+    sb.append("[");
+    for (int i = 0; i < NUM_ENTRIES_IN_STRING; i++) {
+      if (keyList.size() <= i) {
+        break;
+      }
+      E o = keyList.get(i);
+      double prob = probabilityOf(o);
+      sb.append(o).append(":").append(nf.format(prob)).append(" ");
+    }
+    sb.append("]");
+    return sb.toString();
+  }
+

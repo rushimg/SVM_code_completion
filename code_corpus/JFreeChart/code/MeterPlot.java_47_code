@@ -1,0 +1,42 @@
+    protected void fillArc(Graphics2D g2, Rectangle2D area,
+                           double minValue, double maxValue, Paint paint,
+                           boolean dial) {
+        if (paint == null) {
+            throw new IllegalArgumentException("Null 'paint' argument");
+        }
+        double startAngle = valueToAngle(maxValue);
+        double endAngle = valueToAngle(minValue);
+        double extent = endAngle - startAngle;
+
+        double x = area.getX();
+        double y = area.getY();
+        double w = area.getWidth();
+        double h = area.getHeight();
+        int joinType = Arc2D.OPEN;
+        if (this.shape == DialShape.PIE) {
+            joinType = Arc2D.PIE;
+        }
+        else if (this.shape == DialShape.CHORD) {
+            if (dial && this.meterAngle > 180) {
+                joinType = Arc2D.CHORD;
+            }
+            else {
+                joinType = Arc2D.PIE;
+            }
+        }
+        else if (this.shape == DialShape.CIRCLE) {
+            joinType = Arc2D.PIE;
+            if (dial) {
+                extent = 360;
+            }
+        }
+        else {
+            throw new IllegalStateException("DialShape not recognised.");
+        }
+
+        g2.setPaint(paint);
+        Arc2D.Double arc = new Arc2D.Double(x, y, w, h, startAngle, extent,
+                joinType);
+        g2.fill(arc);
+    }
+

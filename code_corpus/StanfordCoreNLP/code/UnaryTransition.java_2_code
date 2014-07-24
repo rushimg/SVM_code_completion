@@ -1,0 +1,35 @@
+  public boolean isLegal(State state, List<ParserConstraint> constraints) {
+    if (state.finished) {
+      return false;
+    }
+    if (state.stack.size() == 0) {
+      return false;
+    }
+    Tree top = state.stack.peek();
+    if (top.label().value().equals(label)) {
+      // Disallow unary transitions where the label doesn't change
+      return false;
+    }
+    if (top.label().value().startsWith("@") && !label.equals(top.label().value().substring(1))) {
+      return false;
+    }
+    if (top.children().length == 1) {
+      Tree child = top.children()[0];
+      if (child.children().length == 1) {
+        Tree grandChild = child.children()[0];
+        if (grandChild.children().length == 1) {
+          // Three consecutive unary trees.  Not legal to keep adding unaries.
+          // TODO: do preterminals count in that equation?
+          return false;
+        }
+      }
+    }
+    if (isRoot && (state.stack.size() > 1 || !state.endOfQueue())) {
+      return false;
+    }
+    // UnaryTransition actually doesn't care about the constraints.
+    // If the constraint winds up unsatisfied, we'll get stuck and
+    // have to do an "emergency transition" to fix the situation.
+    return true;
+  }
+

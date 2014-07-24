@@ -1,0 +1,88 @@
+public final class TreebankPreprocessor {
+
+  private TreebankPreprocessor() {}
+
+  private static String usage() {
+    String cmdLineFormat = String.format("java %s [OPTIONS] config_file%n", TreebankPreprocessor.class.getName());
+    StringBuilder sb = new StringBuilder(cmdLineFormat);
+
+    //Add other parameters here
+    sb.append(String.format("  -v         : Show verbose output%n"));
+    sb.append(String.format("  -d <name>  : Make a distributable package with the specified name%n"));
+
+    return sb.toString();
+  }
+
+  private static Dataset getDatasetClass(Properties dsParams) {
+    Dataset ds = null;
+    String dsType = dsParams.getProperty(ConfigParser.paramType);
+    dsParams.remove(ConfigParser.paramType);
+
+    try {
+      if(dsType == null)
+        ds = new ATBArabicDataset();
+      else {
+        Class c = ClassLoader.getSystemClassLoader().loadClass(dsType);
+        ds = (Dataset) c.newInstance();
+      }
+    } catch (ClassNotFoundException e) {
+      System.err.printf("Dataset type %s does not exist%n", dsType);
+    } catch (InstantiationException e) {
+      System.err.printf("Unable to instantiate dataset type %s%n", dsType);
+    } catch (IllegalAccessException e) {
+      System.err.printf("Unable to access dataset type %s%n", dsType);
+    }
+
+    return ds;
+  }
+
+  private static final int MIN_ARGS = 1;
+
+  //Command line options
+  private static boolean VERBOSE = false;
+  private static boolean MAKE_DISTRIB = false;
+  private static String distribName = null;
+  private static String configFile = null;
+  private static String outputPath = null;
+
+  public static final Map<String,Integer> optionArgDefs = Generics.newHashMap();
+  static {
+    optionArgDefs.put("-d", 1);
+    optionArgDefs.put("-v", 0);
+    optionArgDefs.put("-p", 1);
+  }
+
+  private static boolean validateCommandLine(String[] args) {
+    Map<String, String[]> argsMap = StringUtils.argsToMap(args,optionArgDefs);
+
+    for(Map.Entry<String, String[]> opt : argsMap.entrySet()) {
+      String key = opt.getKey();
+      if (key == null) {
+        // continue;
+
+      } else if(key.equals("-d")) {
+        MAKE_DISTRIB = true;
+        distribName = opt.getValue()[0];
+
+      } else if(key.equals("-v")) {
+        VERBOSE = true;
+
+      } else if(key.equals("-p")) {
+        outputPath = opt.getValue()[0];
+
+      } else {
+        return false;
+      }
+    }
+
+    //Regular arguments
+    String[] rest = argsMap.get(null);
+    if(rest == null || rest.length != MIN_ARGS) {
+      return false;
+    } else {
+      configFile = rest[0];
+    }
+
+    return true;
+  }
+

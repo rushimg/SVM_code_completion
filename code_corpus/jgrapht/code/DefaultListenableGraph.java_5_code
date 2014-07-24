@@ -1,0 +1,16 @@
+    public DefaultListenableGraph(Graph<V, E> g, boolean reuseEvents)
+    {
+        super(g);
+        this.reuseEvents = reuseEvents;
+        reuseableEdgeEvent = new FlyweightEdgeEvent<V, E>(this, -1, null);
+        reuseableVertexEvent = new FlyweightVertexEvent<V>(this, -1, null);
+
+        // the following restriction could be probably relaxed in the future.
+        if (g instanceof ListenableGraph<?, ?>) {
+            throw new IllegalArgumentException(
+                "base graph cannot be listenable");
+        }
+    }
+
+    //~ Methods ----------------------------------------------------------------
+

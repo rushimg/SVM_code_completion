@@ -1,0 +1,63 @@
+  public static Map<PositionedTree, IndexedWord> mapTreeToSg(Tree tree, SemanticGraph sg) {
+    // In order to keep track of positions, we store lists, in order encountered, of lex terms.
+    // e.g. lexToTreeNode.get("the").get(2) should point to the same word as lexToSemNode.get("the").get(2)
+    // Because IndexedWords may be collapsed together "A B" -> "A_B", we check the value of current(), and
+    // split on whitespace if present.
+    MapList<String, TreeNodeProxy> lexToTreeNode = new MapList<String, TreeNodeProxy>();
+    MapList<String, IndexedWordProxy> lexToSemNode = new MapList<String, IndexedWordProxy>();
+
+    for (Tree child : tree.getLeaves()) {
+      List<TreeNodeProxy> leafProxies = TreeNodeProxy.create(child, tree);
+      for (TreeNodeProxy proxy : leafProxies)
+        lexToTreeNode.add(proxy.lex, proxy);
+    }
+
+    Map<IndexedWord, Integer> depthMap = Generics.newHashMap();
+    for (IndexedWord node : sg.vertexSet()) {
+      List<IndexedWord> path = sg.getPathToRoot(node);
+      if (path != null)
+        depthMap.put(node, path.size());
+      else
+        depthMap.put(node, 99999); // Use an arbitrarily deep depth value, to trick it into never being used.
+      List<IndexedWordProxy> nodeProxies = IndexedWordProxy.create(node);
+      for (IndexedWordProxy proxy : nodeProxies)
+        lexToSemNode.add(proxy.lex, proxy);
+    }
+
+    // Now the map-lists (string->position encountered indices) are populated,
+    // simply go through, finding matches.
+    // NOTE: we use TreeNodeProxy instead of keying off of Tree, as
+    // hash codes for Tree nodes do not consider position of the tree
+    // within a tree: two subtrees with the same layout and child
+    // labels will be equal.
+    Map<PositionedTree, IndexedWord> map = Generics.newHashMap();
+    for (String lex : lexToTreeNode.keySet()) {
+      for (int i=0;i<lexToTreeNode.size(lex) && i<lexToSemNode.size(lex);i++) {
+        map.put(new PositionedTree(lexToTreeNode.get(lex, i).treeNode, tree), lexToSemNode.get(lex,i).node);
+      }
+    }
+
+    // Now that a terminals to terminals map has been generated, account for the
+    // tree non-terminals.
+    for (Tree nonTerm : tree) {
+      if (!nonTerm.isLeaf()) {
+        IndexedWord bestNode = null;
+        int bestScore = 99999;
+        for (Tree curr : nonTerm) {
+          IndexedWord equivNode = map.get(new PositionedTree(curr, tree));
+          if ((equivNode == null) || !depthMap.containsKey(equivNode)) continue;
+          int currScore = depthMap.get(equivNode);
+          if (currScore < bestScore) {
+            bestScore = currScore;
+            bestNode = equivNode;
+          }
+        }
+        if (bestNode != null) {
+          map.put(new PositionedTree(nonTerm, tree), bestNode);
+        }
+      }
+    }
+
+    return map;
+  }
+

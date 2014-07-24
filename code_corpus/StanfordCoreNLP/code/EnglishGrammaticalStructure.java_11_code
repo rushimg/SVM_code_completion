@@ -1,0 +1,185 @@
+  private static GrammaticalRelation conjValue(String conj) {
+    String newConj = conj.toLowerCase();
+    if (newConj.equals("not") || newConj.equals("instead") || newConj.equals("rather")) {
+      newConj = "negcc";
+    } else if (newConj.equals("mention") || newConj.equals("to") || newConj.equals("also") || newConj.contains("well") || newConj.equals("&")) {
+      newConj = "and";
+    }
+    return EnglishGrammaticalRelations.getConj(newConj);
+  }
+
+
+  private static void treatCC(Collection<TypedDependency> list) {
+    // Construct a map from tree nodes to the set of typed
+    // dependencies in which the node appears as dependent.
+    Map<TreeGraphNode, Set<TypedDependency>> map = Generics.newHashMap();
+    // Construct a map of tree nodes being governor of a subject grammatical
+    // relation to that relation
+    Map<TreeGraphNode, TypedDependency> subjectMap = Generics.newHashMap();
+    // Construct a set of TreeGraphNodes with a passive auxiliary on them
+    Set<TreeGraphNode> withPassiveAuxiliary = Generics.newHashSet();
+    // Construct a map of tree nodes being governor of an object grammatical
+    // relation to that relation
+    // Map<TreeGraphNode, TypedDependency> objectMap = new
+    // HashMap<TreeGraphNode, TypedDependency>();
+
+    List<TreeGraphNode> rcmodHeads = new ArrayList<TreeGraphNode>();
+    List<TreeGraphNode> prepcDep = new ArrayList<TreeGraphNode>();
+
+    for (TypedDependency typedDep : list) {
+      if (!map.containsKey(typedDep.dep())) {
+        // NB: Here and in other places below, we use a TreeSet (which extends
+        // SortedSet) to guarantee that results are deterministic)
+        map.put(typedDep.dep(), new TreeSet<TypedDependency>());
+      }
+      map.get(typedDep.dep()).add(typedDep);
+
+      if (typedDep.reln().equals(AUX_PASSIVE_MODIFIER)) {
+        withPassiveAuxiliary.add(typedDep.gov());
+      }
+
+      // look for subjects
+      if (typedDep.reln().getParent() == NOMINAL_SUBJECT || typedDep.reln().getParent() == SUBJECT || typedDep.reln().getParent() == CLAUSAL_SUBJECT) {
+        if (!subjectMap.containsKey(typedDep.gov())) {
+          subjectMap.put(typedDep.gov(), typedDep);
+        }
+      }
+
+      // look for objects
+      // this map was only required by the code commented out below, so comment
+      // it out too
+      // if (typedDep.reln() == DIRECT_OBJECT) {
+      // if (!objectMap.containsKey(typedDep.gov())) {
+      // objectMap.put(typedDep.gov(), typedDep);
+      // }
+      // }
+
+      // look for rcmod relations
+      if (typedDep.reln() == RELATIVE_CLAUSE_MODIFIER) {
+        rcmodHeads.add(typedDep.gov());
+      }
+      // look for prepc relations: put the dependent of such a relation in the
+      // list
+      // to avoid wrong propagation of dobj
+      if (typedDep.reln().toString().startsWith("prepc")) {
+        prepcDep.add(typedDep.dep());
+      }
+    }
+
+    // System.err.println(map);
+    // if (DEBUG) System.err.println("Subject map: " + subjectMap);
+    // if (DEBUG) System.err.println("Object map: " + objectMap);
+    // System.err.println(rcmodHeads);
+
+    // create a new list of typed dependencies
+    Collection<TypedDependency> newTypedDeps = new ArrayList<TypedDependency>(list);
+
+    // find typed deps of form conj(gov,dep)
+    for (TypedDependency td : list) {
+      if (EnglishGrammaticalRelations.getConjs().contains(td.reln())) {
+        TreeGraphNode gov = td.gov();
+        TreeGraphNode dep = td.dep();
+
+        // look at the dep in the conjunct
+        Set<TypedDependency> gov_relations = map.get(gov);
+        // System.err.println("gov " + gov);
+        if (gov_relations != null) {
+          for (TypedDependency td1 : gov_relations) {
+            // System.err.println("gov rel " + td1);
+            TreeGraphNode newGov = td1.gov();
+            // in the case of errors in the basic dependencies, it
+            // is possible to have overlapping newGov & dep
+            if (newGov == dep) {
+              continue;
+            }
+            GrammaticalRelation newRel = td1.reln();
+            if (newRel != ROOT) {
+              if (rcmodHeads.contains(gov) && rcmodHeads.contains(dep)) {
+                // to prevent wrong propagation in the case of long dependencies in relative clauses
+                if (newRel != DIRECT_OBJECT && newRel != NOMINAL_SUBJECT) {
+                  if (DEBUG) {
+                    System.err.println("Adding new " + newRel + " dependency from " + newGov + " to " + dep + " (subj/obj case)");
+                  }
+                  newTypedDeps.add(new TypedDependency(newRel, newGov, dep));
+                }
+              } else {
+                if (DEBUG) {
+                  System.err.println("Adding new " + newRel + " dependency from " + newGov + " to " + dep);
+                }
+                newTypedDeps.add(new TypedDependency(newRel, newGov, dep));
+              }
+            }
+          }
+        }
+
+        // propagate subjects
+        // look at the gov in the conjunct: if it is has a subject relation,
+        // the dep is a verb and the dep doesn't have a subject relation
+        // then we want to add a subject relation for the dep.
+        // (By testing for the dep to be a verb, we are going to miss subject of
+        // copular verbs! but
+        // is it safe to relax this assumption?? i.e., just test for the subject
+        // part)
+        // CDM 2008: I also added in JJ, since participial verbs are often
+        // tagged JJ
+        String tag = dep.parent().value();
+        if (subjectMap.containsKey(gov) && (tag.startsWith("VB") || tag.startsWith("JJ")) && ! subjectMap.containsKey(dep)) {
+          TypedDependency tdsubj = subjectMap.get(gov);
+          // check for wrong nsubjpass: if the new verb is VB or VBZ or VBP or JJ, then
+          // add nsubj (if it is tagged correctly, should do this for VBD too, but we don't)
+          GrammaticalRelation relation = tdsubj.reln();
+          if (relation == NOMINAL_PASSIVE_SUBJECT) {
+            if (isDefinitelyActive(tag)) {
+              relation = NOMINAL_SUBJECT;
+            }
+          } else if (relation == CLAUSAL_PASSIVE_SUBJECT) {
+            if (isDefinitelyActive(tag)) {
+              relation = CLAUSAL_SUBJECT;
+            }
+          } else if (relation == NOMINAL_SUBJECT) {
+            if (withPassiveAuxiliary.contains(dep)) {
+              relation = NOMINAL_PASSIVE_SUBJECT;
+            }
+          } else if (relation == CLAUSAL_SUBJECT) {
+            if (withPassiveAuxiliary.contains(dep)) {
+              relation = CLAUSAL_PASSIVE_SUBJECT;
+            }
+          }
+          if (DEBUG) {
+            System.err.println("Adding new " + relation + " dependency from " + dep + " to " + tdsubj.dep() + " (subj propagation case)");
+          }
+          newTypedDeps.add(new TypedDependency(relation, dep, tdsubj.dep()));
+        }
+
+        // propagate objects
+        // cdm july 2010: This bit of code would copy a dobj from the first
+        // clause to a later conjoined clause if it didn't
+        // contain its own dobj or prepc. But this is too aggressive and wrong
+        // if the later clause is intransitive
+        // (including passivized cases) and so I think we have to not have this
+        // done always, and see no good "sometimes" heuristic.
+        // IF WE WERE TO REINSTATE, SHOULD ALSO NOT ADD OBJ IF THERE IS A ccomp
+        // (SBAR).
+        // if (objectMap.containsKey(gov) &&
+        // dep.parent().value().startsWith("VB") && ! objectMap.containsKey(dep)
+        // && ! prepcDep.contains(gov)) {
+        // TypedDependency tdobj = objectMap.get(gov);
+        // if (DEBUG) {
+        // System.err.println("Adding new " + tdobj.reln() + " dependency from "
+        // + dep + " to " + tdobj.dep() + " (obj propagation case)");
+        // }
+        // newTypedDeps.add(new TypedDependency(tdobj.reln(), dep,
+        // tdobj.dep()));
+        // }
+      }
+    }
+    list.clear();
+    list.addAll(newTypedDeps);
+  }
+
+  private static boolean isDefinitelyActive(String tag) {
+    // we should include VBD, but don't as it is often a tagging mistake.
+    return tag.equals("VB") || tag.equals("VBZ") || tag.equals("VBP") || tag.startsWith("JJ");
+  }
+
+

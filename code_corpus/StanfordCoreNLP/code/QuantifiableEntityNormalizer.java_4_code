@@ -1,0 +1,61 @@
+  public static List<CoreLabel> collapseNERLabels(List<CoreLabel> l){
+    if(DEBUG) {
+      for (CoreLabel w: l) {
+        System.err.println("<<"+w.get(CoreAnnotations.TextAnnotation.class)+"::"+w.get(CoreAnnotations.PartOfSpeechAnnotation.class)+"::"+w.get(CoreAnnotations.NamedEntityTagAnnotation.class)+">>");
+      }
+    }
+
+    List<CoreLabel> s = new ArrayList<CoreLabel>();
+    String lastEntity = BACKGROUND_SYMBOL;
+    StringBuilder entityStringCollector = null;
+
+    //Iterate through each word....
+    for (CoreLabel w: l) {
+      String entityType = w.get(CoreAnnotations.NamedEntityTagAnnotation.class);
+      //if we've just completed an entity and we're looking at a non-continuation,
+      //we want to add that now.
+      if (entityStringCollector != null && ! entityType.equals(lastEntity)) {
+        CoreLabel nextWord = new CoreLabel();
+        nextWord.setWord(entityStringCollector.toString());
+        nextWord.set(CoreAnnotations.PartOfSpeechAnnotation.class, "NNP");
+        nextWord.set(CoreAnnotations.NamedEntityTagAnnotation.class, lastEntity);
+        s.add(nextWord);
+        if (DEBUG) {
+          err.print("Quantifiable: Collapsing ");
+          err.println(entityStringCollector.toString());
+        }
+        entityStringCollector = null;
+      }
+      //If its not to be collapsed, toss it onto the sentence.
+      if ( ! collapseBeforeParsing.contains(entityType)) {
+        s.add(w);
+      } else { //If it is to be collapsed....
+        //if its a continuation of the last entity, add it to the
+        //current buffer.
+        if (entityType.equals(lastEntity)){
+          assert entityStringCollector != null;
+          entityStringCollector.append('_');
+          entityStringCollector.append(w.get(CoreAnnotations.TextAnnotation.class));
+        } else {
+          //and its NOT a continuation, make a new buffer.
+          entityStringCollector = new StringBuilder();
+          entityStringCollector.append(w.get(CoreAnnotations.TextAnnotation.class));
+        }
+      }
+      lastEntity=entityType;
+    }
+    // if the last token was a named-entity, we add it here.
+    if (entityStringCollector!=null) {
+      CoreLabel nextWord = new CoreLabel();
+      nextWord.setWord(entityStringCollector.toString());
+      nextWord.set(CoreAnnotations.PartOfSpeechAnnotation.class, "NNP");
+      nextWord.set(CoreAnnotations.NamedEntityTagAnnotation.class, lastEntity);
+      s.add(nextWord);
+    }
+    for (CoreLabel w : s) {
+      System.err.println("<<"+w.get(CoreAnnotations.TextAnnotation.class)+"::"+w.get(CoreAnnotations.PartOfSpeechAnnotation.class)+"::"+w.get(CoreAnnotations.NamedEntityTagAnnotation.class)+">>");
+    }
+    return s;
+  }
+
+

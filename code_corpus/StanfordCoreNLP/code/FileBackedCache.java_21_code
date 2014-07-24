@@ -1,0 +1,30 @@
+  @Override
+  public Set<Entry<KEY, T>> entrySet() {
+    readCache();
+    Set<Entry<KEY, SoftReference<T>>> entries = mapping.entrySet();
+    Set<Entry<KEY, T>> rtn = Generics.newHashSet();
+    for (final Entry<KEY, SoftReference<T>> entry : entries) {
+      T value = entry.getValue().get();
+      if (value == null) value = get(entry.getKey());
+      final T valueFinal = value;
+      rtn.add(new Entry<KEY, T>(){
+        private T valueImpl = valueFinal;
+        @Override
+        public KEY getKey() {
+          return entry.getKey();
+        }
+        @Override
+        public T getValue() {
+          return valueImpl;
+        }
+        @Override
+        public T setValue(T value) {
+          T oldValue = valueImpl;
+          valueImpl = value;
+          return oldValue;
+        }
+      });
+    }
+    return rtn;
+  }
+

@@ -1,0 +1,154 @@
+
+    if (flags.useWord1) {
+      // features.add(charc +"c");
+      // features.add(charc2+"c2");
+      // features.add(charp +"p");
+      // features.add(charp + charc  +"pc");
+      // features.add(charc + charc2  +"cc2");
+      // cdm: need hyphen so you can see which of charp or charc2 is null....
+      // features.add(charp + "-" + charc2 + "pc2");
+
+      features.add(charc +"::c");
+      features.add(charc2+"::c2");
+      features.add(charp +"::p");
+      features.add(charp2 +"::p2");
+      // trying to restore the features that Huishin described in SIGHAN 2005 paper
+      features.add(charc +charc2  +"::cn");
+      features.add(charc +charc3  +"::cn2");
+      features.add(charp +charc  +"::pc");
+      features.add(charp +charc2  +"::pn");
+      features.add(charp2 +charp  +"::p2p");
+      features.add(charp2 +charc  +"::p2c");
+      features.add(charc2 +charc  +"::n2c");
+    }
+
+    if (flags.dictionary != null || flags.serializedDictionary != null) {
+      dictionaryFeaturesC(CoreAnnotations.LBeginAnnotation.class, CoreAnnotations.LMiddleAnnotation.class, CoreAnnotations.LEndAnnotation.class,"",features, p, c, c2);
+    }
+
+    if (flags.dictionary2 != null) {
+      dictionaryFeaturesC(CoreAnnotations.D2_LBeginAnnotation.class, CoreAnnotations.D2_LMiddleAnnotation.class, CoreAnnotations.D2_LEndAnnotation.class,"-D2-",features, p, c, c2);
+    }
+
+    if (flags.useFeaturesC4gram || flags.useFeaturesC5gram || flags.useFeaturesC6gram) {
+      features.add(charp2 + charp  +"p2p");
+      features.add(charp2 + "p2");
+    }
+    if (flags.useFeaturesC5gram || flags.useFeaturesC6gram) {
+      features.add(charc3+"c3");
+      features.add(charc2 + charc3 + "c2c3");
+    }
+    if (flags.useFeaturesC6gram) {
+      features.add(charp3 + "p3");
+      features.add(charp3 + charp2 + "p3p2");
+    }
+
+    if (flags.useUnicodeType || flags.useUnicodeType4gram || flags.useUnicodeType5gram) {
+      features.add(uTypep + "-" + uTypec + "-" + uTypec2 + "-uType3");
+    }
+    if (flags.useUnicodeType4gram || flags.useUnicodeType5gram) {
+      features.add(uTypep2 + "-" + uTypep + "-" + uTypec + "-" + uTypec2 + "-uType4");
+    }
+    if (flags.useUnicodeType5gram) {
+      features.add(uTypep2 + "-" + uTypep + "-" + uTypec + "-" + uTypec2 + "-" + uTypec3 + "-uType5");
+    }
+    if (flags.useUnicodeBlock) {
+      features.add(p.getString(CoreAnnotations.UBlockAnnotation.class) + "-" + c.getString(CoreAnnotations.UBlockAnnotation.class) + "-" + c2.getString(CoreAnnotations.UBlockAnnotation.class) + "-uBlock");
+    }
+    if (flags.useShapeStrings) {
+      if (flags.useShapeStrings1) {
+        features.add(p.getString(CoreAnnotations.ShapeAnnotation.class) + "ps");
+        features.add(c.getString(CoreAnnotations.ShapeAnnotation.class) + "cs");
+        features.add(c2.getString(CoreAnnotations.ShapeAnnotation.class) + "c2s");
+      }
+      if (flags.useShapeStrings3) {
+        features.add(p.getString(CoreAnnotations.ShapeAnnotation.class) + c.getString(CoreAnnotations.ShapeAnnotation.class) + c2.getString(CoreAnnotations.ShapeAnnotation.class) + "pscsc2s");
+      }
+      if (flags.useShapeStrings4) {
+        features.add(p2.getString(CoreAnnotations.ShapeAnnotation.class) + p.getString(CoreAnnotations.ShapeAnnotation.class) + c.getString(CoreAnnotations.ShapeAnnotation.class) + c2.getString(CoreAnnotations.ShapeAnnotation.class) + "p2spscsc2s");
+      }
+      if (flags.useShapeStrings5) {
+        features.add(p2.getString(CoreAnnotations.ShapeAnnotation.class) + p.getString(CoreAnnotations.ShapeAnnotation.class) + c.getString(CoreAnnotations.ShapeAnnotation.class) + c2.getString(CoreAnnotations.ShapeAnnotation.class) + c3.getString(CoreAnnotations.ShapeAnnotation.class) + "p2spscsc2sc3s");
+      }
+    }
+
+    features.add("cliqueC");
+
+    return features;
+  }
+
+
+  private void dictionaryFeaturesCpC(Class<? extends CoreAnnotation<String>> lbeginFieldName,
+                                     Class<? extends CoreAnnotation<String>> lmiddleFieldName,
+                                     Class<? extends CoreAnnotation<String>> lendFieldName,
+                                     String dictSuffix, Collection<String> features, CoreLabel p2, CoreLabel p, CoreLabel c, CoreLabel c2) {
+    String lbegin = c.getString(lbeginFieldName);
+    String lmiddle = c.getString(lmiddleFieldName);
+    String lend = c.getString(lendFieldName);
+    features.add(lbegin+dictSuffix+"-lb");
+    features.add(lmiddle+dictSuffix+"-lm");
+    features.add(lend+dictSuffix+"-le");
+
+    lbegin = p.getString(lbeginFieldName);
+    lmiddle = p.getString(lmiddleFieldName);
+    lend = p.get(lendFieldName);
+    features.add(lbegin+dictSuffix+"-plb");
+    features.add(lmiddle+dictSuffix+"-plm");
+    features.add(lend+dictSuffix+"-ple");
+
+    lbegin = c2.getString(lbeginFieldName);
+    lmiddle = c2.getString(lmiddleFieldName);
+    lend = c2.getString(lendFieldName);
+    features.add(lbegin+dictSuffix+"-c2lb");
+    features.add(lmiddle+dictSuffix+"-c2lm");
+    features.add(lend+dictSuffix+"-c2le");
+
+    if (flags.useDictionaryConjunctions) {
+      String p2Lend = p2.getString(lendFieldName);
+      String pLend = p.getString(lendFieldName);
+      String pLbegin = p.getString(lbeginFieldName);
+      String cLbegin = c.getString(lbeginFieldName);
+      String cLmiddle = c.getString(lmiddleFieldName);
+      if (flags.useDictionaryConjunctions3) {
+        features.add(pLend + cLbegin + cLmiddle + dictSuffix + "-pcLconj1");
+      }
+      features.add(p2Lend + pLend + cLbegin + cLmiddle + dictSuffix + "-p2pcLconj1");
+      features.add(p2Lend + pLend + pLbegin + cLbegin + cLmiddle + dictSuffix + "-p2pcLconj2");
+    }
+  }
+
+
+  protected Collection<String> featuresCpC(PaddedList<? extends CoreLabel> cInfo, int loc) {
+    Collection<String> features = new ArrayList<String>();
+    CoreLabel c = cInfo.get(loc);
+    CoreLabel c2 = cInfo.get(loc + 1);
+    CoreLabel c3 = cInfo.get(loc + 2);
+    CoreLabel p = cInfo.get(loc - 1);
+    CoreLabel p2 = cInfo.get(loc - 2);
+    CoreLabel p3 = cInfo.get(loc - 3);
+
+    String charc = c.getString(CoreAnnotations.CharAnnotation.class);
+    String charc2 = c2.getString(CoreAnnotations.CharAnnotation.class);
+    String charc3 = c3.getString(CoreAnnotations.CharAnnotation.class);
+    String charp = p.getString(CoreAnnotations.CharAnnotation.class);
+    String charp2 = p2.getString(CoreAnnotations.CharAnnotation.class);
+    String charp3 = p3.getString(CoreAnnotations.CharAnnotation.class);
+
+    Integer cI = c.get(CoreAnnotations.UTypeAnnotation.class);
+    String uTypec = (cI != null ? cI.toString() : "");
+    Integer c2I = c2.get(CoreAnnotations.UTypeAnnotation.class);
+    String uTypec2 = (c2I != null ? c2I.toString() : "");
+    Integer c3I = c3.get(CoreAnnotations.UTypeAnnotation.class);
+    String uTypec3 = (c3I != null ? c3I.toString() : "");
+    Integer pI = p.get(CoreAnnotations.UTypeAnnotation.class);
+    String uTypep = (pI != null ? pI.toString() : "");
+    Integer p2I = p2.get(CoreAnnotations.UTypeAnnotation.class);
+    String uTypep2 = (p2I != null ? p2I.toString() : "");
+
+    if (flags.dictionary != null || flags.serializedDictionary != null) {
+      dictionaryFeaturesCpC(CoreAnnotations.LBeginAnnotation.class, CoreAnnotations.LMiddleAnnotation.class, CoreAnnotations.LEndAnnotation.class,"",features, p2, p, c, c2);
+    }
+    if (flags.dictionary2 != null) {
+      dictionaryFeaturesCpC(CoreAnnotations.D2_LBeginAnnotation.class, CoreAnnotations.D2_LMiddleAnnotation.class, CoreAnnotations.D2_LEndAnnotation.class,"-D2-",features, p2, p, c, c2);
+    }
+

@@ -1,0 +1,62 @@
+  public FrenchXMLTreeReader(Reader in, TreeFactory tf, TreeNormalizer tn) {
+    TreebankLanguagePack tlp = new FrenchTreebankLanguagePack();
+    stream = new ReaderInputStream(in,tlp.getEncoding());
+    treeFactory = tf;
+    treeNormalizer = tn;
+
+    DocumentBuilder parser = XMLUtils.getXmlParser();
+    try {
+      final Document xml = parser.parse(stream);
+      final Element root = xml.getDocumentElement();
+      sentences = root.getElementsByTagName(NODE_SENT);
+      sentIdx = 0;
+
+    } catch (SAXException e) {
+      e.printStackTrace();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+
+  public void close() {
+    try {
+      if(stream != null) {
+        stream.close();
+        stream = null;
+      }
+    } catch (IOException e) {
+      //Silently ignore
+    }
+  }
+
+  public Tree readTree() {
+    Tree t = null;
+    while(t == null && sentences != null && sentIdx < sentences.getLength()) {
+      Node sentRoot = sentences.item(sentIdx++);
+      t = getTreeFromXML(sentRoot);
+
+      if(t != null) {
+        t = treeNormalizer.normalizeWholeTree(t, treeFactory);
+        if(t.label() instanceof CoreLabel) {
+          String ftbId = ((Element) sentRoot).getAttribute(ATTR_NUMBER);
+          ((CoreLabel) t.label()).set(CoreAnnotations.SentenceIDAnnotation.class, ftbId);
+        }
+      }
+    }
+    return t;
+  }
+
+  //wsg2010: Sometimes the cat attribute is not present, in which case the POS
+  //is in the attribute catint, which indicates a part of a compound / MWE
+  private String getPOS(Element node) {
+    String attrPOS = node.hasAttribute(ATTR_POS) ? node.getAttribute(ATTR_POS).trim() : "";
+    String attrPOSMWE = node.hasAttribute(ATTR_POS_MWE) ? node.getAttribute(ATTR_POS_MWE).trim() : "";
+
+    if(attrPOS != "")
+      return attrPOS;
+    else if(attrPOSMWE != "")
+      return attrPOSMWE;
+
+    return MISSING_POS;
+  }
+

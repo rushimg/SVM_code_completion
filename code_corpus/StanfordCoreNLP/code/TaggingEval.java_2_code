@@ -1,0 +1,85 @@
+  private void measureOOV(Tree guess, Tree gold) {
+    List<CoreLabel> goldTagging = gold.taggedLabeledYield();
+    List<CoreLabel> guessTagging = guess.taggedLabeledYield();
+
+    assert goldTagging.size() == guessTagging.size();
+
+    for(int i = 0; i < goldTagging.size(); i++) {
+      if(!(goldTagging.get(i) == guessTagging.get(i))) {
+        percentOOV2.incrementCount(goldTagging.get(i).tag());
+        if(!lex.isKnown(goldTagging.get(i).word()))
+          percentOOV.incrementCount(goldTagging.get(i).tag());
+      }
+    }
+  }
+
+  @Override
+  public void display(boolean verbose, PrintWriter pw) {
+    super.display(verbose, pw);
+
+    if(doCatLevelEval) {
+      final NumberFormat nf = new DecimalFormat("0.00");
+      final Set<String> cats = Generics.newHashSet();
+      final Random rand = new Random();
+      cats.addAll(precisions.keySet());
+      cats.addAll(recalls.keySet());
+
+      Map<Double,String> f1Map = new TreeMap<Double,String>();
+      for (String cat : cats) {
+        double pnum2 = pnums2.getCount(cat);
+        double rnum2 = rnums2.getCount(cat);
+        double prec = precisions2.getCount(cat) / pnum2;
+        double rec = recalls2.getCount(cat) / rnum2;
+        double f1 = 2.0 / (1.0 / prec + 1.0 / rec);
+
+        if(new Double(f1).equals(Double.NaN)) f1 = -1.0;
+        if(f1Map.containsKey(f1))
+          f1Map.put(f1 + (rand.nextDouble()/1000.0), cat);
+        else
+          f1Map.put(f1, cat);
+      }
+
+      pw.println("============================================================");
+      pw.println("Tagging Performance by Category -- final statistics");
+      pw.println("============================================================");
+
+      for (String cat : f1Map.values()) {
+        double pnum2 = pnums2.getCount(cat);
+        double rnum2 = rnums2.getCount(cat);
+        double prec = precisions2.getCount(cat) / pnum2;
+        double rec = recalls2.getCount(cat) / rnum2;
+        double f1 = 2.0 / (1.0 / prec + 1.0 / rec);
+
+        double oovRate = (lex == null) ? -1.0 : percentOOV.getCount(cat) / percentOOV2.getCount(cat);
+
+        pw.println(cat + "\tLP: " + ((pnum2 == 0.0) ? " N/A": nf.format(prec)) + "\tguessed: " + (int) pnum2 +
+            "\tLR: " + ((rnum2 == 0.0) ? " N/A": nf.format(rec)) + "\tgold:  " + (int) rnum2 +
+            "\tF1: " + ((pnum2 == 0.0 || rnum2 == 0.0) ? " N/A": nf.format(f1)) +
+            "\tOOV: " + ((lex == null) ? " N/A" : nf.format(oovRate)));
+      }
+
+      pw.println("============================================================");
+    }
+  }
+
+  private static final int minArgs = 2;
+  private static final StringBuilder usage = new StringBuilder();
+  static {
+    usage.append(String.format("Usage: java %s [OPTS] gold guess\n\n",TaggingEval.class.getName()));
+    usage.append("Options:\n");
+    usage.append("  -v         : Verbose mode.\n");
+    usage.append("  -l lang    : Select language settings from " + Languages.listOfLanguages() + "\n");
+    usage.append("  -y num     : Skip gold trees with yields longer than num.\n");
+    usage.append("  -c         : Compute LP/LR/F1 by category.\n");
+    usage.append("  -e         : Input encoding.\n");
+  }
+
+  public static final Map<String,Integer> optionArgDefs = Generics.newHashMap();
+  static {
+    optionArgDefs.put("-v", 0);
+    optionArgDefs.put("-l", 1);
+    optionArgDefs.put("-y", 1);
+    optionArgDefs.put("-c", 0);
+    optionArgDefs.put("-e", 0);
+  }
+

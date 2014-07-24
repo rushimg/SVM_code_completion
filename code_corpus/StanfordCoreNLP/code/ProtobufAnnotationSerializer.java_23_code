@@ -1,0 +1,121 @@
+  public Annotation fromProto(CoreNLPProtos.Document proto) {
+    // Set text
+    Annotation ann = new Annotation(proto.getText());
+
+    // Add tokens
+    List<CoreLabel> tokens = new ArrayList<CoreLabel>();
+    if (proto.getSentenceCount() > 0) {
+      // Populate the tokens from the sentence
+      for (CoreNLPProtos.Sentence sentence : proto.getSentenceList()) {
+        // It's conceivable that the sentences are not contiguous -- pad this with nulls
+        while (sentence.hasTokenOffsetBegin() && tokens.size() < sentence.getTokenOffsetBegin()) {
+          tokens.add(null);
+        }
+        // Read the sentence
+        for (CoreNLPProtos.Token token : sentence.getTokenList()) {
+          CoreLabel coreLabel = fromProto(token);
+          // Set docid
+          if (proto.hasDocID()) { coreLabel.setDocID(proto.getDocID()); }
+          if (token.hasTokenBeginIndex() && token.hasTokenEndIndex()) {
+            // This is usually true, if enough annotators are defined
+            while (tokens.size() < sentence.getTokenOffsetEnd()) {
+              tokens.add(null);
+            }
+            for (int i = token.getTokenBeginIndex(); i < token.getTokenEndIndex(); ++i) {
+              tokens.set(token.getTokenBeginIndex(), coreLabel);
+            }
+          } else {
+            // Assume this token spans a single token, and just add it to the tokens list
+            tokens.add(coreLabel);
+          }
+        }
+      }
+    } else if (proto.getSentencelessTokenCount() > 0) {
+      // Eek -- no sentences. Try to recover tokens directly
+      if (proto.getSentencelessTokenCount() > 0) {
+        for (CoreNLPProtos.Token token : proto.getSentencelessTokenList()) {
+          CoreLabel coreLabel = fromProto(token);
+          // Set docid
+          if (proto.hasDocID()) { coreLabel.setDocID(proto.getDocID()); }
+          tokens.add(coreLabel);
+        }
+      }
+    }
+    if (!tokens.isEmpty()) { ann.set(TokensAnnotation.class, tokens); }
+
+    // Add sentences
+    List<CoreMap> sentences = new ArrayList<CoreMap>(proto.getSentenceCount());
+    for (int sentIndex = 0; sentIndex < proto.getSentenceCount(); ++sentIndex) {
+      CoreNLPProtos.Sentence sentence = proto.getSentence(sentIndex);
+      CoreMap map = fromProtoNoTokens(sentence);
+      if (!tokens.isEmpty() && sentence.hasTokenOffsetBegin() && sentence.hasTokenOffsetEnd() &&
+          map.get(TokensAnnotation.class) == null) {
+        // Set tokens for sentence
+        int tokenBegin = sentence.getTokenOffsetBegin();
+        int tokenEnd = sentence.getTokenOffsetEnd();
+        assert tokenBegin <= tokens.size() && tokenBegin <= tokenEnd;
+        assert tokenEnd <= tokens.size();
+        map.set(TokensAnnotation.class, tokens.subList(tokenBegin, tokenEnd));
+        // Set sentence index + token index + paragraph index
+        for (int i = tokenBegin; i < tokenEnd; ++i) {
+          tokens.get(i).setSentIndex(sentIndex);
+          tokens.get(i).setIndex(i - sentence.getTokenOffsetBegin() + 1);
+          if (sentence.hasParagraph()) { tokens.get(i).set(ParagraphAnnotation.class, sentence.getParagraph()); }
+        }
+        // Set text
+        int characterBegin = sentence.getCharacterOffsetBegin();
+        int characterEnd = sentence.getCharacterOffsetEnd();
+        if (characterEnd <= proto.getText().length()) {
+          // The usual case -- get the text from the document text
+          map.set(TextAnnotation.class, proto.getText().substring(characterBegin, characterEnd));
+        } else {
+          // The document text is wrong -- guess the text from the tokens
+          map.set(TextAnnotation.class, recoverOriginalText(tokens.subList(tokenBegin, tokenEnd), sentence));
+        }
+      }
+      // End iteration
+      sentences.add(map);
+    }
+    if (!sentences.isEmpty()) { ann.set(SentencesAnnotation.class, sentences); }
+
+    // Set DocID
+    String docid = null;
+    if (proto.hasDocID()) {
+      docid = proto.getDocID();
+      ann.set(DocIDAnnotation.class, docid);
+    }
+
+    // Set coref chain
+    Map<Integer, CorefChain> corefChains = new HashMap<Integer, CorefChain>();
+    for (CoreNLPProtos.CorefChain chainProto : proto.getCorefChainList()) {
+      CorefChain chain = fromProto(chainProto, ann);
+      corefChains.put(chain.getChainID(), chain);
+    }
+    if (!corefChains.isEmpty()) { ann.set(CorefChainAnnotation.class, corefChains); }
+
+    // Set dependency graphs
+    // We need to wait until here, since this is the first time we see tokens
+    for (int i = 0; i < proto.getSentenceCount(); ++i) {
+      CoreNLPProtos.Sentence sentence = proto.getSentenceList().get(i);
+      CoreMap map = sentences.get(i);
+      List<CoreLabel> sentenceTokens = map.get(TokensAnnotation.class);
+      if (sentence.hasBasicDependencies()) {
+        map.set(BasicDependenciesAnnotation.class, fromProto(sentence.getBasicDependencies(), sentenceTokens, docid));
+      }
+      if (sentence.hasCollapsedDependencies()) {
+        map.set(CollapsedDependenciesAnnotation.class, fromProto(sentence.getCollapsedDependencies(), sentenceTokens, docid));
+      }
+      if (sentence.hasCollapsedCCProcessedDependencies()) {
+        map.set(CollapsedCCProcessedDependenciesAnnotation.class, fromProto(sentence.getCollapsedCCProcessedDependencies(), sentenceTokens, docid));
+      }
+      // Redo some light annotation
+      if ( map.containsKey(TokensAnnotation.class) &&
+          (!sentence.hasHasNumerizedTokensAnnotation() || sentence.getHasNumerizedTokensAnnotation())) {
+        map.set(NumerizedTokensAnnotation.class, NumberNormalizer.findAndMergeNumbers(map));
+      }
+    }
+
+    // Return
+    return ann;
+  }
+

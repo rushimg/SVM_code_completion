@@ -1,0 +1,16 @@
+  @SuppressWarnings("UnusedDeclaration")
+  public Annotation readUndelimited(File in) throws IOException {
+    FileInputStream delimited = new FileInputStream(in);
+    FileInputStream undelimited = new FileInputStream(in);
+    CoreNLPProtos.Document doc;
+    try {
+      doc = CoreNLPProtos.Document.parseFrom(delimited);
+    } catch (Exception e) {
+      doc = CoreNLPProtos.Document.parseDelimitedFrom(undelimited);
+    } finally {
+      delimited.close();
+      undelimited.close();
+    }
+    return fromProto(doc);
+  }
+

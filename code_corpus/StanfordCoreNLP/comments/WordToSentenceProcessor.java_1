@@ -1,0 +1,46 @@
+/**
+ * Transforms a List of words into a List of Lists of words (that is, a List
+ * of sentences), by grouping the words.  The word stream is assumed to
+ * already be adequately tokenized, and this class just divides the List into
+ * sentences, perhaps discarding some separator tokens as it goes.
+ * <p>
+ * The main behavior is to look for sentence ending tokens like "." or "?!?",
+ * and to split after them and any following sentence closers like ")".
+ * Overlaid on this is an overall choice of state: The WordToSentenceProcessor
+ * can be a non-splitter, which always returns one sentence. Otherwise, the
+ * WordToSentenceProcessor will also split based on paragraphs using one of
+ * these three states: (1) Ignore line breaks in splitting sentences,
+ * (2) Treat each line as a separate paragraph, or (3) Treat two consecutive
+ * line breaks as marking the end of a paragraph. The details of sentence
+ * breaking within paragraphs is controlled based on the following three
+ * variables:
+ * <ul>
+ * <li>sentenceBoundaryTokens are tokens that are left in a sentence, but are
+ * to be regarded as ending a sentence.  A canonical example is a period.
+ * If two of these follow each other, the second will be a sentence
+ * consisting of only the sentenceBoundaryToken.
+ * <li>sentenceBoundaryFollowers are tokens that are left in a sentence, and
+ * which can follow a sentenceBoundaryToken while still belonging to
+ * the previous sentence.  They cannot begin a sentence (except at the
+ * beginning of a document).  A canonical example is a close parenthesis
+ * ')'.
+ * <li>sentenceBoundaryToDiscard are tokens which separate sentences and
+ * which should be thrown away.  In web documents, a typical example would
+ * be a '{@code <p>}' tag.  If two of these follow each other, they are
+ * coalesced: no empty Sentence is output.  The end-of-file is not
+ * represented in this Set, but the code behaves as if it were a member.
+ * <li>regionElementRegex A regular expression for element names containing
+ * a sentence region. Only tokens in such elements will be included in
+ * sentences. The start and end tags themselves are not included in the
+ * sentence.
+ * </ul>
+ *
+ * Instances of this class are now immutable. ☺
+ *
+ * @author Joseph Smarr (jsmarr@stanford.edu)
+ * @author Christopher Manning
+ * @author Teg Grenager (grenager@stanford.edu)
+ * @author Sarah Spikes (sdspikes@cs.stanford.edu) (Templatization)
+ *
+ * @param <IN> The type of the tokens in the sentences
+ */

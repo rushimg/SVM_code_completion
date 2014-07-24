@@ -1,0 +1,138 @@
+  public Experiments(String filename) {
+    try {
+      Exception e1 = new Exception("Incorrect data file format");
+      BufferedReader in = new BufferedReader(new FileReader(filename));
+      String head = in.readLine();
+      if (!head.equals("<data>")) {
+        throw e1;
+      }
+      String xLine = in.readLine();
+      if (!xLine.startsWith("<xSize>")) {
+        throw e1;
+      }
+      if (!xLine.endsWith("</xSize>")) {
+        throw e1;
+      }
+      int index1 = xLine.indexOf('>');
+      int index2 = xLine.lastIndexOf('<');
+      String xSt = xLine.substring(index1 + 1, index2);
+      System.out.println(xSt);
+      xSize = Integer.parseInt(xSt);
+      System.out.println("xSize is " + xSize);
+      String yLine = in.readLine();
+      if (!yLine.startsWith("<ySize>")) {
+        throw e1;
+      }
+      if (!yLine.endsWith("</ySize>")) {
+        throw e1;
+      }
+      index1 = yLine.indexOf('>');
+      index2 = yLine.lastIndexOf('<');
+      ySize = Integer.parseInt(yLine.substring(index1 + 1, index2));
+      System.out.println("ySize is " + ySize);
+      String nLine = in.readLine();
+      if (!nLine.startsWith("<number>")) {
+        throw e1;
+      }
+      if (!nLine.endsWith("</number>")) {
+        throw e1;
+      }
+      index1 = nLine.indexOf('>');
+      index2 = nLine.lastIndexOf('<');
+      int number = Integer.parseInt(nLine.substring(index1 + 1, index2));
+      System.out.println("number is " + number);
+      vArray = new int[number][2];
+      int current = 0;
+      while (current < number) {
+        String experiment = in.readLine();
+        int index = experiment.indexOf(' ');
+        int x = Integer.parseInt(experiment.substring(0, index));
+        int y = Integer.parseInt(experiment.substring(index + 1));
+        vArray[current][0] = x;
+        vArray[current][1] = y;
+        current++;
+      }
+      ptilde(ySize);
+    } catch (Exception e) {
+      System.out.println("Incorrect data file format");
+      e.printStackTrace();
+    }
+  }
+
+  public void add(Experiments m) {
+    v.add(m);
+  }
+
+
+  public final void ptilde() {
+    int maxX = 0;
+    int maxY = 0;
+    for (int[] sample : vArray) {
+      if (maxX < sample[0]) {
+        maxX = sample[0];
+      }
+      if (maxY < sample[1]) {
+        maxY = sample[1];
+      }
+    }
+    px = new int[maxX + 1];
+    py = new int[maxY + 1];
+    pxy = new int[maxX + 1][dim];
+    xSize = maxX + 1;
+    ySize = maxY + 1;
+    //GlobalHolder.xSize=xSize;
+    //GlobalHolder.ySize=ySize;
+    int[] yArr = new int[dim];
+    for (int[] sample : vArray) {
+      int xC = sample[0];
+      int yC = sample[1];
+      px[xC]++;
+      py[yC]++;
+      for (int j = 0; j < dim; j++) {
+        yArr[j] = pxy[xC][j] > 0 ? pxy[xC][j] % ySize : -1;
+      }
+      for (int j = 0; j < dim; j++) {
+        if (yArr[j] == -1) {
+          pxy[xC][j] = ySize + yC;
+          break;
+        }
+        if (yC == yArr[j]) {
+          pxy[xC][j] += ySize;
+          break;
+        }
+      } // for dim
+
+      //System.out.println(" Exception more than  "+dim);
+
+    }// for i
+
+    // check for same x with different y
+    for (int y = 0; y < ySize; y++) {
+      double sum = 0.0;
+      for (int x = 0; x < xSize; x++) {
+        double p1 = ptildeXY(x, y);
+        sum = sum + p1;
+      }
+      if (Math.abs(ptildeY(y) - sum) > 0.00001) {
+        System.out.println("Experiments error: for y=" + y + ", ptildeY(y)=" + ptildeY(y) + " but Sum_x ptildeXY(x,y)=" + sum);
+      }
+    }// for y
+
+    this.maxY = new int[xSize];
+    for (int j = 0; j < xSize; j++) {
+      this.maxY[j] = ySize;
+    }
+  } // end ptilde()
+
+
+  public void setMaxY(int[] maxY) {
+    this.maxY = maxY;
+  }
+
+
+  public int numY(int x) {
+    return maxY[x];
+  }
+
+
+

@@ -1,0 +1,39 @@
+    private void prefetchSectionPaints() {
+
+        // pre-fetch the colors for each key...this is because the subplots
+        // may not display every key, but we need the coloring to be
+        // consistent...
+
+        PiePlot piePlot = (PiePlot) getPieChart().getPlot();
+
+        if (this.dataExtractOrder == TableOrder.BY_ROW) {
+            // column keys provide potential keys for individual pies
+            for (int c = 0; c < this.dataset.getColumnCount(); c++) {
+                Comparable key = this.dataset.getColumnKey(c);
+                Paint p = piePlot.getSectionPaint(key);
+                if (p == null) {
+                    p = (Paint) this.sectionPaints.get(key);
+                    if (p == null) {
+                        p = getDrawingSupplier().getNextPaint();
+                    }
+                }
+                this.sectionPaints.put(key, p);
+            }
+        }
+        else {
+            // row keys provide potential keys for individual pies
+            for (int r = 0; r < this.dataset.getRowCount(); r++) {
+                Comparable key = this.dataset.getRowKey(r);
+                Paint p = piePlot.getSectionPaint(key);
+                if (p == null) {
+                    p = (Paint) this.sectionPaints.get(key);
+                    if (p == null) {
+                        p = getDrawingSupplier().getNextPaint();
+                    }
+                }
+                this.sectionPaints.put(key, p);
+            }
+        }
+
+    }
+

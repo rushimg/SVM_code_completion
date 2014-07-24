@@ -1,0 +1,65 @@
+    private static <EE, CC> HashMap<Integer,
+        List<EquivalenceSet<? super EE, ? super CC>>> createEqualityGroupMap(
+        Collection<EE> elements,
+        EquivalenceComparator<? super EE, ? super CC> aEqComparator,
+        CC aComparatorContext)
+    {
+        HashMap<Integer, List<EquivalenceSet<? super EE, ? super CC>>> equalityGroupMap =
+            new HashMap<Integer, List<EquivalenceSet<? super EE, ? super CC>>>(
+                elements.size());
+
+        for (EE curentElement : elements) {
+            int hashcode =
+                aEqComparator.equivalenceHashcode(
+                    curentElement,
+                    aComparatorContext);
+            List<EquivalenceSet<? super EE, ? super CC>> list =
+                equalityGroupMap.get(Integer.valueOf(hashcode));
+
+            // determine the type of value. It can be null(no value yet) ,
+            // or a list of EquivalenceSet
+
+            if (list == null) {
+                // create list with one element in it
+                list = new LinkedList<EquivalenceSet<? super EE, ? super CC>>();
+                list.add(
+                    new EquivalenceSet<EE, CC>(
+                        curentElement,
+                        aEqComparator,
+                        aComparatorContext));
+
+                // This is the first one .add it to the map , in an eqGroup
+                equalityGroupMap.put(Integer.valueOf(hashcode), list);
+            } else {
+                boolean eqWasFound = false;
+
+                // we need to check the groups in the list. If none are good,
+                // create a new one
+                for (EquivalenceSet<? super EE, ? super CC> eqGroup : list) {
+                    if (eqGroup.equivalentTo(
+                            curentElement,
+                            aComparatorContext))
+                    {
+                        // add it to the list and break
+                        eqGroup.add(curentElement);
+                        eqWasFound = true;
+                        break;
+                    }
+                }
+
+                // if no match was found add it to the list as a new group
+                if (!eqWasFound) {
+                    list.add(
+                        new EquivalenceSet<EE, CC>(
+                            curentElement,
+                            aEqComparator,
+                            aComparatorContext));
+                }
+            }
+        }
+
+        return equalityGroupMap;
+    }
+
+    //~ Inner Classes ----------------------------------------------------------
+

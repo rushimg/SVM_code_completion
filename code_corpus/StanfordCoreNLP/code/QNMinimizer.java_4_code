@@ -1,0 +1,61 @@
+    public void start(double val, double[] grad, double[] x) {
+      startTime = System.currentTimeMillis();
+      gNormInit = ArrayMath.norm(grad);
+      xLast = x;
+      writeToFile(1, val, gNormInit, 0.0);
+
+      if (x != null) {
+        monitorX(x);
+      }
+    }
+
+    private void writeToFile(double fevals, double val, double gNorm,
+        double time) {
+      if (outputFile != null) {
+        outputFile.println(fevals + "," + val + "," + gNorm + "," + time);
+      }
+    }
+
+    public void add(double val, double[] grad, double[] x, int fevals, double evalScore) {
+
+      if (!memoryConscious) {
+        if (gNorms.size() > maxSize) {
+          gNorms.remove(0);
+        }
+        if (time.size() > maxSize) {
+          time.remove(0);
+        }
+        if (funcEvals.size() > maxSize) {
+          funcEvals.remove(0);
+        }
+        gNorms.add(gNormLast);
+        time.add(howLong());
+        funcEvals.add(fevals);
+      } else {
+        maxSize = 10;
+      }
+
+      gNormLast = ArrayMath.norm(grad);
+      if (values.size() > maxSize) {
+        values.remove(0);
+      }
+
+      values.add(val);
+
+      if (evalScore != Double.NEGATIVE_INFINITY)
+        evals.add(evalScore);
+
+      writeToFile(fevals, val, gNormLast, howLong());
+
+      say(nf.format(val) + " " + nfsec.format(howLong()) + "s");
+
+      xLast = x;
+      monitorX(x);
+    }
+
+    public void monitorX(double[] x) {
+      if (this.mon != null) {
+        this.mon.valueAt(x);
+      }
+    }
+

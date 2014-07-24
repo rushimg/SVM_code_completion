@@ -1,0 +1,46 @@
+  private static List<Entry> readEntries(BufferedReader mapping, boolean ignoreCase) throws IOException {
+    List<Entry> entries = new ArrayList<Entry>();
+
+    int lineCount = 0;
+    for (String line; (line = mapping.readLine()) != null; ) {
+      lineCount ++;
+      String[] split = line.split("\t");
+      if (split.length < 2 || split.length > 4)
+        throw new IllegalArgumentException("Provided mapping file is in wrong format: " + line);
+
+      String[] regexes = split[0].trim().split("\\s+");
+      String type = split[1].trim();
+      Set<String> overwritableTypes = Generics.newHashSet();
+      double priority = 0.0;
+      List<Pattern> tokens = new ArrayList<Pattern>();
+
+      if (split.length >= 3) {
+        overwritableTypes.addAll(Arrays.asList(split[2].trim().split(",")));
+      }
+
+      if (split.length == 4) {
+        try {
+          priority = Double.parseDouble(split[3].trim());
+        } catch(NumberFormatException e) {
+          throw new IllegalArgumentException("ERROR: Invalid line " + lineCount + " in regexner file " + mapping + ": \"" + line + "\"!", e);
+        }
+      }
+
+      try {
+        for (String str : regexes) {
+          if(ignoreCase) tokens.add(Pattern.compile(str, Pattern.CASE_INSENSITIVE));
+          else tokens.add(Pattern.compile(str));
+        }
+      } catch (PatternSyntaxException e) {
+        throw new IllegalArgumentException("ERROR: Invalid line " + lineCount + " in regexner file " + mapping + ": \"" + line + "\"!", e);
+      }
+
+      entries.add(new Entry(tokens, type, overwritableTypes, priority));
+    }
+
+    Collections.sort(entries);
+    // System.err.println("Read these entries:");
+    // System.err.println(entries);
+    return entries;
+  }
+

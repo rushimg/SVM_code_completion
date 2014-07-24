@@ -1,0 +1,102 @@
+  public List<IN> classifySentenceWithGlobalInformation(List<? extends HasWord> tokenSequence, final CoreMap doc, final CoreMap sentence) {
+    List<IN> document = new ArrayList<IN>();
+    int i = 0;
+    for (HasWord word : tokenSequence) {
+      IN wi; // initialized straight below
+      if (word instanceof CoreMap) {
+        // copy all annotations! some are required later in
+        // AbstractSequenceClassifier.classifyWithInlineXML
+        // wi = (IN) new ArrayCoreMap((ArrayCoreMap) word);
+        wi = tokenFactory.makeToken((IN) word);
+      } else {
+        wi = tokenFactory.makeToken();
+        wi.set(CoreAnnotations.TextAnnotation.class, word.word());
+        // wi.setWord(word.word());
+      }
+      wi.set(CoreAnnotations.PositionAnnotation.class, Integer.toString(i));
+      wi.set(CoreAnnotations.AnswerAnnotation.class, backgroundSymbol());
+      document.add(wi);
+      i++;
+    }
+
+    // TODO get rid of objectbankwrapper
+    ObjectBankWrapper<IN> wrapper = new ObjectBankWrapper<IN>(flags, null, knownLCWords);
+    wrapper.processDocument(document);
+
+    classifyWithGlobalInformation(document, doc, sentence);
+
+    return document;
+  }
+
+  public SequenceModel getSequenceModel(List<IN> doc) {
+    throw new UnsupportedOperationException();
+  }
+
+  public Sampler<List<IN>> getSampler(final List<IN> input) {
+    return new Sampler<List<IN>>() {
+      SequenceModel model = getSequenceModel(input);
+      SequenceSampler sampler = new SequenceSampler();
+
+      @Override
+      public List<IN> drawSample() {
+        int[] sampleArray = sampler.bestSequence(model);
+        List<IN> sample = new ArrayList<IN>();
+        int i = 0;
+        for (IN word : input) {
+
+          IN newWord = tokenFactory.makeToken(word);
+          newWord.set(CoreAnnotations.AnswerAnnotation.class, classIndex.get(sampleArray[i++]));
+          sample.add(newWord);
+        }
+        return sample;
+      }
+    };
+  }
+
+  public Counter<List<IN>> classifyKBest(List<IN> doc, Class<? extends CoreAnnotation<String>> answerField, int k) {
+
+    if (doc.isEmpty()) {
+      return new ClassicCounter<List<IN>>();
+    }
+
+    // TODO get rid of ObjectBankWrapper
+    // i'm sorry that this is so hideous - JRF
+    ObjectBankWrapper<IN> obw = new ObjectBankWrapper<IN>(flags, null, knownLCWords);
+    doc = obw.processDocument(doc);
+
+    SequenceModel model = getSequenceModel(doc);
+
+    KBestSequenceFinder tagInference = new KBestSequenceFinder();
+    Counter<int[]> bestSequences = tagInference.kBestSequences(model, k);
+
+    Counter<List<IN>> kBest = new ClassicCounter<List<IN>>();
+
+    for (int[] seq : bestSequences.keySet()) {
+      List<IN> kth = new ArrayList<IN>();
+      int pos = model.leftWindow();
+      for (IN fi : doc) {
+        IN newFL = tokenFactory.makeToken(fi);
+        String guess = classIndex.get(seq[pos]);
+        fi.remove(CoreAnnotations.AnswerAnnotation.class); // because fake answers will get
+                                           // added during testing
+        newFL.set(answerField, guess);
+        pos++;
+        kth.add(newFL);
+      }
+      kBest.setCount(kth, bestSequences.getCount(seq));
+    }
+
+    return kBest;
+  }
+
+  public DFSA<String, Integer> getViterbiSearchGraph(List<IN> doc, Class<? extends CoreAnnotation<String>> answerField) {
+    if (doc.isEmpty()) {
+      return new DFSA<String, Integer>(null);
+    }
+    // TODO get rid of objectbankwrapper
+    ObjectBankWrapper<IN> obw = new ObjectBankWrapper<IN>(flags, null, knownLCWords);
+    doc = obw.processDocument(doc);
+    SequenceModel model = getSequenceModel(doc);
+    return ViterbiSearchGraphBuilder.getGraph(model, classIndex);
+  }
+

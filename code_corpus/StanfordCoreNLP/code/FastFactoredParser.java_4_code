@@ -1,0 +1,15 @@
+  private double depScoreTree(Tree tr) {
+    // System.err.println("Here's our tree:");
+    // tr.pennPrint();
+    // System.err.println(Trees.toDebugStructureString(tr));
+    Tree cwtTree = tr.deepCopy(new LabeledScoredTreeFactory(), new CategoryWordTagFactory());
+    cwtTree.percolateHeads(binHeadFinder);
+    // System.err.println("Here's what it went to:");
+    // cwtTree.pennPrint();
+    List<IntDependency> deps = MLEDependencyGrammar.treeToDependencyList(cwtTree, wordIndex, tagIndex);
+    // System.err.println("Here's the deps:\n" + deps);
+    return dg.scoreAll(deps);
+  }
+
+  private final HeadFinder binHeadFinder = new BinaryHeadFinder();
+

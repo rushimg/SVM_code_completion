@@ -1,0 +1,16 @@
+  public final boolean handleResponse(
+      HttpRequest request, HttpResponse response, boolean supportsRetry) throws IOException {
+    if (!supportsRetry) {
+      return false;
+    }
+    // check if back-off is required for this response
+    if (backOffRequired.isRequired(response)) {
+      try {
+        return BackOffUtils.next(sleeper, backOff);
+      } catch (InterruptedException exception) {
+        // ignore
+      }
+    }
+    return false;
+  }
+

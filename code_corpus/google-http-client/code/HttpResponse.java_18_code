@@ -1,0 +1,41 @@
+     InputStream is = response.getContent();
+     try {
+       // Process the input stream..
+     } finally {
+       is.close();
+     }
+  public InputStream getContent() throws IOException {
+    if (!contentRead) {
+      InputStream lowLevelResponseContent = this.response.getContent();
+      if (lowLevelResponseContent != null) {
+        // Flag used to indicate if an exception is thrown before the content is successfully
+        // processed.
+        boolean contentProcessed = false;
+        try {
+          // gzip encoding (wrap content with GZipInputStream)
+          String contentEncoding = this.contentEncoding;
+          if (contentEncoding != null && contentEncoding.contains("gzip")) {
+            lowLevelResponseContent = new GZIPInputStream(lowLevelResponseContent);
+          }
+          // logging (wrap content with LoggingInputStream)
+          Logger logger = HttpTransport.LOGGER;
+          if (loggingEnabled && logger.isLoggable(Level.CONFIG)) {
+            lowLevelResponseContent = new LoggingInputStream(
+                lowLevelResponseContent, logger, Level.CONFIG, contentLoggingLimit);
+          }
+          content = lowLevelResponseContent;
+          contentProcessed = true;
+        } catch (EOFException e) {
+          // this may happen for example on a HEAD request since there no actual response data read
+          // in GZIPInputStream
+        } finally {
+          if (!contentProcessed) {
+            lowLevelResponseContent.close();
+          }
+        }
+      }
+      contentRead = true;
+    }
+    return content;
+  }
+

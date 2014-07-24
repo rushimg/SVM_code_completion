@@ -1,0 +1,34 @@
+    private double[][] createConfusionMatrix(SortedSet<String> tagset,
+        Map<String, ConfusionMatrixLine> data) {
+      int size = tagset.size();
+      double[][] matrix = new double[size][size + 1];
+      int line = 0;
+      for (String ref : tagset) {
+        int column = 0;
+        for (String pred : tagset) {
+          matrix[line][column] = (double) (data.get(ref) != null ? data
+              .get(ref).getValue(pred) : 0);
+          column++;
+        }
+        // set accuracy
+        matrix[line][column] = (double) (data.get(ref) != null ? data.get(ref)
+            .getAccuracy() : 0);
+        line++;
+      }
+
+      return matrix;
+    }
+
+    private SortedSet<String> getConfusionMatrixTagset(
+        Map<String, ConfusionMatrixLine> data) {
+      SortedSet<String> tags = new TreeSet<String>(new CategoryComparator(data));
+      tags.addAll(data.keySet());
+      List<String> col = new LinkedList<String>();
+      for (String t : tags) {
+        col.addAll(data.get(t).line.keySet());
+      }
+      tags.addAll(col);
+      return Collections.unmodifiableSortedSet(tags);
+    }
+  }
+

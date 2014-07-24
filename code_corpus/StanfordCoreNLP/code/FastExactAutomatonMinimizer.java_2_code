@@ -1,0 +1,32 @@
+    TransducerGraph fa = new TransducerGraph();
+    fa.addArc(fa.getStartNode(),"1","a","");
+    fa.addArc(fa.getStartNode(),"2","b","");
+    fa.addArc(fa.getStartNode(),"3","c","");
+    fa.addArc("1","4","a","");
+    fa.addArc("2","4","a","");
+    fa.addArc("3","5","c","");
+    fa.addArc("4",fa.getEndNode(),"c","");
+    fa.addArc("5",fa.getEndNode(),"c","");
+    System.out.println(fa);
+    ExactAutomatonMinimizer minimizer = new ExactAutomatonMinimizer();
+    System.out.println(minimizer.minimizeFA(fa));
+    System.out.println("Starting minimizer test...");
+    List pathList = new ArrayList();
+    TransducerGraph randomFA = TransducerGraph.createRandomGraph(5000, 5, 1.0, 5, pathList);
+    List outputs = randomFA.getPathOutputs(pathList);
+
+    TransducerGraph.GraphProcessor quasiDeterminizer = new QuasiDeterminizer();
+    AutomatonMinimizer minimizer = new FastExactAutomatonMinimizer();
+    TransducerGraph.NodeProcessor ntsp = new TransducerGraph.SetToStringNodeProcessor(new PennTreebankLanguagePack());
+    TransducerGraph.ArcProcessor isp = new TransducerGraph.InputSplittingProcessor();
+    TransducerGraph.ArcProcessor ocp = new TransducerGraph.OutputCombiningProcessor();
+
+    TransducerGraph detGraph = quasiDeterminizer.processGraph(randomFA);
+    TransducerGraph combGraph = new TransducerGraph(detGraph, ocp); // combine outputs into inputs
+    TransducerGraph result = minimizer.minimizeFA(combGraph); // minimize the thing
+    System.out.println("Minimized from " + randomFA.getNodes().size() + " to " + result.getNodes().size());
+    result = new TransducerGraph(result, ntsp);  // pull out strings from sets returned by minimizer
+    result = new TransducerGraph(result, isp); // split outputs from inputs
+    List minOutputs = result.getPathOutputs(pathList);
+    System.out.println("Equal? " + outputs.equals(minOutputs));
+

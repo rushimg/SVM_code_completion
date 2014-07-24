@@ -1,0 +1,53 @@
+  public GeneralDataset<String, String> generateFeatureVectors(Properties props) throws Exception {
+
+    GeneralDataset<String, String> dataset = new Dataset<String, String>();    
+    
+    Dictionaries dict = new Dictionaries(props);
+    MentionExtractor mentionExtractor =
+        new CoNLLMentionExtractor(dict, props, new Semantics(dict));
+    
+    Document document;
+    while((document = mentionExtractor.nextDoc()) != null){
+      setTokenIndices(document);
+      document.extractGoldCorefClusters();
+      Map<Integer, CorefCluster> entities = document.goldCorefClusters;
+
+      // Generate features for coreferent mentions with class label 1
+      for(CorefCluster entity : entities.values()){
+        for(Mention mention : entity.getCorefMentions()){
+          // Ignore verbal mentions
+          if(mention.headWord.tag().startsWith("V")) continue;
+
+          IndexedWord head = mention.dependency.
+              getNodeByIndexSafe(mention.headWord.index());
+          if(head == null) continue;          
+          ArrayList<String> feats = mention.getSingletonFeatures(dict);
+          dataset.add(new BasicDatum<String, String>(
+              feats, "1"));
+        }       
+      }
+
+      // Generate features for singletons with class label 0 
+      ArrayList<CoreLabel> gold_heads = new ArrayList<CoreLabel>();
+      for(Mention gold_men : document.allGoldMentions.values()){
+        gold_heads.add(gold_men.headWord);
+      }      
+      for(Mention predicted_men : document.allPredictedMentions.values()){
+        SemanticGraph dep = predicted_men.dependency;
+        IndexedWord head = dep.getNodeByIndexSafe(predicted_men.headWord.index());
+        if(head == null || !dep.vertexSet().contains(head)) continue;
+
+        // Ignore verbal mentions
+        if(predicted_men.headWord.tag().startsWith("V")) continue;
+        // If the mention is in the gold set, it is not a singleton and thus ignore
+        if(gold_heads.contains(predicted_men.headWord)) continue;
+
+        dataset.add(new BasicDatum<String, String>(
+            predicted_men.getSingletonFeatures(dict), "0"));             
+      }
+    }
+    
+    dataset.summaryStatistics();
+    return dataset;
+  }
+  

@@ -1,0 +1,43 @@
+  public void testRead(File tgtDirPath) throws Exception {
+    List<SsurgeonPattern> patterns = readFromDirectory(tgtDirPath);
+    
+    System.out.println("Patterns, num="+patterns.size());
+    int num = 1;
+    for (SsurgeonPattern pattern : patterns) {
+      System.out.println("\n# "+(num++));
+      System.out.println(pattern);
+    }
+    
+    System.out.println("\n\nRESOURCES ");
+    for (SsurgeonWordlist rsrc : inst().getResources()) {
+    }
+    
+    BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+    String line;
+    boolean runFlag = true;
+    Ssurgeon.inst().initLog(new File("./ssurgeon_run.log"));
+    while (runFlag) {
+      try {
+        System.out.println("Enter a sentence:");
+        line = in.readLine();
+        if (line.length() == 0) {
+          System.exit(0);
+        }
+        System.out.println("Parsing...");
+        SemanticGraph sg = SemanticGraph.valueOf(line);
+        System.out.println("Graph = "+sg);
+        Collection<SemanticGraph> generated = Ssurgeon.inst().exhaustFromPatterns(patterns, sg);
+        System.out.println("# generated = "+generated.size());
+        int index = 1;
+        for (SemanticGraph gsg : generated) {
+          System.out.println("\n# "+index);
+          System.out.println(gsg);
+          index++;
+        }
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+    }
+  }
+  
+  

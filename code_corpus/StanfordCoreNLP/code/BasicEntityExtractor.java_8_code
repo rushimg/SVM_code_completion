@@ -1,0 +1,55 @@
+  public void runTestSet(List<List<CoreLabel>> testSet) {
+    Counter<String> tp = new ClassicCounter<String>();
+    Counter<String> fp = new ClassicCounter<String>();
+    Counter<String> fn = new ClassicCounter<String>();
+
+    Counter<String> actual = new ClassicCounter<String>();
+
+    for (List<CoreLabel> labels : testSet) {
+      List<CoreLabel> unannotatedLabels = new ArrayList<CoreLabel>();
+      // create a new label without answer annotation
+      for (CoreLabel label : labels) {
+        CoreLabel newLabel = new CoreLabel();
+        newLabel.set(annotationForWord, label.get(annotationForWord));
+        newLabel.set(PartOfSpeechAnnotation.class, label
+            .get(PartOfSpeechAnnotation.class));
+        unannotatedLabels.add(newLabel);
+      }
+
+      List<CoreLabel> annotatedLabels = this.classifier.classify(unannotatedLabels);
+
+      int ind = 0;
+      for (CoreLabel expectedLabel : labels) {
+
+        CoreLabel annotatedLabel = annotatedLabels.get(ind);
+        String answer = annotatedLabel.get(AnswerAnnotation.class);
+        String expectedAnswer = expectedLabel.get(AnswerAnnotation.class);
+
+        actual.incrementCount(expectedAnswer);
+
+        // match only non background symbols
+        if (!SeqClassifierFlags.DEFAULT_BACKGROUND_SYMBOL
+            .equals(expectedAnswer)
+            && expectedAnswer.equals(answer)) {
+          // true positives
+          tp.incrementCount(answer);
+          System.out.println("True Positive:" + annotatedLabel);
+        } else if (!SeqClassifierFlags.DEFAULT_BACKGROUND_SYMBOL.equals(answer)) {
+          // false positives
+          fp.incrementCount(answer);
+          System.out.println("False Positive:" + annotatedLabel);
+        } else if (!SeqClassifierFlags.DEFAULT_BACKGROUND_SYMBOL
+            .equals(expectedAnswer)) {
+          // false negatives
+          fn.incrementCount(expectedAnswer);
+          System.out.println("False Negative:" + expectedLabel);
+        } // else true negatives
+
+        ind++;
+      }
+    }
+
+    actual.remove(SeqClassifierFlags.DEFAULT_BACKGROUND_SYMBOL);
+  }
+
+  // XXX not called any more -- maybe lose annotationsToSkip entirely?

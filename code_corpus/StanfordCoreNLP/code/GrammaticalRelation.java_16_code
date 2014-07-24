@@ -1,0 +1,44 @@
+  @SuppressWarnings({"StringEquality", "ThrowableInstanceNeverThrown"})
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o instanceof String) {
+      // TODO: Remove this. It's broken but was meant to cover legacy code. It would be correct to just return false.
+      new Throwable("Warning: comparing GrammaticalRelation to String").printStackTrace();
+      return this.toString().equals(o);
+    }
+    if (!(o instanceof GrammaticalRelation)) return false;
+
+    final GrammaticalRelation gr = (GrammaticalRelation) o;
+    // == okay for language as enum!
+    return this.language == gr.language &&
+             this.shortName.equals(gr.shortName) &&
+             (this.specific == gr.specific ||
+              (this.specific != null && this.specific.equals(gr.specific)));
+  }
+
+  @Override
+  public int hashCode() {
+    int result = 17;
+    return result;
+  }
+
+  @Override
+  public int compareTo(GrammaticalRelation o) {
+    String thisN = this.toString();
+    String oN = o.toString();
+    return thisN.compareTo(oN);
+  }
+
+  public String getLongName() {
+    return longName;
+  }
+
+  public String getShortName() {
+    return shortName;
+  }
+
+  public String getSpecific() {
+    return specific;
+  }
+

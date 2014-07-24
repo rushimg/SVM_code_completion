@@ -1,0 +1,126 @@
+  public ChineseDictionary(String serDicts,
+                           ChineseDocumentToSentenceProcessor cdtos,
+                           boolean expandMidDot) {
+    this(serDicts.split(","), cdtos, expandMidDot);
+  }
+
+  public ChineseDictionary(String[] dicts,
+                           ChineseDocumentToSentenceProcessor cdtos,
+                           boolean expandMidDot) {
+    System.err.println("Loading Chinese dictionaries from "
+                       +dicts.length
+                       +" files:");
+    for(String dict : dicts) {
+      System.err.println("  "+dict);
+    }
+    System.err.println();
+
+    for (int i = 0; i <= MAX_LEXICON_LENGTH; i++) {
+      words_[i] = Generics.newHashSet();
+    }
+
+    this.cdtos_ = cdtos;
+
+    for(String dict : dicts) {
+      if(dict.endsWith("ser.gz")) {
+        // TODO: the way this is written would not work if we allow
+        // dictionaries to have different settings of MAX_LEXICON_LENGTH
+        Set<String>[] dictwords = loadDictionary(dict);
+        for (int i = 0; i <= MAX_LEXICON_LENGTH; i++) {
+          words_[i].addAll(dictwords[i]);
+          dictwords[i] = null;
+        }
+      } else {
+        addDict(dict, expandMidDot);
+      }
+    }
+
+    int total = 0;
+    for(int i = 0; i <= MAX_LEXICON_LENGTH; i++) {
+      total += words_[i].size();
+    }
+    System.err.println("Done. Unique words in ChineseDictionary is: " + total);
+  }
+
+  private final Pattern midDot = Pattern.compile(ChineseUtils.MID_DOT_REGEX_STR);
+
+  private void addDict(String dict, boolean expandMidDot) {
+    String content = IOUtils.slurpFileNoExceptions(dict,"utf-8");
+    String[] lines = content.split("\n");
+    System.err.println("  " + dict + ": " + lines.length + " entries");
+    for (String line : lines) {
+      line = line.trim();
+      // normalize any midDot
+      if (expandMidDot) {
+        // normalize down middot chars
+        line = line.replaceAll(ChineseUtils.MID_DOT_REGEX_STR, "\u00B7");
+      }
+      addOneDict(line);
+      if (DEBUG) EncodingPrintWriter.err.println("ORIG: " + line, "UTF-8");
+      if (expandMidDot && midDot.matcher(line).find()) {
+        line = line.replaceAll(ChineseUtils.MID_DOT_REGEX_STR, "");
+        if (DEBUG) EncodingPrintWriter.err.println("ALSO: " + line, "UTF-8");
+        addOneDict(line);
+      }
+    }
+  }
+
+  private void addOneDict(String item) {
+    int length = item.length();
+    if (length == 0) {
+      // Do nothing for empty items
+    } else if (length <= MAX_LEXICON_LENGTH-1) {
+      if (cdtos_ != null) {
+        item = cdtos_.normalization(item);
+      }
+      if (DEBUG) EncodingPrintWriter.err.println("DICT: "+item, "UTF-8");
+      words_[length].add(item);
+    } else {
+      // insist on new String as it may save memory
+      String subitem = new String(item.substring(0,MAX_LEXICON_LENGTH));
+      if (cdtos_ != null) {
+        subitem = cdtos_.normalization(subitem);
+      }
+      if (DEBUG) EncodingPrintWriter.err.println("DICT: "+subitem, "UTF-8");
+      // length=MAX_LEXICON_LENGTH and MAX_LEXICON_LENGTH+
+      words_[MAX_LEXICON_LENGTH].add(subitem);
+    }
+  }
+
+  public boolean contains(String word) {
+    int length = word.length();
+    if (length <= MAX_LEXICON_LENGTH-1) {
+      return words_[length].contains(word);
+    } else {
+      length = MAX_LEXICON_LENGTH;
+      return words_[length].contains(word.substring(0,6));
+    }
+  }
+
+  public static void main(String[] args) {
+    String inputDicts = "/u/nlp/data/chinese-dictionaries/plain/ne_wikipedia-utf8.txt,/u/nlp/data/chinese-dictionaries/plain/newsexplorer_entities_utf8.txt,/u/nlp/data/chinese-dictionaries/plain/Ch-name-list-utf8.txt,/u/nlp/data/chinese-dictionaries/plain/wikilex-20070908-zh-en.txt,/u/nlp/data/chinese-dictionaries/plain/adso-1.25-050405-monolingual-clean.utf8.txt,/u/nlp/data/chinese-dictionaries/plain/lexicon_108k_normalized.txt,/u/nlp/data/chinese-dictionaries/plain/lexicon_mandarintools_normalized.txt,/u/nlp/data/chinese-dictionaries/plain/harbin-ChineseNames_utf8.txt,/u/nlp/data/chinese-dictionaries/plain/lexicon_HowNet_normalized.txt";
+
+    String output = "/u/nlp/data/gale/segtool/stanford-seg/classifiers/dict-chris6.ser.gz";
+
+
+    Map<String,Integer> flagMap = Generics.newHashMap();
+    flagMap.put("-inputDicts", 1);
+    flagMap.put("-output", 1);
+    Map<String,String[]> argsMap = StringUtils.argsToMap(args,flagMap);
+    // args = argsMap.get(null);
+    if(argsMap.keySet().contains("-inputDicts")) {
+      inputDicts = argsMap.get("-inputDicts")[0];
+    }
+    if(argsMap.keySet().contains("-output")) {
+      output = argsMap.get("-output")[0];
+    }
+
+    String[] dicts = inputDicts.split(",");
+
+    ChineseDocumentToSentenceProcessor cdtos
+      = new ChineseDocumentToSentenceProcessor(null);
+    boolean expandMidDot = true;
+
+    ChineseDictionary dict = new ChineseDictionary(dicts, cdtos, expandMidDot);
+    dict.serializeDictionary(output);
+

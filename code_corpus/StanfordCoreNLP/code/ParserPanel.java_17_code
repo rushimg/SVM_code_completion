@@ -1,0 +1,43 @@
+  public void saveOutput(String filename) {
+    if (filename == null || filename.equals("")) {
+      return;
+    }
+
+    String text = textPane.getText();
+    StringReader reader = new StringReader(text);
+    DocumentPreprocessor processor = new DocumentPreprocessor(reader);
+    TokenizerFactory<? extends HasWord> tf = tlp.getTokenizerFactory();
+    processor.setTokenizerFactory(tf);
+    List<List<HasWord>> sentences = new ArrayList<List<HasWord>>();
+    for (List<HasWord> sentence : processor) {
+      sentences.add(sentence);
+    }
+
+    JProgressBar progress = new JProgressBar(0, sentences.size());
+    JButton cancel = new javax.swing.JButton();
+
+    JDialog dialog = new JDialog(new Frame(), "Parser Progress", true);
+
+    dialog.setSize(300, 150);
+    dialog.add(BorderLayout.NORTH,
+               new JLabel("Parsing " + sentences.size() + " sentences"));
+    dialog.add(BorderLayout.CENTER, progress);
+    dialog.add(BorderLayout.SOUTH, cancel);
+    //dialog.add(progress);
+
+    final SaveOutputThread thread =
+      new SaveOutputThread(filename, progress, dialog, cancel, sentences);
+
+    cancel.setText("Cancel");
+    cancel.setToolTipText("Cancel");
+    cancel.addActionListener(new java.awt.event.ActionListener() {
+      public void actionPerformed(java.awt.event.ActionEvent evt) {
+        thread.cancelled = true;
+      }
+    });
+
+    thread.start();
+
+    dialog.setVisible(true);
+  }
+

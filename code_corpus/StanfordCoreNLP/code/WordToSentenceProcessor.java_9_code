@@ -1,0 +1,162 @@
+  public List<List<IN>> wordsToSentences(List<? extends IN> words) {
+    IdentityHashMap<Object, Boolean> isSentenceBoundary = new IdentityHashMap<Object, Boolean>();
+    if (sentenceBoundaryMultiTokenPattern != null) {
+      // Do initial pass using tokensregex to identify multi token patterns that need to be matched
+      // and add the last token to our table of sentence boundary tokens
+      SequenceMatcher<? super IN> matcher = sentenceBoundaryMultiTokenPattern.getMatcher(words);
+      while (matcher.find()) {
+        List nodes = matcher.groupNodes();
+        if (nodes != null && nodes.size() > 0) {
+          isSentenceBoundary.put(nodes.get(nodes.size() - 1), true);
+        }
+      }
+    }
+
+    // Split tokens into sentences!!!
+    List<List<IN>> sentences = Generics.newArrayList();
+    List<IN> currentSentence = new ArrayList<IN>();
+    List<IN> lastSentence = null;
+    boolean insideRegion = false;
+    boolean inWaitForForcedEnd = false;
+    boolean lastTokenWasNewline = false;
+    for (IN o: words) {
+      String word = getString(o);
+      boolean forcedEnd = isForcedEndToken(o);
+
+      boolean inMultiTokenExpr = false;
+      boolean discardToken = false;
+      if (o instanceof CoreMap) {
+        // Hacky stuff to ensure sentence breaks do not happen in certain cases
+        CoreMap cm = (CoreMap) o;
+        Boolean forcedUntilEndValue = cm.get(CoreAnnotations.ForcedSentenceUntilEndAnnotation.class);
+        if (!forcedEnd) {
+          if (forcedUntilEndValue != null && forcedUntilEndValue)
+            inWaitForForcedEnd = true;
+          else {
+            MultiTokenTag mt = cm.get(CoreAnnotations.MentionTokenAnnotation.class);
+            if (mt != null && !mt.isEnd()) {
+              // In the middle of a multi token mention, make sure sentence is not ended here
+              inMultiTokenExpr = true;
+            }
+          }
+        }
+      }
+      if (tokenPatternsToDiscard != null) {
+        discardToken = matchesTokenPatternsToDiscard(word);
+      }
+
+      if (DEBUG) {
+        EncodingPrintWriter.err.println("Word is " + word, "UTF-8");
+      }
+      if (sentenceRegionBeginPattern != null && ! insideRegion) {
+        if (DEBUG) {
+          System.err.println("  outside region; deleted");
+        }
+        if (sentenceRegionBeginPattern.matcher(word).matches()) {
+          insideRegion = true;
+          if (DEBUG) {
+            System.err.println("  entering region");
+          }
+        }
+        lastTokenWasNewline = false;
+        continue;
+      }
+
+      if (lastSentence != null && currentSentence.isEmpty() && sentenceBoundaryFollowers.contains(word)) {
+        if (!discardToken) lastSentence.add(o);
+        if (DEBUG) {
+          System.err.println(discardToken? "discarded":"  added to last sentence");
+        }
+        lastTokenWasNewline = false;
+        continue;
+      }
+
+      boolean newSent = false;
+      String debugText = (discardToken)? "discarded":"added to current";
+      if (inWaitForForcedEnd && !forcedEnd) {
+        if (!discardToken) currentSentence.add(o);
+        if (DEBUG) {
+          System.err.println("  is in wait for forced end; " + debugText);
+        }
+      } else if (inMultiTokenExpr && !forcedEnd) {
+        if (!discardToken) currentSentence.add(o);
+        if (DEBUG) {
+          System.err.println("  is in multi token expr; " + debugText);
+        }
+      } else if (sentenceBoundaryToDiscard.contains(word)) {
+        if (newlineIsSentenceBreak == NewlineIsSentenceBreak.ALWAYS) {
+          newSent = true;
+        } else if (newlineIsSentenceBreak == NewlineIsSentenceBreak.TWO_CONSECUTIVE) {
+          if (lastTokenWasNewline) {
+            newSent = true;
+          }
+        }
+        lastTokenWasNewline = true;
+        if (DEBUG) {
+          System.err.println("  discarded sentence boundary");
+        }
+      } else {
+        lastTokenWasNewline = false;
+        if (xmlBreakElementsToDiscard != null && matchesXmlBreakElementToDiscard(word)) {
+          newSent = true;
+          if (DEBUG) {
+            System.err.println("  is XML break element; discarded");
+          }
+        } else if (sentenceRegionEndPattern != null && sentenceRegionEndPattern.matcher(word).matches()) {
+          insideRegion = false;
+          newSent = true;
+          // Marked sentence boundaries
+        } else if (isSentenceBoundary.containsKey(o) && isSentenceBoundary.get(o)) {
+          if (!discardToken) currentSentence.add(o);
+          if (DEBUG) {
+            System.err.println("  is sentence boundary (matched multi-token pattern); " + debugText);
+          }
+          newSent = true;
+        } else if (sentenceBoundaryTokenPattern.matcher(word).matches()) {
+          if (!discardToken) currentSentence.add(o);
+          if (DEBUG) {
+            System.err.println("  is sentence boundary; " + debugText);
+          }
+          newSent = true;
+        } else if (forcedEnd) {
+          if (!discardToken) currentSentence.add(o);
+          inWaitForForcedEnd = false;
+          newSent = true;
+          if (DEBUG) {
+            System.err.println("  annotated to be the end of a sentence; " + debugText);
+          }
+        } else {
+          if (!discardToken) currentSentence.add(o);
+          if (DEBUG) {
+            System.err.println("  " + debugText);
+          }
+        }
+      }
+
+      if (newSent && (!currentSentence.isEmpty() || allowEmptySentences)) {
+        if (DEBUG) {
+          System.err.println("  beginning new sentence");
+        }
+        sentences.add(currentSentence);
+        // adds this sentence now that it's complete
+        lastSentence = currentSentence;
+        currentSentence = new ArrayList<IN>(); // clears the current sentence
+      }
+    }
+
+    // add any words at the end, even if there isn't a sentence
+    // terminator at the end of file
+    if ( ! currentSentence.isEmpty()) {
+      sentences.add(currentSentence); // adds last sentence
+    }
+
+    return sentences;
+  }
+
+  public <L, F> Document<L, F, List<IN>> processDocument(Document<L, F, IN> in) {
+    Document<L, F, List<IN>> doc = in.blankDocument();
+    doc.addAll(process(in));
+    return doc;
+  }
+
+

@@ -1,0 +1,89 @@
+
+public class CRFBiasedClassifier<IN extends CoreMap> extends CRFClassifier<IN> {
+
+  private static final String BIAS = "@@@DECODING_CLASS_BIAS@@@";
+  private boolean testTime = false;
+
+
+  public CRFBiasedClassifier(Properties props) {
+    super(props);
+  }
+
+  @Override
+  public CRFDatum<List<String>, CRFLabel> makeDatum(List<IN> info, int loc, List<FeatureFactory<IN>> featureFactories) {
+
+    pad.set(CoreAnnotations.AnswerAnnotation.class, flags.backgroundSymbol);
+    PaddedList<IN> pInfo = new PaddedList<IN>(info, pad);
+
+    List<List<String>> features = new ArrayList<List<String>>();
+    Collection<Clique> done = Generics.newHashSet();
+    for (int i = 0; i < windowSize; i++) {
+      List<String> featuresC = new ArrayList<String>();
+      List<Clique> windowCliques = FeatureFactory.getCliques(i, 0);
+      windowCliques.removeAll(done);
+      done.addAll(windowCliques);
+      for (Clique c : windowCliques) {
+        for (FeatureFactory featureFactory : featureFactories) {
+          featuresC.addAll(featureFactory.getCliqueFeatures(pInfo, loc, c));
+        }
+        if(testTime && i==0)
+          // this feature is only present at test time and only appears
+          // in cliques of size 1 (i.e., cliques with window=0)
+          featuresC.add(BIAS);
+      }
+      features.add(featuresC);
+    }
+
+    int[] labels = new int[windowSize];
+    for (int i = 0; i < windowSize; i++) {
+      String answer = pInfo.get(loc + i - windowSize + 1).get(CoreAnnotations.AnswerAnnotation.class);
+      labels[i] = classIndex.indexOf(answer);
+    }
+
+    return new CRFDatum<List<String>, CRFLabel>(features, new CRFLabel(labels), null);
+  }
+
+  void addBiasFeature() {
+    if(!featureIndex.contains(BIAS)) {
+      featureIndex.add(BIAS);
+      double[][] newWeights = new double[weights.length+1][];
+      System.arraycopy (weights,0,newWeights,0,weights.length);
+      newWeights[weights.length] = new double[classIndex.size()];
+      weights = newWeights;
+    }
+  }
+
+  public void setBiasWeight(String cname, double weight) {
+    int ci = classIndex.indexOf(cname);
+    setBiasWeight(ci, weight);
+  }
+
+  public void setBiasWeight(int cindex, double weight) {
+    addBiasFeature();
+    int fi = featureIndex.indexOf(BIAS);
+    weights[fi][cindex] = weight;
+  }
+
+  @Override
+  public List<IN> classify(List<IN> document) {
+    testTime = true;
+    List<IN> l = super.classify(document);
+    testTime = false;
+    return l;
+  }
+
+  class CRFBiasedClassifierOptimizer implements Function<Double,Double>  {
+    CRFBiasedClassifier<IN> crf;
+    Function<Double, Double> evalFunction;
+
+    CRFBiasedClassifierOptimizer(CRFBiasedClassifier<IN> c, Function<Double, Double> e) {
+      crf = c;
+      evalFunction = e;
+    }
+
+    public Double apply(Double w) {
+      crf.setBiasWeight(0,w);
+      return evalFunction.apply(w);
+    }
+  }
+

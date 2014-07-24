@@ -1,0 +1,20 @@
+    public long getExceptionSegmentCount(long fromMillisecond,
+                                         long toMillisecond) {
+        if (toMillisecond < fromMillisecond) {
+            return (0);
+        }
+
+        int n = 0;
+        for (Iterator iter = this.exceptionSegments.iterator();
+             iter.hasNext();) {
+            Segment segment = (Segment) iter.next();
+            Segment intersection = segment.intersect(fromMillisecond,
+                    toMillisecond);
+            if (intersection != null) {
+                n += intersection.getSegmentCount();
+            }
+        }
+
+        return (n);
+    }
+

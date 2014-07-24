@@ -1,0 +1,21 @@
+    public static String saveChartAsPNG(JFreeChart chart, int width, int height,
+            ChartRenderingInfo info, HttpSession session) throws IOException {
+
+        if (chart == null) {
+            throw new IllegalArgumentException("Null 'chart' argument.");
+        }
+        ServletUtilities.createTempDir();
+        String prefix = ServletUtilities.tempFilePrefix;
+        if (session == null) {
+            prefix = ServletUtilities.tempOneTimeFilePrefix;
+        }
+        File tempFile = File.createTempFile(prefix, ".png",
+                new File(System.getProperty("java.io.tmpdir")));
+        ChartUtilities.saveChartAsPNG(tempFile, chart, width, height, info);
+        if (session != null) {
+            ServletUtilities.registerChartForDeletion(tempFile, session);
+        }
+        return tempFile.getName();
+
+    }
+

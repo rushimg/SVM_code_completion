@@ -1,0 +1,48 @@
+    public V getEdgeTarget(E e)
+    {
+        return base.getEdgeTarget(e);
+    }
+
+    private void addEdgesUsingFilter(Set<E> edgeSet, Set<E> filter)
+    {
+        E e;
+        boolean containsVertices;
+        boolean edgeIncluded;
+
+        for (Iterator<E> iter = edgeSet.iterator(); iter.hasNext();) {
+            e = iter.next();
+
+            V sourceVertex = base.getEdgeSource(e);
+            V targetVertex = base.getEdgeTarget(e);
+            containsVertices =
+                containsVertex(sourceVertex)
+                && containsVertex(targetVertex);
+
+            // note the use of short circuit evaluation
+            edgeIncluded = (filter == null) || filter.contains(e);
+
+            if (containsVertices && edgeIncluded) {
+                addEdge(sourceVertex, targetVertex, e);
+            }
+        }
+    }
+
+    private void addVerticesUsingFilter(Set<V> vertexSet, Set<V> filter)
+    {
+        V v;
+
+        for (Iterator<V> iter = vertexSet.iterator(); iter.hasNext();) {
+            v = iter.next();
+
+            // note the use of short circuit evaluation
+            if ((filter == null) || filter.contains(v)) {
+                addVertex(v);
+            }
+        }
+    }
+
+    public G getBase()
+    {
+        return base;
+    }
+

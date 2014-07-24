@@ -1,0 +1,21 @@
+    public XYSeries createCopy(int start, int end)
+            throws CloneNotSupportedException {
+
+        XYSeries copy = (XYSeries) super.clone();
+        copy.data = new java.util.ArrayList();
+        if (this.data.size() > 0) {
+            for (int index = start; index <= end; index++) {
+                XYDataItem item = (XYDataItem) this.data.get(index);
+                XYDataItem clone = (XYDataItem) item.clone();
+                try {
+                    copy.add(clone);
+                }
+                catch (SeriesException e) {
+                    System.err.println("Unable to add cloned data item.");
+                }
+            }
+        }
+        return copy;
+
+    }
+

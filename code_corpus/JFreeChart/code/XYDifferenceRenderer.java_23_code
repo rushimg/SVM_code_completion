@@ -1,0 +1,82 @@
+    private void createPolygon (Graphics2D x_graphics,
+                                Rectangle2D x_dataArea,
+                                XYPlot x_plot,
+                                ValueAxis x_domainAxis,
+                                ValueAxis x_rangeAxis,
+                                boolean x_positive,
+                                LinkedList x_xValues,
+                                LinkedList x_yValues) {
+
+        PlotOrientation l_orientation      = x_plot.getOrientation();
+        RectangleEdge l_domainAxisLocation = x_plot.getDomainAxisEdge();
+        RectangleEdge l_rangeAxisLocation  = x_plot.getRangeAxisEdge();
+
+        Object[] l_xValues = x_xValues.toArray();
+        Object[] l_yValues = x_yValues.toArray();
+
+        GeneralPath l_path = new GeneralPath();
+
+        if (PlotOrientation.VERTICAL == l_orientation) {
+            double l_x = x_domainAxis.valueToJava2D((
+                    (Double) l_xValues[0]).doubleValue(), x_dataArea,
+                    l_domainAxisLocation);
+            if (this.roundXCoordinates) {
+                l_x = Math.rint(l_x);
+            }
+
+            double l_y = x_rangeAxis.valueToJava2D((
+                    (Double) l_yValues[0]).doubleValue(), x_dataArea,
+                    l_rangeAxisLocation);
+
+            l_path.moveTo((float) l_x, (float) l_y);
+            for (int i = 1; i < l_xValues.length; i++) {
+                l_x = x_domainAxis.valueToJava2D((
+                        (Double) l_xValues[i]).doubleValue(), x_dataArea,
+                        l_domainAxisLocation);
+                if (this.roundXCoordinates) {
+                    l_x = Math.rint(l_x);
+                }
+
+                l_y = x_rangeAxis.valueToJava2D((
+                        (Double) l_yValues[i]).doubleValue(), x_dataArea,
+                        l_rangeAxisLocation);
+                l_path.lineTo((float) l_x, (float) l_y);
+            }
+            l_path.closePath();
+        }
+        else {
+            double l_x = x_domainAxis.valueToJava2D((
+                    (Double) l_xValues[0]).doubleValue(), x_dataArea,
+                    l_domainAxisLocation);
+            if (this.roundXCoordinates) {
+                l_x = Math.rint(l_x);
+            }
+
+            double l_y = x_rangeAxis.valueToJava2D((
+                    (Double) l_yValues[0]).doubleValue(), x_dataArea,
+                    l_rangeAxisLocation);
+
+            l_path.moveTo((float) l_y, (float) l_x);
+            for (int i = 1; i < l_xValues.length; i++) {
+                l_x = x_domainAxis.valueToJava2D((
+                        (Double) l_xValues[i]).doubleValue(), x_dataArea,
+                        l_domainAxisLocation);
+                if (this.roundXCoordinates) {
+                    l_x = Math.rint(l_x);
+                }
+
+                l_y = x_rangeAxis.valueToJava2D((
+                        (Double) l_yValues[i]).doubleValue(), x_dataArea,
+                        l_rangeAxisLocation);
+                l_path.lineTo((float) l_y, (float) l_x);
+            }
+            l_path.closePath();
+        }
+
+        if (l_path.intersects(x_dataArea)) {
+            x_graphics.setPaint(x_positive ? getPositivePaint()
+                    : getNegativePaint());
+            x_graphics.fill(l_path);
+        }
+    }
+

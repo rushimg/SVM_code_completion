@@ -1,0 +1,134 @@
+  public static void main(String[] args) throws IOException {
+    System.err.println(StringUtils.toInvocationString("ColumnDataClassifier", args));
+    // the constructor will load a classifier if one is specified with loadClassifier
+    ColumnDataClassifier cdc = new ColumnDataClassifier(StringUtils.argsToProperties(args));
+    String testFile = cdc.globalFlags.testFile;
+
+    // check that we have roughly sensible options or else warn and exit
+    if ((testFile == null && Flags.serializeTo == null && cdc.globalFlags.crossValidationFolds < 2) ||
+            (Flags.trainFile == null && cdc.globalFlags.loadClassifier == null)) {
+      System.err.println("usage: java edu.stanford.nlp.classify.ColumnDataClassifier -prop propFile");
+      System.err.println("  and/or: -trainFile trainFile -testFile testFile|-serializeTo modelFile [-useNGrams|-sigma sigma|...]");
+      return; // ENDS PROCESSING
+    }
+
+    if (cdc.globalFlags.loadClassifier == null) {
+      // Otherwise we attempt to train one and exit if we don't succeed
+      if ( ! cdc.trainClassifier()) {
+        return;
+      }
+    }
+
+    if (testFile != null) {
+      cdc.testClassifier(testFile);
+    }
+  } // end main()
+
+
+  private boolean trainClassifier() throws IOException {
+    // build dataset of training data featurized
+    Pair<GeneralDataset<String,String>, List<String[]>> dataInfo = readAndReturnTrainingExamples(Flags.trainFile);
+    GeneralDataset<String,String> train = dataInfo.first();
+    List<String[]> lineInfos = dataInfo.second();
+
+    // For things like cross validation, we may well need to sort data!  Data sets are often ordered by class.
+    if (globalFlags.shuffleTrainingData) {
+      long seed;
+      if (globalFlags.shuffleSeed != 0) {
+        seed = globalFlags.shuffleSeed;
+      } else {
+        seed = System.nanoTime();
+      }
+      train.shuffleWithSideInformation(seed, lineInfos);
+    }
+
+    // print any binned value histograms
+    for (int i = 0; i < flags.length; i++) {
+      if (flags[i] != null && flags[i].binnedValuesCounter != null) {
+        System.err.println("BinnedValuesStatistics for column " + i);
+        System.err.println(flags[i].binnedValuesCounter.toString());
+      }
+    }
+    // print any binned length histograms
+    for (int i = 0; i < flags.length; i++) {
+      if (flags[i] != null && flags[i].binnedLengthsCounter != null) {
+        System.err.println("BinnedLengthsStatistics for column " + i);
+        System.err.println(flags[i].binnedLengthsCounter.toString());
+      }
+    }
+    // print the training data in SVMlight format if desired
+    if (Flags.printSVMLightFormatTo != null) {
+      PrintWriter pw = IOUtils.getPrintWriter(Flags.printSVMLightFormatTo, Flags.encoding);
+      train.printSVMLightFormat(pw);
+      IOUtils.closeIgnoringExceptions(pw);
+      train.featureIndex().saveToFilename(Flags.printSVMLightFormatTo + ".featureIndex");
+      train.labelIndex().saveToFilename(Flags.printSVMLightFormatTo + ".labelIndex");
+    }
+
+    if (globalFlags.crossValidationFolds > 1) {
+      crossValidate(train, lineInfos);
+    }
+
+    if (globalFlags.exitAfterTrainingFeaturization) {
+      return false; // ENDS PROCESSING
+    }
+
+    // build the classifier
+    classifier = makeClassifier(train);
+    printClassifier(classifier);
+
+    // serialize the classifier
+    String serializeTo = Flags.serializeTo;
+    if (serializeTo != null) {
+      System.err.println("Serializing classifier to " + serializeTo + "...");
+      ObjectOutputStream oos = IOUtils.writeStreamFromString(serializeTo);
+      oos.writeObject(classifier);
+      // Fiddle: Don't write a testFile to the serialized classifier.  It makes no sense and confuses people
+      String testFile = globalFlags.testFile;
+      globalFlags.testFile = null;
+      oos.writeObject(flags);
+      globalFlags.testFile = testFile;
+      oos.close();
+      System.err.println("Done.");
+    }
+    return true;
+  }
+
+  private void printClassifier(Classifier classifier) {
+    String classString;
+    if (classifier instanceof LinearClassifier<?,?>) {
+      classString = ((LinearClassifier<?,?>)classifier).toString(globalFlags.printClassifier, globalFlags.printClassifierParam);
+    } else {
+      classString = classifier.toString();
+    }
+    if (Flags.printTo != null) {
+      PrintWriter fw = null;
+      try {
+        fw = IOUtils.getPrintWriter(Flags.printTo, Flags.encoding);
+        fw.write(classString);
+        fw.println();
+      } catch (IOException ioe) {
+        ioe.printStackTrace();
+      } finally {
+        IOUtils.closeIgnoringExceptions(fw);
+      }
+      System.err.println("Built classifier described in file " + Flags.printTo);
+    } else {
+      System.err.print("Built this classifier: ");
+      System.err.println(classString);
+    }
+  }
+
+  private void testClassifier(String testFile) {
+    if (globalFlags.printFeatures != null) {
+      newFeaturePrinter(globalFlags.printFeatures, "test", Flags.encoding);
+    }
+
+    Pair<GeneralDataset<String,String>,List<String[]>> testInfo = readTestExamples(testFile);
+    GeneralDataset<String,String> test = testInfo.first();
+    List<String[]> lineInfos = testInfo.second();
+
+    testExamples(classifier, test, lineInfos);
+    // ((LinearClassifier) classifier).dumpSorted();
+  }
+

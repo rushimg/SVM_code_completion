@@ -1,0 +1,37 @@
+    private void condense()
+    {
+      Set<Integer> curBidSet = Generics.newHashSet();
+      Set<Integer> keepBidStates = Generics.newHashSet();
+      for (MatchedStates ms:activeMatchedStates) {
+        // Trim out unneeded states info
+        List<State> states = ms.states;
+        logger.finest("Condense matched state: curPosition=" + ms.curPosition
+                + ", totalTokens=" + ms.matcher.elements.size()
+               + ", nStates=" + states.size());
+        for (State state: states) {
+          curBidSet.add(state.bid);
+          keepBidStates.add(state.bid);
+        }
+      }
+      for (int bid:curBidSet) {
+        BranchState bs = getBranchState(bid);
+        if (bs != null) {
+          keepBidStates.add(bs.bid);
+          bs.updateKeepBids(keepBidStates);
+          if (bs.bidsToCollapse != null) {
+            mergeBranchStates(bs);
+          }
+        }
+      }
+      Collection<Integer> curBidStates = new ArrayList<Integer>(branchStates.keySet());
+      for (int bid:curBidStates) {
+        if (!keepBidStates.contains(bid)) {
+          logger.finest("Remove state for bid=" + bid);
+          branchStates.remove(bid);
+        }
+      }
+      logger.finest("Condense matched state: oldBidStates=" + curBidStates.size()
+              + ", newBidStates=" + branchStates.size()
+              + ", curBidSet=" + curBidSet.size());
+
+      // TODO: We should be able to trim some bids from our bidIndex as well....

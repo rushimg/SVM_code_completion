@@ -1,0 +1,23 @@
+    public Range getRangeBounds(boolean includeInterval) {
+        double lower = Double.POSITIVE_INFINITY;
+        double upper = Double.NEGATIVE_INFINITY;
+        int seriesCount = getSeriesCount();
+        for (int s = 0; s < seriesCount; s++) {
+            XYSeries series = getSeries(s);
+            double minY = series.getMinY();
+            if (!Double.isNaN(minY)) {
+                lower = Math.min(lower, minY);
+            }
+            double maxY = series.getMaxY();
+            if (!Double.isNaN(maxY)) {
+                upper = Math.max(upper, maxY);
+            }
+        }
+        if (lower > upper) {
+            return null;
+        }
+        else {
+            return new Range(lower, upper);
+        }
+    }
+

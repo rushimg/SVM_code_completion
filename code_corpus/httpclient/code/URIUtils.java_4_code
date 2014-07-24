@@ -1,0 +1,27 @@
+    public static URI rewriteURI(
+            final URI uri,
+            final HttpHost target,
+            final boolean dropFragment) throws URISyntaxException {
+        Args.notNull(uri, "URI");
+        if (uri.isOpaque()) {
+            return uri;
+        }
+        final URIBuilder uribuilder = new URIBuilder(uri);
+        if (target != null) {
+            uribuilder.setScheme(target.getSchemeName());
+            uribuilder.setHost(target.getHostName());
+            uribuilder.setPort(target.getPort());
+        } else {
+            uribuilder.setScheme(null);
+            uribuilder.setHost(null);
+            uribuilder.setPort(-1);
+        }
+        if (dropFragment) {
+            uribuilder.setFragment(null);
+        }
+        if (TextUtils.isEmpty(uribuilder.getPath())) {
+            uribuilder.setPath("/");
+        }
+        return uribuilder.build();
+    }
+

@@ -1,0 +1,87 @@
+
+  public boolean testSumOfBatches(double[] x, double functionTolerance){
+    boolean ret = false;
+    System.err.println("Making sure that the sum of stochastic gradients equals the full gradient");
+
+
+    AbstractStochasticCachingDiffFunction.SamplingMethod tmpSampleMethod = thisFunc.sampleMethod;
+    StochasticCalculateMethods tmpMethod = thisFunc.method;
+
+    //Make sure that our function is using ordered sampling.  Otherwise we have no gaurentees.
+    thisFunc.sampleMethod = AbstractStochasticCachingDiffFunction.SamplingMethod.Ordered;
+
+    if(thisFunc.method==StochasticCalculateMethods.NoneSpecified){
+      System.err.println("No calculate method has been specified");
+    }
+
+    approxValue = 0;
+    approxGrad = new double[x.length];
+    curGrad = new double[x.length];
+    fullGrad = new double[x.length];
+    double percent = 0.0;
+
+    //This loop runs through all the batches and sums of the calculations to compare against the full gradient
+    for (int i = 0; i < numBatches ; i ++){
+
+
+
+      //  update the value
+      approxValue += thisFunc.valueAt(x,v,testBatchSize);
+
+      //  update the gradient
+      thisFunc.returnPreviousValues = true;
+      System.arraycopy(thisFunc.derivativeAt(x,v,testBatchSize ), 0,curGrad, 0, curGrad.length);
+
+      //Update Approximate
+      approxGrad = ArrayMath.pairwiseAdd(approxGrad,curGrad);
+      double norm = ArrayMath.norm(approxGrad);
+
+      System.err.printf("%5.1f percent complete  %6.2f \n",percent,norm);
+
+    }
+
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    // Get the full gradient and value, these should equal the approximates
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    System.err.println("About to calculate the full derivative and value");
+    System.arraycopy(thisFunc.derivativeAt(x),0,fullGrad,0,fullGrad.length);
+    thisFunc.returnPreviousValues = true;
+    fullValue = thisFunc.valueAt(x);
+
+    diff = new double[x.length];
+
+    if( (ArrayMath.norm_inf(diff = ArrayMath.pairwiseSubtract(fullGrad,approxGrad))) < functionTolerance){
+      sayln("");
+      sayln("Success: sum of batch gradients equals full gradient");
+      ret = true;
+    }else{
+      diffNorm = ArrayMath.norm(diff);
+      sayln("");
+      sayln("Failure: sum of batch gradients minus full gradient has norm " + diffNorm);
+      ret = false;
+    }
+
+
+    if(Math.abs(approxValue - fullValue) < functionTolerance){
+      sayln("");
+      sayln("Success: sum of batch values equals full value");
+      ret = true;
+    }else{
+      sayln("");
+      sayln("Failure: sum of batch values minus full value has norm " + Math.abs(approxValue - fullValue));
+      ret = false;
+    }
+
+    thisFunc.sampleMethod = tmpSampleMethod;
+    thisFunc.method = tmpMethod;
+
+    return ret;
+  }
+
+
+
+
+
+
+
+

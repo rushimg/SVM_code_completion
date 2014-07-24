@@ -1,0 +1,40 @@
+    protected Size2D arrangeFN(Graphics2D g2, double w) {
+        RectangleEdge position = getPosition();
+        if (position == RectangleEdge.TOP || position == RectangleEdge.BOTTOM) {
+            float maxWidth = (float) w;
+            g2.setFont(this.font);
+            this.content = TextUtilities.createTextBlock(this.text, this.font,
+                    this.paint, maxWidth, this.maximumLinesToDisplay,
+                    new G2TextMeasurer(g2));
+            this.content.setLineAlignment(this.textAlignment);
+            Size2D contentSize = this.content.calculateDimensions(g2);
+            if (this.expandToFitSpace) {
+                return new Size2D(maxWidth, contentSize.getHeight());
+            }
+            else {
+                return contentSize;
+            }
+        }
+        else if (position == RectangleEdge.LEFT || position
+                == RectangleEdge.RIGHT) {
+            float maxWidth = Float.MAX_VALUE;
+            g2.setFont(this.font);
+            this.content = TextUtilities.createTextBlock(this.text, this.font,
+                    this.paint, maxWidth, this.maximumLinesToDisplay,
+                    new G2TextMeasurer(g2));
+            this.content.setLineAlignment(this.textAlignment);
+            Size2D contentSize = this.content.calculateDimensions(g2);
+
+            // transpose the dimensions, because the title is rotated
+            if (this.expandToFitSpace) {
+                return new Size2D(contentSize.getHeight(), maxWidth);
+            }
+            else {
+                return new Size2D(contentSize.height, contentSize.width);
+            }
+        }
+        else {
+            throw new RuntimeException("Unrecognised exception.");
+        }
+    }
+

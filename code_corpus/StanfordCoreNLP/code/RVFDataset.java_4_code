@@ -1,0 +1,39 @@
+  public void scaleFeatures() {
+    // TODO: should also implement a method that scales the features using the
+    // mean and std.
+    minValues = new double[featureIndex.size()];
+    maxValues = new double[featureIndex.size()];
+    Arrays.fill(minValues, Double.POSITIVE_INFINITY);
+    Arrays.fill(maxValues, Double.NEGATIVE_INFINITY);
+
+    // first identify the max and min values for each feature.
+    // System.out.printf("number of datums: %d dataset size: %d\n",data.length,size());
+    for (int i = 0; i < size(); i++) {
+      // System.out.printf("datum %d length %d\n", i,data[i].length);
+      for (int j = 0; j < data[i].length; j++) {
+        int f = data[i][j];
+        if (values[i][j] < minValues[f])
+          minValues[f] = values[i][j];
+        if (values[i][j] > maxValues[f])
+          maxValues[f] = values[i][j];
+      }
+    }
+
+    for (int f = 0; f < featureIndex.size(); f++) {
+      if (minValues[f] == Double.POSITIVE_INFINITY)
+        throw new RuntimeException("minValue for feature " + f + " not assigned. ");
+      if (maxValues[f] == Double.NEGATIVE_INFINITY)
+        throw new RuntimeException("maxValue for feature " + f + " not assigned.");
+    }
+
+    // now scale each value such that it's between 0 and 1.
+    for (int i = 0; i < size(); i++) {
+      for (int j = 0; j < data[i].length; j++) {
+        int f = data[i][j];
+        if (minValues[f] != maxValues[f])// the equality can happen for binary
+                                         // features which always take the value
+                                         // of 1.0
+          values[i][j] = (values[i][j] - minValues[f]) / (maxValues[f] - minValues[f]);
+      }
+    }
+

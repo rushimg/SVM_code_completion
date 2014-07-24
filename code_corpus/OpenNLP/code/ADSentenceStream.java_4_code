@@ -1,0 +1,61 @@
+    public Sentence parse(String sentenceString, int para, boolean isTitle, boolean isBox) {
+      BufferedReader reader = new BufferedReader(new StringReader(
+          sentenceString));
+      Sentence sentence = new Sentence();
+      Node root = new Node();
+      try {
+        // first line is <s ...>
+        String line = reader.readLine();
+
+        boolean useSameTextAndMeta = false; // to handle cases where there are diff sug of parse (&&)
+
+          // should find the source source
+          while (!line.startsWith("SOURCE")) {
+        	  if(line.equals("&&")) {
+        		  // same sentence again!
+        		  useSameTextAndMeta = true;
+        		  break;
+        	  }
+            line = reader.readLine();
+            if (line == null) {
+              return null;
+            }
+          }
+        if(!useSameTextAndMeta) {
+            // got source, get the metadata
+	        String metaFromSource = line.substring(7);
+	        line = reader.readLine();
+	        // we should have the plain sentence
+	        // we remove the first token
+	        int start = line.indexOf(" ");
+	        text = line.substring(start + 1).trim();
+	        text = fixPunctuation(text);
+	        String titleTag = "";
+	        if(isTitle) titleTag = " title";
+	        String boxTag = "";
+	        if(isBox) boxTag = " box";
+	        if(start > 0) {
+	          meta = line.substring(0, start) + " p=" + para + titleTag + boxTag + metaFromSource;
+	        } else {
+	          // rare case were there is no space between id and the sentence.
+              // will use previous meta for now
+	        }
+        }
+        sentence.setText(text);
+        sentence.setMetadata(meta);
+        // now we look for the root node
+
+        // skip lines starting with ###
+        line = reader.readLine();
+        while(line != null && line.startsWith("###")) {
+        	line = reader.readLine();
+        }
+
+        // got the root. Add it to the stack
+        Stack<Node> nodeStack = new Stack<Node>();
+
+        root.setSyntacticTag("ROOT");
+        root.setLevel(0);
+        nodeStack.add(root);
+
+

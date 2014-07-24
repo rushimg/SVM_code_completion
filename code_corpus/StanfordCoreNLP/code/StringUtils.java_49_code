@@ -1,0 +1,40 @@
+  public static int longestCommonSubstring(String s, String t) {
+    int[][] d; // matrix
+    int n; // length of s
+    int m; // length of t
+    int i; // iterates through s
+    int j; // iterates through t
+    // int cost; // cost
+    // Step 1
+    n = s.length();
+    m = t.length();
+    if (n == 0) {
+      return 0;
+    }
+    if (m == 0) {
+      return 0;
+    }
+    d = new int[n + 1][m + 1];
+    // Step 2
+    for (i = 0; i <= n; i++) {
+      d[i][0] = 0;
+    }
+    for (j = 0; j <= m; j++) {
+      d[0][j] = 0;
+    }
+    // Step 3
+    for (i = 1; i <= n; i++) {
+      char s_i = s.charAt(i - 1); // ith character of s
+// Step 4
+      for (j = 1; j <= m; j++) {
+        char t_j = t.charAt(j - 1); // jth character of t
+// Step 5
+        // js: if the chars match, you can get an extra point
+        // otherwise you have to skip an insertion or deletion (no subs)
+        if (s_i == t_j) {
+          d[i][j] = SloppyMath.max(d[i - 1][j], d[i][j - 1], d[i - 1][j - 1] + 1);
+        } else {
+          d[i][j] = Math.max(d[i - 1][j], d[i][j - 1]);
+        }
+      }
+    }

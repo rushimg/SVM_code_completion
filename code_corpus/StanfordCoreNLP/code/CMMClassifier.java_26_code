@@ -1,0 +1,32 @@
+    Scorer(List<INN> lineInfos, Index<String> tagIndex, CMMClassifier<INN> classifier, int pre, int post, Set<List<String>> legalTags) {
+      if (VERBOSE) {
+        System.err.println("Built Scorer for " + lineInfos.size() + " words, clique pre=" + pre + " post=" + post);
+      }
+      this.pre = pre;
+      this.post = post;
+      this.lineInfos = lineInfos;
+      this.tagIndex = tagIndex;
+      this.classifier = classifier;
+      this.legalTags = legalTags;
+      backgroundTags = new int[]{tagIndex.indexOf(classifier.flags.backgroundSymbol)};
+    }
+
+  } // end class Scorer
+
+  private boolean normalize() {
+    return flags.normalize;
+  }
+
+  static int lastPos = -1;
+
+  public Counter<String> scoresOf(List<IN> lineInfos, int pos) {
+//     if (pos != lastPos) {
+//       System.err.print(pos+".");
+//       lastPos = pos;
+//     }
+//     System.err.print("!");
+    Datum<String, String> d = makeDatum(lineInfos, pos, featureFactories);
+    return classifier.logProbabilityOf(d);
+  }
+
+

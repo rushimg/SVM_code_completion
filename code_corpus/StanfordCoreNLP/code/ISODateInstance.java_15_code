@@ -1,0 +1,45 @@
+  private static Pair<String, String> getRangeDates(String inputDate) {
+    for (String curIndicator : rangeIndicators) {
+      String[] dates = inputDate.split(curIndicator);
+      if (dates.length == 2) {
+        return new Pair<String, String>(dates[0], dates[1]);
+      }
+    }
+    return null;
+  }
+
+  private boolean addExtraRanges(String inputDate) {
+    if (isRange()) {
+      return false;
+    }
+    inputDate = inputDate.toLowerCase();
+    if (inputDate.contains("half")) {
+      if (inputDate.contains("first") && isoDate.length() <= 6) {
+        String firstDate = isoDate + "01";
+        String secondDate;
+        if (isoDate.length() == 4) {//year
+          secondDate = isoDate + MONTH_OF_HALF_YEAR;
+        } else {//month
+          secondDate = isoDate + DAY_OF_HALF_MONTH;
+        }
+        isoDate = firstDate + '/' + secondDate;
+        return true;
+      } else if (inputDate.contains("second") && isoDate.length() <= 6) {
+        String firstDate;
+        String secondDate;
+        if (isoDate.length() == 4) {//year
+          firstDate = isoDate + MONTH_OF_HALF_YEAR;
+          secondDate = isoDate + LAST_MONTH_OF_YEAR;
+          isoDate = firstDate + '/' + secondDate;
+        } else {//month
+          firstDate = isoDate + DAY_OF_HALF_MONTH;
+          secondDate = isoDate + LAST_DAY_OF_MONTH;
+        }
+        isoDate = firstDate + '/' + secondDate;
+        return true;
+      }
+    }
+
+    return false;
+  }
+

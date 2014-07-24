@@ -1,0 +1,123 @@
+  public void filterRulesForBatch(Collection<Tree> trees) {
+    TwoDimensionalSet<String, String> binaryRules = TwoDimensionalSet.treeSet();
+    Set<String> unaryRules = new HashSet<String>();
+    Set<String> words = new HashSet<String>();
+    for (Tree tree : trees) {
+      searchRulesForBatch(binaryRules, unaryRules, words, tree);
+    }
+
+    filterRulesForBatch(binaryRules, unaryRules, words);
+  }
+
+  public void filterRulesForBatch(Map<Tree, byte[]> compressedTrees) {
+    TwoDimensionalSet<String, String> binaryRules = TwoDimensionalSet.treeSet();
+    Set<String> unaryRules = new HashSet<String>();
+    Set<String> words = new HashSet<String>();
+    for (Map.Entry<Tree, byte[]> entry : compressedTrees.entrySet()) {
+      searchRulesForBatch(binaryRules, unaryRules, words, entry.getKey());
+
+      for (Tree hypothesis : CacheParseHypotheses.convertToTrees(entry.getValue())) {
+        searchRulesForBatch(binaryRules, unaryRules, words, hypothesis);
+      }
+    }
+
+    filterRulesForBatch(binaryRules, unaryRules, words);
+  }
+
+  public void filterRulesForBatch(TwoDimensionalSet<String, String> binaryRules, Set<String> unaryRules, Set<String> words) {
+    TwoDimensionalMap<String, String, SimpleMatrix> newBinaryTransforms = TwoDimensionalMap.treeMap();
+    TwoDimensionalMap<String, String, SimpleMatrix> newBinaryScores = TwoDimensionalMap.treeMap();
+    for (Pair<String, String> binaryRule : binaryRules) {
+      SimpleMatrix transform = binaryTransform.get(binaryRule.first(), binaryRule.second());
+      if (transform != null) {
+        newBinaryTransforms.put(binaryRule.first(), binaryRule.second(), transform);
+      }
+      SimpleMatrix score = binaryScore.get(binaryRule.first(), binaryRule.second());
+      if (score != null) {
+        newBinaryScores.put(binaryRule.first(), binaryRule.second(), score);
+      }
+      if ((transform == null && score != null) ||
+          (transform != null && score == null)) {
+        throw new AssertionError();
+      }
+    }
+    binaryTransform = newBinaryTransforms;
+    binaryScore = newBinaryScores;
+    numBinaryMatrices = binaryTransform.size();
+
+    Map<String, SimpleMatrix> newUnaryTransforms = Generics.newTreeMap();
+    Map<String, SimpleMatrix> newUnaryScores = Generics.newTreeMap();
+    for (String unaryRule : unaryRules) {
+      SimpleMatrix transform = unaryTransform.get(unaryRule);
+      if (transform != null) {
+        newUnaryTransforms.put(unaryRule, transform);
+      }
+      SimpleMatrix score = unaryScore.get(unaryRule);
+      if (score != null) {
+        newUnaryScores.put(unaryRule, score);
+      }
+      if ((transform == null && score != null) ||
+          (transform != null && score == null)) {
+        throw new AssertionError();
+      }
+    }
+    unaryTransform = newUnaryTransforms;
+    unaryScore = newUnaryScores;
+    numUnaryMatrices = unaryTransform.size();
+
+    Map<String, SimpleMatrix> newWordVectors = Generics.newTreeMap();
+    for (String word : words) {
+      SimpleMatrix wordVector = wordVectors.get(word);
+      if (wordVector != null) {
+        newWordVectors.put(word, wordVector);
+      }
+    }
+    wordVectors = newWordVectors;
+  }
+
+  private void searchRulesForBatch(TwoDimensionalSet<String, String> binaryRules,
+                                   Set<String> unaryRules, Set<String> words,
+                                   Tree tree) {
+    if (tree.isLeaf()) {
+      return;
+    }
+    if (tree.isPreTerminal()) {
+      words.add(getVocabWord(tree.children()[0].value()));
+      return;
+    }
+    Tree[] children = tree.children();
+    if (children.length == 1) {
+      unaryRules.add(basicCategory(children[0].value()));
+      searchRulesForBatch(binaryRules, unaryRules, words, children[0]);
+    } else if (children.length == 2) {
+      binaryRules.add(basicCategory(children[0].value()),
+                      basicCategory(children[1].value()));
+      searchRulesForBatch(binaryRules, unaryRules, words, children[0]);
+      searchRulesForBatch(binaryRules, unaryRules, words, children[1]);
+    } else {
+      throw new AssertionError("Expected a binarized tree");
+    }
+  }
+
+  public String basicCategory(String category) {
+    if (op.trainOptions.dvSimplifiedModel) {
+      return "";
+    } else {
+      String basic = op.langpack().basicCategory(category);
+      // TODO: if we can figure out what is going on with the grammar
+      // compaction, perhaps we don't want this any more
+      if (basic.length() > 0 && basic.charAt(0) == '@') {
+        basic = basic.substring(1);
+      }
+      return basic;
+    }
+  }
+
+
+
+  static final Pattern CHINESE_YEAR_PATTERN = Pattern.compile("[〇零一二三四五六七八九０１２３４５６７８９]{4}+年");
+
+  static final Pattern CHINESE_NUMBER_PATTERN = Pattern.compile("(?:[〇０零一二三四五六七八九０１２３４５６７８９十百万千亿]+[点多]?)+");
+
+  static final Pattern CHINESE_PERCENT_PATTERN = Pattern.compile("百分之[〇０零一二三四五六七八九０１２３４５６７８９十点]+");
+

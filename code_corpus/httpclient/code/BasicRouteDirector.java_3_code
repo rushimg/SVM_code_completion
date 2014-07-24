@@ -1,0 +1,19 @@
+    @Override
+    public int nextStep(final RouteInfo plan, final RouteInfo fact) {
+        Args.notNull(plan, "Planned route");
+
+        int step = UNREACHABLE;
+
+        if ((fact == null) || (fact.getHopCount() < 1)) {
+            step = firstStep(plan);
+        } else if (plan.getHopCount() > 1) {
+            step = proxiedStep(plan, fact);
+        } else {
+            step = directStep(plan, fact);
+        }
+
+        return step;
+
+    } // nextStep
+
+

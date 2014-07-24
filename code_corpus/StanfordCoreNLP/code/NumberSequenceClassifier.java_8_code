@@ -1,0 +1,54 @@
+  private void ordinalRecognizer(List<CoreLabel> tokenSequence) {
+    for (CoreLabel crt : tokenSequence) {
+      if ((crt.get(CoreAnnotations.AnswerAnnotation.class).equals(flags.backgroundSymbol) ||
+              crt.get(CoreAnnotations.AnswerAnnotation.class).equals("NUMBER")) &&
+              ORDINAL_PATTERN.matcher(crt.word()).matches()) {
+        crt.set(CoreAnnotations.AnswerAnnotation.class, "ORDINAL");
+      }
+    }
+  }
+
+  private int changeLeftToRight(List<CoreLabel> tokens,
+      int start,
+      String oldTag,
+      String posTag,
+      String newTag) {
+    while(start < tokens.size()) {
+      CoreLabel crt = tokens.get(start);
+      // we are scanning for a NER tag and found something different
+      if(! oldTag.equals(flags.backgroundSymbol) && ! crt.get(CoreAnnotations.AnswerAnnotation.class).equals(oldTag)) {
+        break;
+      }
+      // the NER tag is not set, so we scan for similar POS tags
+      if(oldTag.equals(flags.backgroundSymbol) && ! crt.tag().equals(posTag)) {
+        break;
+      }
+
+      crt.set(CoreAnnotations.AnswerAnnotation.class, newTag);
+      start ++;
+    }
+    return start;
+  }
+
+  private int changeRightToLeft(List<CoreLabel> tokens,
+      int start,
+      String oldTag,
+      String posTag,
+      String newTag) {
+    while(start >= 0) {
+      CoreLabel crt = tokens.get(start);
+      // we are scanning for a NER tag and found something different
+      if(! oldTag.equals(flags.backgroundSymbol) && ! crt.get(CoreAnnotations.AnswerAnnotation.class).equals(oldTag)) {
+        break;
+      }
+      // the NER tag is not set, so we scan for similar POS tags
+      if(oldTag.equals(flags.backgroundSymbol) && ! crt.tag().equals(posTag)) {
+        break;
+      }
+
+      crt.set(CoreAnnotations.AnswerAnnotation.class, newTag);
+      start --;
+    }
+    return start;
+  }
+

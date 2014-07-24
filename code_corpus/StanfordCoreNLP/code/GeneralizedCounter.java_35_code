@@ -1,0 +1,110 @@
+  public static void main(String[] args) {
+
+    Object[] a1 = new Object[]{"a", "b"};
+    Object[] a2 = new Object[]{"a", "b"};
+
+    System.out.println(Arrays.equals(a1, a2));
+
+
+    GeneralizedCounter<String> gc = new GeneralizedCounter<String>(3);
+    gc.incrementCount(Arrays.asList(new String[]{"a", "j", "x"}), 3.0);
+    gc.incrementCount(Arrays.asList(new String[]{"a", "l", "x"}), 3.0);
+    gc.incrementCount(Arrays.asList(new String[]{"b", "k", "y"}), 3.0);
+    gc.incrementCount(Arrays.asList(new String[]{"b", "k", "z"}), 3.0);
+
+    System.out.println("incremented counts.");
+
+    System.out.println(gc.dumpKeys());
+
+    System.out.println("string representation of generalized counter:");
+    System.out.println(gc.toString());
+
+
+    gc.printKeySet();
+
+    System.out.println("entry set:\n" + gc.entrySet());
+
+
+    arrayPrintDouble(gc.getCounts(Arrays.asList(new String[]{"a", "j", "x"})));
+    arrayPrintDouble(gc.getCounts(Arrays.asList(new String[]{"a", "j", "z"})));
+    arrayPrintDouble(gc.getCounts(Arrays.asList(new String[]{"b", "k", "w"})));
+    arrayPrintDouble(gc.getCounts(Arrays.asList(new String[]{"b", "k", "z"})));
+
+    GeneralizedCounter<String> gc1 = gc.conditionalize(Arrays.asList(new String[]{"a"}));
+    gc1.incrementCount(Arrays.asList(new String[]{"j", "x"}));
+    gc1.incrementCount2D("j", "z");
+    GeneralizedCounter<String> gc2 = gc1.conditionalize(Arrays.asList(new String[]{"j"}));
+    gc2.incrementCount1D("x");
+    System.out.println("Pretty-printing gc after incrementing gc1:");
+    gc.prettyPrint();
+    System.out.println("Total: " + gc.totalCount());
+
+    gc1.printKeySet();
+    System.out.println("another entry set:\n" + gc1.entrySet());
+
+
+    ClassicCounter<List<String>> c = gc.counterView();
+
+    System.out.println("string representation of counter view:");
+    System.out.println(c.toString());
+
+    double d1 = c.getCount(Arrays.asList(new String[]{"a", "j", "x"}));
+    double d2 = c.getCount(Arrays.asList(new String[]{"a", "j", "w"}));
+
+    System.out.println(d1 + " " + d2);
+
+
+    ClassicCounter<List<String>> c1 = gc1.counterView();
+
+    System.out.println("Count of {j,x} -- should be 3.0\t" + c1.getCount(Arrays.asList(new String[]{"j", "x"})));
+
+
+    System.out.println(c.keySet() + " size " + c.keySet().size());
+    System.out.println(c1.keySet() + " size " + c1.keySet().size());
+
+    System.out.println(c1.equals(c));
+    System.out.println(c.equals(c1));
+    System.out.println(c.equals(c));
+
+    System.out.println("### testing equality of regular Counter...");
+
+    ClassicCounter<String> z1 = new ClassicCounter<String>();
+    ClassicCounter<String> z2 = new ClassicCounter<String>();
+
+    z1.incrementCount("a1");
+    z1.incrementCount("a2");
+
+    z2.incrementCount("b");
+
+    System.out.println(z1.equals(z2));
+
+    System.out.println(z1.toString());
+    System.out.println(z1.keySet().toString());
+
+
+  }
+
+
+  // below is testing code
+
+  private void printKeySet() {
+    Set<?> keys = keySet();
+    System.out.println("printing keyset:");
+    for (Object o: keys) {
+      //System.out.println(Arrays.asList((Object[]) i.next()));
+      System.out.println(o);
+    }
+  }
+
+
+  private static void arrayPrintDouble(double[] o) {
+    for (int i = 0, n = o.length; i < n; i++) {
+      System.out.print(o[i] + "\t");
+    }
+    System.out.println();
+  }
+
+  private Set<?> dumpKeys() {
+    return map.keySet();
+  }
+

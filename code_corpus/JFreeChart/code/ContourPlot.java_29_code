@@ -1,0 +1,52 @@
+    public void render(Graphics2D g2, Rectangle2D dataArea,
+                       PlotRenderingInfo info, CrosshairState crosshairState) {
+
+        // now get the data and plot it (the visual representation will depend
+        // on the renderer that has been set)...
+        ContourDataset data = getDataset();
+        if (data != null) {
+
+            ColorBar zAxis = getColorBar();
+
+            if (this.clipPath != null) {
+                GeneralPath clipper = getClipPath().draw(g2, dataArea,
+                        this.domainAxis, this.rangeAxis);
+                if (this.clipPath.isClip()) {
+                    g2.clip(clipper);
+                }
+            }
+
+            if (this.renderAsPoints) {
+                pointRenderer(g2, dataArea, info, this, this.domainAxis,
+                        this.rangeAxis, zAxis, data, crosshairState);
+            }
+            else {
+                contourRenderer(g2, dataArea, info, this, this.domainAxis,
+                        this.rangeAxis, zAxis, data, crosshairState);
+            }
+
+            // draw vertical crosshair if required...
+            setDomainCrosshairValue(crosshairState.getCrosshairX(), false);
+            if (isDomainCrosshairVisible()) {
+                drawVerticalLine(g2, dataArea,
+                                 getDomainCrosshairValue(),
+                                 getDomainCrosshairStroke(),
+                                 getDomainCrosshairPaint());
+            }
+
+            // draw horizontal crosshair if required...
+            setRangeCrosshairValue(crosshairState.getCrosshairY(), false);
+            if (isRangeCrosshairVisible()) {
+                drawHorizontalLine(g2, dataArea,
+                                   getRangeCrosshairValue(),
+                                   getRangeCrosshairStroke(),
+                                   getRangeCrosshairPaint());
+            }
+
+        }
+        else if (this.clipPath != null) {
+            getClipPath().draw(g2, dataArea, this.domainAxis, this.rangeAxis);
+        }
+
+    }
+

@@ -1,0 +1,30 @@
+  private static String getListPropertyValue(String varName, Iterator<?> iterator,
+      boolean containsExplodeModifier, CompositeOutput compositeOutput) {
+    if (!iterator.hasNext()) {
+      return "";
+    }
+    StringBuilder retBuf = new StringBuilder();
+    retBuf.append(compositeOutput.getOutputPrefix());
+    String joiner;
+    if (containsExplodeModifier) {
+      joiner = compositeOutput.getExplodeJoiner();
+    } else {
+      joiner = COMPOSITE_NON_EXPLODE_JOINER;
+      if (compositeOutput.requiresVarAssignment()) {
+        retBuf.append(CharEscapers.escapeUriPath(varName));
+        retBuf.append("=");
+      }
+    }
+    while (iterator.hasNext()) {
+      if (containsExplodeModifier && compositeOutput.requiresVarAssignment()) {
+        retBuf.append(CharEscapers.escapeUriPath(varName));
+        retBuf.append("=");
+      }
+      retBuf.append(compositeOutput.getEncodedValue(iterator.next().toString()));
+      if (iterator.hasNext()) {
+        retBuf.append(joiner);
+      }
+    }
+    return retBuf.toString();
+  }
+

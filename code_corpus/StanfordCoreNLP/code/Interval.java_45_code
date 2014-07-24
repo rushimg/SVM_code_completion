@@ -1,0 +1,26 @@
+  public int compareIntervalOrder(Interval<E> other)
+  {
+    int flags = getRelationFlags(other);
+    if (checkFlagExclusiveSet(flags, REL_FLAGS_INTERVAL_BEFORE, REL_FLAGS_INTERVAL_UNKNOWN)) {
+      return -1;
+    } else if (checkFlagExclusiveSet(flags, REL_FLAGS_INTERVAL_AFTER, REL_FLAGS_INTERVAL_UNKNOWN)) {
+      return 1;
+    } else {
+      return 0;
+    }
+  }
+
+  protected static int toRelFlags(int comp, int shift)
+  {
+    int flags = 0;
+    if (comp == 0) {
+      flags = REL_FLAGS_SAME;
+    } else if (comp > 0) {
+      flags = REL_FLAGS_AFTER;
+    } else {
+      flags = REL_FLAGS_BEFORE;
+    }
+    flags = flags << shift;
+    return flags;
+  }
+

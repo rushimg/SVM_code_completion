@@ -1,0 +1,15 @@
+  public static SemanticGraph makeFromGraphs(Collection<SemanticGraph> sgList) {
+    SemanticGraph sg = new SemanticGraph();
+    Collection<IndexedWord> newRoots = Generics.newHashSet();
+    for (SemanticGraph currSg : sgList) {
+      newRoots.addAll(currSg.getRoots());
+      for (IndexedWord currVertex : currSg.vertexSet())
+        sg.addVertex(currVertex);
+      for (SemanticGraphEdge currEdge : currSg.edgeIterable())
+        sg.addEdge(currEdge.getGovernor(), currEdge.getDependent(),
+                   currEdge.getRelation(), currEdge.getWeight(), currEdge.isExtra());
+    }
+    sg.setRoots(newRoots);
+    return sg;
+  }
+

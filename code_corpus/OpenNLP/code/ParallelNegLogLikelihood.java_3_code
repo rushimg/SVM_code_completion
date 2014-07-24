@@ -1,0 +1,18 @@
+  @Override
+  public double valueAt(double[] x) {
+    
+    if (x.length != dimension)
+      throw new IllegalArgumentException(
+          "x is invalid, its dimension is not equal to domain dimension.");
+
+    // Compute partial value of negative log-likelihood in each thread
+    computeInParallel(x, NegLLComputeTask.class);
+    
+    double negLogLikelihood = 0;
+    for (int t = 0; t < threads; t++) {
+      negLogLikelihood += negLogLikelihoodThread[t];
+    }
+    
+    return negLogLikelihood;
+  }  
+  

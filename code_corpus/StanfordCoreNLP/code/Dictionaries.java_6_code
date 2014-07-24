@@ -1,0 +1,63 @@
+  public boolean isAdjectivalDemonym(String token) {
+    return adjectiveNation.contains(token.toLowerCase(Locale.ENGLISH));
+  }
+
+  private static void getWordsFromFile(String filename, Set<String> resultSet, boolean lowercase) throws IOException {
+    if(filename==null) {
+      return ;
+    }
+    BufferedReader reader = IOUtils.readerFromString(filename);
+    while(reader.ready()) {
+      if(lowercase) resultSet.add(reader.readLine().toLowerCase());
+      else resultSet.add(reader.readLine());
+    }
+    IOUtils.closeIgnoringExceptions(reader);
+  }
+
+  private void loadAnimacyLists(String animateWordsFile, String inanimateWordsFile) {
+    try {
+      getWordsFromFile(animateWordsFile, animateWords, false);
+      getWordsFromFile(inanimateWordsFile, inanimateWords, false);
+    } catch (IOException e) {
+      throw new RuntimeIOException(e);
+    }
+  }
+
+  private void loadGenderLists(String maleWordsFile, String neutralWordsFile, String femaleWordsFile) {
+    try {
+      getWordsFromFile(maleWordsFile, maleWords, false);
+      getWordsFromFile(neutralWordsFile, neutralWords, false);
+      getWordsFromFile(femaleWordsFile, femaleWords, false);
+    } catch (IOException e) {
+      throw new RuntimeIOException(e);
+    }
+  }
+
+  private void loadNumberLists(String pluralWordsFile, String singularWordsFile) {
+    try {
+      getWordsFromFile(pluralWordsFile, pluralWords, false);
+      getWordsFromFile(singularWordsFile, singularWords, false);
+    } catch (IOException e) {
+      throw new RuntimeIOException(e);
+    }
+  }
+  private void loadStatesLists(String file) {
+    try {
+      getWordsFromFile(file, statesAndProvinces, true);
+    } catch (IOException e) {
+      throw new RuntimeIOException(e);
+    }
+  }
+
+  private void loadCountriesLists(String file) {
+    try{
+      BufferedReader reader = IOUtils.readerFromString(file);
+      for (String line; (line = reader.readLine()) != null; ) {
+        countries.add(line.split("\t")[1].toLowerCase());
+      }
+      reader.close();
+    } catch (IOException e) {
+      throw new RuntimeIOException(e);
+    }
+  }
+

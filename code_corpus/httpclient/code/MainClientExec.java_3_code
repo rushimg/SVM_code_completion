@@ -1,0 +1,254 @@
+    public MainClientExec(
+            final HttpRequestExecutor requestExecutor,
+            final HttpClientConnectionManager connManager,
+            final ConnectionReuseStrategy reuseStrategy,
+            final ConnectionKeepAliveStrategy keepAliveStrategy,
+            final HttpProcessor proxyHttpProcessor,
+            final AuthenticationStrategy targetAuthStrategy,
+            final AuthenticationStrategy proxyAuthStrategy,
+            final UserTokenHandler userTokenHandler) {
+        Args.notNull(requestExecutor, "HTTP request executor");
+        Args.notNull(connManager, "Client connection manager");
+        Args.notNull(reuseStrategy, "Connection reuse strategy");
+        Args.notNull(keepAliveStrategy, "Connection keep alive strategy");
+        Args.notNull(proxyHttpProcessor, "Proxy HTTP processor");
+        Args.notNull(targetAuthStrategy, "Target authentication strategy");
+        Args.notNull(proxyAuthStrategy, "Proxy authentication strategy");
+        Args.notNull(userTokenHandler, "User token handler");
+        this.authenticator      = new HttpAuthenticator();
+        this.routeDirector      = new BasicRouteDirector();
+        this.requestExecutor    = requestExecutor;
+        this.connManager        = connManager;
+        this.reuseStrategy      = reuseStrategy;
+        this.keepAliveStrategy  = keepAliveStrategy;
+        this.proxyHttpProcessor = proxyHttpProcessor;
+        this.targetAuthStrategy = targetAuthStrategy;
+        this.proxyAuthStrategy  = proxyAuthStrategy;
+        this.userTokenHandler   = userTokenHandler;
+    }
+
+    public MainClientExec(
+            final HttpRequestExecutor requestExecutor,
+            final HttpClientConnectionManager connManager,
+            final ConnectionReuseStrategy reuseStrategy,
+            final ConnectionKeepAliveStrategy keepAliveStrategy,
+            final AuthenticationStrategy targetAuthStrategy,
+            final AuthenticationStrategy proxyAuthStrategy,
+            final UserTokenHandler userTokenHandler) {
+        this(requestExecutor, connManager, reuseStrategy, keepAliveStrategy,
+                new ImmutableHttpProcessor(new RequestTargetHost()),
+                targetAuthStrategy, proxyAuthStrategy, userTokenHandler);
+    }
+
+    @Override
+    public CloseableHttpResponse execute(
+            final HttpRoute route,
+            final HttpRequestWrapper request,
+            final HttpClientContext context,
+            final HttpExecutionAware execAware) throws IOException, HttpException {
+        Args.notNull(route, "HTTP route");
+        Args.notNull(request, "HTTP request");
+        Args.notNull(context, "HTTP context");
+
+        AuthState targetAuthState = context.getTargetAuthState();
+        if (targetAuthState == null) {
+            targetAuthState = new AuthState();
+            context.setAttribute(HttpClientContext.TARGET_AUTH_STATE, targetAuthState);
+        }
+        AuthState proxyAuthState = context.getProxyAuthState();
+        if (proxyAuthState == null) {
+            proxyAuthState = new AuthState();
+            context.setAttribute(HttpClientContext.PROXY_AUTH_STATE, proxyAuthState);
+        }
+
+        if (request instanceof HttpEntityEnclosingRequest) {
+            RequestEntityProxy.enhance((HttpEntityEnclosingRequest) request);
+        }
+
+        Object userToken = context.getUserToken();
+
+        final ConnectionRequest connRequest = connManager.requestConnection(route, userToken);
+        if (execAware != null) {
+            if (execAware.isAborted()) {
+                connRequest.cancel();
+                throw new RequestAbortedException("Request aborted");
+            } else {
+                execAware.setCancellable(connRequest);
+            }
+        }
+
+        final RequestConfig config = context.getRequestConfig();
+
+        final HttpClientConnection managedConn;
+        try {
+            final int timeout = config.getConnectionRequestTimeout();
+            managedConn = connRequest.get(timeout > 0 ? timeout : 0, TimeUnit.MILLISECONDS);
+        } catch(final InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+            throw new RequestAbortedException("Request aborted", interrupted);
+        } catch(final ExecutionException ex) {
+            Throwable cause = ex.getCause();
+            if (cause == null) {
+                cause = ex;
+            }
+            throw new RequestAbortedException("Request execution failed", cause);
+        }
+
+        context.setAttribute(HttpCoreContext.HTTP_CONNECTION, managedConn);
+
+        if (config.isStaleConnectionCheckEnabled()) {
+            // validate connection
+            if (managedConn.isOpen()) {
+                this.log.debug("Stale connection check");
+                if (managedConn.isStale()) {
+                    this.log.debug("Stale connection detected");
+                    managedConn.close();
+                }
+            }
+        }
+
+        final ConnectionHolder connHolder = new ConnectionHolder(this.log, this.connManager, managedConn);
+        try {
+            if (execAware != null) {
+                execAware.setCancellable(connHolder);
+            }
+
+            HttpResponse response;
+            for (int execCount = 1;; execCount++) {
+
+                if (execCount > 1 && !RequestEntityProxy.isRepeatable(request)) {
+                    throw new NonRepeatableRequestException("Cannot retry request " +
+                            "with a non-repeatable request entity.");
+                }
+
+                if (execAware != null && execAware.isAborted()) {
+                    throw new RequestAbortedException("Request aborted");
+                }
+
+                if (!managedConn.isOpen()) {
+                    this.log.debug("Opening connection " + route);
+                    try {
+                        establishRoute(proxyAuthState, managedConn, route, request, context);
+                    } catch (final TunnelRefusedException ex) {
+                        if (this.log.isDebugEnabled()) {
+                            this.log.debug(ex.getMessage());
+                        }
+                        response = ex.getResponse();
+                        break;
+                    }
+                }
+                final int timeout = config.getSocketTimeout();
+                if (timeout >= 0) {
+                    managedConn.setSocketTimeout(timeout);
+                }
+
+                if (execAware != null && execAware.isAborted()) {
+                    throw new RequestAbortedException("Request aborted");
+                }
+
+                if (this.log.isDebugEnabled()) {
+                    this.log.debug("Executing request " + request.getRequestLine());
+                }
+
+                if (!request.containsHeader(AUTH.WWW_AUTH_RESP)) {
+                    if (this.log.isDebugEnabled()) {
+                        this.log.debug("Target auth state: " + targetAuthState.getState());
+                    }
+                    this.authenticator.generateAuthResponse(request, targetAuthState, context);
+                }
+                if (!request.containsHeader(AUTH.PROXY_AUTH_RESP) && !route.isTunnelled()) {
+                    if (this.log.isDebugEnabled()) {
+                        this.log.debug("Proxy auth state: " + proxyAuthState.getState());
+                    }
+                    this.authenticator.generateAuthResponse(request, proxyAuthState, context);
+                }
+
+                response = requestExecutor.execute(request, managedConn, context);
+
+                // The connection is in or can be brought to a re-usable state.
+                if (reuseStrategy.keepAlive(response, context)) {
+                    // Set the idle duration of this connection
+                    final long duration = keepAliveStrategy.getKeepAliveDuration(response, context);
+                    if (this.log.isDebugEnabled()) {
+                        final String s;
+                        if (duration > 0) {
+                            s = "for " + duration + " " + TimeUnit.MILLISECONDS;
+                        } else {
+                            s = "indefinitely";
+                        }
+                        this.log.debug("Connection can be kept alive " + s);
+                    }
+                    connHolder.setValidFor(duration, TimeUnit.MILLISECONDS);
+                    connHolder.markReusable();
+                } else {
+                    connHolder.markNonReusable();
+                }
+
+                if (needAuthentication(
+                        targetAuthState, proxyAuthState, route, response, context)) {
+                    // Make sure the response body is fully consumed, if present
+                    final HttpEntity entity = response.getEntity();
+                    if (connHolder.isReusable()) {
+                        EntityUtils.consume(entity);
+                    } else {
+                        managedConn.close();
+                        if (proxyAuthState.getState() == AuthProtocolState.SUCCESS
+                                && proxyAuthState.getAuthScheme() != null
+                                && proxyAuthState.getAuthScheme().isConnectionBased()) {
+                            this.log.debug("Resetting proxy auth state");
+                            proxyAuthState.reset();
+                        }
+                        if (targetAuthState.getState() == AuthProtocolState.SUCCESS
+                                && targetAuthState.getAuthScheme() != null
+                                && targetAuthState.getAuthScheme().isConnectionBased()) {
+                            this.log.debug("Resetting target auth state");
+                            targetAuthState.reset();
+                        }
+                    }
+                    // discard previous auth headers
+                    final HttpRequest original = request.getOriginal();
+                    if (!original.containsHeader(AUTH.WWW_AUTH_RESP)) {
+                        request.removeHeaders(AUTH.WWW_AUTH_RESP);
+                    }
+                    if (!original.containsHeader(AUTH.PROXY_AUTH_RESP)) {
+                        request.removeHeaders(AUTH.PROXY_AUTH_RESP);
+                    }
+                } else {
+                    break;
+                }
+            }
+
+            if (userToken == null) {
+                userToken = userTokenHandler.getUserToken(context);
+                context.setAttribute(HttpClientContext.USER_TOKEN, userToken);
+            }
+            if (userToken != null) {
+                connHolder.setState(userToken);
+            }
+
+            // check for entity, release connection if possible
+            final HttpEntity entity = response.getEntity();
+            if (entity == null || !entity.isStreaming()) {
+                // connection not needed and (assumed to be) in re-usable state
+                connHolder.releaseConnection();
+                return new HttpResponseProxy(response, null);
+            } else {
+                return new HttpResponseProxy(response, connHolder);
+            }
+        } catch (final ConnectionShutdownException ex) {
+            final InterruptedIOException ioex = new InterruptedIOException(
+                    "Connection has been shut down");
+            ioex.initCause(ex);
+            throw ioex;
+        } catch (final HttpException ex) {
+            connHolder.abortConnection();
+            throw ex;
+        } catch (final IOException ex) {
+            connHolder.abortConnection();
+            throw ex;
+        } catch (final RuntimeException ex) {
+            connHolder.abortConnection();
+            throw ex;
+        }
+    }
+

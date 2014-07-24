@@ -1,0 +1,15 @@
+  private static <GR extends GrammaticalRelationAnnotation> // separating this out helps some compilers
+  Map<Class<? extends GrammaticalRelationAnnotation>, Set<TreeGraphNode>> getAllDependents(TreeGraphNode node) {
+    Map<Class<? extends GrammaticalRelationAnnotation>, Set<TreeGraphNode>> newMap = Generics.newHashMap();
+
+    for (Class<?> o : node.label.keySet()) {
+      if (GrammaticalRelationAnnotation.class.isAssignableFrom(o)) {
+        // ignore any non-GrammaticalRelationAnnotation element
+        Class<GR> typedKey = ErasureUtils.uncheckedCast(o);
+        newMap.put(typedKey, node.label.get(typedKey));
+      }
+    }
+    return newMap;
+  }
+
+

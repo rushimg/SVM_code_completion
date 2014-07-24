@@ -1,0 +1,70 @@
+  private static synchronized Tree getCollocationProcessedTree(Tree tree,
+                                                               HeadFinder hf) {
+    if (wnc == null) {
+      try {
+        Class<?> cl = Class.forName("edu.stanford.nlp.trees.WordNetInstance");
+        wnc = (WordNetConnection) cl.newInstance();
+      } catch (Exception e) {
+        System.err.println("Couldn't open WordNet Connection.  Aborting collocation detection.");
+        e.printStackTrace();
+        wnc = null;
+      }
+    }
+    if (wnc != null) {
+      CollocationFinder cf = new CollocationFinder(tree, wnc, hf);
+      tree = cf.getMangledTree();
+    } else {
+      System.err.println("ERROR: WordNetConnection unavailable for collocations.");
+    }
+    return tree;
+  }
+
+
+  public void printHeader(PrintWriter pw, String charset) {
+    if (propertyToBoolean(options, "xml")) {
+      pw.println("<?xml version=\"1.0\" encoding=\"" + charset + "\"?>");
+      pw.println("<corpus>");
+    }
+  }
+
+
+  public void printFooter(PrintWriter pw) {
+    if (propertyToBoolean(options, "xml")) {
+      pw.println("</corpus>");
+    }
+  }
+
+
+  public Tree markHeadNodes(Tree t) {
+    return markHeadNodes(t, null);
+  }
+
+  private Tree markHeadNodes(Tree t, Tree head) {
+    if (t.isLeaf()) {
+      return t; // don't worry about head-marking leaves
+    }
+    Label newLabel;
+    if (t == head) {
+      newLabel = headMark(t.label());
+    } else {
+      newLabel = t.label();
+    }
+    Tree newHead = hf.determineHead(t);
+    return t.treeFactory().newTreeNode(newLabel, Arrays.asList(headMarkChildren(t, newHead)));
+  }
+
+  private static Label headMark(Label l) {
+    Label l1 = l.labelFactory().newLabel(l);
+    l1.setValue(l1.value() + headMark);
+    return l1;
+  }
+
+  private Tree[] headMarkChildren(Tree t, Tree head) {
+    Tree[] kids = t.children();
+    Tree[] newKids = new Tree[kids.length];
+    for (int i = 0, n = kids.length; i < n; i++) {
+      newKids[i] = markHeadNodes(kids[i], head);
+    }
+    return newKids;
+  }
+

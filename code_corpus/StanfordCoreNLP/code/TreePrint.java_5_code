@@ -1,0 +1,66 @@
+  public TreePrint(String formatString, String optionsString, TreebankLanguagePack tlp, HeadFinder hf, HeadFinder typedDependencyHF) {
+    formats = StringUtils.stringToProperties(formatString);
+    options = StringUtils.stringToProperties(optionsString);
+    List<String> okOutputs = Arrays.asList(outputTreeFormats);
+    for (Object formObj : formats.keySet()) {
+      String format = (String) formObj;
+      if ( ! okOutputs.contains(format)) {
+        throw new RuntimeException("Error: output tree format " + format + " not supported. Known formats are: " + okOutputs);
+      }
+    }
+
+    this.hf = hf;
+    this.tlp = tlp;
+    boolean includePunctuationDependencies;
+    includePunctuationDependencies = propertyToBoolean(this.options,
+                                                       "includePunctuationDependencies");
+    Filter<String> puncWordFilter;
+    if (includePunctuationDependencies) {
+      dependencyFilter = Filters.acceptFilter();
+      dependencyWordFilter = Filters.acceptFilter();
+      puncWordFilter = Filters.acceptFilter();
+    } else {
+      dependencyFilter = new Dependencies.DependentPuncTagRejectFilter<Label, Label, Object>(tlp.punctuationTagRejectFilter());
+      dependencyWordFilter = new Dependencies.DependentPuncWordRejectFilter<Label, Label, Object>(tlp.punctuationWordRejectFilter());
+      puncWordFilter = tlp.punctuationWordRejectFilter();
+    }
+    if (propertyToBoolean(this.options, "stem")) {
+      stemmer = new WordStemmer();
+    } else {
+      stemmer = null;
+    }
+    if (formats.containsKey("typedDependenciesCollapsed") ||
+        formats.containsKey("typedDependencies") ||
+        (formats.containsKey("conll2007") && tlp.supportsGrammaticalStructures())) {
+      gsf = tlp.grammaticalStructureFactory(puncWordFilter, typedDependencyHF);
+    } else {
+      gsf = null;
+    }
+
+    lexicalize = propertyToBoolean(this.options, "lexicalize");
+    markHeadNodes = propertyToBoolean(this.options, "markHeadNodes");
+    transChinese = propertyToBoolean(this.options, "transChinese");
+    ptb2text = propertyToBoolean(this.options, "ptb2text");
+    removeEmpty = propertyToBoolean(this.options, "noempty") || ptb2text;
+
+    basicDependencies =  propertyToBoolean(this.options, "basicDependencies");
+    collapsedDependencies = propertyToBoolean(this.options, "collapsedDependencies");
+    nonCollapsedDependencies = propertyToBoolean(this.options, "nonCollapsedDependencies");
+    nonCollapsedDependenciesSeparated = propertyToBoolean(this.options, "nonCollapsedDependenciesSeparated");
+    treeDependencies = propertyToBoolean(this.options, "treeDependencies");
+
+    includeTags = propertyToBoolean(this.options, "includeTags");
+
+    // if no option format for the dependencies is specified, CCPropagated is the default
+    if ( ! basicDependencies && ! collapsedDependencies && ! nonCollapsedDependencies && ! nonCollapsedDependenciesSeparated && ! treeDependencies) {
+      CCPropagatedDependencies = true;
+    } else {
+      CCPropagatedDependencies = propertyToBoolean(this.options, "CCPropagatedDependencies");
+    }
+  }
+
+
+  private static boolean propertyToBoolean(Properties prop, String key) {
+    return Boolean.parseBoolean(prop.getProperty(key));
+  }
+

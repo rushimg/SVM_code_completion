@@ -1,0 +1,68 @@
+    public class Leaf extends TreeElement {
+
+      private String word;
+      private String lemma;
+      private String secondaryTag;
+      private String functionalTag;
+
+      @Override
+      public boolean isLeaf() {return true;}
+
+      public void setFunctionalTag(String funcTag) {
+        this.functionalTag = funcTag;
+      }
+
+      public String getFunctionalTag(){
+        return this.functionalTag;
+      }
+
+      public void setSecondaryTag(String secondaryTag) {
+        this.secondaryTag = secondaryTag;
+      }
+
+      public String getSecondaryTag() {
+        return this.secondaryTag;
+      }
+
+      public void setLexeme(String lexeme) {
+        this.word = lexeme;
+      }
+
+      public String getLexeme() {
+        return word;
+      }
+
+      private String emptyOrString(String value, String prefix, String suffix) {
+        if(value == null) return "";
+        return prefix + value + suffix;
+      }
+
+      @Override
+      public String toString() {
+        StringBuilder sb = new StringBuilder();
+        // print itself and its children
+        for (int i = 0; i < this.getLevel(); i++) {
+          sb.append("=");
+        }
+        if (this.getSyntacticTag() != null) {
+          sb.append(this.getSyntacticTag()).append(":")
+              .append(getFunctionalTag()).append("(")
+              .append(emptyOrString(getLemma(), "'", "' "))
+              .append(emptyOrString(getSecondaryTag(), "", " "))
+              .append(this.getMorphologicalTag()).append(") ");
+        }
+        sb.append(this.word).append("\n");
+        return sb.toString();
+      }
+
+      public void setLemma(String lemma) {
+        this.lemma = lemma;
+      }
+
+      public String getLemma() {
+        return lemma;
+      }
+    }
+
+  }
+

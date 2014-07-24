@@ -1,0 +1,46 @@
+  private static GrammaticalRelation determinePrepRelation(Map<TreeGraphNode, ? extends Set<TypedDependency>> map, List<TreeGraphNode> vmod, TypedDependency pc, TypedDependency topPrep, boolean pobj) {
+    // handling the case of an "agent":
+    // the governor of a "by" preposition must have an "auxpass" dependency
+    // or be the dependent of a "vmod" relation
+    // if it is the case, the "agent" variable becomes true
+    boolean agent = false;
+    String preposition = pc.dep().value().toLowerCase();
+    if (preposition.equals("by")) {
+      // look if we have an auxpass
+      Set<TypedDependency> aux_pass_poss = map.get(topPrep.gov());
+      if (aux_pass_poss != null) {
+        for (TypedDependency td_pass : aux_pass_poss) {
+          if (td_pass.reln() == AUX_PASSIVE_MODIFIER) {
+            agent = true;
+          }
+        }
+      }
+      // look if we have a vmod
+      if (!vmod.isEmpty() && vmod.contains(topPrep.gov())) {
+        agent = true;
+      }
+    }
+
+    GrammaticalRelation reln;
+    if (agent) {
+      reln = AGENT;
+    } else {
+      // for prepositions, use the preposition
+      // for pobj: we collapse into "prep"; for pcomp: we collapse into "prepc"
+      if (pobj) {
+        reln = EnglishGrammaticalRelations.getPrep(preposition);
+      } else {
+        reln = EnglishGrammaticalRelations.getPrepC(preposition);
+      }
+    }
+    return reln;
+  }
+
+  // used by collapse2WP(), collapseFlatMWP(), collapse2WPbis() KEPT IN
+  // ALPHABETICAL ORDER
+  private static final String[][] MULTIWORD_PREPS = { { "according", "to" }, { "across", "from" }, { "ahead", "of" }, { "along", "with" }, { "alongside", "of" }, { "apart", "from" }, { "as", "for" }, { "as", "from" }, { "as", "of" }, { "as", "per" }, { "as", "to" }, { "aside", "from" }, { "away", "from" }, { "based", "on" }, { "because", "of" }, { "close", "by" }, { "close", "to" }, { "contrary", "to" }, { "compared", "to" }, { "compared", "with" }, { "due", "to" }, { "depending", "on" }, { "except", "for" }, { "exclusive", "of" }, { "far", "from" }, { "followed", "by" }, { "inside", "of" }, { "instead", "of" }, { "irrespective", "of" }, { "next", "to" }, { "near", "to" }, { "off", "of" }, { "out", "of" }, { "outside", "of" }, { "owing", "to" }, { "preliminary", "to" },
+      { "preparatory", "to" }, { "previous", "to" }, { "prior", "to" }, { "pursuant", "to" }, { "regardless", "of" }, { "subsequent", "to" }, { "such", "as" }, { "thanks", "to" }, { "together", "with" } };
+
+  // used by collapse3WP() KEPT IN ALPHABETICAL ORDER
+  private static final String[][] THREEWORD_PREPS = { { "by", "means", "of" }, { "in", "accordance", "with" }, { "in", "addition", "to" }, { "in", "case", "of" }, { "in", "front", "of" }, { "in", "lieu", "of" }, { "in", "place", "of" }, { "in", "spite", "of" }, { "on", "account", "of" }, { "on", "behalf", "of" }, { "on", "top", "of" }, { "with", "regard", "to" }, { "with", "respect", "to" } };
+

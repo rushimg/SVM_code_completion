@@ -1,0 +1,21 @@
+  public static Annotation sentenceDeepMentionCopy(Annotation sentence) {
+    Annotation newSent = new Annotation(sentence.get(CoreAnnotations.TextAnnotation.class));
+
+    newSent.set(CoreAnnotations.TokensAnnotation.class, sentence.get(CoreAnnotations.TokensAnnotation.class));
+    newSent.set(TreeCoreAnnotations.TreeAnnotation.class, sentence.get(TreeCoreAnnotations.TreeAnnotation.class));
+    newSent.set(SemanticGraphCoreAnnotations.CollapsedDependenciesAnnotation.class, sentence.get(SemanticGraphCoreAnnotations.CollapsedDependenciesAnnotation.class));
+    newSent.set(SemanticGraphCoreAnnotations.BasicDependenciesAnnotation.class, sentence.get(SemanticGraphCoreAnnotations.BasicDependenciesAnnotation.class));
+    newSent.set(SemanticGraphCoreAnnotations.CollapsedCCProcessedDependenciesAnnotation.class, sentence.get(SemanticGraphCoreAnnotations.CollapsedCCProcessedDependenciesAnnotation.class));
+    newSent.set(CoreAnnotations.DocIDAnnotation.class, sentence.get(CoreAnnotations.DocIDAnnotation.class));
+
+    // deep copy of all mentions lists
+    List<EntityMention> ents = sentence.get(MachineReadingAnnotations.EntityMentionsAnnotation.class);
+    if(ents != null) newSent.set(MachineReadingAnnotations.EntityMentionsAnnotation.class, new ArrayList<EntityMention>(ents));
+    List<RelationMention> rels = sentence.get(MachineReadingAnnotations.RelationMentionsAnnotation.class);
+    if(rels != null) newSent.set(MachineReadingAnnotations.RelationMentionsAnnotation.class, new ArrayList<RelationMention>(rels));
+    List<EventMention> evs = sentence.get(MachineReadingAnnotations.EventMentionsAnnotation.class);
+    if(evs != null) newSent.set(MachineReadingAnnotations.EventMentionsAnnotation.class, new ArrayList<EventMention>(evs));
+
+    return newSent;
+  }
+

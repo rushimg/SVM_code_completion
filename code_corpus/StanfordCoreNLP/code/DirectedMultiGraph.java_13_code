@@ -1,0 +1,163 @@
+  public List<V> getShortestPath(V node1, V node2, boolean directionSensitive) {
+    if (!outgoingEdges.containsKey(node1) || !outgoingEdges.containsKey(node2)) {
+      return null;
+    }
+    return DijkstraShortestPath.getShortestPath(this, node1, node2, directionSensitive);
+  }
+
+  public List<E> getShortestPathEdges(V node1, V node2, boolean directionSensitive) {
+    return convertPath(getShortestPath(node1, node2, directionSensitive), directionSensitive);
+  }
+
+  public List<E> convertPath(List<V> nodes, boolean directionSensitive) {
+    if (nodes == null)
+      return null;
+
+    if (nodes.size() <= 1)
+      return Collections.emptyList();
+
+    List<E> path = new ArrayList<E>();
+    Iterator<V> nodeIterator = nodes.iterator();
+    V previous = nodeIterator.next();
+    while (nodeIterator.hasNext()) {
+      V next = nodeIterator.next();
+      E connection = null;
+      List<E> edges = getEdges(previous, next);
+      if (edges.size() == 0 && !directionSensitive) {
+        edges = getEdges(next, previous);
+      }
+      if (edges.size() > 0) {
+        connection = edges.get(0);
+      } else {
+        throw new IllegalArgumentException("Path given with missing " + "edge connection");
+      }
+      path.add(connection);
+      previous = next;
+    }
+    return path;
+  }
+
+  @Override
+  public int getInDegree(V vertex) {
+    if (!containsVertex(vertex)) {
+      return 0;
+    }
+    int result = 0;
+    Map<V, List<E>> incoming = incomingEdges.get(vertex);
+    for (List<E> edges : incoming.values()) {
+      result += edges.size();
+    }
+    return result;
+  }
+
+  @Override
+  public int getOutDegree(V vertex) {
+    int result = 0;
+    Map<V, List<E>> outgoing = outgoingEdges.get(vertex);
+    if (outgoing == null) {
+      return 0;
+    }
+    for (List<E> edges : outgoing.values()) {
+      result += edges.size();
+    }
+    return result;
+  }
+
+  @Override
+  public List<Set<V>> getConnectedComponents() {
+    return ConnectedComponents.getConnectedComponents(this);
+  }
+
+  public Iterator<E> incomingEdgeIterator(final V vertex) {
+    return new EdgeIterator<V, E>(incomingEdges, vertex);
+  }
+
+  public Iterable<E> incomingEdgeIterable(final V vertex) {
+    return new Iterable<E>() {
+      @Override
+      public Iterator<E> iterator() {
+        return new EdgeIterator<V, E>(incomingEdges, vertex);
+      }
+    };
+  }
+
+  public Iterator<E> outgoingEdgeIterator(final V vertex) {
+    return new EdgeIterator<V, E>(outgoingEdges, vertex);
+  }
+
+  public Iterable<E> outgoingEdgeIterable(final V vertex) {
+    return new Iterable<E>() {
+      @Override
+      public Iterator<E> iterator() {
+        return new EdgeIterator<V, E>(outgoingEdges, vertex);
+      }
+    };
+  }
+
+  public Iterator<E> edgeIterator() {
+    return new EdgeIterator<V, E>(this);
+  }
+
+  public Iterable<E> edgeIterable() {
+    return new Iterable<E>() {
+      @Override
+      public Iterator<E> iterator() {
+        return new EdgeIterator<V, E>(DirectedMultiGraph.this);
+      }
+    };
+  }
+
+  static class EdgeIterator<V, E> implements Iterator<E> {
+    private Iterator<Map<V, List<E>>> vertexIterator;
+    private Iterator<List<E>> connectionIterator;
+    private Iterator<E> edgeIterator;
+    private boolean hasNext = true;
+
+
+    public EdgeIterator(DirectedMultiGraph<V, E> graph) {
+      vertexIterator = graph.outgoingEdges.values().iterator();
+    }
+
+    public EdgeIterator(Map<V, Map<V, List<E>>> source, V startVertex) {
+      Map<V, List<E>> neighbors = source.get(startVertex);
+      if (neighbors == null) {
+        return;
+      }
+      vertexIterator = null;
+      connectionIterator = neighbors.values().iterator();
+    }
+
+    @Override
+    public boolean hasNext() {
+      primeIterator();
+      return hasNext;
+    }
+
+    @Override
+    public E next() {
+      if (!hasNext()) {
+        throw new NoSuchElementException("Graph edge iterator exhausted.");
+      }
+      return edgeIterator.next();
+    }
+
+    private void primeIterator() {
+      if (edgeIterator != null && edgeIterator.hasNext()) {
+        hasNext = true;  // technically, we shouldn't need to put this here, but let's be safe
+      } else if (connectionIterator != null && connectionIterator.hasNext()) {
+        edgeIterator = connectionIterator.next().iterator();
+        primeIterator();
+      } else if (vertexIterator != null && vertexIterator.hasNext()) {
+        connectionIterator = vertexIterator.next().values().iterator();
+        primeIterator();
+      } else {
+        hasNext = false;
+      }
+    }
+
+    @Override
+    public void remove() {
+      edgeIterator.remove();
+    }
+  }
+

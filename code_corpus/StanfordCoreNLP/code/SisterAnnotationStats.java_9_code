@@ -1,0 +1,83 @@
+  public static List<String> rightSisterLabels(Tree t, Tree p) {
+    List<String> l = new ArrayList<String>();
+    if (p == null) {
+      return l;
+    }
+    Tree[] kids = p.children();
+    for (int i = kids.length - 1; i >= 0; i--) {
+      if (kids[i].equals(t)) {
+        break;
+      } else {
+        l.add(kids[i].label().value());
+      }
+    }
+    return l;
+  }
+
+
+  public static List<String> kidLabels(Tree t) {
+    Tree[] kids = t.children();
+    List<String> l = new ArrayList<String>(kids.length);
+    for (int i = 0; i < kids.length; i++) {
+      l.add(kids[i].label().value());
+    }
+    return l;
+  }
+
+  protected void sisterCounters(Tree t, Tree p) {
+    List rewrite = kidLabels(t);
+    List left = leftSisterLabels(t, p);
+    List right = rightSisterLabels(t, p);
+
+    String label = t.label().value();
+
+    if (!nodeRules.containsKey(label)) {
+      nodeRules.put(label, new ClassicCounter());
+    }
+
+    if (!rightRules.containsKey(label)) {
+      rightRules.put(label, new HashMap());
+    }
+
+    if (!leftRules.containsKey(label)) {
+      leftRules.put(label, new HashMap());
+    }
+
+
+    ((ClassicCounter) nodeRules.get(label)).incrementCount(rewrite);
+
+
+    sideCounters(label, rewrite, left, leftRules);
+    sideCounters(label, rewrite, right, rightRules);
+
+  }
+
+  protected void sideCounters(String label, List rewrite, List sideSisters, Map sideRules) {
+    for (Iterator i = sideSisters.iterator(); i.hasNext();) {
+      String sis = (String) i.next();
+
+      if (!((Map) sideRules.get(label)).containsKey(sis)) {
+        ((Map) sideRules.get(label)).put(sis, new ClassicCounter());
+      }
+
+      ((ClassicCounter) ((HashMap) sideRules.get(label)).get(sis)).incrementCount(rewrite);
+    }
+  }
+
+
+  public void printStats() {
+    NumberFormat nf = NumberFormat.getNumberInstance();
+    nf.setMaximumFractionDigits(2);
+    // System.out.println("Node rules");
+    // System.out.println(nodeRules);
+    // System.out.println("Parent rules");
+    // System.out.println(pRules);
+    // System.out.println("Grandparent rules");
+    // System.out.println(gPRules);
+
+    // Store java code for selSplit
+    StringBuffer[] javaSB = new StringBuffer[CUTOFFS.length];
+    for (int i = 0; i < CUTOFFS.length; i++) {
+      javaSB[i] = new StringBuffer("  private static String[] sisterSplit" + (i + 1) + " = new String[] {");
+    }
+

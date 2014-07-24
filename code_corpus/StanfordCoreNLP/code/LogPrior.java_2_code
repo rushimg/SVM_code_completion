@@ -1,0 +1,84 @@
+  private static final long serialVersionUID = 7826853908892790965L;
+
+  public enum LogPriorType { NULL, QUADRATIC, HUBER, QUARTIC, COSH, ADAPT, MULTIPLE_QUADRATIC }
+
+  public static LogPriorType getType(String name) {
+    if (name.equalsIgnoreCase("null")) { return LogPriorType.NULL; }
+    else if (name.equalsIgnoreCase("quadratic")) { return LogPriorType.QUADRATIC; }
+    else if (name.equalsIgnoreCase("huber")) { return LogPriorType.HUBER; }
+    else if (name.equalsIgnoreCase("quartic")) { return LogPriorType.QUARTIC; }
+    else if (name.equalsIgnoreCase("cosh")) { return LogPriorType.COSH; }
+//    else if (name.equalsIgnoreCase("multiple")) { return LogPriorType.MULTIPLE; }
+    else { throw new RuntimeException("Unknown LogPriorType: "+name); }
+  }
+
+  // these fields are just for the ADAPT prior -
+  // is there a better way to do this?
+  private double[] means = null;
+  private LogPrior otherPrior = null;
+
+  public static LogPrior getAdaptationPrior(double[] means, LogPrior otherPrior) {
+    LogPrior lp = new LogPrior(LogPriorType.ADAPT);
+    lp.means = means;
+    lp.otherPrior = otherPrior;
+    return lp;
+  }
+
+  public LogPriorType getType() {
+    return type;
+  }
+
+  public final LogPriorType type;
+
+  public LogPrior() {
+    this(LogPriorType.QUADRATIC);
+  }
+
+  public LogPrior(int intPrior) {
+    this(intPrior, 1.0, 0.1);
+  }
+
+  public LogPrior(LogPriorType type) {
+    this(type, 1.0, 0.1);
+  }
+
+  // why isn't this functionality in enum?
+  private static LogPriorType intToType(int intPrior) {
+    LogPriorType[] values = LogPriorType.values();
+    for (LogPriorType val : values) {
+      if (val.ordinal() == intPrior) {
+        return val;
+      }
+    }
+    throw new IllegalArgumentException(intPrior + " is not a legal LogPrior.");
+  }
+
+  public LogPrior(int intPrior, double sigma, double epsilon) {
+    this(intToType(intPrior), sigma, epsilon);
+  }
+
+  public LogPrior(LogPriorType type, double sigma, double epsilon) {
+    this.type = type;
+    if (type != LogPriorType.ADAPT) {
+      setSigma(sigma);
+      setEpsilon(epsilon);
+    }
+  }
+
+
+  // this is the C variable in CSFoo's MM paper C = 1/\sigma^2
+//  private double[] regularizationHyperparameters = null;
+  
+  private double[] sigmaSqM = null;
+  private double[] sigmaQuM = null;
+  
+
+//  public double[] getRegularizationHyperparameters() {
+//    return regularizationHyperparameters;
+//  }
+//
+//  public void setRegularizationHyperparameters(
+//      double[] regularizationHyperparameters) {
+//    this.regularizationHyperparameters = regularizationHyperparameters;
+//  }
+

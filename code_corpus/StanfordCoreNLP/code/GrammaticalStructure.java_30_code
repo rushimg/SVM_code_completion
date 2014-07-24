@@ -1,0 +1,281 @@
+  public static List<GrammaticalStructure> readCoNLLXGrammaticalStructureCollection(String fileName, Map<String, GrammaticalRelation> shortNameToGRel, GrammaticalStructureFromDependenciesFactory factory) throws IOException {
+    LineNumberReader reader = new LineNumberReader(new FileReader(fileName));
+    List<GrammaticalStructure> gsList = new LinkedList<GrammaticalStructure>();
+
+    List<List<String>> tokenFields = new ArrayList<List<String>>();
+
+    for (String inline = reader.readLine(); inline != null;
+         inline = reader.readLine()) {
+      if (!"".equals(inline)) {
+        // read in a single sentence token by token
+        List<String> fields = Arrays.asList(inline.split("\t"));
+        if (fields.size() != CoNLLX_FieldCount) {
+          throw new RuntimeException(String.format("Error (line %d): 10 fields expected but %d are present", reader.getLineNumber(), fields.size()));
+        }
+        tokenFields.add(fields);
+      } else {
+        if (tokenFields.isEmpty())
+          continue; // skip excess empty lines
+
+        gsList.add(buildCoNLLXGrammaticalStructure(tokenFields, shortNameToGRel, factory));
+        tokenFields = new ArrayList<List<String>>();
+      }
+    }
+
+    return gsList;
+  }
+
+  public static GrammaticalStructure
+  buildCoNLLXGrammaticalStructure(List<List<String>> tokenFields,
+                                Map<String, GrammaticalRelation> shortNameToGRel,
+                                GrammaticalStructureFromDependenciesFactory factory) {
+    List<TreeGraphNode> tgWordNodes =
+      new ArrayList<TreeGraphNode>(tokenFields.size());
+    List<TreeGraphNode> tgPOSNodes =
+      new ArrayList<TreeGraphNode>(tokenFields.size());
+
+    SemanticHeadFinder headFinder = new SemanticHeadFinder();
+
+    // Construct TreeGraphNodes for words and POS tags
+    for (List<String> fields : tokenFields) {
+      TreeGraphNode word =
+        new TreeGraphNode(new Word(fields.get(CoNLLX_WordField)));
+      TreeGraphNode pos =
+        new TreeGraphNode(new Word(fields.get(CoNLLX_POSField)));
+      tgWordNodes.add(word);
+      tgPOSNodes.add(pos);
+      TreeGraphNode[] childArr = { word };
+      pos.setChildren(childArr);
+      word.setParent(pos);
+      pos.percolateHeads(headFinder);
+    }
+
+    // We fake up the parts of the tree structure that are not
+    // actually used by the grammatical relation transformation
+    // operations.
+    //
+    // That is, the constructed TreeGraphs consist of a flat tree,
+    // without any phrase bracketing, but that does preserve the
+    // parent child relationship between words and their POS tags.
+    //
+    // e.g. (ROOT (PRP I) (VBD hit) (DT the) (NN ball) (. .))
+    // cdm Nov 2009: This next bit wasn't used so I commented it out
+    // List<List<Integer>> children = new
+    // ArrayList<List<Integer>>(tokenFields.size());
+    // for (int i = 0; i < tgWordNodes.size(); i++) {
+    //   children.add(new ArrayList<Integer>());
+    // }
+
+    TreeGraphNode root =
+      new TreeGraphNode(new Word("ROOT-" + (tgWordNodes.size() + 1)));
+    root.setChildren(tgPOSNodes.toArray(new TreeGraphNode[tgPOSNodes.size()]));
+
+    // Build list of TypedDependencies
+    List<TypedDependency> tdeps =
+      new ArrayList<TypedDependency>(tgWordNodes.size());
+
+    // Create a node outside the tree useful for root dependencies;
+    // we want to keep those if they were stored in the conll file
+    TreeGraphNode dependencyRoot = new TreeGraphNode(new Word("ROOT"));
+    dependencyRoot.setIndex(0);
+    for (int i = 0; i < tgWordNodes.size(); i++) {
+      String parentIdStr = tokenFields.get(i).get(CoNLLX_GovField);
+      if (parentIdStr == null || parentIdStr.equals(""))
+        continue;
+      int parentId = Integer.parseInt(parentIdStr) - 1;
+      String grelString = tokenFields.get(i).get(CoNLLX_RelnField);
+      if (grelString.equals("null") || grelString.equals("erased"))
+        continue;
+      GrammaticalRelation grel = shortNameToGRel.get(grelString.toLowerCase());
+      TypedDependency tdep;
+      if (grel == null) {
+        if (grelString.toLowerCase().equals("root")) {
+          tdep = new TypedDependency(ROOT, dependencyRoot, tgWordNodes.get(i));
+        } else {
+          throw new RuntimeException("Unknown grammatical relation '" +
+                                     grelString + "' fields: " +
+                                     tokenFields.get(i) + "\nNode: " +
+                                     tgWordNodes.get(i) + "\n" +
+                                     "Known Grammatical relations: ["+shortNameToGRel.keySet()+"]" );
+        }
+      } else {
+        if (parentId >= tgWordNodes.size()) {
+          System.err.printf("Warning: Invalid Parent Id %d Sentence Length: %d%n", parentId+1, tgWordNodes.size());
+          System.err.printf("         Assigning to root (0)%n");
+          parentId = -1;
+        }
+        tdep = new TypedDependency(grel, (parentId == -1 ? root : tgWordNodes.get(parentId)),
+                                   tgWordNodes.get(i));
+      }
+      tdeps.add(tdep);
+    }
+    return factory.build(tdeps, root);
+  }
+
+
+  private static String[] parseClassConstructArgs(String namePlusArgs) {
+    String[] args = StringUtils.EMPTY_STRING_ARRAY;
+    String name = namePlusArgs;
+      args = argStr.split(",");
+    }
+    String[] tokens = new String[1 + args.length];
+    tokens[0] = name;
+    System.arraycopy(args, 0, tokens, 1, args.length);
+    return tokens;
+  }
+
+
+  private static DependencyReader loadAlternateDependencyReader(String altDepReaderName) {
+    Class<? extends DependencyReader> altDepReaderClass = null;
+    String[] toks = parseClassConstructArgs(altDepReaderName);
+    altDepReaderName = toks[0];
+    String[] depReaderArgs = new String[toks.length - 1];
+    System.arraycopy(toks, 1, depReaderArgs, 0, toks.length - 1);
+
+    try {
+      Class<?> cl = Class.forName(altDepReaderName);
+      altDepReaderClass = cl.asSubclass(DependencyReader.class);
+    } catch (ClassNotFoundException e) {
+      // have a second go below
+    }
+    if (altDepReaderClass == null) {
+      try {
+        Class<?> cl = Class.forName("edu.stanford.nlp.trees." + altDepReaderName);
+        altDepReaderClass = cl.asSubclass(DependencyReader.class);
+      } catch (ClassNotFoundException e) {
+          //
+      }
+    }
+    if (altDepReaderClass == null) {
+      System.err.println("Can't load dependency reader " + altDepReaderName + " or edu.stanford.nlp.trees." + altDepReaderName);
+      return null;
+    }
+
+    DependencyReader altDepReader; // initialized below
+    if (depReaderArgs.length == 0) {
+      try {
+        altDepReader = altDepReaderClass.newInstance();
+      } catch (InstantiationException e) {
+        throw new RuntimeException(e);
+      } catch (IllegalAccessException e) {
+        System.err.println("No argument constructor to " + altDepReaderName + " is not public");
+        return null;
+      }
+    } else {
+      try {
+        altDepReader = altDepReaderClass.getConstructor(String[].class).newInstance((Object) depReaderArgs);
+      } catch (IllegalArgumentException e) {
+        throw new RuntimeException(e);
+      } catch (SecurityException e) {
+        throw new RuntimeException(e);
+      } catch (InstantiationException e) {
+        e.printStackTrace();
+        return null;
+      } catch (IllegalAccessException e) {
+        System.err.println(depReaderArgs.length + " argument constructor to " + altDepReaderName + " is not public.");
+        return null;
+      } catch (InvocationTargetException e) {
+        throw new RuntimeException(e);
+      } catch (NoSuchMethodException e) {
+        System.err.println("String arguments constructor to " + altDepReaderName + " does not exist.");
+        return null;
+      }
+    }
+    return altDepReader;
+  }
+
+
+  private static DependencyPrinter loadAlternateDependencyPrinter(String altDepPrinterName) {
+    Class<? extends DependencyPrinter> altDepPrinterClass = null;
+    String[] toks = parseClassConstructArgs(altDepPrinterName);
+    altDepPrinterName = toks[0];
+    String[] depPrintArgs = new String[toks.length - 1];
+    System.arraycopy(toks, 1, depPrintArgs, 0, toks.length - 1);
+
+    try {
+      Class<?> cl = Class.forName(altDepPrinterName);
+      altDepPrinterClass = cl.asSubclass(DependencyPrinter.class);
+    } catch (ClassNotFoundException e) {
+      //
+    }
+    if (altDepPrinterClass == null) {
+      try {
+        Class<?> cl = Class.forName("edu.stanford.nlp.trees." + altDepPrinterName);
+        altDepPrinterClass = cl.asSubclass(DependencyPrinter.class);
+      } catch (ClassNotFoundException e) {
+        //
+      }
+    }
+    if (altDepPrinterClass == null) {
+      System.err.printf("Unable to load alternative printer %s or %s. Is your classpath set correctly?\n", altDepPrinterName, "edu.stanford.nlp.trees." + altDepPrinterName);
+      return null;
+    }
+    try {
+      DependencyPrinter depPrinter;
+      if (depPrintArgs.length == 0) {
+        depPrinter = altDepPrinterClass.newInstance();
+      } else {
+        depPrinter = altDepPrinterClass.getConstructor(String[].class).newInstance((Object) depPrintArgs);
+      }
+      return depPrinter;
+    } catch (IllegalArgumentException e) {
+      e.printStackTrace();
+      return null;
+    } catch (SecurityException e) {
+      e.printStackTrace();
+      return null;
+    } catch (InstantiationException e) {
+      e.printStackTrace();
+      return null;
+    } catch (IllegalAccessException e) {
+      e.printStackTrace();
+      return null;
+    } catch (InvocationTargetException e) {
+      e.printStackTrace();
+      return null;
+    } catch (NoSuchMethodException e) {
+      if (depPrintArgs == null) {
+        System.err.printf("Can't find no-argument constructor %s().\n", altDepPrinterName);
+      } else {
+        System.err.printf("Can't find constructor %s(%s).\n", altDepPrinterName, Arrays.toString(depPrintArgs));
+      }
+      return null;
+    }
+  }
+
+  private static Function<List<? extends HasWord>, Tree> loadParser(String parserFile, String parserOptions, boolean makeCopulaHead) {
+    if (parserFile == null || "".equals(parserFile)) {
+      parserFile = DEFAULT_PARSER_FILE;
+      if (parserOptions == null) {
+        parserOptions = "-retainTmpSubcategories";
+      }
+    }
+    if (parserOptions == null) {
+      parserOptions = "";
+    }
+    if (makeCopulaHead) {
+      parserOptions = "-makeCopulaHead " + parserOptions;
+    }
+    parserOptions = parserOptions.trim();
+    // Load parser by reflection, so that this class doesn't require parser
+    // for runtime use
+    // LexicalizedParser lp = LexicalizedParser.loadModel(parserFile);
+    // For example, the tregex package uses TreePrint, which uses
+    // GrammaticalStructure, which would then import the
+    // LexicalizedParser.  The tagger can read trees, which means it
+    // would depend on tregex and therefore depend on the parser.
+    Function<List<? extends HasWord>, Tree> lp;
+    try {
+      Class<?>[] classes = new Class<?>[] { String.class, String[].class };
+      Method method = Class.forName("edu.stanford.nlp.parser.lexparser.LexicalizedParser").getMethod("loadModel", classes);
+      String[] opts = {};
+      if (parserOptions.length() > 0) {
+        opts = parserOptions.split(" +");
+      }
+      lp = (Function<List<? extends HasWord>,Tree>) method.invoke(null, parserFile, opts);
+    } catch (Exception cnfe) {
+      throw new RuntimeException(cnfe);
+    }
+    return lp;
+  }
+

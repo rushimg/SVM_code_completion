@@ -1,0 +1,15 @@
+    public T createInstance(Object... params) {
+      try {
+        boolean accessible = true;
+        if(!constructor.isAccessible()){
+          accessible = false;
+          constructor.setAccessible(true);
+        }
+        T rtn = constructor.newInstance(params);
+        if(!accessible){ constructor.setAccessible(false); }
+        return rtn;
+      } catch (Exception e) {
+        throw new ClassCreationException("MetaClass couldn't create " + constructor + " with args " + Arrays.toString(params), e);
+      }
+    }
+

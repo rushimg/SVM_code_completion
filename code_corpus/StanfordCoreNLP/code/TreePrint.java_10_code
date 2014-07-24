@@ -1,0 +1,357 @@
+  private void printTreeInternal(final Tree t, final PrintWriter pw, final boolean inXml) {
+    Tree outputTree = t;
+
+    if (formats.containsKey("conll2007") || removeEmpty) {
+      outputTree = outputTree.prune(new BobChrisTreeNormalizer.EmptyFilter());
+    }
+
+    if (formats.containsKey("words")) {
+      if (inXml) {
+        ArrayList<Label> sentUnstemmed = outputTree.yield();
+        pw.println("  <words>");
+        int i = 1;
+        for (Label w : sentUnstemmed) {
+          pw.println("    <word ind=\"" + i + "\">" + XMLUtils.escapeXML(w.value()) + "</word>");
+          i++;
+        }
+        pw.println("  </words>");
+      } else {
+        String sent = Sentence.listToString(outputTree.yield(), false);
+        if(ptb2text) {
+          pw.println(PTBTokenizer.ptb2Text(sent));
+        } else {
+          pw.println(sent);
+          pw.println();
+        }
+      }
+    }
+
+    if (propertyToBoolean(options, "removeTopBracket")) {
+      String s = outputTree.label().value();
+      if (tlp.isStartSymbol(s)) {
+        if (outputTree.isUnaryRewrite()) {
+          outputTree = outputTree.firstChild();
+        } else {
+          // It's not quite clear what to do if the tree isn't unary at the top
+          // but we then don't strip the ROOT symbol, since that seems closer
+          // than losing part of the tree altogether....
+          System.err.println("TreePrint: can't remove top bracket: not unary");
+        }
+      }
+      // Note that TreePrint is also called on dependency trees that have
+      // a word as the root node, and so we don't error if there isn't
+      // the root symbol at the top; rather we silently assume that this
+      // is a dependency tree!!
+    }
+    if (stemmer != null) {
+      stemmer.visitTree(outputTree);
+    }
+    if (lexicalize) {
+      outputTree = Trees.lexicalize(outputTree, hf);
+      Function<Tree, Tree> a =
+        TreeFunctions.getLabeledToDescriptiveCoreLabelTreeFunction();
+      outputTree = a.apply(outputTree);
+    }
+
+    if (formats.containsKey("collocations")) {
+      outputTree = getCollocationProcessedTree(outputTree, hf);
+    }
+
+    if (!lexicalize) { // delexicalize the output tree
+      Function<Tree, Tree> a =
+        TreeFunctions.getLabeledTreeToStringLabeledTreeFunction();
+      outputTree = a.apply(outputTree);
+    }
+
+    Tree outputPSTree = outputTree;  // variant with head-marking, translations
+
+    if (markHeadNodes) {
+      outputPSTree = markHeadNodes(outputPSTree);
+    }
+
+    if (transChinese) {
+      TreeTransformer tt = new TreeTransformer() {
+        public Tree transformTree(Tree t) {
+          t = t.treeSkeletonCopy();
+          for (Tree subtree : t) {
+            if (subtree.isLeaf()) {
+              Label oldLabel = subtree.label();
+              String translation = ChineseEnglishWordMap.getInstance().getFirstTranslation(oldLabel.value());
+              if (translation == null) translation = "[UNK]";
+              Label newLabel = new StringLabel(oldLabel.value() + ':' + translation);
+              subtree.setLabel(newLabel);
+            }
+          }
+          return t;
+        }
+      };
+      outputPSTree = tt.transformTree(outputPSTree);
+    }
+
+    if (propertyToBoolean(options, "xml")) {
+      if (formats.containsKey("wordsAndTags")) {
+        ArrayList<TaggedWord> sent = outputTree.taggedYield();
+        pw.println("  <words pos=\"true\">");
+        int i = 1;
+        for (TaggedWord tw : sent) {
+          pw.println("    <word ind=\"" + i + "\" pos=\"" + XMLUtils.escapeXML(tw.tag()) + "\">" + XMLUtils.escapeXML(tw.word()) + "</word>");
+          i++;
+        }
+        pw.println("  </words>");
+      }
+      if (formats.containsKey("penn")) {
+        pw.println("  <tree style=\"penn\">");
+        StringWriter sw = new StringWriter();
+        PrintWriter psw = new PrintWriter(sw);
+        outputPSTree.pennPrint(psw);
+        pw.print(XMLUtils.escapeXML(sw.toString()));
+        pw.println("  </tree>");
+      }
+      if (formats.containsKey("latexTree")) {
+        pw.println("    <tree style=\"latexTrees\">");
+        pw.println(".[");
+        StringWriter sw = new StringWriter();
+        PrintWriter psw = new PrintWriter(sw);
+        outputTree.indentedListPrint(psw,false);
+        pw.print(XMLUtils.escapeXML(sw.toString()));
+        pw.println(".]");
+        pw.println("  </tree>");
+      }
+      if (formats.containsKey("xmlTree")) {
+        pw.println("<tree style=\"xml\">");
+        outputTree.indentedXMLPrint(pw,false);
+        pw.println("</tree>");
+      }
+      if (formats.containsKey("dependencies")) {
+        Tree indexedTree = outputTree.deepCopy(outputTree.treeFactory(),
+                                                 CoreLabel.factory());
+        indexedTree.indexLeaves();
+        Set<Dependency<Label, Label, Object>> depsSet = indexedTree.mapDependencies(dependencyWordFilter, hf);
+        List<Dependency<Label, Label, Object>> sortedDeps = new ArrayList<Dependency<Label, Label, Object>>(depsSet);
+        Collections.sort(sortedDeps, Dependencies.dependencyIndexComparator());
+        pw.println("<dependencies style=\"untyped\">");
+        for (Dependency<Label, Label, Object> d : sortedDeps) {
+          pw.println(d.toString("xml"));
+        }
+        pw.println("</dependencies>");
+      }
+      if (formats.containsKey("conll2007") || formats.containsKey("conllStyleDependencies")) {
+        System.err.println("The \"conll2007\" and \"conllStyleDependencies\" formats are ignored in xml.");
+      }
+      if (formats.containsKey("typedDependencies")) {
+        GrammaticalStructure gs = gsf.newGrammaticalStructure(outputTree);
+        if (basicDependencies) {
+          print(gs.typedDependencies(), "xml", includeTags, pw);
+        }
+        if (nonCollapsedDependencies || nonCollapsedDependenciesSeparated) {
+          print(gs.allTypedDependencies(), "xml", includeTags, pw);
+        }
+        if (collapsedDependencies) {
+          print(gs.typedDependenciesCollapsed(true), "xml", includeTags, pw);
+        }
+        if (CCPropagatedDependencies) {
+          print(gs.typedDependenciesCCprocessed(), "xml", includeTags, pw);
+        }
+        if(treeDependencies) {
+          print(gs.typedDependenciesCollapsedTree(), "xml", includeTags, pw);
+        }
+      }
+      if (formats.containsKey("typedDependenciesCollapsed")) {
+        GrammaticalStructure gs = gsf.newGrammaticalStructure(outputTree);
+        print(gs.typedDependenciesCCprocessed(), "xml", includeTags, pw);
+      }
+
+      // This makes parser require jgrapht.  Bad.
+      // if (formats.containsKey("semanticGraph")) {
+      //  SemanticGraph sg = SemanticGraph.makeFromTree(outputTree, true, false, false, null);
+      //  pw.println(sg.toFormattedString());
+      // }
+    } else {
+      // non-XML printing
+      if (formats.containsKey("wordsAndTags")) {
+        pw.println(Sentence.listToString(outputTree.taggedYield(), false));
+        pw.println();
+      }
+      if (formats.containsKey("oneline")) {
+        pw.println(outputPSTree.toString());
+      }
+      if (formats.containsKey("penn")) {
+        outputPSTree.pennPrint(pw);
+        pw.println();
+      }
+      if (formats.containsKey(rootLabelOnlyFormat)) {
+        pw.println(outputTree.label().value());
+      }
+      if (formats.containsKey("latexTree")) {
+        pw.println(".[");
+        outputTree.indentedListPrint(pw,false);
+        pw.println(".]");
+      }
+      if (formats.containsKey("xmlTree")) {
+        outputTree.indentedXMLPrint(pw,false);
+      }
+      if (formats.containsKey("dependencies")) {
+        Tree indexedTree = outputTree.deepCopy(outputTree.treeFactory());
+        indexedTree.indexLeaves();
+        List<Dependency<Label, Label, Object>> sortedDeps = getSortedDeps(indexedTree, dependencyWordFilter);
+        for (Dependency<Label, Label, Object> d : sortedDeps) {
+          pw.println(d.toString("predicate"));
+        }
+        pw.println();
+      }
+      if (formats.containsKey("conll2007")) {
+        // CoNLL-X 2007 format: http://ilk.uvt.nl/conll/#dataformat
+        // wsg: This code should be retained (and not subsumed into EnglishGrammaticalStructure) so
+        //      that dependencies for other languages can be printed.
+        // wsg2011: This code currently ignores the dependency label since the present implementation
+        //          of mapDependencies() returns UnnamedDependency objects.
+        // TODO: if there is a GrammaticalStructureFactory available, use that instead of mapDependencies
+        Tree it = outputTree.deepCopy(outputTree.treeFactory(), CoreLabel.factory());
+        it.indexLeaves();
+
+        List<CoreLabel> tagged = it.taggedLabeledYield();
+        List<Dependency<Label, Label, Object>> sortedDeps = getSortedDeps(it, Filters.<Dependency<Label, Label, Object>>acceptFilter());
+
+        for (int i = 0; i < sortedDeps.size(); i++) {
+          Dependency<Label, Label, Object> d = sortedDeps.get(i);
+          if (!dependencyFilter.accept(d)) {
+            continue;
+          }
+          CoreMap dep = (CoreMap) d.dependent();
+          CoreMap gov = (CoreMap) d.governor();
+
+          Integer depi = dep.get(CoreAnnotations.IndexAnnotation.class);
+          Integer govi = gov.get(CoreAnnotations.IndexAnnotation.class);
+
+          CoreLabel w = tagged.get(depi-1);
+
+          // Used for both course and fine POS tag fields
+          String tag = PTBTokenizer.ptbToken2Text(w.tag());
+
+          String word = PTBTokenizer.ptbToken2Text(w.word());
+          String lemma = "_";
+          String feats = "_";
+          String pHead = "_";
+          String pDepRel = "_";
+          String depRel;
+          if (d.name() != null) {
+            depRel = d.name().toString();
+          } else {
+            depRel = (govi == 0) ? "ROOT" : "NULL";
+          }
+
+          // The 2007 format has 10 fields
+          pw.printf("%d\t%s\t%s\t%s\t%s\t%s\t%d\t%s\t%s\t%s%n", depi,word,lemma,tag,tag,feats,govi,depRel,pHead,pDepRel);
+        }
+        pw.println();
+      }
+      if (formats.containsKey("conllStyleDependencies")) {
+        // TODO: Rewrite this to output StanfordDependencies using EnglishGrammaticalStructure code
+        BobChrisTreeNormalizer tn = new BobChrisTreeNormalizer();
+        Tree indexedTree = outputTree.deepCopy(outputTree.treeFactory(),
+                                                 CoreLabel.factory());
+        // TODO: Can the below for-loop be deleted now?  (Now that the HeadFinder knows about NML.)
+        for (Tree node : indexedTree) {
+          if (node.label().value().startsWith("NML")) {
+            node.label().setValue("NP");
+          }
+        }
+
+        indexedTree = tn.normalizeWholeTree(indexedTree, outputTree.treeFactory());
+        indexedTree.indexLeaves();
+        Set<Dependency<Label, Label, Object>> depsSet = null;
+        boolean failed = false;
+        try {
+          depsSet = indexedTree.mapDependencies(dependencyFilter, hf);
+        } catch (Exception e) {
+          failed = true;
+        }
+        if (failed) {
+          System.err.println("failed: ");
+          System.err.println(t);
+          System.err.println();
+        } else {
+          Map<Integer,Integer> deps = Generics.newHashMap();
+          for (Dependency<Label, Label, Object> dep : depsSet) {
+            CoreLabel child = (CoreLabel)dep.dependent();
+            CoreLabel parent = (CoreLabel)dep.governor();
+            Integer childIndex =
+              child.get(CoreAnnotations.IndexAnnotation.class);
+            Integer parentIndex =
+              parent.get(CoreAnnotations.IndexAnnotation.class);
+//            System.err.println(childIndex+"\t"+parentIndex);
+            deps.put(childIndex, parentIndex);
+          }
+          boolean foundRoot = false;
+          int index = 1;
+          for (Tree node : indexedTree.getLeaves()) {
+            String word = node.label().value();
+            String tag = node.parent(indexedTree).label().value();
+            int parent = 0;
+            if (deps.containsKey(index)) {
+              parent = deps.get(index);
+            } else {
+              if (foundRoot) { throw new RuntimeException(); }
+              foundRoot = true;
+            }
+            pw.println(index+"\t"+word+"\t"+tag+"\t"+parent);
+            index++;
+          }
+          pw.println();
+        }
+      }
+      if (formats.containsKey("typedDependencies")) {
+        GrammaticalStructure gs = gsf.newGrammaticalStructure(outputTree);
+        if (basicDependencies) {
+          print(gs.typedDependencies(), includeTags, pw);
+        }
+        if (nonCollapsedDependencies) {
+          print(gs.allTypedDependencies(), includeTags, pw);
+        }
+        if (nonCollapsedDependenciesSeparated) {
+          print(gs.allTypedDependencies(), "separator", includeTags, pw);
+        }
+        if (collapsedDependencies) {
+          print(gs.typedDependenciesCollapsed(true), includeTags, pw);
+        }
+        if (CCPropagatedDependencies) {
+          print(gs.typedDependenciesCCprocessed(), includeTags, pw);
+        }
+        if (treeDependencies) {
+          print(gs.typedDependenciesCollapsedTree(), includeTags, pw);
+        }
+      }
+      if (formats.containsKey("typedDependenciesCollapsed")) {
+        GrammaticalStructure gs = gsf.newGrammaticalStructure(outputTree);
+        print(gs.typedDependenciesCCprocessed(), includeTags, pw);
+      }
+      // This makes parser require jgrapht.  Bad
+      // if (formats.containsKey("semanticGraph")) {
+      //  SemanticGraph sg = SemanticGraph.makeFromTree(outputTree, true, false, false, null);
+      //  pw.println(sg.toFormattedString());
+      // }
+    }
+
+    // flush to make sure we see all output
+    pw.flush();
+  }
+
+  private List<Dependency<Label, Label, Object>> getSortedDeps(Tree tree, Filter<Dependency<Label, Label, Object>> filter) {
+    if (gsf != null) {
+      GrammaticalStructure gs = gsf.newGrammaticalStructure(tree);
+      Collection<TypedDependency> deps = gs.typedDependencies(false);
+      List<Dependency<Label, Label, Object>> sortedDeps = new ArrayList<Dependency<Label, Label, Object>>();
+      for (TypedDependency dep : deps) {
+        sortedDeps.add(new NamedDependency(dep.gov().label(), dep.dep().label(), dep.reln().toString()));
+      }
+      Collections.sort(sortedDeps, Dependencies.dependencyIndexComparator());
+      return sortedDeps;
+    } else {
+      Set<Dependency<Label, Label, Object>> depsSet = tree.mapDependencies(filter, hf, "root");
+      List<Dependency<Label, Label, Object>> sortedDeps = new ArrayList<Dependency<Label, Label, Object>>(depsSet);
+      Collections.sort(sortedDeps, Dependencies.dependencyIndexComparator());
+      return sortedDeps;
+    }
+  }
+
+

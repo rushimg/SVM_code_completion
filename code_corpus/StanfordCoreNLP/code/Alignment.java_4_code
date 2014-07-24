@@ -1,0 +1,50 @@
+  public String getJustification() { return justification; }
+
+  @Override
+  public String toString() {
+    return toString("readable");
+  }
+
+  public String toString(String format) {
+    StringBuilder sb = new StringBuilder();
+    if (format == "readable") {
+      // sb.append("Alignment map:\n");
+      List<IndexedWord> keys = new ArrayList<IndexedWord>(map.keySet());
+      Collections.sort(keys);
+      for (IndexedWord key : keys) {
+        sb.append(String.format("%-20s ==> %s%n",
+                                iwToString(key),
+                                iwToString(map.get(key))));
+      }
+      sb.append(String.format("%s %6.3f%n", "Alignment score:", score));
+    }  else if (format == "readable-tag-index") {
+      List<IndexedWord> keys = new ArrayList<IndexedWord>(map.keySet());
+      Collections.sort(keys);
+      for (IndexedWord key : keys) {
+        sb.append(String.format("%-20s ==> %s%n",
+                                iwToString(key),
+                                iwToString(map.get(key))));
+      }
+      sb.append(String.format("%s %6.3f%n", "Alignment score:", score));
+    } else if (format == "readable-old") {
+      // sb.append("Alignment map:\n");
+      for (Map.Entry<IndexedWord, IndexedWord> entry : map.entrySet()) {
+        sb.append(String.format("%-20s ==> %s%n",
+                                iwToString(entry.getKey()),
+                                iwToString(entry.getValue())));
+      }
+      sb.append("Alignment score: ");
+      sb.append(String.format("%6.3f", score));
+      sb.append("\n");
+    } else {                            // default
+      sb.append(map.toString());
+    }
+    return sb.toString();
+  }
+
+  private static String iwToString(IndexedWord iw) {
+    if (iw == null || iw.equals(IndexedWord.NO_WORD))
+      return "_";
+    return iw.toString(IndexedWord.WORD_FORMAT);
+  }
+

@@ -1,0 +1,49 @@
+/**
+ * Expands URI Templates.
+ *
+ * This Class supports Level 1 templates and all Level 4 composite templates as described in:
+ * <a href="http://tools.ietf.org/html/rfc6570">RFC 6570</a>.
+ *
+ * Specifically, for the variables:
+ * var := "value"
+ * list := ["red", "green", "blue"]
+ * keys := [("semi", ";"),("dot", "."),("comma", ",")]
+ *
+ * The following templates results in the following expansions:
+ * {var}     ->   value
+ * {list}    ->   red,green,blue
+ * {list*}   ->   red,green,blue
+ * {keys}    ->   semi,%3B,dot,.,comma,%2C
+ * {keys*}   ->   semi=%3B,dot=.,comma=%2C
+ * {+list}   ->   red,green,blue
+ * {+list*}  ->   red,green,blue
+ * {+keys}   ->   semi,;,dot,.,comma,,
+ * {+keys*}  ->   semi=;,dot=.,comma=,
+ * {#list}   ->   #red,green,blue
+ * {#list*}  ->   #red,green,blue
+ * {#keys}   ->   #semi,;,dot,.,comma,,
+ * {#keys*}  ->   #semi=;,dot=.,comma=,
+ * X{.list}  ->   X.red,green,blue
+ * X{.list*} ->   X.red.green.blue
+ * X{.keys}  ->   X.semi,%3B,dot,.,comma,%2C
+ * X{.keys*} ->   X.semi=%3B.dot=..comma=%2C
+ * {/list}   ->   /red,green,blue
+ * {/list*}  ->   /red/green/blue
+ * {/keys}   ->   /semi,%3B,dot,.,comma,%2C
+ * {/keys*}  ->   /semi=%3B/dot=./comma=%2C
+ * {;list}   ->   ;list=red,green,blue
+ * {;list*}  ->   ;list=red;list=green;list=blue
+ * {;keys}   ->   ;keys=semi,%3B,dot,.,comma,%2C
+ * {;keys*}  ->   ;semi=%3B;dot=.;comma=%2C
+ * {?list}   ->   ?list=red,green,blue
+ * {?list*}  ->   ?list=red&list=green&list=blue
+ * {?keys}   ->   ?keys=semi,%3B,dot,.,comma,%2C
+ * {?keys*}  ->   ?semi=%3B&dot=.&comma=%2C
+ * {&list}   ->   &list=red,green,blue
+ * {&list*}  ->   &list=red&list=green&list=blue
+ * {&keys}   ->   &keys=semi,%3B,dot,.,comma,%2C
+ * {&keys*}  ->   &semi=%3B&dot=.&comma=%2C
+ *
+ * @since 1.6
+ * @author Ravi Mistry
+ */

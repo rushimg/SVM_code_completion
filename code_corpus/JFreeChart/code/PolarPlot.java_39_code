@@ -1,0 +1,55 @@
+    public void draw(Graphics2D g2,
+                     Rectangle2D area,
+                     Point2D anchor,
+                     PlotState parentState,
+                     PlotRenderingInfo info) {
+
+        // if the plot area is too small, just return...
+        boolean b1 = (area.getWidth() <= MINIMUM_WIDTH_TO_DRAW);
+        boolean b2 = (area.getHeight() <= MINIMUM_HEIGHT_TO_DRAW);
+        if (b1 || b2) {
+            return;
+        }
+
+        // record the plot area...
+        if (info != null) {
+            info.setPlotArea(area);
+        }
+
+        // adjust the drawing area for the plot insets (if any)...
+        RectangleInsets insets = getInsets();
+        insets.trim(area);
+
+        Rectangle2D dataArea = area;
+        if (info != null) {
+            info.setDataArea(dataArea);
+        }
+
+        // draw the plot background and axes...
+        drawBackground(g2, dataArea);
+        double h = Math.min(dataArea.getWidth() / 2.0,
+                dataArea.getHeight() / 2.0) - MARGIN;
+        Rectangle2D quadrant = new Rectangle2D.Double(dataArea.getCenterX(),
+                dataArea.getCenterY(), h, h);
+        AxisState state = drawAxis(g2, area, quadrant);
+        if (this.renderer != null) {
+            Shape originalClip = g2.getClip();
+            Composite originalComposite = g2.getComposite();
+
+            g2.clip(dataArea);
+            g2.setComposite(AlphaComposite.getInstance(
+                    AlphaComposite.SRC_OVER, getForegroundAlpha()));
+
+            this.angleTicks = refreshAngleTicks();
+            drawGridlines(g2, dataArea, this.angleTicks, state.getTicks());
+
+            // draw...
+            render(g2, dataArea, info);
+
+            g2.setClip(originalClip);
+            g2.setComposite(originalComposite);
+        }
+        drawOutline(g2, dataArea);
+        drawCornerTextItems(g2, dataArea);
+    }
+

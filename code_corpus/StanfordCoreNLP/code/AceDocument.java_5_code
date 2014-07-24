@@ -1,0 +1,146 @@
+  public boolean sameChunk(int left, int right) {
+    for (int i = right; i > left; i--) {
+      String chunk = AceToken.OTHERS.get(getToken(i).getChunk());
+      if (!chunk.startsWith("I-"))
+        return false;
+      String word = AceToken.WORDS.get(getToken(i).getWord());
+      if (word.equals(",") || word.equals("(") || word.equals("-"))
+        return false;
+    }
+    String leftChunk = AceToken.OTHERS.get(getToken(left).getChunk());
+    if (leftChunk.equals("O"))
+      return false;
+    return true;
+  }
+
+  public boolean isChunkHead(int pos) {
+    String next = AceToken.OTHERS.get(getToken(pos + 1).getChunk());
+    if (next.startsWith("I-"))
+      return false;
+    return true;
+  }
+
+  public int findChunkEnd(int pos) {
+    String crt = AceToken.OTHERS.get(getToken(pos).getChunk());
+    if (crt.equals("O"))
+      return pos;
+
+    for (pos = pos + 1; pos < getTokenCount(); pos++) {
+      crt = AceToken.OTHERS.get(getToken(pos).getChunk());
+      if (!crt.startsWith("I-"))
+        break;
+    }
+
+    return pos - 1;
+  }
+
+  public int findChunkStart(int pos) {
+    String crt = AceToken.OTHERS.get(getToken(pos).getChunk());
+    if (crt.equals("O") || crt.startsWith("B-"))
+      return pos;
+
+    for (pos = pos - 1; pos >= 0; pos--) {
+      crt = AceToken.OTHERS.get(getToken(pos).getChunk());
+      if (crt.startsWith("B-"))
+        break;
+    }
+
+    return pos;
+  }
+
+  public boolean isApposition(int left, int right) {
+    int leftEnd = findChunkEnd(left);
+    int rightStart = findChunkStart(right);
+
+    if (rightStart == leftEnd + 1)
+      return true;
+
+    if (rightStart == leftEnd + 2) {
+      String comma = AceToken.WORDS.get(getToken(leftEnd + 1).getWord());
+      if (comma.equals(",") || comma.equals("-") || comma.equals("_")) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  public int countVerbs(int start, int end) {
+    int count = 0;
+    for (int i = start; i < end; i++) {
+      String crt = AceToken.OTHERS.get(getToken(i).getPos());
+      if (crt.startsWith("VB"))
+        count++;
+    }
+    return count;
+  }
+
+  public int countCommas(int start, int end) {
+    int count = 0;
+    for (int i = start; i < end; i++) {
+      String crt = AceToken.WORDS.get(getToken(i).getWord());
+      if (crt.equals(","))
+        count++;
+    }
+    return count;
+  }
+
+  private void readRawBytes(String fileName) throws IOException {
+    BufferedReader in = new BufferedReader(new FileReader(fileName));
+    StringBuffer buf = new StringBuffer();
+    int c;
+    while ((c = in.read()) >= 0)
+      buf.append((char) c);
+    mRawBuffer = buf.toString();
+    // System.out.println(mRawBuffer);
+    in.close();
+  }
+
+  @SuppressWarnings("unused")
+  private void readPredictedEntityBoundaries(BufferedReader is) throws java.io.IOException {
+    // System.out.println("Reading boundaries from file: " + mPrefix);
+
+    //
+    // read Massi's B-ENT, I-ENT, or O labels
+    //
+    ArrayList<String> labels = new ArrayList<String>();
+    String line;
+    while ((line = is.readLine()) != null) {
+      ArrayList<String> tokens = SimpleTokenize.tokenize(line);
+      if (tokens.isEmpty() == false)
+        labels.add(tokens.get(0));
+    }
+    assert (labels.size() == mTokens.size());
+
+    int entityId = 1;
+
+    //
+    // traverse the label array and create entities as needed
+    //
+    for (int i = 0; i < labels.size(); i++) {
+      // System.out.println(labels.get(i));
+      if (labels.get(i).startsWith("B-") || labels.get(i).startsWith("I-")) { // Massi's
+                                                                              // ents
+                                                                              // may
+                                                                              // start
+                                                                              // with
+                                                                              // I-ENT
+        int startToken = i;
+        int endToken = i + 1;
+        while (endToken < labels.size() && labels.get(endToken).startsWith("I-"))
+          endToken++;
+
+        //
+        // Set the type/subtype to whatever Massi predicted
+        // This is not directly used in this system. It is needed only
+        // to generate the APF files with Massi info, which are needed
+        // by Edgar. Otherwise type/subtype could be safely set to "none".
+        //
+        String label = labels.get(startToken);
+        int dash = label.indexOf("-", 2);
+        if (dash <= 2 || dash >= label.length()) {
+          throw new RuntimeException(label);
+        }
+        assert (dash > 2 && dash < label.length() - 1);
+        String type = label.substring(2, dash);
+        String subtype = label.substring(dash + 1);

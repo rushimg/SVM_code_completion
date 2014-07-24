@@ -1,0 +1,240 @@
+    // Properties modelProps = new Properties();
+    // TaggerConfig oldConfig = new TaggerConfig(); // loads default values in oldConfig
+    if (! props.containsKey("trainFile")) {
+      String name = props.getProperty("model");
+      if (name == null) {
+        name = props.getProperty("dump");
+      }
+      if (name != null) {
+        try {
+          System.err.println("Loading default properties from tagger " + name);
+          DataInputStream in = new DataInputStream(IOUtils.getInputStreamFromURLOrClasspathOrFileSystem(name));
+          this.putAll(TaggerConfig.readConfig(in)); // overwrites defaults with any serialized values.
+          in.close();
+        } catch (Exception e) {
+          throw new RuntimeIOException("No such trained tagger config file found: " + name);
+        }
+      }
+    }
+
+    setProperties(props);
+  }
+
+  public void setProperties(Properties props) {
+    if (props.getProperty("") != null) {
+      throw new RuntimeException("unknown argument(s): \"" + props.getProperty("") + '\"');
+    }
+
+    if (props.getProperty("genprops") != null) {
+      printGenProps(System.out);
+      System.exit(0);
+    }
+
+    if (props.containsKey("mode") && props.containsKey("file")) {
+      this.setProperty("mode", props.getProperty("mode"));
+      this.setProperty("file", props.getProperty("file"));
+    } else if (props.containsKey("trainFile")) {
+      //Training mode
+      this.setProperty("mode", Mode.TRAIN.toString());
+      this.setProperty("file", props.getProperty("trainFile", "").trim());
+    } else if (props.containsKey("testFile")) {
+      //Testing mode
+      this.setProperty("mode", Mode.TEST.toString());
+      this.setProperty("file", props.getProperty("testFile", "").trim());
+    } else if (props.containsKey("textFile")) {
+      //Tagging mode
+      this.setProperty("mode", Mode.TAG.toString());
+      this.setProperty("file", props.getProperty("textFile", "").trim());
+    } else if (props.containsKey("dump")) {
+      this.setProperty("mode", Mode.DUMP.toString());
+      // this.setProperty("file", props.getProperty("dump").trim());
+      props.setProperty("model", props.getProperty("dump").trim());
+    } else {
+      this.setProperty("mode", Mode.TAG.toString());
+      this.setProperty("file", "stdin");
+    }
+    //for any mode other than train, we load a classifier, which means we load a config - model always needs to be specified
+    //on command line/in props file
+    //Get the path to the model (or the path where you'd like to save the model); this is necessary for training, testing, and tagging
+    this.setProperty("model", props.getProperty("model", this.getProperty("model", "")).trim());
+    if ( ! (this.getMode() == Mode.DUMP) && this.getProperty("model").equals("")) {
+      throw new RuntimeException("'model' parameter must be specified");
+    }
+
+    this.setProperty("search", props.getProperty("search", this.getProperty("search")).trim().toLowerCase());
+    String srch = this.getProperty("search");
+    if ( ! (srch.equals("cg") || srch.equals("iis") || srch.equals("owlqn") || srch.equals("qn") || srch.equals("owlqn2"))) {
+      throw new RuntimeException("'search' must be one of 'iis', 'cg', 'qn' or 'owlqn' or 'owlqn2': " + srch);
+    }
+
+    this.setProperty("sigmaSquared", props.getProperty("sigmaSquared", this.getProperty("sigmaSquared")));
+
+    this.setProperty(TAG_SEPARATOR_PROPERTY, props.getProperty(TAG_SEPARATOR_PROPERTY, this.getProperty(TAG_SEPARATOR_PROPERTY)));
+
+    this.setProperty("iterations", props.getProperty("iterations", this.getProperty("iterations")));
+    this.setProperty("rareWordThresh", props.getProperty("rareWordThresh", this.getProperty("rareWordThresh")));
+    this.setProperty("minFeatureThresh", props.getProperty("minFeatureThresh", this.getProperty("minFeatureThresh")));
+    this.setProperty("curWordMinFeatureThresh", props.getProperty("curWordMinFeatureThresh", this.getProperty("curWordMinFeatureThresh")));
+    this.setProperty("rareWordMinFeatureThresh", props.getProperty("rareWordMinFeatureThresh", this.getProperty("rareWordMinFeatureThresh")));
+    this.setProperty("veryCommonWordThresh", props.getProperty("veryCommonWordThresh", this.getProperty("veryCommonWordThresh")));
+    this.setProperty("occurringTagsOnly", props.getProperty("occurringTagsOnly", this.getProperty("occurringTagsOnly", OCCURRING_TAGS_ONLY)));
+    this.setProperty("possibleTagsOnly", props.getProperty("possibleTagsOnly", this.getProperty("possibleTagsOnly")));
+
+    this.setProperty("lang", props.getProperty("lang", this.getProperty("lang")));
+
+    this.setProperty("openClassTags", props.getProperty("openClassTags", this.getProperty("openClassTags")).trim());
+    this.setProperty("closedClassTags", props.getProperty("closedClassTags", this.getProperty("closedClassTags")).trim());
+
+    this.setProperty("learnClosedClassTags", props.getProperty("learnClosedClassTags", this.getProperty("learnClosedClassTags")));
+
+    this.setProperty("closedClassTagThreshold", props.getProperty("closedClassTagThreshold", this.getProperty("closedClassTagThreshold")));
+
+    this.setProperty("arch", props.getProperty("arch", this.getProperty("arch")));
+    if (this.getMode() == Mode.TRAIN && this.getProperty("arch").equals("")) {
+      throw new IllegalArgumentException("No architecture specified; " +
+                                         "set the -arch flag with " +
+                                         "the features to be used");
+    }
+
+    this.setProperty("wordFunction", props.getProperty("wordFunction", this.getProperty("wordFunction", WORD_FUNCTION)));
+
+    this.setProperty("tokenize", props.getProperty("tokenize", this.getProperty("tokenize")));
+    this.setProperty("tokenizerFactory", props.getProperty("tokenizerFactory", this.getProperty("tokenizerFactory")));
+
+    this.setProperty("debugPrefix", props.getProperty("debugPrefix", this.getProperty("debugPrefix", "")));
+    this.setProperty("debug", props.getProperty("debug", DEBUG));
+
+    this.setProperty(ENCODING_PROPERTY, props.getProperty(ENCODING_PROPERTY, this.getProperty(ENCODING_PROPERTY)));
+    this.setProperty("sgml", props.getProperty("sgml", this.getProperty("sgml")));
+    this.setProperty("verbose", props.getProperty("verbose", this.getProperty("verbose")));
+    this.setProperty("verboseResults", props.getProperty("verboseResults", this.getProperty("verboseResults")));
+
+    this.setProperty("regL1", props.getProperty("regL1", this.getProperty("regL1")));
+
+    //this is a property that is stored (not like the general properties)
+    this.setProperty("xmlInput", props.getProperty("xmlInput", this.getProperty("xmlInput")).trim());
+
+    this.setProperty("tagInside", props.getProperty("tagInside", this.getProperty("tagInside"))); //this isn't something we save from time to time
+    this.setProperty("approximate", props.getProperty("approximate", this.getProperty("approximate"))); //this isn't something we save from time to time
+    this.setProperty("tokenizerOptions", props.getProperty("tokenizerOptions", this.getProperty("tokenizerOptions"))); //this isn't something we save from time to time
+    this.setProperty("outputFile", props.getProperty("outputFile", this.getProperty("outputFile")).trim()); //this isn't something we save from time to time
+    this.setProperty("outputFormat", props.getProperty("outputFormat", this.getProperty("outputFormat")).trim()); //this isn't something we save from time to time
+    this.setProperty("outputFormatOptions", props.getProperty("outputFormatOptions", this.getProperty("outputFormatOptions")).trim()); //this isn't something we save from time to time
+    this.setProperty("nthreads", props.getProperty("nthreads", this.getProperty("nthreads", NTHREADS)).trim());
+    String sentenceDelimiter = props.getProperty("sentenceDelimiter", this.getProperty("sentenceDelimiter"));
+    if (sentenceDelimiter != null) {
+      // this isn't something we save from time to time.
+      // It is only relevant when tagging text files.
+      // In fact, we let this one be null, as it really is useful to
+      // let the null value represent no sentence delimiter.
+      this.setProperty("sentenceDelimiter", sentenceDelimiter);
+    }
+  }
+
+
+  public String getModel() { return getProperty("model"); }
+
+  public String getFile() { return getProperty("file"); }
+
+  public String getOutputFile() { return getProperty("outputFile"); }
+
+  public String getOutputFormat() { return getProperty("outputFormat"); }
+
+
+  public boolean getOutputVerbosity() {
+    return getOutputOptionsContains("verbose");
+  }
+
+  public boolean getOutputLemmas() {
+    return getOutputOptionsContains("lemmatize");
+  }
+
+  public boolean keepEmptySentences() {
+    return getOutputOptionsContains("keepEmptySentences");    
+  }
+
+  public boolean getOutputOptionsContains(String sought) {
+    String[] options = getOutputOptions();
+    for (String option : options) {
+      if (option.equals(sought)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  public String getSearch() { return getProperty("search"); }
+
+  public double getSigmaSquared() { return Double.parseDouble(getProperty("sigmaSquared")); }
+
+  public int getIterations() { return Integer.parseInt(getProperty("iterations")); }
+
+  public int getRareWordThresh() { return Integer.parseInt(getProperty("rareWordThresh")); }
+
+  public int getMinFeatureThresh() { return Integer.parseInt(getProperty("minFeatureThresh")); }
+
+  public int getCurWordMinFeatureThresh() { return Integer.parseInt(getProperty("curWordMinFeatureThresh")); }
+
+  public int getRareWordMinFeatureThresh() { return Integer.parseInt(getProperty("rareWordMinFeatureThresh")); }
+
+  public int getVeryCommonWordThresh() { return Integer.parseInt(getProperty("veryCommonWordThresh")); }
+
+  public boolean occurringTagsOnly() { return Boolean.parseBoolean(getProperty("occurringTagsOnly")); }
+
+  public boolean possibleTagsOnly() { return Boolean.parseBoolean(getProperty("possibleTagsOnly")); }
+
+  public String getLang() { return getProperty("lang"); }
+
+  public String[] getOpenClassTags() {
+    return wsvStringToStringArray(getProperty("openClassTags"));
+  }
+
+  public String[] getClosedClassTags() {
+    return wsvStringToStringArray(getProperty("closedClassTags"));
+  }
+
+  private static String[] wsvStringToStringArray(String str) {
+    if (str == null || str.equals("")) {
+      return StringUtils.EMPTY_STRING_ARRAY;
+    } else {
+      return str.split("\\s+");
+    }
+  }
+
+  public boolean getLearnClosedClassTags() { return Boolean.parseBoolean(getProperty("learnClosedClassTags")); }
+
+  public int getClosedTagThreshold() { return Integer.parseInt(getProperty("closedClassTagThreshold")); }
+
+  public String getArch() { return getProperty("arch"); }
+
+  public String getWordFunction() { return getProperty("wordFunction"); }
+
+  public boolean getDebug() { return Boolean.parseBoolean(getProperty("debug")); }
+
+  public String getDebugPrefix() { return getProperty("debugPrefix"); }
+
+  public String getTokenizerFactory() { return getProperty("tokenizerFactory"); }
+
+  public static String getDefaultTagSeparator() { return TAG_SEPARATOR; }
+
+  public final String getTagSeparator() { return getProperty(TAG_SEPARATOR_PROPERTY); }
+
+  public boolean getTokenize() { return Boolean.parseBoolean(getProperty("tokenize")); }
+
+  public String getEncoding() { return getProperty(ENCODING_PROPERTY); }
+
+  public double getRegL1() { return Double.parseDouble(getProperty("regL1")); }
+
+  public String[] getXMLInput() {
+    return wsvStringToStringArray(getProperty("xmlInput"));
+  }
+
+  public boolean getVerbose() { return Boolean.parseBoolean(getProperty("verbose")); }
+
+  public boolean getVerboseResults() { return Boolean.parseBoolean(getProperty("verboseResults")); }
+
+  public boolean getSGML() { return Boolean.parseBoolean(getProperty("sgml")); }
+
+  public int getNThreads() { return Integer.parseInt(getProperty("nthreads")); }
+
+

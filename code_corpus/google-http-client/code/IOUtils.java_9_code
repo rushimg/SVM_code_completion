@@ -1,0 +1,13 @@
+  @SuppressWarnings("unchecked")
+  public static <S extends Serializable> S deserialize(InputStream inputStream) throws IOException {
+    try {
+      return (S) new ObjectInputStream(inputStream).readObject();
+    } catch (ClassNotFoundException exception) {
+      IOException ioe = new IOException("Failed to deserialize object");
+      ioe.initCause(exception);
+      throw ioe;
+    } finally {
+      inputStream.close();
+    }
+  }
+

@@ -1,0 +1,32 @@
+public class AmbiguityClass {
+
+  // private final HashSet<String> s;
+  private final List<Integer> sortedIds;
+  private final String key;
+  private final String word;
+  private final boolean single;
+
+  protected AmbiguityClass(String word, boolean single, Dictionary dict, TTags ttags) {
+    this.single = single;
+    if (single) {
+      this.word = word;
+      sortedIds = Collections.emptyList();
+    } else {
+      this.word = null;
+      String[] tags = dict.getTags(word);
+      sortedIds = new ArrayList<Integer>(tags.length);
+      for (String tag : tags) {
+        add(ttags.getIndex(tag));
+      }
+      // s = Generics.newHashSet();
+      // for (Integer sortedId : sortedIds) {
+      //   s.add(ttags.getTag(sortedId));
+      // }
+    }
+    key = this.toString();
+  }
+
+  public String getWord() {
+    return word;
+  }
+

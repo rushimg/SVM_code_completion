@@ -1,0 +1,22 @@
+  public int get(String s, boolean shouldThrow) {
+    IndexAndCount ic = mDict.get(s);
+    if (mCreate) {
+      if (ic == null) {
+        ic = new IndexAndCount(mDict.size(), 0);
+        mDict.put(s, ic);
+        mInverse.put(Integer.valueOf(ic.mIndex), s);
+      }
+      ic.mCount++;
+    }
+    if (ic != null)
+      return ic.mIndex;
+
+    if (shouldThrow) {
+      throw new RuntimeException("Unknown entry \"" + s + "\" in dictionary \"" + mName + "\"!");
+    } else {
+      return -1;
+    }
+  }
+
+  public static final String NIL_VALUE = "nil";
+

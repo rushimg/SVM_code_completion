@@ -1,0 +1,35 @@
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof IndexedWord)) return false;
+
+    //now compare on appropriate keys
+    final IndexedWord otherWord = (IndexedWord) o;
+    String myDocID = getString(CoreAnnotations.DocIDAnnotation.class);
+    String otherDocID = otherWord.getString(CoreAnnotations.DocIDAnnotation.class);
+    if (myDocID == null) {
+      if (otherDocID != null)
+      return false;
+    } else if ( ! myDocID.equals(otherDocID)) {
+      return false;
+    }
+    Integer mySentInd = get(CoreAnnotations.SentenceIndexAnnotation.class);
+    Integer otherSentInd = otherWord.get(CoreAnnotations.SentenceIndexAnnotation.class);
+    if (mySentInd == null) {
+      if (otherSentInd != null)
+      return false;
+    } else if ( ! mySentInd.equals(otherSentInd)) {
+      return false;
+    }
+    Integer myInd = get(CoreAnnotations.IndexAnnotation.class);
+    Integer otherInd = otherWord.get(CoreAnnotations.IndexAnnotation.class);
+    if (myInd == null) {
+      if (otherInd != null)
+      return false;
+    } else if ( ! myInd.equals(otherInd)) {
+      return false;
+    }
+    return true;
+  }
+
+

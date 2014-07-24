@@ -1,0 +1,33 @@
+  public ExtractionDataSet(ExtractionDataSet original) {
+    sentences = new ArrayList<ExtractionSentence>();
+    for(ExtractionSentence sent: original.getSentences()){
+      // deep copy of the sentence: we create new entity/relation/event lists here
+      // however, we do not deep copy the ExtractionObjects themselves!
+      ExtractionSentence sentCopy = new ExtractionSentence(sent);
+      sentences.add(sentCopy);
+    }
+  }
+
+  public ExtractionSentence getSentence(int i) { return sentences.get(i); } 
+  
+  public int sentenceCount() { return sentences.size(); }
+
+  public void addSentence(ExtractionSentence sentence) {
+    this.sentences.add(sentence);
+  }
+  
+  public void addSentences(List<ExtractionSentence> sentences) {
+    for(ExtractionSentence sent: sentences){
+      addSentence(sent);
+    }
+  }
+
+  public List<ExtractionSentence> getSentences() {
+    return Collections.unmodifiableList(this.sentences);
+  }
+
+  public void shuffle() {
+    // we use a constant seed for replicability of experiments
+    Collections.shuffle(sentences, new Random(0));
+  }
+  

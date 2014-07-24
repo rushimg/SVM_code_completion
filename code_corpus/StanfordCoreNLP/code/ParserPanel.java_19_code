@@ -1,0 +1,22 @@
+  public void loadParser() {
+    jfc.setDialogTitle("Load parser");
+    int status = jfc.showOpenDialog(this);
+    if (status == JFileChooser.APPROVE_OPTION) {
+      String filename = jfc.getSelectedFile().getPath();
+      if (filename.endsWith(".jar")) {
+        String model = chooseJarParser.show(filename, jfcLocation.location);
+        if (model != null) {
+          loadJarParser(filename, model);
+        }
+      } else {
+        loadParser(filename);
+      }
+    }
+  }
+
+  public void loadJarParser(String jarFile, String model) {
+    lpThread = new LoadParserThread(jarFile, model);
+    lpThread.start();
+    startProgressMonitor("Loading Parser", PARSER_LOAD_TIME);
+  }
+

@@ -1,0 +1,38 @@
+  @Override
+  public Set<Class<?>> keySet() {
+
+    return new AbstractSet<Class<?>>() {
+      @Override
+      public Iterator<Class<?>> iterator() {
+        return new Iterator<Class<?>>() {
+          private int i; // = 0;
+
+          @Override
+          public boolean hasNext() {
+            return i < size;
+          }
+
+          @Override
+          public Class<?> next() {
+            try {
+              return keys[i++];
+            } catch (ArrayIndexOutOfBoundsException aioobe) {
+              throw new NoSuchElementException("ArrayCoreMap keySet iterator exhausted");
+            }
+          }
+
+          @Override
+          @SuppressWarnings("unchecked")
+          public void remove() {
+            ArrayCoreMap.this.remove((Class)keys[i]);
+          }
+        };
+      }
+
+      @Override
+      public int size() {
+        return size;
+      }
+    };
+  }
+

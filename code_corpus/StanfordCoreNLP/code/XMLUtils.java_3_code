@@ -1,0 +1,28 @@
+  public static DocumentBuilder getValidatingXmlParser(File schemaFile) {
+    DocumentBuilder db = null;
+    try {
+      DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+
+      SchemaFactory factory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
+      Schema schema = factory.newSchema(schemaFile);
+      dbf.setSchema(schema);
+
+      db = dbf.newDocumentBuilder();
+      db.setErrorHandler(new SAXErrorHandler());
+
+    } catch (ParserConfigurationException e) {
+      System.err.printf("%s: Unable to create XML parser\n", XMLUtils.class.getName());
+      e.printStackTrace();
+
+    } catch (SAXException e) {
+      System.err.printf("%s: XML parsing exception while loading schema %s\n", XMLUtils.class.getName(),schemaFile.getPath());
+      e.printStackTrace();
+
+    } catch(UnsupportedOperationException e) {
+      System.err.printf("%s: API error while setting up XML parser. Check your JAXP version\n", XMLUtils.class.getName());
+      e.printStackTrace();
+    }
+
+    return db;
+  }
+

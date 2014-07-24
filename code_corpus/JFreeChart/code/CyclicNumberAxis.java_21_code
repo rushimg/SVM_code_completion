@@ -1,0 +1,161 @@
+    protected List refreshVerticalTicks(Graphics2D g2,
+                                        Rectangle2D dataArea,
+                                        RectangleEdge edge) {
+
+        List result = new java.util.ArrayList();
+        result.clear();
+
+        Font tickLabelFont = getTickLabelFont();
+        g2.setFont(tickLabelFont);
+        if (isAutoTickUnitSelection()) {
+            selectAutoTickUnit(g2, dataArea, edge);
+        }
+
+        double unit = getTickUnit().getSize();
+        double cycleBound = getCycleBound();
+        double upperValue = getRange().getUpperBound();
+        boolean cycled = false;
+
+        boolean boundMapping = this.boundMappedToLastCycle;
+        this.boundMappedToLastCycle = true;
+
+        NumberTick lastTick = null;
+        float lastY = 0.0f;
+
+        if (upperValue == cycleBound) {
+            currentTickValue = calculateLowestVisibleTickValue();
+            cycled = true;
+            this.boundMappedToLastCycle = true;
+        }
+
+        while (currentTickValue <= upperValue) {
+
+            // Cycle when necessary
+            boolean cyclenow = false;
+            if ((currentTickValue + unit > upperValue) && !cycled) {
+                cyclenow = true;
+            }
+
+            double yy = valueToJava2D(currentTickValue, dataArea, edge);
+            String tickLabel;
+            NumberFormat formatter = getNumberFormatOverride();
+            if (formatter != null) {
+                tickLabel = formatter.format(currentTickValue);
+            }
+            else {
+                tickLabel = getTickUnit().valueToString(currentTickValue);
+            }
+
+            float y = (float) yy;
+            TextAnchor anchor = null;
+            TextAnchor rotationAnchor = null;
+            double angle = 0.0;
+            if (isVerticalTickLabels()) {
+
+                if (edge == RectangleEdge.LEFT) {
+                    anchor = TextAnchor.BOTTOM_CENTER;
+                    if ((lastTick != null) && (lastY == y)
+                            && (currentTickValue != cycleBound)) {
+                        anchor = isInverted()
+                            ? TextAnchor.BOTTOM_LEFT : TextAnchor.BOTTOM_RIGHT;
+                        result.remove(result.size() - 1);
+                        result.add(new CycleBoundTick(
+                            this.boundMappedToLastCycle, lastTick.getNumber(),
+                            lastTick.getText(), anchor, anchor,
+                            lastTick.getAngle())
+                        );
+                        this.internalMarkerWhenTicksOverlap = true;
+                        anchor = isInverted()
+                            ? TextAnchor.BOTTOM_RIGHT : TextAnchor.BOTTOM_LEFT;
+                    }
+                    rotationAnchor = anchor;
+                    angle = -Math.PI / 2.0;
+                }
+                else {
+                    anchor = TextAnchor.BOTTOM_CENTER;
+                    if ((lastTick != null) && (lastY == y)
+                            && (currentTickValue != cycleBound)) {
+                        anchor = isInverted()
+                            ? TextAnchor.BOTTOM_RIGHT : TextAnchor.BOTTOM_LEFT;
+                        result.remove(result.size() - 1);
+                        result.add(new CycleBoundTick(
+                            this.boundMappedToLastCycle, lastTick.getNumber(),
+                            lastTick.getText(), anchor, anchor,
+                            lastTick.getAngle())
+                        );
+                        this.internalMarkerWhenTicksOverlap = true;
+                        anchor = isInverted()
+                            ? TextAnchor.BOTTOM_LEFT : TextAnchor.BOTTOM_RIGHT;
+                    }
+                    rotationAnchor = anchor;
+                    angle = Math.PI / 2.0;
+                }
+            }
+            else {
+                if (edge == RectangleEdge.LEFT) {
+                    anchor = TextAnchor.CENTER_RIGHT;
+                    if ((lastTick != null) && (lastY == y)
+                            && (currentTickValue != cycleBound)) {
+                        anchor = isInverted()
+                            ? TextAnchor.BOTTOM_RIGHT : TextAnchor.TOP_RIGHT;
+                        result.remove(result.size() - 1);
+                        result.add(new CycleBoundTick(
+                            this.boundMappedToLastCycle, lastTick.getNumber(),
+                            lastTick.getText(), anchor, anchor,
+                            lastTick.getAngle())
+                        );
+                        this.internalMarkerWhenTicksOverlap = true;
+                        anchor = isInverted()
+                            ? TextAnchor.TOP_RIGHT : TextAnchor.BOTTOM_RIGHT;
+                    }
+                    rotationAnchor = anchor;
+                }
+                else {
+                    anchor = TextAnchor.CENTER_LEFT;
+                    if ((lastTick != null) && (lastY == y)
+                            && (currentTickValue != cycleBound)) {
+                        anchor = isInverted()
+                            ? TextAnchor.BOTTOM_LEFT : TextAnchor.TOP_LEFT;
+                        result.remove(result.size() - 1);
+                        result.add(new CycleBoundTick(
+                            this.boundMappedToLastCycle, lastTick.getNumber(),
+                            lastTick.getText(), anchor, anchor,
+                            lastTick.getAngle())
+                        );
+                        this.internalMarkerWhenTicksOverlap = true;
+                        anchor = isInverted()
+                            ? TextAnchor.TOP_LEFT : TextAnchor.BOTTOM_LEFT;
+                    }
+                    rotationAnchor = anchor;
+                }
+            }
+
+            CycleBoundTick tick = new CycleBoundTick(
+                this.boundMappedToLastCycle, new Double(currentTickValue),
+                tickLabel, anchor, rotationAnchor, angle
+            );
+            if (currentTickValue == cycleBound) {
+                this.internalMarkerCycleBoundTick = tick;
+            }
+            result.add(tick);
+            lastTick = tick;
+            lastY = y;
+
+            if (currentTickValue == cycleBound) {
+                this.internalMarkerCycleBoundTick = tick;
+            }
+
+            currentTickValue += unit;
+
+            if (cyclenow) {
+                currentTickValue = calculateLowestVisibleTickValue();
+                upperValue = cycleBound;
+                cycled = true;
+                this.boundMappedToLastCycle = false;
+            }
+
+        }
+        this.boundMappedToLastCycle = boundMapping;
+        return result;
+    }
+

@@ -1,0 +1,33 @@
+  static class GroupEndState extends State {
+
+    private final int captureGroupId;
+
+    public GroupEndState(int captureGroupId)
+    {
+      this.captureGroupId = captureGroupId;
+    }
+
+    @Override
+    protected <T> boolean match(int bid, SequenceMatcher.MatchedStates<T> matchedStates, boolean consume, State prevState)
+    {
+      // Opposite of GroupStartState
+      // Don't do anything when we are about to consume an element
+      // Only we are done consuming, and preparing to go on to the next element
+      // do we mark the end of the group
+      if (consume) {
+        return false;
+      } else {
+        Object v = (prevState != null)? prevState.value(bid, matchedStates):null;
+        matchedStates.setGroupEnd(bid, captureGroupId, v);
+        return super.match(bid, matchedStates, consume, prevState);
+      }
+    }
+  }
+
+  static class ConjMatchStateInfo
+  {
+    // A conjunction consists of several child expressions
+    //  When the conjunction state is entered,
+    //    we keep track of the branch id and the node index
+    //     we are on at that time (startBid and startPos)
+

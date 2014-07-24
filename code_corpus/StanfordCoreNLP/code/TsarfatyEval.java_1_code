@@ -1,0 +1,51 @@
+public class TsarfatyEval extends AbstractEval {
+
+  private final boolean useTag;
+  private final ConstituentFactory cf = new LabeledScoredConstituentFactory();
+
+  public TsarfatyEval(String str, boolean tags) {
+    super(str, false);
+    useTag = tags;
+  }
+
+  @Override
+  protected Set<?> makeObjects(Tree tree) {
+    Set<Constituent> deps = Generics.newHashSet();
+    if(tree != null) extractDeps(tree, 0, deps);
+    return deps;
+  }
+
+  private int extractDeps(Tree t, int left, Set<Constituent> deps) {
+    int position = left;
+
+    // Segmentation constituents
+    if(!useTag && t.isLeaf()) { 
+      position += t.label().value().length();
+      deps.add(cf.newConstituent(left, position - 1, t.label(), 0.0));
+
+      // POS tag constituents
+    } else if(useTag && t.isPreTerminal()) {
+      position += t.firstChild().label().value().length();
+      deps.add(cf.newConstituent(left, position - 1, t.label(), 0.0));
+
+    } else {
+      Tree[] kids = t.children();
+      for (int i = 0; i < kids.length; i++)
+        position = extractDeps(kids[i], position, deps);
+    }
+
+    return position;
+  }
+
+  private static final int minArgs = 2;
+  private static final StringBuilder usage = new StringBuilder();
+  static {
+    usage.append(String.format("Usage: java %s [OPTS] gold guess\n\n",TsarfatyEval.class.getName()));
+    usage.append("Options:\n");
+    usage.append("  -v         : Verbose mode.\n");
+    usage.append("  -l lang    : Select language settings from " + Languages.class.getName() + "\n");
+    usage.append("  -y num     : Skip gold trees with yields longer than num.\n");
+    usage.append("  -g num     : Skip guess trees with yields longer than num.\n");
+    usage.append("  -t         : Tagging mode (default: segmentation).\n");
+  }
+

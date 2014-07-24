@@ -1,0 +1,16 @@
+  public static void writeStringToFileNoExceptions(String contents, String path, String encoding) {
+    OutputStream writer = null;
+    try{
+      if (path.endsWith(".gz")) {
+        writer = new GZIPOutputStream(new FileOutputStream(path));
+      } else {
+        writer = new BufferedOutputStream(new FileOutputStream(path));
+      }
+      writer.write(contents.getBytes(encoding));
+    } catch (Exception e) {
+      e.printStackTrace();
+    } finally {
+      if(writer != null){ closeIgnoringExceptions(writer); }
+    }
+  }
+

@@ -1,0 +1,25 @@
+  public List<Mention> getOrderedAntecedents(
+      int antecedentSentence,
+      int mySentence,
+      List<Mention> orderedMentions,
+      List<List<Mention>> orderedMentionsBySentence,
+      Mention m1,
+      int m1Position,
+      Map<Integer, CorefCluster> corefClusters,
+      Dictionaries dict) {
+    List<Mention> orderedAntecedents = new ArrayList<Mention>();
+
+    // ordering antecedents
+    if (antecedentSentence == mySentence) {   // same sentence
+      orderedAntecedents.addAll(orderedMentions.subList(0, m1Position));
+      if(flags.DO_PRONOUN && corefClusters.get(m1.corefClusterID).isSinglePronounCluster(dict)) {
+        orderedAntecedents = sortMentionsForPronoun(orderedAntecedents, m1, true);
+      }
+      if(dict.relativePronouns.contains(m1.spanToString())) Collections.reverse(orderedAntecedents);
+    } else {    // previous sentence
+      orderedAntecedents.addAll(orderedMentionsBySentence.get(antecedentSentence));
+    }
+
+    return orderedAntecedents;
+  }
+

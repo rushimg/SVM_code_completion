@@ -1,0 +1,19 @@
+  public CRFClassifier(CRFClassifier<IN> crf) {
+    super(crf.flags);
+    this.windowSize = crf.windowSize;
+    this.featureFactories = crf.featureFactories;
+    this.pad = crf.pad;
+    this.knownLCWords = (crf.knownLCWords != null) ? Generics.<String>newHashSet(crf.knownLCWords) : null;
+    this.featureIndex = (crf.featureIndex != null) ? new HashIndex<String>(crf.featureIndex.objectsList()) : null;
+    this.classIndex = (crf.classIndex != null) ? new HashIndex<String>(crf.classIndex.objectsList()) : null;
+    if (crf.labelIndices != null) {
+      this.labelIndices = new ArrayList<Index<CRFLabel>>(crf.labelIndices.size());
+      for (int i = 0; i < crf.labelIndices.size(); i++) {
+        this.labelIndices.add((crf.labelIndices.get(i) != null) ? new HashIndex<CRFLabel>(crf.labelIndices.get(i).objectsList()) : null);
+      }
+    } else {
+      this.labelIndices = null;
+    }
+    this.cliquePotentialFunction = crf.cliquePotentialFunction;
+  }
+

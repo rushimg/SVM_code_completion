@@ -1,0 +1,42 @@
+  public DefaultNameContextGenerator(AdaptiveFeatureGenerator... featureGenerators) {
+
+    if (featureGenerators != null) {
+      this.featureGenerators = featureGenerators;
+    }
+    else {
+      // use defaults
+
+      this.featureGenerators = new AdaptiveFeatureGenerator[]{
+          windowFeatures,
+          new PreviousMapFeatureGenerator()};
+    }
+  }
+
+  public void addFeatureGenerator(AdaptiveFeatureGenerator generator) {
+      AdaptiveFeatureGenerator generators[] = featureGenerators;
+
+      featureGenerators = new AdaptiveFeatureGenerator[featureGenerators.length + 1];
+
+      System.arraycopy(generators, 0, featureGenerators, 0, generators.length);
+
+      featureGenerators[featureGenerators.length - 1] = generator;
+  }
+
+  public void updateAdaptiveData(String[] tokens, String[] outcomes) {
+
+    if (tokens != null && outcomes != null && tokens.length != outcomes.length) {
+        throw new IllegalArgumentException(
+            "The tokens and outcome arrays MUST have the same size!");
+      }
+
+    for (AdaptiveFeatureGenerator featureGenerator : featureGenerators) {
+      featureGenerator.updateAdaptiveData(tokens, outcomes);
+    }
+  }
+
+  public void clearAdaptiveData() {
+    for (AdaptiveFeatureGenerator featureGenerator : featureGenerators) {
+      featureGenerator.clearAdaptiveData();
+    }
+  }
+

@@ -1,0 +1,17 @@
+  public static Properties propFileToProperties(String filename) {
+    Properties result = new Properties();
+    try {
+      InputStream is = new BufferedInputStream(new FileInputStream(filename));
+      result.load(is);
+      // trim all values
+      for (Object propKey : result.keySet()){
+        String newVal = result.getProperty((String)propKey);
+        result.setProperty((String)propKey,newVal.trim());
+      }
+      is.close();
+      return result;
+    } catch (IOException e) {
+      throw new RuntimeIOException("propFileToProperties could not read properties file: " + filename, e);
+    }
+  }
+

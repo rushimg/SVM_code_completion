@@ -1,0 +1,93 @@
+  public static class ChildrenAnnotation implements CoreAnnotation<List<? extends CoreMap>> {
+    @Override
+    public Class<List<? extends CoreMap>> getType() {
+      return ErasureUtils.<Class<List<? extends CoreMap>>> uncheckedCast(List.class);
+    }
+  }
+
+  //int tid;     // Time ID
+  SUTime.Temporal origTemporal;  // todo [2013]: never read. Can delete? (Set in TimeExpressionExtractorImpl)
+  //int anchorTimeId = -1;
+
+  public TimeExpression(MatchedExpression expr)
+  {
+    super(expr);
+  }
+
+  public TimeExpression(Interval<Integer> charOffsets, Interval<Integer> tokenOffsets,
+                        Function<CoreMap, SUTime.Temporal> temporalFunc, double priority, double weight)
+  {
+    super(charOffsets, tokenOffsets, getSingleAnnotationExtractor(temporalFunc), priority, weight);
+  }
+
+  protected static final Function<MatchedExpression, TimeExpression> TimeExpressionConverter = new Function<MatchedExpression, TimeExpression>() {
+    public TimeExpression apply(MatchedExpression in) {
+      if (in == null) return null;
+      if (in instanceof TimeExpression) return (TimeExpression) in;
+      TimeExpression newExpr = new TimeExpression(in);
+      if (newExpr.getAnnotation().get(TimeExpression.Annotation.class) == in) {
+        newExpr.getAnnotation().set(TimeExpression.Annotation.class, newExpr);
+      }
+      return newExpr;
+    }
+  };
+
+  private static SingleAnnotationExtractor getSingleAnnotationExtractor(final Function<CoreMap, SUTime.Temporal> temporalFunc)
+  {
+    SingleAnnotationExtractor extractFunc = new SingleAnnotationExtractor();
+    extractFunc.valueExtractor = new Function<CoreMap, Value>() {
+      public Value apply(CoreMap in) {
+        SUTime.Temporal t = temporalFunc.apply(in);
+        return new Expressions.PrimitiveValue<SUTime.Temporal>("Temporal", t);
+      }
+    };
+    extractFunc.tokensAnnotationField = CoreAnnotations.NumerizedTokensAnnotation.class;
+    extractFunc.resultAnnotationField = Collections.singletonList((Class) TimeExpression.Annotation.class);
+    extractFunc.resultNestedAnnotationField = TimeExpression.ChildrenAnnotation.class;
+    extractFunc.resultAnnotationExtractor = TimeExpressionConverter;
+    extractFunc.tokensAggregators = CoreMapAttributeAggregator.DEFAULT_NUMERIC_TOKENS_AGGREGATORS;
+    return extractFunc;
+  }
+
+  public boolean addMod()
+  {
+    SUTime.Temporal t = getTemporal();
+    if (t != null) {
+      if (t != SUTime.TIME_NONE_OK) {
+        setTemporal(t);
+        return true;
+      } else {
+        return false;
+      }
+    } else {
+      return true;
+    }
+  }
+
+  @Override
+  public boolean extractAnnotation(Env env, CoreMap sourceAnnotation)
+  {
+    boolean okay = super.extractAnnotation(env, sourceAnnotation);
+            //super.extractAnnotation(sourceAnnotation, CoreAnnotations.NumerizedTokensAnnotation.class,
+            //CoreMapAttributeAggregator.DEFAULT_NUMERIC_TOKENS_AGGREGATORS,
+            //TimeExpression.Annotation.class, TimeExpression.ChildrenAnnotation.class);
+    if (okay) {
+      return addMod();
+    } else {
+      return false;
+    }
+  }
+
+  @Override
+  public boolean extractAnnotation(Env env, List<? extends CoreMap> source)
+  {
+    boolean okay = super.extractAnnotation(env, source);
+            //super.extractAnnotation(source, CoreMapAttributeAggregator.getDefaultAggregators(),
+            //TimeExpression.Annotation.class, TimeExpression.ChildrenAnnotation.class);
+    if (okay) {
+      return addMod();
+    } else {
+      return false;
+    }
+  }
+

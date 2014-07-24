@@ -1,0 +1,16 @@
+    public Number getEndValue(Comparable rowKey, Comparable columnKey,
+                              int subinterval) {
+        Number result = null;
+        int row = getRowIndex(rowKey);
+        TaskSeries series = (TaskSeries) this.data.get(row);
+        Task task = series.get(columnKey.toString());
+        if (task != null) {
+            Task sub = task.getSubtask(subinterval);
+            if (sub != null) {
+                TimePeriod duration = sub.getDuration();
+                result = new Long(duration.getEnd().getTime());
+            }
+        }
+        return result;
+    }
+

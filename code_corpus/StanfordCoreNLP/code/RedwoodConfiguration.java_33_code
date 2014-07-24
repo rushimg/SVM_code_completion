@@ -1,0 +1,64 @@
+  public static RedwoodConfiguration parse(Properties props){
+    RedwoodConfiguration config = new RedwoodConfiguration().clear();
+    Set<String> used = Generics.newHashSet();
+
+    //--Capture Streams
+    if(get(props,"log.captureStreams","false",used).equalsIgnoreCase("true")){
+      config = config.capture(System.out).capture(System.err);
+    }
+    if(get(props,"log.captureStdout","false",used).equalsIgnoreCase("true")){
+      config = config.capture(System.out);
+    }
+    if(get(props,"log.captureStderr","false",used).equalsIgnoreCase("true")){
+      config = config.capture(System.err);
+    }
+
+    //--Collapse
+    String collapse = get(props, "log.collapse", "none", used);
+    List<LogRecordHandler> chain = new LinkedList<LogRecordHandler>();
+    if (collapse.equalsIgnoreCase("exact")) {
+      chain.add(new RepeatedRecordHandler(RepeatedRecordHandler.EXACT));
+    } else if (collapse.equalsIgnoreCase("approximate")) {
+      chain.add(new RepeatedRecordHandler(RepeatedRecordHandler.APPROXIMATE));
+    } else if (!collapse.equalsIgnoreCase("none")) {
+      throw new IllegalArgumentException("Unknown collapse mode (Redwood): " + collapse);
+    }
+
+    //--Channels.Debug
+    boolean debug = Boolean.parseBoolean(get(props, "log.channels.debug", "true", used));
+    if (!debug) {
+      chain.add(Handlers.hideDebug);
+    }
+
+    //--Channels.Width
+    config.channelWidth( Integer.parseInt(get(props, "log.channels.width", "0", used)) );
+
+    //--Neat exit
+    if(get(props,"log.neatExit","false",used).equalsIgnoreCase("true")){
+      config = config.neatExit();
+    }
+
+    //--File
+    String outputFile = get(props, "log.file", null, used);
+    if (outputFile != null) {
+      config.defaultFile = new File(outputFile);
+      config = config.handlers(Handlers.defaultFile);
+    }
+
+    //--Console
+    config = config.output(get(props, "log.output", "stdout", used));
+
+    //--Console
+    config = config.handlers(Handlers.chain(chain.toArray(new LogRecordHandler[chain.size()]), Handlers.output));
+
+    //--Error Check
+    for(Object propAsObj : props.keySet()) {
+      String prop = propAsObj.toString();
+      if(prop.startsWith("log.") && !used.contains(prop)){
+        throw new IllegalArgumentException("Could not find Redwood log property: " + prop);
+      }
+    }
+    //--Return
+    return config;
+  }
+

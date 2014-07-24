@@ -1,0 +1,25 @@
+    private static byte[] createBlob(final byte[] clientChallenge, final byte[] targetInformation, final byte[] timestamp) {
+        final byte[] blobSignature = new byte[] { (byte) 0x01, (byte) 0x01, (byte) 0x00, (byte) 0x00 };
+        final byte[] reserved = new byte[] { (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00 };
+        final byte[] unknown1 = new byte[] { (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00 };
+        final byte[] unknown2 = new byte[] { (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00 };
+        final byte[] blob = new byte[blobSignature.length + reserved.length + timestamp.length + 8
+                + unknown1.length + targetInformation.length + unknown2.length];
+        int offset = 0;
+        System.arraycopy(blobSignature, 0, blob, offset, blobSignature.length);
+        offset += blobSignature.length;
+        System.arraycopy(reserved, 0, blob, offset, reserved.length);
+        offset += reserved.length;
+        System.arraycopy(timestamp, 0, blob, offset, timestamp.length);
+        offset += timestamp.length;
+        System.arraycopy(clientChallenge, 0, blob, offset, 8);
+        offset += 8;
+        System.arraycopy(unknown1, 0, blob, offset, unknown1.length);
+        offset += unknown1.length;
+        System.arraycopy(targetInformation, 0, blob, offset, targetInformation.length);
+        offset += targetInformation.length;
+        System.arraycopy(unknown2, 0, blob, offset, unknown2.length);
+        offset += unknown2.length;
+        return blob;
+    }
+

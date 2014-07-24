@@ -1,0 +1,35 @@
+    public void vertexRemoved(GraphVertexChangeEvent<V> e)
+    {
+        init(); // for now invalidate cached results, in the future need to
+                // amend them.
+    }
+
+    private void init()
+    {
+        connectedSets = null;
+        vertexToConnectedSet = new HashMap<V, Set<V>>();
+    }
+
+    private List<Set<V>> lazyFindConnectedSets()
+    {
+        if (connectedSets == null) {
+            connectedSets = new ArrayList<Set<V>>();
+
+            Set<V> vertexSet = graph.vertexSet();
+
+            if (vertexSet.size() > 0) {
+                BreadthFirstIterator<V, E> i =
+                    new BreadthFirstIterator<V, E>(graph, null);
+                i.addTraversalListener(new MyTraversalListener());
+
+                while (i.hasNext()) {
+                    i.next();
+                }
+            }
+        }
+
+        return connectedSets;
+    }
+
+    //~ Inner Classes ----------------------------------------------------------
+

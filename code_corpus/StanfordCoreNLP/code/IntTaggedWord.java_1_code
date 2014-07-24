@@ -1,0 +1,110 @@
+public class IntTaggedWord implements Serializable, Comparable<IntTaggedWord> {
+
+  public static final int ANY_WORD_INT = -1;
+  public static final int ANY_TAG_INT = -1;
+  public static final int STOP_WORD_INT = -2;
+  public static final int STOP_TAG_INT = -2;
+
+  public static final String STOP = "STOP";
+
+  public final int word;
+  public final short tag;
+
+  public int tag() {
+    return tag;
+  }
+
+  public int word() {
+    return word;
+  }
+
+  public String wordString(Index<String> wordIndex) {
+    String wordStr;
+    if (word >= 0) {
+      wordStr = wordIndex.get(word);
+    } else if (word == ANY_WORD_INT) {
+      wordStr = ANY;
+    } else {
+      wordStr = STOP;
+    }
+    return wordStr;
+  }
+
+  public String tagString(Index<String> tagIndex) {
+    String tagStr;
+    if (tag >= 0) {
+      tagStr = tagIndex.get(tag);
+    } else if (tag == ANY_TAG_INT) {
+      tagStr = ANY;
+    } else {
+      tagStr = STOP;
+    }
+    return tagStr;
+  }
+
+  @Override
+  public int hashCode() {
+    return word ^ (tag << 16);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    } else if (o instanceof IntTaggedWord) {
+      IntTaggedWord i = (IntTaggedWord) o;
+      return (word == i.word && tag == i.tag);
+    } else {
+      return false;
+    }
+  }
+
+  public int compareTo(IntTaggedWord that) {
+    if (tag != that.tag) {
+      return tag - that.tag;
+    } else {
+      return word - that.word;
+    }
+  }
+
+  private static final char[] charsToEscape = { '\"' };
+
+
+  public String toLexicalEntry(Index<String> wordIndex,
+                               Index<String> tagIndex) {
+    String wordStr = wordString(wordIndex);
+    String tagStr = tagString(tagIndex);
+    return '\"' + StringUtils.escapeString(tagStr, charsToEscape, '\\') + "\" -> \"" + StringUtils.escapeString(wordStr, charsToEscape, '\\') + '\"';
+  }
+
+  @Override
+  public String toString() {
+    return word + "/" + tag;
+  }
+
+  public String toString(Index<String> wordIndex, Index<String> tagIndex) {
+    return wordString(wordIndex)+ '/' +tagString(tagIndex);
+  }
+
+  public String toString(String arg,
+                         Index<String> wordIndex, Index<String> tagIndex) {
+    if (arg.equals("verbose")) {
+      return (wordString(wordIndex) + '[' + word + "]/" +
+              tagString(tagIndex) + '[' + tag + ']');
+    } else {
+      return toString(wordIndex, tagIndex);
+    }
+  }
+
+  public IntTaggedWord(int word, int tag) {
+    this.word = word;
+    this.tag = (short) tag;
+  }
+
+  public TaggedWord toTaggedWord(Index<String> wordIndex,
+                                 Index<String> tagIndex) {
+    String wordStr = wordString(wordIndex);
+    String tagStr = tagString(tagIndex);
+    return new TaggedWord(wordStr, tagStr);
+  }
+

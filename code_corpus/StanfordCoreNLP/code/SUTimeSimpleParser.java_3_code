@@ -1,0 +1,21 @@
+  public static Temporal parse(String str) throws SUTimeParsingError {
+    try {
+      Annotation doc = new Annotation(str);
+      pipeline.annotate(doc);
+
+      assert doc.get(CoreAnnotations.SentencesAnnotation.class) != null;
+      assert doc.get(CoreAnnotations.SentencesAnnotation.class).size() > 0;
+      List<CoreMap> timexAnnotations = doc.get(TimeAnnotations.TimexAnnotations.class);
+      if (timexAnnotations.size() > 1) {
+        throw new RuntimeException("Too many timexes for '" + str + "'");
+      }
+      CoreMap timex = timexAnnotations.get(0);
+
+      return timex.get(TimeExpression.Annotation.class).getTemporal();
+    } catch (Exception e) {
+      SUTimeSimpleParser.SUTimeParsingError parsingError = new SUTimeSimpleParser.SUTimeParsingError(str);
+      parsingError.initCause(e);
+      throw parsingError;
+    }
+  }
+

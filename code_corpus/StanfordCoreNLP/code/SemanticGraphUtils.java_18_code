@@ -1,0 +1,34 @@
+  public static SemanticGraph resetVerticeOrdering(SemanticGraph sg) {
+    SemanticGraph nsg = new SemanticGraph();
+    List<IndexedWord> vertices = sg.vertexListSorted();
+    List<SemanticGraphEdge> edges = sg.edgeListSorted();
+    int index = 1;
+    Map<IndexedWord, IndexedWord> oldToNewVertices = Generics.newHashMap();
+    List<IndexedWord> newVertices = new ArrayList<IndexedWord>();
+    for (IndexedWord vertex : vertices) {
+      IndexedWord newVertex = new IndexedWord(vertex);
+      newVertex.setIndex(index++);
+      oldToNewVertices.put(vertex, newVertex);
+      ///sg.removeVertex(vertex);
+      newVertices.add(newVertex);
+    }
+
+    for (IndexedWord nv : newVertices) {
+      nsg.addVertex(nv);
+    }
+
+    List<IndexedWord> newRoots = new ArrayList<IndexedWord>();
+    for (IndexedWord or : sg.getRoots()) {
+      newRoots.add(oldToNewVertices.get(or));
+    }
+    nsg.setRoots(newRoots);
+
+    for (SemanticGraphEdge edge : edges) {
+      IndexedWord newGov = oldToNewVertices.get(edge.getGovernor());
+      IndexedWord newDep = oldToNewVertices.get(edge.getDependent());
+      nsg.addEdge(newGov, newDep, edge.getRelation(), edge.getWeight(), edge.isExtra());
+    }
+    return nsg;
+  }
+
+

@@ -1,0 +1,56 @@
+    @Override
+    public int compareTo(Entry other) {
+      if (this.priority > other.priority)
+        return -1;
+      if (this.priority < other.priority)
+        return 1;
+      return other.regex.size() - this.regex.size();
+    }
+
+    public String toString() {
+      return "Entry{" + regex + ' ' + type + ' ' + overwritableTypes + ' ' + priority + '}';
+    }
+  }
+
+  private boolean containsValidPos(List<CoreLabel> tokens, int start, int end) {
+    if (validPosPattern == null) {
+      return true;
+    }
+    // System.err.println("CHECKING " + start + " " + end);
+    for (int i = start; i < end; i ++) {
+      // System.err.println("TAG = " + tokens.get(i).tag());
+      if (tokens.get(i).tag() == null) {
+        throw new IllegalArgumentException("RegexNER was asked to check for valid tags on an untagged sequence. Either tag the sequence, perhaps with the pos annotator, or create RegexNER with an empty validPosPattern, perhaps with the property regexner.validpospattern");
+      }
+      Matcher m = validPosPattern.matcher(tokens.get(i).tag());
+      if (m.find()) return true;
+    }
+    return false;
+  }
+
+  @Override
+  public List<CoreLabel> classify(List<CoreLabel> document) {
+    // This is pretty deathly slow. It loops over each entry, and then loops over each document token for it.
+    // We could gain by compiling into disjunctions patterns for the same class with the same priorities and restrictions?
+    for (Entry entry : entries) {
+      int start = 0; // the index of the token from which we begin our search each iteration
+      while (true) {
+        // only search the part of the document that we haven't yet considered
+        // System.err.println("REGEX FIND MATCH FOR " + entry.regex.toString());
+        start = findStartIndex(entry, document, start, myLabels, this.ignoreCase);
+        if (start < 0) break; // no match found
+
+        // make sure we annotate only valid POS tags
+        if (containsValidPos(document, start, start + entry.regex.size())) {
+          // annotate each matching token
+          for (int i = start; i < start + entry.regex.size(); i++) {
+            CoreLabel token = document.get(i);
+            token.set(CoreAnnotations.AnswerAnnotation.class, entry.type);
+          }
+        }
+        start++;
+      }
+    }
+    return document;
+  }
+

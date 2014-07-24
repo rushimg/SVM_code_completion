@@ -1,0 +1,125 @@
+  public void visitTree(Tree t) {
+    processTreeHelper("TOP", "TOP", t);
+  }
+
+  public static List<String> kidLabels(Tree t) {
+    Tree[] kids = t.children();
+    List<String> l = new ArrayList<String>(kids.length);
+    for (Tree kid : kids) {
+      l.add(kid.label().value());
+    }
+    return l;
+  }
+
+  public void processTreeHelper(String gP, String p, Tree t) {
+    if (!t.isLeaf() && (doTags || !t.isPreTerminal())) { // stop at words/tags
+      Map<String,ClassicCounter<List<String>>> nr;
+      Map<List<String>,ClassicCounter<List<String>>> pr;
+      Map<List<String>,ClassicCounter<List<String>>> gpr;
+      if (t.isPreTerminal()) {
+        nr = tagNodeRules;
+        pr = tagPRules;
+        gpr = tagGPRules;
+      } else {
+        nr = nodeRules;
+        pr = pRules;
+        gpr = gPRules;
+      }
+      String n = t.label().value();
+      if (tlp != null) {
+        p = tlp.basicCategory(p);
+        gP = tlp.basicCategory(gP);
+      }
+      List<String> kidn = kidLabels(t);
+      ClassicCounter<List<String>> cntr = nr.get(n);
+      if (cntr == null) {
+        cntr = new ClassicCounter<List<String>>();
+        nr.put(n, cntr);
+      }
+      cntr.incrementCount(kidn);
+      List<String> pairStr = new ArrayList<String>(2);
+      pairStr.add(n);
+      pairStr.add(p);
+      cntr = pr.get(pairStr);
+      if (cntr == null) {
+        cntr = new ClassicCounter<List<String>>();
+        pr.put(pairStr, cntr);
+      }
+      cntr.incrementCount(kidn);
+      List<String> tripleStr = new ArrayList<String>(3);
+      tripleStr.add(n);
+      tripleStr.add(p);
+      tripleStr.add(gP);
+      cntr = gpr.get(tripleStr);
+      if (cntr == null) {
+        cntr = new ClassicCounter<List<String>>();
+        gpr.put(tripleStr, cntr);
+      }
+      cntr.incrementCount(kidn);
+      Tree[] kids = t.children();
+      for (Tree kid : kids) {
+        processTreeHelper(p, n, kid);
+      }
+    }
+  }
+
+
+  public void printStats() {
+    NumberFormat nf = NumberFormat.getNumberInstance();
+    nf.setMaximumFractionDigits(2);
+    // System.out.println("Node rules");
+    // System.out.println(nodeRules);
+    // System.out.println("Parent rules");
+    // System.out.println(pRules);
+    // System.out.println("Grandparent rules");
+    // System.out.println(gPRules);
+
+    // Store java code for selSplit
+    StringBuffer[] javaSB = new StringBuffer[CUTOFFS.length];
+    for (int i = 0; i < CUTOFFS.length; i++) {
+      javaSB[i] = new StringBuffer("  private static String[] splitters" + (i + 1) + " = new String[] {");
+    }
+
+    ClassicCounter<List<String>> allScores = new ClassicCounter<List<String>>();
+    // do value of parent
+    for (String node : nodeRules.keySet()) {
+      ArrayList<Pair<List<String>,Double>> answers = Generics.newArrayList();
+      ClassicCounter<List<String>> cntr = nodeRules.get(node);
+      double support = (cntr.totalCount());
+      System.out.println("Node " + node + " support is " + support);
+      for (Iterator<List<String>> it2 = pRules.keySet().iterator(); it2.hasNext();) {
+        List<String> key = it2.next();
+        if (key.get(0).equals(node)) {   // only do it if they match
+          ClassicCounter<List<String>> cntr2 = pRules.get(key);
+          double support2 = (cntr2.totalCount());
+          double kl = Counters.klDivergence(cntr2, cntr);
+          System.out.println("KL(" + key + "||" + node + ") = " + nf.format(kl) + "\t" + "support(" + key + ") = " + support2);
+          answers.add(new Pair<List<String>,Double>(key, new Double(score)));
+          allScores.setCount(key, score);
+        }
+      }
+      System.out.println("----");
+      Collections.sort(answers, new Comparator<Pair<List<String>, Double>>() {
+        public int compare(Pair<List<String>, Double> o1, Pair<List<String>, Double> o2) {
+          return o2.second().compareTo(o1.second());
+        }
+      });
+      for (int i = 0, size = answers.size(); i < size; i++) {
+        Pair p = (Pair) answers.get(i);
+        double psd = ((Double) p.second()).doubleValue();
+        System.out.println(p.first() + ": " + nf.format(psd));
+        if (psd >= CUTOFFS[0]) {
+          List lst = (List) p.first();
+          String nd = (String) lst.get(0);
+          String par = (String) lst.get(1);
+          for (int j = 0; j < CUTOFFS.length; j++) {
+            if (psd >= CUTOFFS[j]) {
+              javaSB[j].append("\"").append(nd).append("^");
+              javaSB[j].append(par).append("\", ");
+            }
+          }
+        }
+      }
+      System.out.println();
+    }
+

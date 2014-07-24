@@ -1,0 +1,93 @@
+public class FactorTable {
+
+  private final int numClasses;
+  private final int windowSize;
+
+  private final double[] table;
+
+
+  public FactorTable(int numClasses, int windowSize) {
+    this.numClasses = numClasses;
+    this.windowSize = windowSize;
+
+    table = new double[SloppyMath.intPow(numClasses, windowSize)];
+    Arrays.fill(table, Double.NEGATIVE_INFINITY);
+  }
+
+  public FactorTable(FactorTable t) {
+    numClasses = t.numClasses();
+    windowSize = t.windowSize();
+    table = new double[t.size()];
+    System.arraycopy(t.table, 0, table, 0, t.size());
+  }
+
+  public boolean hasNaN() {
+    return ArrayMath.hasNaN(table);
+  }
+
+  public String toProbString() {
+    StringBuilder sb = new StringBuilder("{\n");
+    for (int i = 0; i < table.length; i++) {
+      sb.append(Arrays.toString(toArray(i)));
+      sb.append(": ");
+      sb.append(prob(toArray(i)));
+      sb.append("\n");
+    }
+    sb.append("}");
+    return sb.toString();
+  }
+
+  public String toNonLogString() {
+    StringBuilder sb = new StringBuilder("{\n");
+    for (int i = 0; i < table.length; i++) {
+      sb.append(Arrays.toString(toArray(i)));
+      sb.append(": ");
+      sb.append(Math.exp(getValue(i)));
+      sb.append("\n");
+    }
+    sb.append("}");
+    return sb.toString();
+  }
+
+  public <L> String toString(Index<L> classIndex) {
+    StringBuilder sb = new StringBuilder("{\n");
+    for (int i = 0; i < table.length; i++) {
+      sb.append(toString(toArray(i), classIndex));
+      sb.append(": ");
+      sb.append(getValue(i));
+      sb.append("\n");
+    }
+    sb.append("}");
+    return sb.toString();
+  }
+
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder("{\n");
+    for (int i = 0; i < table.length; i++) {
+      sb.append(Arrays.toString(toArray(i)));
+      sb.append(": ");
+      sb.append(getValue(i));
+      sb.append("\n");
+    }
+    sb.append("}");
+    return sb.toString();
+  }
+
+  private static <L> String toString(int[] array, Index<L> classIndex) {
+    List<L> l = new ArrayList<L>(array.length);
+    for (int i = 0; i < array.length; i++) {
+      l.add(classIndex.get(array[i]));
+    }
+    return l.toString();
+  }
+
+  public int[] toArray(int index) {
+    int[] indices = new int[windowSize];
+    for (int i = indices.length - 1; i >= 0; i--) {
+      indices[i] = index % numClasses;
+      index /= numClasses;
+    }
+    return indices;
+  }
+

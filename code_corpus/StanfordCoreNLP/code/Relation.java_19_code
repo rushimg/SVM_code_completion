@@ -1,0 +1,20 @@
+    @Override
+    boolean satisfies(Tree t1, Tree t2, Tree root, final TregexMatcher matcher) {
+      return true; // shouldn't have to do anything here.
+    }
+
+    private boolean pathMatchesNode(Tree node) {
+      String lab = node.value();
+      // added this code to not crash if null node, even though there probably should be null nodes in the tree
+      if (lab == null) {
+        // Say that a null label matches no positive pattern, but any negated pattern
+        return negatedPattern;
+      } else {
+        if (basicCat) {
+          lab = basicCatFunction.apply(lab);
+        }
+        Matcher m = pattern.matcher(lab);
+        return m.find() != negatedPattern;
+      }
+    }
+

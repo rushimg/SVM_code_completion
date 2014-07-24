@@ -1,0 +1,55 @@
+    public static Range findStackedRangeBounds(CategoryDataset dataset,
+                                               KeyToGroupMap map) {
+        if (dataset == null) {
+            throw new IllegalArgumentException("Null 'dataset' argument.");
+        }
+        boolean hasValidData = false;
+        Range result = null;
+
+        // create an array holding the group indices for each series...
+        int[] groupIndex = new int[dataset.getRowCount()];
+        for (int i = 0; i < dataset.getRowCount(); i++) {
+            groupIndex[i] = map.getGroupIndex(map.getGroup(
+                    dataset.getRowKey(i)));
+        }
+
+        // minimum and maximum for each group...
+        int groupCount = map.getGroupCount();
+        double[] minimum = new double[groupCount];
+        double[] maximum = new double[groupCount];
+
+        int categoryCount = dataset.getColumnCount();
+        for (int item = 0; item < categoryCount; item++) {
+            double[] positive = new double[groupCount];
+            double[] negative = new double[groupCount];
+            int seriesCount = dataset.getRowCount();
+            for (int series = 0; series < seriesCount; series++) {
+                Number number = dataset.getValue(series, item);
+                if (number != null) {
+                    hasValidData = true;
+                    double value = number.doubleValue();
+                    if (value > 0.0) {
+                        positive[groupIndex[series]]
+                                 = positive[groupIndex[series]] + value;
+                    }
+                    if (value < 0.0) {
+                        negative[groupIndex[series]]
+                                 = negative[groupIndex[series]] + value;
+                                 // '+', remember value is negative
+                    }
+                }
+            }
+            for (int g = 0; g < groupCount; g++) {
+                minimum[g] = Math.min(minimum[g], negative[g]);
+                maximum[g] = Math.max(maximum[g], positive[g]);
+            }
+        }
+        if (hasValidData) {
+            for (int j = 0; j < groupCount; j++) {
+                result = Range.combine(result, new Range(minimum[j],
+                        maximum[j]));
+            }
+        }
+        return result;
+    }
+

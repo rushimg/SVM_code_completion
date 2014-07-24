@@ -1,0 +1,43 @@
+    protected void drawGridBandsVertical(Graphics2D g2,
+                                         Rectangle2D drawArea,
+                                         Rectangle2D plotArea,
+                                         boolean firstGridBandIsDark,
+                                         List ticks) {
+
+        boolean currentGridBandIsDark = firstGridBandIsDark;
+        double xx = plotArea.getX();
+        double yy1, yy2;
+
+        //gets the outline stroke width of the plot
+        double outlineStrokeWidth;
+        Stroke outlineStroke = getPlot().getOutlineStroke();
+        if (outlineStroke != null && outlineStroke instanceof BasicStroke) {
+            outlineStrokeWidth = ((BasicStroke) outlineStroke).getLineWidth();
+        }
+        else {
+            outlineStrokeWidth = 1d;
+        }
+
+        Iterator iterator = ticks.iterator();
+        ValueTick tick;
+        Rectangle2D band;
+        while (iterator.hasNext()) {
+            tick = (ValueTick) iterator.next();
+            yy1 = valueToJava2D(tick.getValue() + 0.5d, plotArea,
+                    RectangleEdge.LEFT);
+            yy2 = valueToJava2D(tick.getValue() - 0.5d, plotArea,
+                    RectangleEdge.LEFT);
+            if (currentGridBandIsDark) {
+                g2.setPaint(this.gridBandPaint);
+            }
+            else {
+                g2.setPaint(this.gridBandAlternatePaint);
+            }
+            band = new Rectangle2D.Double(xx + outlineStrokeWidth, yy1,
+                    plotArea.getMaxX() - xx - outlineStrokeWidth, yy2 - yy1);
+            g2.fill(band);
+            currentGridBandIsDark = !currentGridBandIsDark;
+        }
+        g2.setPaintMode();
+    }
+

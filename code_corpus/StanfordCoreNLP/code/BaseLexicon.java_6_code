@@ -1,0 +1,29 @@
+  private Map<String, Counter<String>> baseTagCounts = Generics.newHashMap();
+
+  public BaseLexicon(Index<String> wordIndex, Index<String> tagIndex) {
+    this(new Options(), wordIndex, tagIndex);
+  }
+
+  public BaseLexicon(Options op, Index<String> wordIndex, Index<String> tagIndex) {
+    this.wordIndex = wordIndex;
+    this.tagIndex = tagIndex;
+
+    flexiTag = op.lexOptions.flexiTag;
+    useSignatureForKnownSmoothing = op.lexOptions.useSignatureForKnownSmoothing;
+    this.smoothInUnknownsThreshold = op.lexOptions.smoothInUnknownsThreshold;
+    this.smartMutation = op.lexOptions.smartMutation;
+    this.trainOptions = op.trainOptions;
+    this.testOptions = op.testOptions;
+    this.op = op;
+
+    // Construct UnknownWordModel by reflection -- a right pain
+    // Lexicons and UnknownWordModels aren't very well encapsulated
+    // from each other!
+
+    if (op.lexOptions.uwModelTrainer == null) {
+      this.uwModelTrainerClass = "edu.stanford.nlp.parser.lexparser.BaseUnknownWordModelTrainer";
+    } else {
+      this.uwModelTrainerClass = op.lexOptions.uwModelTrainer;
+    }
+  }
+

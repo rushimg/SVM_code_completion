@@ -1,0 +1,294 @@
+  List<Index<CRFLabel>> labelIndices;
+  Index<String> classIndex;  // didn't have <String> before. Added since that's what is assumed everywhere.
+  double[][] Ehat; // empirical counts of all the linear features [feature][class]
+  double[][] Uhat; // empirical counts of all the output layer features [num of class][input layer size]
+  double[][] What; // empirical counts of all the input layer features [input layer size][featureIndex.size()]
+  int window;
+  int numClasses;
+  int numHiddenUnits;
+  int[] map;
+  int[][][][] data;  // data[docIndex][tokenIndex][][]
+  double[][][][] featureVal;  // featureVal[docIndex][tokenIndex][][]
+  int[][] docWindowLabels;
+
+  int[][] labels;    // labels[docIndex][tokenIndex]
+  int domainDimension = -1;
+  int inputLayerSize = -1;
+  int outputLayerSize = -1;
+  int edgeParamCount = -1;
+  int numNodeFeatures = -1;
+  int numEdgeFeatures = -1;
+  int beforeOutputWeights = -1;
+  int originalFeatureCount = -1;
+
+  int[][] weightIndices;
+
+  String backgroundSymbol;
+
+  private int[][] featureGrouping = null;
+  public static boolean VERBOSE = false;
+  public static boolean DEBUG = false;
+
+  public boolean gradientsOnly = false;
+
+  public static int getPriorType(String priorTypeStr)
+  {
+    if (priorTypeStr == null) return QUADRATIC_PRIOR;  // default
+    if ("QUADRATIC".equalsIgnoreCase(priorTypeStr)) {
+      return QUADRATIC_PRIOR;
+    } else if ("L1".equalsIgnoreCase(priorTypeStr)) {
+      return L1_PRIOR;
+    } else if ("HUBER".equalsIgnoreCase(priorTypeStr)) {
+      return HUBER_PRIOR;
+    } else if ("QUARTIC".equalsIgnoreCase(priorTypeStr)) {
+      return QUARTIC_PRIOR;
+    } else if (priorTypeStr.equalsIgnoreCase("lasso") ||
+               priorTypeStr.equalsIgnoreCase("ridge") ||
+               priorTypeStr.equalsIgnoreCase("ae-lasso") ||
+               priorTypeStr.equalsIgnoreCase("g-lasso") ||
+               priorTypeStr.equalsIgnoreCase("sg-lasso") ||
+               priorTypeStr.equalsIgnoreCase("NONE") ) {
+      return NO_PRIOR;
+    } else {
+      throw new IllegalArgumentException("Unknown prior type: " + priorTypeStr);
+    }
+  }
+
+  CRFNonLinearLogConditionalObjectiveFunction(int[][][][] data, int[][] labels, int window, Index<String> classIndex, List<Index<CRFLabel>> labelIndices, int[] map, SeqClassifierFlags flags, int numNodeFeatures, int numEdgeFeatures, double[][][][] featureVal) {
+    this.window = window;
+    this.classIndex = classIndex;
+    this.numClasses = classIndex.size();
+    this.labelIndices = labelIndices;
+    this.data = data;
+    this.featureVal = featureVal;
+    this.flags = flags;
+    this.map = map;
+    this.labels = labels;
+    this.prior = getPriorType(flags.priorType);
+    this.backgroundSymbol = flags.backgroundSymbol;
+    this.sigma = flags.sigma;
+    this.outputLayerSize = numClasses;
+    this.numHiddenUnits = flags.numHiddenUnits;
+    if (flags.arbitraryInputLayerSize != -1)
+      this.inputLayerSize = flags.arbitraryInputLayerSize;
+    else
+    this.numNodeFeatures = numNodeFeatures;
+    this.numEdgeFeatures = numEdgeFeatures;
+    System.err.println("numOfEdgeFeatures: " + numEdgeFeatures);
+    this.useOutputLayer = flags.useOutputLayer;
+    this.useHiddenLayer = flags.useHiddenLayer;
+    this.useSigmoid = flags.useSigmoid;
+    this.docWindowLabels = new int[data.length][];
+    if (!useOutputLayer) {
+      System.err.println("Output layer not activated, inputLayerSize must be equal to numClasses, setting it to " + numClasses);
+      this.inputLayerSize = numClasses;
+    } else if (flags.softmaxOutputLayer && !(flags.sparseOutputLayer || flags.tieOutputLayer)) {
+      throw new RuntimeException("flags.softmaxOutputLayer == true, but neither flags.sparseOutputLayer or flags.tieOutputLayer is true");
+    }
+    empiricalCounts();
+  }
+
+  @Override
+  public int domainDimension() {
+    if (domainDimension < 0) {
+      domainDimension = 0;
+
+      originalFeatureCount = 0;
+      for (int i = 0; i < map.length; i++) {
+        int s = labelIndices.get(map[i]).size();
+        originalFeatureCount += s;
+      }
+
+      domainDimension += edgeParamCount;
+      beforeOutputWeights = domainDimension;
+      // TODO(mengqiu) temporary fix for debugging
+      if (useOutputLayer) {
+        if (flags.sparseOutputLayer) {
+        } else if (flags.tieOutputLayer) {
+        } else {
+        }
+      }
+      System.err.println("edgeParamCount: "+edgeParamCount);
+      System.err.println("originalFeatureCount: "+originalFeatureCount);
+      System.err.println("beforeOutputWeights: "+beforeOutputWeights);
+      System.err.println("domainDimension: "+domainDimension);
+    }
+    return domainDimension;
+  }
+
+  @Override 
+  //TODO(mengqiu) initialize edge feature weights to be weights from CRF
+  public double[] initial() {
+    double[] initial = new double[domainDimension()];
+    // randomly initialize weights
+    if (useHiddenLayer || useOutputLayer) {
+      double epsilon = 0.1;
+      int count = 0;
+      double val = 0;
+
+      // init edge param weights
+      for (int i = 0; i < edgeParamCount; i++) {
+        initial[count++] = val;
+      }
+
+      if (flags.blockInitialize) {
+        double fanIn = 1/Math.sqrt(numNodeFeatures+0.0);
+        int interval = numNodeFeatures / numHiddenUnits;
+        for (int i = 0; i < numHiddenUnits; i++) {
+          if (i == numHiddenUnits - 1)
+            upper = numNodeFeatures;
+          for (int j = 0; j < outputLayerSize; j++) {
+            for (int k = 0; k < numNodeFeatures; k++) {
+              val = 0;
+              if (k >= lower && k < upper) {
+              }
+              initial[count++] = val;
+            }
+          }
+        }
+        if (count != beforeOutputWeights) {
+          throw new RuntimeException("after blockInitialize, param Index (" + count + ") not equal to beforeOutputWeights (" + beforeOutputWeights + ")");
+        }
+      } else {
+        double fanIn = 1 / Math.sqrt(numNodeFeatures+0.0);
+        for (int i = edgeParamCount; i < beforeOutputWeights; i++) {
+          initial[count++] = val;
+        }
+      }
+
+      // init output layer weights
+      if (flags.sparseOutputLayer) {
+        for (int i = 0; i < outputLayerSize; i++) {
+          double total = 1;
+          for (int j = 0; j < numHiddenUnits-1; j++) {
+            initial[count++] = val;
+            total -= val;
+          }
+          initial[count++] = total;
+        }
+      } else if (flags.tieOutputLayer) {
+        double total = 1;
+        double sum = 0;
+        for (int j = 0; j < numHiddenUnits-1; j++) {
+          if (flags.hardcodeSoftmaxOutputWeights)
+            val = 1.0 / numHiddenUnits;
+          else {
+            total -= val;
+          }
+          initial[count++] = val;
+        }
+        if (flags.hardcodeSoftmaxOutputWeights)
+          initial[count++] = 1.0 / numHiddenUnits;
+        else
+          initial[count++] = total;
+      } else {
+        for (int i = beforeOutputWeights; i < domainDimension(); i++) {
+          initial[count++] = val;
+        }
+      }
+      if (count != domainDimension()) {
+        throw new RuntimeException("after param initialization, param Index (" + count + ") not equal to domainDimension (" + domainDimension() + ")");
+      }
+    }
+    return initial;
+  }
+
+  private void empiricalCounts() {
+    Ehat = empty2D();
+
+    for (int m = 0; m < data.length; m++) {
+      int[][][] docData = data[m];
+      int[] docLabels = labels[m];
+      int[] windowLabels = new int[window];
+      Arrays.fill(windowLabels, classIndex.indexOf(backgroundSymbol));
+      
+      if (docLabels.length>docData.length) { // only true for self-training
+        // fill the windowLabel array with the extra docLabels
+        System.arraycopy(docLabels, 0, windowLabels, 0, windowLabels.length);
+        // shift the docLabels array left
+        int[] newDocLabels = new int[docData.length];
+        System.arraycopy(docLabels, docLabels.length-newDocLabels.length, newDocLabels, 0, newDocLabels.length);
+        docLabels = newDocLabels;
+      }
+      for (int i = 0; i < docData.length; i++) {
+        System.arraycopy(windowLabels, 1, windowLabels, 0, window - 1);
+        windowLabels[window - 1] = docLabels[i];
+        // for (int j = 1; j < docData[i].length; j++) { // j starting from 1, skip all node features
+        //TODO(mengqiu) generalize this for bigger cliques
+        int j = 1;
+        int[] cliqueLabel = new int[j + 1];
+        System.arraycopy(windowLabels, window - 1 - j, cliqueLabel, 0, j + 1);
+        CRFLabel crfLabel = new CRFLabel(cliqueLabel);
+        int labelIndex = labelIndices.get(j).indexOf(crfLabel);
+        int[] cliqueFeatures = docData[i][j];
+        //System.err.println(crfLabel + " " + labelIndex);
+        for (int n = 0; n < cliqueFeatures.length; n++) {
+          Ehat[cliqueFeatures[n]][labelIndex]++;
+        }
+      }
+    }
+  }
+
+  private double[][] emptyU() {
+    int innerSize = inputLayerSize;
+    if (flags.sparseOutputLayer || flags.tieOutputLayer) {
+      innerSize = numHiddenUnits;
+    }
+    int outerSize = outputLayerSize;
+    if (flags.tieOutputLayer) {
+      outerSize = 1;
+    }
+
+    double[][] temp = new double[outerSize][innerSize];
+    for (int i = 0; i < outerSize; i++) {
+      temp[i] = new double[innerSize];
+    }
+    return temp;
+  }
+
+  private double[][] emptyW() {
+    // TODO(mengqiu) temporary fix for debugging
+    double[][] temp = new double[inputLayerSize][numNodeFeatures];
+    for (int i = 0; i < inputLayerSize; i++) {
+      temp[i] = new double[numNodeFeatures];
+    }
+    return temp;
+  }
+
+  public Triple<double[][], double[][], double[][]> separateWeights(double[] x) {
+    double[] linearWeights = new double[edgeParamCount];
+    System.arraycopy(x, 0, linearWeights, 0, edgeParamCount);
+    double[][] linearWeights2D = to2D(linearWeights);
+    int index = edgeParamCount;
+
+    double[][] inputLayerWeights = emptyW();
+    for (int i = 0; i < inputLayerWeights.length; i++) {
+      for (int j = 0; j < inputLayerWeights[i].length; j++) {
+        inputLayerWeights[i][j] = x[index++];
+      }
+    }
+
+    double[][] outputLayerWeights = emptyU();
+    for (int i = 0; i < outputLayerWeights.length; i++) {
+      for (int j = 0; j < outputLayerWeights[i].length; j++) {
+        if (useOutputLayer) {
+          if (flags.hardcodeSoftmaxOutputWeights)
+            outputLayerWeights[i][j] = 1.0 / numHiddenUnits;
+          else 
+            outputLayerWeights[i][j] = x[index++];
+        } else
+          outputLayerWeights[i][j] = 1;
+      }
+    }
+    assert(index == x.length);
+    return new Triple<double[][], double[][], double[][]>(linearWeights2D, inputLayerWeights, outputLayerWeights);
+  }
+
+  public CliquePotentialFunction getCliquePotentialFunction(double[] x) {
+    Triple<double[][], double[][], double[][]> allParams = separateWeights(x);
+    double[][] linearWeights = allParams.first();
+    double[][] W = allParams.second(); // inputLayerWeights 
+    double[][] U = allParams.third(); // outputLayerWeights 
+    return new NonLinearCliquePotentialFunction(linearWeights, W, U, flags);
+  }
+

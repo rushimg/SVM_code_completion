@@ -1,0 +1,23 @@
+  private String setupMorphoFeatures(String activeFeats) {
+    String[] feats = activeFeats.split(",");
+    morphoSpec = tlp.morphFeatureSpec();
+    for(String feat : feats) {
+      MorphoFeatureType fType = MorphoFeatureType.valueOf(feat.trim());
+      morphoSpec.activate(fType);
+    }
+    return morphoSpec.toString();
+  }
+
+  private void removeBaselineFeature(String featName) {
+    if(baselineFeatures.contains(featName)) {
+      baselineFeatures.remove(featName);
+      Pair<TregexPattern,Function<TregexMatcher,String>> p = annotationPatterns.get(featName);
+      activeAnnotations.remove(p);
+    }
+  }
+
+  @Override
+  public void display() {
+    System.err.println(optionsString.toString());
+  }
+

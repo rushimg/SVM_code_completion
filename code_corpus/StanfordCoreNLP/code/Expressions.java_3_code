@@ -1,0 +1,53 @@
+  public abstract static class TypedExpression implements Expression, Serializable {
+    String typename;
+    Tags tags;
+
+    public TypedExpression(String typename, String... tags) {
+      this.typename = typename;
+      if (tags != null) {
+        this.tags = new Tags(tags);
+      }
+    }
+
+    public Tags getTags() {
+      return tags;
+    }
+
+    public void setTags(Tags tags) {
+      this.tags = tags;
+    }
+
+    public String getType() {
+      return typename;
+    }
+
+    public Expression simplify(Env env) {
+      return this;
+    }
+
+    public boolean hasValue() {
+      return false;
+    }
+
+    private static final long serialVersionUID = 2;
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (!(o instanceof TypedExpression)) return false;
+
+      TypedExpression that = (TypedExpression) o;
+
+      if (tags != null ? !tags.equals(that.tags) : that.tags != null) return false;
+      if (typename != null ? !typename.equals(that.typename) : that.typename != null) return false;
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      int result = typename != null ? typename.hashCode() : 0;
+      return result;
+    }
+  }
+

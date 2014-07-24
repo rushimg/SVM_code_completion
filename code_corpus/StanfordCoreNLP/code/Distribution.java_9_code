@@ -1,0 +1,55 @@
+  public static <E> Distribution<E> getDistributionFromLogValues(Counter<E> counter) {
+    Counter<E> c = new ClassicCounter<E>();
+    // go through once to get the max
+    // shift all by max so as to minimize the possibility of underflow
+    double max = Counters.max(counter); // Thang 17Feb12: max should operate on counter instead of c, fixed!
+    for (E key : counter.keySet()) {
+      double count = Math.exp(counter.getCount(key) - max);
+      c.setCount(key, count);
+    }
+    return getDistribution(c);
+  }
+
+  public static <E> Distribution<E> absolutelyDiscountedDistribution(Counter<E> counter, int numberOfKeys, double discount) {
+    Distribution<E> norm = new Distribution<E>();
+    norm.counter = new ClassicCounter<E>();
+    double total = counter.totalCount();
+    double reservedMass = 0.0;
+    for (E key : counter.keySet()) {
+      double count = counter.getCount(key);
+      if (count > discount) {
+        double newCount = (count - discount) / total;
+        norm.counter.setCount(key, newCount); // a positive count left over
+        //        System.out.println("seen: " + newCount);
+        reservedMass += discount;
+      } else { // count <= discount
+        reservedMass += count;
+        // if the count <= discount, don't put key in counter, and we treat it as unseen!!
+      }
+    }
+    norm.numberOfKeys = numberOfKeys;
+    norm.reservedMass = reservedMass / total;
+    if (verbose) {
+      System.err.println("unseenKeys=" + (norm.numberOfKeys - norm.counter.size()) + " seenKeys=" + norm.counter.size() + " reservedMass=" + norm.reservedMass);
+      double zeroCountProb = (norm.reservedMass / (numberOfKeys - norm.counter.size()));
+      System.err.println("0 count prob: " + zeroCountProb);
+      if (discount >= 1.0) {
+        System.err.println("1 count prob: " + zeroCountProb);
+      } else {
+        System.err.println("1 count prob: " + (1.0 - discount) / total);
+      }
+      if (discount >= 2.0) {
+        System.err.println("2 count prob: " + zeroCountProb);
+      } else {
+        System.err.println("2 count prob: " + (2.0 - discount) / total);
+      }
+      if (discount >= 3.0) {
+        System.err.println("3 count prob: " + zeroCountProb);
+      } else {
+        System.err.println("3 count prob: " + (3.0 - discount) / total);
+      }
+    }
+    //    System.out.println("UNSEEN: " + reservedMass / total / (numberOfKeys - counter.size()));
+    return norm;
+  }
+

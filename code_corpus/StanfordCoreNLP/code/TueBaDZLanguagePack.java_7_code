@@ -1,0 +1,57 @@
+  @Override
+  public char[] labelAnnotationIntroducingCharacters() {
+    return annotationIntroducingChars;
+  }
+
+  @Override
+  public String[] punctuationTags() {
+    return tuebadzPunctTags;
+  }
+
+  @Override
+  public String[] punctuationWords() {
+    return tuebadzPunctWords;
+  }
+
+  @Override
+  public String[] sentenceFinalPunctuationTags() {
+    return tuebadzSFPunctTags;
+  }
+
+  @Override
+  public String[] startSymbols() {
+    return new String[] {"TOP"};
+  }
+
+  public String[] sentenceFinalPunctuationWords() {
+    return tuebadzSFPunctWords;
+  }
+
+  public String treebankFileExtension() {
+    return ".penn";
+  }
+
+  private boolean leaveGF = false;
+
+  @Override
+  public String basicCategory(String category) {
+    String basicCat = super.basicCategory(category);
+    if(!leaveGF) {
+      basicCat = stripGF(basicCat);
+    }
+    return basicCat;
+  }
+
+  @Override
+  public String stripGF(String category) {
+    if(category == null) {
+      return null;
+    }
+    int index = category.lastIndexOf(gfCharacter);
+    if(index > 0) {
+      if(!limitedGF || !containsKeptGF(category, index))
+        category = category.substring(0, index);
+    }
+    return category;
+  }
+

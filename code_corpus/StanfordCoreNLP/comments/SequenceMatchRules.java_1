@@ -1,0 +1,144 @@
+/**
+ * Rules for matching sequences using regular expressions
+ * <p>
+ * There are 2 types of rules:
+ * <ol>
+ * <li><b>Assignment rules</b> which assign a value to a variable for later use.
+ * </li>
+ * <li><b>Extraction rules</b> which specifies how regular expression patterns are to be matched against text,
+ *   which matched text expressions are to extracted, and what value to assign to the matched expression.</li>
+ * </ol>
+ * </p>
+ *
+ * NOTE: <code>#</code> or <code>//</code> can be used to indicates one-line comments
+ *
+ * <p><b>Assignment Rules</b> are used to assign values to variables.
+ *     The basic format is: <code>variable = value</code>
+ * </p>
+ * <p>
+ * <em>Variable Names</em>:
+ *   <ul>
+ *     <li>Variable names should follow the pattern [A-Za-z_][A-Za-z0-9_]*</li>
+ *     <li>Variable names for use in regular expressions (to be expanded later) must start with <code>$</code></li>
+ *   </ul>
+ * </p>
+ * <p>
+ * <em>Value Types</em>:
+ * <table>
+ *   <tr><th>Type</th><th>Format</th><th>Example</th><th>Description</th></tr>
+ *   <tr><td><code>BOOLEAN</code></td><td><code>TRUE | FALSE</code></td><td><code>TRUE</code></td><td></td></tr>
+ *   <tr><td><code>STRING</code></td><td><code>"..."</code></td><td><code>"red"</code></td><td></td></tr>
+ *   <tr><td><code>INTEGER</code></td><td><code>[+-]\d+</code></td><td><code>1500</code></td><td></td></tr>
+ *   <tr><td><code>LONG</code></td><td><code>[+-]\d+L</code></td><td><code>1500000000000L</code></td><td></td></tr>
+ *   <tr><td><code>DOUBLE</code></td><td><code>[+-]\d*\.\d+</code></td><td><code>6.98</code></td><td></td></tr>
+ *   <tr><td><code>REGEX</code></td><td><code>/.../</code></td><td><code>/[Aa]pril/</code></td>
+ *       <td>String regular expression {@link Pattern}</td></tr>
+ *   <tr><td><code>TOKENS_REGEX</code></td><td><code>( [...] [...] ... ) </code></td><td><code>( /up/ /to/ /4/ /months/ )</code></td>
+ *       <td>Tokens regular expression {@link TokenSequencePattern}</td></tr>
+ *   <tr><td><code>LIST</code></td><td><code>( [item1] , [item2], ... )</code></td><td><code>("red", "blue", "yellow" )</code></td>
+ *       <td></td></tr>
+ * </table>
+ * </p>
+ * <p>
+ * Some typical uses and examples for assignment rules include:
+ * <ol>
+ *  <li>Assignment of value to variables for use in later rules</li>
+ *  <li>Binding of text key to annotation key (as <code>Class</code>).
+ *    <pre>
+ *      tokens = { type: "CLASS", value: "edu.stanford.nlp.ling.CoreAnnotations$TokensAnnotation" }
+ *    </pre>
+ *  </li>
+ *  <li>Defining regular expressions macros to be embedded in other regular expressions
+ *    <pre>
+ *      $SEASON = "/spring|summer|fall|autumn|winter/"
+ *      $NUM = ( [ { numcomptype:NUMBER } ] )
+ *    </pre>
+ *  </li>
+ *  <li>Setting default environment variables.
+ *      Rules are applied with respect to an environment ({@link Env}), which can be accessed using the variable <code>ENV</code>.
+ *      Members of the Environment can be set as needed.
+ *    <pre>
+ *      # Set default parameters to be used when reading rules
+ *      ENV.defaults["ruleType"] = "tokens"
+ *      # Set default string pattern flags (to case-insensitive)
+ *      ENV.defaultStringPatternFlags = 2
+ *      # Specifies that the result should go into the <code>tokens</code>  key (as defined above).
+ *      ENV.defaultResultAnnotationKey = tokens
+ *    </pre>
+ *  </li>
+ *  <li>Defining options</li>
+ * </ol>
+ * </p>
+ *
+ * Predefined values are:
+ * <table>
+ *   <tr><th>Variable</th><th>Type</th><th>Description</th></tr>
+ *   <tr><td><code>ENV</code></td><td>{@link Env}</td><td>The environment with respect to which the rules are applied.</td></tr>
+ *   <tr><td><code>TRUE</code></td><td><code>BOOLEAN</code></td><td>The <code>Boolean</code>  value <code>true</code>.</td></tr>
+ *   <tr><td><code>FALSE</code></td><td><code>BOOLEAN</code></td><td>The <code>Boolean</code> value <code>false</code>.</td></tr>
+ *   <tr><td><code>NIL</code></td><td><code></code></td><td>The <code>null</code> value.</td></tr>
+ *   <tr><td><code>tags</code></td><td><code>Class</code></td><td>The annotation key {@link edu.stanford.nlp.ling.tokensregex.types.Tags.TagsAnnotation}.</td></tr>
+ * </table>
+ * </p>
+ * <p><b>Extraction Rules</b> specifies how regular expression patterns are to be matched against text.
+ * See {@link CoreMapExpressionExtractor} for more information on the types of the rules, and in what sequence the rules are applied.
+ * A basic rule can be specified using the following template:
+ * <pre>{
+ *        # Type of the rule
+ *        ruleType: "tokens" | "text" | "composite" | "filter",
+ *        # Pattern to match against
+ *        pattern: ( &lt;TokenSequencePattern&gt; ) | /&lt;TextPattern&gt;/,
+ *        # Resulting value to go into the resulting annotation
+ *        result: ...
+ *
+ *        # More fields following...
+ *      }
+ * </pre>
+ * Example:
+ * <pre>
+ *   {
+ *     ruleType: "tokens",
+ *     pattern: ( /one/ ),
+ *     result: 1
+ *   }
+ * </pre>
+ * </p>
+ * Extraction rule fields (most fields are optional):
+ * <table>
+ *   <tr><th>Field</th><th>Values</th><th>Example</th><th>Description</th></tr>
+ *   <tr><td><code>ruleType</code></td><td><code>"tokens" | "text" | "composite" | "filter" </code></td>
+ *      <td><code>tokens</code></td><td>Type of the rule (required).</td></tr>
+ *   <tr><td><code>pattern</code></td><td><code>&lt;Token Sequence Pattern&gt; = (...) | &lt;Text Pattern&gt; = /.../</code></td>
+ *      <td><code>( /winter/ /of/ $YEAR )</code></td><td>Pattern to match against.
+ *      See {@link TokenSequencePattern} and {@link Pattern} for
+ *      how to specify patterns over tokens and strings (required).</td></tr>
+ *   <tr><td><code>action</code></td><td><code>&lt;Action List&gt; = (...)</code></td>
+ *      <td><code>( Annotate($0, ner, "DATE") )</code></td><td>List of actions to apply when the pattern is triggered.
+ *      Each action is a {@link Expressions TokensRegex Expression}</td></tr>
+ *   <tr><td><code>result</code></td><td><code>&lt;Expression&gt;</code></td>
+ *      <td><code></code></td><td>Resulting value to go into the resulting annotation.  See {@link Expressions} for how to specify the result.</td></tr>
+ *   <tr><td><code>name</code></td><td><code>STRING</code></td>
+ *      <td><code></code></td><td>Name to identify the extraction rule.</td></tr>
+ *   <tr><td><code>stage</code></td><td><code>INTEGER</code></td>
+ *      <td><code></code></td><td>Stage at which the rule is to be applied.  Rules are grouped in stages, which are applied from lowest to highest.</td></tr>
+ *   <tr><td><code>active</code></td><td><code>Boolean</code></td>
+ *      <td><code></code></td><td>Whether this rule is enabled (active) or not (default true).</td></tr>
+ *   <tr><td><code>priority</code></td><td><code>DOUBLE</code></td>
+ *      <td><code></code></td><td>Priority of rule.  Within a stage, matches from higher priority rules are preferred.</td></tr>
+ *   <tr><td><code>weight</code></td><td><code>DOUBLE</code></td>
+ *      <td><code></code></td><td>Weight of rule (not currently used).</td></tr>
+ *   <tr><td><code>over</code></td><td><code>CLASS</code></td>
+ *      <td><code></code></td><td>Annotation field to check pattern against.</td></tr>
+ *   <tr><td><code>matchFindType</code></td><td><code>FIND_NONOVERLAPPING | FIND_ALL</code></td>
+ *      <td><code></code></td><td>Whether to find all matched expression or just the nonoverlapping ones (default <code>FIND_NONOVERLAPPING</code>).</td></tr>
+ *   <tr><td><code>matchWithResults</code></td><td><code>Boolean</code></td>
+ *      <td><code></code></td><td>Whether results of the matches should be returned (default false).
+ *        Set to true to access captured groups of embedded regular expressions.</td></tr>
+ *   <tr><td><code>matchedExpressionGroup</code></td><td><code>Integer</code></td>
+ *      <td><code></code></td><td>What group should be treated as the matched expression group (default 0).</td></tr>
+ * </table>
+ *
+ * @author Angel Chang
+ * @see CoreMapExpressionExtractor
+ * @see TokenSequencePattern
+ */

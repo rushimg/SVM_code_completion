@@ -1,0 +1,45 @@
+/**
+ * Implementation of {@link BackOff} that increases the back off period for each retry attempt using
+ * a randomization function that grows exponentially.
+ *
+ * <p>
+ * {@link #nextBackOffMillis()} is calculated using the following formula:
+ * </p>
+ *
+ * <pre>
+       retry_interval * (random value in range [1 - randomization_factor, 1 + randomization_factor])
+ * </pre>
+ *
+ * <p>
+ * In other words {@link #nextBackOffMillis()} will range between the randomization factor
+ * percentage below and above the retry interval. For example, using 2 seconds as the base retry
+ * interval and 0.5 as the randomization factor, the actual back off period used in the next retry
+ * attempt will be between 1 and 3 seconds.
+ * </p>
+ *
+ * <p>
+ * <b>Note:</b> max_interval caps the retry_interval and not the randomized_interval.
+ * </p>
+ *
+ * <p>
+ * If the time elapsed since an {@link ExponentialBackOff} instance is created goes past the
+ * max_elapsed_time then the method {@link #nextBackOffMillis()} starts returning
+ * {@link BackOff#STOP}. The elapsed time can be reset by calling {@link #reset()}.
+ * </p>
+ *
+ * <p>
+ * Example: The default retry_interval is .5 seconds, default randomization_factor is 0.5, default
+ * multiplier is 1.5 and the default max_interval is 1 minute. For 10 tries the sequence will be
+ * (values in seconds) and assuming we go over the max_elapsed_time on the 10th try:
+ * </p>
+ *
+ * <pre>
+ * </pre>
+ *
+ * <p>
+ * Implementation is not thread-safe.
+ * </p>
+ *
+ * @since 1.15
+ * @author Ravi Mistry
+ */

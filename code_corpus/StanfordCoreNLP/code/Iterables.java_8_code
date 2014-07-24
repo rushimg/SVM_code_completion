@@ -1,0 +1,38 @@
+  public static <T> Iterable<T> drop(
+      final Iterable<T> iterable, final int toDrop) {
+
+    return new Iterable<T>() {
+      final Iterator<T> iterator = iterable.iterator();
+
+      // @Override
+      public Iterator<T> iterator() {
+        return new Iterator<T>() {
+          int skipped = 0;
+
+          // @Override
+          public boolean hasNext() {
+            while (skipped < toDrop && iterator.hasNext()) {
+              iterator.next();
+              skipped += 1;
+            }
+            return iterator.hasNext();
+          }
+
+          // @Override
+          public T next() {
+            while (skipped < toDrop && iterator.hasNext()) {
+              iterator.next();
+              skipped += 1;
+            }
+            return iterator.next();
+          }
+
+          // @Override
+          public void remove() {
+            iterator.remove();
+          }
+        };
+      }
+    };
+  }
+

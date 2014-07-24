@@ -1,0 +1,26 @@
+  public synchronized int read() throws IOException {
+    if (in == null) {
+      throw new IOException("Stream Closed");
+    }
+
+    byte result;
+    if (slack != null && begin < slack.length) {
+      result = slack[begin];
+      if (++begin == slack.length) {
+        slack = null;
+      }
+    } else {
+      byte[] buf = new byte[1];
+      if (read(buf, 0, 1) <= 0) {
+        result = -1;
+      }
+      result = buf[0];
+    }
+
+    if (result < -1) {
+      result += 256;
+    }
+
+    return result;
+  }
+

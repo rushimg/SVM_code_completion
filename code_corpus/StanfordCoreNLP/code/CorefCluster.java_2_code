@@ -1,0 +1,44 @@
+  public static void mergeClusters(CorefCluster to, CorefCluster from) {
+    int toID = to.clusterID;
+    for (Mention m : from.corefMentions){
+      m.corefClusterID = toID;
+    }
+    if(Constants.SHARE_ATTRIBUTES){
+      to.numbers.addAll(from.numbers);
+      if(to.numbers.size() > 1 && to.numbers.contains(Number.UNKNOWN)) {
+        to.numbers.remove(Number.UNKNOWN);
+      }
+
+      to.genders.addAll(from.genders);
+      if(to.genders.size() > 1 && to.genders.contains(Gender.UNKNOWN)) {
+        to.genders.remove(Gender.UNKNOWN);
+      }
+
+      to.animacies.addAll(from.animacies);
+      if(to.animacies.size() > 1 && to.animacies.contains(Animacy.UNKNOWN)) {
+        to.animacies.remove(Animacy.UNKNOWN);
+      }
+
+      to.nerStrings.addAll(from.nerStrings);
+      if(to.nerStrings.size() > 1 && to.nerStrings.contains("O")) {
+        to.nerStrings.remove("O");
+      }
+      if(to.nerStrings.size() > 1 && to.nerStrings.contains("MISC")) {
+        to.nerStrings.remove("MISC");
+      }
+    }
+
+    to.heads.addAll(from.heads);
+    to.corefMentions.addAll(from.corefMentions);
+    to.words.addAll(from.words);
+    if(from.firstMention.appearEarlierThan(to.firstMention) && !from.firstMention.isPronominal()) {
+      assert !to.firstMention.appearEarlierThan(from.firstMention);
+      to.firstMention = from.firstMention;
+    }
+    if(from.representative.moreRepresentativeThan(to.representative)) to.representative = from.representative;
+    SieveCoreferenceSystem.logger.finer("merged clusters: "+toID+" += "+from.clusterID);
+    to.printCorefCluster(SieveCoreferenceSystem.logger);
+    from.printCorefCluster(SieveCoreferenceSystem.logger);
+    SieveCoreferenceSystem.logger.finer("");
+  }
+

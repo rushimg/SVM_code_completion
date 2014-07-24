@@ -1,0 +1,56 @@
+  public List<? extends HasWord> defaultTestSentence() {
+    String[] sent = {"هو","استنكر","الحكومة","يوم","امس","."};
+    return Sentence.toWordList(sent);
+  }
+
+  protected class ArabicSubcategoryStripper implements TreeTransformer {
+
+    protected final TreeFactory tf = new LabeledScoredTreeFactory();
+
+    public Tree transformTree(Tree tree) {
+      Label lab = tree.label();
+      String s = lab.value();
+
+      if (tree.isLeaf()) {
+        Tree leaf = tf.newLeaf(lab);
+        leaf.setScore(tree.score());
+        return leaf;
+
+      } else if(tree.isPhrasal()) {
+        if(retainNPTmp && s.startsWith("NP-TMP")) {
+          s = "NP-TMP";
+        } else if(retainNPSbj && s.startsWith("NP-SBJ")) {
+          s = "NP-SBJ";
+          s = tlp.basicCategory(s);
+          s += "-PRD";
+        } else {
+          s = tlp.basicCategory(s);
+        }
+
+      } else if(tree.isPreTerminal()) {
+        s = tlp.basicCategory(s);
+
+      } else {
+        System.err.printf("Encountered a non-leaf/phrasal/pre-terminal node %s\n",s);
+        //Normalize by default
+        s = tlp.basicCategory(s);
+      }
+
+      // Recursively process children depth-first
+      List<Tree> children = new ArrayList<Tree>(tree.numChildren());
+      for (Tree child : tree.getChildrenAsList()) {
+        Tree newChild = transformTree(child);
+        children.add(newChild);
+      }
+
+      // Make the new parent label
+      Tree node = tf.newTreeNode(lab, children);
+      node.setValue(s);
+      node.setScore(tree.score());
+      if(node.label() instanceof HasTag)
+        ((HasTag) node.label()).setTag(s);
+
+      return node;
+    }
+  }
+

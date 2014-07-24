@@ -1,0 +1,78 @@
+  &#64;Override
+  public MyObject clone() {
+    try {
+      &#64;SuppressWarnings("unchecked")
+      MyObject result = (MyObject) super.clone();
+      Data.deepCopy(this, result);
+      return result;
+    } catch (CloneNotSupportedException e) {
+      throw new IllegalStateException(e);
+    }
+  }
+  public static void deepCopy(Object src, Object dest) {
+    Class<?> srcClass = src.getClass();
+    Preconditions.checkArgument(srcClass == dest.getClass());
+    if (srcClass.isArray()) {
+      // clone array
+      Preconditions.checkArgument(Array.getLength(src) == Array.getLength(dest));
+      int index = 0;
+      for (Object value : Types.iterableOf(src)) {
+        Array.set(dest, index++, clone(value));
+      }
+    } else if (Collection.class.isAssignableFrom(srcClass)) {
+      // clone collection
+      @SuppressWarnings("unchecked")
+      Collection<Object> srcCollection = (Collection<Object>) src;
+      if (ArrayList.class.isAssignableFrom(srcClass)) {
+        @SuppressWarnings("unchecked")
+        ArrayList<Object> destArrayList = (ArrayList<Object>) dest;
+        destArrayList.ensureCapacity(srcCollection.size());
+      }
+      @SuppressWarnings("unchecked")
+      Collection<Object> destCollection = (Collection<Object>) dest;
+      for (Object srcValue : srcCollection) {
+        destCollection.add(clone(srcValue));
+      }
+    } else {
+      // clone generic data or a non-map Object
+      boolean isGenericData = GenericData.class.isAssignableFrom(srcClass);
+      if (isGenericData || !Map.class.isAssignableFrom(srcClass)) {
+        ClassInfo classInfo =
+            isGenericData ? ((GenericData) src).classInfo : ClassInfo.of(srcClass);
+        for (String fieldName : classInfo.names) {
+          FieldInfo fieldInfo = classInfo.getFieldInfo(fieldName);
+          // skip final fields
+          if (!fieldInfo.isFinal()) {
+            // generic data already has primitive types copied by clone()
+            if (!isGenericData || !fieldInfo.isPrimitive()) {
+              Object srcValue = fieldInfo.getValue(src);
+              if (srcValue != null) {
+                fieldInfo.setValue(dest, clone(srcValue));
+              }
+            }
+          }
+        }
+      } else if (ArrayMap.class.isAssignableFrom(srcClass)) {
+        // clone array map
+        @SuppressWarnings("unchecked")
+        ArrayMap<Object, Object> destMap = (ArrayMap<Object, Object>) dest;
+        @SuppressWarnings("unchecked")
+        ArrayMap<Object, Object> srcMap = (ArrayMap<Object, Object>) src;
+        int size = srcMap.size();
+        for (int i = 0; i < size; i++) {
+          Object srcValue = srcMap.getValue(i);
+          destMap.set(i, clone(srcValue));
+        }
+      } else {
+        // clone map
+        @SuppressWarnings("unchecked")
+        Map<String, Object> destMap = (Map<String, Object>) dest;
+        @SuppressWarnings("unchecked")
+        Map<String, Object> srcMap = (Map<String, Object>) src;
+        for (Map.Entry<String, Object> srcEntry : srcMap.entrySet()) {
+          destMap.put(srcEntry.getKey(), clone(srcEntry.getValue()));
+        }
+      }
+    }
+  }
+

@@ -1,0 +1,46 @@
+  public void resetDocs() {
+    maxID = -1;
+    currentDocumentID = null;
+  }
+
+  public Document arrange(
+      Annotation anno,
+      List<List<CoreLabel>> words,
+      List<Tree> trees,
+      List<List<Mention>> unorderedMentions) throws Exception {
+    return arrange(anno, words, trees, unorderedMentions, null, false);
+  }
+
+  protected int getHeadIndex(Tree t) {
+    // The trees passed in do not have the CoordinationTransformer
+    // applied, but that just means the SemanticHeadFinder results are
+    // slightly worse.
+    Tree ht = t.headTerminal(headFinder);
+    if(ht==null) return -1;  // temporary: a key which is matched to nothing
+    CoreLabel l = (CoreLabel) ht.label();
+    return l.get(CoreAnnotations.IndexAnnotation.class);
+  }
+  private String treeToKey(Tree t) {
+    int idx = getHeadIndex(t);
+    String key = Integer.toString(idx) + ':' + t.toString();
+    return key;
+  }
+
+  public Document arrange(
+      Annotation anno,
+      List<List<CoreLabel>> words,
+      List<Tree> trees,
+      List<List<Mention>> unorderedMentions,
+      List<List<Mention>> unorderedGoldMentions,
+      boolean doMergeLabels) throws Exception {
+    List<List<Mention>> predictedOrderedMentionsBySentence = arrange(anno, words, trees, unorderedMentions, doMergeLabels);
+    List<List<Mention>> goldOrderedMentionsBySentence = null;
+//    SieveCoreferenceSystem.debugPrintMentions(System.err, "UNORDERED GOLD MENTIONS:", unorderedGoldMentions);
+
+    if(unorderedGoldMentions != null) {
+      goldOrderedMentionsBySentence = arrange(anno, words, trees, unorderedGoldMentions, doMergeLabels);
+    }
+//    SieveCoreferenceSystem.debugPrintMentions(System.err, "ORDERED GOLD MENTIONS:", goldOrderedMentionsBySentence);
+    return new Document(anno, predictedOrderedMentionsBySentence, goldOrderedMentionsBySentence, dictionaries);
+  }
+

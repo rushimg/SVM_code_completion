@@ -1,0 +1,28 @@
+  public CoreNLPProtos.CorefChain toProto(CorefChain chain) {
+    CoreNLPProtos.CorefChain.Builder builder = CoreNLPProtos.CorefChain.newBuilder();
+    // Set ID
+    builder.setChainID(chain.getChainID());
+    // Set mentions
+    Map<CorefChain.CorefMention, Integer> mentionToIndex = new IdentityHashMap<CorefChain.CorefMention, Integer>();
+    for (Map.Entry<IntPair, Set<CorefChain.CorefMention>> entry : chain.getMentionMap().entrySet()) {
+      for (CorefChain.CorefMention mention : entry.getValue()) {
+        mentionToIndex.put(mention, mentionToIndex.size());
+        builder.addMention(CoreNLPProtos.CorefChain.CorefMention.newBuilder()
+            .setMentionID(mention.mentionID)
+            .setMentionType(mention.mentionType.name())
+            .setNumber(mention.number.name())
+            .setGender(mention.gender.name())
+            .setAnimacy(mention.animacy.name())
+            .setStartIndex(mention.startIndex - 1)
+            .setEndIndex(mention.endIndex - 1)
+            .setHeadIndex(mention.headIndex - 1)
+            .setSentenceIndex(mention.sentNum - 1)
+            .setPosition(mention.position.get(1)) );
+      }
+    }
+    // Set representative mention
+    builder.setRepresentative( mentionToIndex.get(chain.getRepresentativeMention()) );
+    // Return
+    return builder.build();
+  }
+

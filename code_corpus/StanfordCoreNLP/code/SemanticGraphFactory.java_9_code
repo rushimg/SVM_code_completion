@@ -1,0 +1,102 @@
+  public static SemanticGraph makeFromTree(Tree tree,
+                                           Mode mode,
+                                           boolean includeExtras,
+                                           boolean threadSafe,
+                                           Filter<TypedDependency> filter,
+                                           String docID, int sentIndex) {
+    Filter<String> wordFilt;
+    if (INCLUDE_PUNCTUATION_DEPENDENCIES) {
+      wordFilt = Filters.acceptFilter();
+    } else {
+      wordFilt = new PennTreebankLanguagePack().punctuationWordRejectFilter();
+    }
+    GrammaticalStructure gs = new EnglishGrammaticalStructure(tree,
+            wordFilt,
+            new SemanticHeadFinder(true),
+            threadSafe);
+    return makeFromTree(gs, mode, includeExtras,
+                        threadSafe, filter, docID, sentIndex);
+  }
+
+
+  // TODO: these booleans would be more readable as enums similar to Mode.
+  // Then the arguments would make more sense
+  public static SemanticGraph makeFromTree(GrammaticalStructure gs,
+                                           Mode mode,
+                                           boolean includeExtras,
+                                           boolean threadSafe,
+                                           Filter<TypedDependency> filter,
+                                           String docID, int sentIndex) {
+    addProjectedCategoriesToGrammaticalStructure(gs);
+    Collection<TypedDependency> deps;
+    switch(mode) {
+    case COLLAPSED_TREE:
+      deps = gs.typedDependenciesCollapsedTree();
+      break;
+    case COLLAPSED:
+      deps = gs.typedDependenciesCollapsed(includeExtras);
+      break;
+    case CCPROCESSED:
+      deps = gs.typedDependenciesCCprocessed(includeExtras);
+      break;
+    case BASIC:
+      deps = gs.typedDependencies(includeExtras);
+      break;
+    default:
+      throw new IllegalArgumentException("Unknown mode " + mode);
+    }
+
+    if (filter != null) {
+      List<TypedDependency> depsFiltered = Generics.newArrayList();
+      for (TypedDependency td : deps) {
+        if (filter.accept(td)) {
+          depsFiltered.add(td);
+        }
+      }
+      deps = depsFiltered;
+    }
+
+    // there used to be an if clause that filtered out the case of empty
+    // dependencies. However, I could not understand (or replicate) the error
+    // it alluded to, and it led to empty dependency graphs for very short fragments,
+    // which meant they were ignored by the RTE system. Changed. (pado)
+    // See also the SemanticGraph constructor.
+
+    //System.err.println(deps.toString());
+    return new SemanticGraph(deps, docID, sentIndex);
+  }
+
+
+  public static SemanticGraph makeFromTree(GrammaticalStructure structure,
+      String docID, int sentIndex) {
+    return makeFromTree(structure, Mode.BASIC, false,
+                        false, null, docID, sentIndex);
+  }
+
+
+  public static SemanticGraph makeFromTree(Tree tree,
+                                           Mode mode,
+                                           boolean includeExtras,
+                                           Filter<TypedDependency> filter) {
+    return makeFromTree(tree, mode, includeExtras,
+                        false, filter);
+  }
+
+
+  public static SemanticGraph makeFromTree(Tree tree,
+                                           Mode mode,
+                                           boolean includeExtras,
+                                           boolean threadSafe) {
+    return makeFromTree(tree, mode, includeExtras,
+                        threadSafe, null);
+  }
+
+  public static SemanticGraph makeFromTree(GrammaticalStructure gs,
+                                           Mode mode,
+                                           boolean includeExtras,
+                                           boolean threadSafe) {
+    return makeFromTree(gs, mode, includeExtras,
+                        threadSafe, null, "", 0);
+  }
+
+

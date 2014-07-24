@@ -1,0 +1,44 @@
+    public BrownBacktrackColoring(final Graph<V, E> g)
+    {
+        super(g);
+    }
+
+    //~ Methods ----------------------------------------------------------------
+
+    void recursiveColor(int pos)
+    {
+        _colorCount[pos] = _colorCount[pos - 1];
+        _allowedColors[pos].set(0, _colorCount[pos] + 1);
+        for (int i = 0; i < _neighbors[pos].length; i++) {
+            final int nb = _neighbors[pos][i];
+            if (_color[nb] > 0) {
+                _allowedColors[pos].clear(_color[nb]);
+            }
+        }
+        for (
+            int i = 1;
+            (i <= _colorCount[pos])
+            && (_colorCount[pos] < _chi);
+            i++)
+        {
+            if (_allowedColors[pos].get(i)) {
+                _color[pos] = i;
+                if (pos < (_neighbors.length - 1)) {
+                    recursiveColor(pos + 1);
+                } else {
+                    _chi = _colorCount[pos];
+                }
+            }
+        }
+        if ((_colorCount[pos] + 1) < _chi) {
+            _colorCount[pos]++;
+            _color[pos] = _colorCount[pos];
+            if (pos < (_neighbors.length - 1)) {
+                recursiveColor(pos + 1);
+            } else {
+                _chi = _colorCount[pos];
+            }
+        }
+        _color[pos] = 0;
+    }
+

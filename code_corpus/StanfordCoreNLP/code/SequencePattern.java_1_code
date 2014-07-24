@@ -1,0 +1,166 @@
+public class SequencePattern<T> {
+  // TODO:
+  //  1. Validate backref capture groupid
+  //  2. Actions
+  //  3. Inconsistent templating with T
+  //  4. Match sequence begin/end (update TokensSequenceParser to map ^ => SEQ_BEGIN_PATTERN_EXPR, and $ to SEQ_END_PATTERN_EXPR)
+  //  5. Update TokensSequenceParser to handle backref of other attributes (\9{attr1,attr2,...})
+  private String patternStr;
+  private PatternExpr patternExpr;
+  private SequenceMatchAction<T> action;
+  State root;
+  int totalGroups = 0;
+
+  // binding of group number to variable name
+  VarGroupBindings varGroupBindings;
+
+  // Priority associated with the pattern (higher priority patterns should take precedence over lower priority ones)
+  double priority = 0.0;
+  // Weight associated with the pattern
+  double weight = 0.0;
+
+  protected SequencePattern(SequencePattern.PatternExpr nodeSequencePattern) {
+    this(null, nodeSequencePattern);
+  }
+
+  protected SequencePattern(String patternStr, SequencePattern.PatternExpr nodeSequencePattern) {
+    this(patternStr, nodeSequencePattern, null);
+  }
+
+  protected SequencePattern(String patternStr, SequencePattern.PatternExpr nodeSequencePattern,
+                            SequenceMatchAction<T> action) {
+    this.patternStr = patternStr;
+    this.patternExpr = nodeSequencePattern;
+    this.action = action;
+
+    nodeSequencePattern = new GroupPatternExpr(nodeSequencePattern, true);
+    nodeSequencePattern = nodeSequencePattern.optimize();
+    this.totalGroups = nodeSequencePattern.assignGroupIds(0);
+    Frag f = nodeSequencePattern.build();
+    f.connect(MATCH_STATE);
+    this.root = f.start;
+    varGroupBindings = new VarGroupBindings(totalGroups+1);
+    nodeSequencePattern.updateBindings(varGroupBindings);
+  }
+
+  @Override
+  public String toString() {
+    return this.pattern();
+  }
+
+  public String pattern() {
+    return patternStr;
+  }
+
+  protected PatternExpr getPatternExpr() {
+    return patternExpr;
+  }
+
+  public double getPriority() {
+    return priority;
+  }
+
+  public void setPriority(double priority) {
+    this.priority = priority;
+  }
+
+  public double getWeight() {
+    return weight;
+  }
+
+  public void setWeight(double weight) {
+    this.weight = weight;
+  }
+
+  public SequenceMatchAction<T> getAction() {
+    return action;
+  }
+
+  public void setAction(SequenceMatchAction<T> action) {
+    this.action = action;
+  }
+
+  public int getTotalGroups() {
+    return totalGroups;
+  }
+
+  // Compiles string (regex) to NFA for doing pattern simulation
+  public static <T> SequencePattern<T> compile(Env env, String string)
+  {
+    try {
+      Pair<PatternExpr, SequenceMatchAction<T>> p = env.parser.parseSequenceWithAction(env, string);
+      return new SequencePattern<T>(string, p.first(), p.second());
+    } catch (Exception ex) {
+      throw new RuntimeException("Error compiling " + string + " using environment " + env);
+    }
+    //throw new UnsupportedOperationException("Compile from string not implemented");
+  }
+
+  protected static <T> SequencePattern<T> compile(SequencePattern.PatternExpr nodeSequencePattern)
+  {
+    return new SequencePattern<T>(nodeSequencePattern);
+  }
+
+  public SequenceMatcher<T> getMatcher(List<? extends T> tokens) {
+    return new SequenceMatcher<T>(this, tokens);
+  }
+
+  public <OUT> OUT findNodePattern(Function<NodePattern<T>, OUT> filter) {
+    Queue<State> todo = new LinkedList<State>();
+    Set<State> seen = new HashSet<State>();
+    todo.add(root);
+    seen.add(root);
+    while (!todo.isEmpty()) {
+      State state = todo.poll();
+      if (state instanceof NodePatternState) {
+        NodePattern<T> pattern = ((NodePatternState) state).pattern;
+        OUT res = filter.apply(pattern);
+        if (res != null) return res;
+      }
+      if (state.next != null) {
+        for (State s: state.next) {
+          if (!seen.contains(s)) { seen.add(s); todo.add(s); }
+        }
+      }
+    }
+    return null;
+  }
+
+  // Parses string to PatternExpr
+  public static interface Parser<T> {
+    public SequencePattern.PatternExpr parseSequence(Env env, String s) throws Exception;
+    public Pair<SequencePattern.PatternExpr, SequenceMatchAction<T>> parseSequenceWithAction(Env env, String s) throws Exception;
+    public SequencePattern.PatternExpr parseNode(Env env, String s) throws Exception;
+  }
+
+  // Binding of variable names to groups
+  // matches the group indices
+  static class VarGroupBindings {
+
+    final String[] varnames;  // Assumes number of groups low
+
+    protected VarGroupBindings(int size) {
+      varnames = new String[size];
+    }
+
+    protected void set(int index, String name) {
+      varnames[index] = name;
+    }
+  }
+
+  // Interface indicating when two nodes match
+  protected static interface NodesMatchChecker<T> {
+    public boolean matches(T o1, T o2);
+  }
+
+  public static final NodesMatchChecker<Object> NODES_EQUAL_CHECKER = new NodesMatchChecker<Object>() {
+    @Override
+    public boolean matches(Object o1, Object o2) {
+      return o1.equals(o2);
+    }
+  };
+
+  public static final PatternExpr ANY_NODE_PATTERN_EXPR = new NodePatternExpr(NodePattern.ANY_NODE);
+  public static final PatternExpr SEQ_BEGIN_PATTERN_EXPR = new SequenceStartPatternExpr();
+  public static final PatternExpr SEQ_END_PATTERN_EXPR = new SequenceEndPatternExpr();
+

@@ -1,0 +1,103 @@
+    static class CollectionContainsChecker<T> {
+      EqualityChecker<T> e;
+
+      public CollectionContainsChecker(EqualityChecker<T> e) {
+        this.e = e;
+      }
+
+      public boolean contained(T obj, Collection<T> coll) {
+        for (T o : coll) {
+          if (e.areEqual(obj, o)) {
+            return true;
+          }
+        }
+        return false;
+      }
+    } // end class CollectionContainsChecker
+
+    double guessed = 0.0;
+    double guessedCorrect = 0.0;
+    double gold = 0.0;
+    double goldCorrect = 0.0;
+
+    double lastPrecision;
+    double lastRecall;
+    double lastF1;
+
+    public void eval(Collection<T> guesses, Collection<T> golds) {
+      eval(guesses, golds, new PrintWriter(System.out, true));
+    }
+
+    // this one is all side effects
+    public void eval(Collection<T> guesses, Collection<T> golds, PrintWriter pw) {
+      double precision = evalPrecision(guesses, golds);
+      lastPrecision = precision;
+      double recall = evalRecall(guesses, golds);
+      lastRecall = recall;
+      lastF1 = f1;
+      guessed += guesses.size();
+      gold += golds.size();
+      pw.println("This example:\tP:\t" + precision + " R:\t" + recall + " F1:\t" + f1);
+      double cumPrecision = guessedCorrect / guessed;
+      double cumRecall = goldCorrect / gold;
+      pw.println("Cumulative:\tP:\t" + cumPrecision + " R:\t" + cumRecall + " F1:\t" + cumF1);
+    }
+
+    // this has no side effects!
+    public double evalPrecision(Collection<T> guesses, Collection<T> golds) {
+      Collection<T> internalGuesses;
+      Collection<T> internalGolds;
+      if(bagEval) {
+        internalGuesses = new ArrayList<T>(guesses.size());
+        internalGolds = new ArrayList<T>(golds.size());
+      } else {
+        internalGuesses = Generics.newHashSet(guesses.size());
+        internalGolds = Generics.newHashSet(golds.size());
+      }
+      internalGuesses.addAll(guesses);
+      internalGolds.addAll(golds);
+      double thisGuessed = 0.0;
+      double thisGuessedCorrect = 0.0;
+      for (T o: internalGuesses) {
+        thisGuessed += 1.0;
+        if (checker.contained(o, internalGolds)) {
+          thisGuessedCorrect += 1.0;
+           removeItem(o,internalGolds,checker);
+        }
+        //       else
+        // 	System.out.println("Precision eval missed " + o);
+      }
+      return thisGuessedCorrect / thisGuessed;
+    }
+
+    // no side effects here either
+    public double evalRecall(Collection<T> guesses, Collection<T> golds) {
+      double thisGold = 0.0;
+      double thisGoldCorrect = 0.0;
+      for (T o : golds) {
+        thisGold += 1.0;
+        if (guesses.contains(o)) {
+          thisGoldCorrect += 1.0;
+        }
+        //       else
+        // 	System.out.println("Recall eval missed " + o);
+      }
+      return thisGoldCorrect / thisGold;
+    }
+
+    public void display() {
+      display(new PrintWriter(System.out, true));
+    }
+
+    public void display(PrintWriter pw) {
+      double precision = guessedCorrect / guessed;
+      double recall = goldCorrect / gold;
+      pw.println("P:\t" + precision + " R:\t" + recall + " F1:\t" + f1);
+    }
+
+  }
+
+  public static interface Factory<IN, OUT> {
+    public EquivalenceClassEval<IN, OUT> equivalenceClassEval();
+  }
+

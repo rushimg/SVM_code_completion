@@ -1,0 +1,46 @@
+  public static List<String> linesFromFile(String filename,String encoding) {
+    return linesFromFile(filename, encoding, false);
+  }
+
+  public static List<String> linesFromFile(String filename,String encoding, boolean ignoreHeader) {
+    try {
+      List<String> lines = new ArrayList<String>();
+      BufferedReader in = new BufferedReader(new EncodingFileReader(filename,encoding));
+      String line;
+      int i = 0;
+      while ((line = in.readLine()) != null) {
+        i++;
+        if(ignoreHeader && i == 1)
+          continue;
+        lines.add(line);
+      }
+      in.close();
+      return lines;
+    }
+    catch (IOException e) {
+      e.printStackTrace();
+      return null;
+    }
+  }
+
+  public static String backupName(String filename) {
+    return backupFile(new File(filename)).toString();
+  }
+
+  public static File backupFile(File file) {
+    int max = 1000;
+    String filename = file.toString();
+    File backup = new File(filename + "~");
+    if (!backup.exists()) { return backup; }
+    for (int i = 1; i <= max; i++) {
+      backup = new File(filename + ".~" + i + ".~");
+      if (!backup.exists()) { return backup; }
+    }
+    return null;
+  }
+
+  public static boolean renameToBackupName(File file) {
+    return file.renameTo(backupFile(file));
+  }
+
+

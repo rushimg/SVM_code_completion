@@ -1,0 +1,46 @@
+  public static final GrammaticalRelation ADV_CLAUSE_MODIFIER =
+    new GrammaticalRelation(Language.English, "advcl", "adverbial clause modifier",
+        AdvClauseModifierGRAnnotation.class, MODIFIER, "VP|S|SQ|SINV|SBARQ|NP", tregexCompiler,
+        new String[] {
+          // first case includes regular in order to purpose clauses
+          // second disjunct matches inverted "had he investigated" cases
+          // 3rd case is "so that" purpose clauses and one way of parsing "now that"
+          // 4th case is another way of parsing "now that"
+          //
+          // the <= relation lets us use the same tregex for either
+          // current node or one of its children matching the rest of
+          // the pattern.  this can be an issue in sentences with sbar
+          // conjunctions.  for example, "Call if you have questions
+          // or if I can be of any help"
+          "VP < (@SBAR=target <= (@SBAR [ < (IN !< /^(?i:that|whether)$/) | <: (SINV <1 /^(?:VB|MD|AUX)/) | < (RB|IN < so|now) < (IN < that) | <1 (ADVP < (RB < now)) <2 (IN < that) ] ))",
+          // to get "rather than"
+          // this one might just be better, but at any rate license one with quotation marks or a conjunction beforehand
+          "S|SQ|SINV < (SBAR|SBAR-TMP=target <, (IN !< /^(?i:that|whether)$/ !$+ (NN < order)) !$+ @VP $+ /^,$/ $++ @NP)",
+          // the last part should probably only be @SQ, but this captures some strays at no cost
+          "SBARQ < (SBAR|SBAR-TMP|SBAR-ADV=target <, (IN !< /^(?i:that|whether)$/ !$+ (NN < order)) $+ /^,$/ $++ @SQ|S|SBARQ)",
+          // added the (S < (VP <TO)) part so that "I tell them how to do so" doesn't get a wrong advcl
+          // note that we allow adverb phrases to come before the WHADVP, which allows for phrases such as "even when"
+          // ":" indicates something that should be a parataxis
+          // in cases where there are two SBARs conjoined, we're happy
+          // to use the head SBAR as a candidate for this relation
+          // "S|SQ < (PP=target <, RB < @S)", // caught as prep and pcomp.
+          "@S < (@SBAR=target $++ @NP $++ @VP)",  // fronted adverbial clause
+          "@S < (@S=target < (VP < TO) $+ (/^,$/ $++ @NP))", // part of former purpcl: This is fronted infinitives: "To find out why, we went to ..."
+          // "VP > (VP < (VB|AUX < be)) < (S=target !$- /^,$/ < (VP < TO|VBG) !$-- NP)", // part of former purpcl [cdm 2010: this pattern was added by me in 2006, but it is just bad!]
+
+          // // matches direct object for long dependencies in relative clause without explicit relative pronouns
+          // "SBAR !< (WHPP|WHNP|WHADVP) < (S < (@NP $++ (VP !< (/^(?:VB|AUX)/ < " + copularWordRegex + " !$+ VP)  !<+(VP) (/^(?:VB|AUX)/ < " + copularWordRegex + " $+ (VP < VBN|VBD)) !<+(VP) NP !< SBAR !<+(VP) (PP <- IN|TO)))) !$-- CC $-- NP > NP=target " +
+          //   // avoid conflicts with rcmod.  TODO: we could look for
+          //   // empty nodes in this kind of structure and use that to
+          //   // find dobj, tmod, advmod, etc.  won't help the parser,
+          //   // of course, but will help when converting a treebank
+          //   // which contains empties
+          //   // Example: "with the way his split-fingered fastball is behaving"
+          //   "!($-- @NP|WHNP|NML > @NP|WHNP <: (S !< (VP < TO)))",
+          "NP < (NP $++ (SBAR=target < (IN < /^(?i:than)$/) !< (WHPP|WHNP|WHADVP) < (S < (@NP $++ (VP !< (/^(?:VB|AUX)/ < " + copularWordRegex + " !$+ VP)  !<+(VP) (/^(?:VB|AUX)/ < " + copularWordRegex + " $+ (VP < VBN|VBD)) !<+(VP) NP !< SBAR !<+(VP) (PP <- IN|TO)))) !<: (S !< (VP < TO))) !$++ (CC $++ =target))"
+
+
+        });
+  public static class AdvClauseModifierGRAnnotation extends GrammaticalRelationAnnotation { }
+
+

@@ -1,0 +1,29 @@
+  public ChunkerModel(String languageCode, MaxentModel chunkerModel) {
+    this(languageCode, chunkerModel, null, new ChunkerFactory());
+  }
+
+  public ChunkerModel(String languageCode, MaxentModel chunkerModel, ChunkerFactory factory) {
+    this(languageCode, chunkerModel, null, factory);
+  }
+
+  public ChunkerModel(InputStream in) throws IOException, InvalidFormatException {
+    super(COMPONENT_NAME, in);
+  }
+
+  public ChunkerModel(File modelFile) throws IOException, InvalidFormatException {
+    super(COMPONENT_NAME, modelFile);
+  }
+
+  public ChunkerModel(URL modelURL) throws IOException, InvalidFormatException {
+    super(COMPONENT_NAME, modelURL);
+  }
+
+  @Override
+  protected void validateArtifactMap() throws InvalidFormatException {
+    super.validateArtifactMap();
+
+    if (!(artifactMap.get(CHUNKER_MODEL_ENTRY_NAME) instanceof AbstractModel)) {
+      throw new InvalidFormatException("Chunker model is incomplete!");
+    }
+  }
+

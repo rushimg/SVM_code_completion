@@ -1,0 +1,41 @@
+    public BlockCutpointGraph(UndirectedGraph<V, E> graph)
+    {
+        super(DefaultEdge.class);
+        this.graph = graph;
+
+        this.dfsTree =
+            new SimpleDirectedGraph<V, DefaultEdge>(
+                DefaultEdge.class);
+        V s = graph.vertexSet().iterator().next();
+        this.dfsTree.addVertex(s);
+        dfsVisit(s, s);
+
+        if (this.dfsTree.edgesOf(s).size() > 1) {
+            this.cutpoints.add(s);
+        } else {
+            this.cutpoints.remove(s);
+        }
+
+        for (Iterator<V> iter = this.cutpoints.iterator(); iter.hasNext();) {
+            V cutpoint = iter.next();
+            UndirectedGraph<V, E> subgraph =
+                new SimpleGraph<V, E>(this.graph.getEdgeFactory());
+            subgraph.addVertex(cutpoint);
+            this.vertex2block.put(cutpoint, subgraph);
+            addVertex(subgraph);
+            Set<UndirectedGraph<V, E>> biconnectedSubgraphs =
+                getBiconnectedSubgraphs(cutpoint);
+            for (
+                Iterator<UndirectedGraph<V, E>> iterator =
+                    biconnectedSubgraphs.iterator();
+                iterator.hasNext();)
+            {
+                UndirectedGraph<V, E> biconnectedSubgraph = iterator.next();
+                assert (vertexSet().contains(biconnectedSubgraph));
+                addEdge(subgraph, biconnectedSubgraph);
+            }
+        }
+    }
+
+    //~ Methods ----------------------------------------------------------------
+

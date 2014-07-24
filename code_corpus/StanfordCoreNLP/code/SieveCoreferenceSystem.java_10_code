@@ -1,0 +1,79 @@
+    List<String> cmd = new ArrayList<String>();
+    cmd.addAll(Arrays.asList(runDistCmd.split("\\s+")));
+    cmd.add("-props");
+    cmd.add(propsFile);
+    ProcessBuilder pb = new ProcessBuilder(cmd);
+    // Copy environment variables over
+    Map<String,String> curEnv = System.getenv();
+    Map<String,String> pbEnv = pb.environment();
+    pbEnv.putAll(curEnv);
+
+    logger.info("Running distributed coref:" + StringUtils.join(pb.command(), " "));
+    StringWriter outSos = new StringWriter();
+    StringWriter errSos = new StringWriter();
+    PrintWriter out = new PrintWriter(new BufferedWriter(outSos));
+    PrintWriter err = new PrintWriter(new BufferedWriter(errSos));
+    SystemUtils.run(pb, out, err);
+    out.close();
+    err.close();
+    String outStr = outSos.toString();
+    String errStr = errSos.toString();
+    logger.info("Finished distributed coref: " + runDistCmd + ", props=" + propsFile);
+    logger.info("Output: " + outStr);
+    if (errStr.length() > 0) {
+      logger.info("Error: " + errStr);
+    }
+  }
+
+  static boolean waitForFiles(File workDir, FileFilter fileFilter, int howMany) throws InterruptedException {
+    logger.info("Waiting until we see " + howMany + " " + fileFilter + " files in directory " + workDir + "...");
+    int seconds = 0;
+    while (true) {
+      File[] checkFiles = workDir.listFiles(fileFilter);
+
+      // we found the required number of .check files
+      if (checkFiles != null && checkFiles.length >= howMany) {
+        logger.info("Found " + checkFiles.length  + " " + fileFilter + " files. Continuing execution.");
+        break;
+      }
+
+      // sleep for while before the next check
+      Thread.sleep(Constants.MONITOR_DIST_CMD_FINISHED_WAIT_MILLIS);
+      seconds += Constants.MONITOR_DIST_CMD_FINISHED_WAIT_MILLIS / 1000;
+      if (seconds % 600 == 0) {
+        double minutes = seconds / 60;
+        logger.info("Still waiting... " + minutes + " minutes have passed.");
+      }
+    }
+    return true;
+  }
+
+  private static int fromSieveNameToIndex(String sieveName, String[] sieveNames)
+  {
+    for (int i = 0; i < sieveNames.length; i++) {
+      if (sieveNames[i].equals(sieveName)) {
+        return i;
+      }
+    }
+    throw new IllegalArgumentException("Invalid sieve name: " + sieveName);
+  }
+
+  private static Pair<Integer,Integer> fromSieveOrderConstraintString(String s, String[] sieveNames)
+  {
+    String[] parts = s.split("<");
+    if (parts.length == 2) {
+      String first = parts[0].trim();
+      String second = parts[1].trim();
+      int a = fromSieveNameToIndex(first, sieveNames);
+      int b = fromSieveNameToIndex(second, sieveNames);
+      return new Pair<Integer,Integer>(a,b);
+    } else {
+      throw new IllegalArgumentException("Invalid sieve ordering constraint: " + s);
+    }
+  }
+
+  private static String toSieveOrderConstraintString(Pair<Integer,Integer> orderedSieveIndices, String[] sieveNames)
+  {
+    return first + " < " + second;
+  }
+

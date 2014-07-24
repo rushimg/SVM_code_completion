@@ -1,0 +1,54 @@
+  @Override
+  public RVFDatum<L, F> getRVFDatum(int index) {
+    ClassicCounter<F> c = new ClassicCounter<F>();
+    for (int i = 0; i < data[index].length; i++) {
+      c.incrementCount(featureIndex.get(data[index][i]), values[index][i]);
+    }
+    return new RVFDatum<L, F>(c, labelIndex.get(labels[index]));
+  }
+
+  public String getRVFDatumSource(int index) {
+    return sourcesAndIds.get(index).first();
+  }
+
+  public String getRVFDatumId(int index) {
+    return sourcesAndIds.get(index).second();
+  }
+
+  private void addSourceAndId(String src, String id) {
+    sourcesAndIds.add(new Pair<String, String>(src, id));
+  }
+
+  private void addLabel(L label) {
+    if (labels.length == size) {
+      System.arraycopy(labels, 0, newLabels, 0, size);
+      labels = newLabels;
+    }
+    labels[size] = labelIndex.indexOf(label, true);
+  }
+
+  private void addFeatures(Counter<F> features) {
+    if (data.length == size) {
+      System.arraycopy(data, 0, newData, 0, size);
+      System.arraycopy(values, 0, newValues, 0, size);
+      data = newData;
+      values = newValues;
+    }
+
+    final List<F> featureNames = new ArrayList<F>(features.keySet());
+    final int nFeatures = featureNames.size();
+    data[size] = new int[nFeatures];
+    values[size] = new double[nFeatures];
+    for (int i = 0; i < nFeatures; ++i) {
+      F feature = featureNames.get(i);
+      int fID = featureIndex.indexOf(feature, true);
+      if (fID >= 0) {
+        data[size][i] = fID;
+        values[size][i] = features.getCount(feature);
+      } else {
+        // Usually a feature present at test but not training time.
+        assert featureIndex.isLocked() : "Could not add feature to index: " + feature;
+      }
+    }
+  }
+

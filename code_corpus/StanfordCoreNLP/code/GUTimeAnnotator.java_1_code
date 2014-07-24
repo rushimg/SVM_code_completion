@@ -1,0 +1,76 @@
+public class GUTimeAnnotator implements Annotator {
+  
+  private static final String BASE_PATH = "$NLP_DATA_HOME/packages/GUTime";
+  private static final String DEFAULT_PATH = DataFilePaths.convert(BASE_PATH);
+  private final File gutimePath;
+  private final boolean outputResults;
+  
+  // if used in a pipeline or constructed with a Properties object,
+  // this property tells the annotator where to find the script
+  public static final String GUTIME_PATH_PROPERTY = "gutime.path";
+  public static final String GUTIME_OUTPUT_RESULTS = "gutime.outputResults";
+
+  public GUTimeAnnotator() {
+    this(new File(System.getProperty("gutime", DEFAULT_PATH)));
+  }
+
+  public GUTimeAnnotator(File gutimePath) {
+    this.gutimePath = gutimePath;
+    this.outputResults = false;
+  }
+
+  public GUTimeAnnotator(String name, Properties props) {
+    String path = props.getProperty(GUTIME_PATH_PROPERTY,
+                                    System.getProperty("gutime", 
+                                                       DEFAULT_PATH));
+    this.gutimePath = new File(path);
+
+    this.outputResults = 
+      Boolean.valueOf(props.getProperty(GUTIME_OUTPUT_RESULTS, "false"));
+  }
+
+  public void annotate(Annotation annotation) {
+    try {
+      this.annotate((CoreMap)annotation);
+    } catch (IOException e) {
+      throw new RuntimeIOException(e);
+    }
+  }
+
+  public void annotate(CoreMap document) throws IOException {
+    // write input file in GUTime format
+    Element inputXML = toInputXML(document);
+    File inputFile = File.createTempFile("gutime", ".input");
+
+    //Document doc = new Document(inputXML);
+    PrintWriter inputWriter = new PrintWriter(inputFile);
+    inputWriter.println(XMLUtils.nodeToString(inputXML, false));
+   // new XMLOutputter().output(inputXML, inputWriter);
+    inputWriter.close();
+
+    boolean useFirstDate = 
+      (!document.has(CoreAnnotations.CalendarAnnotation.class) && !document.has(CoreAnnotations.DocDateAnnotation.class));
+    
+    ArrayList<String> args = new ArrayList<String>();
+    args.add("perl");
+    args.add("-I" + this.gutimePath.getPath());
+    args.add(new File(this.gutimePath, "TimeTag.pl").getPath());
+    if (useFirstDate)
+      args.add("-FDNW");
+    args.add(inputFile.getPath());
+    // run GUTime on the input file
+    ProcessBuilder process = new ProcessBuilder(args);
+
+    StringWriter outputWriter = new StringWriter();
+    SystemUtils.run(process, outputWriter, null);
+    String output = outputWriter.getBuffer().toString();
+    output = docClose.matcher(output).replaceAll("</DOC>");
+
+    // parse the GUTime output
+    Element outputXML;
+    try {
+      outputXML = XMLUtils.parseElement(output);
+    } catch (Exception ex) {
+      throw new RuntimeException(String.format("error:\n%s\ninput:\n%s\noutput:\n%s",
+      		ex, IOUtils.slurpFile(inputFile), output), ex);
+    }

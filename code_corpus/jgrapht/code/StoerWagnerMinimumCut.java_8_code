@@ -1,0 +1,42 @@
+    protected VertexAndWeight mergeVertices(Set<V> s, Set<V> t)
+    {
+        //construct the new combinedvertex
+        Set<V> set = new HashSet<V>();
+        for (V v : s) {
+            set.add(v);
+        }
+        for (V v : t) {
+            set.add(v);
+        }
+        workingGraph.addVertex(set);
+
+        //add edges and weights to the combined vertex
+        double wsum = 0.0;
+        for (Set<V> v : workingGraph.vertexSet()) {
+            if ((s != v) && (t != v)) {
+                DefaultWeightedEdge etv = workingGraph.getEdge(t, v);
+                DefaultWeightedEdge esv = workingGraph.getEdge(s, v);
+                double wtv = 0.0, wsv = 0.0;
+                if (etv != null) {
+                    wtv = workingGraph.getEdgeWeight(etv);
+                }
+                if (esv != null) {
+                    wsv = workingGraph.getEdgeWeight(esv);
+                }
+                double neww = wtv + wsv;
+                wsum += neww;
+                if (neww != 0.0) {
+                    workingGraph.setEdgeWeight(
+                        workingGraph.addEdge(set, v),
+                        neww);
+                }
+            }
+        }
+
+        //remove original vertices
+        workingGraph.removeVertex(t);
+        workingGraph.removeVertex(s);
+
+        return new VertexAndWeight(set, wsum);
+    }
+

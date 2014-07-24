@@ -1,0 +1,71 @@
+    public double draw(Graphics2D g2, double cursor,
+                       Rectangle2D plotArea, Rectangle2D dataArea,
+                       Rectangle2D reservedArea, RectangleEdge edge) {
+
+
+        Rectangle2D colorBarArea = null;
+
+        double thickness = calculateBarThickness(dataArea, edge);
+        if (this.colorBarThickness > 0) {
+            thickness = this.colorBarThickness;  // allow fixed thickness
+        }
+
+        double length = 0.0;
+        if (RectangleEdge.isLeftOrRight(edge)) {
+            length = dataArea.getHeight();
+        }
+        else {
+            length = dataArea.getWidth();
+        }
+
+        if (this.colorBarLength > 0) {
+            length = this.colorBarLength;
+        }
+
+        if (edge == RectangleEdge.BOTTOM) {
+            colorBarArea = new Rectangle2D.Double(dataArea.getX(),
+                    plotArea.getMaxY() + this.outerGap, length, thickness);
+        }
+        else if (edge == RectangleEdge.TOP) {
+            colorBarArea = new Rectangle2D.Double(dataArea.getX(),
+                    reservedArea.getMinY() + this.outerGap, length, thickness);
+        }
+        else if (edge == RectangleEdge.LEFT) {
+            colorBarArea = new Rectangle2D.Double(plotArea.getX() - thickness
+                    - this.outerGap, dataArea.getMinY(), thickness, length);
+        }
+        else if (edge == RectangleEdge.RIGHT) {
+            colorBarArea = new Rectangle2D.Double(plotArea.getMaxX()
+                    + this.outerGap, dataArea.getMinY(), thickness, length);
+        }
+
+        // update, but dont draw tick marks (needed for stepped colors)
+        this.axis.refreshTicks(g2, new AxisState(), colorBarArea, edge);
+
+        drawColorBar(g2, colorBarArea, edge);
+
+        AxisState state = null;
+        if (edge == RectangleEdge.TOP) {
+            cursor = colorBarArea.getMinY();
+            state = this.axis.draw(g2, cursor, reservedArea, colorBarArea,
+                    RectangleEdge.TOP, null);
+        }
+        else if (edge == RectangleEdge.BOTTOM) {
+            cursor = colorBarArea.getMaxY();
+            state = this.axis.draw(g2, cursor, reservedArea, colorBarArea,
+                    RectangleEdge.BOTTOM, null);
+        }
+        else if (edge == RectangleEdge.LEFT) {
+            cursor = colorBarArea.getMinX();
+            state = this.axis.draw(g2, cursor, reservedArea, colorBarArea,
+                    RectangleEdge.LEFT, null);
+        }
+        else if (edge == RectangleEdge.RIGHT) {
+            cursor = colorBarArea.getMaxX();
+            state = this.axis.draw(g2, cursor, reservedArea, colorBarArea,
+                    RectangleEdge.RIGHT, null);
+        }
+        return state.getCursor();
+
+    }
+

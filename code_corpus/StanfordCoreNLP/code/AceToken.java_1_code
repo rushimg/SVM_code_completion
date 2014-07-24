@@ -1,0 +1,34 @@
+  private static void loadDictionary(Map<String, String> dict, String file) throws java.io.FileNotFoundException,
+      java.io.IOException {
+
+    BufferedReader in = new BufferedReader(new FileReader(file));
+
+    String line;
+    while ((line = in.readLine()) != null) {
+      ArrayList<String> tokens = SimpleTokenize.tokenize(line);
+      if (tokens.size() > 0) {
+        String lower = tokens.get(0).toLowerCase();
+        if (tokens.size() == 1)
+          dict.put(lower, "true");
+        else
+          dict.put(lower, tokens.get(1));
+      }
+    }
+  }
+
+  public static boolean isLocation(String lower) {
+    return exists(LOC_GAZ, lower);
+  }
+
+  public static boolean isFirstName(String lower) {
+    return exists(FIRST_GAZ, lower);
+  }
+
+  public static boolean isLastName(String lower) {
+    return exists(LAST_GAZ, lower);
+  }
+
+  public static String isTriggerWord(String lower) {
+    return TRIGGER_GAZ.get(lower);
+  }
+

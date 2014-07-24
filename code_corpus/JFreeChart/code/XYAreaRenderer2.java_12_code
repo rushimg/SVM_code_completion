@@ -1,0 +1,124 @@
+    public void drawItem(Graphics2D g2,
+                         XYItemRendererState state,
+                         Rectangle2D dataArea,
+                         PlotRenderingInfo info,
+                         XYPlot plot,
+                         ValueAxis domainAxis,
+                         ValueAxis rangeAxis,
+                         XYDataset dataset,
+                         int series,
+                         int item,
+                         CrosshairState crosshairState,
+                         int pass) {
+
+        if (!getItemVisible(series, item)) {
+            return;
+        }
+        // get the data point...
+        double x1 = dataset.getXValue(series, item);
+        double y1 = dataset.getYValue(series, item);
+        if (Double.isNaN(y1)) {
+            y1 = 0.0;
+        }
+
+        double transX1 = domainAxis.valueToJava2D(x1, dataArea,
+                plot.getDomainAxisEdge());
+        double transY1 = rangeAxis.valueToJava2D(y1, dataArea,
+                plot.getRangeAxisEdge());
+
+        // get the previous point and the next point so we can calculate a
+        // "hot spot" for the area (used by the chart entity)...
+        double x0 = dataset.getXValue(series, Math.max(item - 1, 0));
+        double y0 = dataset.getYValue(series, Math.max(item - 1, 0));
+        if (Double.isNaN(y0)) {
+            y0 = 0.0;
+        }
+        double transX0 = domainAxis.valueToJava2D(x0, dataArea,
+                plot.getDomainAxisEdge());
+        double transY0 = rangeAxis.valueToJava2D(y0, dataArea,
+                plot.getRangeAxisEdge());
+
+        int itemCount = dataset.getItemCount(series);
+        double x2 = dataset.getXValue(series, Math.min(item + 1,
+                itemCount - 1));
+        double y2 = dataset.getYValue(series, Math.min(item + 1,
+                itemCount - 1));
+        if (Double.isNaN(y2)) {
+            y2 = 0.0;
+        }
+        double transX2 = domainAxis.valueToJava2D(x2, dataArea,
+                plot.getDomainAxisEdge());
+        double transY2 = rangeAxis.valueToJava2D(y2, dataArea,
+                plot.getRangeAxisEdge());
+
+        double transZero = rangeAxis.valueToJava2D(0.0, dataArea,
+                plot.getRangeAxisEdge());
+        Polygon hotspot = null;
+        if (plot.getOrientation() == PlotOrientation.HORIZONTAL) {
+            hotspot = new Polygon();
+            hotspot.addPoint((int) transZero,
+                    (int) ((transX0 + transX1) / 2.0));
+            hotspot.addPoint((int) ((transY0 + transY1) / 2.0),
+                    (int) ((transX0 + transX1) / 2.0));
+            hotspot.addPoint((int) transY1, (int) transX1);
+            hotspot.addPoint((int) ((transY1 + transY2) / 2.0),
+                    (int) ((transX1 + transX2) / 2.0));
+            hotspot.addPoint((int) transZero,
+                    (int) ((transX1 + transX2) / 2.0));
+        }
+        else {  // vertical orientation
+            hotspot = new Polygon();
+            hotspot.addPoint((int) ((transX0 + transX1) / 2.0),
+                    (int) transZero);
+            hotspot.addPoint((int) ((transX0 + transX1) / 2.0),
+                    (int) ((transY0 + transY1) / 2.0));
+            hotspot.addPoint((int) transX1, (int) transY1);
+            hotspot.addPoint((int) ((transX1 + transX2) / 2.0),
+                    (int) ((transY1 + transY2) / 2.0));
+            hotspot.addPoint((int) ((transX1 + transX2) / 2.0),
+                    (int) transZero);
+        }
+
+        PlotOrientation orientation = plot.getOrientation();
+        Paint paint = getItemPaint(series, item);
+        Stroke stroke = getItemStroke(series, item);
+        g2.setPaint(paint);
+        g2.setStroke(stroke);
+
+        // Check if the item is the last item for the series.
+        // and number of items > 0.  We can't draw an area for a single point.
+        g2.fill(hotspot);
+
+        // draw an outline around the Area.
+        if (isOutline()) {
+            g2.setStroke(lookupSeriesOutlineStroke(series));
+            g2.setPaint(lookupSeriesOutlinePaint(series));
+            g2.draw(hotspot);
+        }
+        int domainAxisIndex = plot.getDomainAxisIndex(domainAxis);
+        int rangeAxisIndex = plot.getRangeAxisIndex(rangeAxis);
+        updateCrosshairValues(crosshairState, x1, y1, domainAxisIndex,
+                rangeAxisIndex, transX1, transY1, orientation);
+
+        // collect entity and tool tip information...
+        if (state.getInfo() != null) {
+            EntityCollection entities = state.getEntityCollection();
+            if (entities != null && hotspot != null) {
+                String tip = null;
+                XYToolTipGenerator generator = getToolTipGenerator(series,
+                        item);
+                if (generator != null) {
+                    tip = generator.generateToolTip(dataset, series, item);
+                }
+                String url = null;
+                if (getURLGenerator() != null) {
+                    url = getURLGenerator().generateURL(dataset, series, item);
+                }
+                XYItemEntity entity = new XYItemEntity(hotspot, dataset,
+                        series, item, tip, url);
+                entities.add(entity);
+            }
+        }
+
+    }
+

@@ -1,0 +1,61 @@
+  public void matchCharSeqs(String filePrefix) {
+    //
+    // match the head and extent of entity mentions
+    //
+    Set<String> keys = mEntityMentions.keySet();
+    for (String key : keys) {
+      AceEntityMention m = mEntityMentions.get(key);
+
+      //
+      // match the head charseq to 1+ phrase(s)
+      //
+      try {
+        m.getHead().match(mTokens);
+      } catch (MatchException e) {
+        mLog.severe("READER ERROR: Failed to match entity mention head: " + "[" + m.getHead().getText() + ", "
+            + m.getHead().getByteStart() + ", " + m.getHead().getByteEnd() + "]");
+        mLog.severe("Document tokens: " + tokensWithByteSpan(m.getHead().getByteStart(), m.getHead().getByteEnd()));
+        mLog.severe("Document prefix: " + filePrefix);
+        System.exit(1);
+      }
+
+      //
+      // match the extent charseq to 1+ phrase(s)
+      //
+      try {
+        m.getExtent().match(mTokens);
+      } catch (MatchException e) {
+        mLog.severe("READER ERROR: Failed to match entity mention extent: " + "[" + m.getExtent().getText() + ", "
+            + m.getExtent().getByteStart() + ", " + m.getExtent().getByteEnd() + "]");
+        mLog.severe("Document tokens: " + tokensWithByteSpan(m.getExtent().getByteStart(), m.getExtent().getByteEnd()));
+        System.exit(1);
+      }
+
+      //
+      // set the head word of the mention
+      //
+      m.detectHeadToken(this);      
+    }
+    
+    // we need to do this for events as well since they may not have any AceEntityMentions associated with them (if they have no arguments)
+    Set<String> eventKeys = mEventMentions.keySet();
+    for (String key : eventKeys) {
+      AceEventMention m = mEventMentions.get(key);
+      
+      //
+      // match the extent charseq to 1+ phrase(s)
+      //
+      try {
+        m.getExtent().match(mTokens);
+      } catch (MatchException e) {
+        mLog.severe("READER ERROR: Failed to match event mention extent: " + "[" + m.getExtent().getText() + ", "
+            + m.getExtent().getByteStart() + ", " + m.getExtent().getByteEnd() + "]");
+        mLog.severe("Document tokens: " + tokensWithByteSpan(m.getExtent().getByteStart(), m.getExtent().getByteEnd()));
+        System.exit(1);
+      }
+    }
+  }
+
+  public static final String XML_EXT = ".apf.xml";
+  public static final String ORIG_EXT = ".sgm";
+

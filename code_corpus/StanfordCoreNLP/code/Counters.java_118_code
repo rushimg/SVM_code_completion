@@ -1,0 +1,245 @@
+  public static <E, N extends Number> Counter<E> fromMap(final Map<E, N> map, final Class<N> type) {
+    // get our initial total
+    double initialTotal = 0.0;
+    for (Map.Entry<E, N> entry : map.entrySet()) {
+      initialTotal += entry.getValue().doubleValue();
+    }
+
+    // and pass it in to the returned inner class with a final variable
+    final double initialTotalFinal = initialTotal;
+
+    return new AbstractCounter<E>() {
+      double total = initialTotalFinal;
+      double defRV = 0.0;
+
+      @Override
+      public void clear() {
+        map.clear();
+        total = 0.0;
+      }
+
+      @Override
+      public boolean containsKey(E key) {
+        return map.containsKey(key);
+      }
+
+      @Override
+      public void setDefaultReturnValue(double rv) {
+        defRV = rv;
+      }
+
+      @Override
+      public double defaultReturnValue() {
+        return defRV;
+      }
+
+      @Override
+      @SuppressWarnings("unchecked")
+      public boolean equals(Object o) {
+        if (this == o) {
+          return true;
+        } else if (!(o instanceof Counter)) {
+          return false;
+        } else {
+          return Counters.equals(this, (Counter<E>) o);
+        }
+      }
+
+      @Override
+      public int hashCode() {
+        return map.hashCode();
+      }
+
+      public Set<Entry<E, Double>> entrySet() {
+        return new AbstractSet<Entry<E, Double>>() {
+          Set<Entry<E, N>> entries = map.entrySet();
+
+          @Override
+          public Iterator<Entry<E, Double>> iterator() {
+            return new Iterator<Entry<E, Double>>() {
+              Iterator<Entry<E, N>> it = entries.iterator();
+              Entry<E, N> lastEntry; // = null;
+
+              public boolean hasNext() {
+                return it.hasNext();
+              }
+
+              public Entry<E, Double> next() {
+                final Entry<E, N> entry = it.next();
+                lastEntry = entry;
+
+                return new Entry<E, Double>() {
+                  public E getKey() {
+                    return entry.getKey();
+                  }
+
+                  public Double getValue() {
+                    return entry.getValue().doubleValue();
+                  }
+
+                  public Double setValue(Double value) {
+                    final double lastValue = entry.getValue().doubleValue();
+                    double rv;
+
+                    if (type == Double.class) {
+                      rv = ErasureUtils.<Entry<E, Double>> uncheckedCast(entry).setValue(value);
+                    } else if (type == Integer.class) {
+                      rv = ErasureUtils.<Entry<E, Integer>> uncheckedCast(entry).setValue(value.intValue());
+                    } else if (type == Float.class) {
+                      rv = ErasureUtils.<Entry<E, Float>> uncheckedCast(entry).setValue(value.floatValue());
+                    } else if (type == Long.class) {
+                      rv = ErasureUtils.<Entry<E, Long>> uncheckedCast(entry).setValue(value.longValue());
+                    } else if (type == Short.class) {
+                      rv = ErasureUtils.<Entry<E, Short>> uncheckedCast(entry).setValue(value.shortValue());
+                    } else {
+                      throw new RuntimeException("Unrecognized numeric type in wrapped counter");
+                    }
+
+                    // need to call getValue().doubleValue() to make sure
+                    // we keep the same precision as the underlying map
+                    total += entry.getValue().doubleValue() - lastValue;
+
+                    return rv;
+                  }
+                };
+              }
+
+              public void remove() {
+                total -= lastEntry.getValue().doubleValue();
+                it.remove();
+              }
+            };
+          }
+
+          @Override
+          public int size() {
+            return map.size();
+          }
+        };
+      }
+
+      public double getCount(Object key) {
+        final Number value = map.get(key);
+        return value != null ? value.doubleValue() : defRV;
+      }
+
+      public Factory<Counter<E>> getFactory() {
+        return new Factory<Counter<E>>() {
+
+          private static final long serialVersionUID = -4063129407369590522L;
+
+          public Counter<E> create() {
+            // return a HashMap backed by the same numeric type to
+            // keep the precision of the returned counter consistent with
+            // this one's precision
+            return fromMap(Generics.<E, N>newHashMap(), type);
+          }
+        };
+      }
+
+      public Set<E> keySet() {
+        return new AbstractSet<E>() {
+          @Override
+          public Iterator<E> iterator() {
+            return new Iterator<E>() {
+              Iterator<E> it = map.keySet().iterator();
+
+              public boolean hasNext() {
+                return it.hasNext();
+              }
+
+              public E next() {
+                return it.next();
+              }
+
+              public void remove() {
+                throw new UnsupportedOperationException("Cannot remove from key set");
+              }
+            };
+          }
+
+          @Override
+          public int size() {
+            return map.size();
+          }
+        };
+      }
+
+      public double remove(E key) {
+        final Number removed = map.remove(key);
+        if (removed != null) {
+          final double rv = removed.doubleValue();
+          total -= rv;
+          return rv;
+        }
+        return defRV;
+      }
+
+      public void setCount(E key, double value) {
+        final Double lastValue;
+        double newValue;
+
+        if (type == Double.class) {
+          lastValue = ErasureUtils.<Map<E, Double>> uncheckedCast(map).put(key, value);
+          newValue = value;
+        } else if (type == Integer.class) {
+          final Integer last = ErasureUtils.<Map<E, Integer>> uncheckedCast(map).put(key, (int) value);
+          lastValue = last != null ? last.doubleValue() : null;
+          newValue = ((int) value);
+        } else if (type == Float.class) {
+          final Float last = ErasureUtils.<Map<E, Float>> uncheckedCast(map).put(key, (float) value);
+          lastValue = last != null ? last.doubleValue() : null;
+          newValue = ((float) value);
+        } else if (type == Long.class) {
+          final Long last = ErasureUtils.<Map<E, Long>> uncheckedCast(map).put(key, (long) value);
+          lastValue = last != null ? last.doubleValue() : null;
+          newValue = ((long) value);
+        } else if (type == Short.class) {
+          final Short last = ErasureUtils.<Map<E, Short>> uncheckedCast(map).put(key, (short) value);
+          lastValue = last != null ? last.doubleValue() : null;
+          newValue = ((short) value);
+        } else {
+          throw new RuntimeException("Unrecognized numeric type in wrapped counter");
+        }
+
+        // need to use newValue instead of value to make sure we
+        // keep same precision as underlying map.
+        total += newValue - (lastValue != null ? lastValue : 0);
+      }
+
+      public int size() {
+        return map.size();
+      }
+
+      public double totalCount() {
+        return total;
+      }
+
+      public Collection<Double> values() {
+        return new AbstractCollection<Double>() {
+          @Override
+          public Iterator<Double> iterator() {
+            return new Iterator<Double>() {
+              final Iterator<N> it = map.values().iterator();
+
+              public boolean hasNext() {
+                return it.hasNext();
+              }
+
+              public Double next() {
+                return it.next().doubleValue();
+              }
+
+              public void remove() {
+                throw new UnsupportedOperationException("Cannot remove from values collection");
+              }
+            };
+          }
+
+          @Override
+          public int size() {
+            return map.size();
+          }
+        };
+      }
+

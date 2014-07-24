@@ -1,0 +1,55 @@
+  private static boolean hasClausalV(Tree tree) {
+    // this is originally called only called on phrasal nodes
+    if (tree.isPhrasal()) {
+      if (tree.isPrePreTerminal() &&
+          tree.value().startsWith("NP")) {
+        return false;
+      }
+      Tree[] kids = tree.children();
+      for (Tree t : kids) {
+        if (hasClausalV(t)) {
+          return true;
+        }
+      }
+      return false;
+    } else {
+      String str = tree.value();
+      return str.startsWith("VB") || str.startsWith("MD");
+    }
+  }
+
+  private static boolean hasV(List<? extends Label> tags) {
+    for (Label tag : tags) {
+      String str = tag.toString();
+      if (str.startsWith("V") || str.startsWith("MD")) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private static boolean hasI(List<? extends Label> tags) {
+    for (Label tag : tags) {
+      if (tag.toString().startsWith("I")) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private static boolean hasC(List<? extends Label> tags) {
+    for (Label tag : tags) {
+      if (tag.toString().startsWith("CC")) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+
+  @Override
+  public void display() {
+    englishTrain.display();
+  }
+
+

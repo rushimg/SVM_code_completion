@@ -1,0 +1,38 @@
+  private void display(int indent, boolean parentLabelNull, boolean firstSibling, boolean leftSiblingPreTerminal, boolean topLevel, boolean onlyLabelValue, PrintWriter pw) {
+    // the condition for staying on the same line in Penn Treebank
+    boolean suppressIndent = (parentLabelNull || (firstSibling && isPreTerminal()) || (leftSiblingPreTerminal && isPreTerminal() && (label() == null || !label().value().startsWith("CC"))));
+    if (suppressIndent) {
+      pw.print(" ");
+      // pw.flush();
+    } else {
+      if (!topLevel) {
+        pw.println();
+      }
+      for (int i = 0; i < indent; i++) {
+        pw.print("  ");
+        // pw.flush();
+      }
+    }
+    if (isLeaf() || isPreTerminal()) {
+      String terminalString = toStringBuilder(new StringBuilder(), onlyLabelValue).toString();
+      pw.print(terminalString);
+      pw.flush();
+      return;
+    }
+    pw.print("(");
+    String nodeString;
+    if (onlyLabelValue) {
+      String value = value();
+      nodeString = (value == null) ? "" : value;
+    } else {
+      nodeString = nodeString();
+    }
+    pw.print(nodeString);
+    // pw.flush();
+    boolean parentIsNull = label() == null || label().value() == null;
+    displayChildren(children(), indent + 1, parentIsNull, true, pw);
+    pw.print(")");
+    pw.flush();
+  }
+
+

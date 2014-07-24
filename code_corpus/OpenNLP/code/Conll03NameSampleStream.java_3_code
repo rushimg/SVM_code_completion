@@ -1,0 +1,19 @@
+  public Conll03NameSampleStream(LANGUAGE lang, ObjectStream<String> lineStream, int types) {
+    this.lang = lang;
+    this.lineStream = lineStream;
+    this.types = types;
+  }
+
+  public Conll03NameSampleStream(LANGUAGE lang, InputStreamFactory in, int types) throws IOException {
+
+    this.lang = lang;
+    try {
+      this.lineStream = new PlainTextByLineStream(in, "UTF-8");
+      System.setOut(new PrintStream(System.out, true, "UTF-8"));
+    } catch (UnsupportedEncodingException e) {
+      // UTF-8 is available on all JVMs, will never happen
+      throw new IllegalStateException(e);
+    }
+    this.types = types;
+  }
+

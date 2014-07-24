@@ -1,0 +1,45 @@
+    public LegendItem getLegendItem(int datasetIndex, int series) {
+        XYPlot plot = getPlot();
+        if (plot == null) {
+            return null;
+        }
+        LegendItem result = null;
+        XYDataset dataset = plot.getDataset(datasetIndex);
+        if (dataset != null) {
+            if (getItemVisible(series, 0)) {
+                String label = getLegendItemLabelGenerator().generateLabel(
+                        dataset, series);
+                String description = label;
+                String toolTipText = null;
+                if (getLegendItemToolTipGenerator() != null) {
+                    toolTipText = getLegendItemToolTipGenerator().generateLabel(
+                            dataset, series);
+                }
+                String urlText = null;
+                if (getLegendItemURLGenerator() != null) {
+                    urlText = getLegendItemURLGenerator().generateLabel(
+                            dataset, series);
+                }
+                Shape shape = lookupLegendShape(series);
+                boolean shapeFilled = getItemShapeFilled(series, 0);
+                Paint paint = lookupSeriesPaint(series);
+                Paint linePaint = paint;
+                Stroke lineStroke = lookupSeriesStroke(series);
+                result = new LegendItem(label, description, toolTipText,
+                        urlText, this.baseShapesVisible, shape, shapeFilled,
+                        paint, !shapeFilled, paint, lineStroke,
+                        this.plotLines, this.legendLine, lineStroke, linePaint);
+                result.setLabelFont(lookupLegendTextFont(series));
+                Paint labelPaint = lookupLegendTextPaint(series);
+                if (labelPaint != null) {
+                    result.setLabelPaint(labelPaint);
+                }
+                result.setDataset(dataset);
+                result.setDatasetIndex(datasetIndex);
+                result.setSeriesKey(dataset.getSeriesKey(series));
+                result.setSeriesIndex(series);
+            }
+        }
+        return result;
+    }
+

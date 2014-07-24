@@ -1,0 +1,60 @@
+    private boolean isGuardVertexDisconnected(
+        RankingPathElement<V, E> prevPathElement)
+    {
+        if (this.guardVertexToNotDisconnect == null) {
+            return false;
+        }
+
+        if (this.path2disconnect.containsKey(prevPathElement)) {
+            return this.path2disconnect.get(prevPathElement);
+        }
+
+        ConnectivityInspector<V, E> connectivityInspector;
+        MaskFunctor<V, E> connectivityMask;
+
+        if (this.graph instanceof DirectedGraph<?, ?>) {
+            connectivityMask = new PathMask<V, E>(prevPathElement);
+            DirectedMaskSubgraph<V, E> connectivityGraph =
+                new DirectedMaskSubgraph<V, E>(
+                    (DirectedGraph<V, E>) this.graph,
+                    connectivityMask);
+            connectivityInspector =
+                new ConnectivityInspector<V, E>(
+                    connectivityGraph);
+        } else {
+            connectivityMask = new PathMask<V, E>(prevPathElement);
+            UndirectedMaskSubgraph<V, E> connectivityGraph =
+                new UndirectedMaskSubgraph<V, E>(
+                    (UndirectedGraph<V, E>) this.graph,
+                    connectivityMask);
+            connectivityInspector =
+                new ConnectivityInspector<V, E>(
+                    connectivityGraph);
+        }
+
+        if (connectivityMask.isVertexMasked(this.guardVertexToNotDisconnect)) {
+            // the guard-vertex was already in the path element -> invalid path
+            this.path2disconnect.put(prevPathElement, true);
+            return true;
+        }
+
+        if (!connectivityInspector.pathExists(
+                this.vertex,
+                this.guardVertexToNotDisconnect))
+        {
+            this.path2disconnect.put(prevPathElement, true);
+            return true;
+        }
+
+        this.path2disconnect.put(prevPathElement, false);
+        return false;
+    }
+
+    private boolean isNotValidPath(
+        RankingPathElement<V, E> prevPathElement,
+        E edge)
+    {
+        return !isSimplePath(prevPathElement, edge)
+            || isGuardVertexDisconnected(prevPathElement);
+    }
+

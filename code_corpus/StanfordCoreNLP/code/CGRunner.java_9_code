@@ -1,0 +1,10 @@
+  public void solveCG() {
+    LikelihoodFunction df = new LikelihoodFunction(prob, tol, useGaussianPrior, priorSigmaS, sigmaSquareds);
+    MonitorFunction monitor = new MonitorFunction(prob, df, filename);
+    Minimizer<DiffFunction> cgm = new CGMinimizer(monitor);
+
+    // all parameters are started at 0.0
+    prob.lambda = cgm.minimize(df, tol, new double[df.domainDimension()]);
+    printOptimizationResults(df, monitor);
+  }
+

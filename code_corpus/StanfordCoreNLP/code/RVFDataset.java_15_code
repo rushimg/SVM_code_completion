@@ -1,0 +1,26 @@
+  public void printFullFeatureMatrixWithValues(PrintWriter pw) {
+    String sep = "\t";
+    for (int i = 0; i < featureIndex.size(); i++) {
+      pw.print(sep + featureIndex.get(i));
+    }
+    pw.println();
+    for (int i = 0; i < size; i++) { // changed labels.length to size
+      pw.print(labelIndex.get(labels[i])); // changed i to labels[i]
+      Map<Integer, Double> feats = Generics.newHashMap();
+      for (int j = 0; j < data[i].length; j++) {
+        int feature = data[i][j];
+        double val = values[i][j];
+        feats.put(Integer.valueOf(feature), new Double(val));
+      }
+      for (int j = 0; j < featureIndex.size(); j++) {
+        if (feats.containsKey(Integer.valueOf(j))) {
+          pw.print(sep + feats.get(Integer.valueOf(j)));
+        } else {
+          pw.print(sep + " ");
+        }
+      }
+      pw.println();
+    }
+    pw.flush();
+  }
+

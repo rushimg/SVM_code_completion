@@ -1,0 +1,55 @@
+         I'm actually not using "testContent" anymore.
+         I think it's broken because the whole test file has been read over and over again,
+         tand the testContentIdx has been set to 0 every time, while "doc" is moving
+         line by line!!!!
+         -pichuan
+
+      int testContentIdx=0;
+      StringBuilder ans = new StringBuilder(); // the actual output we will return
+      StringBuilder unmod_ans = new StringBuilder();  // this is the original output from the CoreLabel
+      StringBuilder unmod_normed_ans = new StringBuilder();  // this is the original output from the CoreLabel
+      CoreLabel wi = null;
+      for (Iterator<CoreLabel> wordIter = doc.iterator(); wordIter.hasNext();
+           testContentIdx++) {
+        CoreLabel pwi = wi;
+        wi = wordIter.next();
+        boolean originalWhiteSpace = "1".equals(wi.get(CoreAnnotations.SpaceBeforeAnnotation.class));
+
+        //  if the CRF says "START" (segmented), and it's not the first word..
+        if (wi.get(CoreAnnotations.AnswerAnnotation.class).equals("1") && !("0".equals(String.valueOf(wi.get(CoreAnnotations.PositionAnnotation.class))))) {
+          // check if we need to preserve the "no space" between English
+          // characters
+          boolean seg = true; // since it's in the "1" condition.. default
+                              // is to seg
+          if (flags.keepEnglishWhitespaces) {
+            if (testContentIdx > 0) {
+              char prevChar = pwi.get(CoreAnnotations.OriginalCharAnnotation.class).charAt(0);
+              char currChar = wi.get(CoreAnnotations.OriginalCharAnnotation.class).charAt(0);
+              if (isLetterASCII(prevChar) && isLetterASCII(currChar)) {
+                // keep the "non space" before wi
+                if (! originalWhiteSpace) {
+                  seg = false;
+                }
+              }
+            }
+          }
+
+          // if there was space and keepAllWhitespaces is true, restore it no matter what
+          if (flags.keepAllWhitespaces && originalWhiteSpace) {
+              seg = true;
+          }
+          if (seg) {
+            if (originalWhiteSpace) {
+              ans.append('\u1924'); // a pretty Limbu character which is later changed to a space
+            } else {
+              ans.append(' ');
+            }
+          }
+          unmod_ans.append(' ');
+          unmod_normed_ans.append(' ');
+        } else {
+          boolean seg = false; // since it's in the "0" condition.. default
+          // Changed after conversation with Huihsin.
+          //
+          // Decided that all words consisting of English/ASCII characters
+          // should be separated from the surrounding Chinese characters. -cer

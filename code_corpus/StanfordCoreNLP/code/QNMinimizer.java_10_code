@@ -1,0 +1,32 @@
+    public int update(double[] newX, double[] x, double[] newGrad,
+        double[] grad, double step) throws SurpriseConvergence {
+      // todo: add outofmemory error.
+      double[] newS, newY;
+      double sy, yy, sg;
+
+      // allocate arrays for new s,y pairs (or replace if the list is already
+      // full)
+      if (mem > 0 && s.size() == mem || s.size() == maxMem) {
+        newS = s.remove(0);
+        newY = y.remove(0);
+        rho.remove(0);
+      } else {
+        newS = new double[x.length];
+        newY = new double[x.length];
+      }
+
+      // Here we construct the new pairs, and check for positive definiteness.
+      sy = 0;
+      yy = 0;
+      sg = 0;
+      for (int i = 0; i < x.length; i++) {
+        newS[i] = newX[i] - x[i];
+        newY[i] = newGrad[i] - grad[i];
+      }
+
+      // Apply the updates used for the initial hessian.
+
+      return update(newS, newY, yy, sy, sg, step);
+    }
+
+    private class NegativeCurvature extends Throwable {

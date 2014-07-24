@@ -1,0 +1,19 @@
+  public static List<CoreLabel> taggedLeafLabels(Tree t) {
+    List<CoreLabel> l = new ArrayList<CoreLabel>();
+    taggedLeafLabels(t, l);
+    return l;
+  }
+
+  private static void taggedLeafLabels(Tree t, List<CoreLabel> l) {
+    if (t.isPreTerminal()) {
+      CoreLabel fl = (CoreLabel)t.getChild(0).label();
+      fl.set(CoreAnnotations.TagLabelAnnotation.class, t.label());
+      l.add(fl);
+    } else {
+      for (Tree kid : t.children()) {
+        taggedLeafLabels(kid, l);
+      }
+    }
+  }
+
+

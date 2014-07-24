@@ -1,0 +1,63 @@
+  public static void checkOutputFile(String name, File outFile) {
+
+    String isFailure = null;
+
+    if (outFile.exists()) {
+
+      // The file already exists, ensure that it is a normal file and that it is
+      // possible to write into it
+
+      if (outFile.isDirectory()) {
+        isFailure = "The " + name + " file is a directory!";
+      }
+      else if (outFile.isFile()) {
+        if (!outFile.canWrite()) {
+          isFailure = "No permissions to write the " + name + " file!";
+        }
+      }
+      else {
+        isFailure = "The " + name + " file is not a normal file!";
+      }
+    }
+    else {
+
+      // The file does not exist ensure its parent
+      // directory exists and has write permissions to create
+      // a new file in it
+
+      File parentDir = outFile.getAbsoluteFile().getParentFile();
+
+      if (parentDir != null && parentDir.exists()) {
+
+        if (!parentDir.canWrite()) {
+          isFailure = "No permissions to create the " + name + " file!";
+        }
+      }
+      else {
+        isFailure = "The parent directory of the " + name + " file does not exist, " +
+        		"please create it first!";
+      }
+
+    }
+
+    if (null != isFailure) {
+      throw new TerminateToolException(-1, isFailure + " Path: " + outFile.getAbsolutePath());
+    }
+  }
+
+  public static FileInputStream openInFile(File file) {
+    try {
+      return new FileInputStream(file);
+    } catch (FileNotFoundException e) {
+      throw new TerminateToolException(-1, "File '" + file + "' cannot be found", e);
+    }
+  }
+
+  public static InputStreamFactory createInputStreamFactory(File file) {
+    try {
+      return new MarkableFileInputStreamFactory(file);
+    } catch (FileNotFoundException e) {
+      throw new TerminateToolException(-1, "File '" + file + "' cannot be found", e);
+    }
+  }
+

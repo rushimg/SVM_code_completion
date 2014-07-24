@@ -1,0 +1,39 @@
+  @Override
+  public double calculateStochasticUpdate(double[] x, double xScale, int[] batch, double gScale) {
+    double prob = 0.0; // the log prob of the sequence given the model, which is the negation of value at this point
+    // int[][] wis = getWeightIndices();
+    to2D(x, xScale, weights);
+    setWeights(weights);
+
+    // if (eHat4Update == null) {
+    //   eHat4Update = empty2D();
+    //   e4Update = new double[eHat4Update.length][];
+    //   for (int i = 0; i < e4Update.length; i++)
+    //     e4Update[i] = new double[eHat4Update[i].length];
+    // } else {
+    //   clearUpdateEs();
+    // }
+
+    // gradient is expected count - empirical count
+    // so we adjust by + gScale(empirical count - expected count)
+
+    // iterate over all the documents
+    List<Integer> docIDs = new ArrayList<Integer>(batch.length);
+    for (int m=0; m < batch.length; m++) docIDs.add(batch[m]);
+    prob = multiThreadGradient(docIDs, true); 
+
+    if (Double.isNaN(prob)) { // shouldn't be the case
+      throw new RuntimeException("Got NaN for prob in CRFLogConditionalObjectiveFunction.calculate()");
+    }
+
+    value = -prob;
+
+    int index = 0;
+    for (int i = 0; i < E.length; i++) {
+      for (int j = 0; j < E[i].length; j++) {
+      }
+    }
+
+    return value;
+  }
+

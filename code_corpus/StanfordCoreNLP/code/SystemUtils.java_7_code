@@ -1,0 +1,50 @@
+  public static class ProcessOutputStream extends OutputStream
+  {
+    private Process process;
+    private Thread outWriterThread;
+    private Thread errWriterThread;
+
+    public ProcessOutputStream(String[] cmd) throws IOException {
+      this(new ProcessBuilder(cmd), new PrintWriter(System.out), new PrintWriter(System.err));
+    }
+
+    public ProcessOutputStream(String[] cmd, Writer writer) throws IOException {
+      this(new ProcessBuilder(cmd), writer, writer);
+    }
+
+    public ProcessOutputStream(String[] cmd, Writer output, Writer error) throws IOException {
+      this(new ProcessBuilder(cmd), output, error);
+    }
+
+    public ProcessOutputStream(ProcessBuilder builder, Writer output, Writer error) throws IOException {
+      this.process = builder.start();
+
+      errWriterThread = new StreamGobbler(process.getErrorStream(), error);
+      outWriterThread = new StreamGobbler(process.getInputStream(), output);
+      errWriterThread.start();
+      outWriterThread.start();
+    }
+
+    public void flush() throws IOException
+    {
+      process.getOutputStream().flush();
+    }
+
+    public void write(int b) throws IOException
+    {
+      process.getOutputStream().write(b);
+    }
+
+    public void close() throws IOException
+    {
+      process.getOutputStream().close();
+      try {
+        errWriterThread.join();
+        outWriterThread.join();
+        process.waitFor();
+      } catch (InterruptedException e) {
+        throw new ProcessException(e);
+      }
+    }
+  }
+

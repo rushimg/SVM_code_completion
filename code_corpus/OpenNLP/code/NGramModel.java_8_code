@@ -1,0 +1,26 @@
+  public void add(StringList ngram, int minLength, int maxLength) {
+
+    if (minLength < 1 || maxLength < 1)
+        throw new IllegalArgumentException("minLength and maxLength param must be at least 1. " +
+            "minLength=" + minLength + ", maxLength= " + maxLength);
+
+    if (minLength > maxLength)
+        throw new IllegalArgumentException("minLength param must not be larger than " +
+            "maxLength param. minLength=" + minLength + ", maxLength= " + maxLength);
+
+    for (int lengthIndex = minLength; lengthIndex < maxLength + 1;
+    lengthIndex++) {
+      for (int textIndex = 0;
+          textIndex + lengthIndex - 1 < ngram.size(); textIndex++) {
+
+        String[] grams = new String[lengthIndex];
+
+        for (int i = textIndex; i < textIndex + lengthIndex; i++) {
+          grams[i - textIndex] = ngram.getToken(i);
+        }
+
+        add(new StringList(grams));
+      }
+    }
+  }
+

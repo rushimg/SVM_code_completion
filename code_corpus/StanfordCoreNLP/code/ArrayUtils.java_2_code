@@ -1,0 +1,74 @@
+  private static BitSet byteArrayToBitSet(byte[] array) {
+
+    BitSet bitSet = new BitSet();
+    int index = 0;
+    for (byte b : array) {
+      int b1 = ((int)b) + 128;
+
+      bitSet.set(index++, ((b1 >> 7) & 1) == 1);
+      bitSet.set(index++, ((b1 >> 6) & 1) == 1);
+      bitSet.set(index++, ((b1 >> 5) & 1) == 1);
+      bitSet.set(index++, ((b1 >> 4) & 1) == 1);
+      bitSet.set(index++, ((b1 >> 3) & 1) == 1);
+      bitSet.set(index++, ((b1 >> 2) & 1) == 1);
+      bitSet.set(index++, ((b1 >> 1) & 1) == 1);
+      bitSet.set(index++, (b1 & 1) == 1);
+    }
+
+    return bitSet;
+  }
+
+//     for (int i = 1; i < orig.length; i++) {
+//       if (orig[i] < orig[i-1]) { throw new RuntimeException("Array must be sorted!"); }
+
+//       StringBuilder bits = new StringBuilder();
+//       int prevNum = 0;
+//       for (int f : orig) {
+//         StringBuilder bits1 = new StringBuilder();
+//               System.err.print(f+"\t");
+//               String n = Integer.toString(f-prevNum, 2);
+//               String n1 = Integer.toString(n.length(), 2);
+//               for (int ii = 0; ii < n1.length(); ii++) {
+//                 bits1.append("1");
+//               }
+//               bits1.append("0");
+//               bits1.append(n1.substring(1));
+//               bits1.append(n.substring(1));
+//               System.err.print(bits1+"\t");
+//               bits.append(bits1);
+//               prevNum = f;
+//             }
+
+
+
+  public static double[] flatten(double[][] array) {
+    int size = 0;
+    for (double[] a : array) {
+      size += a.length;
+    }
+    double[] newArray = new double[size];
+    int i = 0;
+    for (double[] a : array) {
+      for (double d : a) {
+        newArray[i++] = d;
+      }
+    }
+    return newArray;
+  }
+
+  public static double[][] to2D(double[] array, int dim1Size) {
+    int dim2Size = array.length/dim1Size;
+    return to2D(array, dim1Size, dim2Size);
+  }
+
+  public static double[][] to2D(double[] array, int dim1Size, int dim2Size) {
+    double[][] newArray = new double[dim1Size][dim2Size];
+    int k = 0;
+    for (int i = 0; i < newArray.length; i++) {
+      for (int j = 0; j < newArray[i].length; j++) {
+        newArray[i][j] = array[k++];
+      }
+    }
+    return newArray;
+  }
+

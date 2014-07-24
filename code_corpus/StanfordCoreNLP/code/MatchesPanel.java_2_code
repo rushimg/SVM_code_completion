@@ -1,0 +1,126 @@
+  public static synchronized MatchesPanel getInstance() {
+    if (instance == null) {
+      instance = new MatchesPanel();
+    }
+    return instance;
+  }
+
+  private MatchesPanel() {
+    //data
+    DefaultListModel model = new DefaultListModel();
+    list = new TooltipJList(model);
+    list.setCellRenderer(new MatchCellRenderer());
+    list.setTransferHandler(new TreeTransferHandler());
+    matchedParts = Generics.newHashMap();
+    list.addListSelectionListener(this);
+    MouseInputAdapter mouseListener = new MouseInputAdapter() {
+      private boolean dragNDrop = false;
+      @Override
+      public void mousePressed(MouseEvent e) {
+        if (MatchesPanel.getInstance().isEmpty()) return;
+        if(firstMouseEvent == null) {
+          firstMouseEvent = e;
+        }
+        e.consume();
+        TreeFromFile selectedValue = (TreeFromFile) list.getSelectedValue();
+        if(selectedValue == null) return;
+        JTextField label = selectedValue.getLabel();
+        if(((e.getModifiersEx()) & InputEvent.SHIFT_DOWN_MASK) == InputEvent.SHIFT_DOWN_MASK) {
+          //shift is being held
+          addHighlight(label, firstMouseEvent, e);
+        } else if(!HighlightUtils.isInHighlight(e, label, label.getHighlighter())) {
+          label.getHighlighter().removeAllHighlights();
+          firstMouseEvent = e;
+          dragNDrop = false;
+          list.repaint();
+        } else {
+          //in a highlight, if we drag after this, we'll be DnDing
+          dragNDrop = true;
+        }
+      }
+
+      private boolean addHighlight(JTextField label, MouseEvent mouseEvent1, MouseEvent mouseEvent2) {
+        //Two parts: adding the highlight on the label, and scrolling the list appropriately
+        //HighlightUtils handles the first part, we handle the second part here
+        boolean highlightSuccessful = HighlightUtils.addHighlight(label, mouseEvent1, mouseEvent2);
+        FontMetrics fm = label.getFontMetrics(label.getFont());
+        int firstXpos = mouseEvent1.getX();
+        int lastXpos = mouseEvent2.getX();
+        int firstOffset = getCharOffset(fm, label.getText(), firstXpos);
+        int lastOffset = getCharOffset(fm, label.getText(), lastXpos);
+        if(lastOffset != firstOffset) {
+          if(firstOffset > lastOffset) {
+            int tmp = firstOffset;
+            firstOffset = lastOffset;
+            lastOffset = tmp;
+          }
+          Rectangle curVisible = list.getVisibleRect();
+          if(lastXpos > curVisible.x+curVisible.width) {
+            list.scrollRectToVisible(new Rectangle(new Point(lastXpos-curVisible.width, curVisible.y), curVisible.getSize()));
+          } else if(lastXpos < curVisible.x) {
+            list.scrollRectToVisible(new Rectangle(new Point(lastXpos, curVisible.y), curVisible.getSize()));
+          }
+          list.repaint();
+          return highlightSuccessful;
+        } else
+          return false;
+      }
+
+      @Override
+      public void mouseDragged(MouseEvent e) {
+        if (MatchesPanel.getInstance().isEmpty()) return;
+
+        if (firstMouseEvent != null) {
+          e.consume();
+          JTextField label = ((TreeFromFile) list.getSelectedValue()).getLabel();
+          if(dragNDrop) {
+            if(label == null)
+              return;
+            if(Point2D.distanceSq(e.getX(), e.getY(), firstMouseEvent.getX(), firstMouseEvent.getY()) > 25) {
+              //do DnD
+              list.getTransferHandler().exportAsDrag((JComponent) e.getSource(), firstMouseEvent, TransferHandler.COPY);
+            }
+          } else {
+            addHighlight(label, firstMouseEvent, e);
+          }
+        }
+      }
+
+      private int getCharOffset(FontMetrics fm, String characters, int xPos) {
+        StringBuilder s = new StringBuilder();
+        char[] sArray = characters.toCharArray();
+        int i;
+        for(i = 0; i < characters.length() && fm.stringWidth(s.toString()) < xPos; i++) {
+          s.append(sArray[i]);
+        }
+        return i;
+
+      }
+    };
+
+    list.addMouseMotionListener(mouseListener);
+    list.addMouseListener(mouseListener);
+    listeners = new ArrayList<MatchesPanelListener>();
+    //layout
+    this.setLayout(new BorderLayout());
+    this.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEmptyBorder(),"Matches: "));
+    JScrollPane scroller = new JScrollPane(list);
+    this.add(scroller, BorderLayout.CENTER);
+  }
+
+  public void removeAllMatches() {
+    setMatchedParts(Generics.<TreeFromFile, List<Tree>>newHashMap());
+    ((DefaultListModel) list.getModel()).removeAllElements();
+    list.setSelectedIndex(-1);
+    this.sendToListeners();
+  }
+
+  private static List<Tree> getTreebankAsList(Treebank tb) {
+    List<Tree> treeList = new ArrayList<Tree>();
+    if (tb != null) {
+      treeList.addAll(tb);
+    }
+    return treeList;
+  }
+
+

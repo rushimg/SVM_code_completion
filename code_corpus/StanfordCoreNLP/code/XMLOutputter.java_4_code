@@ -1,0 +1,33 @@
+        Tree sentimentTree = sentence.get(SentimentCoreAnnotations.AnnotatedTree.class);
+        if (sentimentTree != null) {
+          int sentiment = RNNCoreAnnotations.getPredictedClass(sentimentTree);
+          sentElem.addAttribute(new Attribute("sentimentValue", Integer.toString(sentiment)));
+          String sentimentClass = sentence.get(SentimentCoreAnnotations.ClassName.class);
+          sentElem.addAttribute(new Attribute("sentiment", sentimentClass.replaceAll(" ", "")));
+        }
+
+
+        // add the sentence to the root
+        sentencesElem.appendChild(sentElem);
+      }
+    }
+
+    //
+    // add the coref graph
+    //
+    Map<Integer, CorefChain> corefChains =
+      annotation.get(CorefCoreAnnotations.CorefChainAnnotation.class);
+    if (corefChains != null) {
+      List<CoreMap> sentences = annotation.get(CoreAnnotations.SentencesAnnotation.class);
+      Element corefInfo = new Element("coreference", NAMESPACE_URI);
+      if (addCorefGraphInfo(options, corefInfo, sentences, corefChains, NAMESPACE_URI))
+        docElem.appendChild(corefInfo);
+    }
+
+    //
+    // save any document-level annotations here
+    //
+
+    return xmlDoc;
+  }
+

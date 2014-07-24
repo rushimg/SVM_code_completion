@@ -1,0 +1,25 @@
+  public static boolean entitySameSpeaker(Document document, Mention m, Mention ant) {
+    String mSpeakerStr = m.headWord.get(CoreAnnotations.SpeakerAnnotation.class);
+    if (mSpeakerStr == null) {
+      return false;
+    }
+    String antSpeakerStr = ant.headWord.get(CoreAnnotations.SpeakerAnnotation.class);
+    if (antSpeakerStr == null) {
+      return false;
+    }
+
+    // Speakers are the same if the speaker strings are the same (most common case?)
+    if (mSpeakerStr.equals(antSpeakerStr)) {
+      return true;
+    } else {
+      // Speakers are also the same if they map to the same cluster id...
+      int mSpeakerClusterID = getSpeakerClusterId(document, mSpeakerStr);
+      int antSpeakerClusterID = getSpeakerClusterId(document, antSpeakerStr);
+      if (mSpeakerClusterID >= 0 && antSpeakerClusterID >= 0) {
+        return (mSpeakerClusterID == antSpeakerClusterID);
+      } else {
+        return false;
+      }
+    }
+  }
+

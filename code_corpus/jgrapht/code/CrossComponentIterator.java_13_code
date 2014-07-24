@@ -1,0 +1,27 @@
+    public V next()
+    {
+        if (startVertex != null) {
+            encounterStartVertex();
+        }
+
+        if (hasNext()) {
+            if (state == CCS_BEFORE_COMPONENT) {
+                state = CCS_WITHIN_COMPONENT;
+                if (nListeners != 0) {
+                    fireConnectedComponentStarted(ccStartedEvent);
+                }
+            }
+
+            V nextVertex = provideNextVertex();
+            if (nListeners != 0) {
+                fireVertexTraversed(createVertexTraversalEvent(nextVertex));
+            }
+
+            addUnseenChildrenOf(nextVertex);
+
+            return nextVertex;
+        } else {
+            throw new NoSuchElementException();
+        }
+    }
+

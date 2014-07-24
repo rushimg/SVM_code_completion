@@ -1,0 +1,44 @@
+    protected Size2D drawHorizontal(Graphics2D g2, Rectangle2D chartArea) {
+
+        double startY = 0.0;
+        double topSpace = 0.0;
+        double bottomSpace = 0.0;
+        double leftSpace = 0.0;
+        double rightSpace = 0.0;
+
+        double w = getWidth();
+        double h = getHeight();
+        RectangleInsets padding = getPadding();
+        topSpace = padding.calculateTopOutset(h);
+        bottomSpace = padding.calculateBottomOutset(h);
+        leftSpace = padding.calculateLeftOutset(w);
+        rightSpace = padding.calculateRightOutset(w);
+
+        if (getPosition() == RectangleEdge.TOP) {
+            startY = chartArea.getY() + topSpace;
+        }
+        else {
+            startY = chartArea.getY() + chartArea.getHeight() - bottomSpace - h;
+        }
+
+        // what is our alignment?
+        HorizontalAlignment horizontalAlignment = getHorizontalAlignment();
+        double startX = 0.0;
+        if (horizontalAlignment == HorizontalAlignment.CENTER) {
+            startX = chartArea.getX() + leftSpace + chartArea.getWidth() / 2.0
+                     - w / 2.0;
+        }
+        else if (horizontalAlignment == HorizontalAlignment.LEFT) {
+            startX = chartArea.getX() + leftSpace;
+        }
+        else if (horizontalAlignment == HorizontalAlignment.RIGHT) {
+            startX = chartArea.getX() + chartArea.getWidth() - rightSpace - w;
+        }
+        g2.drawImage(this.image, (int) startX, (int) startY, (int) w, (int) h,
+                null);
+
+        return new Size2D(chartArea.getWidth() + leftSpace + rightSpace,
+            h + topSpace + bottomSpace);
+
+    }
+

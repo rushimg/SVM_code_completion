@@ -1,0 +1,10 @@
+  public synchronized void put(I item) throws RejectedExecutionException {
+    Integer procId = getProcessor();
+    if (procId == null) {
+      throw new RejectedExecutionException("Couldn't submit item to threadpool: " + item.toString());
+    }
+    final int itemId = submittedItemCounter++;
+    CallableJob<I,O> job = new CallableJob<I,O>(item, itemId, processorList.get(procId), procId, callback);
+    threadPool.submit(job);
+  }
+

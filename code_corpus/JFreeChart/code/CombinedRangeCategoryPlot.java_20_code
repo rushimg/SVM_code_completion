@@ -1,0 +1,19 @@
+    public Object clone() throws CloneNotSupportedException {
+        CombinedRangeCategoryPlot result
+            = (CombinedRangeCategoryPlot) super.clone();
+        result.subplots = (List) ObjectUtilities.deepClone(this.subplots);
+        for (Iterator it = result.subplots.iterator(); it.hasNext();) {
+            Plot child = (Plot) it.next();
+            child.setParent(result);
+        }
+
+        // after setting up all the subplots, the shared range axis may need
+        // reconfiguring
+        ValueAxis rangeAxis = result.getRangeAxis();
+        if (rangeAxis != null) {
+            rangeAxis.configure();
+        }
+
+        return result;
+    }
+

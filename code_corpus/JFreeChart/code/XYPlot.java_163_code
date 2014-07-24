@@ -1,0 +1,37 @@
+    protected AxisSpace calculateRangeAxisSpace(Graphics2D g2,
+                                                Rectangle2D plotArea,
+                                                AxisSpace space) {
+
+        if (space == null) {
+            space = new AxisSpace();
+        }
+
+        // reserve some space for the range axis...
+        if (this.fixedRangeAxisSpace != null) {
+            if (this.orientation == PlotOrientation.HORIZONTAL) {
+                space.ensureAtLeast(this.fixedRangeAxisSpace.getTop(),
+                        RectangleEdge.TOP);
+                space.ensureAtLeast(this.fixedRangeAxisSpace.getBottom(),
+                        RectangleEdge.BOTTOM);
+            }
+            else if (this.orientation == PlotOrientation.VERTICAL) {
+                space.ensureAtLeast(this.fixedRangeAxisSpace.getLeft(),
+                        RectangleEdge.LEFT);
+                space.ensureAtLeast(this.fixedRangeAxisSpace.getRight(),
+                        RectangleEdge.RIGHT);
+            }
+        }
+        else {
+            // reserve space for the range axes...
+            for (int i = 0; i < this.rangeAxes.size(); i++) {
+                Axis axis = (Axis) this.rangeAxes.get(i);
+                if (axis != null) {
+                    RectangleEdge edge = getRangeAxisEdge(i);
+                    space = axis.reserveSpace(g2, this, plotArea, edge, space);
+                }
+            }
+        }
+        return space;
+
+    }
+

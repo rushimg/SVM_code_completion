@@ -1,0 +1,49 @@
+  static void outputTree(PrintStream out, CoreMap sentence, List<Output> outputFormats) {
+    Tree tree = sentence.get(SentimentCoreAnnotations.AnnotatedTree.class);
+    for (Output output : outputFormats) {
+      switch (output) {
+      case PENNTREES: {
+        Tree copy = tree.deepCopy();
+        setSentimentLabels(copy);
+        out.println(copy);
+        break;
+      }
+      case VECTORS: {
+        Tree copy = tree.deepCopy();
+        setIndexLabels(copy, 0);
+        out.println(copy);
+        outputTreeVectors(out, tree, 0);
+        break;
+      }
+      case ROOT: {
+        out.println("  " + sentence.get(SentimentCoreAnnotations.ClassName.class));
+        break;
+      }
+      case PROBABILITIES: {
+        Tree copy = tree.deepCopy();
+        setIndexLabels(copy, 0);
+        out.println(copy);
+        outputTreeScores(out, tree, 0);
+        break;
+      }
+      default:
+        throw new IllegalArgumentException("Unknown output format " + output);
+      }
+    }
+  }
+
+  static final String DEFAULT_TLPP_CLASS = "edu.stanford.nlp.parser.lexparser.EnglishTreebankParserParams";
+
+  public static void help() {
+    System.err.println("Known command line arguments:");
+    System.err.println("  -sentimentModel <model>: Which model to use");
+    System.err.println("  -parserModel <model>: Which parser to use");
+    System.err.println("  -file <filename>: Which file to process");
+    System.err.println("  -fileList <file>,<file>,...: Comma separated list of files to process.  Output goes to file.out");
+    System.err.println("  -stdin: Process stdin instead of a file");
+    System.err.println("  -input <format>: Which format to input, TEXT or TREES.  Will not process stdin as trees.  If trees are not already binarized, they will be binarized with -tlppClass's headfinder, which means they must have labels in that treebank's tagset.");
+    System.err.println("  -output <format>: Which format to output, PENNTREES, VECTORS, PROBABILITIES, or ROOT.  Multiple formats can be specified as a comma separated list.");
+    System.err.println("  -filterUnknown: remove unknown trees from the input.  Only applies to TREES input, in which case the trees must be binarized with sentiment labels");
+    System.err.println("  -tlppClass: a class to use for building the binarizer if using non-binarized TREES as input.  Defaults to " + DEFAULT_TLPP_CLASS);
+  }
+

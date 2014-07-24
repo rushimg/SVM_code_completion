@@ -1,0 +1,22 @@
+  @SuppressWarnings("unchecked")
+  public static <E, C extends Counter<E>> C tfLogScale(C c, double base) {
+    C scaled = (C) c.getFactory().create();
+    for (E key : c.keySet()) {
+      double cnt = c.getCount(key);
+      double scaledCnt = 0.0;
+      if (cnt > 0) {
+        scaledCnt = 1.0 + SloppyMath.log(cnt, base);
+      }
+      scaled.setCount(key, scaledCnt);
+    }
+    return scaled;
+  }
+
+  public static <E extends Comparable<E>> void printCounterSortedByKeys(Counter<E> c) {
+    List<E> keyList = new ArrayList<E>(c.keySet());
+    Collections.sort(keyList);
+    for (E o : keyList) {
+      System.out.println(o + ":" + c.getCount(o));
+    }
+  }
+

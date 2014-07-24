@@ -1,0 +1,59 @@
+    @Override
+    public void validate(final Cookie cookie, final CookieOrigin origin)
+            throws MalformedCookieException {
+        Args.notNull(cookie, "Cookie");
+        Args.notNull(origin, "Cookie origin");
+        final String host = origin.getHost().toLowerCase(Locale.ROOT);
+        if (cookie.getDomain() == null) {
+            throw new CookieRestrictionViolationException("Invalid cookie state: " +
+                                               "domain not specified");
+        }
+        final String cookieDomain = cookie.getDomain().toLowerCase(Locale.ROOT);
+
+        if (cookie instanceof ClientCookie
+                && ((ClientCookie) cookie).containsAttribute(ClientCookie.DOMAIN_ATTR)) {
+            // Domain attribute must start with a dot
+            if (!cookieDomain.startsWith(".")) {
+                throw new CookieRestrictionViolationException("Domain attribute \"" +
+                    cookie.getDomain() + "\" violates RFC 2109: domain must start with a dot");
+            }
+
+            // Domain attribute must contain at least one embedded dot,
+            // or the value must be equal to .local.
+            final int dotIndex = cookieDomain.indexOf('.', 1);
+            if (((dotIndex < 0) || (dotIndex == cookieDomain.length() - 1))
+                && (!cookieDomain.equals(".local"))) {
+                throw new CookieRestrictionViolationException(
+                        "Domain attribute \"" + cookie.getDomain()
+                        + "\" violates RFC 2965: the value contains no embedded dots "
+                        + "and the value is not .local");
+            }
+
+            // The effective host name must domain-match domain attribute.
+            if (!domainMatch(host, cookieDomain)) {
+                throw new CookieRestrictionViolationException(
+                        "Domain attribute \"" + cookie.getDomain()
+                        + "\" violates RFC 2965: effective host name does not "
+                        + "domain-match domain attribute.");
+            }
+
+            // effective host name minus domain must not contain any dots
+            final String effectiveHostWithoutDomain = host.substring(
+                    0, host.length() - cookieDomain.length());
+            if (effectiveHostWithoutDomain.indexOf('.') != -1) {
+                throw new CookieRestrictionViolationException("Domain attribute \""
+                                                   + cookie.getDomain() + "\" violates RFC 2965: "
+                                                   + "effective host minus domain may not contain any dots");
+            }
+        } else {
+            // Domain was not specified in header. In this case, domain must
+            // string match request host (case-insensitive).
+            if (!cookie.getDomain().equals(host)) {
+                throw new CookieRestrictionViolationException("Illegal domain attribute: \""
+                                                   + cookie.getDomain() + "\"."
+                                                   + "Domain of origin: \""
+                                                   + host + "\"");
+            }
+        }
+    }
+

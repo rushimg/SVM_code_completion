@@ -1,0 +1,29 @@
+  @SuppressWarnings("unchecked")
+  public static <T> T globalIntern(T o) {
+    synchronized(globalMutex) {
+      return (T) getGlobal().intern(o);
+    }
+  }
+
+
+  protected final Interner<T> delegate;
+  protected final Object mutex;
+
+  public SynchronizedInterner(Interner<T> delegate) {
+    if (delegate == null) throw new NullPointerException();
+    this.delegate = delegate;
+    this.mutex = this;
+  }
+
+  public SynchronizedInterner(Interner<T> delegate, Object mutex) {
+    if (delegate == null) throw new NullPointerException();
+    this.delegate = delegate;
+    this.mutex = mutex;
+  }
+
+  public void clear() {
+    synchronized(mutex) {
+      delegate.clear();
+    }
+  }
+

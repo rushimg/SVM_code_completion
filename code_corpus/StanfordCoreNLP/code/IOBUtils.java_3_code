@@ -1,0 +1,48 @@
+  public static List<CoreLabel> StringToIOB(List<CoreLabel> tokenList,
+                                            Character segMarker,
+                                            boolean applyRewriteRules,
+                                            boolean stripRewrites) {
+    final String strSegMarker = String.valueOf(segMarker);
+
+    boolean addWhitespace = false;
+    final int numTokens = tokenList.size();
+    String lastToken = "";
+    String currentWord = "";
+    int wordStartIndex = 0;
+    for (int i = 0; i < numTokens; ++i) {
+      // What type of token is this
+      CoreLabel cl = tokenList.get(i);
+
+      if (addWhitespace) {
+        fillInWordStatistics(iobList, currentWord, wordStartIndex);
+        currentWord = "";
+        wordStartIndex = iobList.size() + 1;
+        
+        iobList.add(createDatum(cl, BoundaryChar, BoundarySymbol));
+        final CoreLabel boundaryDatum = iobList.get(iobList.size() - 1);
+        boundaryDatum.setIndex(0);
+        boundaryDatum.setWord("");
+        addWhitespace = false;
+      }
+
+      String token = cl.word();
+      TokenType tokType = getTokenType(token, strSegMarker);
+      token = stripSegmentationMarkers(token, tokType);
+      assert token.length() != 0;
+
+      if (shouldNotSegment(token)) {
+        iobList.add(createDatum(cl, token, NosegSymbol));
+        addWhitespace = true;
+
+      } else {
+        // Iterate over the characters in the token
+        tokenToDatums(iobList, cl, token, tokType, tokenList.get(i), lastToken, applyRewriteRules, stripRewrites);
+        addWhitespace = (tokType == TokenType.BeginMarker || tokType == TokenType.NoMarker);
+      }
+      currentWord += token;
+      lastToken = token;
+    }
+    fillInWordStatistics(iobList, currentWord, wordStartIndex);
+    return iobList;
+  }
+

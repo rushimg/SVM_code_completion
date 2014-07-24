@@ -1,0 +1,96 @@
+    public void mouseDragged(MouseEvent e) {
+
+        // if the popup menu has already been triggered, then ignore dragging...
+        if (this.popup != null && this.popup.isShowing()) {
+            return;
+        }
+
+        // handle panning if we have a start point
+        if (this.panLast != null) {
+            double dx = e.getX() - this.panLast.getX();
+            double dy = e.getY() - this.panLast.getY();
+            if (dx == 0.0 && dy == 0.0) {
+                return;
+            }
+            double wPercent = -dx / this.panW;
+            double hPercent = dy / this.panH;
+            boolean old = this.chart.getPlot().isNotify();
+            this.chart.getPlot().setNotify(false);
+            Pannable p = (Pannable) this.chart.getPlot();
+            if (p.getOrientation() == PlotOrientation.VERTICAL) {
+                p.panDomainAxes(wPercent, this.info.getPlotInfo(),
+                        this.panLast);
+                p.panRangeAxes(hPercent, this.info.getPlotInfo(),
+                        this.panLast);
+            }
+            else {
+                p.panDomainAxes(hPercent, this.info.getPlotInfo(),
+                        this.panLast);
+                p.panRangeAxes(wPercent, this.info.getPlotInfo(),
+                        this.panLast);
+            }
+            this.panLast = e.getPoint();
+            this.chart.getPlot().setNotify(old);
+            return;
+        }
+
+        // if no initial zoom point was set, ignore dragging...
+        if (this.zoomPoint == null) {
+            return;
+        }
+        Graphics2D g2 = (Graphics2D) getGraphics();
+
+        // erase the previous zoom rectangle (if any).  We only need to do
+        // this is we are using XOR mode, which we do when we're not using
+        // the buffer (if there is a buffer, then at the end of this method we
+        // just trigger a repaint)
+        if (!this.useBuffer) {
+            drawZoomRectangle(g2, true);
+        }
+
+        boolean hZoom = false;
+        boolean vZoom = false;
+        if (this.orientation == PlotOrientation.HORIZONTAL) {
+            hZoom = this.rangeZoomable;
+            vZoom = this.domainZoomable;
+        }
+        else {
+            hZoom = this.domainZoomable;
+            vZoom = this.rangeZoomable;
+        }
+        Rectangle2D scaledDataArea = getScreenDataArea(
+                (int) this.zoomPoint.getX(), (int) this.zoomPoint.getY());
+        if (hZoom && vZoom) {
+            // selected rectangle shouldn't extend outside the data area...
+            double xmax = Math.min(e.getX(), scaledDataArea.getMaxX());
+            double ymax = Math.min(e.getY(), scaledDataArea.getMaxY());
+            this.zoomRectangle = new Rectangle2D.Double(
+                    this.zoomPoint.getX(), this.zoomPoint.getY(),
+                    xmax - this.zoomPoint.getX(), ymax - this.zoomPoint.getY());
+        }
+        else if (hZoom) {
+            double xmax = Math.min(e.getX(), scaledDataArea.getMaxX());
+            this.zoomRectangle = new Rectangle2D.Double(
+                    this.zoomPoint.getX(), scaledDataArea.getMinY(),
+                    xmax - this.zoomPoint.getX(), scaledDataArea.getHeight());
+        }
+        else if (vZoom) {
+            double ymax = Math.min(e.getY(), scaledDataArea.getMaxY());
+            this.zoomRectangle = new Rectangle2D.Double(
+                    scaledDataArea.getMinX(), this.zoomPoint.getY(),
+                    scaledDataArea.getWidth(), ymax - this.zoomPoint.getY());
+        }
+
+        // Draw the new zoom rectangle...
+        if (this.useBuffer) {
+            repaint();
+        }
+        else {
+            // with no buffer, we use XOR to draw the rectangle "over" the
+            // chart...
+            drawZoomRectangle(g2, true);
+        }
+        g2.dispose();
+
+    }
+

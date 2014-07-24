@@ -1,0 +1,38 @@
+  public Set<Dependency<Label, Label, Object>> mapDependencies(Filter<Dependency<Label, Label, Object>> f, HeadFinder hf) {
+    if (hf == null) {
+      throw new IllegalArgumentException("mapDependencies: need HeadFinder");
+    }
+    Set<Dependency<Label, Label, Object>> deps = Generics.newHashSet();
+    for (Tree node : this) {
+      if (node.isLeaf() || node.children().length < 2) {
+        continue;
+      }
+      // Label l = node.label();
+      // System.err.println("doing kids of label: " + l);
+      //Tree hwt = node.headPreTerminal(hf);
+      Tree hwt = node.headTerminal(hf);
+      // System.err.println("have hf, found head preterm: " + hwt);
+      if (hwt == null) {
+        throw new IllegalStateException("mapDependencies: HeadFinder failed!");
+      }
+
+      for (Tree child : node.children()) {
+        // Label dl = child.label();
+        // Tree dwt = child.headPreTerminal(hf);
+        Tree dwt = child.headTerminal(hf);
+        if (dwt == null) {
+          throw new IllegalStateException("mapDependencies: HeadFinder failed!");
+        }
+        //System.err.println("kid is " + dl);
+         //System.err.println("transformed to " + dml.toString("value{map}"));
+        if (dwt != hwt) {
+          Dependency<Label, Label, Object> p = new UnnamedDependency(hwt.label(), dwt.label());
+          if (f.accept(p)) {
+            deps.add(p);
+          }
+        }
+      }
+    }
+    return deps;
+  }
+

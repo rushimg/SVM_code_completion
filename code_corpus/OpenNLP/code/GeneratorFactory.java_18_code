@@ -1,0 +1,37 @@
+  static AdaptiveFeatureGenerator createGenerator(Element generatorElement,
+      FeatureGeneratorResourceProvider resourceManager) throws InvalidFormatException {
+
+    String elementName = generatorElement.getTagName();
+
+    XmlFeatureGeneratorFactory generatorFactory = factories.get(elementName);
+
+    if (generatorFactory == null) {
+      throw new InvalidFormatException("Unexpected element: " + elementName);
+    }
+
+    return generatorFactory.create(generatorElement, resourceManager);
+  }
+
+  private static org.w3c.dom.Document createDOM(InputStream xmlDescriptorIn)
+      throws IOException, InvalidFormatException {
+    DocumentBuilderFactory documentBuilderFacoty = DocumentBuilderFactory.newInstance();
+
+    DocumentBuilder documentBuilder;
+
+    try {
+      documentBuilder = documentBuilderFacoty.newDocumentBuilder();
+    } catch (ParserConfigurationException e) {
+      throw new IllegalStateException(e);
+    }
+
+    org.w3c.dom.Document xmlDescriptorDOM;
+
+    try {
+      xmlDescriptorDOM = documentBuilder.parse(xmlDescriptorIn);
+    } catch (SAXException e) {
+      throw new InvalidFormatException("Descriptor is not valid XML!", e);
+    }
+
+    return xmlDescriptorDOM;
+  }
+

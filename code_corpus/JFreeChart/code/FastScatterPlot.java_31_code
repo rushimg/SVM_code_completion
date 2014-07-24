@@ -1,0 +1,19 @@
+    protected void drawDomainGridlines(Graphics2D g2, Rectangle2D dataArea,
+                                       List ticks) {
+
+        // draw the domain grid lines, if the flag says they're visible...
+        if (isDomainGridlinesVisible()) {
+            Iterator iterator = ticks.iterator();
+            while (iterator.hasNext()) {
+                ValueTick tick = (ValueTick) iterator.next();
+                double v = this.domainAxis.valueToJava2D(tick.getValue(),
+                        dataArea, RectangleEdge.BOTTOM);
+                Line2D line = new Line2D.Double(v, dataArea.getMinY(), v,
+                        dataArea.getMaxY());
+                g2.setPaint(getDomainGridlinePaint());
+                g2.setStroke(getDomainGridlineStroke());
+                g2.draw(line);
+            }
+        }
+    }
+

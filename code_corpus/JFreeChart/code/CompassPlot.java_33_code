@@ -1,0 +1,31 @@
+    public Object clone() throws CloneNotSupportedException {
+
+        CompassPlot clone = (CompassPlot) super.clone();
+        if (this.circle1 != null) {
+            clone.circle1 = (Ellipse2D) this.circle1.clone();
+        }
+        if (this.circle2 != null) {
+            clone.circle2 = (Ellipse2D) this.circle2.clone();
+        }
+        if (this.a1 != null) {
+            clone.a1 = (Area) this.a1.clone();
+        }
+        if (this.a2 != null) {
+            clone.a2 = (Area) this.a2.clone();
+        }
+        if (this.rect1 != null) {
+            clone.rect1 = (Rectangle2D) this.rect1.clone();
+        }
+        clone.datasets = (ValueDataset[]) this.datasets.clone();
+        clone.seriesNeedle = (MeterNeedle[]) this.seriesNeedle.clone();
+
+        // clone share data sets => add the clone as listener to the dataset
+        for (int i = 0; i < this.datasets.length; ++i) {
+            if (clone.datasets[i] != null) {
+                clone.datasets[i].addChangeListener(clone);
+            }
+        }
+        return clone;
+
+    }
+

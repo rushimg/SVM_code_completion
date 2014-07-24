@@ -1,0 +1,26 @@
+class ExtractorMidSentenceCap extends RareExtractor {
+
+  public ExtractorMidSentenceCap() {
+  }
+
+  @Override
+  String extract(History h, PairsHolder pH) {
+    String prevTag = pH.getTag(h, -1);
+    if(prevTag == null) { return "0"; }
+    if (prevTag.equals(naTag)) {
+      return "0";
+    }
+    String s = pH.getWord(h, 0);
+    if (containsUpperCase(s)) {
+      return "1";
+    }
+    return "0";
+  }
+
+  private static final long serialVersionUID = 24L;
+
+  @Override public boolean isLocal() { return false; }
+  @Override public boolean isDynamic() { return true; }
+}
+
+

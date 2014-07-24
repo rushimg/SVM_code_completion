@@ -1,0 +1,36 @@
+      if (auxLabels.contains(auxAnswer)) {
+        if ( ! prevAnswer.equals(auxAnswer) && ! prevAnswer.equals(background)) {
+          if (auxTagValid){
+            for (INN wi : constituents) {
+              wi.set(CoreAnnotations.AnswerAnnotation.class, prevAnswer);
+            }
+          }
+          auxTagValid = true;
+          constituents = new ArrayList<INN>();
+        }
+        insideAuxTag = true;
+        if (insideMainTag) { auxTagValid = false; }
+        prevAnswer = auxAnswer;
+        constituents.add(wMain);
+      } else {
+        if (insideAuxTag) {
+          if (auxTagValid){
+            for (INN wi : constituents) {
+              wi.set(CoreAnnotations.AnswerAnnotation.class, prevAnswer);
+            }
+          }
+          constituents = new ArrayList<INN>();
+        }
+        insideAuxTag=false;
+        auxTagValid = true;
+        prevAnswer = background;
+      }
+    }
+    // deal with a sequence final auxLabel
+    if (auxTagValid){
+      for (INN wi : constituents) {
+        wi.set(CoreAnnotations.AnswerAnnotation.class, prevAnswer);
+      }
+    }
+  }
+

@@ -1,0 +1,84 @@
+  protected boolean addArc(Arc a) {
+    Object source = a.getSourceNode();
+    Object target = a.getTargetNode();
+    Object input = a.getInput();
+    if (source == null || target == null || input == null) {
+      return false;
+    }
+    // add to data structures
+    if (arcs.contains(a)) {
+      return false;
+    }
+    // it's new, so add to the rest of the data structures
+    // add to source and input map
+    Pair p = Generics.newPair(source, input);
+    if (arcsBySourceAndInput.containsKey(p) && checkDeterminism) {
+      throw new RuntimeException("Creating nondeterminism while inserting arc " + a + " because it already has arc " + arcsBySourceAndInput.get(p) + checkDeterminism);
+    }
+    arcsBySourceAndInput.put(p, a);
+    Maps.putIntoValueHashSet(arcsBySource, source, a);
+    p = Generics.newPair(target, input);
+    Maps.putIntoValueHashSet(arcsByTargetAndInput, p, a);
+    Maps.putIntoValueHashSet(arcsByTarget, target, a);
+    Maps.putIntoValueHashSet(arcsByInput, input, a);
+    // add to arcs
+    arcs.add(a);
+    return true;
+  }
+
+  public boolean removeArc(Arc a) {
+    Object source = a.getSourceNode();
+    Object target = a.getTargetNode();
+    Object input = a.getInput();
+    // remove from arcs
+    if (!arcs.remove(a)) {
+      return false;
+    }
+    // remove from arcsBySourceAndInput
+    Pair p = Generics.newPair(source, input);
+    if (!arcsBySourceAndInput.containsKey(p)) {
+      return false;
+    }
+    arcsBySourceAndInput.remove(p);
+    // remove from arcsBySource
+    Set<Arc> s = arcsBySource.get(source);
+    if (s == null) {
+      return false;
+    }
+    if (!s.remove(a)) {
+      return false;
+    }
+    // remove from arcsByTargetAndInput
+    p = Generics.newPair(target, input);
+    s = arcsByTargetAndInput.get(p);
+    if (s == null) {
+      return false;
+    }
+    if (!s.remove(a)) {
+      return false;
+    }
+    // remove from arcsByTarget
+    s = arcsByTarget.get(target);
+    if (s == null) {
+      return false;
+    }
+    s = arcsByInput.get(input);
+    if (s == null) {
+      return false;
+    }
+    if (!s.remove(a)) {
+      return false;
+    }
+    return true;
+  }
+
+  public boolean canAddArc(Object source, Object target, Object input, Object output) {
+    Arc a = new Arc(source, target, input, output);
+    if (arcs.contains(a)) // inexpensive check
+    {
+      return false;
+    }
+    Pair p = Generics.newPair(source, input);
+    return !arcsBySourceAndInput.containsKey(p); // expensive check
+  }
+

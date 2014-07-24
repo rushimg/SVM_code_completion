@@ -1,0 +1,56 @@
+  // TODO perhaps some reflection magic can simplify this process?
+  @SuppressWarnings("unchecked")
+  public static <T> void log(RedwoodChannels channels, String description, Object obj) {
+    if (obj instanceof Map) {
+      log(channels, description, (Map)obj);
+    } else if (obj instanceof PrettyLoggable) {
+      ((PrettyLoggable) obj).prettyLog(channels, description);
+    } else if (obj instanceof Dictionary) {
+      log(channels, description, (Dictionary)obj);
+    } else if (obj instanceof Iterable) {
+      log(channels, description, (Iterable)obj);
+    } else if (obj.getClass().isArray()) {
+      Object[] arrayCopy; // the array to log
+      if(obj.getClass().getComponentType().isPrimitive()){
+        //(case: a primitive array)
+        Class componentClass = obj.getClass().getComponentType();
+        if(boolean.class.isAssignableFrom(componentClass)){
+          arrayCopy = new Object[((boolean[]) obj).length];
+          for(int i=0; i<arrayCopy.length; i++){ arrayCopy[i] = ((boolean[]) obj)[i]; }
+        } else if(byte.class.isAssignableFrom(componentClass)){
+          arrayCopy = new Object[((byte[]) obj).length];
+          for(int i=0; i<arrayCopy.length; i++){ arrayCopy[i] = ((byte[]) obj)[i]; }
+        } else if(char.class.isAssignableFrom(componentClass)){
+          arrayCopy = new Object[((char[]) obj).length];
+          for(int i=0; i<arrayCopy.length; i++){ arrayCopy[i] = ((char[]) obj)[i]; }
+        } else if(short.class.isAssignableFrom(componentClass)){
+          arrayCopy = new Object[((short[]) obj).length];
+          for(int i=0; i<arrayCopy.length; i++){ arrayCopy[i] = ((short[]) obj)[i]; }
+        } else if(int.class.isAssignableFrom(componentClass)){
+          arrayCopy = new Object[((int[]) obj).length];
+          for(int i=0; i<arrayCopy.length; i++){ arrayCopy[i] = ((int[]) obj)[i]; }
+        } else if(long.class.isAssignableFrom(componentClass)){
+          arrayCopy = new Object[((long[]) obj).length];
+          for(int i=0; i<arrayCopy.length; i++){ arrayCopy[i] = ((long[]) obj)[i]; }
+        } else if(float.class.isAssignableFrom(componentClass)){
+          arrayCopy = new Object[((float[]) obj).length];
+          for(int i=0; i<arrayCopy.length; i++){ arrayCopy[i] = ((float[]) obj)[i]; }
+        } else if(double.class.isAssignableFrom(componentClass)){
+          arrayCopy = new Object[((double[]) obj).length];
+          for(int i=0; i<arrayCopy.length; i++){ arrayCopy[i] = ((double[]) obj)[i]; }
+        } else {
+          throw new IllegalStateException("I forgot about the primitive class: " + componentClass);
+        }
+      } else {
+        //(case: a regular array)
+        arrayCopy = (T[]) obj;
+      }
+      log(channels, description, arrayCopy);
+    } else {
+      if (!description.equals("")) {
+        description += ": ";
+      }
+      channels.log(description + obj);
+    }
+  }
+

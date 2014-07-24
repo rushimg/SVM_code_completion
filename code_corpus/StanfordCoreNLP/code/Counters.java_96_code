@@ -1,0 +1,11 @@
+  public static <T> String toSortedString(Counter<T> counter, int k, String itemFormat, String joiner, String wrapperFormat) {
+    PriorityQueue<T> queue = toPriorityQueue(counter);
+    List<String> strings = new ArrayList<String>();
+    for (int rank = 0; rank < k && !queue.isEmpty(); ++rank) {
+      T key = queue.removeFirst();
+      double value = counter.getCount(key);
+      strings.add(String.format(itemFormat, key, value));
+    }
+    return String.format(wrapperFormat, StringUtils.join(strings, joiner));
+  }
+

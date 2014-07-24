@@ -1,0 +1,58 @@
+  public static CombinationMode extractCombinationModeSafe(Properties p) {
+    try {
+      return extractCombinationMode(p);
+    } catch (IllegalArgumentException e) {
+      System.err.print("Illegal value of " + COMBINATION_MODE_PROPERTY + ": " + p.getProperty(COMBINATION_MODE_PROPERTY));
+      System.err.print("  Legal values:");
+      for (CombinationMode mode : CombinationMode.values()) {
+        System.err.print("  " + mode);
+      }
+      System.err.println();
+      return CombinationMode.NORMAL;
+    }
+  }
+
+  private void loadClassifiers(List<String> paths) throws FileNotFoundException {
+    baseClassifiers = new ArrayList<AbstractSequenceClassifier<IN>>();
+    for(String path: paths){
+      AbstractSequenceClassifier<IN> cls = loadClassifierFromPath(path);
+      baseClassifiers.add(cls);
+      if(DEBUG){
+        System.err.printf("Successfully loaded classifier #%d from %s.\n", baseClassifiers.size(), path);
+      }
+    }
+    if (baseClassifiers.size() > 0) {
+      flags.backgroundSymbol = baseClassifiers.get(0).flags.backgroundSymbol;
+    }
+  }
+
+
+  public static <INN extends CoreMap & HasWord> AbstractSequenceClassifier<INN> loadClassifierFromPath(String path)
+      throws FileNotFoundException {
+    //try loading as a CRFClassifier
+    try {
+       return ErasureUtils.uncheckedCast(CRFClassifier.getClassifier(path));
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    //try loading as a CMMClassifier
+    try {
+      return ErasureUtils.uncheckedCast(CMMClassifier.getClassifier(path));
+    } catch (Exception e) {
+      //fail
+      //System.err.println("Couldn't load classifier from path :"+path);
+      FileNotFoundException fnfe = new FileNotFoundException();
+      fnfe.initCause(e);
+      throw fnfe;
+    }
+  }
+
+  @Override
+  public Set<String> labels() {
+    Set<String> labs = Generics.newHashSet();
+    for(AbstractSequenceClassifier<? extends CoreMap> cls: baseClassifiers)
+      labs.addAll(cls.labels());
+    return labs;
+  }
+
+

@@ -1,0 +1,22 @@
+    @Override
+    public void publish(LogRecord record) {
+      String message = record.getMessage();
+      Level level = record.getLevel();
+      Object tag = null;
+      if (level == Level.WARNING) {
+        tag = Redwood.WARN;
+      } else if (level == Level.SEVERE) {
+        tag = Redwood.ERR;
+      } else if (level.intValue() <= Level.FINE.intValue()) {
+        tag = Redwood.DBG;
+      }
+
+      if (tag == null) {
+        Redwood.log(message);
+      } else {
+        Redwood.log(tag, message);
+      }
+    }
+
+  }
+

@@ -1,0 +1,27 @@
+    public Charset getCredentialsCharset() {
+        return credentialsCharset != null ? credentialsCharset : Consts.ASCII;
+    }
+
+    String getCredentialsCharset(final HttpRequest request) {
+        String charset = (String) request.getParams().getParameter(AuthPNames.CREDENTIAL_CHARSET);
+        if (charset == null) {
+            charset = getCredentialsCharset().name();
+        }
+        return charset;
+    }
+
+    @Override
+    protected void parseChallenge(
+            final CharArrayBuffer buffer, final int pos, final int len) throws MalformedChallengeException {
+        final HeaderValueParser parser = BasicHeaderValueParser.INSTANCE;
+        final ParserCursor cursor = new ParserCursor(pos, buffer.length());
+        final HeaderElement[] elements = parser.parseElements(buffer, cursor);
+        if (elements.length == 0) {
+            throw new MalformedChallengeException("Authentication challenge is empty");
+        }
+        this.params.clear();
+        for (final HeaderElement element : elements) {
+            this.params.put(element.getName().toLowerCase(Locale.ROOT), element.getValue());
+        }
+    }
+

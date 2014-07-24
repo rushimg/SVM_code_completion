@@ -1,0 +1,25 @@
+  public void evaluate(ObjectStream<DocumentSample> samples, int nFolds)
+      throws IOException {
+
+    CrossValidationPartitioner<DocumentSample> partitioner = new CrossValidationPartitioner<DocumentSample>(
+        samples, nFolds);
+
+    while (partitioner.hasNext()) {
+
+      CrossValidationPartitioner.TrainingSampleStream<DocumentSample> trainingSampleStream = partitioner
+          .next();
+
+      DoccatModel model = DocumentCategorizerME.train(languageCode,
+          trainingSampleStream, params, factory);
+
+      DocumentCategorizerEvaluator evaluator = new DocumentCategorizerEvaluator(
+          new DocumentCategorizerME(model), listeners);
+
+      evaluator.evaluate(trainingSampleStream.getTestSampleStream());
+
+      documentAccuracy.add(evaluator.getAccuracy(),
+          evaluator.getDocumentCount());
+
+    }
+  }
+

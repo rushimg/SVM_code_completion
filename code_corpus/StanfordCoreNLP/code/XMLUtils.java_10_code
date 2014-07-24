@@ -1,0 +1,39 @@
+  public static String escapeAttributeXML(String in) {
+    int leng = in.length();
+    StringBuilder sb = new StringBuilder(leng);
+    for (int i = 0; i < leng; i++) {
+      char c = in.charAt(i);
+      if (c == '&') {
+        sb.append("&amp;");
+      } else if (c == '"') {
+        sb.append("&quot;");
+      } else {
+        sb.append(c);
+      }
+    }
+    return sb.toString();
+  }
+
+
+  public static String escapeTextAroundXMLTags(String s) {
+    StringBuilder result = new StringBuilder();
+    Reader r = new StringReader(s);
+    try {
+      do {
+        String text = readUntilTag(r);
+        //      System.out.println("got text: " + text);
+        result.append(escapeXML(text));
+        XMLTag tag = readAndParseTag(r);
+        //      System.out.println("got tag: " + tag);
+        if (tag == null) {
+          break;
+        }
+        result.append(tag.toString());
+      } while (true);
+    } catch (IOException e) {
+      System.err.println("Error reading string");
+      e.printStackTrace();
+    }
+    return result.toString();
+  }
+

@@ -1,0 +1,17 @@
+  public static <T> T columnStringToObject(Class<?> objClass, String str, Pattern delimiterPattern, String[] fieldNames)
+          throws InstantiationException, IllegalAccessException, NoSuchMethodException, NoSuchFieldException, InvocationTargetException
+  {
+    String[] fields = delimiterPattern.split(str);
+    T item = ErasureUtils.<T>uncheckedCast(objClass.newInstance());
+    for (int i = 0; i < fields.length; i++) {
+      try {
+        Field field = objClass.getDeclaredField(fieldNames[i]);
+        field.set(item, fields[i]);
+      } catch (IllegalAccessException ex) {
+        Method method = objClass.getDeclaredMethod("set" + StringUtils.capitalize(fieldNames[i]), String.class);
+        method.invoke(item, fields[i]);
+      }
+    }
+    return item;
+  }
+

@@ -1,0 +1,30 @@
+  private String getEntryExtension(String entry) throws InvalidFormatException {
+    int extensionIndex = entry.lastIndexOf('.') + 1;
+
+    if (extensionIndex == -1 || extensionIndex >= entry.length())
+        throw new InvalidFormatException("Entry name must have type extension: " + entry);
+
+    return entry.substring(extensionIndex);
+  }
+
+  protected ArtifactSerializer getArtifactSerializer(String resourceName) {
+    String extension = null;
+    try {
+      extension = getEntryExtension(resourceName);
+    } catch (InvalidFormatException e) {
+      throw new IllegalStateException(e);
+    }
+
+    return artifactSerializers.get(extension);
+  }
+
+  protected static Map<String, ArtifactSerializer> createArtifactSerializers() {
+    Map<String, ArtifactSerializer> serializers = new HashMap<String, ArtifactSerializer>();
+
+    GenericModelSerializer.register(serializers);
+    PropertiesSerializer.register(serializers);
+    DictionarySerializer.register(serializers);
+
+    return serializers;
+  }
+

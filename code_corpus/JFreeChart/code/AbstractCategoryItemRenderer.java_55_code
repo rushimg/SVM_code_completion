@@ -1,0 +1,33 @@
+    protected void addEntity(EntityCollection entities, Shape hotspot,
+                             CategoryDataset dataset, int row, int column,
+                             double entityX, double entityY) {
+        if (!getItemCreateEntity(row, column)) {
+            return;
+        }
+        Shape s = hotspot;
+        if (hotspot == null) {
+            double r = getDefaultEntityRadius();
+            if (getPlot().getOrientation() == PlotOrientation.VERTICAL) {
+                s = new Ellipse2D.Double(entityX - r, entityY - r, w, w);
+            }
+            else {
+                s = new Ellipse2D.Double(entityY - r, entityX - r, w, w);
+            }
+        }
+        String tip = null;
+        CategoryToolTipGenerator generator = getToolTipGenerator(row, column);
+        if (generator != null) {
+            tip = generator.generateToolTip(dataset, row, column);
+        }
+        String url = null;
+        CategoryURLGenerator urlster = getItemURLGenerator(row, column);
+        if (urlster != null) {
+            url = urlster.generateURL(dataset, row, column);
+        }
+        CategoryItemEntity entity = new CategoryItemEntity(s, tip, url,
+                dataset, dataset.getRowKey(row), dataset.getColumnKey(column));
+        entities.add(entity);
+    }
+
+    // === DEPRECATED CODE ===
+

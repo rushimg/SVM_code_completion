@@ -1,0 +1,42 @@
+    public String getName() {
+      return cl.getName();
+    }
+
+    @Override
+    public String toString() {
+      StringBuilder b = new StringBuilder();
+      b.append(cl.getName()).append("(");
+      for (Class<?> cl : classParams) {
+        b.append(" ").append(cl.getName()).append(",");
+      }
+      b.replace(b.length() - 1, b.length(), " ");
+      b.append(")");
+      return b.toString();
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public boolean equals(Object o) {
+      if (o instanceof ClassFactory) {
+        ClassFactory other = (ClassFactory) o;
+        if (!this.cl.equals(other.cl))
+          return false;
+        for (int i = 0; i < classParams.length; i++) {
+          if (!this.classParams[i].equals(other.classParams[i]))
+            return false;
+        }
+        return true;
+      } else {
+        return false;
+      }
+    }
+
+    @Override
+    public int hashCode() {
+      return cl.hashCode();
+    }
+
+  } // end static class ClassFactory
+
+  private String classname;
+

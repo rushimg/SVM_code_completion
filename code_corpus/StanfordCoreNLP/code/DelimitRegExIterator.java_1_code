@@ -1,0 +1,67 @@
+public class DelimitRegExIterator<T> extends AbstractIterator<T> {
+
+  private Iterator<String> tokens;
+  private final Function<String,T> op;
+  private T nextToken; // = null;
+
+  //TODO: not sure if this is the best way to name things...
+  public static DelimitRegExIterator<String> defaultDelimitRegExIterator(Reader in, String delimiter) {
+    return new DelimitRegExIterator<String>(in, delimiter, new IdentityFunction<String>());
+  }
+
+  public DelimitRegExIterator(Reader r, String delimiter, Function<String,T> op) {
+    this.op = op;
+    BufferedReader in = new BufferedReader(r);
+    try {
+      String line;
+      StringBuilder input = new StringBuilder();
+      while ((line = in.readLine()) != null) {
+        input.append(line).append("\n");
+      }
+      line = input.toString();
+      Pattern p = Pattern.compile("^"+delimiter);
+      Matcher m = p.matcher(line);
+      line = m.replaceAll("");
+      p = Pattern.compile(delimiter+"$");
+      m = p.matcher(line);
+      line = m.replaceAll("");
+      line = line.trim();
+
+      tokens = Arrays.asList(line.split(delimiter)).iterator();
+    } catch (Exception e) {
+    }
+    setNext();
+  }
+
+  private void setNext() {
+    if (tokens.hasNext()) {
+      String s = tokens.next();
+      nextToken = parseString(s);
+    } else {
+      nextToken = null;
+    }
+  }
+
+  protected T parseString(String s) {
+    return op.apply(s);
+  }
+
+  @Override
+  public boolean hasNext() {
+    return nextToken != null;
+  }
+
+  @Override
+  public T next() {
+    if (nextToken == null) {
+      throw new NoSuchElementException("DelimitRegExIterator exhausted");
+    }
+    T token = nextToken;
+    setNext();
+    return token;
+  }
+
+  public Object peek() {
+    return nextToken;
+  }
+

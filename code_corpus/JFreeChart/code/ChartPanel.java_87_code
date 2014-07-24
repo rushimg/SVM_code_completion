@@ -1,0 +1,39 @@
+    public void mousePressed(MouseEvent e) {
+        Plot plot = this.chart.getPlot();
+        int mods = e.getModifiers();
+        if ((mods & this.panMask) == this.panMask) {
+            // can we pan this plot?
+            if (plot instanceof Pannable) {
+                Pannable pannable = (Pannable) plot;
+                if (pannable.isDomainPannable() || pannable.isRangePannable()) {
+                    Rectangle2D screenDataArea = getScreenDataArea(e.getX(),
+                            e.getY());
+                    if (screenDataArea != null && screenDataArea.contains(
+                            e.getPoint())) {
+                        this.panW = screenDataArea.getWidth();
+                        this.panH = screenDataArea.getHeight();
+                        this.panLast = e.getPoint();
+                        setCursor(Cursor.getPredefinedCursor(Cursor.MOVE_CURSOR));
+                    }
+                }
+                // the actual panning occurs later in the mouseDragged() 
+                // method
+            }
+        }
+        else if (this.zoomRectangle == null) {
+            Rectangle2D screenDataArea = getScreenDataArea(e.getX(), e.getY());
+            if (screenDataArea != null) {
+                this.zoomPoint = getPointInRectangle(e.getX(), e.getY(),
+                        screenDataArea);
+            }
+            else {
+                this.zoomPoint = null;
+            }
+            if (e.isPopupTrigger()) {
+                if (this.popup != null) {
+                    displayPopupMenu(e.getX(), e.getY());
+                }
+            }
+        }
+    }
+

@@ -1,0 +1,11 @@
+  static HttpParams newDefaultHttpParams() {
+    HttpParams params = new BasicHttpParams();
+    // Turn off stale checking. Our connections break all the time anyway,
+    // and it's not worth it to pay the penalty of checking every time.
+    HttpConnectionParams.setStaleCheckingEnabled(params, false);
+    HttpConnectionParams.setSocketBufferSize(params, 8192);
+    ConnManagerParams.setMaxTotalConnections(params, 200);
+    ConnManagerParams.setMaxConnectionsPerRoute(params, new ConnPerRouteBean(20));
+    return params;
+  }
+

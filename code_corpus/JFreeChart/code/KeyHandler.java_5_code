@@ -1,0 +1,17 @@
+    public void endElement(String namespaceURI,
+                           String localName,
+                           String qName) throws SAXException {
+
+        if (qName.equals(KEY_TAG)) {
+            this.itemHandler.setKey(getCurrentText());
+            this.rootHandler.popSubHandler();
+            this.rootHandler.pushSubHandler(
+                new ValueHandler(this.rootHandler, this.itemHandler)
+            );
+        }
+        else {
+            throw new SAXException("Expecting </Key> but found " + qName);
+        }
+
+    }
+

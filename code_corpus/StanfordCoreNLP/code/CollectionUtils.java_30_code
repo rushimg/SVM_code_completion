@@ -1,0 +1,18 @@
+  public static <T> Collection<Pair<Collection<T>, Collection<T>>> trainTestFoldsForCV(List<T> values, int numFolds) {
+    Collection<Pair<Collection<T>, Collection<T>>> trainTestPairs = new ArrayList<Pair<Collection<T>,Collection<T>>>();
+    List<Collection<T>> folds = partitionIntoFolds(values, numFolds);
+    for (int splitNum = 0; splitNum < numFolds; splitNum++) {
+      Collection<T> test = folds.get(splitNum);
+      Collection<T> train = new ArrayList<T>();
+      for (int foldNum = 0; foldNum < numFolds; foldNum++) {
+        if (foldNum != splitNum) {
+          train.addAll(folds.get(foldNum));
+        }
+      }
+
+      trainTestPairs.add(new Pair<Collection<T>, Collection<T>>(train, test));
+    }
+
+    return trainTestPairs;
+  }
+

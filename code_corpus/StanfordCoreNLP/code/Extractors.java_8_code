@@ -1,0 +1,42 @@
+  public void save(String filename) {
+    try {
+      DataOutputStream rf = IOUtils.getDataOutputStream(filename);
+      rf.writeInt(v.length);
+      for (Extractor extr : v) {
+        rf.writeBytes(extr.toString());
+      }
+      rf.close();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+
+  public void read(String filename) {
+    try {
+      InDataStreamFile rf = new InDataStreamFile(filename);
+      int len = rf.readInt();
+      v = new Extractor[len];
+      //GlobalHolder.init();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+
+  Extractor get(int index) {
+    return v[index];
+  }
+
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder("Extractors[");
+    for (int i = 0; i < v.length; i++) {
+      sb.append(v[i].toString());
+      if (i < v.length - 1) {
+        sb.append(", ");
+      }
+    }
+    sb.append(']');
+    return sb.toString();
+  }
+
+

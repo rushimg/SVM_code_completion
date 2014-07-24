@@ -1,0 +1,31 @@
+  public Section readNextSection(String titleToLookFor) throws IOException {
+    String title = null;
+    StringBuilder keyBuilder = null;
+    while (true) {
+      String line = reader.readLine();
+      if (line == null) {
+        Preconditions.checkArgument(title == null, "missing end tag (%s)", title);
+        return null;
+      }
+      if (keyBuilder == null) {
+        Matcher m = BEGIN_PATTERN.matcher(line);
+        if (m.matches()) {
+          String curTitle = m.group(1);
+          if (titleToLookFor == null || curTitle.equals(titleToLookFor)) {
+            keyBuilder = new StringBuilder();
+            title = curTitle;
+          }
+        }
+      } else {
+        Matcher m = END_PATTERN.matcher(line);
+        if (m.matches()) {
+          String endTitle = m.group(1);
+          Preconditions.checkArgument(endTitle.equals(title),
+              "end tag (%s) doesn't match begin tag (%s)", endTitle, title);
+          return new Section(title, Base64.decodeBase64(keyBuilder.toString()));
+        }
+        keyBuilder.append(line);
+      }
+    }
+  }
+

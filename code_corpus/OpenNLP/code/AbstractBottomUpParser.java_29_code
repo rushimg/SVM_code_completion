@@ -1,0 +1,32 @@
+  public static Parse[] collapsePunctuation(Parse[] chunks, Set<String> punctSet) {
+    List<Parse> collapsedParses = new ArrayList<Parse>(chunks.length);
+    int lastNonPunct = -1;
+    int nextNonPunct = -1;
+    for (int ci=0,cn=chunks.length;ci<cn;ci++) {
+      if (punctSet.contains(chunks[ci].getType())) {
+        if (lastNonPunct >= 0) {
+          chunks[lastNonPunct].addNextPunctuation(chunks[ci]);
+        }
+        for (nextNonPunct=ci+1;nextNonPunct<cn;nextNonPunct++) {
+          if (!punctSet.contains(chunks[nextNonPunct].getType())) {
+            break;
+          }
+        }
+        if (nextNonPunct < cn) {
+          chunks[nextNonPunct].addPreviousPunctuation(chunks[ci]);
+        }
+      }
+      else {
+        collapsedParses.add(chunks[ci]);
+        lastNonPunct = ci;
+      }
+    }
+    if (collapsedParses.size() == chunks.length) {
+      return chunks;
+    }
+    //System.err.println("collapsedPunctuation: collapsedParses"+collapsedParses);
+    return collapsedParses.toArray(new Parse[collapsedParses.size()]);
+  }
+
+
+

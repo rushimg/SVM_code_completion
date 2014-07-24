@@ -1,0 +1,36 @@
+  public static <T> T nullOf(Class<?> objClass) {
+    Object result = NULL_CACHE.get(objClass);
+    if (result == null) {
+      synchronized (NULL_CACHE) {
+        result = NULL_CACHE.get(objClass);
+        if (result == null) {
+          if (objClass.isArray()) {
+            // arrays are special because we need to compute both the dimension and component type
+            int dims = 0;
+            Class<?> componentType = objClass;
+            do {
+              componentType = componentType.getComponentType();
+              dims++;
+            } while (componentType.isArray());
+            result = Array.newInstance(componentType, new int[dims]);
+          } else if (objClass.isEnum()) {
+            // enum requires look for constant with @NullValue
+            FieldInfo fieldInfo = ClassInfo.of(objClass).getFieldInfo(null);
+            Preconditions.checkNotNull(
+                fieldInfo, "enum missing constant with @NullValue annotation: %s", objClass);
+            @SuppressWarnings({"unchecked", "rawtypes"})
+            Enum e = fieldInfo.<Enum>enumValue();
+            result = e;
+          } else {
+            // other classes are simpler
+            result = Types.newInstance(objClass);
+          }
+          NULL_CACHE.put(objClass, result);
+        }
+      }
+    }
+    @SuppressWarnings("unchecked")
+    T tResult = (T) result;
+    return tResult;
+  }
+

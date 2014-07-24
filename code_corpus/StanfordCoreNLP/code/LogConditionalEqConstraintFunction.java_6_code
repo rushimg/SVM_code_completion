@@ -1,0 +1,39 @@
+    System.out.println("N: "+data.length);
+    System.out.println("Value: "+value);
+    double ds = 0.0;
+    for (int i=0; i<x.length; i++) {
+      ds += derivative[i];
+      System.out.println(i+" is: "+derivative[i]);
+    }
+    //System.out.println("Deriv sum is: "+ds);
+  }
+
+
+  public LogConditionalEqConstraintFunction(int numFeatures, int numClasses, int[][] data, int[] labels) {
+    this(numFeatures, numClasses, data, labels, 1.0);
+  }
+
+  public LogConditionalEqConstraintFunction(int numFeatures, int numClasses, int[][] data, int[] labels, double sigma) {
+    this(numFeatures, numClasses, data, labels, QUADRATIC_PRIOR, sigma, 0.0);
+  }
+
+
+  public LogConditionalEqConstraintFunction(int numFeatures, int numClasses, int[][] data, int[] labels, int prior, double sigma, double epsilon) {
+    this.numFeatures = numFeatures;
+    this.numClasses = numClasses;
+    this.data = data;
+    this.labels = labels;
+    if (prior >= 0 && prior <= QUARTIC_PRIOR) {
+      this.prior = prior;
+    } else {
+      throw new IllegalArgumentException("Invalid prior: " + prior);
+    }
+    this.epsilon = epsilon;
+    this.sigma = sigma;
+    numValues = NaiveBayesClassifierFactory.numberValues(data, numFeatures);
+    for (int i = 0; i < numValues.length; i++) {
+      System.out.println("numValues " + i + " " + numValues[i]);
+    }
+    featureIndex = createIndex();
+  }
+

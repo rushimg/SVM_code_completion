@@ -1,0 +1,38 @@
+    System.out.println("govH " + govH);
+    System.out.println("dep node " + dep);
+
+    Set<Class<? extends GrammaticalRelationAnnotation>> arcLabels = govH.arcLabelsToNode(depH);
+    //System.out.println("arcLabels: " + arcLabels);
+    if (dep != depH) {
+      Set<Class<? extends GrammaticalRelationAnnotation>> arcLabels2 = govH.arcLabelsToNode(dep);
+      //System.out.println("arcLabels2: " + arcLabels2);
+      arcLabels.addAll(arcLabels2);
+    }
+    //System.out.println("arcLabels: " + arcLabels);
+
+    for (Class<? extends GrammaticalRelationAnnotation> arcLabel : arcLabels) {
+      if (arcLabel != null) {
+        GrammaticalRelation reln = GrammaticalRelation.getRelation(arcLabel);
+        boolean descendantFound = false;
+        for (int index = 0; index < list.size(); ++index) {
+          GrammaticalRelation gr = list.get(index);
+          //if the element in the list is an ancestor of the current
+          //relation, remove it (we will replace it later)
+          if (gr.isAncestor(reln)) {
+            list.remove(index);
+            --index;
+          } else if (reln.isAncestor(gr)) {
+            //if the relation is not an ancestor of an element in the
+            //list, we add the relation
+            descendantFound = true;
+          }
+        }
+        if (!descendantFound) {
+          list.add(reln);
+        }
+      }
+    }
+    //System.out.println("in list " + list);
+    return list;
+  }
+

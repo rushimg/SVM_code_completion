@@ -1,0 +1,37 @@
+  public Parse adjoin(Parse sister, HeadRules rules) {
+    Parse lastChild = parts.get(parts.size()-1);
+    Parse adjNode = new Parse(this.text,new Span(lastChild.getSpan().getStart(),sister.getSpan().getEnd()),lastChild.getType(),1,rules.getHead(new Parse[]{lastChild,sister},lastChild.getType()));
+    adjNode.parts.add(lastChild);
+    if (sister.prevPunctSet != null) {
+      adjNode.parts.addAll(sister.prevPunctSet);
+    }
+    adjNode.parts.add(sister);
+    parts.set(parts.size()-1,adjNode);
+    this.span = new Span(span.getStart(),sister.getSpan().getEnd());
+    this.head = rules.getHead(getChildren(),type);
+    this.headIndex = head.headIndex;
+    return adjNode;
+  }
+
+  public void expandTopNode(Parse root) {
+    boolean beforeRoot = true;
+    //System.err.println("expandTopNode: parts="+parts);
+    for (int pi=0,ai=0;pi<parts.size();pi++,ai++) {
+      Parse node = parts.get(pi);
+      if (node == root) {
+        beforeRoot = false;
+      }
+      else if (beforeRoot) {
+        root.parts.add(ai,node);
+        parts.remove(pi);
+        pi--;
+      }
+      else {
+        root.parts.add(node);
+        parts.remove(pi);
+        pi--;
+      }
+    }
+    root.updateSpan();
+  }
+

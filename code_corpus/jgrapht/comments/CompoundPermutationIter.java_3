@@ -1,0 +1,55 @@
+/**
+ * For permutation like this:
+ * <li>1,2 are the same eq.group (numbers)
+ * <li>a,b are og the same eq.group (letters)
+ * <li>'$' is of its own eq. group (signs) Let the order of the group be
+ * (arbitrary): signs,numbers,letters (note that for performance reasons, this
+ * arbitrary order is the worst! see Performance section below)
+ *
+ * <p>These are the possible compound perm: [$,1,2,a,b,c]
+ *
+ * <p>[$,1,2,a,c,b]
+ *
+ * <p>[$,1,2,b,a,c]
+ *
+ * <p>[$,1,2,b,c,a]
+ *
+ * <p>[$,1,2,c,a,b]
+ *
+ * <p>[$,1,2,c,b,a]
+ *
+ * <p>[$,2,1,a,b,c]
+ *
+ * <p>[$,2,1,a,c,b]
+ *
+ * <p>[$,2,1,b,a,c]
+ *
+ * <p>[$,2,1,b,c,a]
+ *
+ * <p>[$,2,1,c,a,b]
+ *
+ * <p>[$,2,1,c,b,a]
+ *
+ * <p>The overall number is the product of the factorials of each eq. group
+ * size; in our example : (1!)x(2!)x(3!)=1x2x6=12. Using the constructor with
+ * eq.group sizes and initial order [1,2,3], the result permutations are
+ * retrieved as numbers in an array, where [0,1,2,3,4,5] means [$,1,2,a,b,c]:
+ *
+ * <p>[0,1,2,3,5,4]
+ *
+ * <p>[0,1,2,4,3,5]
+ *
+ * <p>etc. etc., till:
+ *
+ * <p>[0,2,1,5,4,3] means [$,2,1,c,b,a]
+ *
+ * <p>
+ * <p><i>Performance:</i> The implementation tries to advance each time the
+ * group zero, if it does not succeed, it tries the next group (1,2 and so on),
+ * so: try to put the largest group as the first groups, UNLIKE the example.
+ * Performance-wise it is better to do [a,b,c,1,2,$] .The effect is improvement
+ * by constant (for example, by 2)
+ *
+ * @author Assaf
+ * @since May 30, 2005
+ */

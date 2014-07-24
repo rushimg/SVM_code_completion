@@ -1,0 +1,44 @@
+  public static BasicEntityExtractor load(String path, Class<? extends BasicEntityExtractor> entityClassifier, boolean preferDefaultGazetteer) throws ClassCastException, IOException, ClassNotFoundException {
+
+
+    // load the additional arguments
+    // try to load the extra file from the CLASSPATH first
+    InputStream is = BasicEntityExtractor.class.getClassLoader().getResourceAsStream(path + ".extra");
+    // if not found in the CLASSPATH, load from the file system
+    if (is == null) is = new FileInputStream(path + ".extra");
+    ObjectInputStream in = new ObjectInputStream(is);
+    String gazetteerLocation = ErasureUtils.<String>uncheckedCast(in.readObject());
+    if(preferDefaultGazetteer) gazetteerLocation = DefaultPaths.DEFAULT_NFL_GAZETTEER;
+    Set<String> annotationsToSkip = ErasureUtils.<Set<String>>uncheckedCast(in.readObject());
+    Boolean useSubTypes = ErasureUtils.<Boolean>uncheckedCast(in.readObject());
+    Boolean useBIO = ErasureUtils.<Boolean>uncheckedCast(in.readObject());
+    in.close();
+    is.close();
+
+    BasicEntityExtractor extractor = (BasicEntityExtractor) MachineReading.makeEntityExtractor(entityClassifier, gazetteerLocation);
+
+    // load the CRF classifier (this works from any resource, e.g., classpath or file system)
+    extractor.classifier = CRFClassifier.getClassifier(path);
+
+    // copy the extra arguments
+    extractor.annotationsToSkip = annotationsToSkip;
+    extractor.useSubTypes = useSubTypes;
+    extractor.useBIO = useBIO;
+
+    return extractor;
+  }
+
+  public void save(String path) throws IOException {
+    // save the CRF
+    this.classifier.serializeClassifier(path);
+
+    // save the additional arguments
+    FileOutputStream fos = new FileOutputStream(path + ".extra");
+    ObjectOutputStream out = new ObjectOutputStream(fos);
+    out.writeObject(this.gazetteerLocation);
+    out.writeObject(this.annotationsToSkip);
+    out.writeObject(this.useSubTypes);
+    out.writeObject(this.useBIO);
+    out.close();
+  }
+

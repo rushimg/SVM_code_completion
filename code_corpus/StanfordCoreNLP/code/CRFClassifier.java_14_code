@@ -1,0 +1,248 @@
+  protected void makeAnswerArraysAndTagIndex(Collection<List<IN>> ob) {
+    boolean useFeatureCountThresh = flags.featureCountThresh > 1;
+
+    Set<String>[] featureIndices = new HashSet[windowSize];
+    Map<String, Integer>[] featureCountIndices = null;
+    for (int i = 0; i < windowSize; i++) {
+      featureIndices[i] = Generics.newHashSet();
+    }
+    if (useFeatureCountThresh) {
+      featureCountIndices = new HashMap[windowSize];
+      for (int i = 0; i < windowSize; i++) {
+        featureCountIndices[i] = Generics.newHashMap();
+      }
+    }
+
+    labelIndices = new ArrayList<Index<CRFLabel>>(windowSize);
+    for (int i = 0; i < windowSize; i++) {
+      labelIndices.add(new HashIndex<CRFLabel>());
+    }
+
+    Index<CRFLabel> labelIndex = labelIndices.get(windowSize - 1);
+
+    if (classIndex == null)
+      classIndex = new HashIndex<String>();
+    // classIndex.add("O");
+    classIndex.add(flags.backgroundSymbol);
+
+    Set<String>[] seenBackgroundFeatures = new HashSet[2];
+    seenBackgroundFeatures[0] = Generics.newHashSet();
+    seenBackgroundFeatures[1] = Generics.newHashSet();
+
+    int wordCount = 0;
+
+    if (flags.labelDictionaryCutoff > 0) {
+      this.labelDictionary = new LabelDictionary();
+    }
+
+    for (List<IN> doc : ob) {
+      if (flags.useReverse) {
+        Collections.reverse(doc);
+      }
+
+      // create the full set of labels in classIndex
+      // note: update to use addAll later
+      for (IN token : doc) {
+        wordCount++;
+        String ans = token.get(CoreAnnotations.AnswerAnnotation.class);
+        if (ans == null || ans.equals("")) {
+          throw new IllegalArgumentException("Word " + wordCount + " (\"" + token.get(CoreAnnotations.TextAnnotation.class) + "\") has a blank answer");
+        }
+        classIndex.add(ans);
+        if (labelDictionary != null) {
+          String observation = token.get(CoreAnnotations.TextAnnotation.class);
+          labelDictionary.increment(observation, ans);
+        }
+      }
+
+      for (int j = 0, docSize = doc.size(); j < docSize; j++) {
+        CRFDatum<List<String>, CRFLabel> d = makeDatum(doc, j, featureFactories);
+        labelIndex.add(d.label());
+
+        List<List<String>> features = d.asFeatures();
+        for (int k = 0, fSize = features.size(); k < fSize; k++) {
+          Collection<String> cliqueFeatures = features.get(k);
+          if (k < 2 && flags.removeBackgroundSingletonFeatures) {
+            String ans = doc.get(j).get(CoreAnnotations.AnswerAnnotation.class);
+            boolean background = ans.equals(flags.backgroundSymbol);
+            if (k == 1 && j > 0 && background) {
+              ans = doc.get(j - 1).get(CoreAnnotations.AnswerAnnotation.class);
+              background = ans.equals(flags.backgroundSymbol);
+            }
+            if (background) {
+              for (String f : cliqueFeatures) {
+                if (useFeatureCountThresh) {
+                  if (!featureCountIndices[k].containsKey(f)) {
+                    if (seenBackgroundFeatures[k].contains(f)) {
+                      seenBackgroundFeatures[k].remove(f);
+                      featureCountIndices[k].put(f, 1);
+                    } else {
+                      seenBackgroundFeatures[k].add(f);
+                    }
+                  }
+                } else {
+                  if (!featureIndices[k].contains(f)) {
+                    if (seenBackgroundFeatures[k].contains(f)) {
+                      seenBackgroundFeatures[k].remove(f);
+                      featureIndices[k].add(f);
+                    } else {
+                      seenBackgroundFeatures[k].add(f);
+                    }
+                  }
+                }
+              }
+            } else {
+              seenBackgroundFeatures[k].removeAll(cliqueFeatures);
+              if (useFeatureCountThresh) {
+                Map<String, Integer> fCountIndex = featureCountIndices[k];
+                for (String f: cliqueFeatures) {
+                  if (fCountIndex.containsKey(f))
+                    fCountIndex.put(f, fCountIndex.get(f)+1);
+                  else
+                    fCountIndex.put(f, 1);
+                }
+              } else {
+                featureIndices[k].addAll(cliqueFeatures);
+              }
+            }
+          } else {
+            if (useFeatureCountThresh) {
+              Map<String, Integer> fCountIndex = featureCountIndices[k];
+              for (String f: cliqueFeatures) {
+                if (fCountIndex.containsKey(f))
+                  fCountIndex.put(f, fCountIndex.get(f)+1);
+                else
+                  fCountIndex.put(f, 1);
+              }
+            } else {
+              featureIndices[k].addAll(cliqueFeatures);
+            }
+          }
+        }
+      }
+
+      if (flags.useReverse) {
+        Collections.reverse(doc);
+      }
+    }
+
+    if (useFeatureCountThresh) {
+      int numFeatures = 0;
+      for (int i = 0; i < windowSize; i++) {
+        numFeatures += featureCountIndices[i].size();
+      }
+      System.err.println("Before feature count thresholding, numFeatures = " + numFeatures);
+      for (int i = 0; i < windowSize; i++) {
+        for(Iterator<Map.Entry<String, Integer>> it = featureCountIndices[i].entrySet().iterator(); it.hasNext(); ) {
+          Map.Entry<String, Integer> entry = it.next();
+          if(entry.getValue() < flags.featureCountThresh) {
+            it.remove();
+          }
+        }
+        featureIndices[i].addAll(featureCountIndices[i].keySet());
+        featureCountIndices[i] = null;
+      }
+    }
+
+    int numFeatures = 0;
+    for (int i = 0; i < windowSize; i++) {
+      numFeatures += featureIndices[i].size();
+    }
+    System.err.println("numFeatures = " + numFeatures);
+
+    featureIndex = new HashIndex<String>();
+    map = new int[numFeatures];
+
+    if (flags.groupByFeatureTemplate) {
+      templateGroupIndex = new HashIndex<String>();
+      featureIndexToTemplateIndex = new HashMap<Integer, Integer>();
+    }
+
+    for (int i = 0; i < windowSize; i++) {
+      Index<Integer> featureIndexMap = new HashIndex<Integer>();
+
+      featureIndex.addAll(featureIndices[i]);
+      for (String str : featureIndices[i]) {
+        int index = featureIndex.indexOf(str);
+        map[index] = i;
+        featureIndexMap.add(index);
+
+        // grouping features by template
+        if (flags.groupByFeatureTemplate) {
+          Matcher m = suffixPatt.matcher(str);
+          String groupSuffix = "NoTemplate";
+          if (m.matches()) {
+            groupSuffix = m.group(1);
+          }
+          groupSuffix += "-c:"+i;
+
+          int groupIndex = templateGroupIndex.indexOf(groupSuffix, true);
+          featureIndexToTemplateIndex.put(index, groupIndex);
+        }
+      }
+      // todo [cdm 2014]: Talk to Mengqiu about this; it seems like it only supports first order CRF
+      if (i == 0) {
+        nodeFeatureIndicesMap = featureIndexMap;
+        System.err.println("setting nodeFeatureIndicesMap, size="+nodeFeatureIndicesMap.size());
+      } else {
+        edgeFeatureIndicesMap = featureIndexMap;
+        System.err.println("setting edgeFeatureIndicesMap, size="+edgeFeatureIndicesMap.size());
+      }
+    }
+
+    if (flags.numOfFeatureSlices > 0) {
+      System.err.println("Taking " + flags.numOfFeatureSlices + " out of " + flags.totalFeatureSlice + " slices of node features for training");
+      pruneNodeFeatureIndices(flags.totalFeatureSlice, flags.numOfFeatureSlices);
+    }
+
+    if (flags.useObservedSequencesOnly) {
+      for (int i = 0, liSize = labelIndex.size(); i < liSize; i++) {
+        CRFLabel label = labelIndex.get(i);
+        for (int j = windowSize - 2; j >= 0; j--) {
+          label = label.getOneSmallerLabel();
+          labelIndices.get(j).add(label);
+        }
+      }
+    } else {
+      for (int i = 0; i < labelIndices.size(); i++) {
+        labelIndices.set(i, allLabels(i + 1, classIndex));
+      }
+    }
+
+    if (VERBOSE) {
+      for (int i = 0, fiSize = featureIndex.size(); i < fiSize; i++) {
+        System.out.println(i + ": " + featureIndex.get(i));
+      }
+    }
+    if (labelDictionary != null) {
+      labelDictionary.lock(flags.labelDictionaryCutoff, classIndex);
+    }
+  }
+
+  protected static Index<CRFLabel> allLabels(int window, Index<String> classIndex) {
+    int[] label = new int[window];
+    // cdm 2005: array initialization isn't necessary: JLS (3rd ed.) 4.12.5
+    // Arrays.fill(label, 0);
+    int numClasses = classIndex.size();
+    Index<CRFLabel> labelIndex = new HashIndex<CRFLabel>();
+    OUTER: while (true) {
+      CRFLabel l = new CRFLabel(label);
+      labelIndex.add(l);
+      int[] label1 = new int[window];
+      System.arraycopy(label, 0, label1, 0, label.length);
+      label = label1;
+      for (int j = 0; j < label.length; j++) {
+        label[j]++;
+        if (label[j] >= numClasses) {
+          label[j] = 0;
+          if (j == label.length - 1) {
+            break OUTER;
+          }
+        } else {
+          break;
+        }
+      }
+    }
+    return labelIndex;
+  }
+

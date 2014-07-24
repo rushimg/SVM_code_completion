@@ -1,0 +1,17 @@
+    public void remove(Comparable rowKey, Comparable columnKey) {
+        // defer null argument checks
+        int r = getRowIndex(rowKey);
+        int c = getColumnIndex(columnKey);
+        this.data.removeObject(rowKey, columnKey);
+
+        // if this cell held a maximum and/or minimum value, we'll need to
+        // update the cached bounds...
+        if ((this.maximumRangeValueRow == r && this.maximumRangeValueColumn
+                == c) || (this.minimumRangeValueRow == r
+                && this.minimumRangeValueColumn == c))  {
+            updateBounds();
+        }
+
+        fireDatasetChanged();
+    }
+

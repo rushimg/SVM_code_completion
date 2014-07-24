@@ -1,0 +1,63 @@
+
+public class ChineseDictionary {
+
+  private static final boolean DEBUG = false;
+
+  public static final int MAX_LEXICON_LENGTH = 6;
+  @SuppressWarnings({"unchecked"})
+  Set<String>[] words_ = new HashSet[MAX_LEXICON_LENGTH+1];
+
+  private ChineseDocumentToSentenceProcessor cdtos_; // = null;
+
+  private void serializeDictionary(String serializePath) {
+    System.err.print("Serializing dictionaries to " + serializePath + "...");
+
+    try {
+      ObjectOutputStream oos = IOUtils.writeStreamFromString(serializePath);
+
+      //oos.writeObject(MAX_LEXICON_LENGTH);
+      oos.writeObject(words_);
+      //oos.writeObject(cdtos_);
+      oos.close();
+      System.err.println("done.");
+    } catch (Exception e) {
+      System.err.println("Failed");
+      throw new RuntimeException(e);
+    }
+  }
+
+  @SuppressWarnings({"unchecked"})
+  private static Set<String>[] loadDictionary(String serializePath) {
+    Set<String>[] dict = new HashSet[MAX_LEXICON_LENGTH+1];
+    for (int i = 0; i <= MAX_LEXICON_LENGTH; i++) {
+      dict[i] = Generics.newHashSet();
+    }
+
+    System.err.print("loading dictionaries from " + serializePath + "...");
+
+    try {
+      // once we read MAX_LEXICON_LENGTH and cdtos as well
+      // now these files only store one object we care about
+      //ChineseDictionary.MAX_LEXICON_LENGTH = (int) ois.readObject();
+      dict = IOUtils.readObjectFromURLOrClasspathOrFileSystem(serializePath);
+    } catch (Exception e) {
+      System.err.println("Failed to load Chinese dictionary " + serializePath);
+      throw new RuntimeException(e);
+    }
+    return dict;
+  }
+
+
+  public ChineseDictionary(String dict) {
+    this(new String[] { dict });
+  }
+
+  public ChineseDictionary(String[] dicts) {
+    this(dicts, null);
+  }
+
+  public ChineseDictionary(String[] dicts,
+                           ChineseDocumentToSentenceProcessor cdtos) {
+    this(dicts, cdtos, false);
+  }
+

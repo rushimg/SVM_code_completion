@@ -1,0 +1,74 @@
+  public PRCurve(String filename, boolean svm) {
+    try {
+
+      ArrayList<Pair<Double, Integer>> dataScores = new ArrayList<Pair<Double, Integer>>();
+      for(String line : ObjectBank.getLineIterator(new File(filename))) {
+        List<String> elems = StringUtils.split(line);
+        int cls = Double.valueOf(elems.get(0)).intValue();
+        if (cls == -1) {
+          cls = 0;
+        }
+        double score = Double.valueOf(elems.get(1)) + 0.5;
+        Pair<Double, Integer> p = new Pair<Double, Integer>(new Double(score), Integer.valueOf(cls));
+        dataScores.add(p);
+      }
+      init(dataScores);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+
+  }
+
+  public double optimalAccuracy() {
+    return precision(numSamples()) / (double) numSamples();
+  }
+
+  public double accuracy() {
+    return logPrecision(numSamples()) / (double) numSamples();
+  }
+
+
+  public PRCurve(List<Pair<Double, Integer>> dataScores) {
+    init(dataScores);
+  }
+
+  public void init(List<Pair<Double, Integer>> dataScores) {
+    PriorityQueue<Pair<Integer, Pair<Double, Integer>>> q = new BinaryHeapPriorityQueue<Pair<Integer, Pair<Double, Integer>>>();
+    for (int i = 0; i < dataScores.size(); i++) {
+      q.add(new Pair<Integer, Pair<Double, Integer>>(Integer.valueOf(i), dataScores.get(i)), -dataScores.get(i).first().doubleValue());
+    }
+    List<Pair<Integer, Pair<Double, Integer>>> sorted = q.toSortedList();
+    scores = new double[sorted.size()];
+    classes = new int[sorted.size()];
+    System.err.println("incoming size " + dataScores.size() + " resulting " + sorted.size());
+
+    for (int i = 0; i < sorted.size(); i++) {
+      Pair<Double, Integer> next = sorted.get(i).second();
+      scores[i] = next.first().doubleValue();
+      classes[i] = next.second().intValue();
+    }
+    init();
+  }
+
+
+  public void initMC(ArrayList<Triple<Double, Integer, Integer>> dataScores) {
+    PriorityQueue<Pair<Integer, Triple<Double, Integer, Integer>>> q = new BinaryHeapPriorityQueue<Pair<Integer, Triple<Double, Integer, Integer>>>();
+    for (int i = 0; i < dataScores.size(); i++) {
+      q.add(new Pair<Integer, Triple<Double, Integer, Integer>>(Integer.valueOf(i), dataScores.get(i)), -dataScores.get(i).first().doubleValue());
+    }
+    List<Pair<Integer, Triple<Double, Integer, Integer>>> sorted = q.toSortedList();
+    scores = new double[sorted.size()];
+    classes = new int[sorted.size()];
+    guesses = new int[sorted.size()];
+    System.err.println("incoming size " + dataScores.size() + " resulting " + sorted.size());
+
+    for (int i = 0; i < sorted.size(); i++) {
+      Triple<Double, Integer, Integer> next = sorted.get(i).second();
+      scores[i] = next.first().doubleValue();
+      classes[i] = next.second().intValue();
+      guesses[i] = next.third().intValue();
+    }
+    init();
+  }
+
+

@@ -1,0 +1,98 @@
+  public ChineseGrammaticalStructure(List<TypedDependency> projectiveDependencies, TreeGraphNode root) {
+    super(projectiveDependencies, root);
+  }
+
+
+
+  @Override
+  protected void collapseDependencies(List<TypedDependency> list, boolean CCprocess, boolean includeExtras) {
+    //      collapseConj(list);
+    collapsePrepAndPoss(list);
+    //      collapseMultiwordPreps(list);
+  }
+
+  private static void collapsePrepAndPoss(Collection<TypedDependency> list) {
+    Collection<TypedDependency> newTypedDeps = new ArrayList<TypedDependency>();
+
+    // Construct a map from tree nodes to the set of typed
+    // dependencies in which the node appears as governor.
+    Map<TreeGraphNode, Set<TypedDependency>> map = Generics.newHashMap();
+    for (TypedDependency typedDep : list) {
+      if (!map.containsKey(typedDep.gov())) {
+        map.put(typedDep.gov(), Generics.<TypedDependency>newHashSet());
+      }
+      map.get(typedDep.gov()).add(typedDep);
+    }
+    //System.err.println("here's the map: " + map);
+
+    for (TypedDependency td1 : list) {
+      if (td1.reln() != GrammaticalRelation.KILL) {
+        TreeGraphNode td1Dep = td1.dep();
+        String td1DepPOS = td1Dep.parent().value();
+        // find all other typedDeps having our dep as gov
+        Set<TypedDependency> possibles = map.get(td1Dep);
+        if (possibles != null) {
+          // look for the "second half"
+          for (TypedDependency td2 : possibles) {
+            // TreeGraphNode td2Dep = td2.dep();
+            // String td2DepPOS = td2Dep.parent().value();
+            if (td1.reln() == DEPENDENT && td2.reln() == DEPENDENT && td1DepPOS.equals("P")) {
+              GrammaticalRelation td3reln = ChineseGrammaticalRelations.valueOf(td1Dep.value());
+              if (td3reln == null) {
+                td3reln = GrammaticalRelation.valueOf(GrammaticalRelation.Language.Chinese,
+                                                      td1Dep.value());
+              }
+              TypedDependency td3 = new TypedDependency(td3reln, td1.gov(), td2.dep());
+              //System.err.println("adding: " + td3);
+              newTypedDeps.add(td3);
+              td1.setReln(GrammaticalRelation.KILL);        // remember these are "used up"
+              td2.setReln(GrammaticalRelation.KILL);        // remember these are "used up"
+            }
+          }
+
+          // Now we need to see if there any TDs that will be "orphaned"
+          // by this collapse.  Example: if we have:
+          //   dep(drew, on)
+          //   dep(on, book)
+          //   dep(on, right)
+          // the first two will be collapsed to on(drew, book), but then
+          // the third one will be orphaned, since its governor no
+          // longer appears.  So, change its governor to 'drew'.
+          if (td1.reln().equals(GrammaticalRelation.KILL)) {
+            for (TypedDependency td2 : possibles) {
+              if (!td2.reln().equals(GrammaticalRelation.KILL)) {
+                //System.err.println("td1 & td2: " + td1 + " & " + td2);
+                td2.setGov(td1.gov());
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // now copy remaining unkilled TDs from here to new
+    for (TypedDependency td : list) {
+      if (!td.reln().equals(GrammaticalRelation.KILL)) {
+        newTypedDeps.add(td);
+      }
+    }
+
+    list.clear();                            // forget all (esp. killed) TDs
+    list.addAll(newTypedDeps);
+  }
+
+  private static void AddTreesFromFile(String treeFileName, String encoding, Treebank tb) {
+    ChineseTreebankParserParams ctpp = new ChineseTreebankParserParams();
+    try {
+      TreeReaderFactory trf = ctpp.treeReaderFactory();
+      TreeReader tr = trf.newTreeReader(new InputStreamReader(new FileInputStream(treeFileName), encoding));
+      Tree t;
+      while ((t = tr.readTree()) != null) {
+        tb.add(t);
+      }
+      tr.close();
+    } catch (IOException e) {
+      throw new RuntimeException("File problem: " + e);
+    }
+  }
+

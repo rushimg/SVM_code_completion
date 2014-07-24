@@ -1,0 +1,75 @@
+  @Override
+  public boolean removeVertex(V vertex) {
+    if (!outgoingEdges.containsKey(vertex)) {
+      return false;
+    }
+    for (V other : outgoingEdges.get(vertex).keySet()) {
+      incomingEdges.get(other).remove(vertex);
+    }
+    for (V other : incomingEdges.get(vertex).keySet()) {
+      outgoingEdges.get(other).remove(vertex);
+    }
+    outgoingEdges.remove(vertex);
+    incomingEdges.remove(vertex);
+    return true;
+  }
+
+  @Override
+  public boolean removeVertices(Collection<V> vertices) {
+    boolean changed = false;
+    for (V v : vertices) {
+      if (removeVertex(v)) {
+        changed = true;
+      }
+    }
+    return changed;
+  }
+
+  @Override
+  public int getNumVertices() {
+    return outgoingEdges.size();
+  }
+
+  @Override
+  public List<E> getOutgoingEdges(V v) {
+    if (!outgoingEdges.containsKey(v)) { //noinspection unchecked
+      return Collections.EMPTY_LIST;
+    }
+    return CollectionUtils.flatten(outgoingEdges.get(v).values());
+  }
+
+  @Override
+  public List<E> getIncomingEdges(V v) {
+    if (!incomingEdges.containsKey(v)) { //noinspection unchecked
+      return Collections.EMPTY_LIST;
+    }
+    return CollectionUtils.flatten(incomingEdges.get(v).values());
+  }
+
+  @Override
+  public int getNumEdges() {
+    int count = 0;
+    for (Map.Entry<V, Map<V, List<E>>> sourceEntry : outgoingEdges.entrySet()) {
+      for (Map.Entry<V, List<E>> destEntry : sourceEntry.getValue().entrySet()) {
+        count += destEntry.getValue().size();
+      }
+    }
+    return count;
+  }
+
+  @Override
+  public Set<V> getParents(V vertex) {
+    Map<V, List<E>> parentMap = incomingEdges.get(vertex);
+    if (parentMap == null)
+      return null;
+    return Collections.unmodifiableSet(parentMap.keySet());
+  }
+
+  @Override
+  public Set<V> getChildren(V vertex) {
+    Map<V, List<E>> childMap = outgoingEdges.get(vertex);
+    if (childMap == null)
+      return null;
+    return Collections.unmodifiableSet(childMap.keySet());
+  }
+

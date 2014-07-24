@@ -1,0 +1,48 @@
+  public static TransducerGraph createRandomGraph(int numPaths, int pathLengthMean, double pathLengthVariance, int numInputs, List pathList) {
+    // compute the path length. Draw from a normal distribution
+    for (int i = 0; i < numPaths; i++) {
+      // make a path
+      List path = new ArrayList();
+      for (int j = 0; j < pathLength; j++) {
+        String input = Integer.toString(r.nextInt(numInputs));
+        path.add(input);
+      }
+      // TODO: createRandomPaths had the following difference:
+      // we're done, add one more arc to get to the endNode.
+      //input = TransducerGraph.EPSILON_INPUT;
+      //path.add(input);
+      pathList.add(path);
+    }
+    return createGraphFromPaths(pathList, -1);
+  }
+
+  public static List createRandomPaths(int numPaths, int pathLengthMean, double pathLengthVariance, int numInputs) {
+    List pathList = new ArrayList();
+    // make a bunch of paths, randomly
+    // compute the path length. Draw from a normal distribution
+    for (int i = 0; i < numPaths; i++) {
+      // make a path
+      List<String> path = new ArrayList<String>();
+      String input;
+      for (int j = 0; j < pathLength; j++) {
+        input = Integer.toString(r.nextInt(numInputs));
+        path.add(input);
+      }
+      // we're done, add one more arc to get to the endNode.
+      input = TransducerGraph.EPSILON_INPUT;
+      path.add(input);
+      pathList.add(path);
+    }
+    return pathList;
+  }
+
+  public void depthFirstSearch(boolean forward, StringBuilder b) {
+    if (forward) {
+      depthFirstSearchHelper(getStartNode(), new HashSet(), 0, true, b);
+    } else {
+      for (Object o : getEndNodes()) {
+        depthFirstSearchHelper(o, new HashSet(), 0, false, b);
+      }
+    }
+  }
+

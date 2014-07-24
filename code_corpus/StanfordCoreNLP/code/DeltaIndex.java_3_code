@@ -1,0 +1,24 @@
+  @Override
+  public Iterator<E> iterator() {
+    return new Iterator<E>() {
+      Iterator<E> backingIterator = backingIndex.iterator();
+      Iterator<E> spilloverIterator = spilloverIndex.iterator();
+
+      public boolean hasNext() {
+        return backingIterator.hasNext() || spilloverIterator.hasNext();
+      }
+
+      public E next() {
+        if (backingIterator.hasNext()) {
+          return backingIterator.next();
+        } else {
+          return spilloverIterator.next();
+        }
+      }
+
+      public void remove() {
+        throw new UnsupportedOperationException();
+      }
+    };
+  }
+

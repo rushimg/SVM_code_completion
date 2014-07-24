@@ -1,0 +1,37 @@
+public class TwoDimensionalIntCounter<K1, K2> implements Serializable {
+
+  private static final long serialVersionUID = 1L;
+
+  // the outermost Map
+  private Map<K1, IntCounter<K2>> map;
+
+  // the total of all counts
+  private int total;
+
+  // the MapFactory used to make new maps to counters
+  private MapFactory<K1,IntCounter<K2>> outerMF;
+
+  // the MapFactory used to make new maps in the inner counter
+  private MapFactory<K2, MutableInteger> innerMF;
+
+  private int defaultValue = 0;
+
+  public void defaultReturnValue(double rv) { defaultValue = (int) rv; }
+
+  public void defaultReturnValue(int rv) { defaultValue = rv; }
+
+  public int defaultReturnValue() { return defaultValue; }
+
+  @Override
+  public boolean equals(Object o) {
+    if (o == this) return true;
+    if (!(o instanceof TwoDimensionalIntCounter)) return false;
+
+    return ((TwoDimensionalIntCounter<?,?>) o).map.equals(map);
+  }
+
+  @Override
+  public int hashCode() {
+    return map.hashCode() + 17;
+  }
+

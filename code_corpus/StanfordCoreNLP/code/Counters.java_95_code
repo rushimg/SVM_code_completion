@@ -1,0 +1,94 @@
+  public static <E> void saveCounter(Counter<E> c, String filename) throws IOException {
+    FileOutputStream fos = new FileOutputStream(filename);
+    saveCounter(c, fos);
+    fos.close();
+  }
+
+  public static <T1, T2> TwoDimensionalCounter<T1, T2> load2DCounter(String filename, Class<T1> t1, Class<T2> t2) throws RuntimeException {
+    try {
+      TwoDimensionalCounter<T1, T2> tdc = new TwoDimensionalCounter<T1, T2>();
+      loadInto2DCounter(filename, t1, t2, tdc);
+      return tdc;
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public static <T1, T2> void loadInto2DCounter(String filename, Class<T1> t1, Class<T2> t2, TwoDimensionalCounter<T1, T2> tdc) throws RuntimeException {
+    try {
+      Constructor<T1> m1 = t1.getConstructor(String.class);
+      Constructor<T2> m2 = t2.getConstructor(String.class);
+      BufferedReader in = IOUtils.getBufferedFileReader(filename);// new
+                                                                  // BufferedReader(new
+                                                                  // FileReader(filename));
+      for (String line; (line = in.readLine()) != null;) {
+        String[] tuple = line.trim().split("\t");
+        String outer = tuple[0];
+        String inner = tuple[1];
+        String valStr = tuple[2];
+        tdc.setCount(m1.newInstance(outer.trim()), m2.newInstance(inner.trim()), Double.parseDouble(valStr.trim()));
+      }
+      in.close();
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public static <T1, T2> void loadIncInto2DCounter(String filename, Class<T1> t1, Class<T2> t2,
+                                                   TwoDimensionalCounterInterface<T1, T2> tdc) throws RuntimeException {
+    try {
+      Constructor<T1> m1 = t1.getConstructor(String.class);
+      Constructor<T2> m2 = t2.getConstructor(String.class);
+      BufferedReader in = IOUtils.getBufferedFileReader(filename);// new
+                                                                  // BufferedReader(new
+                                                                  // FileReader(filename));
+      for (String line; (line = in.readLine()) != null;) {
+        String[] tuple = line.trim().split("\t");
+        String outer = tuple[0];
+        String inner = tuple[1];
+        String valStr = tuple[2];
+        tdc.incrementCount(m1.newInstance(outer.trim()), m2.newInstance(inner.trim()), Double.parseDouble(valStr.trim()));
+      }
+      in.close();
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public static <T1, T2> void save2DCounter(TwoDimensionalCounter<T1, T2> tdc, String filename) throws IOException {
+    PrintWriter out = new PrintWriter(new FileWriter(filename));
+    for (T1 outer : tdc.firstKeySet()) {
+      for (T2 inner : tdc.secondKeySet()) {
+        out.println(outer + "\t" + inner + '\t' + tdc.getCount(outer, inner));
+      }
+    }
+    out.close();
+  }
+
+  public static <T1, T2> void save2DCounterSorted(TwoDimensionalCounterInterface<T1, T2> tdc, String filename) throws IOException {
+    PrintWriter out = new PrintWriter(new FileWriter(filename));
+    for (T1 outer : tdc.firstKeySet()) {
+      Counter<T2> c = tdc.getCounter(outer);
+      List<T2> keys = Counters.toSortedList(c);
+      for (T2 inner : keys) {
+        out.println(outer + "\t" + inner + '\t' + c.getCount(inner));
+      }
+    }
+    out.close();
+  }
+
+  public static <T> void serializeCounter(Counter<T> c, String filename) throws IOException {
+    // serialize to file
+    ObjectOutputStream out = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(filename)));
+    out.writeObject(c);
+    out.close();
+  }
+
+  public static <T> ClassicCounter<T> deserializeCounter(String filename) throws Exception {
+    // reconstitute
+    ObjectInputStream in = new ObjectInputStream(new BufferedInputStream(new FileInputStream(filename)));
+    ClassicCounter<T> c = ErasureUtils.uncheckedCast(in.readObject());
+    in.close();
+    return c;
+  }
+

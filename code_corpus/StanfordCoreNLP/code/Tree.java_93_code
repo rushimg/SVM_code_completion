@@ -1,0 +1,44 @@
+  public Tree ancestor(int height, Tree root) {
+    if (height < 0) {
+      throw new IllegalArgumentException("ancestor: height cannot be negative");
+    }
+    if (height == 0) {
+      return this;
+    }
+    Tree par = parent(root);
+    if (par == null) {
+      return null;
+    }
+    return par.ancestor(height - 1, root);
+  }
+
+
+  private static class TreeIterator implements Iterator<Tree> {
+
+    private final List<Tree> treeStack;
+
+    protected TreeIterator(Tree t) {
+      treeStack = new ArrayList<Tree>();
+      treeStack.add(t);
+    }
+
+    @Override
+    public boolean hasNext() {
+      return (!treeStack.isEmpty());
+    }
+
+    @Override
+    public Tree next() {
+      int lastIndex = treeStack.size() - 1;
+      if (lastIndex < 0) {
+        throw new NoSuchElementException("TreeIterator exhausted");
+      }
+      Tree tr = treeStack.remove(lastIndex);
+      Tree[] kids = tr.children();
+      // so that we can efficiently use one List, we reverse them
+      for (int i = kids.length - 1; i >= 0; i--) {
+        treeStack.add(kids[i]);
+      }
+      return tr;
+    }
+

@@ -1,0 +1,130 @@
+  public static AceDocument parseDocument(String prefix, boolean usePredictedBoundaries) throws java.io.IOException,
+      org.xml.sax.SAXException, javax.xml.parsers.ParserConfigurationException {
+    mLog.fine("Reading document " + prefix);
+    AceDocument doc = null;
+
+    //
+    // read the ACE XML annotations
+    //
+    if (usePredictedBoundaries == false) {
+      doc = AceDomReader.parseDocument(new File(prefix + XML_EXT));
+      // System.err.println("Parsed " + doc.getEntityMentions().size() +
+      // " entities in document " + prefix);
+    }
+
+    //
+    // will use the predicted entity boundaries (see below)
+    //
+    else {
+      int lastSlash = prefix.lastIndexOf(File.separator);
+      assert (lastSlash > 0 && lastSlash < prefix.length() - 1);
+      String id = prefix.substring(lastSlash + 1);
+      // System.err.println(id + ": " + prefix);
+      doc = new AceDocument(id);
+    }
+    doc.setPrefix(prefix);
+
+    //
+    // read the raw byte stream
+    //
+    String trueCasedFileName = prefix + ORIG_EXT + ".truecase";
+    if((new File(trueCasedFileName).exists())){
+    	mLog.severe("Using truecased file: " + trueCasedFileName);
+    	doc.readRawBytes(trueCasedFileName);
+    } else {
+    	doc.readRawBytes(prefix + ORIG_EXT);
+    }
+
+    //
+    // read the AceTokens
+    //
+    int offsetToSubtract = 0;
+    List<List<AceToken>> sentences = AceSentenceSegmenter.tokenizeAndSegmentSentences(prefix);
+    doc.setSentences(sentences);
+    for (List<AceToken> sentence : sentences) {
+      for (AceToken token : sentence) {
+        offsetToSubtract = token.adjustPhrasePositions(offsetToSubtract, token.getLiteral());
+        doc.addToken(token);
+      }
+    }
+    
+    //
+    // match char sequences to phrases
+    //
+    doc.matchCharSeqs(prefix);
+
+    //
+    // construct the mEntityMentions matrix
+    //
+    Set<String> entityKeys = doc.mEntityMentions.keySet();
+    int sentence;
+    for (String key : entityKeys) {
+      AceEntityMention em = doc.mEntityMentions.get(key);
+      sentence = doc.mTokens.get(em.getHead().getTokenStart()).getSentence();
+
+      // adjust the number of rows if necessary
+      while (sentence >= doc.mSentenceEntityMentions.size()) {
+        doc.mSentenceEntityMentions.add(new ArrayList<AceEntityMention>());
+        doc.mSentenceRelationMentions.add(new ArrayList<AceRelationMention>());
+        doc.mSentenceEventMentions.add(new ArrayList<AceEventMention>());
+      }
+
+      // store the entity mentions in increasing order:
+      // (a) of the start position of their head
+      // (b) if start is the same, in increasing order of the head end
+      ArrayList<AceEntityMention> sentEnts = doc.mSentenceEntityMentions.get(sentence);
+      boolean added = false;
+      for (int i = 0; i < sentEnts.size(); i++) {
+        AceEntityMention crt = sentEnts.get(i);
+        if ((crt.getHead().getTokenStart() > em.getHead().getTokenStart())
+            || (crt.getHead().getTokenStart() == em.getHead().getTokenStart() && crt.getHead().getTokenEnd() > em
+                .getHead().getTokenEnd())) {
+          sentEnts.add(i, em);
+          added = true;
+          break;
+        }
+      }
+      if (!added) {
+        sentEnts.add(em);
+      }
+    }
+
+    // 
+    // construct the mRelationMentions matrix
+    //
+    Set<String> relKeys = doc.mRelationMentions.keySet();
+    for (String key : relKeys) {
+      AceRelationMention rm = doc.mRelationMentions.get(key);
+      sentence = doc.mTokens.get(rm.getArg(0).getHead().getTokenStart()).getSentence();
+
+      //
+      // no need to adjust the number of rows: was done above
+      //
+
+      // store the relation mentions in increasing order
+      // (a) of the start position of their head, or
+      // (b) if start is the same, in increasing order of ends
+      ArrayList<AceRelationMention> sentRels = doc.mSentenceRelationMentions.get(sentence);
+      boolean added = false;
+      for (int i = 0; i < sentRels.size(); i++) {
+        AceRelationMention crt = sentRels.get(i);
+        if ((crt.getMinTokenStart() > rm.getMinTokenStart())
+            || (crt.getMinTokenStart() == rm.getMinTokenStart() && crt.getMaxTokenEnd() > rm.getMaxTokenEnd())) {
+          sentRels.add(i, rm);
+          added = true;
+          break;
+        }
+      }
+      if (!added) {
+        sentRels.add(rm);
+      }
+    }
+    
+    // 
+    // construct the mEventMentions matrix
+    //
+    Set<String> eventKeys = doc.mEventMentions.keySet();
+    for (String key : eventKeys) {
+      AceEventMention em = doc.mEventMentions.get(key);
+      sentence = doc.mTokens.get(em.getMinTokenStart()).getSentence();
+

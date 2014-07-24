@@ -1,0 +1,31 @@
+  protected void validateFactoryArgs(ObjectStreamFactory<T> factory, String[] args) {
+    String errMessage = ArgumentParser.validateArgumentsLoudly(args, factory.getParameters());
+    if (null != errMessage) {
+      throw new TerminateToolException(1, "Format parameters are invalid: " + errMessage + "\n" +
+          "Usage: " + ArgumentParser.createUsage(factory.getParameters()));
+    }
+  }
+
+  @Override
+  protected <A> String getBasicHelp(Class<A>... argProxyInterfaces) {
+    Map<String, ObjectStreamFactory<T>> factories = StreamFactoryRegistry.getFactories(type);
+
+    String formatsHelp = " ";
+    if (1 < factories.size()) {
+      StringBuilder formats = new StringBuilder();
+      for (String format : factories.keySet()) {
+        if (!StreamFactoryRegistry.DEFAULT_FORMAT.equals(format)) {
+          formats.append(".").append(format).append("|");
+        }
+      }
+      formatsHelp = "[" + formats.substring(0, formats.length() - 1)+ "] ";
+    }
+
+    return "Usage: " + CLI.CMD + " " + getName() + formatsHelp +
+        ArgumentParser.createUsage(argProxyInterfaces);
+  }
+
+  public String getHelp() {
+    return getHelp("");
+  }
+

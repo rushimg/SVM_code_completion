@@ -1,0 +1,30 @@
+  Pair<ClassicCounter<OUT>, ClassicCounter<OUT>> evalPrecision(Collection<IN> guesses, Collection<IN> golds) {
+    Collection<IN> internalGuesses = null;
+    Collection<IN> internalGolds = null;
+    if(bagEval) {
+      internalGuesses = new ArrayList<IN>(guesses.size());
+      internalGolds = new ArrayList<IN>(golds.size());
+    }
+    else {
+      internalGuesses = Generics.newHashSet(guesses.size());
+      internalGolds = Generics.newHashSet(golds.size());
+    }
+    internalGuesses.addAll(guesses);
+    internalGolds.addAll(golds);
+    ClassicCounter<OUT> thisGuessed = new ClassicCounter<OUT>();
+    ClassicCounter<OUT> thisCorrect = new ClassicCounter<OUT>();
+    for (IN o : internalGuesses) {
+      OUT equivalenceClass = eq.equivalenceClass(o);
+      thisGuessed.incrementCount(equivalenceClass);
+      if (checker.contained(o, internalGolds)) {
+        thisCorrect.incrementCount(equivalenceClass);
+        removeItem(o,internalGolds,checker);
+      } else {
+        if (verbose) {
+          System.out.println("Eval missed " + o);
+        }
+      }
+    }
+    return Generics.newPair(thisGuessed, thisCorrect);
+  }
+

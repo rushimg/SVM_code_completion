@@ -1,0 +1,24 @@
+  public static <T> Iterable<T> cast(
+      final Iterable<?> iterable, final Class<? extends T> type) {
+
+    return new Iterable<T>() {
+      public Iterator<T> iterator() {
+        return new Iterator<T>() {
+          Iterator<?> inner = iterable.iterator();
+
+          public boolean hasNext() {
+            return inner.hasNext();
+          }
+
+          public T next() {
+            return type.cast(inner.next());
+          }
+
+          public void remove() {
+            inner.remove();
+          }
+        };
+      }
+    };
+  }
+

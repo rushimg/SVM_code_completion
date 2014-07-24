@@ -1,0 +1,28 @@
+    protected Object[] createItemArray(XYDataset dataset, int series,
+                                       int item) {
+        Object[] result = new Object[3];
+        result[0] = dataset.getSeriesKey(series).toString();
+
+        double x = dataset.getXValue(series, item);
+        if (this.xDateFormat != null) {
+            result[1] = this.xDateFormat.format(new Date((long) x));
+        }
+        else {
+            result[1] = this.xFormat.format(x);
+        }
+
+        double y = dataset.getYValue(series, item);
+        if (Double.isNaN(y) && dataset.getY(series, item) == null) {
+            result[2] = this.nullYString;
+        }
+        else {
+            if (this.yDateFormat != null) {
+                result[2] = this.yDateFormat.format(new Date((long) y));
+            }
+            else {
+                result[2] = this.yFormat.format(y);
+            }
+        }
+        return result;
+    }
+

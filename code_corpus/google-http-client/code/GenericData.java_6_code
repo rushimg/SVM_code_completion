@@ -1,0 +1,41 @@
+  public GenericData set(String fieldName, Object value) {
+    FieldInfo fieldInfo = classInfo.getFieldInfo(fieldName);
+    if (fieldInfo != null) {
+      fieldInfo.setValue(this, value);
+    } else {
+      if (classInfo.getIgnoreCase()) {
+        fieldName = fieldName.toLowerCase();
+      }
+      unknownFields.put(fieldName, value);
+    }
+    return this;
+  }
+
+  @Override
+  public final void putAll(Map<? extends String, ?> map) {
+    for (Map.Entry<? extends String, ?> entry : map.entrySet()) {
+      set(entry.getKey(), entry.getValue());
+    }
+  }
+
+  @Override
+  public final Object remove(Object name) {
+    if (!(name instanceof String)) {
+      return null;
+    }
+    String fieldName = (String) name;
+    FieldInfo fieldInfo = classInfo.getFieldInfo(fieldName);
+    if (fieldInfo != null) {
+      throw new UnsupportedOperationException();
+    }
+    if (classInfo.getIgnoreCase()) {
+      fieldName = fieldName.toLowerCase();
+    }
+    return unknownFields.remove(fieldName);
+  }
+
+  @Override
+  public Set<Map.Entry<String, Object>> entrySet() {
+    return new EntrySet();
+  }
+

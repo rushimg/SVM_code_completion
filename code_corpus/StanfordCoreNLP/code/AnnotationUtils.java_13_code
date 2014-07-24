@@ -1,0 +1,110 @@
+  public static List<RelationMention> getAllRelations(RelationMentionFactory factory, CoreMap sentence, boolean createUnrelatedRelations) {
+    List<RelationMention> relationMentions = sentence.get(MachineReadingAnnotations.RelationMentionsAnnotation.class);
+    List<RelationMention> allRelations = new ArrayList<RelationMention>();
+    if(relationMentions != null) allRelations.addAll(relationMentions);
+    if(createUnrelatedRelations){
+      allRelations.addAll(getAllUnrelatedRelations(factory, sentence, true));
+    }
+    return allRelations;
+  }
+
+  public static List<RelationMention> getAllUnrelatedRelations(RelationMentionFactory factory, CoreMap sentence, boolean checkExisting) {
+
+    List<RelationMention> relationMentions = (checkExisting ? sentence.get(MachineReadingAnnotations.RelationMentionsAnnotation.class) : null);
+    List<EntityMention> entityMentions = sentence.get(MachineReadingAnnotations.EntityMentionsAnnotation.class);
+    List<RelationMention> nonRelations = new ArrayList<RelationMention>();
+
+    //
+    // scan all possible arguments
+    //
+    if(entityMentions != null){
+      for(int i = 0; i < entityMentions.size(); i ++){
+        for(int j = 0; j < entityMentions.size(); j ++){
+          if(i == j) continue;
+          EntityMention arg1 = entityMentions.get(i);
+          EntityMention arg2 = entityMentions.get(j);
+          boolean match = false;
+          if(relationMentions != null){
+            for (RelationMention rel : relationMentions) {
+              if (rel.argsMatch(arg1, arg2)) {
+                match = true;
+                break;
+              }
+            }
+          }
+          if (match == false) {
+          	nonRelations.add(RelationMention.createUnrelatedRelation(factory, arg1,arg2));
+          }
+        }
+      }
+    }
+
+    return nonRelations;
+  }
+
+  public static void addEntityMention(CoreMap sentence, EntityMention arg) {
+    List<EntityMention> l = sentence.get(MachineReadingAnnotations.EntityMentionsAnnotation.class);
+    if(l == null){
+      l = new ArrayList<EntityMention>();
+      sentence.set(MachineReadingAnnotations.EntityMentionsAnnotation.class, l);
+    }
+    l.add(arg);
+  }
+
+  public static void addEntityMentions(CoreMap sentence, Collection<EntityMention> args) {
+    List<EntityMention> l = sentence.get(MachineReadingAnnotations.EntityMentionsAnnotation.class);
+    if(l == null){
+      l = new ArrayList<EntityMention>();
+      sentence.set(MachineReadingAnnotations.EntityMentionsAnnotation.class, l);
+    }
+    l.addAll(args);
+  }
+
+  public List<EntityMention> getEntityMentions(CoreMap sent) {
+    return Collections.unmodifiableList(sent.get(MachineReadingAnnotations.EntityMentionsAnnotation.class));
+  }
+
+  public static void addRelationMention(CoreMap sentence, RelationMention arg) {
+    List<RelationMention> l = sentence.get(MachineReadingAnnotations.RelationMentionsAnnotation.class);
+    if(l == null){
+      l = new ArrayList<RelationMention>();
+      sentence.set(MachineReadingAnnotations.RelationMentionsAnnotation.class, l);
+    }
+    l.add(arg);
+  }
+
+  public static void addRelationMentions(CoreMap sentence, Collection<RelationMention> args) {
+    List<RelationMention> l = sentence.get(MachineReadingAnnotations.RelationMentionsAnnotation.class);
+    if(l == null){
+      l = new ArrayList<RelationMention>();
+      sentence.set(MachineReadingAnnotations.RelationMentionsAnnotation.class, l);
+    }
+    l.addAll(args);
+  }
+
+  public List<RelationMention> getRelationMentions(CoreMap sent) {
+    return Collections.unmodifiableList(sent.get(MachineReadingAnnotations.RelationMentionsAnnotation.class));
+  }
+
+  public static void addEventMention(CoreMap sentence, EventMention arg) {
+    List<EventMention> l = sentence.get(MachineReadingAnnotations.EventMentionsAnnotation.class);
+    if(l == null){
+      l = new ArrayList<EventMention>();
+      sentence.set(MachineReadingAnnotations.EventMentionsAnnotation.class, l);
+    }
+    l.add(arg);
+  }
+
+  public static void addEventMentions(CoreMap sentence, Collection<EventMention> args) {
+    List<EventMention> l = sentence.get(MachineReadingAnnotations.EventMentionsAnnotation.class);
+    if(l == null){
+      l = new ArrayList<EventMention>();
+      sentence.set(MachineReadingAnnotations.EventMentionsAnnotation.class, l);
+    }
+    l.addAll(args);
+  }
+
+  public List<EventMention> getEventMentions(CoreMap sent) {
+    return Collections.unmodifiableList(sent.get(MachineReadingAnnotations.EventMentionsAnnotation.class));
+  }
+

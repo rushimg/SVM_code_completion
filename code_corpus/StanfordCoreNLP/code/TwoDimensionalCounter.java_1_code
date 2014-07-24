@@ -1,0 +1,41 @@
+public class TwoDimensionalCounter<K1, K2> implements TwoDimensionalCounterInterface<K1,K2>, Serializable {
+
+  private static final long serialVersionUID = 1L;
+
+  // the outermost Map
+  private Map<K1, ClassicCounter<K2>> map;
+
+  // the total of all counts
+  private double total;
+
+  // the MapFactory used to make new maps to counters
+  private MapFactory<K1, ClassicCounter<K2>> outerMF;
+
+  // the MapFactory used to make new maps in the inner counter
+  private MapFactory<K2, MutableDouble> innerMF;
+
+  private double defaultValue = 0.0;
+
+  public void defaultReturnValue(double rv) {
+    defaultValue = rv;
+  }
+
+  public double defaultReturnValue() {
+    return defaultValue;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (o == this)
+      return true;
+    if (!(o instanceof TwoDimensionalCounter))
+      return false;
+
+    return ((TwoDimensionalCounter<?, ?>) o).map.equals(map);
+  }
+
+  @Override
+  public int hashCode() {
+    return map.hashCode() + 17;
+  }
+

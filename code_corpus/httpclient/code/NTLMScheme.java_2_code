@@ -1,0 +1,25 @@
+@NotThreadSafe
+public class NTLMScheme extends AuthSchemeBase {
+
+    enum State {
+        UNINITIATED,
+        CHALLENGE_RECEIVED,
+        MSG_TYPE1_GENERATED,
+        MSG_TYPE2_RECEVIED,
+        MSG_TYPE3_GENERATED,
+        FAILED,
+    }
+
+    private final NTLMEngine engine;
+
+    private State state;
+    private String challenge;
+
+    public NTLMScheme(final NTLMEngine engine) {
+        super();
+        Args.notNull(engine, "NTLM engine");
+        this.engine = engine;
+        this.state = State.UNINITIATED;
+        this.challenge = null;
+    }
+

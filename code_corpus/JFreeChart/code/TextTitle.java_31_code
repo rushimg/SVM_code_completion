@@ -1,0 +1,41 @@
+    protected Size2D arrangeRR(Graphics2D g2, Range widthRange,
+            Range heightRange) {
+        RectangleEdge position = getPosition();
+        if (position == RectangleEdge.TOP || position == RectangleEdge.BOTTOM) {
+            float maxWidth = (float) widthRange.getUpperBound();
+            g2.setFont(this.font);
+            this.content = TextUtilities.createTextBlock(this.text, this.font,
+                    this.paint, maxWidth, this.maximumLinesToDisplay,
+                    new G2TextMeasurer(g2));
+            this.content.setLineAlignment(this.textAlignment);
+            Size2D contentSize = this.content.calculateDimensions(g2);
+            if (this.expandToFitSpace) {
+                return new Size2D(maxWidth, contentSize.getHeight());
+            }
+            else {
+                return contentSize;
+            }
+        }
+        else if (position == RectangleEdge.LEFT || position
+                == RectangleEdge.RIGHT) {
+            float maxWidth = (float) heightRange.getUpperBound();
+            g2.setFont(this.font);
+            this.content = TextUtilities.createTextBlock(this.text, this.font,
+                    this.paint, maxWidth, this.maximumLinesToDisplay,
+                    new G2TextMeasurer(g2));
+            this.content.setLineAlignment(this.textAlignment);
+            Size2D contentSize = this.content.calculateDimensions(g2);
+
+            // transpose the dimensions, because the title is rotated
+            if (this.expandToFitSpace) {
+                return new Size2D(contentSize.getHeight(), maxWidth);
+            }
+            else {
+                return new Size2D(contentSize.height, contentSize.width);
+            }
+        }
+        else {
+            throw new RuntimeException("Unrecognised exception.");
+        }
+    }
+

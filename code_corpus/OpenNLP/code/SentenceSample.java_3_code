@@ -1,0 +1,25 @@
+  public SentenceSample(String document, Span... sentences) {
+    this.document = document;
+    this.sentences = Collections.unmodifiableList(new ArrayList<Span>(Arrays.asList(sentences)));;
+  }
+
+  public SentenceSample(Detokenizer detokenizer, String[][] sentences) {
+
+    List<Span> spans = new ArrayList<Span>(sentences.length);
+
+    StringBuilder documentBuilder = new StringBuilder();
+
+    for (String sentenceTokens[] : sentences) {
+
+      String sampleSentence = detokenizer.detokenize(sentenceTokens, null);
+
+      int beginIndex = documentBuilder.length();
+      documentBuilder.append(sampleSentence);
+
+      spans.add(new Span(beginIndex, documentBuilder.length()));
+    }
+
+    document = documentBuilder.toString();
+    this.sentences = Collections.unmodifiableList(spans);
+  }
+

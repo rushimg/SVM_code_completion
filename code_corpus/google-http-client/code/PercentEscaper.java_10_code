@@ -1,0 +1,18 @@
+  public PercentEscaper(String safeChars, boolean plusForSpace) {
+    // Avoid any misunderstandings about the behavior of this escaper
+      throw new IllegalArgumentException(
+          "Alphanumeric characters are always 'safe' and should not be " + "explicitly specified");
+    }
+    // Avoid ambiguous parameters. Safe characters are never modified so if
+    // space is a safe character then setting plusForSpace is meaningless.
+    if (plusForSpace && safeChars.contains(" ")) {
+      throw new IllegalArgumentException(
+          "plusForSpace cannot be specified when space is a 'safe' character");
+    }
+    if (safeChars.contains("%")) {
+      throw new IllegalArgumentException("The '%' character cannot be specified as 'safe'");
+    }
+    this.plusForSpace = plusForSpace;
+    safeOctets = createSafeOctets(safeChars);
+  }
+

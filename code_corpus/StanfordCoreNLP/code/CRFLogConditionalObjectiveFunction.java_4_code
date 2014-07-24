@@ -1,0 +1,25 @@
+  @Override
+  public void calculateStochasticGradient(double[] x, int[] batch) {
+    if (derivative == null) {
+      derivative = new double[domainDimension()];
+    }
+    // int[][] wis = getWeightIndices();
+    // was: double[][] weights = to2D(x, 1.0); // but 1.0 should be the same as omitting 2nd parameter....
+    to2D(x, weights);
+    setWeights(weights);
+
+    // iterate over all the documents
+    List<Integer> docIDs = new ArrayList<Integer>(batch.length);
+    for (int m=0; m < batch.length; m++) docIDs.add(batch[m]);
+    multiThreadGradient(docIDs, true); 
+
+    int index = 0;
+    for (int i = 0; i < E.length; i++) {
+      for (int j = 0; j < E[i].length; j++) {
+        // real gradient should be empirical-expected;
+        // but since we minimize -L(\theta), the gradient is -(empirical-expected)
+        derivative[index++] = (E[i][j]-Ehat[i][j]);
+      }
+    }
+  }
+

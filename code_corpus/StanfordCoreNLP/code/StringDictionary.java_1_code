@@ -1,0 +1,34 @@
+  private Map<Integer, String> mInverse;
+
+  public StringDictionary(String name) {
+    mName = name;
+    mCreate = false;
+    mDict = Generics.newHashMap();
+    mInverse = Generics.newHashMap();
+  }
+
+  public void setMode(boolean mode) {
+    mCreate = mode;
+  }
+
+  public int size() {
+    return mDict.size();
+  }
+
+  public int get(String s) {
+    return get(s, true);
+  }
+
+  public IndexAndCount getIndexAndCount(String s) {
+    IndexAndCount ic = mDict.get(s);
+    if (mCreate) {
+      if (ic == null) {
+        ic = new IndexAndCount(mDict.size(), 0);
+        mDict.put(s, ic);
+        mInverse.put(Integer.valueOf(ic.mIndex), s);
+      }
+      ic.mCount++;
+    }
+    return ic;
+  }
+

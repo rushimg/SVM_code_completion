@@ -1,0 +1,42 @@
+  public Span[] tokenizePos(String d) {
+    Span[] tokens = WhitespaceTokenizer.INSTANCE.tokenizePos(d);
+    newTokens.clear();
+    tokProbs.clear();
+    for (int i = 0, il = tokens.length; i < il; i++) {
+      Span s = tokens[i];
+      String tok = d.substring(s.getStart(), s.getEnd());
+      // Can't tokenize single characters
+      if (tok.length() < 2) {
+        newTokens.add(s);
+        tokProbs.add(1d);
+      }
+      else if (useAlphaNumericOptimization() && alphanumeric.matcher(tok).matches()) {
+        newTokens.add(s);
+        tokProbs.add(1d);
+      }
+      else {
+        int start = s.getStart();
+        int end = s.getEnd();
+        final int origStart = s.getStart();
+        double tokenProb = 1.0;
+        for (int j = origStart + 1; j < end; j++) {
+          double[] probs =
+            model.eval(cg.getContext(tok, j - origStart));
+          String best = model.getBestOutcome(probs);
+          if (best.equals(TokenizerME.SPLIT)) {
+            newTokens.add(new Span(start, j));
+            tokProbs.add(tokenProb);
+            start = j;
+            tokenProb = 1.0;
+          }
+        }
+        newTokens.add(new Span(start, end));
+        tokProbs.add(tokenProb);
+      }
+    }
+
+    Span[] spans = new Span[newTokens.size()];
+    newTokens.toArray(spans);
+    return spans;
+  }
+

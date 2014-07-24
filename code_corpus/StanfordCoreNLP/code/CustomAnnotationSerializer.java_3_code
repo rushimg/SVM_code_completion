@@ -1,0 +1,81 @@
+  private static class IntermediateSemanticGraph {
+    List<IntermediateNode> nodes;
+    List<IntermediateEdge> edges;
+    IntermediateSemanticGraph() {
+      nodes = new ArrayList<IntermediateNode>();
+      edges = new ArrayList<IntermediateEdge>();
+    }
+  }
+
+  private static class IntermediateNode {
+    String docId;
+    int sentIndex;
+    int index;
+    int copyAnnotation;
+    IntermediateNode(String docId, int sentIndex, int index, int copy) {
+      this.docId = docId;
+      this.sentIndex = sentIndex;
+      this.index = index;
+      this.copyAnnotation = copy;
+    }
+  }
+
+  private static class IntermediateEdge {
+    int source;
+    int target;
+    String dep;
+    boolean isExtra;
+    IntermediateEdge(String dep, int source, int target, boolean isExtra) {
+      this.dep = dep;
+      this.source = source;
+      this.target = target;
+      this.isExtra = isExtra;
+    }
+  }
+
+  private static IntermediateSemanticGraph loadDependencyGraph(BufferedReader reader) throws IOException {
+    IntermediateSemanticGraph graph = new IntermediateSemanticGraph();
+
+    // first line: list of nodes
+    String line = reader.readLine().trim();
+    // System.out.println("PARSING LINE: " + line);
+    if(line.length() > 0){
+      String [] bits = line.split("\t");
+      if(bits.length < 3) throw new RuntimeException("ERROR: Invalid dependency node line: " + line);
+      String docId = bits[0];
+      if(docId.equals("-")) docId = "";
+      int sentIndex = Integer.valueOf(bits[1]);
+      for(int i = 2; i < bits.length; i ++){
+        String bit = bits[i];
+        String [] bbits = bit.split("-");
+        int copyAnnotation = -1;
+        if(bbits.length > 2){
+          throw new RuntimeException("ERROR: Invalid format for dependency graph: " + line);
+        } else if(bbits.length == 2){
+          copyAnnotation = Integer.valueOf(bbits[1]);
+        }
+        int index = Integer.valueOf(bbits[0]);
+        graph.nodes.add(new IntermediateNode(docId, sentIndex, index, copyAnnotation));
+      }
+    }
+
+    // second line: list of deps
+    line = reader.readLine().trim();
+    if(line.length() > 0){
+      String [] bits = line.split("\t");
+      for(String bit: bits){
+        String [] bbits = bit.split(" ");
+        if(bbits.length < 3 || bbits.length > 4){
+          throw new RuntimeException("ERROR: Invalid format for dependency graph: " + line);
+        }
+        String dep = bbits[0];
+        int source = Integer.valueOf(bbits[1]);
+        int target = Integer.valueOf(bbits[2]);
+        boolean isExtra = (bbits.length == 4) ? Boolean.valueOf(bbits[3]) : false;
+        graph.edges.add(new IntermediateEdge(dep, source, target, isExtra));
+      }
+    }
+
+    return graph;
+  }
+

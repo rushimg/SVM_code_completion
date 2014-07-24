@@ -1,0 +1,74 @@
+  public boolean addAllKeys(TwoDimensionalMap<? extends K1, ? extends K2, ?> map) {
+    boolean result = false;
+    for (TwoDimensionalMap.Entry<? extends K1, ? extends K2, ?> entry : map) {
+      if (add(entry.getFirstKey(), entry.getSecondKey())) {
+        result = true;
+      }
+    }
+    return result;
+  }
+
+  public void clear() {
+    backingMap.clear();
+  }
+
+  public boolean contains(K1 k1, K2 k2) {
+    return backingMap.contains(k1, k2);
+  }
+
+  public boolean containsAll(TwoDimensionalSet<? extends K1, ? extends K2> set) {
+    for (Pair<? extends K1, ? extends K2> pair : set) {
+      if (!contains(pair.first, pair.second)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (o == this) {
+      return true;
+    }
+    if (!(o instanceof TwoDimensionalSet)) {
+      return false;
+    }
+    TwoDimensionalSet<?, ?> other = (TwoDimensionalSet) o;
+    return backingMap.equals(other.backingMap);
+  }
+
+  @Override
+  public int hashCode() {
+    return backingMap.hashCode();
+  }
+
+  public boolean isEmpty() {
+    return backingMap.isEmpty();
+  }
+
+  public boolean remove(K1 k1, K2 k2) {
+    return backingMap.remove(k1, k2);
+  }
+
+  public boolean removeAll(TwoDimensionalSet<? extends K1, ? extends K2> set) {
+    boolean removed = false;
+    for (Pair<? extends K1, ? extends K2> pair : set) {
+      if (remove(pair.first, pair.second)) {
+        removed = true;
+      }
+    }
+    return removed;
+  }
+
+  public int size() {
+    return backingMap.size();
+  }
+
+  public Set<K1> firstKeySet() {
+    return backingMap.firstKeySet();
+  }
+
+  public Set<K2> secondKeySet(K1 k1) {
+    return backingMap.getMap(k1).keySet();
+  }
+

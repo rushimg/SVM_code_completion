@@ -1,0 +1,20 @@
+  private static boolean usingFeature(final List<String> types, List<String> checklist, String type) {
+    checklist.remove(type);
+    return types.contains(type) || types.contains("all");
+  }
+
+  private static GrammaticalRelation generalizeRelation(GrammaticalRelation gr) {
+    final GrammaticalRelation[] GENERAL_RELATIONS = { EnglishGrammaticalRelations.SUBJECT,
+            EnglishGrammaticalRelations.COMPLEMENT, EnglishGrammaticalRelations.CONJUNCT,
+            EnglishGrammaticalRelations.MODIFIER, };
+    for (GrammaticalRelation generalGR : GENERAL_RELATIONS) {
+      if (generalGR.isAncestor(gr)) {
+        return generalGR;
+      }
+    }
+    if (gr.equals(EnglishGrammaticalRelations.CONTROLLING_SUBJECT)) {
+      return EnglishGrammaticalRelations.SUBJECT;
+    }
+    return gr;
+  }
+

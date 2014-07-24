@@ -1,0 +1,93 @@
+    int delme = 0;
+    if (true) {
+      for (double[] dd : weights) {
+        delme++;
+        for (double d : dd) {
+        }
+      }
+    }
+    System.err.println(weights[delme-1][0]);
+    System.err.println("size of weights: "+delme);
+  }
+
+
+  public void retrain(ObjectBank<List<IN>> doc) {
+    if (classifier == null) {
+      throw new UnsupportedOperationException("Cannot retrain before you train!");
+    }
+    Index<String> findex = ((LinearClassifier<String, String>)classifier).featureIndex();
+    Index<String> lindex = ((LinearClassifier<String, String>)classifier).labelIndex();
+    System.err.println("Starting retrain:\t# of original features"+findex.size()+", # of original labels"+lindex.size());
+    retrain(doc, findex, lindex);
+  }
+
+
+  @Override
+  public void train(Collection<List<IN>> wordInfos,
+                    DocumentReaderAndWriter<IN> readerAndWriter) {
+    Dataset<String, String> train = getDataset(wordInfos);
+    //train.summaryStatistics();
+    //train.printSVMLightFormat();
+    // wordInfos = null;  // cdm: I think this does no good as ptr exists in caller (could empty the list or better refactor so conversion done earlier?)
+    train(train);
+
+    for (int i = 0; i < flags.numTimesPruneFeatures; i++) {
+
+      Index<String> featuresAboveThreshhold = getFeaturesAboveThreshhold(train, flags.featureDiffThresh);
+      System.err.println("Removing features with weight below " + flags.featureDiffThresh + " and retraining...");
+      train = getDataset(train, featuresAboveThreshhold);
+
+      int tmp = flags.QNsize;
+      flags.QNsize = flags.QNsize2;
+      train(train);
+      flags.QNsize = tmp;
+    }
+
+    if (flags.doAdaptation && flags.adaptFile != null) {
+      adapt(flags.adaptFile,train,readerAndWriter);
+    }
+
+    System.err.print("Built this classifier: ");
+    if (classifier instanceof LinearClassifier) {
+      String classString = ((LinearClassifier<String, String>)classifier).toString(flags.printClassifier, flags.printClassifierParam);
+      System.err.println(classString);
+    } else {
+      String classString = classifier.toString();
+      System.err.println(classString);
+    }
+  }
+
+  public Index<String> getFeaturesAboveThreshhold(Dataset<String, String> dataset, double thresh) {
+    if (!(classifier instanceof LinearClassifier)) {
+      throw new RuntimeException("Attempting to remove features based on weight from a non-linear classifier");
+    }
+    Index<String> featureIndex = dataset.featureIndex;
+    Index<String> labelIndex = dataset.labelIndex;
+
+    Index<String> features = new HashIndex<String>();
+    Iterator<String> featureIt = featureIndex.iterator();
+    LinearClassifier<String, String> lc = (LinearClassifier<String, String>)classifier;
+    LOOP:
+    while (featureIt.hasNext()) {
+      String f = featureIt.next();
+      Iterator<String> labelIt = labelIndex.iterator();
+      double smallest = Double.POSITIVE_INFINITY;
+      double biggest = Double.NEGATIVE_INFINITY;
+      while (labelIt.hasNext()) {
+        String l = labelIt.next();
+        double weight = lc.weight(f, l);
+        if (weight < smallest) {
+          smallest = weight;
+        }
+        if (weight > biggest) {
+          biggest = weight;
+        }
+        if (biggest - smallest > thresh) {
+          features.add(f);
+          continue LOOP;
+        }
+      }
+    }
+    return features;
+  }
+

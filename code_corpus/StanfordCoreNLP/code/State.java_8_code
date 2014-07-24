@@ -1,0 +1,75 @@
+  int getSeparatorCount(int right, int left) {
+    if (right >= left) {
+      throw new AssertionError("Expected right < left");
+    }
+    return getSeparatorCount(getStackNode(right), getStackNode(left));
+  }
+
+  int getSeparatorCount(Tree right, Tree left) {
+    if (right == null || left == null) {
+      return 0;
+    }
+    int leftHead = ShiftReduceUtils.headIndex(left);
+    int rightHead = ShiftReduceUtils.headIndex(right);
+    Integer nextSeparator = separators.higherKey(leftHead);
+    int count = 0;
+    while (nextSeparator != null && nextSeparator < rightHead) {
+      ++count;
+      nextSeparator = separators.higherKey(nextSeparator);
+    }
+    return count;
+  }
+
+  HeadPosition getSeparator(int nodeNum) {
+    if (nodeNum >= stack.size()) {
+      return null;
+    }
+    TreeShapedStack<Tree> stack = this.stack;
+    for (int i = 0; i < nodeNum; ++i) {
+      stack = stack.pop();
+    }
+    Tree node = stack.peek();
+    int head = ShiftReduceUtils.headIndex(node);
+    if (separators.get(head) != null) {
+      return HeadPosition.HEAD;
+    }
+    int left = ShiftReduceUtils.leftIndex(node);
+    Integer nextLeft = separators.floorKey(head);
+    boolean hasLeft = (nextLeft != null && nextLeft >= left);
+
+    int right = ShiftReduceUtils.rightIndex(node);
+    Integer nextRight = separators.ceilingKey(head);
+    boolean hasRight = (nextRight != null && nextRight <= right);
+
+    if (hasLeft && hasRight) {
+      return HeadPosition.BOTH;
+    } else if (hasLeft) {
+      return HeadPosition.LEFT;
+    } else if (hasRight) {
+      return HeadPosition.RIGHT;
+    } else {
+      return HeadPosition.NONE;
+    }
+  }
+
+  static final Pattern separatorRegex = Pattern.compile("^[,;:-]+$");
+
+  static final char[][] equivalentSeparators = { { '，', ',' },
+                                                 { '；', ';' },
+                                                 { '：', ':' } };
+
+  static TreeMap<Integer, String> findSeparators(List<Tree> sentence) {
+    TreeMap<Integer, String> separators = Generics.newTreeMap();
+    for (int index = 0; index < sentence.size(); ++index) {
+      Tree leaf = sentence.get(index).children()[0];
+      String value = leaf.value();
+      for (int i = 0; i < equivalentSeparators.length; ++i) {
+        value = value.replace(equivalentSeparators[i][0], equivalentSeparators[i][1]);
+      }
+      if (separatorRegex.matcher(value).matches()) {
+        separators.put(index, leaf.value());
+      }
+    }
+    return separators;
+  }
+

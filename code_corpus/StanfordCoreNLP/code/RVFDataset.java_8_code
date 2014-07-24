@@ -1,0 +1,114 @@
+  public RVFDatum<L, F> scaleDatum(RVFDatum<L, F> datum) {
+    // scale this dataset before scaling the datum
+    if (minValues == null || maxValues == null)
+      scaleFeatures();
+    Counter<F> scaledFeatures = new ClassicCounter<F>();
+    for (F feature : datum.asFeatures()) {
+      int fID = this.featureIndex.indexOf(feature);
+      if (fID >= 0) {
+        double oldVal = datum.asFeaturesCounter().getCount(feature);
+        double newVal;
+        if (minValues[fID] != maxValues[fID])
+          newVal = (oldVal - minValues[fID]) / (maxValues[fID] - minValues[fID]);
+        else
+          newVal = oldVal;
+        scaledFeatures.incrementCount(feature, newVal);
+      }
+    }
+    return new RVFDatum<L, F>(scaledFeatures, datum.label());
+  }
+
+  public RVFDataset<L, F> scaleDatasetGaussian(RVFDataset<L, F> dataset) {
+    RVFDataset<L, F> newDataset = new RVFDataset<L, F>(this.featureIndex, this.labelIndex);
+    for (int i = 0; i < dataset.size(); i++) {
+      RVFDatum<L, F> datum = dataset.getDatum(i);
+      newDataset.add(scaleDatumGaussian(datum));
+    }
+    return newDataset;
+  }
+
+  public RVFDatum<L, F> scaleDatumGaussian(RVFDatum<L, F> datum) {
+    // scale this dataset before scaling the datum
+    if (means == null || stdevs == null)
+      scaleFeaturesGaussian();
+    Counter<F> scaledFeatures = new ClassicCounter<F>();
+    for (F feature : datum.asFeatures()) {
+      int fID = this.featureIndex.indexOf(feature);
+      if (fID >= 0) {
+        double oldVal = datum.asFeaturesCounter().getCount(feature);
+        double newVal;
+        if (stdevs[fID] != 0)
+          newVal = (oldVal - means[fID]) / stdevs[fID];
+        else
+          newVal = oldVal;
+        scaledFeatures.incrementCount(feature, newVal);
+      }
+    }
+    return new RVFDatum<L, F>(scaledFeatures, datum.label());
+  }
+
+  @Override
+  public Pair<GeneralDataset<L, F>, GeneralDataset<L, F>> split(int start, int end) {
+    int devSize = end - start;
+    int trainSize = size() - devSize;
+
+    int[][] devData = new int[devSize][];
+    double[][] devValues = new double[devSize][];
+    int[] devLabels = new int[devSize];
+
+    int[][] trainData = new int[trainSize][];
+    double[][] trainValues = new double[trainSize][];
+    int[] trainLabels = new int[trainSize];
+
+    System.arraycopy(data, start, devData, 0, devSize);
+    System.arraycopy(values, start, devValues, 0, devSize);
+    System.arraycopy(labels, start, devLabels, 0, devSize);
+
+    System.arraycopy(data, 0, trainData, 0, start);
+    System.arraycopy(data, end, trainData, start, size() - end);
+    System.arraycopy(values, 0, trainValues, 0, start);
+    System.arraycopy(values, end, trainValues, start, size() - end);
+    System.arraycopy(labels, 0, trainLabels, 0, start);
+    System.arraycopy(labels, end, trainLabels, start, size() - end);
+
+    GeneralDataset<L, F> dev = new RVFDataset<L, F>(labelIndex, devLabels, featureIndex, devData, devValues);
+    GeneralDataset<L, F> train = new RVFDataset<L, F>(labelIndex, trainLabels, featureIndex, trainData, trainValues);
+
+    return new Pair<GeneralDataset<L, F>, GeneralDataset<L, F>>(train, dev);
+
+  }
+
+  // TODO: Check that this does what we want for Datum other than RVFDatum
+  @Override
+  public void add(Datum<L, F> d) {
+    if (d instanceof RVFDatum<?, ?>) {
+      addLabel(d.label());
+      addFeatures(((RVFDatum<L, F>) d).asFeaturesCounter());
+      size++;
+    } else {
+      addLabel(d.label());
+      addFeatures(Counters.asCounter(d.asFeatures()));
+      size++;
+    }
+  }
+
+  public void add(Datum<L, F> d, String src, String id) {
+    if (d instanceof RVFDatum<?, ?>) {
+      addLabel(d.label());
+      addFeatures(((RVFDatum<L, F>) d).asFeaturesCounter());
+      addSourceAndId(src, id);
+      size++;
+    } else {
+      addLabel(d.label());
+      addFeatures(Counters.asCounter(d.asFeatures()));
+      addSourceAndId(src, id);
+      size++;
+    }
+  }
+
+  // TODO shouldn't have both this and getRVFDatum
+  @Override
+  public RVFDatum<L, F> getDatum(int index) {
+    return getRVFDatum(index);
+  }
+

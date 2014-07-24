@@ -1,0 +1,43 @@
+    public static void writeScaledChartAsPNG(OutputStream out,
+            JFreeChart chart, int width, int height, int widthScaleFactor,
+            int heightScaleFactor) throws IOException {
+
+        if (out == null) {
+            throw new IllegalArgumentException("Null 'out' argument.");
+        }
+        if (chart == null) {
+            throw new IllegalArgumentException("Null 'chart' argument.");
+        }
+
+        double defaultWidth = width;
+        double defaultHeight = height;
+        boolean scale = false;
+
+        // get desired width and height from somewhere then...
+        if ((widthScaleFactor != 1) || (heightScaleFactor != 1)) {
+            scale = true;
+        }
+
+        double scaleX = desiredWidth / defaultWidth;
+        double scaleY = desiredHeight / defaultHeight;
+
+        BufferedImage image = new BufferedImage((int) desiredWidth,
+                (int) desiredHeight, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2 = image.createGraphics();
+
+        if (scale) {
+            AffineTransform saved = g2.getTransform();
+            g2.transform(AffineTransform.getScaleInstance(scaleX, scaleY));
+            chart.draw(g2, new Rectangle2D.Double(0, 0, defaultWidth,
+                    defaultHeight), null, null);
+            g2.setTransform(saved);
+            g2.dispose();
+        }
+        else {
+            chart.draw(g2, new Rectangle2D.Double(0, 0, defaultWidth,
+                    defaultHeight), null, null);
+        }
+        out.write(encodeAsPNG(image));
+
+    }
+

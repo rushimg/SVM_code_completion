@@ -1,0 +1,24 @@
+  public static <K,V> Iterable<V> transform(
+      final Iterable<K> iterable, final Function<? super K,? extends V> function) {
+
+    return new Iterable<V>() {
+      public Iterator<V> iterator() {
+        return new Iterator<V>() {
+          Iterator<K> inner = iterable.iterator();
+
+          public boolean hasNext() {
+            return inner.hasNext();
+          }
+
+          public V next() {
+            return function.apply(inner.next());
+          }
+
+          public void remove() {
+            inner.remove();
+          }
+        };
+      }
+    };
+  }
+

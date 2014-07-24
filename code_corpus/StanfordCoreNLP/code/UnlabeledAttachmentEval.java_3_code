@@ -1,0 +1,33 @@
+  @Override
+  protected Set<?> makeObjects(Tree tree) {
+    if (tree == null) {
+      System.err.println("Warning: null tree");
+      return Generics.newHashSet();
+    }
+    if (headFinder != null) {
+      tree.percolateHeads(headFinder);
+    }
+    
+    Set<Dependency<Label, Label, Object>> deps = tree.dependencies(punctRejectFilter);
+    return deps;
+  }
+  
+  private static final int minArgs = 2;
+  private static final StringBuilder usage = new StringBuilder();
+  static {
+    usage.append(String.format("Usage: java %s [OPTS] gold guess\n\n", UnlabeledAttachmentEval.class.getName()));
+    usage.append("Options:\n");
+    usage.append("  -v         : Verbose mode.\n");
+    usage.append("  -l lang    : Select language settings from ").append(Languages.listOfLanguages()).append('\n');
+    usage.append("  -y num     : Skip gold trees with yields longer than num.\n");
+    usage.append("  -e         : Input encoding.\n");
+  }
+
+  public static final Map<String,Integer> optionArgDefs = Generics.newHashMap();
+  static {
+    optionArgDefs.put("-v", 0);
+    optionArgDefs.put("-l", 1);
+    optionArgDefs.put("-y", 1);
+    optionArgDefs.put("-e", 0);
+  }
+

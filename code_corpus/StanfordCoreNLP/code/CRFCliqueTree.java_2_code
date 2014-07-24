@@ -1,0 +1,66 @@
+  @Override
+  public double[] scoresOf(int[] sequence, int position) {
+    if (position >= factorTables.length) throw new RuntimeException("Index out of bounds: " + position);
+    // DecimalFormat nf = new DecimalFormat("#0.000");
+    // if (position>0 && position<sequence.length-1) System.out.println(position
+    // + ": asking about " +sequence[position-1] + "(" + sequence[position] +
+    // ")" + sequence[position+1]);
+    double[] probThisGivenPrev = new double[numClasses];
+    double[] probNextGivenThis = new double[numClasses];
+    // double[] marginal = new double[numClasses]; // for debugging only
+
+    // compute prob of this tag given the window-1 previous tags, normalized
+    // extract the window-1 previous tags, pad left with background if necessary
+    int prevLength = windowSize - 1;
+    int[] prev = new int[prevLength + 1]; // leave an extra element for the
+    // label at this position
+    int i = 0;
+    for (; i < prevLength - position; i++) { // will only happen if
+      // position-prevLength < 0
+      prev[i] = classIndex.indexOf(backgroundSymbol);
+    }
+    for (; i < prevLength; i++) {
+      prev[i] = sequence[position - prevLength + i];
+    }
+    for (int label = 0; label < numClasses; label++) {
+      prev[prev.length - 1] = label;
+      probThisGivenPrev[label] = factorTables[position].unnormalizedLogProb(prev);
+      // marginal[label] = factorTables[position].logProbEnd(label); // remove:
+      // for debugging only
+    }
+
+    // ArrayMath.logNormalize(probThisGivenPrev);
+
+    // compute the prob of the window-1 next tags given this tag
+    // extract the window-1 next tags
+    int nextLength = windowSize - 1;
+    if (position + nextLength >= length()) {
+      nextLength = length() - position - 1;
+    }
+    FactorTable nextFactorTable = factorTables[position + nextLength];
+    if (nextLength != windowSize - 1) {
+      for (int j = 0; j < windowSize - 1 - nextLength; j++) {
+        nextFactorTable = nextFactorTable.sumOutFront();
+      }
+    }
+    if (nextLength == 0) { // we are asking about the prob of no sequence
+      Arrays.fill(probNextGivenThis, 1.0);
+    } else {
+      int[] next = new int[nextLength];
+      System.arraycopy(sequence, position + 1, next, 0, nextLength);
+      for (int label = 0; label < numClasses; label++) {
+        // ask the factor table such that pos is the first position in the
+        // window
+        // probNextGivenThis[label] =
+        // factorTables[position+nextLength].conditionalLogProbGivenFirst(label,
+        // next);
+        // probNextGivenThis[label] =
+        // nextFactorTable.conditionalLogProbGivenFirst(label, next);
+        probNextGivenThis[label] = nextFactorTable.unnormalizedConditionalLogProbGivenFirst(label, next);
+      }
+    }
+
+    // pointwise multiply
+    return ArrayMath.pairwiseAdd(probThisGivenPrev, probNextGivenThis);
+  }
+

@@ -1,0 +1,22 @@
+    protected Size2D arrangeFN(BlockContainer container, Graphics2D g2,
+                               RectangleConstraint constraint) {
+
+        double width = constraint.getWidth() / this.columns;
+        RectangleConstraint bc = constraint.toFixedWidth(width);
+        List blocks = container.getBlocks();
+        double maxH = 0.0;
+        for (int r = 0; r < this.rows; r++) {
+            for (int c = 0; c < this.columns; c++) {
+                if (index >= blocks.size()) {
+                    break;
+                }
+                Block b = (Block) blocks.get(index);
+                if (b != null) {
+                    Size2D s = b.arrange(g2, bc);
+                    maxH = Math.max(maxH, s.getHeight());
+                }
+            }
+        }
+        return arrange(container, g2, cc);
+    }
+

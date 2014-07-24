@@ -1,0 +1,117 @@
+  private String shapeOf(String input) {
+    String shape;
+    if (flags.augmentedDateChars && Sighan2005DocumentReaderAndWriter.dateCharsPlus.matcher(input).matches()) {
+      shape = "D";
+    } else if (Sighan2005DocumentReaderAndWriter.dateChars.matcher(input).matches()) {
+      shape = "D";
+    } else if (Sighan2005DocumentReaderAndWriter.numberChars.matcher(input).matches()) {
+      shape = "N";
+    } else if (Sighan2005DocumentReaderAndWriter.letterChars.matcher(input).matches()) {
+      shape = "L";
+    } else if (Sighan2005DocumentReaderAndWriter.periodChars.matcher(input).matches()) {
+      shape = "P";
+    } else if (separatingPuncChars.matcher(input).matches()) {
+      shape = "S";
+    } else if (ambiguousPuncChars.matcher(input).matches()) {
+      shape = "A";
+    } else if (flags.useMidDotShape && midDotPattern.matcher(input).matches()) {
+      shape = "M";
+    } else {
+      shape = "C";
+    }
+    return shape;
+  }
+
+
+  private static void addDictionaryFeatures(ChineseDictionary dict, Class<? extends CoreAnnotation<String>> lbeginFieldName, Class<? extends CoreAnnotation<String>> lmiddleFieldName, Class<? extends CoreAnnotation<String>> lendFieldName, String nonspaceLine, List<CoreLabel> lwi) {
+    int lwiSize = lwi.size();
+    if (lwiSize != nonspaceLine.length()) { throw new RuntimeException(); }
+    int[] lbegin = new int[lwiSize];
+    int[] lmiddle = new int[lwiSize];
+    int[] lend = new int[lwiSize];
+    for (int i = 0; i < lwiSize; i++) {
+      lbegin[i] = lmiddle[i] = lend[i] = 0;
+    }
+    for (int i = 0; i < lwiSize; i++) {
+      for (int leng = ChineseDictionary.MAX_LEXICON_LENGTH; leng >= 1; leng--) {
+        if (i+leng-1 < lwiSize) {
+          if (dict.contains(nonspaceLine.substring(i, i+leng))) {
+            // lbegin
+            if (leng > lbegin[i]) {
+              lbegin[i] = leng;
+            }
+            // lmid
+            int last = i+leng-1;
+            if (leng==ChineseDictionary.MAX_LEXICON_LENGTH) { last+=1; }
+            for (int mid = i+1; mid < last; mid++) {
+              if (leng > lmiddle[mid]) {
+                lmiddle[mid] = leng;
+              }
+            }
+            // lend
+            if (leng<ChineseDictionary.MAX_LEXICON_LENGTH) {
+              if (leng > lend[i+leng-1]) {
+                lend[i+leng-1] = leng;
+              }
+            }
+          }
+        }
+      }
+    }
+    for (int i = 0; i < lwiSize; i++) {
+      StringBuilder sb = new StringBuilder();
+      sb.append(lbegin[i]);
+      if (lbegin[i]==ChineseDictionary.MAX_LEXICON_LENGTH) {
+        sb.append("+");
+      }
+      lwi.get(i).set(lbeginFieldName, sb.toString());
+
+      sb = new StringBuilder();
+      sb.append(lmiddle[i]);
+      if (lmiddle[i]==ChineseDictionary.MAX_LEXICON_LENGTH) {
+        sb.append("+");
+      }
+      lwi.get(i).set(lmiddleFieldName, sb.toString());
+
+      sb = new StringBuilder();
+      sb.append(lend[i]);
+      if (lend[i]==ChineseDictionary.MAX_LEXICON_LENGTH) {
+        sb.append("+");
+      }
+      lwi.get(i).set(lendFieldName, sb.toString());
+
+      //System.err.println(lwi.get(i));
+    }
+  }
+
+  @Override
+  public void printAnswers(List<CoreLabel> doc, PrintWriter pw) {
+    String ansStr = ChineseStringUtils.combineSegmentedSentence(doc, flags);
+    pw.print(ansStr);
+    pw.println();
+  }
+
+
+  private static String intern(String s) {
+    return s.trim().intern();
+  }
+
+  @Override
+  public void printLattice(DFSA<String, Integer> tagLattice, List<CoreLabel> doc, PrintWriter out) {
+    CoreLabel[] docArray = doc.toArray(new CoreLabel[doc.size()]);
+    // Create answer lattice:
+    MutableInteger nodeId = new MutableInteger(0);
+    DFSA<String, Integer> answerLattice = new DFSA<String, Integer>(null);
+    DFSAState<String, Integer> aInitState = new DFSAState<String, Integer>(nodeId.intValue(),answerLattice);
+    answerLattice.setInitialState(aInitState);
+    Map<DFSAState<String, Integer>,DFSAState<String, Integer>> stateLinks = Generics.newHashMap();
+    // Convert binary lattice into word lattice:
+    tagLatticeToAnswerLattice
+      (tagLattice.initialState(), aInitState, new StringBuilder(""), nodeId, 0, 0.0, stateLinks, answerLattice, docArray);
+    try {
+      answerLattice.printAttFsmFormat(out);
+    } catch(IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+

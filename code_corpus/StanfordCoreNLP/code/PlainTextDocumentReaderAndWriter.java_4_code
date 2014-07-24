@@ -1,0 +1,48 @@
+    while (tokenizer.hasNext()) {
+      IN w = tokenizer.next();
+      String word = w.get(CoreAnnotations.TextAnnotation.class);
+      Matcher m = sgml.matcher(word);
+      if (m.matches()) {
+
+        String before = StringUtils.getNotNullString(w.get(CoreAnnotations.BeforeAnnotation.class));
+        String after = StringUtils.getNotNullString(w.get(CoreAnnotations.AfterAnnotation.class));
+        prepend.append(before).append(word);
+        if (previous != null) {
+          String previousTokenAfter = StringUtils.getNotNullString(previous.get(CoreAnnotations.AfterAnnotation.class));
+          previous.set(CoreAnnotations.AfterAnnotation.class, previousTokenAfter + word + after);
+        }
+        // previous.appendAfter(w.word() + w.after());
+      } else {
+
+        String before = StringUtils.getNotNullString(w.get(CoreAnnotations.BeforeAnnotation.class));
+        if (prepend.length() > 0) {
+          // todo: change to prepend.append(before); w.set(CoreAnnotations.BeforeAnnotation.class, prepend.toString());
+          w.set(CoreAnnotations.BeforeAnnotation.class, prepend.toString() + before);
+          // w.prependBefore(prepend.toString());
+          prepend = new StringBuilder();
+        }
+        words.add(w);
+        previous = w;
+      }
+    }
+
+    List<List<IN>> sentences = wts.process(words);
+    String after = "";
+    IN last = null;
+    for (List<IN> sentence : sentences) {
+      int pos = 0;
+      for (IN w : sentence) {
+        w.set(CoreAnnotations.PositionAnnotation.class, Integer.toString(pos));
+        after = StringUtils.getNotNullString(w.get(CoreAnnotations.AfterAnnotation.class));
+        w.remove(CoreAnnotations.AfterAnnotation.class);
+        last = w;
+      }
+    }
+    if (last != null) {
+      last.set(CoreAnnotations.AfterAnnotation.class, after);
+    }
+
+    return sentences.iterator();
+  }
+
+

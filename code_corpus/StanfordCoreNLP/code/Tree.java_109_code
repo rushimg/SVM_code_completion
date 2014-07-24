@@ -1,0 +1,46 @@
+  public void insertDtr(Tree dtr, int position) {
+    Tree[] kids = children();
+    if (position > kids.length) {
+      throw new IllegalArgumentException("Can't insert tree after the " + position + "th daughter in " + this + "; only " + kids.length + " daughters exist!");
+    }
+    Tree[] newKids = new Tree[kids.length + 1];
+    int i = 0;
+    for (; i < position; i++) {
+      newKids[i] = kids[i];
+    }
+    newKids[i] = dtr;
+    for (; i < kids.length; i++) {
+      newKids[i + 1] = kids[i];
+    }
+    setChildren(newKids);
+  }
+
+  // --- composition methods to implement Label interface
+
+  @Override
+  public String value() {
+    Label lab = label();
+    if (lab == null) {
+      return null;
+    }
+    return lab.value();
+  }
+
+
+  @Override
+  public void setValue(String value) {
+    Label lab = label();
+    if (lab != null) {
+      lab.setValue(value);
+    }
+  }
+
+
+  @Override
+  public void setFromString(String labelStr) {
+    Label lab = label();
+    if (lab != null) {
+      lab.setFromString(labelStr);
+    }
+  }
+

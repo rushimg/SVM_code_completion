@@ -1,0 +1,36 @@
+/**
+ * First, this runs a tagger once to see what results it comes up with.
+ * Then it runs the same tagger in two separate threads to make sure the results are the same.
+ * The results are printed to stdout; the user is expected to verify they are as expected.
+ *
+ * Normally you would run MaxentTagger with command line arguments such as:
+ *
+ * -model ../data/tagger/my-left3words-distsim-wsj-0-18.tagger
+ * -testFile ../data/tagger/test-wsj-19-21 -verboseResults false
+ *
+ * If you provide the same arguments to this program, it will first
+ * run the given tagger on the given test file once to establish the
+ * "baseline" results.  It will then run the same tagger in more than
+ * one thread at the same time; the output for both threads should be
+ * the same if the MaxentTagger is re-entrant.  The number of threads
+ * to be run can be specified with -numThreads; the default is
+ * DEFAULT_NUM_THREADS.
+ *
+ * You can also provide multiple models.  After performing that test
+ * on model1, it will then run the same test file on model2, model3,
+ * etc to establish baseline results for that tagger.  After that, it
+ * runs both taggers at the same time.  The taggers should be
+ * completely separate structures.  In other words, the second tagger
+ * should not have clobbered any static state initialized by the first
+ * tagger.  Thus, the results of the two simultaneous taggers should
+ * be the same as the two taggers' baselines.
+ *
+ * Example arguments for the more complicated test:
+ *
+ * -model1 ../data/pos-tagger/newmodels/left3words-distsim-wsj-0-18.tagger
+ * -model2 ../data/pos-tagger/newmodels/left3words-wsj-0-18.tagger
+ * -testFile ../data/pos-tagger/training/english/test-wsj-19-21
+ * -verboseResults false
+ *
+ * @author John Bauer
+ */

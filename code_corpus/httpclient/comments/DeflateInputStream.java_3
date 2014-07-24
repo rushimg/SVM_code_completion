@@ -1,0 +1,24 @@
+        /*
+            * A zlib stream will have a header.
+            *
+            * CMF | FLG [| DICTID ] | ...compressed data | ADLER32 |
+            *
+            * * CMF is one byte.
+            *
+            * * FLG is one byte.
+            *
+            * * DICTID is four bytes, and only present if FLG.FDICT is set.
+            *
+            * Sniff the content. Does it look like a zlib stream, with a CMF, etc? c.f. RFC1950,
+            * section 2.2. http://tools.ietf.org/html/rfc1950#page-4
+            *
+            * We need to see if it looks like a proper zlib stream, or whether it is just a deflate
+            * stream. RFC2616 calls zlib streams deflate. Confusing, isn't it? That's why some servers
+            * implement deflate Content-Encoding using deflate streams, rather than zlib streams.
+            *
+            * We could start looking at the bytes, but to be honest, someone else has already read
+            * the RFCs and implemented that for us. So we'll just use the JDK libraries and exception
+            * handling to do this. If that proves slow, then we could potentially change this to check
+            * the first byte - does it look like a CMF? What about the second byte - does it look like
+            * a FLG, etc.
+            */

@@ -1,0 +1,50 @@
+    public List<E> getPathEdgeList(V endVertex)
+    {
+        assertGetPath(endVertex);
+
+        lazyCalculate();
+
+        BellmanFordPathElement<V, E> pathElement =
+            this.iter.getPathElement(endVertex);
+
+        if (pathElement == null) {
+            return null;
+        }
+
+        return pathElement.createEdgeListPath();
+    }
+
+    private void assertGetPath(V endVertex)
+    {
+        if (endVertex.equals(this.startVertex)) {
+            throw new IllegalArgumentException(
+                "The end vertex is the same as the start vertex!");
+        }
+
+        if (!this.graph.containsVertex(endVertex)) {
+            throw new IllegalArgumentException(
+                "Graph must contain the end vertex!");
+        }
+    }
+
+    private void lazyCalculate()
+    {
+        if (this.iter == null) {
+            this.iter =
+                new BellmanFordIterator<V, E>(
+                    this.graph,
+                    this.startVertex,
+                    epsilon);
+        }
+
+        // at the i-th pass the shortest paths with less (or equal) than i edges
+        // are calculated.
+        for (
+            ;
+            (this.passNumber <= this.nMaxHops) && this.iter.hasNext();
+            this.passNumber++)
+        {
+            this.iter.next();
+        }
+    }
+

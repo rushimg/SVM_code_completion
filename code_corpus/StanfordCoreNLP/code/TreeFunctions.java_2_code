@@ -1,0 +1,33 @@
+  public static Function<Tree, Tree> getLabeledTreeToStringLabeledTreeFunction() {
+    return new LabeledTreeToStringLabeledTreeFunction();
+  }
+
+
+  private static class LabeledTreeToCategoryWordTagTreeFunction implements Function<Tree, Tree> {
+
+    protected TreeFactory tf = 
+      new LabeledScoredTreeFactory(new CategoryWordTagFactory());
+
+    public Tree helper(Tree t) {
+      if (t == null) {
+        return null;
+      } else if (t.isLeaf()) {
+        return tf.newLeaf(t.label().value());
+      } else if (t.isPreTerminal()) {
+        return tf.newTreeNode(t.label().value(), Collections.singletonList(helper(t.children()[0])));
+      } else {
+        int numKids = t.numChildren();
+        List<Tree> children = new ArrayList<Tree>(numKids);
+        for (int k = 0; k < numKids; k++) {
+          children.add(helper(t.children()[k]));
+        }
+        return tf.newTreeNode(t.label().value(), children);
+      }
+    }
+
+    public Tree apply(Tree o) {
+      return helper(o);
+    }
+
+  } // end static class
+

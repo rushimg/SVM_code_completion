@@ -1,0 +1,90 @@
+  public boolean find()
+  {
+    switch (findType) {
+      case FIND_NONOVERLAPPING:
+        return findNextNonOverlapping();
+      case FIND_ALL:
+        return findNextAll();
+      default:
+        throw new UnsupportedOperationException("Unsupported findType " + findType);
+    }
+  }
+
+  protected boolean findMatchStart(int start, boolean matchAllTokens)
+  {
+    switch (findType) {
+      case FIND_NONOVERLAPPING:
+        return findMatchStartBacktracking(start, matchAllTokens);
+      case FIND_ALL:
+        // TODO: Should use backtracking here too, need to keep track of todo stack
+        // so we can recover after finding a match
+        return findMatchStartNoBacktracking(start, matchAllTokens);
+      default:
+        throw new UnsupportedOperationException("Unsupported findType " + findType);
+    }
+  }
+
+  // Does not do backtracking - alternative matches are stored as we go
+  protected boolean findMatchStartNoBacktracking(int start, boolean matchAllTokens)
+  {
+    boolean matchAll = true;
+    MatchedStates cStates = getStartStates();
+    // Save cStates for FIND_ALL ....
+    curMatchStates = cStates;
+    for(int i = start; i < regionEnd; i++){
+      boolean match = cStates.match(i);
+      if (cStates == null || cStates.size() == 0) {
+        break;
+      }
+      if (!matchAllTokens) {
+        if ((matchAll && cStates.isAllMatch())
+            || (!matchAll && cStates.isMatch())) {
+          cStates.completeMatch();
+          return true;
+        }
+      }
+    }
+    cStates.completeMatch();
+    return cStates.isMatch();
+  }
+
+  // Does some backtracking...
+  protected boolean findMatchStartBacktracking(int start, boolean matchAllTokens)
+  {
+    boolean matchAll = true;
+    Stack<MatchedStates> todo = new Stack<MatchedStates>();
+    MatchedStates cStates = getStartStates();
+    cStates.curPosition = start-1;
+    todo.push(cStates);
+    while (!todo.empty()) {
+      cStates = todo.pop();
+      int s = cStates.curPosition+1;
+      for(int i = s; i < regionEnd; i++){
+        if (Thread.interrupted()) {
+          throw new RuntimeInterruptedException();
+        }
+        boolean match = cStates.match(i);
+        if (cStates == null || cStates.size() == 0) {
+          break;
+        }
+        if (!matchAllTokens) {
+          if ((matchAll && cStates.isAllMatch())
+              || (!matchAll && cStates.isMatch())) {
+            cStates.completeMatch();
+            return true;
+          }
+        }
+        if (branchLimit >= 0 && cStates.branchSize() > branchLimit) {
+          MatchedStates s2 = cStates.split(branchLimit);
+          todo.push(s2);
+        }
+      }
+      if (cStates.isMatch()) {
+        cStates.completeMatch();
+        return true;
+      }
+      cStates.clean();
+    }
+    return false;
+  }
+

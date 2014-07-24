@@ -1,0 +1,16 @@
+  public static synchronized EntityLinker<?> getLinker(String entityType, EntityLinkerProperties properties) throws IOException {
+    if (entityType == null || properties == null) {
+      throw new IllegalArgumentException("Null argument in entityLinkerFactory");
+    }
+
+    String linkerImplFullName = properties.getProperty("linker." + entityType, "");
+
+    if (linkerImplFullName == null || linkerImplFullName.equals("")) {
+      throw new IllegalArgumentException("linker." + entityType + "  property must be set!");
+    }
+
+    EntityLinker<?> linker = ExtensionLoader.instantiateExtension(EntityLinker.class, linkerImplFullName);
+    linker.init(properties);
+    return linker;
+  }
+

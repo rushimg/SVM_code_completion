@@ -1,0 +1,22 @@
+  private void highlightSentence(int start, int end) {
+    // clears highlight.  paints over entire document because the document may have changed
+    highlightText(0, textPane.getText().length(), normalStyle);
+
+    // if start<1 set startIndex to 0, otherwise set to index following closest preceding period
+    startIndex = (start < 1) ? 0 : nearestDelimiter(textPane.getText(), start, SEEK_BACK) + 1;
+
+    // if end<startIndex, set endIndex to closest period following startIndex
+    // else, set it to closest period following end
+    endIndex = nearestDelimiter(textPane.getText(), (end < startIndex) ? startIndex : end, SEEK_FORWARD);
+    if (endIndex == -1) {
+      endIndex = textPane.getText().length() - 1;
+    }
+
+    highlightText(startIndex, endIndex, highlightStyle);
+
+    // enable/disable scroll buttons as necessary
+    backButton.setEnabled(startIndex != 0);
+    forwardButton.setEnabled(endIndex != textPane.getText().length() - 1);
+    parseNextButton.setEnabled(forwardButton.isEnabled() && parser != null);
+  }
+

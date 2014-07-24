@@ -1,0 +1,106 @@
+  @SuppressWarnings("unchecked")
+  @Override
+  public boolean equals(Object obj) {
+    if (!(obj instanceof CoreMap)) {
+      return false;
+    }
+
+    if (obj instanceof HashableCoreMap) {
+      // overridden behavior for HashableCoreMap
+      return obj.equals(this);
+    }
+
+    if (obj instanceof ArrayCoreMap) {
+      // specialized equals for ArrayCoreMap
+      return equals((ArrayCoreMap)obj);
+    }
+
+    // TODO: make the general equality work in the situation of loops
+    // in the object graph
+
+    // general equality
+    CoreMap other = (CoreMap)obj;
+    if ( ! this.keySet().equals(other.keySet())) {
+      return false;
+    }
+    for (Class key : this.keySet()) {
+      if (!other.has(key)) {
+        return false;
+      }
+      Object thisV = this.get(key), otherV = other.get(key);
+
+      if (thisV == otherV) {
+        continue;
+      }
+      // the two values must be unequal, so if either is null, the other isn't
+      if (thisV == null || otherV == null) {
+        return false;
+      }
+
+      if ( ! thisV.equals(otherV)) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+
+  private boolean equals(ArrayCoreMap other) {
+    TwoDimensionalMap<CoreMap, CoreMap, Boolean> calledMap = equalsCalled.get();
+    boolean createdCalledMap = (calledMap == null);
+    if (createdCalledMap) {
+      calledMap = TwoDimensionalMap.identityHashMap();
+      equalsCalled.set(calledMap);
+    }
+
+    // Note that for the purposes of recursion, we assume the two maps
+    // are equals.  The two maps will therefore be equal if they
+    // encounter each other again during the recursion unless there is
+    // some other key that causes the equality to fail.
+    // We do not need to later put false, as the entire call to equals
+    // will unwind with false if any one equality check returns false.
+    // TODO: since we only ever keep "true", we would rather use a
+    // TwoDimensionalSet, but no such thing exists
+    if (calledMap.contains(this, other)) {
+      return true;
+    }
+    boolean result = true;
+    calledMap.put(this, other, true);
+    calledMap.put(other, this, true);
+
+    if (this.size != other.size) {
+      result = false;
+    } else {
+    for (int i = 0; i < this.size; i++) {
+      // test if other contains this key,value pair
+      boolean matched = false;
+      for (int j = 0; j < other.size; j++) {
+        if (this.keys[i] == other.keys[j]) {
+          if ((this.values[i] == null && other.values[j] != null) ||
+              (this.values[i] != null && other.values[j] == null)) {
+            matched = false;
+            break;
+          }
+
+          if ((this.values[i] == null && other.values[j] == null) ||
+              (this.values[i].equals(other.values[j]))) {
+            matched = true;
+            break;
+          }
+        }
+      }
+
+      if (!matched) {
+        result = false;
+        break;
+      }
+    }
+    }
+
+    if (createdCalledMap) {
+      equalsCalled.set(null);
+    }
+    return result;
+  }
+

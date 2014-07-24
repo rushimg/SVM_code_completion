@@ -1,0 +1,27 @@
+  private static class WriterThread extends Thread {
+    private Reader reader;
+    private Writer writer;
+    public WriterThread(InputStream inputStream, Writer writer) {
+      this.reader = new InputStreamReader(inputStream);
+      this.writer = writer;
+    }
+
+    @Override
+    public void run() {
+      char[] buffer = new char[4096];
+      while (true) {
+        try {
+          int read = this.reader.read(buffer);
+          if (read == -1) {
+            break;
+          }
+          this.writer.write(buffer, 0, read);
+          this.writer.flush();
+        } catch (IOException e) {
+          throw new ProcessException(e);
+        }
+        Thread.yield();
+      }
+    }
+  }
+

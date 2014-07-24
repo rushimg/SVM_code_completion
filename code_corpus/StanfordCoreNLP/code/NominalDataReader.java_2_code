@@ -1,0 +1,48 @@
+  static RVFDatum<String, Integer> readDatum(String line, String separator, Map<Integer, Index<String>> indices) {
+    StringTokenizer st = new StringTokenizer(line, separator);
+    //int fno = 0;
+    ArrayList<String> tokens = new ArrayList<String>();
+    while (st.hasMoreTokens()) {
+      String token = st.nextToken();
+      tokens.add(token);
+    }
+    String[] arr = tokens.toArray(new String[tokens.size()]);
+    Set<Integer> skip = Generics.newHashSet();
+    skip.add(Integer.valueOf(arr.length - 2));
+    return readDatum(arr, arr.length - 1, skip, indices);
+  }
+
+  static RVFDatum<String, Integer> readDatum(String[] values, int classColumn, Set<Integer> skip, Map<Integer, Index<String>> indices) {
+    ClassicCounter<Integer> c = new ClassicCounter<Integer>();
+    RVFDatum<String, Integer> d = new RVFDatum<String, Integer>(c);
+    int attrNo = 0;
+    for (int index = 0; index < values.length; index++) {
+      if (index == classColumn) {
+        d.setLabel(values[index]);
+        continue;
+      }
+      if (skip.contains(Integer.valueOf(index))) {
+        continue;
+      }
+      Integer featKey = Integer.valueOf(attrNo);
+      Index<String> ind = indices.get(featKey);
+      if (ind == null) {
+        ind = new HashIndex<String>();
+        indices.put(featKey, ind);
+      }
+      // MG: condition on isLocked is useless, since add(E) contains such a condition:
+      //if (!ind.isLocked()) {
+        ind.add(values[index]);
+      //}
+      int valInd = ind.indexOf(values[index]);
+      if (valInd == -1) {
+        valInd = 0;
+        System.err.println("unknown attribute value " + values[index] + " of attribute " + attrNo);
+      }
+      c.incrementCount(featKey, valInd);
+      attrNo++;
+
+    }
+    return d;
+  }
+

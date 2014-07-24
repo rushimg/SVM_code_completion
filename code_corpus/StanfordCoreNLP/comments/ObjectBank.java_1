@@ -1,0 +1,115 @@
+/**
+ * The ObjectBank class is designed to make it easy to change the format/source
+ * of data read in by other classes and to standardize how data is read in
+ * javaNLP classes.
+ * This should make reuse of existing code (by non-authors of the code)
+ * easier because one has to just create a new ObjectBank which knows where to
+ * look for the data and how to turn it into Objects, and then use the new
+ * ObjectBank in the class.  This will also make it easier to reuse code for
+ * reading in the same data.
+ * <p/>
+ * An ObjectBank is a Collection of Objects.  These objects are taken
+ * from input sources and then tokenized and parsed into the desired
+ * kind of Object.  An ObjectBank requires a ReaderIteratorFactory and a
+ * IteratorFromReaderFactory.  The ReaderIteratorFactory is used to get
+ * an Iterator over java.util.Readers which contain representations of
+ * the Objects.  A ReaderIteratorFactory resembles a collection that
+ * takes input sources and dispenses Iterators over java.util.Readers
+ * of those sources.  A IteratorFromReaderFactory is used to turn a single
+ * java.io.Reader into an Iterator over Objects.  The
+ * IteratorFromReaderFactory splits the contents of the java.util.Reader
+ * into Strings and then parses them into appropriate Objects.
+ * <p/>
+ *
+ * <h3>Example Usages:</h3>
+ * The general case is covered below, but the most common thing people
+ * <i>actually</i> want to do is read lines from a file.  There are special
+ * methods to make this easy!  You use the <code>getLineIterator</code> method.
+ * In its simplest use, it returns an ObjectBank&lt;String&gt;, which is a subclass of
+ * Collection&lt;String&gt;.  So, statements like these work:
+ * <blockquote>
+ * <code>
+ * for (String str : ObjectBank.getLineIterator(filename) { <br>
+ *   System.out.println(str); <br>
+ * } <br><br>
+ * String[] strings = ObjectBank.getLineIterator(filename).toArray(new String[0]); <br><br>
+ * String[] strings = ObjectBank.getLineIterator(filename, "GB18030").toArray(new String[0]);
+ * </code>
+ * </blockquote>
+ * More complex uses of getLineIterator let you interpret each line of a file
+ * as an object of arbitrary type via a transformer Function.
+ *
+ * <p/>
+ * As an example of the general power of this class, suppose you have
+ * a collection of files in the directory /u/nlp/data/gre/questions.  Each file
+ * contains several Puzzle documents which look like:
+ * <pre>
+ * &lt;puzzle>
+ *    &lt;preamble> some text &lt;/preamble>
+ *    &lt;question> some intro text
+ *      &lt;answer> answer1 &lt;/answer>
+ *      &lt;answer> answer2 &lt;/answer>
+ *      &lt;answer> answer3 &lt;/answer>
+ *      &lt;answer> answer4 &lt;/answer>
+ *    &lt;/question>
+ *    &lt;question> another question
+ *      &lt;answer> answer1 &lt;/answer>
+ *      &lt;answer> answer2 &lt;/answer>
+ *      &lt;answer> answer3 &lt;/answer>
+ *      &lt;answer> answer4 &lt;/answer>
+ *    &lt;/question>
+ * &lt;/puzzle>
+ * </pre>
+ * <p/>
+ * First you need to build a ReaderIteratorFactory which will provide java.io.Readers
+ * over all the files in your directory:
+ * <p/>
+ * <pre>
+ * Collection c = new FileSequentialCollection("/u/nlp/data/gre/questions/", "", false);
+ * ReaderIteratorFactory rif = new ReaderIteratorFactory(c);
+ * </pre>
+ * <p/>
+ * Next you need to make an IteratorFromReaderFactory which will take the
+ * java.io.Readers vended by the ReaderIteratorFactory, split them up into
+ * documents (Strings) and
+ * then convert the Strings into Objects.  In this case we want to keep everything
+ * between each set of <puzzle> </puzzle> tags so we would use a BeginEndTokenizerFactory.
+ * You would also need to write a class which extends Function and whose apply method
+ * converts the String between the <puzzle> </puzzle> tags into Puzzle objects.
+ * <p/>
+ * <pre>
+ * public class PuzzleParser implements Function {
+ *   public Object apply (Object o) {
+ *     String s = (String)o;
+ *     ...
+ *     Puzzle p = new Puzzle(...);
+ *     ...
+ *     return p;
+ *   }
+ * }
+ * </pre>
+ * <p/>
+ * Now to build the IteratorFromReaderFactory:
+ * <p/>
+ * <pre>
+ * IteratorFromReaderFactory rtif = new BeginEndTokenizerFactory("<puzzle>", "</puzzle>", new PuzzleParser());
+ * </pre>
+ * <p/>
+ * Now, to create your ObjectBank you just give it the ReaderIteratorFactory and
+ * IteratorFromReaderFactory that you just created:
+ * <p/>
+ * <pre>
+ * ObjectBank puzzles = new ObjectBank(rif, rtif);
+ * </pre>
+ * <p/>
+ * Now, if you get a new set of puzzles that are located elsewhere and formatted differently
+ * you create a new ObjectBank for reading them in and use that ObjectBank instead with only
+ * trivial changes (or possible none at all if the ObjectBank is read in on a constructor)
+ * to your code.  Or even better, if someone else wants to use your code to evaluate their puzzles,
+ * which are  located elsewhere and formatted differently, they already know what they have to do
+ * to make your code work for them.
+ * <p/>
+ *
+ * @author Jenny Finkel <A HREF="mailto:jrfinkel@stanford.edu>jrfinkel@stanford.edu</A>
+ * @author Sarah Spikes (sdspikes@cs.stanford.edu) - cleanup and filling in types
+ */

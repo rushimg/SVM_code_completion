@@ -1,0 +1,53 @@
+  private GenericDataSetReader makeAuxReader() {
+    try {
+			if (auxReader == null) {
+				if (MachineReadingProperties.datasetAuxReaderClass != null) {
+				  auxReader = MachineReadingProperties.datasetAuxReaderClass.getConstructor().newInstance();
+				}
+			}
+		} catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+    return auxReader;
+  }
+  
+  public static Extractor makeEntityExtractor(
+      Class<? extends BasicEntityExtractor> entityExtractorClass,
+      String gazetteerPath) {
+    if (entityExtractorClass == null) return null;
+    BasicEntityExtractor ex;
+    try {
+      ex = entityExtractorClass.getConstructor(String.class).newInstance(gazetteerPath);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+    return ex;
+  }
+
+  public static RelationFeatureFactory makeRelationFeatureFactory(
+      Class<RelationFeatureFactory> relationFeatureFactoryClass,
+      String relationFeatureList,
+      boolean doNotLexicalizeFirstArg) {
+    if (relationFeatureList == null || relationFeatureFactoryClass == null)
+      return null;
+    RelationFeatureFactory rff;
+    try {
+      rff = relationFeatureFactoryClass.getConstructor(String[].class).newInstance(featureList);
+      rff.setDoNotLexicalizeFirstArgument(doNotLexicalizeFirstArg);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+    return rff;
+  }
+  
+  public static RelationMentionFactory makeRelationMentionFactory(
+      Class<RelationMentionFactory> relationMentionFactoryClass) {
+    RelationMentionFactory rmf;
+    try {
+      rmf = relationMentionFactoryClass.getConstructor().newInstance();
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+    return rmf;
+  }
+  

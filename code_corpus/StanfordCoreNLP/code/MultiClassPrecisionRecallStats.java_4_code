@@ -1,0 +1,77 @@
+  protected int[] fnCount;
+
+  protected Index<L> labelIndex;
+  protected L negLabel;
+  protected int negIndex = -1;
+
+  public <F> MultiClassPrecisionRecallStats(Classifier<L,F> classifier, GeneralDataset<L,F> data, L negLabel) 
+  {
+    this.negLabel = negLabel;
+    score(classifier, data);
+  }
+
+  public MultiClassPrecisionRecallStats(L negLabel) 
+  {
+    this.negLabel = negLabel;
+  }
+
+  public L getNegLabel() {
+      return negLabel;
+  }
+
+  public <F> double score(ProbabilisticClassifier<L,F> classifier, GeneralDataset<L,F> data) {
+    return score((Classifier<L,F>)classifier, data);
+  }
+
+  public <F> double score(Classifier<L,F> classifier, GeneralDataset<L,F> data) {
+
+    List<L> guesses = new ArrayList<L>();
+    List<L> labels = new ArrayList<L>();
+
+    for (int i = 0; i < data.size(); i++) {
+      Datum<L, F> d = data.getRVFDatum(i);
+      L guess = classifier.classOf(d);
+      guesses.add(guess);
+    }      
+
+    int[] labelsArr = data.getLabelsArray();
+    labelIndex = data.labelIndex;
+    for (int i = 0; i < data.size(); i++) {
+      labels.add(labelIndex.get(labelsArr[i]));
+    }
+
+    labelIndex = new HashIndex<L>();
+    labelIndex.addAll(data.labelIndex().objectsList());
+    labelIndex.addAll(classifier.labels());
+
+    int numClasses = labelIndex.size();
+    tpCount = new int[numClasses];
+    fpCount = new int[numClasses];
+    fnCount = new int[numClasses];
+
+    negIndex = labelIndex.indexOf(negLabel);
+
+    for (int i=0; i < guesses.size(); ++i)
+    {
+      L guess = guesses.get(i);
+      int guessIndex = labelIndex.indexOf(guess);
+      L label = labels.get(i);
+      int trueIndex = labelIndex.indexOf(label);
+      
+      if (guessIndex == trueIndex) {
+        if (guessIndex != negIndex) {
+          tpCount[guessIndex]++;
+        }
+      } else {
+        if (guessIndex != negIndex) {
+          fpCount[guessIndex]++;
+        }
+        if (trueIndex != negIndex) {
+          fnCount[trueIndex]++;
+        }
+      }
+    }
+    
+    return getFMeasure();
+  }
+

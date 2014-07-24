@@ -1,0 +1,160 @@
+  private void processLeaf(Leaf leaf, List<String> sentence,
+      List<Span> names) {
+
+    boolean alreadyAdded = false;
+
+    if (leftContractionPart != null) {
+      // will handle the contraction
+      String right = leaf.getLexeme();
+
+      String c = PortugueseContractionUtility.toContraction(
+          leftContractionPart, right);
+      if (c != null) {
+        String[] parts = whitespacePattern.split(c);
+        sentence.addAll(Arrays.asList(parts));
+        alreadyAdded = true;
+      } else {
+        // contraction was missing! why?
+        sentence.add(leftContractionPart);
+        // keep alreadyAdded false.
+      }
+      leftContractionPart = null;
+    }
+
+      String namedEntityTag = null;
+      int startOfNamedEntity = -1;
+
+      String leafTag = leaf.getSecondaryTag();
+      boolean expandLastNER = false; // used when we find a <NER2> tag
+
+      if (leafTag != null) {
+        if (leafTag.contains("<sam->") && !alreadyAdded) {
+          String[] lexemes = underlinePattern.split(leaf.getLexeme());
+          if(lexemes.length > 1) {
+             sentence.addAll(Arrays.asList(lexemes).subList(0, lexemes.length - 1));
+          }
+          leftContractionPart = lexemes[lexemes.length - 1];
+          return;
+        }
+        if (leafTag.contains("<NER2>")) {
+          // this one an be part of the last name
+          expandLastNER = true;
+        }
+        namedEntityTag = getNER(leafTag);
+      }
+
+      if (namedEntityTag != null) {
+        startOfNamedEntity = sentence.size();
+      }
+
+      if(!alreadyAdded) {
+        sentence.addAll(processLexeme(leaf.getLexeme()));
+      }
+
+      if (namedEntityTag != null) {
+        names
+            .add(new Span(startOfNamedEntity, sentence.size(), namedEntityTag));
+      }
+
+      if (expandLastNER) {
+        // if the current leaf has the tag <NER2>, it can be the continuation of
+        // a NER.
+        // we check if it is true, and expand the last NER
+        int lastIndex = names.size() - 1;
+        Span last = null;
+        boolean error = false;
+        if (names.size() > 0) {
+          last = names.get(lastIndex);
+          if (last.getEnd() == sentence.size() - 1) {
+            names.set(lastIndex, new Span(last.getStart(), sentence.size(),
+                last.getType()));
+          } else {
+            error = true;
+          }
+        } else {
+          error = true;
+        }
+        if (error) {
+//           Maybe it is not the same NER, skip it.
+//           System.err.println("Missing NER start for sentence [" + sentence
+//           + "] node [" + leaf + "]");
+        }
+      }
+
+    }
+
+  private List<String> processLexeme(String lexemeStr) {
+    List<String> out = new ArrayList<String>();
+    String[] parts = underlinePattern.split(lexemeStr);
+    for (String tok : parts) {
+      if(tok.length() > 1 && !alphanumericPattern.matcher(tok).matches()) {
+        out.addAll(processTok(tok));
+      } else {
+        out.add(tok);
+      }
+    }
+    return out;
+  }
+
+  private List<String> processTok(String tok) {
+    boolean tokAdded = false;
+    String original = tok;
+    List<String> out = new ArrayList<String>();
+    LinkedList<String> suffix = new LinkedList<String>();
+    char first = tok.charAt(0);
+    if (first == '«') {
+      out.add(Character.toString(first));
+      tok = tok.substring(1);
+    }
+    char last = tok.charAt(tok.length() - 1);
+    if (last == '»' || last == ':' || last == ',' || last == '!' ) {
+      suffix.add(Character.toString(last));
+      tok = tok.substring(0, tok.length() - 1);
+    }
+
+    // lets split all hyphens
+    if (this.splitHyphenatedTokens && tok.contains("-") && tok.length() > 1) {
+      Matcher matcher = hyphenPattern.matcher(tok);
+
+      String firstTok = null;
+      String hyphen = "-";
+      String secondTok = null;
+      String rest = null;
+
+      if (matcher.matches()) {
+        if (matcher.group(1) != null) {
+          firstTok = matcher.group(2);
+        } else if (matcher.group(3) != null) {
+          secondTok = matcher.group(4);
+          rest = matcher.group(5);
+        } else if (matcher.group(6) != null) {
+          firstTok = matcher.group(7);
+          secondTok = matcher.group(8);
+          rest = matcher.group(9);
+        }
+
+        addIfNotEmpty(firstTok, out);
+        addIfNotEmpty(hyphen, out);
+        addIfNotEmpty(secondTok, out);
+        addIfNotEmpty(rest, out);
+        tokAdded = true;
+      }
+    }
+    if (!tokAdded) {
+      if (!original.equals(tok) && tok.length() > 1
+          && !alphanumericPattern.matcher(tok).matches()) {
+        out.addAll(processTok(tok));
+      } else {
+        out.add(tok);
+      }
+    }
+    out.addAll(suffix);
+    return out;
+  }
+
+  private void addIfNotEmpty(String firstTok, List<String> out) {
+    if (firstTok != null && firstTok.length() > 0) {
+      out.addAll(processTok(firstTok));
+    }
+  }
+

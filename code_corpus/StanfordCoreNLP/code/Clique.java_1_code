@@ -1,0 +1,61 @@
+
+public class Clique implements Serializable {
+
+  private static final long serialVersionUID = -8109637472035159453L;
+
+  private final int[] relativeIndices;
+  protected static final Map<CliqueEqualityWrapper, Clique> interner = Generics.newHashMap();
+
+  private static class CliqueEqualityWrapper {
+    private final Clique c;
+
+    public CliqueEqualityWrapper(Clique c) {
+      this.c = c;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (!(o instanceof CliqueEqualityWrapper)) { return false; }
+      CliqueEqualityWrapper otherC = (CliqueEqualityWrapper)o;
+      if (otherC.c.relativeIndices.length != c.relativeIndices.length) { return false; }
+      for (int i = 0; i < c.relativeIndices.length; i++) {
+        if (c.relativeIndices[i] != otherC.c.relativeIndices[i]) { return false; }
+      }
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      int h = 1;
+      for (int i : c.relativeIndices) {
+        h += i;
+      }
+      return h;
+    }
+  } // end static class CliqueEqualityWrapper
+
+
+  private static Clique intern(Clique c) {
+    CliqueEqualityWrapper wrapper = new CliqueEqualityWrapper(c);
+    Clique newC = interner.get(wrapper);
+    if (newC == null) {
+      interner.put(wrapper, c);
+      newC = c;
+    }
+    return newC;
+  }
+
+
+  private Clique(int[] relativeIndices) {
+    this.relativeIndices = relativeIndices;
+  }
+
+  public static Clique valueOf(int maxLeft, int maxRight) {
+    int[] ri = new int[-maxLeft+maxRight+1];
+    int j = maxLeft;
+    for (int i = 0; i < ri.length; i++) {
+      ri[i] = j++;
+    }
+    return valueOfHelper(ri);
+  }
+

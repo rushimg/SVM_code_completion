@@ -1,0 +1,262 @@
+  private final List<String> baselineFeatures = new ArrayList<String>();
+  {
+    baselineFeatures.add("-markNounNPargTakers");
+    baselineFeatures.add("-genitiveMark");
+    baselineFeatures.add("-splitPUNC");
+    baselineFeatures.add("-markContainsVerb");
+    baselineFeatures.add("-markStrictBaseNP");
+    baselineFeatures.add("-markOneLevelIdafa");
+    baselineFeatures.add("-splitIN");
+    baselineFeatures.add("-markMasdarVP");
+    baselineFeatures.add("-containsSVO");
+    baselineFeatures.add("-splitCC");
+    baselineFeatures.add("-markFem");
+    
+    // Added for MWE experiments
+    baselineFeatures.add("-mwe");
+    baselineFeatures.add("-mweContainsVerb");
+  }
+  private final List<String> additionalFeatures = new ArrayList<String>();
+
+  private void initializeAnnotationPatterns() {
+    //This doesn't/can't really pick out genitives, but just any NP following an NN head.
+    //wsg2011: In particular, it doesn't select NP complements of PPs, which are also genitive.
+    final String genitiveNodeTregexString = "@NP > @NP $- /^N/";
+
+    TregexPatternCompiler tregexPatternCompiler =
+      new TregexPatternCompiler(headFinder());
+
+    try {
+      // Baseline features
+      annotationPatterns.put("-genitiveMark",new Pair<TregexPattern,Function<TregexMatcher,String>>(TregexPattern.compile(genitiveNodeTregexString),new SimpleStringFunction("-genitive")));
+      annotationPatterns.put("-markStrictBaseNP",new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@NP !< (__ < (__ < __))"),new SimpleStringFunction("-base"))); // NP with no phrasal node in it
+      annotationPatterns.put("-markOneLevelIdafa",new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@NP < (@NP < (__ < __)) !< (/^[^N]/ < (__ < __)) !< (__ < (__ < (__ < __)))"),new SimpleStringFunction("-idafa1")));
+      annotationPatterns.put("-markNounNPargTakers",new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@NN|NNS|NNP|NNPS|DTNN|DTNNS|DTNNP|DTNNPS ># (@NP < @NP)"),new SimpleStringFunction("-NounNParg")));
+      annotationPatterns.put("-markContainsVerb",new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("__ << (/^[CIP]?V/ < (__ !< __))"),new SimpleStringFunction("-withV")));
+      annotationPatterns.put("-splitIN",new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@IN < __=word"), new AddRelativeNodeFunction("-","word", false)));
+      annotationPatterns.put("-splitPUNC",new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@PUNC < __=" + AnnotatePunctuationFunction2.key),new AnnotatePunctuationFunction2()));
+      annotationPatterns.put("-markMasdarVP", new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@VP|MWVP < /VBG|VN/"), new SimpleStringFunction("-masdar")));
+      annotationPatterns.put("-containsSVO", new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("__ << (@S < (@NP . @VP|MWVP))"), new SimpleStringFunction("-hasSVO")));
+      annotationPatterns.put("-splitCC",new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@CC|CONJ . __=term , __"),new AddEquivalencedConjNode("-","term")));
+      annotationPatterns.put("-markFem", new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("__ < /ة$/"), new SimpleStringFunction("-fem")));
+      
+      // Added for MWE experiments
+      annotationPatterns.put("-mwe",new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("__ > /MW/=tag"), new AddRelativeNodeFunction("-","tag", true)));
+      annotationPatterns.put("-mweContainsVerb",new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("__ << @MWVP"),new SimpleStringFunction("-withV")));
+
+      //This version, which uses the PTB equivalence classing, results in slightly lower labeled F1
+      //than the splitPUNC feature above, which was included in the COLING2010 evaluation
+      annotationPatterns.put("-splitPUNC2",new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@PUNC < __=punc"),new AnnotatePunctuationFunction("-","punc")));
+
+      // Label each POS with its parent
+      annotationPatterns.put("-tagPAar", new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("!@PUNC < (__ !< __) > __=parent"),new AddRelativeNodeFunction("-","parent", true)));
+
+      //Didn't work
+      annotationPatterns.put("-splitCC2",new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@CC . __=term , __"),new AddRelativeNodeFunction("-","term", true)));
+      annotationPatterns.put("-idafaJJ1", new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@NP <, (@NN $+ @NP) <+(@NP) @ADJP"), new SimpleStringFunction("-idafaJJ")));
+      annotationPatterns.put("-idafaJJ2", new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@NP <, (@NN $+ @NP) <+(@NP) @ADJP !<< @SBAR"), new SimpleStringFunction("-idafaJJ")));
+
+      annotationPatterns.put("-properBaseNP", new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@NP !<< @NP < /NNP/ !< @PUNC|CD"), new SimpleStringFunction("-prop")));
+      annotationPatterns.put("-interrog", new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("__ << هل|ماذا|لماذا|اين|متى"), new SimpleStringFunction("-inter")));
+      annotationPatterns.put("-splitPseudo", new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@NN < مع|بعد|بين"), new SimpleStringFunction("-pseudo")));
+      annotationPatterns.put("-nPseudo", new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@NP < (@NN < مع|بعد|بين)"), new SimpleStringFunction("-npseudo")));
+      annotationPatterns.put("-pseudoArg", new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@NP < @NP $, (@NN < مع|بعد|بين)"), new SimpleStringFunction("-pseudoArg")));
+      annotationPatterns.put("-eqL1", new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("__ < (@S !< @VP|S)"), new SimpleStringFunction("-haseq")));
+      annotationPatterns.put("-eqL1L2", new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("__ < (__ < (@S !< @VP|S)) | < (@S !< @VP|S)"), new SimpleStringFunction("-haseq")));
+      annotationPatterns.put("-fullQuote", new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("__ < ((@PUNC < \") $ (@PUNC < \"))"), new SimpleStringFunction("-fq")));
+      annotationPatterns.put("-brokeQuote", new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("__ < ((@PUNC < \") !$ (@PUNC < \"))"), new SimpleStringFunction("-bq")));
+      annotationPatterns.put("-splitVP", new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@VP <# __=term1"), new AddRelativeNodeFunction("-","term1",true)));
+      annotationPatterns.put("-markFemP", new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@NP|ADJP < (__ < /ة$/)"), new SimpleStringFunction("-femP")));
+      annotationPatterns.put("-embedSBAR", new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@NP|PP <+(@NP|PP) @SBAR"), new SimpleStringFunction("-embedSBAR")));
+      annotationPatterns.put("-complexVP", new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("__ << (@VP < (@NP $ @NP)) > __"), new SimpleStringFunction("-complexVP")));
+      annotationPatterns.put("-containsJJ", new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@NP <+(@NP) /JJ/"), new SimpleStringFunction("-hasJJ")));
+      annotationPatterns.put("-markMasdarVP2", new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("__ << @VN|VBG"), new SimpleStringFunction("-masdar")));
+      annotationPatterns.put("-coordNP", new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@NP|ADJP <+(@NP|ADJP) (@CC|PUNC $- __ $+ __)"), new SimpleStringFunction("-coordNP")));
+      annotationPatterns.put("-coordWa", new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("__ << (@CC , __ < و-)"), new SimpleStringFunction("-coordWA")));
+      annotationPatterns.put("-NPhasADJP", new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@NP <+(@NP) @ADJP"), new SimpleStringFunction("-NPhasADJP")));
+      annotationPatterns.put("-NPADJP", new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@NP < @ADJP"), new SimpleStringFunction("-npadj")));
+      annotationPatterns.put("-NPJJ", new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@NP < /JJ/"), new SimpleStringFunction("-npjj")));
+      annotationPatterns.put("-NPCC", new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@NP <+(@NP) @CC"), new SimpleStringFunction("-npcc")));
+      annotationPatterns.put("-NPCD", new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@NP < @CD"), new SimpleStringFunction("-npcd")));
+      annotationPatterns.put("-NPNNP", new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@NP < /NNP/"), new SimpleStringFunction("-npnnp")));
+      annotationPatterns.put("-SVO", new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@S < (@NP . @VP)"), new SimpleStringFunction("-svo")));
+      annotationPatterns.put("-containsSBAR", new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("__ << @SBAR"), new SimpleStringFunction("-hasSBAR")));
+
+
+      //WSGDEBUG - Template
+      //annotationPatterns.put("", new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile(""), new SimpleStringFunction("")));
+
+
+      // Old and unused features (in various states of repair)
+      annotationPatterns.put("-markGappedVP",new Pair<TregexPattern,Function<TregexMatcher,String>>(TregexPattern.compile("@VP > @VP $- __ $ /^(?:CC|CONJ)/ !< /^V/"),new SimpleStringFunction("-gappedVP")));
+      annotationPatterns.put("-markGappedVPConjoiners",new Pair<TregexPattern,Function<TregexMatcher,String>>(TregexPattern.compile("/^(?:CC|CONJ)/ $ (@VP > @VP $- __ !< /^V/)"),new SimpleStringFunction("-gappedVP")));
+      annotationPatterns.put("-markGenitiveParent",new Pair<TregexPattern,Function<TregexMatcher,String>>(TregexPattern.compile("@NP < (" + genitiveNodeTregexString + ')'),new SimpleStringFunction("-genitiveParent")));
+      // maSdr: this pattern is just a heuristic classification, which matches on
+      // various common maSdr pattterns, but probably also matches on a lot of other
+      // stuff.  It marks NPs with possible maSdr.
+      // Roger's old pattern:
+      annotationPatterns.put("-maSdrMark",new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("/^N/ <<# (/^[t\\u062a].+[y\\u064a].$/ > @NN|NOUN|DTNN)"),new SimpleStringFunction("-maSdr")));
+      // chris' attempt
+      annotationPatterns.put("-maSdrMark2",new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("/^N/ <<# (/^(?:[t\\u062a].+[y\\u064a].|<.{3,}|A.{3,})$/ > @NN|NOUN|DTNN)"),new SimpleStringFunction("-maSdr")));
+      annotationPatterns.put("-maSdrMark3",new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("/^N/ <<# (/^(?:[t\\u062a<A].{3,})$/ > @NN|NOUN|DTNN)"),new SimpleStringFunction("-maSdr")));
+      annotationPatterns.put("-maSdrMark4",new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("/^N/ <<# (/^(?:[t\\u062a<A].{3,})$/ > (@NN|NOUN|DTNN > (@NP < @NP)))"),new SimpleStringFunction("-maSdr")));
+      annotationPatterns.put("-maSdrMark5",new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("/^N/ <<# (__ > (@NN|NOUN|DTNN > (@NP < @NP)))"),new SimpleStringFunction("-maSdr")));
+      annotationPatterns.put("-mjjMark",new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@JJ|DTJJ < /^m/ $+ @PP ># @ADJP "),new SimpleStringFunction("-mjj")));
+      //annotationPatterns.put(markPRDverbString,new Pair<TregexPattern,Function<TregexMatcher,String>>(TregexPattern.compile("/^V[^P]/ > VP $ /-PRD$/"),new SimpleStringFunction("-PRDverb"))); // don't need this pattern anymore, the functionality has been moved to ArabicTreeNormalizer
+      // PUNC is PUNC in either raw or Bies POS encoding
+      annotationPatterns.put("-markNPwithSdescendant",new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("__ !< @S << @S [ >> @NP | == @NP ]"),new SimpleStringFunction("-inNPdominatesS")));
+      annotationPatterns.put("-markRightRecursiveNP",new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("__ <<- @NP [>>- @NP | == @NP]"),new SimpleStringFunction("-rrNP")));
+      annotationPatterns.put("-markBaseNP",new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@NP !< @NP !< @VP !< @SBAR !< @ADJP !< @ADVP !< @S !< @QP !< @UCP !< @PP"),new SimpleStringFunction("-base")));
+      // allow only a single level of idafa as Base NP; this version works!
+      annotationPatterns.put("-markBaseNPplusIdafa",new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@NP !< (/^[^N]/ < (__ < __)) !< (__ < (__ < (__ < __)))"),new SimpleStringFunction("-base")));
+      annotationPatterns.put("-markTwoLevelIdafa",new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@NP < (@NP < (@NP < (__ < __)) !< (/^[^N]/ < (__ < __))) !< (/^[^N]/ < (__ < __)) !< (__ < (__ < (__ < (__ < __))))"),new SimpleStringFunction("-idafa2")));
+      annotationPatterns.put("-markDefiniteIdafa",new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@NP < (/^(?:NN|NOUN)/ !$,, /^[^AP]/) <+(/^NP/) (@NP < /^DT/)"), new SimpleStringFunction("-defIdafa")));
+      annotationPatterns.put("-markDefiniteIdafa1",new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@NP < (/^(?:NN|NOUN)/ !$,, /^[^AP]/) < (@NP < /^DT/) !< (/^[^N]/ < (__ < __)) !< (__ < (__ < (__ < __)))"), new SimpleStringFunction("-defIdafa1")));
+      annotationPatterns.put("-markContainsSBAR",new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("__ << @SBAR"),new SimpleStringFunction("-withSBAR")));
+      annotationPatterns.put("-markPhrasalNodesDominatedBySBAR",new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("__ < (__ < __) >> @SBAR"),new SimpleStringFunction("-domBySBAR")));
+      annotationPatterns.put("-markCoordinateNPs",new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@NP < @CC|CONJ"),new SimpleStringFunction("-coord")));
+      //annotationPatterns.put("-markCopularVerbTags",new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("/^V/ < " + copularVerbForms),new SimpleStringFunction("-copular")));
+      //annotationPatterns.put("-markSBARVerbTags",new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("/^V/ < " + sbarVerbForms),new SimpleStringFunction("-SBARverb")));
+      annotationPatterns.put("-markNounAdjVPheads",new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@NN|NNS|NNP|NNPS|JJ|DTJJ|DTNN|DTNNS|DTNNP|DTNNPS ># @VP"),new SimpleStringFunction("-VHead")));
+      // a better version of the below might only mark clitic pronouns, but
+      // since most pronouns are clitics, let's try this first....
+      annotationPatterns.put("-markPronominalNP",new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@NP < @PRP"),new SimpleStringFunction("-PRP")));
+      // try doing coordination parallelism -- there's a lot of that in Arabic (usually the same, sometimes different CC)
+      annotationPatterns.put("-markMultiCC", new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("__ < (@CC $.. @CC)"), new SimpleStringFunction("-multiCC"))); // this unfortunately didn't seem helpful for capturing CC parallelism; should try again
+      annotationPatterns.put("-markHasCCdaughter", new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("__ < @CC"), new SimpleStringFunction("-CCdtr")));
+      annotationPatterns.put("-markAcronymNP",new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@NP !<  (__ < (__ < __)) < (/^NN/ < /^.$/ $ (/^NN/ < /^.$/)) !< (__ < /../)"), new SimpleStringFunction("-acro")));
+      annotationPatterns.put("-markAcronymNN",new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("/^NN/ < /^.$/ $ (/^NN/ < /^.$/) > (@NP !<  (__ < (__ < __)) !< (__ < /../))"), new SimpleStringFunction("-acro")));
+      //PP Specific patterns
+      annotationPatterns.put("-markPPwithPPdescendant",new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("__ !< @PP << @PP [ >> @PP | == @PP ]"),new SimpleStringFunction("-inPPdominatesPP")));
+      annotationPatterns.put("-gpAnnotatePrepositions",new Pair<TregexPattern,Function<TregexMatcher,String>>(TregexPattern.compile("/^(?:IN|PREP)$/ > (__ > __=gp)"),new AddRelativeNodeFunction("^^","gp", false)));
+      annotationPatterns.put("-gpEquivalencePrepositions",new Pair<TregexPattern,Function<TregexMatcher,String>>(TregexPattern.compile("/^(?:IN|PREP)$/ > (@PP >+(/^PP/) __=gp)"),new AddEquivalencedNodeFunction("^^","gp")));
+      annotationPatterns.put("-gpEquivalencePrepositionsVar",new Pair<TregexPattern,Function<TregexMatcher,String>>(TregexPattern.compile("/^(?:IN|PREP)$/ > (@PP >+(/^PP/) __=gp)"),new AddEquivalencedNodeFunctionVar("^^","gp")));
+      annotationPatterns.put("-markPPParent", new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@PP=max !< @PP"),new AddRelativeNodeRegexFunction("^^","max","^(\\w)")));
+      annotationPatterns.put("-whPP", new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@PP <- (@SBAR <, /^WH/)"),new SimpleStringFunction("-whPP")));
+      //    annotationPatterns.put("-markTmpPP", new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@PP !<+(__) @PP"),new LexicalCategoryFunction("-TMP",temporalNouns)));
+      annotationPatterns.put("-deflateMin", new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("__ < (__ < من)"),new SimpleStringFunction("-min")));
+      annotationPatterns.put("-v2MarkovIN", new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@IN > (@__=p1 > @__=p2)"),new AddRelativeNodeFunction("^","p1","p2", false)));
+      annotationPatterns.put("-pleonasticMin", new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@PP <, (IN < من) > @S"),new SimpleStringFunction("-pleo")));
+      annotationPatterns.put("-v2MarkovPP", new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@PP > (@__=p1 > @__=p2)"), new AddRelativeNodeFunction("^","p1","p2", false)));
+
+    } catch (TregexParseException e) {
+      int nth = annotationPatterns.size() + 1;
+      String nthStr = (nth == 1) ? "1st": ((nth == 2) ? "2nd": nth + "th");
+      System.err.println("Parse exception on " + nthStr + " annotation pattern initialization:" + e);
+      throw e;
+    }
+  }
+
+  private static class SimpleStringFunction implements SerializableFunction<TregexMatcher,String> {
+
+    public SimpleStringFunction(String result) {
+      this.result = result;
+    }
+
+    private String result;
+
+    public String apply(TregexMatcher tregexMatcher) {
+      return result;
+    }
+
+    @Override
+    public String toString() { return "SimpleStringFunction[" + result + ']'; }
+
+    private static final long serialVersionUID = 1L;
+  }
+
+
+  private static class AddRelativeNodeFunction implements SerializableFunction<TregexMatcher,String> {
+
+    private String annotationMark;
+    private String key;
+    private String key2;
+    private boolean doBasicCat = false;
+
+    private static final TreebankLanguagePack tlp = new ArabicTreebankLanguagePack();
+
+    public AddRelativeNodeFunction(String annotationMark, String key, boolean basicCategory) {
+      this.annotationMark = annotationMark;
+      this.key = key;
+      this.key2 = null;
+      doBasicCat = basicCategory;
+    }
+
+    public AddRelativeNodeFunction(String annotationMark, String key1, String key2, boolean basicCategory) {
+      this(annotationMark,key1,basicCategory);
+      this.key2 = key2;
+    }
+
+    public String apply(TregexMatcher m) {
+      if(key2 == null)
+        return annotationMark + ((doBasicCat) ? tlp.basicCategory(m.getNode(key).label().value()) : m.getNode(key).label().value());
+      else {
+        String annot1 = (doBasicCat) ? tlp.basicCategory(m.getNode(key).label().value()) : m.getNode(key).label().value();
+        String annot2 = (doBasicCat) ? tlp.basicCategory(m.getNode(key2).label().value()) : m.getNode(key2).label().value();
+        return annotationMark + annot1 + annotationMark + annot2;
+      }
+    }
+
+    @Override
+    public String toString() {
+      if(key2 == null)
+        return "AddRelativeNodeFunction[" + annotationMark + ',' + key + ']';
+      else
+        return "AddRelativeNodeFunction[" + annotationMark + ',' + key + ',' + key2 + ']';
+    }
+
+    private static final long serialVersionUID = 1L;
+
+  }
+
+
+  private static class AddRelativeNodeRegexFunction implements SerializableFunction<TregexMatcher,String> {
+
+    private String annotationMark;
+    private String key;
+    private Pattern pattern;
+
+    private String key2 = null;
+    private Pattern pattern2;
+
+    public AddRelativeNodeRegexFunction(String annotationMark, String key, String regex) {
+      this.annotationMark = annotationMark;
+      this.key = key;
+      try {
+        this.pattern = Pattern.compile(regex);
+      } catch (PatternSyntaxException pse) {
+        System.err.println("Bad pattern: " + regex);
+        pattern = null;
+        throw new IllegalArgumentException(pse);
+      }
+    }
+
+    public String apply(TregexMatcher m) {
+      String val = m.getNode(key).label().value();
+      if (pattern != null) {
+        Matcher mat = pattern.matcher(val);
+        if (mat.find()) {
+          val = mat.group(1);
+        }
+      }
+
+      if(key2 != null && pattern2 != null) {
+        String val2 = m.getNode(key2).label().value();
+        Matcher mat2 = pattern2.matcher(val2);
+        if(mat2.find()) {
+          val = val + annotationMark + mat2.group(1);
+        } else {
+          val = val + annotationMark + val2;
+        }
+      }
+
+      return annotationMark + val;
+    }
+
+    @Override
+    public String toString() { return "AddRelativeNodeRegexFunction[" + annotationMark + ',' + key + ',' + pattern + ']'; }
+
+    private static final long serialVersionUID = 1L;
+  }
+
+

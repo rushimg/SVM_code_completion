@@ -1,0 +1,30 @@
+  protected void expandDependency(IntDependency dependency, double count) {
+    //if (Test.prunePunc && pruneTW(dependency.arg))
+    //  return;
+    if (dependency.head == null || dependency.arg == null) {
+      return;
+    }
+
+    if (dependency.arg.word != STOP_WORD_INT) {
+      expandArg(dependency, valenceBin(dependency.distance), count);
+    }
+    expandStop(dependency, distanceBin(dependency.distance), count, true);
+  }
+
+  private TagProjection smoothTP;
+  private Index<String> smoothTPIndex;
+
+  private short tagProject(short tag) {
+    if (smoothTPIndex == null) {
+      smoothTPIndex = new HashIndex<String>(tagIndex);
+    }
+    if (tag < 0) {
+      return tag;
+    } else {
+      String tagStr = smoothTPIndex.get(tag);
+      String binStr = TP_PREFIX + smoothTP.project(tagStr);
+      return (short) smoothTPIndex.indexOf(binStr, true);
+    }
+  }
+
+

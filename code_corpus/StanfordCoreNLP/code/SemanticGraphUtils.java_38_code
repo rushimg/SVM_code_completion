@@ -1,0 +1,28 @@
+  private static class TreeNodeProxy {
+    Tree treeNode;
+    String lex;
+    Tree root;
+
+    public String toString() {
+      return lex+" -> "+treeNode.toString()+", #="+treeNode.nodeNumber(root);
+    }
+
+    private TreeNodeProxy(Tree intree, String lex, Tree root) {
+      this.treeNode = intree;
+      this.lex = lex;
+      this.root = root;
+    }
+
+    public static List<TreeNodeProxy> create(Tree intree, Tree root) {
+      List<TreeNodeProxy> ret = new ArrayList<TreeNodeProxy>();
+      if (intree.isLeaf()) {
+        ret.add(new TreeNodeProxy(intree, intree.label().value(), root));
+      } else
+        for (LabeledWord lword : intree.labeledYield()) {
+          ret.add(new TreeNodeProxy(intree, lword.word(), root));
+        }
+
+      return ret;
+    }
+  }
+

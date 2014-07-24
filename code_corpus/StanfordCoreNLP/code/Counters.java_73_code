@@ -1,0 +1,22 @@
+  public static <E> double klDivergence(Counter<E> from, Counter<E> to) {
+    double result = 0.0;
+    double tot = (from.totalCount());
+    double tot2 = (to.totalCount());
+    // System.out.println("tot is " + tot + " tot2 is " + tot2);
+    for (E key : from.keySet()) {
+      double num = (from.getCount(key));
+      if (num == 0) {
+        continue;
+      }
+      num /= tot;
+      double num2 = (to.getCount(key));
+      num2 /= tot2;
+      // System.out.println("num is " + num + " num2 is " + num2);
+      double logFract = Math.log(num / num2);
+      if (logFract == Double.NEGATIVE_INFINITY) {
+        return Double.NEGATIVE_INFINITY; // can't recover
+      }
+    }
+    return result;
+  }
+

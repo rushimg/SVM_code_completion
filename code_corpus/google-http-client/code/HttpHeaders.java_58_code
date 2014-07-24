@@ -1,0 +1,47 @@
+  public HttpHeaders setBasicAuthentication(String username, String password) {
+    String userPass =
+        Preconditions.checkNotNull(username) + ":" + Preconditions.checkNotNull(password);
+    String encoded = Base64.encodeBase64String(StringUtils.getBytesUtf8(userPass));
+    return setAuthorization("Basic " + encoded);
+  }
+
+  private static void addHeader(Logger logger,
+      StringBuilder logbuf,
+      StringBuilder curlbuf,
+      LowLevelHttpRequest lowLevelHttpRequest,
+      String name,
+      Object value,
+      Writer writer) throws IOException {
+    // ignore nulls
+    if (value == null || Data.isNull(value)) {
+      return;
+    }
+    // compute value
+    String stringValue = toStringValue(value);
+    // log header
+    String loggedStringValue = stringValue;
+    if (("Authorization".equalsIgnoreCase(name) || "Cookie".equalsIgnoreCase(name))
+        && (logger == null || !logger.isLoggable(Level.ALL))) {
+      loggedStringValue = "<Not Logged>";
+    }
+    if (logbuf != null) {
+      logbuf.append(name).append(": ");
+      logbuf.append(loggedStringValue);
+      logbuf.append(StringUtils.LINE_SEPARATOR);
+    }
+    if (curlbuf != null) {
+      curlbuf.append(" -H '").append(name).append(": ").append(loggedStringValue).append("'");
+    }
+    // add header to lowLevelHttpRequest
+    if (lowLevelHttpRequest != null) {
+      lowLevelHttpRequest.addHeader(name, stringValue);
+    }
+    // add header to the writer
+    if (writer != null) {
+      writer.write(name);
+      writer.write(": ");
+      writer.write(stringValue);
+      writer.write("\r\n");
+    }
+  }
+

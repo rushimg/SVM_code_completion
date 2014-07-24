@@ -1,0 +1,71 @@
+  public void setRetrainFromScratchAfterSigmaTuning( boolean retrainFromScratchAfterSigmaTuning) {
+    this.retrainFromScratchAfterSigmaTuning = retrainFromScratchAfterSigmaTuning;
+  }
+
+
+  public Classifier<L, F> trainClassifier(Iterable<Datum<L, F>> dataIterable) {
+    Minimizer<DiffFunction> minimizer = getMinimizer();
+    Index<F> featureIndex = Generics.newIndex();
+    Index<L> labelIndex = Generics.newIndex();
+    for (Datum<L, F> d : dataIterable) {
+      labelIndex.add(d.label());
+      featureIndex.addAll(d.asFeatures());//If there are duplicates, it doesn't add them again.
+    }
+    System.err.println(String.format("Training linear classifier with %d features and %d labels", featureIndex.size(), labelIndex.size()));
+
+    LogConditionalObjectiveFunction<L, F> objective = new LogConditionalObjectiveFunction<L, F>(dataIterable, logPrior, featureIndex, labelIndex);
+    // [cdm 2014] Commented out next line. Why not use the logPrior set up previously and used at creation???
+    // objective.setPrior(new LogPrior(LogPrior.LogPriorType.QUADRATIC));
+
+    double[] initial = objective.initial();
+    double[] weights = minimizer.minimize(objective, TOL, initial);
+
+    LinearClassifier<L, F> classifier = new LinearClassifier<L, F>(objective.to2D(weights), featureIndex, labelIndex);
+    return classifier;
+  }
+
+  public Classifier<L, F> trainClassifier(GeneralDataset<L, F> dataset, float[] dataWeights, LogPrior prior) {
+    Minimizer<DiffFunction> minimizer = getMinimizer();
+    if (dataset instanceof RVFDataset) {
+      ((RVFDataset<L,F>)dataset).ensureRealValues();
+    }
+    LogConditionalObjectiveFunction<L, F> objective = new LogConditionalObjectiveFunction<L, F>(dataset, dataWeights, prior);
+
+    double[] initial = objective.initial();
+    double[] weights = minimizer.minimize(objective, TOL, initial);
+
+    LinearClassifier<L, F> classifier = new LinearClassifier<L, F>(objective.to2D(weights), dataset.featureIndex(), dataset.labelIndex());
+    return classifier;
+  }
+
+
+  @Override
+  public LinearClassifier<L, F> trainClassifier(GeneralDataset<L, F> dataset) {
+    return trainClassifier(dataset, null);
+  }
+  public LinearClassifier<L, F> trainClassifier(GeneralDataset<L, F> dataset, double[] initial) {
+    // Sanity check
+    if(dataset instanceof RVFDataset)
+      ((RVFDataset<L,F>)dataset).ensureRealValues();
+    if (initial != null) {
+      for (double weight : initial) {
+        if (Double.isNaN(weight) || Double.isInfinite(weight)) {
+          throw new IllegalArgumentException("Initial weights are invalid!");
+        }
+      }
+    }
+    // Train classifier
+    double[][] weights =  trainWeights(dataset, initial, false);
+    LinearClassifier<L, F> classifier = new LinearClassifier<L, F>(weights, dataset.featureIndex(), dataset.labelIndex());
+    return classifier;
+  }
+  public LinearClassifier<L, F> trainClassifierWithInitialWeights(GeneralDataset<L, F> dataset, double[][] initialWeights2D) {
+    double[] initialWeights = (initialWeights2D != null)? ArrayUtils.flatten(initialWeights2D):null;
+    return trainClassifier(dataset, initialWeights);
+  }
+  public LinearClassifier<L, F> trainClassifierWithInitialWeights(GeneralDataset<L, F> dataset, LinearClassifier<L,F> initialClassifier) {
+    double[][] initialWeights2D = (initialClassifier != null)? initialClassifier.weights():null;
+    return trainClassifierWithInitialWeights(dataset, initialWeights2D);
+  }
+
+

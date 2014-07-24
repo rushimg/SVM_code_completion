@@ -1,0 +1,37 @@
+  public static class VarExpression extends SimpleExpression<String> implements AssignableExpression  {
+    public VarExpression(String varname, String... tags) {
+      super(TYPE_VAR, varname, tags);
+    }
+    public Value evaluate(Env env, Object... args) {
+      Expression exp = null;
+      String varName = value;
+      if (args != null) {
+        if (args.length == 1 && args[0] instanceof CoreMap) {
+          CoreMap cm = (CoreMap) args[0];
+          if (VAR_SELF.equals(varName))  {
+            return createValue(varName, cm);
+          }
+          Class annotationKey = EnvLookup.lookupAnnotationKey(env, varName);
+          if (annotationKey != null) {
+            return createValue(varName, cm.get(annotationKey));
+          }
+        }
+      }
+      if (VAR_SELF.equals(varName))  {
+        return createValue(varName, env.peek(varName));
+      }
+      Object obj = env.get(varName);
+      if (obj != null) {
+        exp = asExpression(env, obj);
+      }
+      Value v = exp != null? exp.evaluate(env, args): null;
+      if (v == null) {
+        System.err.println("Unknown variable: " + varName);
+      }
+      return v;
+    }
+    public Expression assign(Expression expr) {
+      return new VarAssignmentExpression(value, expr, true);
+    }
+  }
+

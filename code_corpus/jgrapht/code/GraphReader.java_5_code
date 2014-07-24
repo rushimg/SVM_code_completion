@@ -1,0 +1,45 @@
+    public GraphReader(Reader input, double defaultWeight)
+        throws IOException
+    {
+        this(input, true, defaultWeight);
+    }
+
+    //~ Methods ----------------------------------------------------------------
+
+    // ~ Methods ---------------------------------------------------------------
+
+    private String [] split(final String src)
+    {
+        if (src == null) {
+            return null;
+        }
+        return src.split("\\s+");
+    }
+
+    private String [] skipComments()
+    {
+        String [] cols = null;
+        try {
+            cols = split(_in.readLine());
+            while (
+                (cols != null)
+                && ((cols.length == 0)
+                    || cols[0].equals("c")
+                    || cols[0].startsWith("%")))
+            {
+                cols = split(_in.readLine());
+            }
+        } catch (IOException e) {
+        }
+        return cols;
+    }
+
+    private int readNodeCount()
+    {
+        final String [] cols = skipComments();
+        if (cols[0].equals("p")) {
+            return Integer.parseInt(cols[1]);
+        }
+        return -1;
+    }
+

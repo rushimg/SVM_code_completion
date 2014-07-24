@@ -1,0 +1,229 @@
+    public void drawItem(Graphics2D g2,
+                         XYItemRendererState state,
+                         Rectangle2D dataArea,
+                         PlotRenderingInfo info,
+                         XYPlot plot,
+                         ValueAxis domainAxis,
+                         ValueAxis rangeAxis,
+                         XYDataset dataset,
+                         int series,
+                         int item,
+                         CrosshairState crosshairState,
+                         int pass) {
+
+        boolean horiz;
+        PlotOrientation orientation = plot.getOrientation();
+        if (orientation == PlotOrientation.HORIZONTAL) {
+            horiz = true;
+        }
+        else if (orientation == PlotOrientation.VERTICAL) {
+            horiz = false;
+        }
+        else {
+            return;
+        }
+
+        // setup for collecting optional entity info...
+        EntityCollection entities = null;
+        if (info != null) {
+            entities = info.getOwner().getEntityCollection();
+        }
+
+        OHLCDataset highLowData = (OHLCDataset) dataset;
+
+        double x = highLowData.getXValue(series, item);
+        double yHigh = highLowData.getHighValue(series, item);
+        double yLow = highLowData.getLowValue(series, item);
+        double yOpen = highLowData.getOpenValue(series, item);
+        double yClose = highLowData.getCloseValue(series, item);
+
+        RectangleEdge domainEdge = plot.getDomainAxisEdge();
+        double xx = domainAxis.valueToJava2D(x, dataArea, domainEdge);
+
+        RectangleEdge edge = plot.getRangeAxisEdge();
+        double yyHigh = rangeAxis.valueToJava2D(yHigh, dataArea, edge);
+        double yyLow = rangeAxis.valueToJava2D(yLow, dataArea, edge);
+        double yyOpen = rangeAxis.valueToJava2D(yOpen, dataArea, edge);
+        double yyClose = rangeAxis.valueToJava2D(yClose, dataArea, edge);
+
+        double volumeWidth;
+        double stickWidth;
+        if (this.candleWidth > 0) {
+            // These are deliberately not bounded to minimums/maxCandleWidth to
+            //  retain old behaviour.
+            volumeWidth = this.candleWidth;
+            stickWidth = this.candleWidth;
+        }
+        else {
+            double xxWidth = 0;
+            int itemCount;
+            switch (this.autoWidthMethod) {
+
+                case WIDTHMETHOD_AVERAGE:
+                    itemCount = highLowData.getItemCount(series);
+                    if (horiz) {
+                        xxWidth = dataArea.getHeight() / itemCount;
+                    }
+                    else {
+                        xxWidth = dataArea.getWidth() / itemCount;
+                    }
+                    break;
+
+                case WIDTHMETHOD_SMALLEST:
+                    // Note: It would be nice to pre-calculate this per series
+                    itemCount = highLowData.getItemCount(series);
+                    double lastPos = -1;
+                    xxWidth = dataArea.getWidth();
+                    for (int i = 0; i < itemCount; i++) {
+                        double pos = domainAxis.valueToJava2D(
+                                highLowData.getXValue(series, i), dataArea,
+                                domainEdge);
+                        if (lastPos != -1) {
+                            xxWidth = Math.min(xxWidth,
+                                    Math.abs(pos - lastPos));
+                        }
+                        lastPos = pos;
+                    }
+                    break;
+
+                case WIDTHMETHOD_INTERVALDATA:
+                    IntervalXYDataset intervalXYData
+                            = (IntervalXYDataset) dataset;
+                    double startPos = domainAxis.valueToJava2D(
+                            intervalXYData.getStartXValue(series, item),
+                            dataArea, plot.getDomainAxisEdge());
+                    double endPos = domainAxis.valueToJava2D(
+                            intervalXYData.getEndXValue(series, item),
+                            dataArea, plot.getDomainAxisEdge());
+                    xxWidth = Math.abs(endPos - startPos);
+                    break;
+
+            }
+            xxWidth = Math.min(xxWidth, this.maxCandleWidth);
+            volumeWidth = Math.max(Math.min(1, this.maxCandleWidth), xxWidth);
+            stickWidth = Math.max(Math.min(3, this.maxCandleWidth), xxWidth);
+        }
+
+        Paint p = getItemPaint(series, item);
+        Paint outlinePaint = null;
+        if (this.useOutlinePaint) {
+            outlinePaint = getItemOutlinePaint(series, item);
+        }
+        Stroke s = getItemStroke(series, item);
+
+        g2.setStroke(s);
+
+        if (this.drawVolume) {
+            int volume = (int) highLowData.getVolumeValue(series, item);
+            double volumeHeight = volume / this.maxVolume;
+
+            double min, max;
+            if (horiz) {
+                min = dataArea.getMinX();
+                max = dataArea.getMaxX();
+            }
+            else {
+                min = dataArea.getMinY();
+                max = dataArea.getMaxY();
+            }
+
+
+            g2.setPaint(getVolumePaint());
+            Composite originalComposite = g2.getComposite();
+            g2.setComposite(AlphaComposite.getInstance(
+                    AlphaComposite.SRC_OVER, 0.3f));
+
+            if (horiz) {
+                g2.fill(new Rectangle2D.Double(min, xx - volumeWidth / 2,
+                        zzVolume, volumeWidth));
+            }
+            else {
+                g2.fill(new Rectangle2D.Double(xx - volumeWidth / 2,
+                        max - zzVolume, volumeWidth, zzVolume));
+            }
+
+            g2.setComposite(originalComposite);
+        }
+
+        if (this.useOutlinePaint) {
+            g2.setPaint(outlinePaint);
+        }
+        else {
+            g2.setPaint(p);
+        }
+
+        double yyMaxOpenClose = Math.max(yyOpen, yyClose);
+        double yyMinOpenClose = Math.min(yyOpen, yyClose);
+        double maxOpenClose = Math.max(yOpen, yClose);
+        double minOpenClose = Math.min(yOpen, yClose);
+
+        // draw the upper shadow
+        if (yHigh > maxOpenClose) {
+            if (horiz) {
+                g2.draw(new Line2D.Double(yyHigh, xx, yyMaxOpenClose, xx));
+            }
+            else {
+                g2.draw(new Line2D.Double(xx, yyHigh, xx, yyMaxOpenClose));
+            }
+        }
+
+        // draw the lower shadow
+        if (yLow < minOpenClose) {
+            if (horiz) {
+                g2.draw(new Line2D.Double(yyLow, xx, yyMinOpenClose, xx));
+            }
+            else {
+                g2.draw(new Line2D.Double(xx, yyLow, xx, yyMinOpenClose));
+            }
+        }
+
+        // draw the body
+        Rectangle2D body = null;
+        Rectangle2D hotspot = null;
+        double length = Math.abs(yyHigh - yyLow);
+        double base = Math.min(yyHigh, yyLow);
+        if (horiz) {
+            body = new Rectangle2D.Double(yyMinOpenClose, xx - stickWidth / 2,
+                    yyMaxOpenClose - yyMinOpenClose, stickWidth);
+            hotspot = new Rectangle2D.Double(base, xx - stickWidth / 2,
+                    length, stickWidth);
+        }
+        else {
+            body = new Rectangle2D.Double(xx - stickWidth / 2, yyMinOpenClose,
+                    stickWidth, yyMaxOpenClose - yyMinOpenClose);
+            hotspot = new Rectangle2D.Double(xx - stickWidth / 2,
+                    base, stickWidth, length);
+        }
+        if (yClose > yOpen) {
+            if (this.upPaint != null) {
+                g2.setPaint(this.upPaint);
+            }
+            else {
+                g2.setPaint(p);
+            }
+            g2.fill(body);
+        }
+        else {
+            if (this.downPaint != null) {
+                g2.setPaint(this.downPaint);
+            }
+            else {
+                g2.setPaint(p);
+            }
+            g2.fill(body);
+        }
+        if (this.useOutlinePaint) {
+            g2.setPaint(outlinePaint);
+        }
+        else {
+            g2.setPaint(p);
+        }
+        g2.draw(body);
+
+        // add an entity for the item...
+        if (entities != null) {
+            addEntity(entities, hotspot, dataset, series, item, 0.0, 0.0);
+        }
+
+    }
+

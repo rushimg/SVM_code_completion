@@ -1,0 +1,49 @@
+    private boolean reorderTargetArrayToMatchSourceOrder(
+        EquivalenceSet [] sourceArray,
+        EquivalenceSet [] targetArray)
+    {
+        boolean result = true;
+        for (
+            int sourceIndex = 0;
+            sourceIndex < sourceArray.length;
+            sourceIndex++)
+        {
+            int currTargetIndex = sourceIndex;
+
+            // if they are already equivalent do nothing.
+            EquivalenceSet sourceEqGroup = sourceArray[sourceIndex];
+            EquivalenceSet targetEqGroup = targetArray[currTargetIndex];
+            if (!sourceEqGroup.equals(targetEqGroup)) {
+                // iterate through the next group in the targetArray until
+                // a new size or hashcode is seen
+                boolean foundMatch = false;
+                int sourceSize = sourceEqGroup.size();
+                int sourceHashCode = sourceEqGroup.hashCode();
+                while (
+                    (targetEqGroup.size() == sourceSize)
+                    && (targetEqGroup.hashCode() == sourceHashCode)
+                    && (currTargetIndex < (targetArray.length - 1)))
+                {
+                    currTargetIndex++;
+                    targetEqGroup = targetArray[currTargetIndex];
+                    if (targetEqGroup.equals(sourceEqGroup)) {
+                        foundMatch = true;
+
+                        // swap . targetEqGroup will serve as the temp
+                        // variable.
+                        targetArray[currTargetIndex] = targetArray[sourceIndex];
+                        targetArray[sourceIndex] = targetEqGroup;
+                    }
+                }
+                if (!foundMatch) {
+                    // a match was not found
+                    // throw new IllegalArgumentException("could not reorder
+                    // the array , because the groups don`t match");
+                    result = false;
+                    break;
+                }
+            }
+        }
+        return result;
+    }
+

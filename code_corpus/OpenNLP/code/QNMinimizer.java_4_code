@@ -1,0 +1,122 @@
+  public double[] minimize(Function function) {
+    
+    Function l2RegFunction = new L2RegFunction(function, l2Cost);
+    this.dimension  = l2RegFunction.getDimension();
+    this.updateInfo = new UpdateInfo(this.m, this.dimension);
+    
+    // Current point is at the origin
+    double[] currPoint = new double[dimension];
+    
+    double currValue = l2RegFunction.valueAt(currPoint);
+    
+    // Gradient at the current point
+    double[] currGrad = new double[dimension]; 
+    System.arraycopy(l2RegFunction.gradientAt(currPoint), 0, 
+        currGrad, 0, dimension);
+    
+    // Pseudo-gradient - only use when L1-regularization is enabled
+    double[] pseudoGrad = null;
+    if (l1Cost > 0) {
+      pseudoGrad = new double[dimension];
+      computePseudoGrad(currPoint, currGrad, pseudoGrad);
+    }
+    
+    LineSearchResult lsr;
+    if (l1Cost > 0) {
+      lsr = LineSearchResult.getInitialObjectForL1(
+          currValue, currGrad, pseudoGrad, currPoint);
+    } else {
+      lsr = LineSearchResult.getInitialObject(
+          currValue, currGrad, currPoint);
+    }
+
+    if (verbose) {
+      display("\nSolving convex optimization problem.");
+      display("\nObjective function has " + dimension + " variable(s).");
+      display("\n\nPerforming " + iterations + " iterations with " +
+          "L1Cost=" + l1Cost + " and L2Cost=" + l2Cost + "\n");
+    }
+    
+    double[] direction = new double[dimension];
+    long startTime = System.currentTimeMillis();
+    
+    // Initial step size for the 1st iteration
+    double initialStepSize = l1Cost > 0?
+        ArrayMath.invL2norm(lsr.getPseudoGradAtNext()) :
+        ArrayMath.invL2norm(lsr.getGradAtNext());
+    
+    for (int iter = 1; iter <= iterations; iter++) {
+      // Find direction
+      if (l1Cost > 0) {
+        System.arraycopy(lsr.getPseudoGradAtNext(), 0, direction, 0, direction.length);
+      } else {
+        System.arraycopy(lsr.getGradAtNext(), 0, direction, 0, direction.length);
+      }
+      computeDirection(direction);
+      
+      // Line search
+      if (l1Cost > 0) {
+        // Constrain the search direction
+        pseudoGrad = lsr.getPseudoGradAtNext();
+        for (int i = 0; i < dimension; i++) {
+            direction[i] = 0;
+          }
+        }
+        LineSearch.doConstrainedLineSearch(l2RegFunction, direction, lsr, l1Cost, initialStepSize);
+        computePseudoGrad(lsr.getNextPoint(), lsr.getGradAtNext(), pseudoGrad);
+        lsr.setPseudoGradAtNext(pseudoGrad);
+      }
+      else {
+        LineSearch.doLineSearch(l2RegFunction, direction, lsr, initialStepSize);
+      }
+      
+      // Save Hessian updates
+      updateInfo.update(lsr);
+      
+      if (verbose) {
+        if (iter < 10)
+          display("  " + iter + ":  ");
+        else if (iter < 100)
+          display(" " + iter + ":  ");
+        else
+          display(iter + ":  ");
+
+        if (evaluator != null) {
+          display("\t" + lsr.getValueAtNext()
+                + "\t" + lsr.getFuncChangeRate()
+                + "\t" + evaluator.evaluate(lsr.getNextPoint()) + "\n");
+        } else {
+          display("\t " + lsr.getValueAtNext() + 
+                  "\t" + lsr.getFuncChangeRate() + "\n");
+        }
+      }
+      if (isConverged(lsr))
+        break;
+      
+      initialStepSize = INITIAL_STEP_SIZE;
+    }
+    
+    // Undo L2-shrinkage if Elastic Net is used (since 
+    // in that case, the shrinkage is done twice)
+    if (l1Cost > 0 && l2Cost > 0) {
+      double[] x = lsr.getNextPoint();
+      for (int i = 0; i < dimension; i++) {
+      }
+    }
+    
+    long endTime = System.currentTimeMillis();
+    long duration = endTime - startTime;
+    display("Running time: " + (duration / 1000.) + "s\n");
+    
+    // Release memory
+    this.updateInfo = null;
+    System.gc();
+    
+    // Avoid returning the reference to LineSearchResult's member so that GC can 
+    // collect memory occupied by lsr after this function completes (is it necessary?)
+    double[] parameters = new double[dimension];
+    System.arraycopy(lsr.getNextPoint(), 0, parameters, 0, dimension);
+    
+    return parameters;
+  }
+  

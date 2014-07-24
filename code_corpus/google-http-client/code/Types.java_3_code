@@ -1,0 +1,36 @@
+  public static ParameterizedType getSuperParameterizedType(Type type, Class<?> superClass) {
+    if (type instanceof Class<?> || type instanceof ParameterizedType) {
+      outer: while (type != null && type != Object.class) {
+        Class<?> rawType;
+        if (type instanceof Class<?>) {
+          // type is a class
+          rawType = (Class<?>) type;
+        } else {
+          // current is a parameterized type
+          ParameterizedType parameterizedType = (ParameterizedType) type;
+          rawType = getRawClass(parameterizedType);
+          // check if found Collection
+          if (rawType == superClass) {
+            // return the actual collection parameter
+            return parameterizedType;
+          }
+          if (superClass.isInterface()) {
+            for (Type interfaceType : rawType.getGenericInterfaces()) {
+              // interface type is class or parameterized type
+              Class<?> interfaceClass =
+                  interfaceType instanceof Class<?> ? (Class<?>) interfaceType : getRawClass(
+                      (ParameterizedType) interfaceType);
+              if (superClass.isAssignableFrom(interfaceClass)) {
+                type = interfaceType;
+                continue outer;
+              }
+            }
+          }
+        }
+        // move on to the super class
+        type = rawType.getGenericSuperclass();
+      }
+    }
+    return null;
+  }
+

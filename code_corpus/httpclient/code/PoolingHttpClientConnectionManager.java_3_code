@@ -1,0 +1,13 @@
+    public PoolingHttpClientConnectionManager(
+        final HttpClientConnectionOperator httpClientConnectionOperator,
+        final HttpConnectionFactory<HttpRoute, ManagedHttpClientConnection> connFactory,
+        final long timeToLive, final TimeUnit tunit) {
+        super();
+        this.configData = new ConfigData();
+        this.pool = new CPool(new InternalConnectionFactory(
+                this.configData, connFactory), 2, 20, timeToLive, tunit);
+        this.pool.setValidateAfterInactivity(5000);
+        this.connectionOperator = Args.notNull(httpClientConnectionOperator, "HttpClientConnectionOperator");
+        this.isShutDown = new AtomicBoolean(false);
+    }
+

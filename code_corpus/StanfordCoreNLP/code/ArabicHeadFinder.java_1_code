@@ -1,0 +1,50 @@
+  public enum TagSet {
+    BIES_COLLAPSED {
+      @Override
+      String prep()  { return "IN"; }
+      @Override
+      String noun()  { return "NN"; } // really there should be several here.
+      @Override
+      String det()  { return "DT"; }
+      @Override
+      String adj()  { return "JJ"; }
+      @Override
+      String detPlusNoun()  { return "DTNN"; }  // really there should be several here; major point is that the det part is ignored completely
+      @Override
+      TreebankLanguagePack langPack()  { return new ArabicTreebankLanguagePack(); }
+    },
+    ORIGINAL {
+      @Override
+      String prep()  { return "PREP"; }
+      @Override
+      String noun()  { return "NOUN"; }
+      @Override
+      String det()  { return "DET"; }
+      @Override
+      String adj()  { return "ADJ"; }
+      @Override
+      String detPlusNoun()  { return "DET+NN"; }
+      @Override
+      TreebankLanguagePack langPack()  { return new ArabicTreebankLanguagePack(); }
+    };
+
+    abstract String prep();
+    abstract String noun();
+    abstract String adj();
+    abstract String det();
+    abstract String detPlusNoun();
+    abstract TreebankLanguagePack langPack();
+
+    static TagSet tagSet(String str) {
+      if(str.equals("BIES_COLLAPSED"))
+        return BIES_COLLAPSED;
+      else if(str.equals("ORIGINAL"))
+        return ORIGINAL;
+      else throw new IllegalArgumentException("Don't know anything about tagset " + str);
+    }
+  }
+
+  public ArabicHeadFinder() {
+    this(new ArabicTreebankLanguagePack());
+  }
+

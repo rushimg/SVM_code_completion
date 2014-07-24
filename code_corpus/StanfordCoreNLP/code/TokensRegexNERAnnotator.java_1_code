@@ -1,0 +1,38 @@
+public class TokensRegexNERAnnotator implements Annotator {
+  protected static final Redwood.RedwoodChannels logger = Redwood.channels("TokenRegexNER");
+
+  private final boolean ignoreCase;
+  private final List<Entry> entries;
+  private final Map<SequencePattern<CoreMap>,Entry> patternToEntry;
+  private final MultiPatternMatcher<CoreMap>  multiPatternMatcher;
+
+  private final Set<String> myLabels;  // set of labels to always overwrite
+  private final Pattern validPosPattern;
+  private final boolean verbose;
+
+  // Labels for which we don't use the default overwrite types (mylabels)
+  private final Set<String> noDefaultOverwriteLabels;
+
+  enum PosMatchType {
+    // all tokens must match the pos pattern
+    MATCH_ALL_TOKENS,
+    // only one token must match the pos pattern
+    MATCH_AT_LEAST_ONE_TOKEN,
+    // only single token phrases have to match the pos pattern
+    MATCH_ONE_TOKEN_PHRASE_ONLY }
+  private final PosMatchType posMatchType;
+  public static final PosMatchType DEFAULT_POS_MATCH_TYPE = PosMatchType.MATCH_AT_LEAST_ONE_TOKEN;
+  public static final String DEFAULT_BACKGROUND_SYMBOL = SeqClassifierFlags.DEFAULT_BACKGROUND_SYMBOL + ",MISC";
+
+  public static PropertiesUtils.Property[] SUPPORTED_PROPERTIES = new PropertiesUtils.Property[]{
+          new PropertiesUtils.Property("mapping", DefaultPaths.DEFAULT_REGEXNER_RULES, "Comma separated list of mapping files to use."),
+          new PropertiesUtils.Property("ignorecase", "false", "Whether to ignore case or not when matching patterns."),
+          new PropertiesUtils.Property("validpospattern", "", "Regular expression pattern for matching POS tags."),
+          new PropertiesUtils.Property("posmatchtype", DEFAULT_POS_MATCH_TYPE.name(), "How should 'validpospattern' be used to match the POS of the tokens."),
+          new PropertiesUtils.Property("noDefaultOverwriteLabels", "", "Comma separated list of output types for which default NER labels are not overwritten.\n" +
+                  " For these types, only if the matched expression has NER type matching the\n" +
+                  " specified overwriteableType for the regex will the NER type be overwritten."),
+          new PropertiesUtils.Property("backgroundSymbol", DEFAULT_BACKGROUND_SYMBOL, "Comma separated list of NER labels to always replace."),
+          new PropertiesUtils.Property("verbose", "false", ""),
+  };
+

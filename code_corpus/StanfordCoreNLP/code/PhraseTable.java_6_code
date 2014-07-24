@@ -1,0 +1,422 @@
+  public void readPhrasesWithTagScores(String filename) throws IOException
+  {
+    readPhrasesWithTagScores(filename, tabPattern, whitespacePattern);
+  }
+
+  public void readPhrasesWithTagScores(String filename, String fieldDelimiterRegex,
+                                    String countDelimiterRegex) throws IOException
+  {
+    readPhrasesWithTagScores(filename, Pattern.compile(fieldDelimiterRegex), Pattern.compile(countDelimiterRegex));
+  }
+
+  public void readPhrasesWithTagScores(String filename, Pattern fieldDelimiterPattern, Pattern countDelimiterPattern) throws IOException
+  {
+    Timing timer = new Timing();
+    timer.doing("Reading phrases: " + filename);
+    BufferedReader br = IOUtils.getBufferedFileReader(filename);
+    String line;
+    int lineno = 0;
+    while ((line = br.readLine()) != null) {
+      String[] columns = fieldDelimiterPattern.split(line);
+      String phrase = columns[0];
+      // Pick map factory to use depending on number of tags we have
+      MapFactory<String,MutableDouble> mapFactory = (columns.length < 20)?
+              MapFactory.<String,MutableDouble>arrayMapFactory(): MapFactory.<String,MutableDouble>linkedHashMapFactory();
+      Counter<String> counts = new ClassicCounter<String>(mapFactory);
+      for (int i = 1; i < columns.length; i++) {
+        String[] tagCount = countDelimiterPattern.split(columns[i], 2);
+        if (tagCount.length == 2) {
+          try {
+            counts.setCount(tagCount[0], Double.parseDouble(tagCount[1]));
+          } catch (NumberFormatException ex) {
+            throw new RuntimeException("Error processing field " + i + ": '" + columns[i] +
+                    "' from (" + filename + ":" + lineno + "): " + line, ex);
+          }
+        } else {
+          throw new RuntimeException("Error processing field " + i + ": '" + columns[i] +
+                  "' from + (" + filename + ":" + lineno + "): " + line);
+        }
+      }
+      addPhrase(phrase, null, counts);
+      lineno++;
+    }
+    br.close();
+    timer.done();
+  }
+
+  public void readPhrases(String filename, int phraseColIndex, int tagColIndex) throws IOException
+  {
+    if (phraseColIndex < 0) {
+      throw new IllegalArgumentException("Invalid phraseColIndex " + phraseColIndex);
+    }
+    Timing timer = new Timing();
+    timer.doing("Reading phrases: " + filename);
+    BufferedReader br = IOUtils.getBufferedFileReader(filename);
+    String line;
+    while ((line = br.readLine()) != null) {
+      String[] columns = tabPattern.split(line);
+      String phrase = columns[phraseColIndex];
+      String tag = (tagColIndex >= 0)? columns[tagColIndex]: null;
+      addPhrase(phrase, tag);
+    }
+    br.close();
+    timer.done();
+  }
+
+  public static Phrase getLongestPhrase(List<Phrase> phrases)
+  {
+    Phrase longest = null;
+    for (Phrase phrase:phrases) {
+      if (longest == null || phrase.isLonger(longest)) {
+        longest = phrase;
+      }
+    }
+    return longest;
+  }
+
+  public String[] splitText(String phraseText)
+  {
+    String[] words;
+    if (tokenizer != null) {
+      Annotation annotation = new Annotation(phraseText);
+      tokenizer.annotate(annotation);
+      List<CoreLabel> tokens = annotation.get(CoreAnnotations.TokensAnnotation.class);
+      words = new String[tokens.size()];
+      for (int i = 0; i < tokens.size(); i++) {
+        words[i] = tokens.get(i).word();
+      }
+    } else {
+      phraseText = possPattern.matcher(phraseText).replaceAll(" 's$1");
+      words = delimPattern.split(phraseText);
+    }
+    return words;
+  }
+
+  public WordList toWordList(String phraseText)
+  {
+    String[] words = splitText(phraseText);
+    return new StringList(words);
+  }
+
+  public WordList toNormalizedWordList(String phraseText)
+  {
+    String[] words = splitText(phraseText);
+    List<String> list = new ArrayList<String>(words.length);
+    for (String word:words) {
+      word = getNormalizedForm(word);
+      if (word.length() > 0) {
+        list.add(word);
+      }
+    }
+    return new StringList(list);
+  }
+
+  public void addPhrases(Collection<String> phraseTexts)
+  {
+    for (String phraseText:phraseTexts) {
+      addPhrase(phraseText, null);
+    }
+  }
+
+  public void addPhrases(Map<String,String> taggedPhraseTexts)
+  {
+    for (String phraseText:taggedPhraseTexts.keySet()) {
+      addPhrase(phraseText, taggedPhraseTexts.get(phraseText));
+    }
+  }
+
+  public boolean addPhrase(String phraseText)
+  {
+    return addPhrase(phraseText, null);
+  }
+
+  public boolean addPhrase(String phraseText, String tag)
+  {
+    return addPhrase(phraseText, tag, null);
+  }
+
+  public boolean addPhrase(String phraseText, String tag, Object phraseData)
+  {
+    WordList wordList = toNormalizedWordList(phraseText);
+    return addPhrase(phraseText, tag, wordList, phraseData);
+  }
+
+  public boolean addPhrase(List<String> tokens)
+  {
+    return addPhrase(tokens, null);
+  }
+
+  public boolean addPhrase(List<String> tokens, String tag)
+  {
+    return addPhrase(tokens, tag, null);
+  }
+
+  public boolean addPhrase(List<String> tokens, String tag, Object phraseData)
+  {
+    WordList wordList = new StringList(tokens);
+    return addPhrase(StringUtils.join(tokens, " "), tag, wordList, phraseData);
+  }
+
+  private int MAX_LIST_SIZE = 20;
+  private synchronized boolean addPhrase(String phraseText, String tag, WordList wordList, Object phraseData)
+  {
+    if (rootTree == null) {
+      rootTree = new HashMap<String,Object>();
+    }
+    return addPhrase(rootTree, phraseText, tag, wordList, phraseData, 0);
+  }
+
+  private synchronized void addPhrase(Map<String,Object> tree, Phrase phrase, int wordIndex)
+  {
+    String word = (phrase.wordList.size() <= wordIndex)? PHRASE_END:phrase.wordList.getWord(wordIndex);
+    Object node = tree.get(word);
+    if (node == null) {
+      tree.put(word, phrase);
+    } else if (node instanceof Phrase) {
+      // create list with this phrase and other and put it here
+      List list = new ArrayList(2);
+      list.add(phrase);
+      list.add(node);
+      tree.put(word, list);
+    } else if (node instanceof Map) {
+      addPhrase((Map<String,Object>) node, phrase, wordIndex+1);
+    } else if (node instanceof List) {
+      ((List) node).add(phrase);
+    } else {
+      throw new RuntimeException("Unexpected class " + node.getClass() + " while adding word "
+              + wordIndex + "(" + word + ") in phrase " + phrase.getText());
+    }
+  }
+
+  private synchronized boolean addPhrase(Map<String,Object> tree,
+                                         String phraseText, String tag, WordList wordList, Object phraseData, int wordIndex)
+  {
+    // Find place to insert this item
+    boolean phraseAdded = false;  // True if this phrase was successfully added to the phrase table
+    boolean newPhraseAdded = false;    // True if the phrase was a new phrase
+    boolean oldPhraseNewFormAdded = false;      // True if the phrase already exists, and this was new form added to old phrase
+    for (int i = wordIndex; i < wordList.size(); i++) {
+      String word = Interner.globalIntern(wordList.getWord(i));
+      Object node = tree.get(word);
+      if (node == null) {
+        // insert here
+        Phrase phrase = new Phrase(wordList, phraseText, tag, phraseData);
+        tree.put(word, phrase);
+        phraseAdded = true;
+        newPhraseAdded = true;
+      } else if (node instanceof Phrase) {
+        // check rest of the phrase matches
+        Phrase oldphrase = (Phrase) node;
+        int matchedTokenEnd = checkWordListMatch(
+          oldphrase, wordList, 0, wordList.size(), i+1, true);
+        if (matchedTokenEnd >= 0) {
+          oldPhraseNewFormAdded = oldphrase.addForm(phraseText);
+        } else {
+          // create list with this phrase and other and put it here
+          Phrase newphrase = new Phrase(wordList, phraseText, tag, phraseData);
+          List list = new ArrayList(2);
+          list.add(oldphrase);
+          list.add(newphrase);
+          tree.put(word, list);
+          newPhraseAdded = true;
+        }
+        phraseAdded = true;
+      } else if (node instanceof Map) {
+        tree = (Map<String, Object>) node;
+      } else if (node instanceof List) {
+        // Search through list for matches to word (at this point, the table is small, so no Map)
+        List lookupList = (List) node;
+        int nMaps = 0;
+        for (Object obj:lookupList) {
+          if (obj instanceof Phrase) {
+            // check rest of the phrase matches
+            Phrase oldphrase = (Phrase) obj;
+            int matchedTokenEnd = checkWordListMatch(
+              oldphrase, wordList, 0, wordList.size(), i, true);
+            if (matchedTokenEnd >= 0) {
+              oldPhraseNewFormAdded = oldphrase.addForm(phraseText);
+              phraseAdded = true;
+              break;
+            }
+          } else if (obj instanceof Map) {
+            if (nMaps == 1) {
+              throw new RuntimeException("More than one map in list while adding word "
+                      + i + "(" + word + ") in phrase " + phraseText);
+            }
+            tree = (Map<String, Object>) obj;
+            nMaps++;
+          } else  {
+            throw new RuntimeException("Unexpected class in list " + obj.getClass() + " while adding word "
+                    + i + "(" + word + ") in phrase " + phraseText);
+          }
+        }
+        if (!phraseAdded && nMaps == 0) {
+          // add to list
+          Phrase newphrase = new Phrase(wordList, phraseText, tag, phraseData);
+          lookupList.add(newphrase);
+          newPhraseAdded = true;
+          phraseAdded = true;
+          if (lookupList.size() > MAX_LIST_SIZE) {
+            // convert lookupList (should consist only of phrases) to map
+            Map newMap = new HashMap<String,Object>(lookupList.size());
+            for (Object obj:lookupList) {
+              if (obj instanceof Phrase) {
+                Phrase oldphrase = (Phrase) obj;
+                addPhrase(newMap, oldphrase, i+1);
+              } else  {
+                throw new RuntimeException("Unexpected class in list " + obj.getClass() + " while converting list to map");
+              }
+            }
+            tree.put(word,newMap);
+          }
+        }
+      } else {
+        throw new RuntimeException("Unexpected class in list " + node.getClass() + " while adding word "
+                + i + "(" + word + ") in phrase " + phraseText);
+      }
+      if (phraseAdded) {
+        break;
+      }
+    }
+    if (!phraseAdded) {
+      if (wordList.size() == 0) {
+        System.err.println("WARNING: " + phraseText + " not added");
+      } else {
+        Phrase oldphrase = (Phrase) tree.get(PHRASE_END);
+        if (oldphrase != null) {
+          int matchedTokenEnd = checkWordListMatch(
+                  oldphrase, wordList, 0, wordList.size(), wordList.size(), true);
+          if (matchedTokenEnd >= 0) {
+            oldPhraseNewFormAdded = oldphrase.addForm(phraseText);
+          } else {
+            // create list with this phrase and other and put it here
+            Phrase newphrase = new Phrase(wordList, phraseText, tag, phraseData);
+            List list = new ArrayList(2);
+            list.add(oldphrase);
+            list.add(newphrase);
+            tree.put(PHRASE_END, list);
+            newPhraseAdded = true;
+          }
+        } else {
+          Phrase newphrase = new Phrase(wordList, phraseText, tag, phraseData);
+          tree.put(PHRASE_END, newphrase);
+          newPhraseAdded = true;
+        }
+      }
+    }
+    if (newPhraseAdded) {
+      nPhrases++;
+      nStrings++;
+    } else {
+      nStrings++;
+    }
+    return (newPhraseAdded || oldPhraseNewFormAdded);
+  }
+
+  public String getNormalizedForm(String word)
+  {
+    String normalized = normalizedCache.get(word);
+    if (normalized == null) {
+      normalized = createNormalizedForm(word);
+      synchronized (this) {
+        normalizedCache.put(word, normalized);
+      }
+    }
+    return normalized;
+  }
+
+  private static final Pattern whitespacePattern = Pattern.compile("\\s+");
+  private static final Pattern delimPattern = Pattern.compile("[\\s_-]+");
+  private static final Pattern possPattern = Pattern.compile("'s(\\s+|$)");
+  private String createNormalizedForm(String word)
+  {
+    if (normalize) {
+      word = StringUtils.normalize(word);
+    }
+    if (caseInsensitive) {
+      word = word.toLowerCase();
+    }
+    if (ignorePunctuation) {
+      word = punctWhitespacePattern.matcher(word).replaceAll("");
+    } else if (ignorePunctuationTokens) {
+      if (punctWhitespacePattern.matcher(word).matches()) {
+        word = "";
+      }
+    }
+    word = whitespacePattern.matcher(word).replaceAll("");
+    return word;
+  }
+
+  public Phrase lookup(String phrase)
+  {
+    return lookup(toWordList(phrase));
+  }
+
+  public Phrase lookupNormalized(String phrase)
+  {
+    return lookup(toNormalizedWordList(phrase));
+  }
+
+  public Phrase lookup(WordList wordList)
+  {
+    if (wordList == null || rootTree == null) return null;
+    Map<String,Object> tree = rootTree;
+    for (int i = 0; i < wordList.size(); i++) {
+      String word = wordList.getWord(i);
+      Object node = tree.get(word);
+      if (node == null) {
+        return null;
+      } else if (node instanceof Phrase) {
+        Phrase phrase = (Phrase) node;
+        int matchedTokenEnd = checkWordListMatch(
+          phrase, wordList, 0, wordList.size(), i, true);
+
+        if (matchedTokenEnd >= 0) {
+          return phrase;
+        }
+      } else if (node instanceof Map) {
+        tree = (Map<String, Object>) node;
+      } else if (node instanceof List) {
+        // Search through list for matches to word (at this point, the table is small, so no Map)
+        List lookupList = (List) node;
+        int nMaps = 0;
+        for (Object obj:lookupList) {
+          if (obj instanceof Phrase) {
+            // check rest of the phrase matches
+            Phrase phrase = (Phrase) obj;
+            int matchedTokenEnd = checkWordListMatch(
+              phrase, wordList, 0, wordList.size(), i, true);
+
+            if (matchedTokenEnd >= 0) {
+              return phrase;
+            }
+          } else if (obj instanceof Map) {
+            if (nMaps == 1) {
+              throw new RuntimeException("More than one map in list while looking up word "
+                      + i + "(" + word + ") in phrase " + wordList.toString());
+            }
+            tree = (Map<String, Object>) obj;
+            nMaps++;
+          } else  {
+            throw new RuntimeException("Unexpected class in list " + obj.getClass() + " while looking up word "
+                    + i + "(" + word + ") in phrase " + wordList.toString());
+          }
+        }
+        if (nMaps == 0) {
+          return null;
+        }
+      } else {
+        throw new RuntimeException("Unexpected class in list " + node.getClass() + " while looking up word "
+                + i + "(" + word + ") in phrase " + wordList.toString());
+      }
+    }
+    Phrase phrase = (Phrase) tree.get(PHRASE_END);
+    if (phrase != null) {
+      int matchedTokenEnd = checkWordListMatch(
+        phrase, wordList, 0, wordList.size(), wordList.size(), true);
+      return (matchedTokenEnd >= 0)? phrase:null;
+    } else {
+      return null;
+    }
+  }
+

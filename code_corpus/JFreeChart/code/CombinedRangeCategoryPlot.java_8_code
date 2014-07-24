@@ -1,0 +1,23 @@
+    public void add(CategoryPlot subplot, int weight) {
+        if (subplot == null) {
+            throw new IllegalArgumentException("Null 'subplot' argument.");
+        }
+        if (weight <= 0) {
+            throw new IllegalArgumentException("Require weight >= 1.");
+        }
+        // store the plot and its weight
+        subplot.setParent(this);
+        subplot.setWeight(weight);
+        subplot.setInsets(new RectangleInsets(0.0, 0.0, 0.0, 0.0));
+        subplot.setRangeAxis(null);
+        subplot.setOrientation(getOrientation());
+        subplot.addChangeListener(this);
+        this.subplots.add(subplot);
+        // configure the range axis...
+        ValueAxis axis = getRangeAxis();
+        if (axis != null) {
+            axis.configure();
+        }
+        fireChangeEvent();
+    }
+

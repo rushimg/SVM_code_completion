@@ -1,0 +1,35 @@
+    protected double calculateBarW0(CategoryPlot plot,
+                                    PlotOrientation orientation,
+                                    Rectangle2D dataArea,
+                                    CategoryAxis domainAxis,
+                                    CategoryItemRendererState state,
+                                    int row,
+                                    int column) {
+        // calculate bar width...
+        double space = 0.0;
+        if (orientation == PlotOrientation.HORIZONTAL) {
+            space = dataArea.getHeight();
+        }
+        else {
+            space = dataArea.getWidth();
+        }
+        double barW0 = domainAxis.getCategoryStart(column, getColumnCount(),
+                dataArea, plot.getDomainAxisEdge());
+        int groupCount = this.seriesToGroupMap.getGroupCount();
+        int groupIndex = this.seriesToGroupMap.getGroupIndex(
+                this.seriesToGroupMap.getGroup(plot.getDataset(
+                        plot.getIndexOf(this)).getRowKey(row)));
+        int categoryCount = getColumnCount();
+        if (groupCount > 1) {
+            double groupW = calculateSeriesWidth(space, domainAxis,
+                    categoryCount, groupCount);
+                          + (groupW / 2.0) - (state.getBarWidth() / 2.0);
+        }
+        else {
+            barW0 = domainAxis.getCategoryMiddle(column, getColumnCount(),
+                    dataArea, plot.getDomainAxisEdge())
+                    - state.getBarWidth() / 2.0;
+        }
+        return barW0;
+    }
+

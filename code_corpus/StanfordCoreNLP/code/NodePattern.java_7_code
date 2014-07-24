@@ -1,0 +1,24 @@
+  public static class ConjNodePattern<T> extends NodePattern<T> {
+    List<NodePattern<T>> nodePatterns;
+
+    public ConjNodePattern(List<NodePattern<T>> nodePatterns) {
+      this.nodePatterns = nodePatterns;
+    }
+
+    public boolean match(T node)
+    {
+      boolean matched = true;
+      for (NodePattern<T> p:nodePatterns) {
+        if (!p.match(node)) {
+          matched = false;
+          break;
+        }
+      }
+      return matched;
+    }
+
+    public String toString() {
+      return StringUtils.join(nodePatterns, " & ");
+    }
+  }
+

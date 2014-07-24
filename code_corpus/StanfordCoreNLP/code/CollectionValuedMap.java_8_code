@@ -1,0 +1,35 @@
+  public void addAll(Map<K, V> m) {
+    if (m instanceof CollectionValuedMap<?, ?>) {
+      throw new UnsupportedOperationException();
+    }
+    for (Map.Entry<K, V> e : m.entrySet()) {
+      add(e.getKey(), e.getValue());
+    }
+  }
+
+  public void addAll(CollectionValuedMap<K, V> cvm) {
+    for (Entry<K, Collection<V>> entry : cvm.entrySet()) {
+      K key = entry.getKey();
+      Collection<V> currentCollection = get(key);
+      Collection<V> newValues = entry.getValue();
+      if (treatCollectionsAsImmutable) {
+        Collection<V> newCollection = cf.newCollection();
+        if (currentCollection != null) {
+          newCollection.addAll(currentCollection);
+        }
+        newCollection.addAll(newValues);
+        map.put(key, newCollection); // replacing the old collection
+      } else {
+        boolean needToAdd = false;
+        if (currentCollection == emptyValue) {
+          currentCollection = cf.newCollection();
+          needToAdd = true;
+        }
+        currentCollection.addAll(newValues); // modifying the old collection
+        if (needToAdd) {
+          map.put(key, currentCollection);
+        }
+      }
+    }
+  }
+

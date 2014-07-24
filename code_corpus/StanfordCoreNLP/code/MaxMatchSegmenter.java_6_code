@@ -1,0 +1,58 @@
+  public ArrayList<Word> segmentWords(MatchHeuristic h) throws UnsupportedOperationException {
+    if(lattice==null || len < 0)
+      throw new UnsupportedOperationException("segmentWords must be run first");
+    List<Word> segmentedWords = new ArrayList<Word>();
+    // Init dynamic programming:
+    double costs[] = new double[len+1];
+    List<DFSATransition<Word, Integer>> bptrs = new ArrayList<DFSATransition<Word, Integer>>();
+    for (int i = 0; i < len + 1; ++i) {
+      bptrs.add(null);
+    }
+    costs[0]=0.0;
+    for (int i=1; i<=len; ++i)
+       costs[i] = Double.MAX_VALUE;
+    // DP:
+    for (int start=0; start<len; ++start) {
+      DFSAState<Word, Integer> fromState = states.get(start);
+      Collection<DFSATransition<Word, Integer>> trs = fromState.transitions();
+      for (DFSATransition<Word, Integer> tr : trs) {
+        DFSAState<Word, Integer> toState = tr.getTarget();
+        double lcost = tr.score();
+        int end = toState.stateID();
+        //System.err.println("start="+start+" end="+end+" word="+tr.getInput());
+        if (h == MatchHeuristic.MINWORDS) {
+          // Minimize number of words:
+          if (costs[start]+1 < costs[end]) {
+            costs[end] = costs[start]+lcost;
+            bptrs.set(end, tr);
+            //System.err.println("start="+start+" end="+end+" word="+tr.getInput());
+          }
+        } else if (h == MatchHeuristic.MAXWORDS) {
+          // Maximze number of words:
+          if (costs[start]+1 < costs[end]) {
+            costs[end] = costs[start]-lcost;
+            bptrs.set(end, tr);
+          }
+        } else {
+          throw new UnsupportedOperationException("unimplemented heuristic");
+        }
+      }
+    }
+    // Extract min-cost path:
+    int i=len;
+    while (i>0) {
+      DFSATransition<Word, Integer> tr = bptrs.get(i);
+      DFSAState<Word, Integer> fromState = tr.getSource();
+      Word word = tr.getInput();
+      if (!word.word().equals(" "))
+        segmentedWords.add(0, word);
+      i = fromState.stateID();
+    }
+    if(DEBUG) {
+      // Print lattice density ([1,+inf[) : if equal to 1, it means
+      // there is only one segmentation using words of the lexicon.
+      System.err.println("latticeDensity: "+density+" cost: "+costs[len]);
+    }
+    return new ArrayList<Word>(segmentedWords);
+  }
+

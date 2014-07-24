@@ -1,0 +1,259 @@
+    public int day = -1;
+
+    public IsoDate(int y, int m, int d) {
+      this(null, y, m, d);
+    }
+
+    public IsoDate(StandardTemporalType temporalType, int y, int m, int d) {
+      this.year = y;
+      this.month = m;
+      this.day = d;
+      initBase();
+      this.standardTemporalType = temporalType;
+    }
+
+    // TODO: Added for grammar parsing
+    public IsoDate(Number y, Number m, Number d) {
+      this(y,m,d,null,null);
+    }
+
+    public IsoDate(Number y, Number m, Number d, Number era, Boolean yearEraAdjustNeeded) {
+      this.year = (y != null)? y.intValue():-1;
+      this.month = (m != null)? m.intValue():-1;
+      this.day = (d != null)? d.intValue():-1;
+      this.era = (era != null)? era.intValue():ERA_UNKNOWN;
+      if (yearEraAdjustNeeded != null && yearEraAdjustNeeded && this.era == ERA_BC) {
+        if (this.year > 0) {
+          this.year--;
+        }
+      }
+      initBase();
+    }
+
+
+    // Assumes y, m, d are ISO formatted
+    public IsoDate(String y, String m, String d) {
+      if (y != null && !PAD_FIELD_UNKNOWN4.equals(y)) {
+        if (!y.matches("[+-]?[0-9X]{4}")) {
+          throw new IllegalArgumentException("Year not in ISO format " + y);
+        }
+        if (y.startsWith("-")) {
+          y = y.substring(1);
+          era = ERA_BC; // BC
+        } else if (y.startsWith("+")) {
+          y = y.substring(1);
+          era = ERA_AD; // AD
+        }
+        if (y.contains(PAD_FIELD_UNKNOWN)) {
+        } else {
+          year = Integer.parseInt(y);
+        }
+      } else {
+        y = PAD_FIELD_UNKNOWN4;
+      }
+      if (m != null && !PAD_FIELD_UNKNOWN2.equals(m)) {
+        month = Integer.parseInt(m);
+      } else {
+        m = PAD_FIELD_UNKNOWN2;
+      }
+      if (d != null && !PAD_FIELD_UNKNOWN2.equals(d)) {
+        day = Integer.parseInt(d);
+      } else {
+        d = PAD_FIELD_UNKNOWN2;
+      }
+
+      initBase();
+      if (year < 0 && !PAD_FIELD_UNKNOWN4.equals(y)) {
+        if (Character.isDigit(y.charAt(0)) && Character.isDigit(y.charAt(1))) {
+          int century = Integer.parseInt(y.substring(0, 2));
+          base = JodaTimeUtils.setField(base, DateTimeFieldType.centuryOfEra(), century);
+        }
+        if (Character.isDigit(y.charAt(2)) && Character.isDigit(y.charAt(3))) {
+          int cy = Integer.parseInt(y.substring(2, 4));
+          base = JodaTimeUtils.setField(base, DateTimeFieldType.yearOfCentury(), cy);
+        } else if (Character.isDigit(y.charAt(2))) {
+          int decade = Integer.parseInt(y.substring(2, 3));
+          base = JodaTimeUtils.setField(base, JodaTimeUtils.DecadeOfCentury, decade);
+        }
+      }
+    }
+
+    private void initBase() {
+      if (era >= 0 )
+        base = JodaTimeUtils.setField(base, DateTimeFieldType.era(), era);
+      if (year >= 0)
+        base = JodaTimeUtils.setField(base, DateTimeFieldType.year(), year);
+      if (month >= 0)
+        base = JodaTimeUtils.setField(base, DateTimeFieldType.monthOfYear(), month);
+      if (day >= 0)
+        base = JodaTimeUtils.setField(base, DateTimeFieldType.dayOfMonth(), day);
+    }
+
+    public String toString() {
+      // TODO: is the right way to print this object?
+      StringBuilder os = new StringBuilder();
+      if (era == ERA_BC) {
+        os.append("-");
+      } else if (era == ERA_AD) {
+        os.append("+");
+      }
+      if (year >= 0)
+        os.append(year);
+      else
+        os.append("XXXX");
+      os.append("-");
+      if (month >= 0)
+        os.append(month);
+      else
+        os.append("XX");
+      os.append("-");
+      if (day >= 0)
+        os.append(day);
+      else
+        os.append("XX");
+      return os.toString();
+    }
+
+    public int getYear() {
+      return year;
+    }
+
+    // TODO: Should we allow setters??? Most time classes are immutable
+    public void setYear(int y) {
+      this.year = y;
+      initBase();
+    }
+
+    public int getMonth() {
+      return month;
+    }
+
+    // TODO: Should we allow setters??? Most time classes are immutable
+    public void setMonth(int m) {
+      this.month = m;
+      initBase();
+    }
+
+    public int getDay() {
+      return day;
+    }
+
+    // TODO: Should we allow setters??? Most time classes are immutable
+    public void setDay(int d) {
+      this.day = d;
+      initBase();
+    }
+
+    // TODO: Should we allow setters??? Most time classes are immutable
+    public void setDate(int y, int m, int d) {
+      this.year = y;
+      this.month = m;
+      this.day = d;
+      initBase();
+    }
+
+    private static final long serialVersionUID = 1;
+  }
+
+  public static final int HALFDAY_AM = 0;
+  public static final int HALFDAY_PM = 1;
+  public static final int HALFDAY_UNKNOWN = -1;
+
+  // Helper time class
+  protected static class IsoTime extends PartialTime {
+    public int hour = -1;
+    public int minute = -1;
+    public int second = -1;
+    public int millis = -1;
+    public int halfday = HALFDAY_UNKNOWN; // 0 = am, 1 = pm
+
+    public IsoTime(int h, int m, int s) {
+      this(h, m, s, -1, -1);
+    }
+
+    // TODO: Added for reading types from file
+    public IsoTime(Number h, Number m, Number s) {
+      this(h, m, s, null, null);
+    }
+
+    public IsoTime(int h, int m, int s, int ms, int halfday) {
+      this.hour = h;
+      this.minute = m;
+      this.second = s;
+      this.millis = ms;
+      this.halfday = halfday;
+      initBase();
+    }
+
+    // TODO: Added for reading types from file
+    public IsoTime(Number h, Number m, Number s, Number ms, Number halfday) {
+      this.hour = (h != null)? h.intValue():-1;
+      this.minute = (m != null)? m.intValue():-1;
+      this.second = (s != null)? s.intValue():-1;
+      this.millis = (ms != null)? ms.intValue():-1;
+      this.halfday = (halfday != null)? halfday.intValue():-1;
+      initBase();
+    }
+
+    public IsoTime(String h, String m, String s) {
+      this(h, m, s, null);
+    }
+
+    public IsoTime(String h, String m, String s, String ms) {
+      if (h != null) {
+        hour = Integer.parseInt(h);
+      }
+      if (m != null) {
+        minute = Integer.parseInt(m);
+      }
+      if (s != null) {
+        second = Integer.parseInt(s);
+      }
+      if (ms != null) {
+        millis = Integer.parseInt(s);
+      }
+      initBase();
+    }
+
+    @Override
+    public boolean hasTime() {
+      return true;
+    }
+
+    private void initBase() {
+      if (hour >= 0) {
+        if (hour < 24) {
+          base = JodaTimeUtils.setField(base, DateTimeFieldType.hourOfDay(), hour);
+        } else {
+          base = JodaTimeUtils.setField(base, DateTimeFieldType.clockhourOfDay(), hour);
+        }
+      }
+      if (minute >= 0)
+        base = JodaTimeUtils.setField(base, DateTimeFieldType.minuteOfHour(), minute);
+      if (second >= 0)
+        base = JodaTimeUtils.setField(base, DateTimeFieldType.secondOfMinute(), second);
+      if (millis >= 0)
+        base = JodaTimeUtils.setField(base, DateTimeFieldType.millisOfSecond(), millis);
+      if (halfday >= 0) {
+        base = JodaTimeUtils.setField(base, DateTimeFieldType.halfdayOfDay(), halfday);
+      }
+    }
+    private static final long serialVersionUID = 1;
+  }
+
+
+  protected static class IsoDateTime extends PartialTime {
+    private final IsoDate date;
+    private final IsoTime time;
+
+    public IsoDateTime(IsoDate date, IsoTime time) {
+      this.date = date;
+      this.time = time;
+      base = JodaTimeUtils.combine(date.base, time.base);
+    }
+
+    @Override
+    public boolean hasTime() {
+      return (time != null);
+    }
+

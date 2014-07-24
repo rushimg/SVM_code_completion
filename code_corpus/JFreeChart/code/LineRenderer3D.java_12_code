@@ -1,0 +1,33 @@
+    public void drawDomainGridline(Graphics2D g2,
+                                   CategoryPlot plot,
+                                   Rectangle2D dataArea,
+                                   double value) {
+
+        Line2D line1 = null;
+        Line2D line2 = null;
+        PlotOrientation orientation = plot.getOrientation();
+        if (orientation == PlotOrientation.HORIZONTAL) {
+            double y0 = value;
+            double y1 = value - getYOffset();
+            double x0 = dataArea.getMinX();
+            double x1 = x0 + getXOffset();
+            double x2 = dataArea.getMaxX();
+            line1 = new Line2D.Double(x0, y0, x1, y1);
+            line2 = new Line2D.Double(x1, y1, x2, y1);
+        }
+        else if (orientation == PlotOrientation.VERTICAL) {
+            double x0 = value;
+            double x1 = value + getXOffset();
+            double y0 = dataArea.getMaxY();
+            double y1 = y0 - getYOffset();
+            double y2 = dataArea.getMinY();
+            line1 = new Line2D.Double(x0, y0, x1, y1);
+            line2 = new Line2D.Double(x1, y1, x1, y2);
+        }
+        g2.setPaint(plot.getDomainGridlinePaint());
+        g2.setStroke(plot.getDomainGridlineStroke());
+        g2.draw(line1);
+        g2.draw(line2);
+
+    }
+

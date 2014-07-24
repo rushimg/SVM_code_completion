@@ -1,0 +1,17 @@
+    protected void checkClose() throws IOException {
+
+        if (wrappedStream != null) {
+            try {
+                boolean scws = true; // should close wrapped stream?
+                if (eofWatcher != null) {
+                    scws = eofWatcher.streamClosed(wrappedStream);
+                }
+                if (scws) {
+                    wrappedStream.close();
+                }
+            } finally {
+                wrappedStream = null;
+            }
+        }
+    }
+

@@ -1,0 +1,38 @@
+  public static class TrainingSampleStream<E> implements ObjectStream<E> {
+
+    private ObjectStream<E> sampleStream;
+
+    private final int numberOfPartitions;
+
+    private final int testIndex;
+
+    private int index;
+
+    private boolean isPoisened;
+
+    private TestSampleStream<E> testSampleStream;
+
+    TrainingSampleStream(ObjectStream<E> sampleStream, int numberOfPartitions, int testIndex) {
+      this.numberOfPartitions = numberOfPartitions;
+      this.sampleStream = sampleStream;
+      this.testIndex = testIndex;
+    }
+
+    public E read() throws IOException {
+
+      if (testSampleStream != null || isPoisened) {
+        throw new IllegalStateException();
+      }
+
+      // If the test element is reached skip over it to not include it in
+      // the training data
+      if (index % numberOfPartitions == testIndex) {
+        sampleStream.read();
+        index++;
+      }
+
+      index++;
+
+      return sampleStream.read();
+    }
+

@@ -1,0 +1,27 @@
+  public NGramModel(InputStream in) throws IOException, InvalidFormatException {
+    DictionarySerializer.create(in, new EntryInserter() {
+      public void insert(Entry entry) throws InvalidFormatException {
+
+        int count;
+        String countValueString = null;
+
+        try {
+          countValueString = entry.getAttributes().getValue(COUNT);
+
+          if (countValueString == null) {
+        	  throw new InvalidFormatException(
+        	      "The count attribute must be set!");
+          }
+
+          count = Integer.parseInt(countValueString);
+        } catch (NumberFormatException e) {
+          throw new InvalidFormatException("The count attribute '" + countValueString
+              + "' must be a number!", e);
+        }
+
+        add(entry.getTokens());
+        setCount(entry.getTokens(), count);
+      }
+    });
+  }
+

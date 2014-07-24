@@ -1,0 +1,34 @@
+      // Incremental delta improvements are over the previous feature (dev set, <= 40)
+      //
+
+      // POS Splitting for verbs
+      annotationPatterns.put("-markInf",new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@V > (@VN > @VPinf)"),new SimpleStringFunction("-infinitive")));
+      annotationPatterns.put("-markPart",new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@V > (@VN > @VPpart)"),new SimpleStringFunction("-participle")));
+      annotationPatterns.put("-markVN",new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("__ << @VN"),new SimpleStringFunction("-withVN")));
+
+      // +1.45 F1  (Helps MWEs significantly)
+      annotationPatterns.put("-tagPAFr", new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("!@PUNC < (__ !< __) > __=parent"),new AddRelativeNodeFunction("-","parent", true)));
+
+      // +.14 F1
+      annotationPatterns.put("-coord1",new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@COORD <2 __=word"), new AddRelativeNodeFunction("-","word", true)));
+
+      // +.70 F1 -- de c-commands other stuff dominated by NP, PP, and COORD
+      annotationPatterns.put("-de2", new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@P < /^([Dd]es?|du|d')$/"),new SimpleStringFunction("-de2")));
+      annotationPatterns.put("-de3", new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@NP|PP|COORD >+(@NP|PP) (@PP <, (@P < /^([Dd]es?|du|d')$/))"),new SimpleStringFunction("-de3")));
+
+      // +.31 F1
+      annotationPatterns.put("-markP1",new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@P > (@PP > @NP)"),new SimpleStringFunction("-n")));
+
+      //MWEs
+      //(for MWADV 75.92 -> 77.16)
+      annotationPatterns.put("-MWAdvS", new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@MWADV > /S/"),new SimpleStringFunction("-mwadv-s")));
+
+      annotationPatterns.put("-MWADVSel1", new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@MWADV <1 @P <2 @N !<3 __"),new SimpleStringFunction("-mwadv1")));
+      annotationPatterns.put("-MWADVSel2", new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@MWADV <1 @P <2 @D <3 @N !<4 __"),new SimpleStringFunction("-mwadv2")));
+
+      annotationPatterns.put("-MWNSel1", new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@MWN <1 @N <2 @A !<3 __"),new SimpleStringFunction("-mwn1")));
+      annotationPatterns.put("-MWNSel2", new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@MWN <1 @N <2 @P <3 @N !<4 __"),new SimpleStringFunction("-mwn2")));
+      annotationPatterns.put("-MWNSel3", new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@MWN <1 @N <2 @- <3 @N !<4 __"),new SimpleStringFunction("-mwn3")));
+
+      annotationPatterns.put("-splitPUNC",new Pair<TregexPattern,Function<TregexMatcher,String>>(tregexPatternCompiler.compile("@PUNC < __=" + AnnotatePunctuationFunction.key),new AnnotatePunctuationFunction()));
+

@@ -1,0 +1,37 @@
+  protected static class AnnotatePunctuationFunction implements SerializableFunction<TregexMatcher,String> {
+    private final String key;
+    private final String annotationMark;
+
+    public AnnotatePunctuationFunction(String annotationMark, String key) {
+      this.key = key;
+      this.annotationMark = annotationMark;
+    }
+
+    @Override
+    public String apply(TregexMatcher m) {
+      String punc = m.getNode(key).value();
+      String punctClass = PunctEquivalenceClasser.getPunctClass(punc);
+
+      return punctClass.equals("") ? "" : annotationMark + punctClass;
+    }
+
+    @Override
+    public String toString() { return "AnnotatePunctuationFunction"; }
+
+    private static final long serialVersionUID = 1L;
+  }
+
+  @Override
+  public List<GrammaticalStructure>
+    readGrammaticalStructureFromFile(String filename)
+  {
+    throw new UnsupportedOperationException("This language does not support GrammaticalStructures or dependencies");
+  }
+
+  @Override
+  public GrammaticalStructure getGrammaticalStructure(Tree t,
+                                                      Filter<String> filter,
+                                                      HeadFinder hf) {
+    throw new UnsupportedOperationException("This language does not support GrammaticalStructures or dependencies");
+  }
+

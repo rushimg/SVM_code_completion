@@ -1,0 +1,33 @@
+  public static <E> void printCounterComparison(Counter<E> a, Counter<E> b, PrintWriter out) {
+    if (a.equals(b)) {
+      out.println("Counters are equal.");
+      return;
+    }
+    for (E key : a.keySet()) {
+      double aCount = a.getCount(key);
+      double bCount = b.getCount(key);
+      if (Math.abs(aCount - bCount) > 1e-5) {
+        out.println("Counters differ on key " + key + '\t' + a.getCount(key) + " vs. " + b.getCount(key));
+      }
+    }
+    // left overs
+    Set<E> rest = Generics.newHashSet(b.keySet());
+    rest.removeAll(a.keySet());
+
+    for (E key : rest) {
+      double aCount = a.getCount(key);
+      double bCount = b.getCount(key);
+      if (Math.abs(aCount - bCount) > 1e-5) {
+        out.println("Counters differ on key " + key + '\t' + a.getCount(key) + " vs. " + b.getCount(key));
+      }
+    }
+  }
+
+  public static <E> Counter<Double> getCountCounts(Counter<E> c) {
+    Counter<Double> result = new ClassicCounter<Double>();
+    for (double v : c.values()) {
+      result.incrementCount(v);
+    }
+    return result;
+  }
+

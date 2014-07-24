@@ -1,0 +1,20 @@
+  public List<SequenceMatchResult<T>> findNonOverlappingMaxScore(List<? extends T> elements,
+                                                                 Function<? super SequenceMatchResult, Double> scorer)
+  {
+    Collection<SequencePattern<T>> triggered = getTriggeredPatterns(elements);
+    List<SequenceMatchResult<T>> all = new ArrayList<SequenceMatchResult<T>>();
+    int i = 0;
+    for (SequencePattern<T> p:triggered) {
+      SequenceMatcher<T> m = p.getMatcher(elements);
+      m.setOrder(i);
+      while (m.find()) {
+        all.add(m.toBasicSequenceMatchResult());
+      }
+      i++;
+    }
+    List<SequenceMatchResult<T>> res = IntervalTree.getNonOverlappingMaxScore( all, SequenceMatchResult.TO_INTERVAL, scorer);
+    Collections.sort(res, SequenceMatchResult.OFFSET_COMPARATOR);
+
+    return res;
+  }
+

@@ -1,0 +1,125 @@
+    public void drawHorizontalItem(Graphics2D g2,
+                                   Rectangle2D dataArea,
+                                   PlotRenderingInfo info,
+                                   XYPlot plot,
+                                   ValueAxis domainAxis,
+                                   ValueAxis rangeAxis,
+                                   XYDataset dataset,
+                                   int series,
+                                   int item,
+                                   CrosshairState crosshairState,
+                                   int pass) {
+
+        // setup for collecting optional entity info...
+        EntityCollection entities = null;
+        if (info != null) {
+            entities = info.getOwner().getEntityCollection();
+        }
+
+        BoxAndWhiskerXYDataset boxAndWhiskerData
+                = (BoxAndWhiskerXYDataset) dataset;
+
+        Number x = boxAndWhiskerData.getX(series, item);
+        Number yMax = boxAndWhiskerData.getMaxRegularValue(series, item);
+        Number yMin = boxAndWhiskerData.getMinRegularValue(series, item);
+        Number yMedian = boxAndWhiskerData.getMedianValue(series, item);
+        Number yAverage = boxAndWhiskerData.getMeanValue(series, item);
+        Number yQ1Median = boxAndWhiskerData.getQ1Value(series, item);
+        Number yQ3Median = boxAndWhiskerData.getQ3Value(series, item);
+
+        double xx = domainAxis.valueToJava2D(x.doubleValue(), dataArea,
+                plot.getDomainAxisEdge());
+
+        RectangleEdge location = plot.getRangeAxisEdge();
+        double yyMax = rangeAxis.valueToJava2D(yMax.doubleValue(), dataArea,
+                location);
+        double yyMin = rangeAxis.valueToJava2D(yMin.doubleValue(), dataArea,
+                location);
+        double yyMedian = rangeAxis.valueToJava2D(yMedian.doubleValue(),
+                dataArea, location);
+        double yyAverage = 0.0;
+        if (yAverage != null) {
+            yyAverage = rangeAxis.valueToJava2D(yAverage.doubleValue(),
+                    dataArea, location);
+        }
+        double yyQ1Median = rangeAxis.valueToJava2D(yQ1Median.doubleValue(),
+                dataArea, location);
+        double yyQ3Median = rangeAxis.valueToJava2D(yQ3Median.doubleValue(),
+                dataArea, location);
+
+        double exactBoxWidth = getBoxWidth();
+        double width = exactBoxWidth;
+        double dataAreaX = dataArea.getHeight();
+        double maxBoxPercent = 0.1;
+        if (exactBoxWidth <= 0.0) {
+            int itemCount = boxAndWhiskerData.getItemCount(series);
+            if (exactBoxWidth < 3) {
+                width = 3;
+            }
+            else if (exactBoxWidth > maxBoxWidth) {
+                width = maxBoxWidth;
+            }
+            else {
+                width = exactBoxWidth;
+            }
+        }
+
+        g2.setPaint(getItemPaint(series, item));
+        Stroke s = getItemStroke(series, item);
+        g2.setStroke(s);
+
+        // draw the upper shadow
+        g2.draw(new Line2D.Double(yyMax, xx, yyQ3Median, xx));
+        g2.draw(new Line2D.Double(yyMax, xx - width / 2, yyMax,
+                xx + width / 2));
+
+        // draw the lower shadow
+        g2.draw(new Line2D.Double(yyMin, xx, yyQ1Median, xx));
+        g2.draw(new Line2D.Double(yyMin, xx - width / 2, yyMin,
+                xx + width / 2));
+
+        // draw the body
+        Shape box = null;
+        if (yyQ1Median < yyQ3Median) {
+            box = new Rectangle2D.Double(yyQ1Median, xx - width / 2,
+                    yyQ3Median - yyQ1Median, width);
+        }
+        else {
+            box = new Rectangle2D.Double(yyQ3Median, xx - width / 2,
+                    yyQ1Median - yyQ3Median, width);
+        }
+        if (this.fillBox) {
+            g2.setPaint(lookupBoxPaint(series, item));
+            g2.fill(box);
+        }
+        g2.setStroke(getItemOutlineStroke(series, item));
+        g2.setPaint(getItemOutlinePaint(series, item));
+        g2.draw(box);
+
+        // draw median
+        g2.setPaint(getArtifactPaint());
+        g2.draw(new Line2D.Double(yyMedian,
+                xx - width / 2, yyMedian, xx + width / 2));
+
+        // draw average - SPECIAL AIMS REQUIREMENT
+        if (yAverage != null) {
+            double aRadius = width / 4;
+            // here we check that the average marker will in fact be visible
+            // before drawing it...
+            if ((yyAverage > (dataArea.getMinX() - aRadius))
+                    && (yyAverage < (dataArea.getMaxX() + aRadius))) {
+                Ellipse2D.Double avgEllipse = new Ellipse2D.Double(
+                g2.fill(avgEllipse);
+                g2.draw(avgEllipse);
+            }
+        }
+
+        // FIXME: draw outliers
+
+        // add an entity for the item...
+        if (entities != null && box.intersects(dataArea)) {
+            addEntity(entities, box, dataset, series, item, yyAverage, xx);
+        }
+
+    }
+

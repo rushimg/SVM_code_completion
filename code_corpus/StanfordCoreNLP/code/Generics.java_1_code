@@ -1,0 +1,57 @@
+  public static <K,V> Map<K,V> newHashMap() {
+    try {
+      return ErasureUtils.uncheckedCast(HASH_MAP_CLASS.newInstance());
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public static <K,V> Map<K,V> newHashMap(int initialCapacity) {
+    if (HASH_MAP_SIZE_CONSTRUCTOR == null) {
+      return newHashMap();
+    }
+    try {
+      return ErasureUtils.uncheckedCast(HASH_MAP_SIZE_CONSTRUCTOR.newInstance(initialCapacity));
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public static <K,V> Map<K,V> newHashMap(Map<? extends K,? extends V> m) {
+    try {
+      return ErasureUtils.uncheckedCast(HASH_MAP_FROM_MAP_CONSTRUCTOR.newInstance(m));
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public static <K,V> IdentityHashMap<K,V> newIdentityHashMap() {
+    return new IdentityHashMap<K,V>();
+  }
+
+  public static <K,V> WeakHashMap<K,V> newWeakHashMap() {
+    return new WeakHashMap<K,V>();
+  }
+
+  public static <K,V> ConcurrentHashMap<K,V> newConcurrentHashMap() {
+    return new ConcurrentHashMap<K,V>();
+  }
+
+  public static <K,V> ConcurrentHashMap<K,V> newConcurrentHashMap(int initialCapacity) {
+    return new ConcurrentHashMap<K,V>(initialCapacity);
+  }
+
+  public static <K,V> ConcurrentHashMap<K,V> newConcurrentHashMap(int initialCapacity,
+      float loadFactor, int concurrencyLevel) {
+    return new ConcurrentHashMap<K,V>(initialCapacity, loadFactor, concurrencyLevel);
+  }
+
+  public static <K,V> TreeMap<K,V> newTreeMap() {
+    return new TreeMap<K,V>();
+  }
+
+  public static <E> Index<E> newIndex() {
+    return new HashIndex<E>();
+  }
+
+

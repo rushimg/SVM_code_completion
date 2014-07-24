@@ -1,0 +1,35 @@
+  public int commonAncestor(IndexedWord v1, IndexedWord v2) {
+    List<IndexedWord> v1Parents = this.getParentList(v1);
+    List<IndexedWord> v2Parents = this.getParentList(v2);
+    List<IndexedWord> v1GrandParents = new ArrayList<IndexedWord>();
+    List<IndexedWord> v2GrandParents = new ArrayList<IndexedWord>();
+    // does v1 have any parents that are v2's parents?
+
+    for (IndexedWord v1Parent : v1Parents) {
+      if (v2Parents.contains(v1Parent)) {
+        return 1;
+      }
+      v1GrandParents.addAll(this.getParentList(v1Parent));
+    }
+    // does v1 have any grandparents that are v2's parents?
+    for (IndexedWord v1GrandParent : v1GrandParents) {
+      if (v2Parents.contains(v1GrandParent)) {
+        return 2;
+      }
+    }
+    // build v2 grandparents
+    for (IndexedWord v2Parent : v2Parents) {
+      v2GrandParents.addAll(this.getParentList(v2Parent));
+    }
+    // does v1 have any parents or grandparents that are v2's grandparents?
+    for (IndexedWord v2GrandParent : v2GrandParents) {
+      if (v1Parents.contains(v2GrandParent)) {
+        return 1;
+      }
+      if (v1GrandParents.contains(v2GrandParent)) {
+        return 2;
+      }
+    }
+    return -1;
+  }
+

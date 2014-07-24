@@ -1,0 +1,46 @@
+  protected BaseModel(String componentName, String languageCode,
+      Map<String, String> manifestInfoEntries, BaseToolFactory factory) {
+
+    this(componentName, false);
+
+    if (languageCode == null)
+        throw new IllegalArgumentException("languageCode must not be null!");
+
+    createBaseArtifactSerializers(artifactSerializers);
+
+    Properties manifest = new Properties();
+    manifest.setProperty(MANIFEST_VERSION_PROPERTY, "1.0");
+    manifest.setProperty(LANGUAGE_PROPERTY, languageCode);
+    manifest.setProperty(VERSION_PROPERTY, Version.currentVersion().toString());
+    manifest.setProperty(TIMESTAMP_PROPERTY,
+        Long.toString(System.currentTimeMillis()));
+    manifest.setProperty(COMPONENT_NAME_PROPERTY, componentName);
+
+    if (manifestInfoEntries != null) {
+      for (Map.Entry<String, String> entry : manifestInfoEntries.entrySet()) {
+        manifest.setProperty(entry.getKey(), entry.getValue());
+      }
+    }
+
+    artifactMap.put(MANIFEST_ENTRY, manifest);
+    finishedLoadingArtifacts = true;
+
+    if (factory!=null) {
+      setManifestProperty(FACTORY_NAME, factory.getClass().getCanonicalName());
+      artifactMap.putAll(factory.createArtifactMap());
+
+      // new manifest entries
+      Map<String, String> entries = factory.createManifestEntries();
+      for (String key : entries.keySet()) {
+        setManifestProperty(key, entries.get(key));
+      }
+    }
+
+    try {
+      initializeFactory();
+    } catch (InvalidFormatException e) {
+      throw new IllegalArgumentException("Could not initialize tool factory. ", e);
+    }
+    loadArtifactSerializers();
+  }
+

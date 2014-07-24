@@ -1,0 +1,20 @@
+    @Override
+    public void parse(final SetCookie cookie, final String value)
+            throws MalformedCookieException {
+        Args.notNull(cookie, "Cookie");
+        if (value == null) {
+            throw new MalformedCookieException(
+                    "Missing value for version attribute");
+        }
+        int version = -1;
+        try {
+            version = Integer.parseInt(value);
+        } catch (final NumberFormatException e) {
+            version = -1;
+        }
+        if (version < 0) {
+            throw new MalformedCookieException("Invalid cookie version.");
+        }
+        cookie.setVersion(version);
+    }
+

@@ -1,0 +1,72 @@
+  /**
+   * Given sentences or trees, output the typed dependencies.
+   * <p>
+   * By default, the method outputs the collapsed typed dependencies with
+   * processing of conjuncts. The input can be given as plain text (one sentence
+   * by line) using the option -sentFile, or as trees using the option
+   * -treeFile. For -sentFile, the input has to be strictly one sentence per
+   * line. You can specify where to find a parser with -parserFile
+   * serializedParserPath. See LexicalizedParser for more flexible processing of
+   * text files (including with Stanford Dependencies output). The above options
+   * assume a file as input. You can also feed trees (only) via stdin by using
+   * the option -filter.  If one does not specify a -parserFile, one
+   * can specify which language pack to use with -tLPP, This option
+   * specifies a class which determines which GrammaticalStructure to
+   * use, which HeadFinder to use, etc.  It will default to
+   * edu.stanford.nlp.parser.lexparser.EnglishTreebankParserParams,
+   * but any TreebankLangParserParams can be specified.
+   * <p>
+   * If no method of producing trees is given other than to use the
+   * LexicalizedParser, but no parser is specified, a default parser
+   * is used, the English parser.  You can specify options to load
+   * with the parser using the -parserOpts flag.  If the default
+   * parser is used, and no options are provided, the option
+   * -retainTmpSubcategories is used.
+   * <p>
+   * The following options can be used to specify the types of dependencies
+   * wanted: </p>
+   * <ul>
+   * <li> -collapsed collapsed dependencies
+   * <li> -basic non-collapsed dependencies that preserve a tree structure
+   * <li> -nonCollapsed non-collapsed dependencies that do not preserve a tree
+   * structure (the basic dependencies plus the extra ones)
+   * <li> -CCprocessed
+   * collapsed dependencies and conjunctions processed (dependencies are added
+   * for each conjunct) -- this is the default if no options are passed
+   * <li> -collapsedTree collapsed dependencies retaining a tree structure
+   * <li> -makeCopulaHead Contrary to the approach argued for in the SD papers,
+   *  nevertheless make the verb 'to be' the head, not the predicate noun, adjective,
+   *  etc. (However, when the verb 'to be' is used as an auxiliary verb, the main
+   *  verb is still treated as the head.)
+   * </ul>
+   * <p>
+   * The {@code -conllx} option will output the dependencies in the CoNLL format,
+   * instead of in the standard Stanford format (relation(governor,dependent))
+   * and will retain punctuation by default.
+   * When used in the "collapsed" format, words such as prepositions, conjunctions
+   * which get collapsed into the grammatical relations and are not part of the
+   * sentence per se anymore will be annotated with "erased" as grammatical relation
+   * and attached to the fake "ROOT" node with index 0.
+   * <p/><p>
+   * There is also an option to retain dependencies involving punctuation:
+   * {@code -keepPunct}
+   * </p><p>
+   * The {@code -extraSep} option used with -nonCollapsed will print the basic
+   * dependencies first, then a separator ======, and then the extra
+   * dependencies that do not preserve the tree structure. The -test option is
+   * used for debugging: it prints the grammatical structure, as well as the
+   * basic, collapsed and CCprocessed dependencies. It also checks the
+   * connectivity of the collapsed dependencies. If the collapsed dependencies
+   * list doesn't constitute a connected graph, it prints the possible offending
+   * nodes (one of them is the real root of the graph).
+   * </p><p>
+   * Using the -conllxFile, you can pass a file containing Stanford dependencies
+   * in the CoNLL format (e.g., the basic dependencies), and obtain another
+   * representation using one of the representation options.
+   * </p><p>
+   * Usage: <br>
+   * <code>java edu.stanford.nlp.trees.GrammaticalStructure [-treeFile FILE | -sentFile FILE | -conllxFile FILE | -filter] <br>
+   * [-collapsed -basic -CCprocessed -test]</code>
+   *
+   * @param args Command-line arguments, as above
+   */

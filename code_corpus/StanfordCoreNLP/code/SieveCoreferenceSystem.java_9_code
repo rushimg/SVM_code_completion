@@ -1,0 +1,160 @@
+  private int additionalCorrectLinksCount;
+  private int additionalLinksCount;
+
+  public SieveCoreferenceSystem(Properties props) throws Exception {
+    // initialize required fields
+    currentSieve = -1;
+
+    //
+    // construct the sieve passes
+    //
+    String sievePasses = props.getProperty(Constants.SIEVES_PROP, Constants.SIEVEPASSES);
+    sieves = new DeterministicCorefSieve[sieveClassNames.length];
+    for(int i = 0; i < sieveClassNames.length; i ++){
+      sieves[i] = (DeterministicCorefSieve) Class.forName("edu.stanford.nlp.dcoref.sievepasses."+sieveClassNames[i]).getConstructor().newInstance();
+      sieves[i].init(props);
+    }
+
+    //
+    // create scoring framework
+    //
+    doScore = Boolean.parseBoolean(props.getProperty(Constants.SCORE_PROP, "false"));
+
+    //
+    // setting post processing
+    //
+    doPostProcessing = Boolean.parseBoolean(props.getProperty(Constants.POSTPROCESSING_PROP, "false"));
+
+    //
+    // setting singleton predictor
+    //
+    useSingletonPredictor = Boolean.parseBoolean(props.getProperty(Constants.SINGLETON_PROP, "true"));
+
+    //
+    // setting maximum sentence distance between two mentions for resolution (-1: no constraint on distance)
+    //
+    maxSentDist = Integer.parseInt(props.getProperty(Constants.MAXDIST_PROP, "-1"));
+
+    //
+    // set useWordNet
+    //
+    useSemantics = sievePasses.contains("AliasMatch") || sievePasses.contains("LexicalChainMatch");
+
+    // flag for replicating CoNLL result
+    replicateCoNLL = Boolean.parseBoolean(props.getProperty(Constants.REPLICATECONLL_PROP, "false"));
+    conllMentionEvalScript = props.getProperty(Constants.CONLL_SCORER, Constants.conllMentionEvalScript);
+
+    // flag for optimizing sieve ordering
+    optimizeSieves = Boolean.parseBoolean(props.getProperty(Constants.OPTIMIZE_SIEVES_PROP, "false"));
+    optimizeScoreType = props.getProperty(Constants.OPTIMIZE_SIEVES_SCORE_PROP, "pairwise.Precision");
+
+    // Break down of the optimize score type
+    String[] validMetricTypes = { "muc", "pairwise", "bcub", "ceafe", "ceafm", "combined" };
+    String[] parts = optimizeScoreType.split("\\.");
+    optimizeConllScore = parts.length > 2 && "conll".equalsIgnoreCase(parts[2]);
+    optimizeMetricType = parts[0];
+    boolean optimizeMetricTypeOk = false;
+    for (String validMetricType : validMetricTypes) {
+      if (validMetricType.equalsIgnoreCase(optimizeMetricType)) {
+        optimizeMetricTypeOk = true;
+        break;
+      }
+    }
+    if (!optimizeMetricTypeOk) {
+      throw new IllegalArgumentException("Invalid metric type for " +
+              Constants.OPTIMIZE_SIEVES_SCORE_PROP + " property: " + optimizeScoreType);
+    }
+    optimizeSubScoreType = CorefScorer.SubScoreType.valueOf(parts[1]);
+
+    if (optimizeSieves) {
+      String keepSieveOrder = props.getProperty(Constants.OPTIMIZE_SIEVES_KEEP_ORDER_PROP);
+      if (keepSieveOrder != null) {
+        sievesKeepOrder = new ArrayList<Pair<Integer, Integer>>();
+        String firstSieveConstraint = null;
+        String lastSieveConstraint = null;
+        for (String ordering:orderings) {
+          // Convert ordering constraints from string
+          Pair<Integer,Integer> p = fromSieveOrderConstraintString(ordering, sieveClassNames);
+          // Do initial check of sieves order, can only have one where the first is ANY (< 0), and one where second is ANY (< 0)
+          if (p.first() < 0 && p.second() < 0) {
+            throw new IllegalArgumentException("Invalid ordering constraint: " + ordering);
+          } else if (p.first() < 0) {
+            if (lastSieveConstraint != null) {
+              throw new IllegalArgumentException("Cannot have these two ordering constraints: " + lastSieveConstraint + "," + ordering);
+            }
+            lastSieveConstraint = ordering;
+          } else if (p.second() < 0) {
+            if (firstSieveConstraint != null) {
+              throw new IllegalArgumentException("Cannot have these two ordering constraints: " + firstSieveConstraint + "," + ordering);
+            }
+            firstSieveConstraint = ordering;
+          }
+          sievesKeepOrder.add(p);
+        }
+      }
+    }
+
+    if(doScore){
+      initScorers();
+    }
+
+    //
+    // load all dictionaries
+    //
+    dictionaries = new Dictionaries(props);
+    semantics = (useSemantics)? new Semantics(dictionaries) : null;
+
+    if(useSingletonPredictor){
+      singletonPredictor = getSingletonPredictorFromSerializedFile(props.getProperty(Constants.SINGLETON_MODEL_PROP, DefaultPaths.DEFAULT_DCOREF_SINGLETON_MODEL));
+    }
+  }
+
+  public static String signature(Properties props) {
+    StringBuilder os = new StringBuilder();
+    os.append(Constants.SIEVES_PROP + ":" +
+            props.getProperty(Constants.SIEVES_PROP,
+                    Constants.SIEVEPASSES));
+    os.append(Constants.SINGLETON_PROP + ":" +
+        props.getProperty(Constants.SINGLETON_PROP,
+                "false"));
+    os.append(Constants.SINGLETON_MODEL_PROP + ":" +
+        props.getProperty(Constants.SINGLETON_MODEL_PROP,
+                DefaultPaths.DEFAULT_DCOREF_SINGLETON_MODEL));
+    os.append(Constants.SCORE_PROP + ":" +
+            props.getProperty(Constants.SCORE_PROP,
+                    "false"));
+    os.append(Constants.POSTPROCESSING_PROP + ":" +
+            props.getProperty(Constants.POSTPROCESSING_PROP,
+                    "false"));
+    os.append(Constants.MAXDIST_PROP + ":" +
+            props.getProperty(Constants.MAXDIST_PROP,
+                    "-1"));
+    os.append(Constants.REPLICATECONLL_PROP + ":" +
+            props.getProperty(Constants.REPLICATECONLL_PROP,
+                    "false"));
+    os.append(Constants.CONLL_SCORER + ":" +
+            props.getProperty(Constants.CONLL_SCORER,
+                    Constants.conllMentionEvalScript));
+    os.append(Dictionaries.signature(props));
+    return os.toString();
+  }
+
+  public void initScorers() {
+    linksCountInPass = new ArrayList<Pair<Integer, Integer>>();
+    scorePairwise = new ArrayList<CorefScorer>();
+    scoreBcubed = new ArrayList<CorefScorer>();
+    scoreMUC = new ArrayList<CorefScorer>();
+    for(int i = 0 ; i < sieveClassNames.length ; i++){
+      scorePairwise.add(new ScorerPairwise());
+      scoreBcubed.add(new ScorerBCubed(BCubedType.Bconll));
+      scoreMUC.add(new ScorerMUC());
+      linksCountInPass.add(new Pair<Integer, Integer>(0, 0));
+    }
+  }
+
+  public boolean doScore() { return doScore; }
+  public Dictionaries dictionaries() { return dictionaries; }
+  public Semantics semantics() { return semantics; }
+  public String sieveClassName(int sieveIndex)  {
+    return (sieveIndex >= 0 && sieveIndex < sieveClassNames.length)? sieveClassNames[sieveIndex]:null; }
+

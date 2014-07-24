@@ -1,0 +1,24 @@
+  protected ModelType modelType;
+
+  public AbstractModel(Context[] params, String[] predLabels, IndexHashTable<String> pmap, String[] outcomeNames) {
+    this.pmap = pmap;
+    this.outcomeNames =  outcomeNames;
+    this.evalParams = new EvalParameters(params,outcomeNames.length);
+  }
+
+  public AbstractModel(Context[] params, String[] predLabels, String[] outcomeNames) {
+    init(predLabels,outcomeNames);
+    this.evalParams = new EvalParameters(params,outcomeNames.length);
+  }
+
+  public AbstractModel(Context[] params, String[] predLabels, String[] outcomeNames, int correctionConstant,double correctionParam) {
+    init(predLabels,outcomeNames);
+    this.evalParams = new EvalParameters(params,correctionParam,correctionConstant,outcomeNames.length);
+  }
+
+  private void init(String[] predLabels, String[] outcomeNames){
+    this.pmap = new IndexHashTable<String>(predLabels, 0.7d);
+    this.outcomeNames =  outcomeNames;
+  }
+
+

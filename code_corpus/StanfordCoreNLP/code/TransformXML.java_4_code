@@ -1,0 +1,22 @@
+  public static class NoEscapingSAXInterface<T> extends SAXInterface<T> {
+    @Override
+    public void processText(String text) {
+      if (text.length() > 0) {
+        text = function.apply(text).toString();
+        outWriter.print(text);
+        outWriter.print('\n');
+      }
+    }    
+  }
+
+
+  public TransformXML() {
+    try {
+      saxParser = SAXParserFactory.newInstance().newSAXParser();
+    } catch (Exception e) {
+      System.err.println("Error configuring XML parser: " + e);
+      throw new RuntimeException(e);
+    }
+  }
+
+

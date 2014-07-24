@@ -1,0 +1,324 @@
+  private void readGazette(BufferedReader in) throws IOException {
+    Pattern p = Pattern.compile("^(\\S+)\\s+(.+)$");
+    for (String line; (line = in.readLine()) != null; ) {
+      Matcher m = p.matcher(line);
+      if (m.matches()) {
+        String type = intern(m.group(1));
+        String phrase = m.group(2);
+        String[] words = phrase.split(" ");
+        for (int i = 0; i < words.length; i++) {
+          String word = intern(words[i]);
+          if (flags.sloppyGazette) {
+            Collection<String> entries = wordToGazetteEntries.get(word);
+            if (entries == null) {
+              entries = Generics.newHashSet();
+              wordToGazetteEntries.put(word, entries);
+            }
+            String feature = intern(type + "-GAZ" + words.length);
+            entries.add(feature);
+            feature = intern(type + "-GAZ");
+            entries.add(feature);
+          }
+          if (flags.cleanGazette) {
+            Collection<GazetteInfo> infos = wordToGazetteInfos.get(word);
+            if (infos == null) {
+              infos = Generics.newHashSet();
+              wordToGazetteInfos.put(word, infos);
+            }
+            GazetteInfo info = new GazetteInfo(intern(type + "-GAZ" + words.length), i, words);
+            infos.add(info);
+            info = new GazetteInfo(intern(type + "-GAZ"), i, words);
+            infos.add(info);
+          }
+        }
+      }
+    }
+  }
+
+  private Set<Class<? extends GenericAnnotation<?>>> genericAnnotationKeys; // = null; //cache which keys are generic annotations so we don't have to do too many instanceof checks
+
+  @SuppressWarnings({"unchecked", "SuspiciousMethodCalls"})
+  private void makeGenericKeyCache(CoreLabel c) {
+    genericAnnotationKeys = Generics.newHashSet();
+    for (Class<?> key : c.keySet()) {
+      if (CoreLabel.genericValues.containsKey(key)) {
+        Class<? extends GenericAnnotation<?>> genKey = (Class<? extends GenericAnnotation<?>>) key;
+        genericAnnotationKeys.add(genKey);
+      }
+    }
+  }
+
+  private Set<String> lastNames; // = null;
+  private Set<String> maleNames; // = null;
+  private Set<String> femaleNames; // = null;
+
+  private final Pattern titlePattern = Pattern.compile("(?:Mr|Ms|Mrs|Dr|Miss|Sen|Judge|Sir)\\.?"); // todo: should make static final and add more titles
+
+
+  protected Collection<String> featuresC(PaddedList<IN> cInfo, int loc) {
+    CoreLabel p3 = cInfo.get(loc - 3);
+    CoreLabel p2 = cInfo.get(loc - 2);
+    CoreLabel p = cInfo.get(loc - 1);
+    CoreLabel c = cInfo.get(loc);
+    CoreLabel n = cInfo.get(loc + 1);
+    CoreLabel n2 = cInfo.get(loc + 2);
+
+    String cWord = getWord(c);
+    String pWord = getWord(p);
+    String nWord = getWord(n);
+    String cShape = c.getString(CoreAnnotations.ShapeAnnotation.class);
+    String pShape = p.getString(CoreAnnotations.ShapeAnnotation.class);
+    String nShape = n.getString(CoreAnnotations.ShapeAnnotation.class);
+
+    Collection<String> featuresC = new ArrayList<String>();
+
+    if (flags.useDistSim) {
+      distSimAnnotate(cInfo);
+    }
+
+    if (flags.useBagOfWords) {
+      for (IN word : cInfo) {
+        featuresC.add(getWord(word) + "-BAGOFWORDS");
+      }
+    }
+
+    if (flags.useDistSim && flags.useMoreTags) {
+      featuresC.add(p.get(CoreAnnotations.DistSimAnnotation.class) + '-' + cWord + "-PDISTSIM-CWORD");
+    }
+
+
+    if (flags.useDistSim) {
+      featuresC.add(c.get(CoreAnnotations.DistSimAnnotation.class) + "-DISTSIM");
+    }
+
+
+    if (flags.useTitle) {
+      Matcher m = titlePattern.matcher(cWord);
+      if (m.matches()) {
+        featuresC.add("IS_TITLE");
+      }
+    }
+
+
+    if (flags.useInternal && flags.useExternal ) {
+
+      if (flags.useWord) {
+        featuresC.add(cWord + "-WORD");
+      }
+
+      if (flags.use2W) {
+        featuresC.add(getWord(p2) + "-P2W");
+        featuresC.add(getWord(n2) + "-N2W");
+      }
+
+      if (flags.useLC) {
+        featuresC.add(cWord.toLowerCase() + "-CL");
+        featuresC.add(pWord.toLowerCase() + "-PL");
+        featuresC.add(nWord.toLowerCase() + "-NL");
+      }
+
+      if (flags.useUnknown) { // for true casing
+        featuresC.add(c.get(CoreAnnotations.UnknownAnnotation.class)+"-UNKNOWN");
+        featuresC.add(p.get(CoreAnnotations.UnknownAnnotation.class)+"-PUNKNOWN");
+        featuresC.add(n.get(CoreAnnotations.UnknownAnnotation.class)+"-NUNKNOWN");
+      }
+
+      if (flags.useLemmas) {
+        String lem = c.getString(CoreAnnotations.LemmaAnnotation.class);
+        if (! "".equals(lem)) {
+          featuresC.add(lem + "-LEM");
+        }
+      }
+      if (flags.usePrevNextLemmas) {
+        String plem = p.getString(CoreAnnotations.LemmaAnnotation.class);
+        String nlem = n.getString(CoreAnnotations.LemmaAnnotation.class);
+        if (! "".equals(plem)) {
+          featuresC.add(plem + "-PLEM");
+        }
+        if (! "".equals(nlem)) {
+          featuresC.add(nlem + "-NLEM");
+        }
+      }
+
+      if (flags.checkNameList) {
+        try {
+          if (lastNames == null) {
+            lastNames = Generics.newHashSet();
+
+            for (String line : ObjectBank.getLineIterator(flags.lastNameList)) {
+              String[] cols = line.split("\\s+");
+              lastNames.add(cols[0]);
+            }
+          }
+          if (maleNames == null) {
+            maleNames = Generics.newHashSet();
+            for (String line : ObjectBank.getLineIterator(flags.maleNameList)) {
+              String[] cols = line.split("\\s+");
+              maleNames.add(cols[0]);
+            }
+          }
+          if (femaleNames == null) {
+            femaleNames = Generics.newHashSet();
+            for (String line : ObjectBank.getLineIterator(flags.femaleNameList)) {
+              String[] cols = line.split("\\s+");
+              femaleNames.add(cols[0]);
+            }
+          }
+
+          String name = cWord.toUpperCase();
+          if (lastNames.contains(name)) {
+            featuresC.add("LAST_NAME");
+          }
+
+          if (maleNames.contains(name)) {
+            featuresC.add("MALE_NAME");
+          }
+
+          if (femaleNames.contains(name)) {
+            featuresC.add("FEMALE_NAME");
+          }
+
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+      }
+
+      if (flags.binnedLengths != null) {
+        int len = cWord.length();
+        String featureName = null;
+        for (int i = 0; i <= flags.binnedLengths.length; i++) {
+          if (i == flags.binnedLengths.length) {
+            featureName = "Len-" + flags.binnedLengths[flags.binnedLengths.length - 1] + "-Inf";
+          } else if (len <= flags.binnedLengths[i]) {
+            featureName = "Len-" + ((i == 0) ? 1 : flags.binnedLengths[i - 1]) + '-' + flags.binnedLengths[i];
+            break;
+          }
+        }
+        featuresC.add(featureName);
+      }
+
+      if (flags.useABGENE) {
+        featuresC.add(c.get(CoreAnnotations.AbgeneAnnotation.class) + "-ABGENE");
+        featuresC.add(p.get(CoreAnnotations.AbgeneAnnotation.class) + "-PABGENE");
+        featuresC.add(n.get(CoreAnnotations.AbgeneAnnotation.class) + "-NABGENE");
+      }
+
+      if (flags.useABSTRFreqDict) {
+        featuresC.add(c.get(CoreAnnotations.AbstrAnnotation.class) + "-ABSTRACT" + c.get(CoreAnnotations.FreqAnnotation.class) + "-FREQ" + c.getString(CoreAnnotations.PartOfSpeechAnnotation.class) + "-TAG");
+        featuresC.add(c.get(CoreAnnotations.AbstrAnnotation.class) + "-ABSTRACT" + c.get(CoreAnnotations.DictAnnotation.class) + "-DICT" + c.getString(CoreAnnotations.PartOfSpeechAnnotation.class) + "-TAG");
+        featuresC.add(c.get(CoreAnnotations.AbstrAnnotation.class) + "-ABSTRACT" + c.get(CoreAnnotations.DictAnnotation.class) + "-DICT" + c.get(CoreAnnotations.FreqAnnotation.class) + "-FREQ" + c.getString(CoreAnnotations.PartOfSpeechAnnotation.class) + "-TAG");
+      }
+
+      if (flags.useABSTR) {
+        featuresC.add(c.get(CoreAnnotations.AbstrAnnotation.class) + "-ABSTRACT");
+        featuresC.add(p.get(CoreAnnotations.AbstrAnnotation.class) + "-PABSTRACT");
+        featuresC.add(n.get(CoreAnnotations.AbstrAnnotation.class) + "-NABSTRACT");
+      }
+
+      if (flags.useGENIA) {
+        featuresC.add(c.get(CoreAnnotations.GeniaAnnotation.class) + "-GENIA");
+        featuresC.add(p.get(CoreAnnotations.GeniaAnnotation.class) + "-PGENIA");
+        featuresC.add(n.get(CoreAnnotations.GeniaAnnotation.class) + "-NGENIA");
+      }
+      if (flags.useWEBFreqDict) {
+        featuresC.add(c.get(CoreAnnotations.WebAnnotation.class) + "-WEB" + c.get(CoreAnnotations.FreqAnnotation.class) + "-FREQ" + c.getString(CoreAnnotations.PartOfSpeechAnnotation.class) + "-TAG");
+        featuresC.add(c.get(CoreAnnotations.WebAnnotation.class) + "-WEB" + c.get(CoreAnnotations.DictAnnotation.class) + "-DICT" + c.getString(CoreAnnotations.PartOfSpeechAnnotation.class) + "-TAG");
+        featuresC.add(c.get(CoreAnnotations.WebAnnotation.class) + "-WEB" + c.get(CoreAnnotations.DictAnnotation.class) + "-DICT" + c.get(CoreAnnotations.FreqAnnotation.class) + "-FREQ" + c.getString(CoreAnnotations.PartOfSpeechAnnotation.class) + "-TAG");
+      }
+
+      if (flags.useWEB) {
+        featuresC.add(c.get(CoreAnnotations.WebAnnotation.class) + "-WEB");
+        featuresC.add(p.get(CoreAnnotations.WebAnnotation.class) + "-PWEB");
+        featuresC.add(n.get(CoreAnnotations.WebAnnotation.class) + "-NWEB");
+      }
+
+      if (flags.useIsURL) {
+        featuresC.add(c.get(CoreAnnotations.IsURLAnnotation.class) + "-ISURL");
+      }
+      if (flags.useEntityRule) {
+        featuresC.add(c.get(CoreAnnotations.EntityRuleAnnotation.class)+"-ENTITYRULE");
+      }
+      if (flags.useEntityTypes) {
+        featuresC.add(c.get(CoreAnnotations.EntityTypeAnnotation.class) + "-ENTITYTYPE");
+      }
+      if (flags.useIsDateRange) {
+        featuresC.add(c.get(CoreAnnotations.IsDateRangeAnnotation.class) + "-ISDATERANGE");
+      }
+
+      if (flags.useABSTRFreq) {
+        featuresC.add(c.get(CoreAnnotations.AbstrAnnotation.class) + "-ABSTRACT" + c.get(CoreAnnotations.FreqAnnotation.class) + "-FREQ");
+      }
+
+      if (flags.useFREQ) {
+        featuresC.add(c.get(CoreAnnotations.FreqAnnotation.class) + "-FREQ");
+      }
+
+      if (flags.useMoreTags) {
+        featuresC.add(p.getString(CoreAnnotations.PartOfSpeechAnnotation.class) + '-' + cWord + "-PTAG-CWORD");
+      }
+
+      if (flags.usePosition) {
+        featuresC.add(c.get(CoreAnnotations.PositionAnnotation.class) + "-POSITION");
+      }
+      if (flags.useBeginSent) {
+        String pos = c.get(CoreAnnotations.PositionAnnotation.class);
+        if ("0".equals(pos)) {
+          featuresC.add("BEGIN-SENT");
+          featuresC.add(cShape + "-BEGIN-SENT");
+        } else if (Integer.toString(cInfo.size() - 1).equals(pos)) {
+          featuresC.add("END-SENT");
+          featuresC.add(cShape + "-END-SENT");
+        } else {
+          featuresC.add("IN-SENT");
+          featuresC.add(cShape + "-IN-SENT");
+        }
+      }
+      if (flags.useTags) {
+        featuresC.add(c.getString(CoreAnnotations.PartOfSpeechAnnotation.class) + "-TAG");
+      }
+
+      if (flags.useOrdinal) {
+        if (isOrdinal(cInfo, loc)) {
+          featuresC.add("C_ORDINAL");
+          if (isOrdinal(cInfo, loc-1)) {
+            //System.err.print(getWord(p) + " ");
+            featuresC.add("PC_ORDINAL");
+          }
+          //System.err.println(cWord);
+        }
+        if (isOrdinal(cInfo, loc-1)) {
+          featuresC.add("P_ORDINAL");
+        }
+      }
+
+      if (flags.usePrev) {
+        featuresC.add(pWord + "-PW");
+        if (flags.useTags) {
+          featuresC.add(p.getString(CoreAnnotations.PartOfSpeechAnnotation.class) + "-PTAG");
+        }
+        if (flags.useDistSim) {
+          featuresC.add(p.get(CoreAnnotations.DistSimAnnotation.class) + "-PDISTSIM");
+        }
+        if (flags.useIsURL) {
+          featuresC.add(p.get(CoreAnnotations.IsURLAnnotation.class) + "-PISURL");
+        }
+        if (flags.useEntityTypes) {
+          featuresC.add(p.get(CoreAnnotations.EntityTypeAnnotation.class) + "-PENTITYTYPE");
+        }
+      }
+
+      if (flags.useNext) {
+        featuresC.add(nWord + "-NW");
+        if (flags.useTags) {
+          featuresC.add(n.getString(CoreAnnotations.PartOfSpeechAnnotation.class) + "-NTAG");
+        }
+        if (flags.useDistSim) {
+          featuresC.add(n.get(CoreAnnotations.DistSimAnnotation.class) + "-NDISTSIM");
+        }
+        if (flags.useIsURL) {
+          featuresC.add(n.get(CoreAnnotations.IsURLAnnotation.class) + "-NISURL");
+        }
+        if (flags.useEntityTypes) {
+          featuresC.add(n.get(CoreAnnotations.EntityTypeAnnotation.class) + "-NENTITYTYPE");
+        }
+      }

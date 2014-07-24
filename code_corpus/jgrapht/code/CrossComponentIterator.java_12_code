@@ -1,0 +1,35 @@
+    public boolean hasNext()
+    {
+        if (startVertex != null) {
+            encounterStartVertex();
+        }
+
+        if (isConnectedComponentExhausted()) {
+            if (state == CCS_WITHIN_COMPONENT) {
+                state = CCS_AFTER_COMPONENT;
+                if (nListeners != 0) {
+                    fireConnectedComponentFinished(ccFinishedEvent);
+                }
+            }
+
+            if (isCrossComponentTraversal()) {
+                while (vertexIterator.hasNext()) {
+                    V v = vertexIterator.next();
+
+                    if (!isSeenVertex(v)) {
+                        encounterVertex(v, null);
+                        state = CCS_BEFORE_COMPONENT;
+
+                        return true;
+                    }
+                }
+
+                return false;
+            } else {
+                return false;
+            }
+        } else {
+            return true;
+        }
+    }
+

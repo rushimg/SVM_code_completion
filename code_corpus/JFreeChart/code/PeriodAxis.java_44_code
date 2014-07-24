@@ -1,0 +1,80 @@
+    protected void drawTickMarksHorizontal(Graphics2D g2, AxisState state,
+                                           Rectangle2D dataArea,
+                                           RectangleEdge edge) {
+        List ticks = new ArrayList();
+        double x0 = dataArea.getX();
+        double y0 = state.getCursor();
+        double insideLength = getTickMarkInsideLength();
+        double outsideLength = getTickMarkOutsideLength();
+        RegularTimePeriod t = createInstance(this.majorTickTimePeriodClass, 
+                this.first.getStart(), getTimeZone(), this.locale);
+        long t0 = t.getFirstMillisecond();
+        Line2D inside = null;
+        Line2D outside = null;
+        long firstOnAxis = getFirst().getFirstMillisecond();
+        long lastOnAxis = getLast().getLastMillisecond() + 1;
+        while (t0 <= lastOnAxis) {
+            ticks.add(new NumberTick(new Double(t0), "", TextAnchor.CENTER,
+                    TextAnchor.CENTER, 0.0));
+            x0 = valueToJava2D(t0, dataArea, edge);
+            if (edge == RectangleEdge.TOP) {
+                inside = new Line2D.Double(x0, y0, x0, y0 + insideLength);
+                outside = new Line2D.Double(x0, y0, x0, y0 - outsideLength);
+            }
+            else if (edge == RectangleEdge.BOTTOM) {
+                inside = new Line2D.Double(x0, y0, x0, y0 - insideLength);
+                outside = new Line2D.Double(x0, y0, x0, y0 + outsideLength);
+            }
+            if (t0 >= firstOnAxis) {
+                g2.setPaint(getTickMarkPaint());
+                g2.setStroke(getTickMarkStroke());
+                g2.draw(inside);
+                g2.draw(outside);
+            }
+            // draw minor tick marks
+            if (this.minorTickMarksVisible) {
+                RegularTimePeriod tminor = createInstance(
+                        this.minorTickTimePeriodClass, new Date(t0),
+                        getTimeZone(), this.locale);
+                long tt0 = tminor.getFirstMillisecond();
+                while (tt0 < t.getLastMillisecond()
+                        && tt0 < lastOnAxis) {
+                    double xx0 = valueToJava2D(tt0, dataArea, edge);
+                    if (edge == RectangleEdge.TOP) {
+                        inside = new Line2D.Double(xx0, y0, xx0,
+                                y0 + this.minorTickMarkInsideLength);
+                        outside = new Line2D.Double(xx0, y0, xx0,
+                                y0 - this.minorTickMarkOutsideLength);
+                    }
+                    else if (edge == RectangleEdge.BOTTOM) {
+                        inside = new Line2D.Double(xx0, y0, xx0,
+                                y0 - this.minorTickMarkInsideLength);
+                        outside = new Line2D.Double(xx0, y0, xx0,
+                                y0 + this.minorTickMarkOutsideLength);
+                    }
+                    if (tt0 >= firstOnAxis) {
+                        g2.setPaint(this.minorTickMarkPaint);
+                        g2.setStroke(this.minorTickMarkStroke);
+                        g2.draw(inside);
+                        g2.draw(outside);
+                    }
+                    tminor = tminor.next();
+                    tminor.peg(this.calendar);
+                    tt0 = tminor.getFirstMillisecond();
+                }
+            }
+            t = t.next();
+            t.peg(this.calendar);
+            t0 = t.getFirstMillisecond();
+        }
+        if (edge == RectangleEdge.TOP) {
+            state.cursorUp(Math.max(outsideLength,
+                    this.minorTickMarkOutsideLength));
+        }
+        else if (edge == RectangleEdge.BOTTOM) {
+            state.cursorDown(Math.max(outsideLength,
+                    this.minorTickMarkOutsideLength));
+        }
+        state.setTicks(ticks);
+    }
+

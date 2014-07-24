@@ -1,0 +1,16 @@
+  static final Filter<Tree> REMOVE_TMP_AND_ADV = new Filter<Tree>() {
+    public boolean accept(Tree tree) {
+      if (tree == null) 
+        return false;
+      Label label = tree.label();
+      if (label == null) 
+        return false;
+      if (label.value().contains("-TMP") || label.value().contains("-ADV"))
+        return false;
+      if (label.value().startsWith("VP") && noVerbOverTempTregex.matcher(tree).matches()) {
+        return false;
+      }
+      return true;
+    }
+  };
+    

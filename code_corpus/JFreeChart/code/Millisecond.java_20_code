@@ -1,0 +1,42 @@
+    public int compareTo(Object obj) {
+        int result;
+        long difference;
+
+        // CASE 1 : Comparing to another Second object
+        // -------------------------------------------
+        if (obj instanceof Millisecond) {
+            Millisecond ms = (Millisecond) obj;
+            difference = getFirstMillisecond() - ms.getFirstMillisecond();
+            if (difference > 0) {
+                result = 1;
+            }
+            else {
+                if (difference < 0) {
+                    result = -1;
+                }
+                else {
+                    result = 0;
+                }
+            }
+        }
+
+        // CASE 2 : Comparing to another TimePeriod object
+        // -----------------------------------------------
+        else if (obj instanceof RegularTimePeriod) {
+            RegularTimePeriod rtp = (RegularTimePeriod) obj;
+            final long thisVal = this.getFirstMillisecond();
+            final long anotherVal = rtp.getFirstMillisecond();
+            result = (thisVal < anotherVal ? -1
+                    : (thisVal == anotherVal ? 0 : 1));
+        }
+
+        // CASE 3 : Comparing to a non-TimePeriod object
+        // ---------------------------------------------
+        else {
+            // consider time periods to be ordered after general objects
+            result = 1;
+        }
+
+        return result;
+    }
+

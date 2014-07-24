@@ -1,0 +1,21 @@
+  public static Type getMapValueParameter(Type mapType) {
+    return getActualParameterAtPosition(mapType, Map.class, 1);
+  }
+
+  private static Type getActualParameterAtPosition(Type type, Class<?> superClass, int position) {
+    ParameterizedType parameterizedType = Types.getSuperParameterizedType(type, superClass);
+    if (parameterizedType == null) {
+      return null;
+    }
+    Type valueType = parameterizedType.getActualTypeArguments()[position];
+    // this is normally a type variable, except in the case where the class of iterableType is
+    // superClass, e.g. Iterable<String>
+    if (valueType instanceof TypeVariable<?>) {
+      Type resolve = Types.resolveTypeVariable(Arrays.asList(type), (TypeVariable<?>) valueType);
+      if (resolve != null) {
+        return resolve;
+      }
+    }
+    return valueType;
+  }
+

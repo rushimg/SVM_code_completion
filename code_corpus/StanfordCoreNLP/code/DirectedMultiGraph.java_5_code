@@ -1,0 +1,68 @@
+  @Override
+  public void add(V source, V dest, E data) {
+    Map<V, List<E>> outgoingMap = getOutgoingEdgesMap(source);
+    Map<V, List<E>> incomingMap = getIncomingEdgesMap(dest);
+
+    List<E> outgoingList = outgoingMap.get(dest);
+    if (outgoingList == null) {
+      outgoingList = new ArrayList<E>();
+      outgoingMap.put(dest, outgoingList);
+    }
+
+    List<E> incomingList = incomingMap.get(source);
+    if (incomingList == null) {
+      incomingList = new ArrayList<E>();
+      incomingMap.put(source, incomingList);
+    }
+
+    outgoingList.add(data);
+    incomingList.add(data);
+  }
+
+  @Override
+  public boolean removeEdges(V source, V dest) {
+    if (!outgoingEdges.containsKey(source)) {
+      return false;
+    }
+    if (!incomingEdges.containsKey(dest)) {
+      return false;
+    }
+    if (!outgoingEdges.get(source).containsKey(dest)) {
+      return false;
+    }
+    outgoingEdges.get(source).remove(dest);
+    incomingEdges.get(dest).remove(source);
+    return true;
+  }
+
+  @Override
+  public boolean removeEdge(V source, V dest, E data) {
+    if (!outgoingEdges.containsKey(source)) {
+      return false;
+    }
+    if (!incomingEdges.containsKey(dest)) {
+      return false;
+    }
+    if (!outgoingEdges.get(source).containsKey(dest)) {
+      return false;
+    }
+    boolean foundOut = outgoingEdges.containsKey(source) && outgoingEdges.get(source).containsKey(dest) &&
+        outgoingEdges.get(source).get(dest).remove(data);
+    boolean foundIn = incomingEdges.containsKey(dest) && incomingEdges.get(dest).containsKey(source) &&
+        incomingEdges.get(dest).get(source).remove(data);
+    if (foundOut && !foundIn) {
+      throw new AssertionError("Edge found in outgoing but not incoming");
+    }
+    if (foundIn && !foundOut) {
+      throw new AssertionError("Edge found in incoming but not outgoing");
+    }
+    // TODO: cut down the number of .get calls
+    if (outgoingEdges.containsKey(source) && (!outgoingEdges.get(source).containsKey(dest) || outgoingEdges.get(source).get(dest).size() == 0)) {
+      outgoingEdges.get(source).remove(dest);
+    }
+    if (incomingEdges.containsKey(dest) && (!incomingEdges.get(dest).containsKey(source) || incomingEdges.get(dest).get(source).size() == 0)) {
+      incomingEdges.get(dest).remove(source);
+    }
+    return foundOut;
+  }
+

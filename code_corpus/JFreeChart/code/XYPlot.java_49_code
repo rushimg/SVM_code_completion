@@ -1,0 +1,21 @@
+    public void setRangeAxis(ValueAxis axis)  {
+
+        if (axis != null) {
+            axis.setPlot(this);
+        }
+
+        // plot is likely registered as a listener with the existing axis...
+        ValueAxis existing = getRangeAxis();
+        if (existing != null) {
+            existing.removeChangeListener(this);
+        }
+
+        this.rangeAxes.set(0, axis);
+        if (axis != null) {
+            axis.configure();
+            axis.addChangeListener(this);
+        }
+        fireChangeEvent();
+
+    }
+

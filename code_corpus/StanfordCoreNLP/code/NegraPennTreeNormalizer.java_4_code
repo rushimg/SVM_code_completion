@@ -1,0 +1,29 @@
+  @Override
+  public String normalizeNonterminal(String category) {
+    if (junkCPP.equals(category)) // one garbage category cleanup here.
+      category = cpp;
+
+    //Accommodate the null root nodes in Negra/Tiger trees
+    category = cleanUpLabel(category);
+
+    return (category == null) ? null : category.intern();
+  }
+
+  private Tree fixNonUnaryRoot(Tree t, TreeFactory tf) {
+    List<Tree> kids = t.getChildrenAsList();
+    if(kids.size() == 2 && t.firstChild().isPhrasal() && tlp.isSentenceFinalPunctuationTag(t.lastChild().value())) {
+      List<Tree> grandKids = t.firstChild().getChildrenAsList();
+      grandKids.add(t.lastChild());
+      t.firstChild().setChildren(grandKids);
+      kids.remove(kids.size() - 1);
+      t.setChildren(kids);
+      t.setValue(tlp.startSymbol());
+      
+    } else {
+      t.setValue(nonUnaryRoot);
+      t = tf.newTreeNode(tlp.startSymbol(), Collections.singletonList(t));
+    }
+    return t;
+  }
+
+

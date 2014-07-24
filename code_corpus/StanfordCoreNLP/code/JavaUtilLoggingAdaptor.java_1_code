@@ -1,0 +1,35 @@
+public class JavaUtilLoggingAdaptor {
+
+  private static boolean addedRedwoodHandler; // = false;
+
+  private JavaUtilLoggingAdaptor() {
+  }
+
+  public static void adapt() {
+    // get the top Logger:
+    Logger topLogger = Logger.getLogger("");
+    Handler oldConsoleHandler = null;
+
+    // see if there is already a console handler
+    // hopefully reasonable assumption: there's only one ConsoleHandler
+    // TODO confirm that this will always give us all handlers (i.e. do we need to loop over all Loggers in java.util.LogManager and do this for each one?)
+    for (Handler handler : topLogger.getHandlers()) {
+      if (handler instanceof ConsoleHandler && !(handler instanceof RedwoodHandler)) {
+        // found the console handler
+        oldConsoleHandler = handler;
+        break;
+      }
+    }
+
+    if (oldConsoleHandler != null) {
+      // it's safe to call this after it's been removed
+      topLogger.removeHandler(oldConsoleHandler);
+    }
+
+    if (!addedRedwoodHandler) {
+      Handler redwoodHandler = new JavaUtilLoggingAdaptor.RedwoodHandler();
+      topLogger.addHandler(redwoodHandler);
+      addedRedwoodHandler = true;
+    }
+  }
+

@@ -1,0 +1,22 @@
+  public double logProb(int position, int[] labels) {
+    if (labels.length < windowSize) {
+      return factorTables[position].unnormalizedLogProbEnd(labels) - z;
+    } else if (labels.length == windowSize) {
+      return factorTables[position].unnormalizedLogProb(labels) - z;
+    } else {
+      int[] l = new int[windowSize];
+      System.arraycopy(labels, 0, l, 0, l.length);
+      int position1 = position - labels.length + windowSize;
+      double p = factorTables[position1].unnormalizedLogProb(l) - z;
+      l = new int[windowSize - 1];
+      System.arraycopy(labels, 1, l, 0, l.length);
+      position1++;
+      for (int i = windowSize; i < labels.length; i++) {
+        p += condLogProbGivenPrevious(position1++, labels[i], l);
+        System.arraycopy(l, 1, l, 0, l.length - 1);
+        l[windowSize - 2] = labels[i];
+      }
+      return p;
+    }
+  }
+

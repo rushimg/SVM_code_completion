@@ -1,0 +1,105 @@
+    Parse advanceNode=null;
+    Parse[] originalChildren = p.getChildren();
+    Parse[] children = collapsePunctuation(originalChildren,punctSet);
+    int numNodes = children.length;
+    if (numNodes == 0) {
+      return null;
+    }
+    //determines which node needs to be labeled and prior labels.
+    for (advanceNodeIndex = 0; advanceNodeIndex < numNodes; advanceNodeIndex++) {
+      advanceNode = children[advanceNodeIndex];
+      if (advanceNode.getLabel() == null) {
+        break;
+      }
+      else if (startTypeMap.containsKey(advanceNode.getLabel())) {
+        lastStartType = startTypeMap.get(advanceNode.getLabel());
+        lastStartNode = advanceNode;
+        lastStartIndex = advanceNodeIndex;
+        //System.err.println("lastStart "+i+" "+lastStart.label+" "+lastStart.prob);
+      }
+    }
+    int originalAdvanceIndex = mapParseIndex(advanceNodeIndex,children,originalChildren);
+    List<Parse> newParsesList = new ArrayList<Parse>(buildModel.getNumOutcomes());
+    //call build
+    buildModel.eval(buildContextGenerator.getContext(children, advanceNodeIndex), bprobs);
+    double bprobSum = 0;
+    while (bprobSum < probMass) {
+      // The largest unadvanced labeling.
+      int max = 0;
+      for (int pi = 1; pi < bprobs.length; pi++) { //for each build outcome
+        if (bprobs[pi] > bprobs[max]) {
+          max = pi;
+        }
+      }
+      if (bprobs[max] == 0) {
+        break;
+      }
+      double bprob = bprobs[max];
+      bprobs[max] = 0; //zero out so new max can be found
+      bprobSum += bprob;
+      String tag = buildModel.getOutcome(max);
+      //System.out.println("trying "+tag+" "+bprobSum+" lst="+lst);
+      if (max == topStartIndex) { // can't have top until complete
+        continue;
+      }
+      //System.err.println(i+" "+tag+" "+bprob);
+      if (startTypeMap.containsKey(tag)) { //update last start
+        lastStartIndex = advanceNodeIndex;
+        lastStartNode = advanceNode;
+        lastStartType = startTypeMap.get(tag);
+      }
+      else if (contTypeMap.containsKey(tag)) {
+        if (lastStartNode == null || !lastStartType.equals(contTypeMap.get(tag))) {
+          continue; //Cont must match previous start or continue
+        }
+      }
+      Parse newParse1 = (Parse) p.clone(); //clone parse
+      if (createDerivationString) newParse1.getDerivation().append(max).append("-");
+      newParse1.setChild(originalAdvanceIndex,tag); //replace constituent being labeled to create new derivation
+      newParse1.addProb(Math.log(bprob));
+      //check
+      //String[] context = checkContextGenerator.getContext(newParse1.getChildren(), lastStartType, lastStartIndex, advanceNodeIndex);
+      checkModel.eval(checkContextGenerator.getContext(collapsePunctuation(newParse1.getChildren(),punctSet), lastStartType, lastStartIndex, advanceNodeIndex), cprobs);
+      //System.out.println("check "+lastStartType+" "+cprobs[completeIndex]+" "+cprobs[incompleteIndex]+" "+tag+" "+java.util.Arrays.asList(context));
+      Parse newParse2 = newParse1;
+      if (cprobs[completeIndex] > q) { //make sure a reduce is likely
+        newParse2 = (Parse) newParse1.clone();
+        if (createDerivationString) newParse2.getDerivation().append(1).append(".");
+        newParse2.addProb(Math.log(cprobs[completeIndex]));
+        Parse[] cons = new Parse[advanceNodeIndex - lastStartIndex + 1];
+        boolean flat = true;
+        //first
+        cons[0] = lastStartNode;
+        flat &= cons[0].isPosTag();
+        //last
+        cons[advanceNodeIndex - lastStartIndex] = advanceNode;
+        flat &= cons[advanceNodeIndex - lastStartIndex].isPosTag();
+        //middle
+        for (int ci = 1; ci < advanceNodeIndex - lastStartIndex; ci++) {
+          cons[ci] = children[ci + lastStartIndex];
+          flat &= cons[ci].isPosTag();
+        }
+        if (!flat) { //flat chunks are done by chunker
+          if (lastStartIndex == 0 && advanceNodeIndex == numNodes-1) { //check for top node to include end and begining punctuation
+            //System.err.println("ParserME.advanceParses: reducing entire span: "+new Span(lastStartNode.getSpan().getStart(), advanceNode.getSpan().getEnd())+" "+lastStartType+" "+java.util.Arrays.asList(children));
+            newParse2.insert(new Parse(p.getText(), p.getSpan(), lastStartType, cprobs[1], headRules.getHead(cons, lastStartType)));
+          }
+          else {
+            newParse2.insert(new Parse(p.getText(), new Span(lastStartNode.getSpan().getStart(), advanceNode.getSpan().getEnd()), lastStartType, cprobs[1], headRules.getHead(cons, lastStartType)));
+          }
+          newParsesList.add(newParse2);
+        }
+      }
+      if (cprobs[incompleteIndex] > q) { //make sure a shift is likely
+        if (createDerivationString) newParse1.getDerivation().append(0).append(".");
+        if (advanceNodeIndex != numNodes - 1) { //can't shift last element
+          newParse1.addProb(Math.log(cprobs[incompleteIndex]));
+          newParsesList.add(newParse1);
+        }
+      }
+    }
+    Parse[] newParses = new Parse[newParsesList.size()];
+    newParsesList.toArray(newParses);
+    return newParses;
+  }
+

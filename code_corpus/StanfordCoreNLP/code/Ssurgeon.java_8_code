@@ -1,0 +1,77 @@
+  public static SsurgeonEdit parseEditLine(String editLine) {
+    // Extract the operation name first
+    SsurgeonEdit retEdit = null;
+    String[] tuples1 = editLine.split("\\s+", 2);
+    if (tuples1.length < 2) {
+      throw new IllegalArgumentException("Error in SsurgeonEdit.parseEditLine: invalid number of arguments");
+    }
+    String command = tuples1[0];
+    String[] argsArray = parseArgs(tuples1[1]);
+    SsurgeonArgs argsBox = new SsurgeonArgs();
+
+    for (int argIndex = 0; argIndex < argsArray.length; ++argIndex) {
+      if (argsArray[argIndex].equals(GOV_NODENAME_ARG)) {
+        argsBox.govNodeName = argsArray[argIndex + 1];
+        argIndex += 2;
+      } else if (argsArray[argIndex].equals(DEP_NODENAME_ARG)) {
+        argsBox.dep = argsArray[argIndex + 1];
+        argIndex += 2;
+      } else if (argsArray[argIndex].equals(EDGE_NAME_ARG)) {
+        argsBox.edge = argsArray[argIndex + 1];
+        argIndex += 2;
+      } else if (argsArray[argIndex].equals(RELN_ARG)) {
+        argsBox.reln = argsArray[argIndex + 1];
+        argIndex += 2;
+      } else if (argsArray[argIndex].equals(NODENAME_ARG)) {
+        argsBox.node = argsArray[argIndex + 1];
+        argIndex += 2;
+      } else if (argsArray[argIndex].equals(NODE_PROTO_ARG)) {
+        argsBox.nodeString = argsArray[argIndex + 1];
+        argIndex += 2;
+      } else if (argsArray[argIndex].equals(WEIGHT_ARG)) {
+        argsBox.weight = Double.valueOf(argsArray[argIndex + 1]);
+        argIndex += 2;
+      } else if (argsArray[argIndex].equals(NAME_ARG)) {
+        argsBox.name = argsArray[argIndex + 1];
+        argIndex += 2;
+      } else {
+        throw new IllegalArgumentException("Parsing Ssurgeon args: unknown flag " + argsArray[argIndex]);
+      }
+    }
+    
+    
+    // Parse the arguments based upon the type of command to execute.
+    // TODO: this logic really should be moved into the individual classes.  The string-->class
+    // mappings should also be stored in more appropriate data structure.
+    if (command.equalsIgnoreCase(AddDep.LABEL)) {
+      retEdit = AddDep.createEngAddDep(argsBox.govNodeName, argsBox.reln, argsBox.nodeString);
+    } else if (command.equalsIgnoreCase(AddNode.LABEL)) {
+      retEdit = AddNode.createAddNode(argsBox.nodeString, argsBox.name);
+    } else if (command.equalsIgnoreCase(AddEdge.LABEL)) {
+      retEdit = AddEdge.createEngAddEdge(argsBox.govNodeName, argsBox.dep, argsBox.reln);
+    } else if (command.equalsIgnoreCase(DeleteGraphFromNode.LABEL)) {
+      retEdit = new DeleteGraphFromNode(argsBox.node);
+    } else if (command.equalsIgnoreCase(RemoveEdge.LABEL)) {
+      retEdit = new RemoveEdge(GrammaticalRelation.valueOf(argsBox.reln), argsBox.govNodeName, argsBox.dep);
+    } else if (command.equalsIgnoreCase(RemoveNamedEdge.LABEL)) {
+      retEdit = new RemoveNamedEdge(argsBox.edge, argsBox.govNodeName, argsBox.dep);
+    } else if (command.equalsIgnoreCase(SetRoots.LABEL)) {
+      String[] names = tuples1[1].split("\\s+");
+      List<String> newRoots = Arrays.asList(names);
+      retEdit = new SetRoots(newRoots);
+    } else if (command.equalsIgnoreCase(KillNonRootedNodes.LABEL)) {
+      retEdit = new KillNonRootedNodes();
+    } else if (command.equalsIgnoreCase(KillAllIncomingEdges.LABEL)) {
+      retEdit = new KillAllIncomingEdges(argsBox.node);
+    } else {
+      throw new IllegalArgumentException("Error in SsurgeonEdit.parseEditLine: command '"+command+"' is not supported");
+    }
+    return retEdit;
+  }
+  
+  //public static SsurgeonPattern fromXML(String xmlString) throws Exception {
+  //SAXBuilder builder = new SAXBuilder();
+  //Document jdomDoc = builder.build(xmlString);
+  //jdomDoc.getRootElement().getChildren(SsurgeonPattern.SSURGEON_ELEM_TAG);
+  //}
+  

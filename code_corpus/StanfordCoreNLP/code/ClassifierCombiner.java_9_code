@@ -1,0 +1,62 @@
+  private List<IN> mergeDocuments(List<List<IN>> baseDocuments){
+    // we should only get here if there is something to merge
+    assert(! baseClassifiers.isEmpty() && ! baseDocuments.isEmpty());
+    // all base outputs MUST have the same length (we generated them internally!)
+    for(int i = 1; i < baseDocuments.size(); i ++)
+      assert(baseDocuments.get(0).size() == baseDocuments.get(i).size());
+
+    String background = baseClassifiers.get(0).flags.backgroundSymbol;
+
+    // baseLabels.get(i) points to the labels assigned by baseClassifiers.get(i)
+    List<Set<String>> baseLabels = new ArrayList<Set<String>>();
+    Set<String> seenLabels = Generics.newHashSet();
+    for (AbstractSequenceClassifier<? extends CoreMap> baseClassifier : baseClassifiers) {
+      Set<String> labs = baseClassifier.labels();
+      if (combinationMode != CombinationMode.HIGH_RECALL) {
+        labs.removeAll(seenLabels);
+      } else {
+        labs.remove(baseClassifier.flags.backgroundSymbol);
+        labs.remove(background);
+      }
+      seenLabels.addAll(labs);
+      baseLabels.add(labs);
+    }
+
+    if (DEBUG) {
+      for(int i = 0; i < baseLabels.size(); i ++)
+        System.err.println("mergeDocuments: Using classifier #" + i + " for " + baseLabels.get(i));
+      System.err.println("mergeDocuments: Background symbol is " + background);
+
+      System.err.println("Base model outputs:");
+      for( int i = 0; i < baseDocuments.size(); i ++){
+        System.err.printf("Output of model #%d:", i);
+        for (IN l : baseDocuments.get(i)) {
+          System.err.print(' ');
+          System.err.print(l.get(CoreAnnotations.AnswerAnnotation.class));
+        }
+        System.err.println();
+      }
+    }
+
+    // incrementally merge each additional model with the main model (i.e., baseDocuments.get(0))
+    // this keeps adding labels from the additional models to mainDocument
+    // hence, when all is done, mainDocument contains the labels of all base models
+    List<IN> mainDocument = baseDocuments.get(0);
+    for (int i = 1; i < baseDocuments.size(); i ++) {
+      mergeTwoDocuments(mainDocument, baseDocuments.get(i), baseLabels.get(i), background);
+    }
+
+    if (DEBUG) {
+      System.err.print("Output of combined model:");
+      for (IN l: mainDocument) {
+        System.err.print(' ');
+        System.err.print(l.get(CoreAnnotations.AnswerAnnotation.class));
+      }
+      System.err.println();
+      System.err.println();
+    }
+
+    return mainDocument;
+  }
+
+

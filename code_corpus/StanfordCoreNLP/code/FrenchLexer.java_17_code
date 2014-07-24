@@ -1,0 +1,32 @@
+  private Object getNext(String txt, String originalText) {
+    return getNext(txt, originalText, null);
+  }
+
+  private Object getNext(String txt, String originalText, String annotation) {
+    txt = removeSoftHyphens(txt);
+    Label w = (Label) tokenFactory.makeToken(txt, yychar, yylength());
+    if (invertible || annotation != null) {
+      CoreLabel word = (CoreLabel) w;
+      if (invertible) {
+        String str = prevWordAfter.toString();
+        prevWordAfter.setLength(0);
+        word.set(CoreAnnotations.OriginalTextAnnotation.class, originalText);
+        word.set(CoreAnnotations.BeforeAnnotation.class, str);
+        prevWord.set(CoreAnnotations.AfterAnnotation.class, str);
+        prevWord = word;
+      }
+      if (annotation != null) {
+        word.set(CoreAnnotations.ParentAnnotation.class, annotation);
+      }
+    }
+    return w;
+  }
+
+  private Object getNormalizedAmpNext() {
+    final String txt = yytext();
+    return normalizeAmpersandEntity ?
+      getNext(normalizeAmp(txt), txt) : getNext();
+  }
+
+
+

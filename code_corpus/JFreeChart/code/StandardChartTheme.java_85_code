@@ -1,0 +1,64 @@
+    protected void applyToXYPlot(XYPlot plot) {
+        plot.setAxisOffset(this.axisOffset);
+        plot.setDomainZeroBaselinePaint(this.baselinePaint);
+        plot.setRangeZeroBaselinePaint(this.baselinePaint);
+        plot.setDomainGridlinePaint(this.domainGridlinePaint);
+        plot.setRangeGridlinePaint(this.rangeGridlinePaint);
+        plot.setDomainCrosshairPaint(this.crosshairPaint);
+        plot.setRangeCrosshairPaint(this.crosshairPaint);
+        // process all domain axes
+        int domainAxisCount = plot.getDomainAxisCount();
+        for (int i = 0; i < domainAxisCount; i++) {
+            ValueAxis axis = plot.getDomainAxis(i);
+            if (axis != null) {
+                applyToValueAxis(axis);
+            }
+        }
+
+        // process all range axes
+        int rangeAxisCount = plot.getRangeAxisCount();
+        for (int i = 0; i < rangeAxisCount; i++) {
+            ValueAxis axis = (ValueAxis) plot.getRangeAxis(i);
+            if (axis != null) {
+                applyToValueAxis(axis);
+            }
+        }
+
+        // process all renderers
+        int rendererCount = plot.getRendererCount();
+        for (int i = 0; i < rendererCount; i++) {
+            XYItemRenderer r = plot.getRenderer(i);
+            if (r != null) {
+                applyToXYItemRenderer(r);
+            }
+        }
+
+        // process all annotations
+        Iterator iter = plot.getAnnotations().iterator();
+        while (iter.hasNext()) {
+            XYAnnotation a = (XYAnnotation) iter.next();
+            applyToXYAnnotation(a);
+        }
+
+        if (plot instanceof CombinedDomainXYPlot) {
+            CombinedDomainXYPlot cp = (CombinedDomainXYPlot) plot;
+            Iterator iterator = cp.getSubplots().iterator();
+            while (iterator.hasNext()) {
+                XYPlot subplot = (XYPlot) iterator.next();
+                if (subplot != null) {
+                    applyToPlot(subplot);
+                }
+            }
+        }
+        if (plot instanceof CombinedRangeXYPlot) {
+            CombinedRangeXYPlot cp = (CombinedRangeXYPlot) plot;
+            Iterator iterator = cp.getSubplots().iterator();
+            while (iterator.hasNext()) {
+                XYPlot subplot = (XYPlot) iterator.next();
+                if (subplot != null) {
+                    applyToPlot(subplot);
+                }
+            }
+        }
+    }
+

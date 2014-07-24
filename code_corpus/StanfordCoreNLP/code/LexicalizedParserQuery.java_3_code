@@ -1,0 +1,66 @@
+  public Tree getBestParse() {
+    return getBestParse(true);
+  }
+
+  Tree getBestParse(boolean stripSubcat) {
+    if (parseSkipped) {
+      return null;
+    }
+    if (bparser != null && parseSucceeded) {
+      Tree binaryTree = bparser.getBestParse();
+
+      Tree tree = debinarizer.transformTree(binaryTree);
+      if (op.nodePrune) {
+        NodePruner np = new NodePruner(pparser, debinarizer);
+        tree = np.prune(tree);
+      }
+      if (stripSubcat) {
+        tree = subcategoryStripper.transformTree(tree);
+      }
+      restoreOriginalWords(tree);
+      return tree;
+
+    } else if (pparser != null && pparser.hasParse() && fallbackToPCFG) {
+      return getBestPCFGParse();
+    } else if (dparser != null && dparser.hasParse()) { // && fallbackToDG
+      // Should we strip subcategories like this?  Traditionally haven't...
+      // return subcategoryStripper.transformTree(getBestDependencyParse(true));
+      return getBestDependencyParse(true);
+    } else {
+      throw new NoSuchParseException();
+    }
+  }
+
+  public List<ScoredObject<Tree>> getBestPCFGParses() {
+    return pparser.getBestParses();
+  }
+
+  public boolean hasFactoredParse() {
+    if (bparser == null) {
+      return false;
+    }
+    return !parseSkipped && parseSucceeded && bparser.hasParse();
+  }
+
+  public Tree getBestFactoredParse() {
+    return bparser.getBestParse();
+  }
+
+  public List<ScoredObject<Tree>> getKGoodFactoredParses(int k) {
+    if (bparser == null || parseSkipped) {
+      return null;
+    }
+    List<ScoredObject<Tree>> binaryTrees = bparser.getKGoodParses(k);
+    if (binaryTrees == null) {
+      return null;
+    }
+    List<ScoredObject<Tree>> trees = new ArrayList<ScoredObject<Tree>>(k);
+    for (ScoredObject<Tree> tp : binaryTrees) {
+      Tree t = debinarizer.transformTree(tp.object());
+      t = subcategoryStripper.transformTree(t);
+      restoreOriginalWords(t);
+      trees.add(new ScoredObject<Tree>(t, tp.score()));
+    }
+    return trees;
+  }
+

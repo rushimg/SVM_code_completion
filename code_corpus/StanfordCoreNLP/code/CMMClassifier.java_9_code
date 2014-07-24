@@ -1,0 +1,44 @@
+                  " al:"+prevScores.getCount(al)+
+                  " ar:"+prevScores.getCount(ar)+
+                System.out.println(docId + '|' + startIndex + ' ' + endIndex + '|' + sb.toString().trim());
+              }
+            }
+          }
+
+          // restore the original tags
+          for (j = winStart; j < winEnd; j++) {
+            copy[j] = tags[j];
+          }
+          i = end;
+        }
+      }
+    }
+
+    for (int i = 0, docSize = document.size(); i < docSize; i++) {
+      CoreLabel lineInfo = document.get(i);
+      String answer = classIndex.get(tags[i]);
+      lineInfo.set(CoreAnnotations.AnswerAnnotation.class, answer);
+    }
+
+    if (flags.justify && classifier instanceof LinearClassifier) {
+      LinearClassifier<String, String> lc = (LinearClassifier<String, String>) classifier;
+      if (flags.dump) {
+        lc.dump();
+      }
+      for (int i = 0, docSize = document.size(); i < docSize; i++) {
+        CoreLabel lineInfo = document.get(i);
+        System.err.print("@@ Position is: " + i + ": ");
+        System.err.println(lineInfo.word() + ' ' + lineInfo.get(CoreAnnotations.AnswerAnnotation.class));
+        lc.justificationOf(makeDatum(document, i, featureFactories));
+      }
+    }
+
+//    document.remove(0);
+
+    if (flags.useReverse) {
+      Collections.reverse(document);
+
+    }
+  } // end testSeq
+
+

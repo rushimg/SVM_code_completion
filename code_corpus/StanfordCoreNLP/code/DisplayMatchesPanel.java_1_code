@@ -1,0 +1,78 @@
+@SuppressWarnings("serial")
+public class DisplayMatchesPanel extends JPanel implements ListSelectionListener {
+
+  private JScrollPane scroller;
+  private MouseEvent firstMouseEvent = null;
+
+  private String fontName = "";
+  private int fontSize = 12;
+  private Color defaultColor = Color.BLACK;
+  private Color matchedColor = Color.RED;
+
+  private static DisplayMatchesPanel instance = null;
+  private ScrollableTreeJPanel tjp;
+
+  private List<Point2D.Double> matchedPartCoordinates;
+  private int matchedPartCoordinateIdx = -1;
+
+  public static synchronized DisplayMatchesPanel getInstance() {
+    if (instance == null) {
+      instance = new DisplayMatchesPanel();
+    }
+    return instance;
+  }
+
+  private DisplayMatchesPanel() {
+    //data
+    JPanel spaceholder = new JPanel();
+    spaceholder.setBackground(Color.white);
+    JTextArea message = new JTextArea("For non-English trees, first set up the tree reader and encoding in Preferences. Then load trees from the File menu.");
+    message.setEditable(false);
+    spaceholder.add(message);
+
+    scroller = new JScrollPane(spaceholder);
+
+    // Fix slow scrolling on OS X
+    if (TregexGUI.isMacOSX()) {
+      scroller.getVerticalScrollBar().setUnitIncrement(3);
+      scroller.getHorizontalScrollBar().setUnitIncrement(3);
+    }
+
+    this.setFocusable(true);
+    this.setTransferHandler(new DisplayTransferHandler());
+    MatchesPanel.getInstance().addListener(this);
+
+    //layout
+    this.setLayout(new BorderLayout());
+    this.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEmptyBorder(),""));
+    this.add(scroller, BorderLayout.CENTER);
+  }
+
+
+  private static class DisplayTransferHandler extends TransferHandler {
+
+    public DisplayTransferHandler() {
+      super();
+    }
+
+    protected static String exportString(JComponent c) {
+      if (c instanceof ScrollableTreeJPanel) {
+        ScrollableTreeJPanel tjp = (ScrollableTreeJPanel) c;
+        return tjp.getTree().pennString();
+      }
+      return "";
+    }
+
+    @Override
+    protected Transferable createTransferable(JComponent c) {
+      return new StringSelection(exportString(c));
+    }
+
+    @Override
+    public int getSourceActions(JComponent c) {
+      return COPY_OR_MOVE;
+    }
+
+  } // end class DisplayTransferHandler
+
+

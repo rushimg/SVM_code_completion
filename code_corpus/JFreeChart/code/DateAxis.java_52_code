@@ -1,0 +1,51 @@
+    protected void autoAdjustRange() {
+
+        Plot plot = getPlot();
+
+        if (plot == null) {
+            return;  // no plot, no data
+        }
+
+        if (plot instanceof ValueAxisPlot) {
+            ValueAxisPlot vap = (ValueAxisPlot) plot;
+
+            Range r = vap.getDataRange(this);
+            if (r == null) {
+                if (this.timeline instanceof SegmentedTimeline) {
+                    //Timeline hasn't method getStartTime()
+                    r = new DateRange((
+                            (SegmentedTimeline) this.timeline).getStartTime(),
+                            ((SegmentedTimeline) this.timeline).getStartTime()
+                            + 1);
+                }
+                else {
+                    r = new DateRange();
+                }
+            }
+
+            long upper = this.timeline.toTimelineValue(
+                    (long) r.getUpperBound());
+            long lower;
+            long fixedAutoRange = (long) getFixedAutoRange();
+            if (fixedAutoRange > 0.0) {
+                lower = upper - fixedAutoRange;
+            }
+            else {
+                lower = this.timeline.toTimelineValue((long) r.getLowerBound());
+                double range = upper - lower;
+                long minRange = (long) getAutoRangeMinimumSize();
+                if (range < minRange) {
+                    long expand = (long) (minRange - range) / 2;
+                    upper = upper + expand;
+                    lower = lower - expand;
+                }
+            }
+
+            upper = this.timeline.toMillisecond(upper);
+            lower = this.timeline.toMillisecond(lower);
+            DateRange dr = new DateRange(new Date(lower), new Date(upper));
+            setRange(dr, false, false);
+        }
+
+    }
+

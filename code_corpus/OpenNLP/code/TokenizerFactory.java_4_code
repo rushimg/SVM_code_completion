@@ -1,0 +1,58 @@
+  public TokenizerFactory(String languageCode,
+      Dictionary abbreviationDictionary, boolean useAlphaNumericOptimization,
+      Pattern alphaNumericPattern) {
+    this.init(languageCode, abbreviationDictionary,
+        useAlphaNumericOptimization, alphaNumericPattern);
+  }
+
+  protected void init(String languageCode, Dictionary abbreviationDictionary,
+      boolean useAlphaNumericOptimization, Pattern alphaNumericPattern) {
+    this.languageCode = languageCode;
+    this.useAlphaNumericOptimization = useAlphaNumericOptimization;
+    this.alphaNumericPattern = alphaNumericPattern;
+    this.abbreviationDictionary = abbreviationDictionary;
+  }
+
+  @Override
+  public void validateArtifactMap() throws InvalidFormatException {
+
+    if (this.artifactProvider
+        .getManifestProperty(USE_ALPHA_NUMERIC_OPTIMIZATION) == null)
+      throw new InvalidFormatException(USE_ALPHA_NUMERIC_OPTIMIZATION
+          + " is a mandatory property!");
+
+    Object abbreviationsEntry = this.artifactProvider
+        .getArtifact(ABBREVIATIONS_ENTRY_NAME);
+
+    if (abbreviationsEntry != null && !(abbreviationsEntry instanceof Dictionary)) {
+      throw new InvalidFormatException("Abbreviations dictionary '" + abbreviationsEntry +
+              "' has wrong type, needs to be of type Dictionary!");
+    }
+  }
+
+  @Override
+  public Map<String, Object> createArtifactMap() {
+    Map<String, Object> artifactMap = super.createArtifactMap();
+
+    // Abbreviations are optional
+    if (abbreviationDictionary != null)
+      artifactMap.put(ABBREVIATIONS_ENTRY_NAME, abbreviationDictionary);
+
+    return artifactMap;
+  }
+
+  @Override
+  public Map<String, String> createManifestEntries() {
+    Map<String, String> manifestEntries = super.createManifestEntries();
+
+    manifestEntries.put(USE_ALPHA_NUMERIC_OPTIMIZATION,
+        Boolean.toString(isUseAlphaNumericOptmization()));
+
+    // alphanumeric pattern is optional
+    if (getAlphaNumericPattern() != null)
+      manifestEntries.put(ALPHA_NUMERIC_PATTERN, getAlphaNumericPattern()
+          .pattern());
+
+    return manifestEntries;
+  }
+

@@ -1,0 +1,20 @@
+    public static Range findDomainBounds(XYDataset dataset,
+                                         boolean includeInterval) {
+
+        if (dataset == null) {
+            throw new IllegalArgumentException("Null 'dataset' argument.");
+        }
+
+        Range result = null;
+        // if the dataset implements DomainInfo, life is easier
+        if (dataset instanceof DomainInfo) {
+            DomainInfo info = (DomainInfo) dataset;
+            result = info.getDomainBounds(includeInterval);
+        }
+        else {
+            result = iterateDomainBounds(dataset, includeInterval);
+        }
+        return result;
+
+    }
+

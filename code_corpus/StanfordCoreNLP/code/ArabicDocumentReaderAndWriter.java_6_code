@@ -1,0 +1,101 @@
+  public ArabicDocumentReaderAndWriter(boolean hasSegMarkers,
+      boolean hasTags,
+      boolean hasDomainLabels,
+      String domain,
+      boolean stripRewrites,
+      TokenizerFactory<CoreLabel> tokFactory) {
+    tf = tokFactory;
+    inputHasTags = hasTags;
+    inputHasDomainLabels = hasDomainLabels;
+    inputDomain = domain;
+    shouldStripRewrites = stripRewrites;
+    segMarker = hasSegMarkers ? DEFAULT_SEG_MARKER : null;
+    factory = LineIterator.getFactory(new SerializableFunction<String, List<CoreLabel>>() {
+      private static final long serialVersionUID = 5243251505653686497L;
+      public List<CoreLabel> apply(String in) {
+        List<CoreLabel> tokenList;
+        
+        String lineDomain = "";
+        if (inputHasDomainLabels) {
+          String[] domainAndData = in.split("\\s+", 2);
+          if (domainAndData.length < 2) {
+            System.err.println("Missing domain label or text: ");
+            System.err.println(in);
+          } else {
+            lineDomain = domainAndData[0];
+            in = domainAndData[1];
+          }
+        } else {
+          lineDomain = inputDomain;
+        }
+
+        if (inputHasTags) {
+          String[] toks = in.split("\\s+");
+          List<CoreLabel> input = new ArrayList<CoreLabel>(toks.length);
+          final String tagDelim = Pattern.quote(tagDelimiter);
+          final String rewDelim = Pattern.quote(rewriteDelimiter);
+          for (String wordTag : toks) {
+            String[] wordTagPair = wordTag.split(tagDelim);
+            assert wordTagPair.length == 2;
+            String[] rewritePair = wordTagPair[0].split(rewDelim);
+            assert rewritePair.length == 1 || rewritePair.length == 2;
+            String raw = rewritePair[0];
+            String rewritten = raw;
+            if (rewritePair.length == 2)
+              rewritten = rewritePair[1];
+
+            CoreLabel cl = new CoreLabel();
+            if (tf != null) {
+              List<CoreLabel> lexListRaw = tf.getTokenizer(new StringReader(raw)).tokenize();
+              List<CoreLabel> lexListRewritten = tf.getTokenizer(new StringReader(rewritten)).tokenize();
+              if (lexListRewritten.size() != lexListRaw.size()) {
+                System.err.printf("%s: Different number of tokens in raw and rewritten: %s>>>%s%n", this.getClass().getName(), raw, rewritten);
+                lexListRewritten = lexListRaw;
+
+              }
+              if (lexListRaw.size() == 0) {
+                continue;
+              
+              } else if (lexListRaw.size() == 1) {
+                raw = lexListRaw.get(0).value();
+                rewritten = lexListRewritten.get(0).value();
+              
+              } else if (lexListRaw.size() > 1) {
+                String secondWord = lexListRaw.get(1).value();
+                if (secondWord.equals(String.valueOf(segMarker))) {
+                  // Special case for the null marker in the vocalized section
+                  raw = lexListRaw.get(0).value() + segMarker;
+                  rewritten = lexListRewritten.get(0).value() + segMarker;
+                } else {
+                  System.err.printf("%s: Raw token generates multiple segments: %s%n", this.getClass().getName(), raw);
+                  raw = lexListRaw.get(0).value();
+                  rewritten = lexListRewritten.get(0).value();
+                }
+              }
+            }
+            cl.setValue(raw);
+            cl.setWord(raw);
+            cl.setTag(wordTagPair[1]);
+            cl.set(CoreAnnotations.DomainAnnotation.class, lineDomain);
+            cl.set(RewrittenArabicAnnotation.class, rewritten);
+            input.add(cl);
+          }
+          tokenList = IOBUtils.StringToIOB(input, segMarker, true, shouldStripRewrites);
+
+        } else if (tf == null) {
+          tokenList = IOBUtils.StringToIOB(in, segMarker);
+
+        } else {
+          List<CoreLabel> line = tf.getTokenizer(new StringReader(in)).tokenize();
+          tokenList = IOBUtils.StringToIOB(line, segMarker, false);
+        }
+        
+        if (inputHasDomainLabels && !inputHasTags)
+          IOBUtils.labelDomain(tokenList, lineDomain);
+        else if (!inputHasDomainLabels)
+          IOBUtils.labelDomain(tokenList, inputDomain);
+        return tokenList;
+      }
+    });
+  }
+

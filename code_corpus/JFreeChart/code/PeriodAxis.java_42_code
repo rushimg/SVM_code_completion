@@ -1,0 +1,24 @@
+    public AxisState draw(Graphics2D g2, double cursor, Rectangle2D plotArea,
+            Rectangle2D dataArea, RectangleEdge edge,
+            PlotRenderingInfo plotState) {
+
+        AxisState axisState = new AxisState(cursor);
+        if (isAxisLineVisible()) {
+            drawAxisLine(g2, cursor, dataArea, edge);
+        }
+        if (isTickMarksVisible()) {
+            drawTickMarks(g2, axisState, dataArea, edge);
+        }
+        if (isTickLabelsVisible()) {
+            for (int band = 0; band < this.labelInfo.length; band++) {
+                axisState = drawTickLabels(band, g2, axisState, dataArea, edge);
+            }
+        }
+
+        // returned)...
+        axisState = drawLabel(getLabel(), g2, plotArea, dataArea, edge,
+                axisState);
+        return axisState;
+
+    }
+

@@ -1,0 +1,36 @@
+/**
+ * A sequence classifier that labels tokens with types based on a simple manual mapping from
+ * regular expressions to the types of the entities they are meant to describe.
+ * The user provides a file formatted as follows:
+ * <pre>
+ *    regex1    TYPE    overwritableType1,Type2...    priority
+ *    regex2    TYPE    overwritableType1,Type2...    priority
+ *    ...
+ * </pre>
+ * where each argument is tab-separated, and the last two arguments are optional. Several regexes can be
+ * associated with a single type. In the case where multiple regexes match a phrase, the priority ranking
+ * is used to choose between the possible types. This classifier is designed to be used as part of a full
+ * NER system to label entities that don't fall into the usual NER categories. It only records the label
+ * if the token has not already been NER-annotated, or it has been annotated but the NER-type has been
+ * designated overwritable (the third argument).  Note that this is evaluated token-wise in this classifier,
+ * and so it may assign a label against a token sequence that is partly background and partly overwritable.
+ * (In contrast, RegexNERAnnotator doesn't allow this.)
+ * It assigns labels to AnswerAnnotation, while checking for existing labels in NamedEntityTagAnnotation.
+ *
+ * The first column regex may be a sequence of regex, each separated by whitespace (matching "\\s+").
+ * The regex will match if the successive regex match a sequence of tokens in the input.
+ * Spaces can only be used to separate regular expression tokens; within tokens \\s or similar non-space
+ * representations need to be used instead.
+ * Notes: Following Java regex conventions, some characters in the file need to be escaped. Only a single
+ * backslash should be used though, as these are not String literals. The input to RegexNER will have
+ * already been tokenized.  So, for example, with our usual English tokenization, things like genitives
+ * and commas at the end of words will be separated in the input and matched as a separate token.
+ *
+ * This class isn't implemented very efficiently, since every regex is evaluated at every token position.
+ * So it can and does get quite slow if you have a lot of patterns in your NER rules.
+ * {@code TokensRegex} is a more general framework to provide the functionality of this class.
+ * But at present we still use this class.
+ *
+ * @author jtibs
+ * @author Mihai
+ */

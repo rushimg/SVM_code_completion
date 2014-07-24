@@ -1,0 +1,20 @@
+  public static Set<String> retainMatchingKeys(Counter<String> counter, List<Pattern> matchPatterns) {
+    Set<String> removed = Generics.newHashSet();
+    for (String key : counter.keySet()) {
+      boolean matched = false;
+      for (Pattern pattern : matchPatterns) {
+        if (pattern.matcher(key).matches()) {
+          matched = true;
+          break;
+        }
+      }
+      if (!matched) {
+        removed.add(key);
+      }
+    }
+    for (String key : removed) {
+      counter.remove(key);
+    }
+    return removed;
+  }
+

@@ -1,0 +1,17 @@
+    protected URI createLocationURI(final String location) throws ProtocolException {
+        try {
+            final URIBuilder b = new URIBuilder(new URI(location).normalize());
+            final String host = b.getHost();
+            if (host != null) {
+                b.setHost(host.toLowerCase(Locale.ROOT));
+            }
+            final String path = b.getPath();
+            if (TextUtils.isEmpty(path)) {
+                b.setPath("/");
+            }
+            return b.build();
+        } catch (final URISyntaxException ex) {
+            throw new ProtocolException("Invalid redirect URI: " + location, ex);
+        }
+    }
+

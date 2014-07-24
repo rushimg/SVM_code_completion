@@ -1,0 +1,45 @@
+
+package com.google.api.client.http.javanet;
+
+import com.google.api.client.http.LowLevelHttpResponse;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+final class NetHttpResponse extends LowLevelHttpResponse {
+
+  private final HttpURLConnection connection;
+  private final int responseCode;
+  private final String responseMessage;
+  private final ArrayList<String> headerNames = new ArrayList<String>();
+  private final ArrayList<String> headerValues = new ArrayList<String>();
+
+  NetHttpResponse(HttpURLConnection connection) throws IOException {
+    this.connection = connection;
+    int responseCode = connection.getResponseCode();
+    this.responseCode = responseCode == -1 ? 0 : responseCode;
+    responseMessage = connection.getResponseMessage();
+    List<String> headerNames = this.headerNames;
+    List<String> headerValues = this.headerValues;
+    for (Map.Entry<String, List<String>> entry : connection.getHeaderFields().entrySet()) {
+      String key = entry.getKey();
+      if (key != null) {
+        for (String value : entry.getValue()) {
+          if (value != null) {
+            headerNames.add(key);
+            headerValues.add(value);
+          }
+        }
+      }
+    }
+  }
+
+  @Override
+  public int getStatusCode() {
+    return responseCode;
+  }
+

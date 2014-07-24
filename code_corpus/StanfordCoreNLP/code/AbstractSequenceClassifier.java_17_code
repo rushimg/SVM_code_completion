@@ -1,0 +1,44 @@
+  public List<Triple<String, Integer, Integer>> classifyToCharacterOffsets(String sentences) {
+    ObjectBank<List<IN>> documents =
+      makeObjectBankFromString(sentences, plainTextReaderAndWriter);
+
+    List<Triple<String, Integer, Integer>> entities =
+      new ArrayList<Triple<String, Integer, Integer>>();
+    for (List<IN> doc : documents) {
+      String prevEntityType = flags.backgroundSymbol;
+      Triple<String, Integer, Integer> prevEntity = null;
+
+      classify(doc);
+
+      for (IN fl : doc) {
+        String guessedAnswer = fl.get(CoreAnnotations.AnswerAnnotation.class);
+        if (guessedAnswer.equals(flags.backgroundSymbol)) {
+          if (prevEntity != null) {
+            entities.add(prevEntity);
+            prevEntity = null;
+          }
+        } else {
+          if (!guessedAnswer.equals(prevEntityType)) {
+            if (prevEntity != null) {
+              entities.add(prevEntity);
+            }
+            prevEntity = new Triple<String, Integer, Integer>(guessedAnswer, fl
+                .get(CoreAnnotations.CharacterOffsetBeginAnnotation.class), fl.get(CoreAnnotations.CharacterOffsetEndAnnotation.class));
+          } else {
+            assert prevEntity != null; // if you read the code carefully, this
+                                       // should always be true!
+            prevEntity.setThird(fl.get(CoreAnnotations.CharacterOffsetEndAnnotation.class));
+          }
+        }
+        prevEntityType = guessedAnswer;
+      }
+
+      // include any entity at end of doc
+      if (prevEntity != null) {
+        entities.add(prevEntity);
+      }
+
+    }
+    return entities;
+  }
+

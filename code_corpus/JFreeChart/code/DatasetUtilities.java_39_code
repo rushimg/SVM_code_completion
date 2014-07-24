@@ -1,0 +1,114 @@
+    public static Range iterateToFindRangeBounds(XYDataset dataset,
+            List visibleSeriesKeys, Range xRange, boolean includeInterval) {
+
+        if (dataset == null) {
+            throw new IllegalArgumentException("Null 'dataset' argument.");
+        }
+        if (visibleSeriesKeys == null) {
+            throw new IllegalArgumentException(
+                    "Null 'visibleSeriesKeys' argument.");
+        }
+        if (xRange == null) {
+            throw new IllegalArgumentException("Null 'xRange' argument");
+        }
+
+        double minimum = Double.POSITIVE_INFINITY;
+        double maximum = Double.NEGATIVE_INFINITY;
+
+        // handle three cases by dataset type
+        if (includeInterval && dataset instanceof OHLCDataset) {
+            // handle special case of OHLCDataset
+            OHLCDataset ohlc = (OHLCDataset) dataset;
+            Iterator iterator = visibleSeriesKeys.iterator();
+            while (iterator.hasNext()) {
+                Comparable seriesKey = (Comparable) iterator.next();
+                int series = dataset.indexOf(seriesKey);
+                int itemCount = dataset.getItemCount(series);
+                for (int item = 0; item < itemCount; item++) {
+                    double x = ohlc.getXValue(series, item);
+                    if (xRange.contains(x)) {
+                        double lvalue = ohlc.getLowValue(series, item);
+                        double uvalue = ohlc.getHighValue(series, item);
+                        if (!Double.isNaN(lvalue)) {
+                            minimum = Math.min(minimum, lvalue);
+                        }
+                        if (!Double.isNaN(uvalue)) {
+                            maximum = Math.max(maximum, uvalue);
+                        }
+                    }
+                }
+            }
+        }
+        else if (includeInterval && dataset instanceof BoxAndWhiskerXYDataset) {
+            // handle special case of BoxAndWhiskerXYDataset
+            BoxAndWhiskerXYDataset bx = (BoxAndWhiskerXYDataset) dataset;
+            Iterator iterator = visibleSeriesKeys.iterator();
+            while (iterator.hasNext()) {
+                Comparable seriesKey = (Comparable) iterator.next();
+                int series = dataset.indexOf(seriesKey);
+                int itemCount = dataset.getItemCount(series);
+                for (int item = 0; item < itemCount; item++) {
+                    double x = bx.getXValue(series, item);
+                    if (xRange.contains(x)) {
+                        Number lvalue = bx.getMinRegularValue(series, item);
+                        Number uvalue = bx.getMaxRegularValue(series, item);
+                        if (lvalue != null) {
+                            minimum = Math.min(minimum, lvalue.doubleValue());
+                        }
+                        if (uvalue != null) {
+                            maximum = Math.max(maximum, uvalue.doubleValue());
+                        }
+                    }
+                }
+            }
+        }
+        else if (includeInterval && dataset instanceof IntervalXYDataset) {
+            // handle special case of IntervalXYDataset
+            IntervalXYDataset ixyd = (IntervalXYDataset) dataset;
+            Iterator iterator = visibleSeriesKeys.iterator();
+            while (iterator.hasNext()) {
+                Comparable seriesKey = (Comparable) iterator.next();
+                int series = dataset.indexOf(seriesKey);
+                int itemCount = dataset.getItemCount(series);
+                for (int item = 0; item < itemCount; item++) {
+                    double x = ixyd.getXValue(series, item);
+                    if (xRange.contains(x)) {
+                        double lvalue = ixyd.getStartYValue(series, item);
+                        double uvalue = ixyd.getEndYValue(series, item);
+                        if (!Double.isNaN(lvalue)) {
+                            minimum = Math.min(minimum, lvalue);
+                        }
+                        if (!Double.isNaN(uvalue)) {
+                            maximum = Math.max(maximum, uvalue);
+                        }
+                    }
+                }
+            }
+        }
+        else {
+            // standard case - plain XYDataset
+            Iterator iterator = visibleSeriesKeys.iterator();
+            while (iterator.hasNext()) {
+                Comparable seriesKey = (Comparable) iterator.next();
+                int series = dataset.indexOf(seriesKey);
+                int itemCount = dataset.getItemCount(series);
+                for (int item = 0; item < itemCount; item++) {
+                    double x = dataset.getXValue(series, item);
+                    double y = dataset.getYValue(series, item);
+                    if (xRange.contains(x)) {
+                        if (!Double.isNaN(y)) {
+                            minimum = Math.min(minimum, y);
+                            maximum = Math.max(maximum, y);
+                        }
+                    }
+                }
+            }
+        }
+        if (minimum == Double.POSITIVE_INFINITY) {
+            return null;
+        }
+        else {
+            return new Range(minimum, maximum);
+        }
+    }
+

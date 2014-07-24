@@ -1,0 +1,35 @@
+    public ContourPlot(ContourDataset dataset,
+                       ValueAxis domainAxis, ValueAxis rangeAxis,
+                       ColorBar colorBar) {
+
+        super();
+
+        this.dataset = dataset;
+        if (dataset != null) {
+            dataset.addChangeListener(this);
+        }
+
+        this.domainAxis = domainAxis;
+        if (domainAxis != null) {
+            domainAxis.setPlot(this);
+            domainAxis.addChangeListener(this);
+        }
+
+        this.rangeAxis = rangeAxis;
+        if (rangeAxis != null) {
+            rangeAxis.setPlot(this);
+            rangeAxis.addChangeListener(this);
+        }
+
+        this.colorBar = colorBar;
+        if (colorBar != null) {
+            colorBar.getAxis().setPlot(this);
+            colorBar.getAxis().addChangeListener(this);
+            colorBar.configure(this);
+        }
+        this.colorBarLocation = RectangleEdge.LEFT;
+
+        this.toolTipGenerator = new StandardContourToolTipGenerator();
+
+    }
+

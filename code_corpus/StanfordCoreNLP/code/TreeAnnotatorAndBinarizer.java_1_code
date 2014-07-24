@@ -1,0 +1,15 @@
+  public void addRoot(Tree t) {
+    if (t.isLeaf()) {
+      System.err.println("Warning: tree is leaf: " + t);
+      t = tf.newTreeNode(tlp.startSymbol(), Collections.singletonList(t));
+    }
+    t.setLabel(new CategoryWordTag(tlp.startSymbol(), Lexicon.BOUNDARY, Lexicon.BOUNDARY_TAG));
+    List<Tree> preTermChildList = new ArrayList<Tree>();
+    Tree boundaryTerm = tf.newLeaf(new Word(Lexicon.BOUNDARY));//CategoryWordTag(Lexicon.BOUNDARY,Lexicon.BOUNDARY,""));
+    preTermChildList.add(boundaryTerm);
+    Tree boundaryPreTerm = tf.newTreeNode(new CategoryWordTag(Lexicon.BOUNDARY_TAG, Lexicon.BOUNDARY, Lexicon.BOUNDARY_TAG), preTermChildList);
+    List<Tree> childList = t.getChildrenAsList();
+    childList.add(boundaryPreTerm);
+    t.setChildren(childList);
+  }
+

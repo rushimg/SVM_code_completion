@@ -1,0 +1,14 @@
+  protected TreeGraphNode(Tree t, TreeGraphNode parent) {
+    this.parent = parent;
+    Tree[] tKids = t.children();
+    int numKids = tKids.length;
+    children = new TreeGraphNode[numKids];
+    for (int i = 0; i < numKids; i++) {
+      children[i] = new TreeGraphNode(tKids[i], this);
+      if (t.isPreTerminal()) { // add the tags to the leaves
+        children[i].label.setTag(t.label().value());
+      }
+    }
+    this.label = (CoreLabel) mlf.newLabel(t.label());
+  }
+

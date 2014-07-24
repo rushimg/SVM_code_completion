@@ -1,0 +1,56 @@
+    private IsomorphismRelation<V, E> findNextIsomorphicGraph()
+    {
+        boolean result = false;
+        IsomorphismRelation<V, E> resultRelation = null;
+        if (this.vertexPermuteIter != null) {
+            // System.out.println("Souce  LabelsGraph="+this.lableGraph1);
+            while (this.vertexPermuteIter.hasNext()) {
+                currVertexPermutation = this.vertexPermuteIter.getNextSet();
+
+                // compare vertexes
+                if (!areVertexSetsOfTheSameEqualityGroup(
+                        this.graph1VertexSet,
+                        currVertexPermutation))
+                {
+                    continue; // this one is not iso, so try the next one
+                }
+
+                // compare edges
+                GraphOrdering<V, E> currPermuteGraph =
+                    new GraphOrdering<V, E>(
+                        this.graph2,
+                        currVertexPermutation,
+                        this.graph2EdgeSet);
+
+                // System.out.println("target LablesGraph="+currPermuteGraph);
+                if (this.lableGraph1.equalsByEdgeOrder(currPermuteGraph)) {
+                    // create result object.
+                    resultRelation =
+                        new IsomorphismRelation<V, E>(
+                            new ArrayList<V>(graph1VertexSet),
+                            new ArrayList<V>(currVertexPermutation),
+                            graph1,
+                            graph2);
+
+                    // if the edge comparator exists, check equivalence by it
+                    boolean edgeEq =
+                        areAllEdgesEquivalent(
+                            resultRelation,
+                            this.edgeComparator);
+                    if (edgeEq) // only if equivalent
+
+                    {
+                        result = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (result == true) {
+            return resultRelation;
+        } else {
+            return null;
+        }
+    }
+

@@ -1,0 +1,24 @@
+  public Map<String, String> getSettings(String namespace) {
+
+    Map<String, String> trainingParams = new HashMap<String, String>();
+
+    for (Map.Entry<String, String> entry : parameters.entrySet()) {
+      String key = entry.getKey();
+
+      if (namespace != null) {
+        String prefix = namespace + ".";
+
+        if (key.startsWith(prefix))  {
+          trainingParams.put(key.substring(prefix.length()), entry.getValue());
+        }
+      }
+      else {
+        if (!key.contains(".")) {
+          trainingParams.put(key, entry.getValue());
+        }
+      }
+    }
+
+    return Collections.unmodifiableMap(trainingParams);
+  }
+

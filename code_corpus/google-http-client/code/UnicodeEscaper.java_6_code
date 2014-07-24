@@ -1,0 +1,57 @@
+  protected final String escapeSlow(String s, int index) {
+    int end = s.length();
+
+    // Get a destination buffer and setup some loop variables.
+    char[] dest = Platform.charBufferFromThreadLocal();
+    int destIndex = 0;
+    int unescapedChunkStart = 0;
+
+    while (index < end) {
+      int cp = codePointAt(s, index, end);
+      if (cp < 0) {
+        throw new IllegalArgumentException("Trailing high surrogate at end of input");
+      }
+      // It is possible for this to return null because nextEscapeIndex() may
+      // (for performance reasons) yield some false positives but it must never
+      // give false negatives.
+      char[] escaped = escape(cp);
+      int nextIndex = index + (Character.isSupplementaryCodePoint(cp) ? 2 : 1);
+      if (escaped != null) {
+        int charsSkipped = index - unescapedChunkStart;
+
+        // This is the size needed to add the replacement, not the full
+        // size needed by the string. We only regrow when we absolutely must.
+        int sizeNeeded = destIndex + charsSkipped + escaped.length;
+        if (dest.length < sizeNeeded) {
+          int destLength = sizeNeeded + end - index + DEST_PAD;
+          dest = growBuffer(dest, destIndex, destLength);
+        }
+        // If we have skipped any characters, we need to copy them now.
+        if (charsSkipped > 0) {
+          s.getChars(unescapedChunkStart, index, dest, destIndex);
+          destIndex += charsSkipped;
+        }
+        if (escaped.length > 0) {
+          System.arraycopy(escaped, 0, dest, destIndex, escaped.length);
+          destIndex += escaped.length;
+        }
+        // If we dealt with an escaped character, reset the unescaped range.
+        unescapedChunkStart = nextIndex;
+      }
+      index = nextEscapeIndex(s, nextIndex, end);
+    }
+
+    // Process trailing unescaped characters - no need to account for escaped
+    // length or padding the allocation.
+    int charsSkipped = end - unescapedChunkStart;
+    if (charsSkipped > 0) {
+      int endIndex = destIndex + charsSkipped;
+      if (dest.length < endIndex) {
+        dest = growBuffer(dest, destIndex, endIndex);
+      }
+      s.getChars(unescapedChunkStart, end, dest, destIndex);
+      destIndex = endIndex;
+    }
+    return new String(dest, 0, destIndex);
+  }
+

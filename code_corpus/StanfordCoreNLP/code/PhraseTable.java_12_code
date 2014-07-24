@@ -1,0 +1,64 @@
+    WordList wordList;
+    String text;
+    String tag;
+    Object data; // additional data associated with the phrase
+
+    // Alternate forms that can be used for lookup elsewhere
+    private Set<String> alternateForms;
+
+    public Phrase(WordList wordList, String text, String tag, Object data) {
+      this.wordList = wordList;
+      this.text = text;
+      this.tag = tag;
+      this.data = data;
+    }
+
+    public boolean isLonger(Phrase phrase)
+    {
+      return (this.getWordList().size() > phrase.getWordList().size()
+             || (this.getWordList().size() == phrase.getWordList().size()
+                 && this.getText().length() > phrase.getText().length()));
+    }
+
+    public boolean addForm(String form) {
+      if (alternateForms == null) {
+        alternateForms = new HashSet<String>(4);
+        alternateForms.add(text);
+      }
+      return alternateForms.add(form);
+    }
+
+    public WordList getWordList() {
+      return wordList;
+    }
+
+    public String getText() {
+      return text;
+    }
+
+    public String getTag() {
+      return tag;
+    }
+
+    public Object getData() {
+      return data;
+    }
+
+    public Collection<String> getAlternateForms() {
+      if (alternateForms == null) {
+        List<String> forms = new ArrayList(1);
+        forms.add(text);
+        return forms;
+      }
+      return alternateForms;
+    }
+
+    public String toString()
+    {
+      return text;
+    }
+  }
+
+  public final static Comparator<PhraseMatch> PHRASEMATCH_LENGTH_ENDPOINTS_COMPARATOR =
+          Comparators.chain(HasInterval.LENGTH_COMPARATOR, HasInterval.ENDPOINTS_COMPARATOR);
+

@@ -1,0 +1,36 @@
+  @Override
+  public boolean checkCorrectness() {
+    System.err.println("Checking model correctness; x size " + p.data.xSize + ' ' + ", ysize " + p.data.ySize);
+
+    NumberFormat nf = NumberFormat.getNumberInstance();
+    nf.setMaximumFractionDigits(4);
+    boolean flag = true;
+    for (int f = 0; f < lambda.length; f++) {
+      if (Math.abs(lambda[f]) > 100) {
+        System.err.println(" Lambda too big " + lambda[f]);
+        System.err.println(" empirical " + ftildeArr[f] + " expected " + fExpected(p.functions.get(f)));
+      }
+    }
+
+    for (int i = 0; i < ftildeArr.length; i++) {
+      double exp = Math.abs(ftildeArr[i] - fExpected(p.functions.get(i)));
+      if (exp > 0.001) {
+        flag = false;
+        System.err.println("Constraint " + i + " not satisfied emp " + nf.format(ftildeArr[i]) + " exp " + nf.format(fExpected(p.functions.get(i))) + " diff " + nf.format(exp) + " lambda " + nf.format(lambda[i]));
+      }
+    }
+    for (int x = 0; x < p.data.xSize; x++) {
+      double s = 0.0;
+      for (int y = 0; y < p.data.ySize; y++) {
+        s = s + probConds[x][y];
+      }
+      if (Math.abs(s - 1) > 0.0001) {
+        for (int y = 0; y < p.data.ySize; y++) {
+          System.err.println(y + " : " + probConds[x][y]);
+        }
+        System.err.println("probabilities do not sum to one " + x + ' ' + (float) s);
+      }
+    }
+    return flag;
+  }
+

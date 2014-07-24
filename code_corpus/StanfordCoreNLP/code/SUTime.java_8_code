@@ -1,0 +1,76 @@
+  public static class SimpleTime extends Time {
+    String label;
+
+    public SimpleTime(String label) {
+      this.label = label;
+    }
+
+    @Override
+    public String toFormattedString(int flags) {
+      if (getTimeLabel() != null) {
+        return getTimeLabel();
+      }
+      if ((flags & FORMAT_ISO) != 0) {
+        return null;
+      } // TODO: is there iso standard?
+      return label;
+    }
+
+    @Override
+    public Time add(Duration offset) {
+      Time t = new RelativeTime(this, TemporalOp.OFFSET_EXACT, offset);
+      // t.approx = this.approx;
+      // t.mod = this.mod;
+      return t;
+    }
+
+    private static final long serialVersionUID = 1;
+  }
+
+  // Composite time - like PartialTime but with more, approximate fields
+  public static class CompositePartialTime extends PartialTime {
+    // Summer weekend morning in June
+    Time tod; // Time of day
+    Time dow; // Day of week
+    Time poy; // Part of year
+
+    // Duration duration; // Underspecified time (like day in June)
+
+    public CompositePartialTime(PartialTime t, Time poy, Time dow, Time tod) {
+      super(t);
+      this.poy = poy;
+      this.dow = dow;
+      this.tod = tod;
+    }
+
+    public CompositePartialTime(PartialTime t, Partial p, Time poy, Time dow, Time tod) {
+      this(t, poy, dow, tod);
+      this.base = p;
+    }
+
+    @Override
+    public Instant getJodaTimeInstant() {
+      Partial p = base;
+      if (tod != null) {
+        Partial p2 = tod.getJodaTimePartial();
+        if (p2 != null && JodaTimeUtils.isCompatible(p, p2)) {
+          p = JodaTimeUtils.combine(p, p2);
+        }
+      }
+      if (dow != null) {
+        Partial p2 = dow.getJodaTimePartial();
+        if (p2 != null && JodaTimeUtils.isCompatible(p, p2)) {
+          p = JodaTimeUtils.combine(p, p2);
+        }
+      }
+      if (poy != null) {
+        Partial p2 = poy.getJodaTimePartial();
+        if (p2 != null && JodaTimeUtils.isCompatible(p, p2)) {
+          p = JodaTimeUtils.combine(p, p2);
+        }
+      }
+      return JodaTimeUtils.getInstant(p);
+    }
+
+    @Override
+    public Duration getDuration() {

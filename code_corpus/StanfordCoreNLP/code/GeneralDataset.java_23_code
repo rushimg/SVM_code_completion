@@ -1,0 +1,25 @@
+
+  public void printSVMLightFormat(PrintWriter pw) {
+    //assumes each data item has a few features on, and sorts the feature keys while collecting the values in a counter
+
+    // old comment:
+    // the following code commented out by Ramesh (nmramesh@cs.stanford.edu) 12/17/2009.
+    // why not simply print the exact id of the label instead of mapping to some values??
+    // new comment:
+    // mihai: we NEED this, because svm_light has special conventions not supported by default by our labels,
+    //        e.g., in a multiclass setting it assumes that labels start at 1 whereas our labels start at 0 (08/31/2010)
+    String[] labelMap = makeSvmLabelMap();
+
+    for (int i = 0; i < size; i++) {
+      RVFDatum<L, F> d = getRVFDatum(i);
+      Counter<F> c = d.asFeaturesCounter();
+      ClassicCounter<Integer> printC = new ClassicCounter<Integer>();
+      for (F f : c.keySet()) {
+        printC.setCount(featureIndex.indexOf(f), c.getCount(f));
+      }
+      Integer[] features = printC.keySet().toArray(new Integer[printC.keySet().size()]);
+      Arrays.sort(features);
+      StringBuilder sb = new StringBuilder();
+      sb.append(labelMap[labels[i]]).append(' ');
+      // sb.append(labels[i]).append(' '); // commented out by mihai: labels[i] breaks svm_light conventions!
+

@@ -1,0 +1,60 @@
+  public static String timexDurationValue(ReadablePeriod duration, ConversionOptions opts){
+    StringBuilder b = new StringBuilder().append("P");
+    boolean seenTime = false;
+    int years = duration.get(years());
+    //(millenia)
+    if(years >= 1000 && consistentWithForced("L",opts.forceUnits)){
+      b.append(opts.approximate ? "X" : years / 1000).append("L");
+      years = years % 1000;
+    }
+    //(centuries)
+    if(years >= 100 && consistentWithForced("C", opts.forceUnits)){
+      b.append(opts.approximate ? "X" : years / 100).append("C");
+      years = years % 100;
+    }
+    //(decades)
+    if(years >= 10 && consistentWithForced("E", opts.forceUnits)){
+      b.append(opts.approximate ? "X" : years / 10).append("E");
+      years = years % 10;
+    }
+    //(years)
+    if(years != 0 && consistentWithForced("Y", opts.forceUnits)){
+      b.append(opts.approximate ? "X" : years).append("Y");
+    }
+    //(months)
+    int months = duration.get(months());
+    if(months != 0){
+      if(months % 3 == 0 && consistentWithForced("Q", opts.forceUnits)){
+        b.append(opts.approximate ? "X" : months / 3).append("Q");
+        months = months % 3;
+      } else {
+        b.append(opts.approximate ? "X" : months).append("M");
+      }
+    }
+    //(weeks)
+    if(duration.get(weeks()) != 0){
+      b.append(opts.approximate ? "X" : duration.get(weeks())).append("W");
+    }
+    //(days)
+    if(duration.get(days()) != 0){
+      b.append(opts.approximate ? "X" : duration.get(days())).append("D");
+    }
+    //(hours)
+    if(duration.get(hours()) != 0){
+      if(!seenTime){ b.append("T"); seenTime = true; }
+      b.append(opts.approximate ? "X" : duration.get(hours())).append("H");
+    }
+    //(minutes)
+    if(duration.get(minutes()) != 0){
+      if(!seenTime){ b.append("T"); seenTime = true; }
+      b.append(opts.approximate ? "X" : duration.get(minutes())).append("M");
+    }
+    //(seconds)
+    if(duration.get(seconds()) != 0){
+      if(!seenTime){ b.append("T"); seenTime = true; }
+      b.append(opts.approximate ? "X" : duration.get(seconds())).append("S");
+    }
+    return b.toString();
+  }
+  public static String timexDurationValue(ReadablePeriod duration){ return timexDurationValue(duration, new ConversionOptions()); }
+

@@ -1,0 +1,16 @@
+  public static GrammaticalRelation getPrep(String prepositionString) {
+    GrammaticalRelation result = preps.get(prepositionString);
+    if (result == null) {
+      synchronized(preps) {
+        result = preps.get(prepositionString);
+        if (result == null) {
+          result = new GrammaticalRelation(Language.English, "prep", "prep_collapsed", null, PREPOSITIONAL_MODIFIER, prepositionString);
+          preps.put(prepositionString, result);
+          threadSafeAddRelation(result);
+        }
+      }
+    }
+    return result;
+  }
+
+

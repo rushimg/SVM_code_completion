@@ -1,0 +1,11 @@
+  public CoreNLPProtos.Document toProto(Annotation doc) {
+    Set<Class<?>> keysToSerialize = new HashSet<Class<?>>(doc.keySet());
+    keysToSerialize.remove(TokensAnnotation.class);  // note(gabor): tokens are saved in the sentence
+    CoreNLPProtos.Document.Builder builder = toProtoBuilder(doc, keysToSerialize);
+    // Completeness Check
+    if (enforceLosslessSerialization && !keysToSerialize.isEmpty()) {
+      throw new LossySerializationException("Keys are not being serialized: " + StringUtils.join(keysToSerialize));
+    }
+    return builder.build();
+  }
+

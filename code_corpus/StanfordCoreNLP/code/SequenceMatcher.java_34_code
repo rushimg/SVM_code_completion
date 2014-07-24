@@ -1,0 +1,33 @@
+  static class MatchedStates<T>
+  {
+    // Sequence matcher with pattern that we are matching against and sequence
+    SequenceMatcher<T> matcher;
+    // Branch states
+    BranchStates branchStates;
+    // set of old states along with their branch ids (used to avoid reallocating mem)
+    List<State> oldStates;
+    // new states to be explored (along with their branch ids)
+    List<State> states;
+    // Current position to match
+    int curPosition = -1;
+
+    protected MatchedStates(SequenceMatcher<T> matcher, SequencePattern.State state)
+    {
+      this(matcher, new BranchStates());
+      int bid = branchStates.newBid(-1, 0);
+      states.add(new State(bid,state));
+    }
+
+    private MatchedStates(SequenceMatcher<T> matcher, BranchStates branchStates) {
+      this.matcher = matcher;
+      states = new ArrayList<State>();
+      oldStates = new ArrayList<State>();
+      this.branchStates = branchStates;
+      branchStates.link(this);
+    }
+
+    protected BranchStates getBranchStates()
+    {
+      return branchStates;
+    }
+

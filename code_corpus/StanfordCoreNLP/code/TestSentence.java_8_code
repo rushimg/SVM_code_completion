@@ -1,0 +1,48 @@
+  private ArrayList<TaggedWord> testTagInference() {
+    runTagInference();
+    return getTaggedSentence();
+  }
+
+  private void runTagInference() {
+    this.initializeScorer();
+
+    BestSequenceFinder ti = new ExactBestSequenceFinder();
+      //new BeamBestSequenceFinder(50);
+      //new KBestSequenceFinder()
+    int[] bestTags = ti.bestSequence(this);
+    finalTags = new String[bestTags.length];
+    for (int j = 0; j < size; j++) {
+      finalTags[j] = maxentTagger.tags.getTag(bestTags[j + leftWindow()]);
+    }
+    cleanUpScorer();
+  }
+
+
+  // This is used for Dan's tag inference methods.
+  // current is the actual word number + leftW
+  private void setHistory(int current, History h, int[] tags) {
+    //writes over the tags in the last thing in pairs
+
+    int left = leftWindow();
+    int right = rightWindow();
+
+    for (int j = current - left; j <= current + right; j++) {
+      if (j < left) {
+        continue;
+      } //but shouldn't happen
+      if (j >= size + left) {
+        break;
+      } //but shouldn't happen
+      h.setTag(j - left, maxentTagger.tags.getTag(tags[j]));
+    }
+  }
+
+  // do initializations for the TagScorer interface
+  protected void initializeScorer() {
+    pairs.setSize(size);
+    for (int i = 0; i < size; i++)
+      pairs.setWord(i,sent.get(i));
+    endSizePairs += size;
+  }
+
+

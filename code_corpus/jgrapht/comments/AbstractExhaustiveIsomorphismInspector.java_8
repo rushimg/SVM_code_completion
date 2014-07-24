@@ -1,0 +1,41 @@
+    /**
+     * <p>1. Creates a LabelsGraph of graph1 which will serve as a source to all
+     * the comparisons which will follow.
+     *
+     * <p>2. extract the edge array of graph2; it will be permanent too.
+     *
+     * <p>3. for each permutation of the vertexes of graph2, test :
+     *
+     * <p>3.1. vertices
+     *
+     * <p>3.2. edges (in labelsgraph)
+     *
+     * <p>Implementation Notes and considerations: Let's consider a trivial
+     * example: graph of strings "A","B","C" with two edges A->B,B->C. Let's
+     * assume for this example that the vertex comparator always returns true,
+     * meaning String value does not matter, only the graph structure does. So
+     * "D" "E" "A" with D->E->A will be isomorphic , but "A","B,"C"with
+     * A->B,A->C will not.
+     *
+     * <p>First let's extract the important info for isomorphism from the graph.
+     * We don't care what the vertexes are, we care that there are 3 of them
+     * with edges from first to second and from second to third. So the source
+     * LabelsGraph will be: vertexes:[1,2,3] edges:[[1->2],[2->3]] Now we will
+     * do several permutations of D,E,A. A few examples: D->E , E->A
+     * [1,2,3]=[A,D,E] so edges are: 2->3 , 3->1 . does it match the source? NO.
+     * [1,2,3]=[D,A,E] so edges are: 1->3 , 3->2 . no match either.
+     * [1,2,3]=[D,E,A] so edges are: 1->2 , 2->3 . MATCH FOUND ! Trivial
+     * algorithm: We will iterate on all permutations
+     * [abc][acb][bac][bca][cab][cba]. (n! of them,3!=6) For each, first compare
+     * vertexes using the VertexComparator(always true). Then see that the edges
+     * are in the exact order 1st->2nd , 2nd->3rd. If we found a match stop and
+     * return true, otherwise return false; we will compare vetices and edges by
+     * their order (1st,2nd,3rd,etc) only. Two graphs are the same, by this
+     * order, if: 1. for each i, sourceVertexArray[i] is equivalent to
+     * targetVertexArray[i] 2. for each vertex, the edges which start in it (it
+     * is the source) goes to the same ordered vertex. For multiple ones, count
+     * them too.
+     *
+     * @return IsomorphismRelation for a permutation found, or null if no
+     * permutation was isomorphic
+     */

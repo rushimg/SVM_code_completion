@@ -1,0 +1,209 @@
+    private void add(String tok, String ref, String pred) {
+      // token stats
+      if (!tokAccuracies.containsKey(tok)) {
+        tokAccuracies.put(tok, new Mean());
+        tokOcurrencies.put(tok, new Counter());
+        tokErrors.put(tok, new Counter());
+      }
+      tokOcurrencies.get(tok).increment();
+
+      // tag stats
+      if (!tagOcurrencies.containsKey(ref)) {
+        tagOcurrencies.put(ref, new Counter());
+        tagErrors.put(ref, new Counter());
+      }
+      tagOcurrencies.get(ref).increment();
+
+      // updates general, token and tag error stats
+      if (ref.equals(pred)) {
+        tokAccuracies.get(tok).add(1);
+        accuracy.add(1);
+      } else {
+        tokAccuracies.get(tok).add(0);
+        tokErrors.get(tok).increment();
+        tagErrors.get(ref).increment();
+        accuracy.add(0);
+      }
+
+      // populate confusion matrixes
+      if (!generalConfusionMatrix.containsKey(ref)) {
+        generalConfusionMatrix.put(ref, new ConfusionMatrixLine(ref));
+      }
+      generalConfusionMatrix.get(ref).increment(pred);
+
+      if (!tokenConfusionMatrix.containsKey(tok)) {
+        tokenConfusionMatrix.put(tok,
+            new HashMap<String, ConfusionMatrixLine>());
+      }
+      if (!tokenConfusionMatrix.get(tok).containsKey(ref)) {
+        tokenConfusionMatrix.get(tok).put(ref, new ConfusionMatrixLine(ref));
+      }
+      tokenConfusionMatrix.get(tok).get(ref).increment(pred);
+    }
+
+    private void updateTagFMeasure(String[] refs, String[] preds) {
+      // create a set with all tags
+      Set<String> tags = new HashSet<String>(Arrays.asList(refs));
+      tags.addAll(Arrays.asList(preds));
+
+      // create samples for each tag
+      for (String tag : tags) {
+        List<Span> reference = new ArrayList<Span>();
+        List<Span> prediction = new ArrayList<Span>();
+        for (int i = 0; i < refs.length; i++) {
+          if (refs[i].equals(tag)) {
+            reference.add(new Span(i, i + 1));
+          }
+          if (preds[i].equals(tag)) {
+            prediction.add(new Span(i, i + 1));
+          }
+        }
+        if (!this.tagFMeasure.containsKey(tag)) {
+          this.tagFMeasure.put(tag, new FMeasure());
+        }
+        // populate the fmeasure
+        this.tagFMeasure.get(tag).updateScores(
+            reference.toArray(new Span[reference.size()]),
+            prediction.toArray(new Span[prediction.size()]));
+      }
+    }
+
+    public double getAccuracy() {
+      return accuracy.mean();
+    }
+
+    public int getNumberOfTags() {
+      return this.tagOcurrencies.keySet().size();
+    }
+
+    public long getNumberOfSentences() {
+      return this.averageSentenceLength.count();
+    }
+
+    public double getAverageSentenceSize() {
+      return this.averageSentenceLength.mean();
+    }
+
+    public int getMinSentenceSize() {
+      return this.minimalSentenceLength;
+    }
+
+    public int getMaxSentenceSize() {
+      return this.maximumSentenceLength;
+    }
+
+    public double getTokenAccuracy(String token) {
+      return tokAccuracies.get(token).mean();
+    }
+
+    public int getTokenErrors(String token) {
+      return tokErrors.get(token).value();
+    }
+
+    public int getTokenFrequency(String token) {
+      return tokOcurrencies.get(token).value();
+    }
+
+    public SortedSet<String> getTokensOrderedByFrequency() {
+      SortedSet<String> toks = new TreeSet<String>(new Comparator<String>() {
+        public int compare(String o1, String o2) {
+          if (o1.equals(o2)) {
+            return 0;
+          }
+          int e1 = 0, e2 = 0;
+          if (tokOcurrencies.containsKey(o1))
+            e1 = tokOcurrencies.get(o1).value();
+          if (tokOcurrencies.containsKey(o2))
+            e2 = tokOcurrencies.get(o2).value();
+          if (e1 == e2) {
+            return o1.compareTo(o2);
+          }
+          return e2 - e1;
+        }
+      });
+
+      toks.addAll(tokOcurrencies.keySet());
+
+      return Collections.unmodifiableSortedSet(toks);
+    }
+
+    public SortedSet<String> getTokensOrderedByNumberOfErrors() {
+      SortedSet<String> toks = new TreeSet<String>(new Comparator<String>() {
+        public int compare(String o1, String o2) {
+          if (o1.equals(o2)) {
+            return 0;
+          }
+          int e1 = 0, e2 = 0;
+          if (tokErrors.containsKey(o1))
+            e1 = tokErrors.get(o1).value();
+          if (tokErrors.containsKey(o2))
+            e2 = tokErrors.get(o2).value();
+          if (e1 == e2) {
+            return o1.compareTo(o2);
+          }
+          return e2 - e1;
+        }
+      });
+      toks.addAll(tokErrors.keySet());
+      return toks;
+    }
+
+    public int getTagFrequency(String tag) {
+      return tagOcurrencies.get(tag).value();
+    }
+
+    public int getTagErrors(String tag) {
+      return tagErrors.get(tag).value();
+    }
+
+    public double getTagFMeasure(String tag) {
+      return tagFMeasure.get(tag).getFMeasure();
+    }
+
+    public double getTagRecall(String tag) {
+      return tagFMeasure.get(tag).getRecallScore();
+    }
+
+    public double getTagPrecision(String tag) {
+      return tagFMeasure.get(tag).getPrecisionScore();
+    }
+
+    public SortedSet<String> getTagsOrderedByErrors() {
+      SortedSet<String> tags = new TreeSet<String>(new Comparator<String>() {
+        public int compare(String o1, String o2) {
+          if (o1.equals(o2)) {
+            return 0;
+          }
+          int e1 = 0, e2 = 0;
+          if (tagErrors.containsKey(o1))
+            e1 = tagErrors.get(o1).value();
+          if (tagErrors.containsKey(o2))
+            e2 = tagErrors.get(o2).value();
+          if (e1 == e2) {
+            return o1.compareTo(o2);
+          }
+          return e2 - e1;
+        }
+      });
+      tags.addAll(tagErrors.keySet());
+      return Collections.unmodifiableSortedSet(tags);
+    }
+
+    public SortedSet<String> getConfusionMatrixTagset() {
+      return getConfusionMatrixTagset(generalConfusionMatrix);
+    }
+
+    public double[][] getConfusionMatrix() {
+      return createConfusionMatrix(getConfusionMatrixTagset(),
+          generalConfusionMatrix);
+    }
+
+    public SortedSet<String> getConfusionMatrixTagset(String token) {
+      return getConfusionMatrixTagset(tokenConfusionMatrix.get(token));
+    }
+
+    public double[][] getConfusionMatrix(String token) {
+      return createConfusionMatrix(getConfusionMatrixTagset(token),
+          tokenConfusionMatrix.get(token));
+    }
+

@@ -1,0 +1,137 @@
+
+public class ObjectBankWrapper<IN extends CoreMap> extends ObjectBank<List<IN>> {
+
+  private static final long serialVersionUID = -3838331732026362075L;
+
+  private final SeqClassifierFlags flags;
+  private final ObjectBank<List<IN>> wrapped;
+  private final Set<String> knownLCWords;
+
+
+  public ObjectBankWrapper(SeqClassifierFlags flags, ObjectBank<List<IN>> wrapped, Set<String> knownLCWords) {
+    super(null,null);
+    this.flags = flags;
+    this.wrapped = wrapped;
+    this.knownLCWords = knownLCWords;
+  }
+
+
+  @Override
+  public Iterator<List<IN>> iterator() {
+    Iterator<List<IN>> iter = new WrappedIterator(wrapped.iterator());
+    return iter;
+  }
+
+  private class WrappedIterator extends AbstractIterator<List<IN>> {
+    Iterator<List<IN>> wrappedIter;
+    Iterator<List<IN>> spilloverIter;
+
+    public WrappedIterator(Iterator<List<IN>> wrappedIter) {
+      this.wrappedIter = wrappedIter;
+    }
+
+    @Override
+    public boolean hasNext() {
+      while ((spilloverIter == null || !spilloverIter.hasNext()) &&
+             wrappedIter.hasNext()) {
+        List<IN> doc = wrappedIter.next();
+        List<List<IN>> docs = new ArrayList<List<IN>>();
+        docs.add(doc);
+        fixDocLengths(docs);
+        spilloverIter = docs.iterator();
+      }
+      return wrappedIter.hasNext() ||
+        (spilloverIter != null && spilloverIter.hasNext());
+    }
+
+    @Override
+    public List<IN> next() {
+      // this while loop now is redundant because it should
+      // have already been done in "hasNext".
+      // I'm keeping it so that the diff is minimal.
+      // -pichuan
+      while (spilloverIter == null || !spilloverIter.hasNext()) {
+        List<IN> doc = wrappedIter.next();
+        List<List<IN>> docs = new ArrayList<List<IN>>();
+        docs.add(doc);
+        fixDocLengths(docs);
+        spilloverIter = docs.iterator();
+      }
+
+      return processDocument(spilloverIter.next());
+    }
+  }
+
+  public List<IN> processDocument(List<IN> doc) {
+    if (flags.mergeTags) { mergeTags(doc); }
+    if (flags.iobTags) { iobTags(doc); }
+    doBasicStuff(doc);
+
+    return doc;
+  }
+
+  private String intern(String s) {
+    if (flags.intern) {
+      return s.intern();
+    } else {
+      return s;
+    }
+  }
+
+
+  private final Pattern monthDayPattern = Pattern.compile("Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday|January|February|March|April|May|June|July|August|September|October|November|December", Pattern.CASE_INSENSITIVE);
+
+  private String fix(String word) {
+    if (flags.normalizeTerms || flags.normalizeTimex) {
+      // Same case for days/months: map to lowercase
+      if (monthDayPattern.matcher(word).matches()) {
+        return word.toLowerCase();
+      }
+    }
+    if (flags.normalizeTerms) {
+      return Americanize.americanize(word, false);
+    }
+    return word;
+  }
+
+
+  private void doBasicStuff(List<IN> doc) {
+    int position = 0;
+    for (IN fl : doc) {
+
+      // position in document
+      fl.set(CoreAnnotations.PositionAnnotation.class, Integer.toString((position++)));
+
+      // word shape
+      if ((flags.wordShape > WordShapeClassifier.NOWORDSHAPE) && (!flags.useShapeStrings)) {
+        // TODO: if we pass in a FeatureFactory, as suggested by an
+        // earlier comment, we should use that FeatureFactory's
+        // getWord function
+        String word = fl.get(CoreAnnotations.TextAnnotation.class);
+        if (flags.wordFunction != null) {
+          word = flags.wordFunction.apply(word);
+        }
+        if (flags.useKnownLCWords && word.length() > 0) {
+          char ch = word.charAt(0);
+          if (Character.isLowerCase(ch)) {
+            knownLCWords.add(word);
+          }
+        }
+
+        String s = intern(WordShapeClassifier.wordShape(word, flags.wordShape, knownLCWords));
+        fl.set(CoreAnnotations.ShapeAnnotation.class, s);
+      }
+
+      // normalizing and interning
+      // was the following; should presumably now be
+      // if ("CTBSegDocumentReader".equalsIgnoreCase(flags.documentReader)) {
+      if ("edu.stanford.nlp.wordseg.Sighan2005DocumentReaderAndWriter".equalsIgnoreCase(flags.readerAndWriter)) {
+        // for Chinese segmentation, "word" is no use and ignore goldAnswer for memory efficiency.
+        fl.set(CoreAnnotations.CharAnnotation.class,intern(fix(fl.get(CoreAnnotations.CharAnnotation.class))));
+      } else {
+        fl.set(CoreAnnotations.TextAnnotation.class, intern(fix(fl.get(CoreAnnotations.TextAnnotation.class))));
+        fl.set(CoreAnnotations.GoldAnswerAnnotation.class, fl.get(CoreAnnotations.AnswerAnnotation.class));
+      }
+    }
+  }
+

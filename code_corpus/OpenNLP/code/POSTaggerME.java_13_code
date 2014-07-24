@@ -1,0 +1,106 @@
+  public double[] probs() {
+    return bestSequence.getProbs();
+  }
+
+  @Deprecated
+  public String tag(String sentence) {
+    List<String> toks = new ArrayList<String>();
+    StringTokenizer st = new StringTokenizer(sentence);
+    while (st.hasMoreTokens())
+      toks.add(st.nextToken());
+    List<String> tags = tag(toks);
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < tags.size(); i++)
+      sb.append(toks.get(i) + "/" + tags.get(i) + " ");
+    return sb.toString().trim();
+  }
+
+  public String[] getOrderedTags(List<String> words, List<String> tags, int index) {
+    return getOrderedTags(words,tags,index,null);
+  }
+
+  public String[] getOrderedTags(List<String> words, List<String> tags, int index,double[] tprobs) {
+
+    if (modelPackage.getPosModel() != null) {
+
+      MaxentModel posModel = modelPackage.getPosModel();
+
+      double[] probs = posModel.eval(contextGen.getContext(index,
+          words.toArray(new String[words.size()]),
+          tags.toArray(new String[tags.size()]),null));
+
+      String[] orderedTags = new String[probs.length];
+      for (int i = 0; i < probs.length; i++) {
+        int max = 0;
+        for (int ti = 1; ti < probs.length; ti++) {
+          if (probs[ti] > probs[max]) {
+            max = ti;
+          }
+        }
+        orderedTags[i] = posModel.getOutcome(max);
+        if (tprobs != null){
+          tprobs[i]=probs[max];
+        }
+        probs[max] = 0;
+      }
+      return orderedTags;
+    }
+    else {
+      throw new UnsupportedOperationException("This method can only be called if the "
+          + "classifcation model is an event model!");
+    }
+  }
+
+  public static POSModel train(String languageCode,
+      ObjectStream<POSSample> samples, TrainingParameters trainParams,
+      POSTaggerFactory posFactory) throws IOException {
+
+    String beamSizeString = trainParams.getSettings().get(BeamSearch.BEAM_SIZE_PARAMETER);
+
+    int beamSize = NameFinderME.DEFAULT_BEAM_SIZE;
+    if (beamSizeString != null) {
+      beamSize = Integer.parseInt(beamSizeString);
+    }
+
+    POSContextGenerator contextGenerator = posFactory.getPOSContextGenerator();
+
+    Map<String, String> manifestInfoEntries = new HashMap<String, String>();
+
+    TrainerType trainerType = TrainerFactory.getTrainerType(trainParams.getSettings());
+
+    MaxentModel posModel = null;
+    SequenceClassificationModel<String> seqPosModel = null;
+    if (TrainerType.EVENT_MODEL_TRAINER.equals(trainerType)) {
+      ObjectStream<Event> es = new POSSampleEventStream(samples, contextGenerator);
+
+      EventTrainer trainer = TrainerFactory.getEventTrainer(trainParams.getSettings(),
+          manifestInfoEntries);
+      posModel = trainer.train(es);
+    }
+    else if (TrainerType.EVENT_MODEL_SEQUENCE_TRAINER.equals(trainerType)) {
+      POSSampleSequenceStream ss = new POSSampleSequenceStream(samples, contextGenerator);
+      EventModelSequenceTrainer trainer = TrainerFactory.getEventModelSequenceTrainer(trainParams.getSettings(),
+          manifestInfoEntries);
+      posModel = trainer.train(ss);
+    }
+    else if (TrainerType.SEQUENCE_TRAINER.equals(trainerType)) {
+      SequenceTrainer trainer = TrainerFactory.getSequenceModelTrainer(
+          trainParams.getSettings(), manifestInfoEntries);
+
+      // TODO: This will probably cause issue, since the feature generator uses the outcomes array
+
+      POSSampleSequenceStream ss = new POSSampleSequenceStream(samples, contextGenerator);
+      seqPosModel = trainer.train(ss);
+    }
+    else {
+      throw new IllegalArgumentException("Trainer type is not supported: " + trainerType);
+    }
+
+    if (posModel != null) {
+      return new POSModel(languageCode, posModel, manifestInfoEntries, posFactory);
+    }
+    else {
+      return new POSModel(languageCode, seqPosModel, manifestInfoEntries, posFactory);
+    }
+  }
+

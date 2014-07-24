@@ -1,0 +1,82 @@
+  @Override
+  public Tree transformTree(Tree t) {
+    if (VERBOSE) {
+      System.err.println("Input to CoordinationTransformer: " + t);
+    }
+    t = tn.transformTree(t);
+    if (VERBOSE) {
+      System.err.println("After DependencyTreeTransformer:  " + t);
+    }
+    if (t == null) {
+      return t;
+    }
+    t = UCPtransform(t);
+    if (VERBOSE) {
+      System.err.println("After UCPTransformer:             " + t);
+    }
+    t = CCtransform(t);
+    if (VERBOSE) {
+      System.err.println("After CCTransformer:              " + t);
+    }
+    t = qp.transformTree(t);
+    if (VERBOSE) {
+      System.err.println("After QPTreeTransformer:          " + t);
+    }
+    t = SQflatten(t);
+    if (VERBOSE) {
+      System.err.println("After SQ flattening:              " + t);
+    }
+    t = dates.transformTree(t);
+    if (VERBOSE) {
+      System.err.println("After DateTreeTransformer:        " + t);
+    }
+    t = removeXOverX(t);
+    if (VERBOSE) {
+      System.err.println("After removeXoverX:               " + t);
+    }
+    t = combineConjp(t);
+    if (VERBOSE) {
+      System.err.println("After combineConjp:               " + t);
+    }
+    t = moveRB(t);
+    if (VERBOSE) {
+      System.err.println("After moveRB:                     " + t);
+    }
+    t = changeSbarToPP(t);
+    if (VERBOSE) {
+      System.err.println("After changeSbarToPP:             " + t);
+    }
+    t = rearrangeNowThat(t);
+    if (VERBOSE) {
+      System.err.println("After rearrangeNowThat:           " + t);
+    }
+    return t;
+  }
+
+  private static TregexPattern rearrangeNowThatTregex =
+    TregexPattern.compile("ADVP=advp <1 (RB < /^(?i:now)$/) <2 (SBAR=sbar <1 (IN < /^(?i:that)$/))");
+
+  private static TsurgeonPattern[] rearrangeNowThatTsurgeon = {
+    Tsurgeon.parseOperation("relabel advp SBAR"),
+    Tsurgeon.parseOperation("excise sbar sbar"),
+  };
+
+  public Tree rearrangeNowThat(Tree t) {
+    if (t == null) {
+      return t;
+    }
+    TregexMatcher matcher = rearrangeNowThatTregex.matcher(t);
+    while (matcher.find()) {
+      t = rearrangeNowThatTsurgeon[0].evaluate(t, matcher);
+      t = rearrangeNowThatTsurgeon[1].evaluate(t, matcher);
+    }
+    return t;
+  }
+
+
+  private static TregexPattern changeSbarToPPTregex =
+    TregexPattern.compile("NP < (NP $++ (SBAR=sbar < (IN < /^(?i:after|before|until|since|during)$/ $++ S)))");
+
+  private static TsurgeonPattern changeSbarToPPTsurgeon =
+    Tsurgeon.parseOperation("relabel sbar PP");
+

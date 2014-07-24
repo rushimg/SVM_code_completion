@@ -1,0 +1,18 @@
+  public static void apply(Properties props){
+    //--Tweak Properties
+    //(output to stderr)
+    if (props.getProperty("log.output") == null) {
+      props.setProperty("log.output", "stderr");
+    }
+    //(capture system streams)
+    if(props.getProperty("log.captureStderr") == null){
+      props.setProperty("log.captureStderr", "true");
+    }
+    //(apply properties)
+    RedwoodConfiguration.apply(props);
+
+    //--Strange Tweaks
+    //(adapt legacy logging systems)
+    JavaUtilLoggingAdaptor.adapt();
+  }
+

@@ -1,0 +1,22 @@
+  public List<Double> getPathOutputs(List<List> pathList) {
+    List<Double> outputList = new ArrayList<Double>();
+    for (List path : pathList) {
+      outputList.add(new Double(getOutputOfPathInGraph(path)));
+    }
+    return outputList;
+  }
+
+  public static boolean testGraphPaths(TransducerGraph sourceGraph, TransducerGraph testGraph, int numPaths) {
+    for (int i = 0; i < numPaths; i++) {
+      List path = sourceGraph.sampleUniformPathFromGraph();
+      double score = sourceGraph.getOutputOfPathInGraph(path);
+      double newScore = testGraph.getOutputOfPathInGraph(path);
+      if ((score - newScore) / (score + newScore) > 1e-10) {
+        System.out.println("Problem: " + score + " vs. " + newScore + " on " + path);
+        return false;
+      }
+    }
+    return true;
+  }
+
+

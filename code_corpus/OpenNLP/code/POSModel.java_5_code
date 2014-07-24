@@ -1,0 +1,33 @@
+  @Deprecated
+
+  public MaxentModel getPosModel() {
+    if (artifactMap.get(POS_MODEL_ENTRY_NAME) instanceof MaxentModel) {
+      return (MaxentModel) artifactMap.get(POS_MODEL_ENTRY_NAME);
+    }
+    else {
+      return null;
+    }
+  }
+
+  public SequenceClassificationModel<String> getPosSequenceModel() {
+
+    Properties manifest = (Properties) artifactMap.get(MANIFEST_ENTRY);
+
+    if (artifactMap.get(POS_MODEL_ENTRY_NAME) instanceof MaxentModel) {
+      String beamSizeString = manifest.getProperty(BeamSearch.BEAM_SIZE_PARAMETER);
+
+      int beamSize = NameFinderME.DEFAULT_BEAM_SIZE;
+      if (beamSizeString != null) {
+        beamSize = Integer.parseInt(beamSizeString);
+      }
+
+      return new BeamSearch<>(beamSize, (MaxentModel) artifactMap.get(POS_MODEL_ENTRY_NAME));
+    }
+    else if (artifactMap.get(POS_MODEL_ENTRY_NAME) instanceof SequenceClassificationModel) {
+      return (SequenceClassificationModel) artifactMap.get(POS_MODEL_ENTRY_NAME);
+    }
+    else {
+      return null;
+    }
+  }
+

@@ -1,0 +1,94 @@
+  @Override
+  public void train(Collection<Tree> trees, double weight) {
+    // scan data
+    for (Tree tree : trees) {
+      train(tree, weight);
+    }
+  }
+
+  @Override
+  public void train(Tree tree, double weight) {
+    train(tree.taggedYield(), weight);
+  }
+
+  @Override
+  public final void train(List<TaggedWord> sentence, double weight) {
+    uwModelTrainer.incrementTreesRead(weight);
+    int loc = 0;
+    for (TaggedWord tw : sentence) {
+      train(tw, loc, weight);
+      ++loc;
+    }
+  }
+
+  @Override
+  public final void incrementTreesRead(double weight) {
+    uwModelTrainer.incrementTreesRead(weight);
+  }
+
+  @Override
+  public final void trainUnannotated(List<TaggedWord> sentence,
+                                     double weight) {
+    uwModelTrainer.incrementTreesRead(weight);
+    int loc = 0;
+    for (TaggedWord tw : sentence) {
+      String baseTag = op.langpack().basicCategory(tw.tag());
+      Counter<String> counts = baseTagCounts.get(baseTag);
+      if (counts == null) {
+        ++loc;
+        continue;
+      }
+      double totalCount = counts.totalCount();
+      if (totalCount == 0) {
+        ++loc;
+        continue;
+      }
+      for (String tag : counts.keySet()) {
+        TaggedWord newTW = new TaggedWord(tw.word(), tag);
+      }
+      ++loc;
+    }
+  }
+
+  @Override
+  public void train(TaggedWord tw, int loc, double weight) {
+    uwModelTrainer.train(tw, loc, weight);
+
+    IntTaggedWord iTW =
+      new IntTaggedWord(tw.word(), tw.tag(), wordIndex, tagIndex);
+    seenCounter.incrementCount(iTW, weight);
+    IntTaggedWord iT = new IntTaggedWord(nullWord, iTW.tag);
+    seenCounter.incrementCount(iT, weight);
+    IntTaggedWord iW = new IntTaggedWord(iTW.word, nullTag);
+    seenCounter.incrementCount(iW, weight);
+    IntTaggedWord i = new IntTaggedWord(nullWord, nullTag);
+    seenCounter.incrementCount(i, weight);
+    // rules.add(iTW);
+    tags.add(iT);
+    words.add(iW);
+
+    String tag = tw.tag();
+    String baseTag = op.langpack().basicCategory(tag);
+
+    Counter<String> counts = baseTagCounts.get(baseTag);
+    if (counts == null) {
+      counts = new ClassicCounter<String>();
+      baseTagCounts.put(baseTag, counts);
+    }
+    counts.incrementCount(tag, weight);
+  }
+
+  @Override
+  public void finishTraining() {
+    uwModel = uwModelTrainer.finishTraining();
+
+    tune();
+
+    // index the possible tags for each word
+    initRulesWithWord();
+
+    if (DEBUG_LEXICON) {
+      printLexStats();
+    }
+  }
+

@@ -1,0 +1,28 @@
+  public NumberRangesFileFilter(String ranges, boolean recurse) {
+    recursively = recurse;
+    try {
+      String[] ra = ranges.split(",");
+      for (String range : ra) {
+        String[] one = range.split("-");
+        if (one.length > 2) {
+          throw new IllegalArgumentException("Constructor argument not valid list of number ranges (too many hyphens): ");
+        } else {
+          int low = Integer.parseInt(one[0].trim());
+          int high;
+          if (one.length == 2) {
+            high = Integer.parseInt(one[1].trim());
+          } else {
+            high = low;
+          }
+          Pair<Integer, Integer> p = new Pair<Integer, Integer>(Integer.valueOf(low), Integer.valueOf(high));
+          this.ranges.add(p);
+        }
+      }
+    } catch (Exception e) {
+      IllegalArgumentException iae = new IllegalArgumentException("Constructor argument not valid list of number ranges: " + ranges);
+      iae.initCause(e);
+      throw iae;
+    }
+  }
+
+

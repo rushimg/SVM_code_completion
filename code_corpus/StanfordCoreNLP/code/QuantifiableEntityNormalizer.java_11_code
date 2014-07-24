@@ -1,0 +1,108 @@
+  private static <E extends CoreMap> Number fetchNumberFromSUTime(List<E> l) {
+    for(E e: l) {
+      if(e.containsKey(CoreAnnotations.NumericCompositeValueAnnotation.class)){
+        return e.get(CoreAnnotations.NumericCompositeValueAnnotation.class);
+      }
+    }
+    return null;
+  }
+
+  private static <E extends CoreMap> Timex fetchTimexFromSUTime(List<E> l) {
+    for(E e: l) {
+      if(e.containsKey(TimeAnnotations.TimexAnnotation.class)){
+        return e.get(TimeAnnotations.TimexAnnotation.class);
+      }
+    }
+    return null;
+  }
+
+  private static <E extends CoreMap> List<E> processEntity(List<E> l,
+        String entityType, String compModifier, String nextWord) {
+    assert(quantifiable.contains(entityType));
+    if (DEBUG) {
+      System.err.println("Quantifiable.processEntity: " + l);
+    }
+    String s;
+    if (entityType.equals("TIME")) {
+      s = timeEntityToString(l);
+    } else {
+      s = singleEntityToString(l);
+    }
+
+    Number numberFromSUTime = fetchNumberFromSUTime(l);
+    Timex timexFromSUTime = fetchTimexFromSUTime(l);
+
+    if (DEBUG) System.err.println("Quantifiable: working on " + s);
+    String p = null;
+    if (entityType.equals("NUMBER")) {
+      p = "";
+      if (compModifier != null) {
+        p = compModifier;
+      }
+      String q = normalizedNumberString(s, nextWord, numberFromSUTime);
+      if (q != null) {
+        p = p.concat(q);
+      } else {
+        p = null;
+      }
+    } else if (entityType.equals("ORDINAL")) {
+      p = normalizedOrdinalString(s, numberFromSUTime);
+    } else if (entityType.equals("DURATION")) {
+      // SUTime marks some ordinals, e.g., "22nd time", as durations
+      p = normalizedDurationString(s, timexFromSUTime);
+    } else if (entityType.equals("MONEY")) {
+      p = "";
+      if(compModifier!=null) {
+        p = compModifier;
+      }
+      String q = normalizedMoneyString(s, numberFromSUTime);
+      if (q != null) {
+        p = p.concat(q);
+      } else {
+        p = null;
+      }
+    } else if (entityType.equals("DATE")) {
+      p = normalizedDateString(s, timexFromSUTime);
+    } else if (entityType.equals("TIME")) {
+      p = "";
+      if (compModifier != null && ! compModifier.matches("am|pm")) {
+        p = compModifier;
+      }
+      String q = normalizedTimeString(s, compModifier != null ? compModifier : "", timexFromSUTime);
+      if (q != null && q.length() == 1 && !q.equals("D")) {
+        p = p.concat(q);
+      } else {
+        p = q;
+      }
+    } else if (entityType.equals("PERCENT")) {
+      p = "";
+      if (compModifier != null) {
+        p = compModifier;
+      }
+      String q = normalizedPercentString(s, numberFromSUTime);
+      if (q != null) {
+        p = p.concat(q);
+      } else {
+        p = null;
+      }
+    }
+    if (DEBUG) {
+      err.println("Quantifiable: Processed '" + s + "' as '" + p + '\'');
+    }
+
+    int i = 0;
+    for (E wi : l) {
+      if (p != null) {
+        if (DEBUG) {
+          System.err.println("#4: Changing normalized NER from " + wi.get(CoreAnnotations.NormalizedNamedEntityTagAnnotation.class) + " to " + p + " at index " + i);
+        }
+        wi.set(CoreAnnotations.NormalizedNamedEntityTagAnnotation.class, p);
+      }
+      //currently we also write this into the answers;
+      //wi.setAnswer(wi.get(CoreAnnotations.AnswerAnnotation.class)+"("+p+")");
+      i++;
+    }
+    return l;
+  }
+
+

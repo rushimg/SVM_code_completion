@@ -1,0 +1,37 @@
+  @Override
+  public boolean parseAndReport(List<? extends HasWord> sentence, PrintWriter pwErr) {
+    boolean result = parse(sentence);
+    if (result) {
+      if (whatFailed != null) {
+        // Something failed, probably because of memory problems.
+        // However, we still got a PCFG parse, at least.
+        if ( ! saidMemMessage) {
+          ParserUtils.printOutOfMemory(pwErr);
+          saidMemMessage = true;
+        }
+        pwErr.println("Sentence too long for " + whatFailed + " parser.  Falling back to PCFG parse...");
+      } else if (parseFallback) {
+        // We had to fall back for some other reason.
+        pwErr.println("Sentence couldn't be parsed by grammar.... falling back to PCFG parse.");
+      }
+    } else if (parseUnparsable) {
+      // No parse at all, completely failed.
+      pwErr.println("Sentence couldn't be parsed by grammar.");
+    } else if (parseNoMemory) {
+      // Ran out of memory, either with or without a possible PCFG parse.
+      if (!saidMemMessage) {
+        ParserUtils.printOutOfMemory(pwErr);
+        saidMemMessage = true;
+      }
+      if (pparser.hasParse() && fallbackToPCFG) {
+        pwErr.println("No memory to gather PCFG parse. Skipping...");
+      } else {
+        pwErr.println("Sentence has no parse using PCFG grammar (or no PCFG fallback).  Skipping...");
+      }
+    } else if (parseSkipped) {
+      pwErr.println("Sentence too long (or zero words).");
+    }
+    return result;
+  }
+
+

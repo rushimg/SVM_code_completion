@@ -1,0 +1,29 @@
+    public AbstractExhaustiveIsomorphismInspector(
+        Graph<V, E> graph1,
+        Graph<V, E> graph2,
+
+        // XXX hb 060128: FOllowing parameter may need Graph<? super V,? super
+        // E>
+        EquivalenceComparator<? super V, ? super Graph<? super V, ? super E>> vertexChecker,
+        EquivalenceComparator<? super E, ? super Graph<? super V, ? super E>> edgeChecker)
+    {
+        this.graph1 = graph1;
+        this.graph2 = graph2;
+
+        if (vertexChecker != null) {
+            this.vertexComparator = vertexChecker;
+        } else {
+            this.vertexComparator = vertexDefaultIsomorphismComparator;
+        }
+
+        // Unlike vertexes, edges have better performance, when not tested for
+        // Equivalence, so if the user did not supply one, use null
+        // instead of edgeDefaultIsomorphismComparator.
+
+        if (edgeChecker != null) {
+            this.edgeComparator = edgeChecker;
+        }
+
+        init();
+    }
+

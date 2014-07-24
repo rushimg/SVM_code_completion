@@ -1,0 +1,34 @@
+  public boolean find(int start)
+  {
+    if (start < 0 || start > elements.size()) {
+      throw new IndexOutOfBoundsException("Invalid region start=" + start + ", need to be between 0 and " + elements.size());
+    }
+    reset();
+    return find(start, false);
+  }
+
+  protected boolean find(int start, boolean matchStart)
+  {
+    boolean match = false;
+    matched = false;
+    matchingCompleted = false;
+    if (matchStart)  {
+      match = findMatchStart(start, false);
+    } else {
+      for (int i = start; i < regionEnd; i++) {
+        match = findMatchStart(i, false);
+        if (match) {
+          break;
+        }
+      }
+    }
+    matched = match;
+    matchingCompleted = true;
+    if (matched) {
+      nextMatchStart = (findType == FindType.FIND_NONOVERLAPPING)? end(): start()+1;
+    } else {
+      nextMatchStart = -1;
+    }
+    return match;
+  }
+

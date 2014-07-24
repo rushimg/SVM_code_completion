@@ -1,0 +1,129 @@
+  public static Tree toFlatTree(List<? extends HasWord> s, LabelFactory lf) {
+    List<Tree> daughters = new ArrayList<Tree>(s.size());
+    for (HasWord word : s) {
+      Tree wordNode = new LabeledScoredTreeNode(lf.newLabel(word.word()));
+      if (word instanceof TaggedWord) {
+        TaggedWord taggedWord = (TaggedWord) word;
+        wordNode = new LabeledScoredTreeNode(new StringLabel(taggedWord.tag()), Collections.singletonList(wordNode));
+      } else {
+        wordNode = new LabeledScoredTreeNode(lf.newLabel("WD"), Collections.singletonList(wordNode));
+      }
+      daughters.add(wordNode);
+    }
+    return new LabeledScoredTreeNode(new StringLabel("S"), daughters);
+  }
+
+
+   public static String treeToLatex(Tree t) {
+     StringBuilder connections = new StringBuilder();
+     StringBuilder hierarchy = new StringBuilder();
+     treeToLatexHelper(t,connections,hierarchy,0,1,0);
+     return "\\tree"+hierarchy+ '\n' +connections+ '\n';
+   }
+
+  private static int treeToLatexHelper(Tree t, StringBuilder c, StringBuilder h,
+                                       int n, int nextN, int indent) {
+    StringBuilder sb = new StringBuilder();
+    for (int i=0; i<indent; i++)
+      sb.append("  ");
+    h.append('\n').append(sb);
+    h.append("{\\").append(t.isLeaf() ? "" : "n").append("tnode{z").append(n).append("}{").append(t.label()).append('}');
+    if (!t.isLeaf()) {
+      for (int k=0; k<t.children().length; k++) {
+        h.append(", ");
+        c.append("\\nodeconnect{z").append(n).append("}{z").append(nextN).append("}\n");
+        nextN = treeToLatexHelper(t.children()[k],c,h,nextN,nextN+1,indent+1);
+      }
+    }
+    h.append('}');
+    return nextN;
+  }
+
+  public static String treeToLatexEven(Tree t) {
+    StringBuilder connections = new StringBuilder();
+    StringBuilder hierarchy = new StringBuilder();
+    int maxDepth = t.depth();
+    treeToLatexEvenHelper(t,connections,hierarchy,0,1,0,0,maxDepth);
+    return "\\tree"+hierarchy+ '\n' +connections+ '\n';
+  }
+
+  private static int treeToLatexEvenHelper(Tree t, StringBuilder c, StringBuilder h, int n,
+                                           int nextN, int indent, int curDepth, int maxDepth) {
+    StringBuilder sb = new StringBuilder();
+    for (int i=0; i<indent; i++)
+      sb.append("  ");
+    h.append('\n').append(sb);
+    int tDepth = t.depth();
+    if (tDepth == 0 && tDepth+curDepth < maxDepth) {
+      for (int pad=0; pad < maxDepth-tDepth-curDepth; pad++) {
+        h.append("{\\ntnode{pad}{}, ");
+      }
+    }
+    h.append("{\\ntnode{z").append(n).append("}{").append(t.label()).append('}');
+    if (!t.isLeaf()) {
+      for (int k=0; k<t.children().length; k++) {
+        h.append(", ");
+        c.append("\\nodeconnect{z").append(n).append("}{z").append(nextN).append("}\n");
+        nextN = treeToLatexEvenHelper(t.children()[k],c,h,nextN,nextN+1,indent+1,curDepth+1,maxDepth);
+      }
+    }
+    if (tDepth == 0 && tDepth+curDepth < maxDepth) {
+      for (int pad=0; pad < maxDepth-tDepth-curDepth; pad++) {
+        h.append('}');
+      }
+    }
+    h.append('}');
+    return nextN;
+  }
+
+  static String texTree(Tree t) {
+    return treeToLatex(t);
+  }
+
+  static String escape(String s) {
+    StringBuilder sb = new StringBuilder();
+    for (int i=0; i<s.length(); i++) {
+      char c = s.charAt(i);
+      if (c == '^')
+        sb.append('\\');
+      sb.append(c);
+      if (c == '^')
+        sb.append("{}");
+    }
+    return sb.toString();
+  }
+
+
+  public static void main(String[] args) throws IOException {
+    int i = 0;
+    while (i < args.length) {
+      Tree tree = Tree.valueOf(args[i]);
+      if (tree == null) {
+        // maybe it was a filename
+        tree = Tree.valueOf(IOUtils.slurpFile(args[i]));
+      }
+      if (tree != null) {
+        System.out.println(escape(texTree(tree)));
+      }
+      i++;
+    }
+    if (i == 0) {
+      Tree tree = (new PennTreeReader(new BufferedReader(new
+              InputStreamReader(System.in)), new LabeledScoredTreeFactory(new
+              StringLabelFactory()))).readTree();
+      System.out.println(escape(texTree(tree)));
+    }
+  }
+
+  public static Tree normalizeTree(Tree tree, TreeNormalizer tn, TreeFactory tf) {
+    for (Tree node : tree) {
+      if (node.isLeaf()) {
+        node.label().setValue(tn.normalizeTerminal(node.label().value()));
+      } else {
+        node.label().setValue(tn.normalizeNonterminal(node.label().value()));
+      }
+    }
+    return tn.normalizeWholeTree(tree, tf);
+  }
+
+

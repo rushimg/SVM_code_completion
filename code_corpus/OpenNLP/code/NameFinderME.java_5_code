@@ -1,0 +1,44 @@
+  @Deprecated
+  public NameFinderME(TokenNameFinderModel model, int beamSize) {
+    this(model, null, beamSize);
+  }
+
+  static AdaptiveFeatureGenerator createFeatureGenerator() {
+    return new CachedFeatureGenerator(
+            new AdaptiveFeatureGenerator[]{
+              new WindowFeatureGenerator(new TokenFeatureGenerator(), 2, 2),
+              new WindowFeatureGenerator(new TokenClassFeatureGenerator(true), 2, 2),
+              new OutcomePriorFeatureGenerator(),
+              new PreviousMapFeatureGenerator(),
+              new BigramNameFeatureGenerator(),
+              new SentenceFeatureGenerator(true, false)
+            });
+  }
+
+  private static AdaptiveFeatureGenerator createFeatureGenerator(
+          byte[] generatorDescriptor, final Map<String, Object> resources)
+          throws IOException {
+    AdaptiveFeatureGenerator featureGenerator;
+
+    if (generatorDescriptor != null) {
+      featureGenerator = GeneratorFactory.create(new ByteArrayInputStream(
+              generatorDescriptor), new FeatureGeneratorResourceProvider() {
+
+                public Object getResource(String key) {
+                  if (resources != null) {
+                    return resources.get(key);
+                  }
+                  return null;
+                }
+              });
+    } else {
+      featureGenerator = null;
+    }
+
+    return featureGenerator;
+  }
+
+  public Span[] find(String[] tokens) {
+    return find(tokens, EMPTY);
+  }
+

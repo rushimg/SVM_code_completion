@@ -1,0 +1,63 @@
+  public static EdgeDiffResult diffEdges(Collection<SemanticGraphEdge> edges1, Collection<SemanticGraphEdge> edges2,
+      SemanticGraph sg1, SemanticGraph sg2,
+      ISemanticGraphEdgeEql compareObj) {
+    Set<SemanticGraphEdge> remainingEdges1 = Generics.newHashSet();
+    Set<SemanticGraphEdge> remainingEdges2 = Generics.newHashSet();
+    Set<SemanticGraphEdge> sameEdges = Generics.newHashSet();
+
+
+    ArrayList<SemanticGraphEdge> edges2Cache = new ArrayList<SemanticGraphEdge>(edges2);
+    edge1Loop:
+      for (SemanticGraphEdge edge1 : edges1) {
+        for (SemanticGraphEdge edge2 : edges2Cache) {
+          if (compareObj.equals(edge1, edge2, sg1, sg2)) {
+            sameEdges.add(edge1);
+            edges2Cache.remove(edge2);
+            continue edge1Loop;
+          }
+        }
+        remainingEdges1.add(edge1);
+      }
+
+    ArrayList<SemanticGraphEdge> edges1Cache = new ArrayList<SemanticGraphEdge>(edges1);
+    edge2Loop:
+      for (SemanticGraphEdge edge2 : edges2) {
+        for (SemanticGraphEdge edge1 : edges1) {
+          if (compareObj.equals(edge1, edge2, sg1, sg2)) {
+            edges1Cache.remove(edge1);
+            continue edge2Loop;
+          }
+        }
+        remainingEdges2.add(edge2);
+      }
+
+    return new EdgeDiffResult(sameEdges, remainingEdges1, remainingEdges2);
+  }
+
+  public static class EdgeDiffResult {
+    Set<SemanticGraphEdge> sameEdges;
+    Set<SemanticGraphEdge> remaining1;
+    Set<SemanticGraphEdge> remaining2;
+
+    public EdgeDiffResult(Set<SemanticGraphEdge> sameEdges,
+        Set<SemanticGraphEdge> remaining1,
+        Set<SemanticGraphEdge> remaining2) {
+      this.sameEdges = sameEdges;
+      this.remaining1 = remaining1;
+      this.remaining2 = remaining2;
+    }
+
+    public Set<SemanticGraphEdge> getRemaining1() {
+      return remaining1;
+    }
+
+    public Set<SemanticGraphEdge> getRemaining2() {
+      return remaining2;
+    }
+
+    public Set<SemanticGraphEdge> getSameEdges() {
+      return sameEdges;
+    }
+  }
+
+

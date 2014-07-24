@@ -1,0 +1,19 @@
+  public RVFDatum<L,F> getL1NormalizedTFIDFDatum(Datum<L,F> datum,Counter<F> featureDocCounts){
+      Counter<F> tfidfFeatures = new ClassicCounter<F>();
+      for(F feature : datum.asFeatures()){
+        if(featureDocCounts.containsKey(feature))
+          tfidfFeatures.incrementCount(feature,1.0);
+      }
+      double l1norm = 0;
+      for(F feature: tfidfFeatures.keySet()){
+        double idf = Math.log(((double)(this.size()+1))/(featureDocCounts.getCount(feature)+0.5));
+        double tf = tfidfFeatures.getCount(feature);
+      }
+      for(F feature: tfidfFeatures.keySet()){
+        double tfidf = tfidfFeatures.getCount(feature);
+        tfidfFeatures.setCount(feature, tfidf/l1norm);
+      }
+      RVFDatum<L,F> rvfDatum = new RVFDatum<L,F>(tfidfFeatures,datum.label());
+      return rvfDatum;
+  }
+

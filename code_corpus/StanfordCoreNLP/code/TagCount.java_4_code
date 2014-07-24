@@ -1,0 +1,22 @@
+  public static TagCount readTagCount(DataInputStream rf) {
+    try {
+      TagCount tc = new TagCount();
+      int numTags = rf.readInt();
+      tc.map = Generics.newHashMap(numTags);
+
+      for (int i = 0; i < numTags; i++) {
+	String tag = rf.readUTF();
+        int count = rf.readInt();
+
+	if (tag.equals(NULL_SYMBOL)) tag = null;
+	tc.map.put(tag, count);
+      }
+
+      tc.getTagsCache = tc.map.keySet().toArray(new String[tc.map.keySet().size()]);
+      tc.sumCache = tc.calculateSumCache();
+      return tc;
+    } catch (IOException e) {
+      throw new RuntimeIOException(e);
+    }
+  }
+

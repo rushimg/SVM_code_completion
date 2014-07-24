@@ -1,0 +1,36 @@
+  public Collection<SemanticGraph> execute(SemanticGraph sg) throws Exception {
+    Collection<SemanticGraph> generated = new ArrayList<SemanticGraph>();
+    SemgrexMatcher matcher = semgrexPattern.matcher(sg);
+    nextMatch:
+    while (matcher.find()) {
+      // NOTE: Semgrex can match two named nodes to the same node.  In this case, we simply,
+      // check the named nodes, and if there are any collisions, we throw out this match.
+      Set<String> nodeNames = matcher.getNodeNames();
+      Set<IndexedWord> seen = Generics.newHashSet();
+      for (String name : nodeNames) {
+        IndexedWord curr = matcher.getNode(name);
+        if (seen.contains(curr))
+          break nextMatch;
+        seen.add(curr);
+//        System.out.println("REDUNDANT NODES FOUDN IN SEMGREX MATCH");
+      }
+      
+      // if we do have to test, assemble the tests and arguments based off of the current
+      // match and test.  If false, continue, else execute as normal.
+      if (predicateTest != null) {        
+        if (!predicateTest.test(matcher))
+          continue;
+      }
+//      SemanticGraph tgt = new SemanticGraph(sg);
+      // Generate a new graph, since we don't want to mutilate the original graph.
+      // We use the same nodes, since the matcher operates off of those.
+      SemanticGraph tgt = SemanticGraphFactory.duplicateKeepNodes(sg);
+      nodeMap = Generics.newHashMap();
+      for (SsurgeonEdit edit : editScript) {      
+        edit.evaluate(tgt, matcher);
+      }
+      generated.add(tgt);
+    }
+    return generated;
+  }
+

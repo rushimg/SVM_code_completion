@@ -1,0 +1,47 @@
+  protected void surround(Parse node, int i, String type, Collection<Parse> punctuation, List<String> features) {
+    StringBuilder feat = new StringBuilder(20);
+    feat.append("s").append(i).append("=");
+    if (punctuation !=null) {
+      for (Iterator<Parse> pi=punctuation.iterator();pi.hasNext();) {
+        Parse punct = pi.next();
+        if (node != null) {
+          feat.append(node.getHead().getCoveredText()).append("|").append(type).append("|").append(node.getType()).append("|").append(punct.getType());
+        }
+        else {
+          feat.append(type).append("|").append(EOS).append("|").append(punct.getType());
+        }
+        features.add(feat.toString());
+
+        feat.setLength(0);
+        if (node != null) {
+          feat.append(type).append("|").append(node.getType()).append("|").append(punct.getType());
+        }
+        else {
+          feat.append(type).append("|").append(EOS).append("|").append(punct.getType());
+        }
+        features.add(feat.toString());
+
+        feat.setLength(0);
+        feat.append(type).append("|").append(punct.getType());
+        features.add(feat.toString());
+      }
+    }
+    else {
+      if (node != null) {
+        feat.append(node.getHead().getCoveredText()).append("|").append(type).append("|").append(node.getType());
+      }
+      else {
+        feat.append(type).append("|").append(EOS);
+      }
+      features.add(feat.toString());
+      feat.setLength(0);
+      if (node != null) {
+        feat.append(type).append("|").append(node.getType());
+      }
+      else {
+        feat.append(type).append("|").append(EOS);
+      }
+      features.add(feat.toString());
+    }
+  }
+

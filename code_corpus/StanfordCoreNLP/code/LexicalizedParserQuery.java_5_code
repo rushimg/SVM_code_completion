@@ -1,0 +1,46 @@
+  @Override
+  public boolean parse(List<? extends HasWord> sentence) {
+    try {
+      if (!parseInternal(sentence)) {
+        if (pparser != null && pparser.hasParse() && fallbackToPCFG) {
+          parseFallback = true;
+          return true;
+        } else {
+          parseUnparsable = true;
+          return false;
+        }
+      } else {
+        return true;
+      }
+    } catch (OutOfMemoryError e) {
+      if (op.testOptions.maxLength != -0xDEADBEEF) {
+        // this means they explicitly asked for a length they cannot handle.
+        // Throw exception.  Avoid string concatenation before throw it.
+        System.err.print("NOT ENOUGH MEMORY TO PARSE SENTENCES OF LENGTH ");
+        System.err.println(op.testOptions.maxLength);
+        throw e;
+      }
+      if (pparser.hasParse() && fallbackToPCFG) {
+        try {
+          whatFailed = "dependency";
+          if (dparser.hasParse()) {
+            whatFailed = "factored";
+          }
+          parseFallback = true;
+          return true;
+        } catch (OutOfMemoryError oome) {
+          oome.printStackTrace();
+          parseNoMemory = true;
+          pparser.nudgeDownArraySize();
+          return false;
+        }
+      } else {
+        parseNoMemory = true;
+        return false;
+      }
+    } catch (UnsupportedOperationException uoe) {
+      parseSkipped = true;
+      return false;
+    }
+  }
+

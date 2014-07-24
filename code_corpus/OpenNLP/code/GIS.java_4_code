@@ -1,0 +1,38 @@
+  public static double SMOOTHING_OBSERVATION = 0.1;
+
+  public GIS() {
+  }
+
+  public boolean isValid() {
+
+    if (!super.isValid()) {
+      return false;
+    }
+
+    String algorithmName = getAlgorithm();
+
+    if (algorithmName != null && !(MAXENT_VALUE.equals(algorithmName))) {
+      return false;
+    }
+
+    return true;
+  }
+
+  public boolean isSortAndMerge() {
+    return true;
+  }
+
+  public AbstractModel doTrain(DataIndexer indexer) throws IOException {
+    int iterations = getIterations();
+
+    AbstractModel model;
+
+    int threads = getIntParam("Threads", 1);
+
+    model = trainModel(iterations, indexer, true, false, null, 0, threads);
+
+    return model;
+  }
+
+  // << members related to AbstractEventTrainer
+

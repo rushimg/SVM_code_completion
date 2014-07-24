@@ -1,0 +1,99 @@
+    protected AxisState drawSubCategoryLabels(Graphics2D g2,
+                                              Rectangle2D plotArea,
+                                              Rectangle2D dataArea,
+                                              RectangleEdge edge,
+                                              AxisState state,
+                                              PlotRenderingInfo plotState) {
+
+        if (state == null) {
+            throw new IllegalArgumentException("Null 'state' argument.");
+        }
+
+        g2.setFont(this.subLabelFont);
+        g2.setPaint(this.subLabelPaint);
+        CategoryPlot plot = (CategoryPlot) getPlot();
+        int categoryCount = 0;
+        CategoryDataset dataset = plot.getDataset();
+        if (dataset != null) {
+            categoryCount = dataset.getColumnCount();
+        }
+
+        double maxdim = getMaxDim(g2, edge);
+        for (int categoryIndex = 0; categoryIndex < categoryCount;
+             categoryIndex++) {
+
+            double x0 = 0.0;
+            double x1 = 0.0;
+            double y0 = 0.0;
+            double y1 = 0.0;
+            if (edge == RectangleEdge.TOP) {
+                x0 = getCategoryStart(categoryIndex, categoryCount, dataArea,
+                        edge);
+                x1 = getCategoryEnd(categoryIndex, categoryCount, dataArea,
+                        edge);
+                y1 = state.getCursor();
+                y0 = y1 - maxdim;
+            }
+            else if (edge == RectangleEdge.BOTTOM) {
+                x0 = getCategoryStart(categoryIndex, categoryCount, dataArea,
+                        edge);
+                x1 = getCategoryEnd(categoryIndex, categoryCount, dataArea,
+                        edge);
+                y0 = state.getCursor();
+                y1 = y0 + maxdim;
+            }
+            else if (edge == RectangleEdge.LEFT) {
+                y0 = getCategoryStart(categoryIndex, categoryCount, dataArea,
+                        edge);
+                y1 = getCategoryEnd(categoryIndex, categoryCount, dataArea,
+                        edge);
+                x1 = state.getCursor();
+                x0 = x1 - maxdim;
+            }
+            else if (edge == RectangleEdge.RIGHT) {
+                y0 = getCategoryStart(categoryIndex, categoryCount, dataArea,
+                        edge);
+                y1 = getCategoryEnd(categoryIndex, categoryCount, dataArea,
+                        edge);
+                x0 = state.getCursor();
+                x1 = x0 + maxdim;
+            }
+            Rectangle2D area = new Rectangle2D.Double(x0, y0, (x1 - x0),
+                    (y1 - y0));
+            int subCategoryCount = this.subCategories.size();
+            float width = (float) ((x1 - x0) / subCategoryCount);
+            float height = (float) ((y1 - y0) / subCategoryCount);
+            float xx = 0.0f;
+            float yy = 0.0f;
+            for (int i = 0; i < subCategoryCount; i++) {
+                if (RectangleEdge.isTopOrBottom(edge)) {
+                    yy = (float) area.getCenterY();
+                }
+                else {
+                    xx = (float) area.getCenterX();
+                }
+                String label = this.subCategories.get(i).toString();
+                TextUtilities.drawRotatedString(label, g2, xx, yy,
+                        TextAnchor.CENTER, 0.0, TextAnchor.CENTER);
+            }
+        }
+
+        if (edge.equals(RectangleEdge.TOP)) {
+            double h = maxdim;
+            state.cursorUp(h);
+        }
+        else if (edge.equals(RectangleEdge.BOTTOM)) {
+            double h = maxdim;
+            state.cursorDown(h);
+        }
+        else if (edge == RectangleEdge.LEFT) {
+            double w = maxdim;
+            state.cursorLeft(w);
+        }
+        else if (edge == RectangleEdge.RIGHT) {
+            double w = maxdim;
+            state.cursorRight(w);
+        }
+        return state;
+    }
+

@@ -1,0 +1,28 @@
+  public LoggingInputStream(
+      InputStream inputStream, Logger logger, Level loggingLevel, int contentLoggingLimit) {
+    super(inputStream);
+    logStream = new LoggingByteArrayOutputStream(logger, loggingLevel, contentLoggingLimit);
+  }
+
+  @Override
+  public int read() throws IOException {
+    int read = super.read();
+    logStream.write(read);
+    return read;
+  }
+
+  @Override
+  public int read(byte[] b, int off, int len) throws IOException {
+    int read = super.read(b, off, len);
+    if (read > 0) {
+      logStream.write(b, off, read);
+    }
+    return read;
+  }
+
+  @Override
+  public void close() throws IOException {
+    logStream.close();
+    super.close();
+  }
+

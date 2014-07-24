@@ -1,0 +1,89 @@
+  public static <T> List<List<T>> getPrefixesAndSuffixes(List<T> items, int minSize, int maxSize, T paddingSymbol, boolean includePrefixes, boolean includeSuffixes) {
+    assert minSize > 0;
+    assert maxSize >= minSize;
+    assert includePrefixes || includeSuffixes;
+
+    List<List<T>> prefixesAndSuffixes = new ArrayList<List<T>>();
+    for (int span = minSize - 1; span < maxSize; span++) {
+      List<Integer> indices = new ArrayList<Integer>();
+      List<T> seq = new ArrayList<T>();
+      if (includePrefixes) {
+        for (int i = 0; i <= span; i++) {
+          indices.add(i);
+        }
+      }
+      if (includeSuffixes) {
+        int maxIndex = items.size() - 1;
+        for (int i = span; i >= 0; i--) {
+          indices.add(maxIndex - i);
+        }
+      }
+
+      for (int i : indices) {
+        try {
+          seq.add(items.get(i));
+        } catch (IndexOutOfBoundsException ioobe) {
+          seq.add(paddingSymbol);
+        }
+      }
+
+      prefixesAndSuffixes.add(seq);
+    }
+
+    return prefixesAndSuffixes;
+  }
+
+  public static <T, M> List<T> mergeList(List<? extends T> list, Collection<M> matched, Function<M, Interval<Integer>> toIntervalFunc, Function<List<? extends T>, T> aggregator) {
+    List<Interval<Integer>> matchedIntervals = new ArrayList<Interval<Integer>>(matched.size());
+    for (M m : matched) {
+      matchedIntervals.add(toIntervalFunc.apply(m));
+    }
+    return mergeList(list, matchedIntervals, aggregator);
+  }
+
+  public static <T> List<T> mergeList(List<? extends T> list, List<? extends HasInterval<Integer>> matched, Function<List<? extends T>, T> aggregator) {
+    Collections.sort(matched, HasInterval.ENDPOINTS_COMPARATOR);
+    return mergeListWithSortedMatched(list, matched, aggregator);
+  }
+
+  public static <T> List<T> mergeListWithSortedMatched(List<? extends T> list, List<? extends HasInterval<Integer>> matched, Function<List<? extends T>, T> aggregator) {
+    List<T> merged = new ArrayList<T>(list.size()); // Approximate size
+    int last = 0;
+    for (HasInterval<Integer> m : matched) {
+      Interval<Integer> interval = m.getInterval();
+      int start = interval.getBegin();
+      int end = interval.getEnd();
+      if (start >= last) {
+        merged.addAll(list.subList(last, start));
+        T t = aggregator.apply(list.subList(start, end));
+        merged.add(t);
+        last = end;
+      }
+    }
+    // Add rest of elements
+    if (last < list.size()) {
+      merged.addAll(list.subList(last, list.size()));
+    }
+    return merged;
+  }
+
+  public static <T> List<T> mergeListWithSortedMatchedPreAggregated(List<? extends T> list, List<? extends T> matched, Function<T, Interval<Integer>> toIntervalFunc) {
+    List<T> merged = new ArrayList<T>(list.size()); // Approximate size
+    int last = 0;
+    for (T m : matched) {
+      Interval<Integer> interval = toIntervalFunc.apply(m);
+      int start = interval.getBegin();
+      int end = interval.getEnd();
+      if (start >= last) {
+        merged.addAll(list.subList(last, start));
+        merged.add(m);
+        last = end;
+      }
+    }
+    // Add rest of elements
+    if (last < list.size()) {
+      merged.addAll(list.subList(last, list.size()));
+    }
+    return merged;
+  }
+

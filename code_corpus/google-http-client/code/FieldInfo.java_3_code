@@ -1,0 +1,12 @@
+  public static FieldInfo of(Enum<?> enumValue) {
+    try {
+      FieldInfo result = FieldInfo.of(enumValue.getClass().getField(enumValue.name()));
+      Preconditions.checkArgument(
+          result != null, "enum constant missing @Value or @NullValue annotation: %s", enumValue);
+      return result;
+    } catch (NoSuchFieldException e) {
+      // not possible
+      throw new RuntimeException(e);
+    }
+  }
+

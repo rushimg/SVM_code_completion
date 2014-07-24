@@ -1,0 +1,52 @@
+/**
+ * A base class for a HeadFinder similar to the one described in
+ * Michael Collins' 1999 thesis.  For a given constituent we perform operations
+ * like (this is for "left" or "right":
+ * <pre>
+ * for categoryList in categoryLists
+ *   for index = 1 to n [or n to 1 if R->L]
+ *     for category in categoryList
+ *       if category equals daughter[index] choose it.
+ * </pre>
+ * <p>
+ * with a final default that goes with the direction (L->R or R->L)
+ * For most constituents, there will be only one category in the list,
+ * the exception being, in Collins' original version, NP.
+ * </p>
+ * <p>
+ * It is up to the overriding base class to initialize the map
+ * from constituent type to categoryLists, "nonTerminalInfo",
+ * in its constructor.
+ * Entries are presumed to be of type String[][].  Each String[] is a list of
+ * categories, except for the first entry, which specifies direction of
+ * traversal and must be one of the following:
+ * </p>
+ * <ul>
+ * <li> "left" means search left-to-right by category and then by position
+ * <li> "leftdis" means search left-to-right by position and then by category
+ * <li> "right" means search right-to-left by category and then by position
+ * <li> "rightdis" means search right-to-left by position and then by category
+ * <li> "leftexcept" means to take the first thing from the left that isn't in the list
+ * <li> "rightexcept" means to take the first thing from the right that isn't on the list
+ * </ul>
+ * <p>
+ * Changes:
+ * </p>
+ * <ul>
+ * <li> 2002/10/28 -- Category label identity checking now uses the
+ * equals() method instead of ==, so not interning category labels
+ * shouldn't break things anymore.  (Roger Levy) <br>
+ * <li> 2003/02/10 -- Changed to use TreebankLanguagePack and to cut on
+ * characters that set off annotations, so this should work even if
+ * functional tags are still on nodes. <br>
+ * <li> 2004/03/30 -- Made abstract base class and subclasses for CollinsHeadFinder,
+ * ModCollinsHeadFinder, SemanticHeadFinder, ChineseHeadFinder
+ * (and trees.icegb.ICEGBHeadFinder, trees.international.negra.NegraHeadFinder,
+ * and movetrees.EnglishPennMaxProjectionHeadFinder)
+ * <li> 2011/01/13 -- Add support for categoriesToAvoid (which can be set to ensure that
+ * punctuation is not the head if there are other options)
+ * </ul>
+ *
+ * @author Christopher Manning
+ * @author Galen Andrew
+ */

@@ -1,0 +1,176 @@
+    for (int sentenceIndex = 0; sentenceIndex < aceDocument.getSentenceCount(); sentenceIndex++) {
+      List<AceToken> tokens = aceDocument.getSentence(sentenceIndex);
+      StringBuffer b = new StringBuffer();
+      for(AceToken t: tokens) b.append(t.getLiteral() + " " );
+      logger.info("SENTENCE: " + b.toString());
+    }
+
+    int tokenOffset = 0;
+    for (int sentenceIndex = 0; sentenceIndex < aceDocument.getSentenceCount(); sentenceIndex++) {
+      List<AceToken> tokens = aceDocument.getSentence(sentenceIndex);
+
+      List<CoreLabel> words = new ArrayList<CoreLabel>();
+      StringBuilder textContent = new StringBuilder();
+      for(int i = 0; i < tokens.size(); i ++){
+        CoreLabel l = new CoreLabel();
+        l.setWord(tokens.get(i).getLiteral());
+        l.set(CoreAnnotations.ValueAnnotation.class, l.word());
+        l.set(CoreAnnotations.CharacterOffsetBeginAnnotation.class, tokens.get(i).getByteStart());
+        l.set(CoreAnnotations.CharacterOffsetEndAnnotation.class, tokens.get(i).getByteEnd());
+        words.add(l);
+        if(i > 0) textContent.append(" ");
+        textContent.append(tokens.get(i).getLiteral());
+      }
+
+      // skip "sentences" that are really just SGML tags (which come from using the RobustTokenizer)
+      if (words.size() == 1) {
+        String word = words.get(0).word();
+        if (word.startsWith("<") && word.endsWith(">")) {
+          tokenOffset += tokens.size();
+          continue;
+        }
+      }
+
+      CoreMap sentence = new Annotation(textContent.toString());
+      sentence.set(CoreAnnotations.DocIDAnnotation.class, docId);
+      sentence.set(CoreAnnotations.TokensAnnotation.class, words);
+      logger.info("Reading sentence: \"" + textContent + "\"");
+
+      List<AceEntityMention> entityMentions = aceDocument.getEntityMentions(sentenceIndex);
+      List<AceRelationMention> relationMentions = aceDocument.getRelationMentions(sentenceIndex);
+      List<AceEventMention> eventMentions = aceDocument.getEventMentions(sentenceIndex);
+
+      // convert entity mentions
+      for (AceEntityMention aceEntityMention : entityMentions) {
+        String corefID="";
+        for(String entityID : aceDocument.getKeySetEntities()){
+          AceEntity e = aceDocument.getEntity(entityID);
+          if(e.getMentions().contains(aceEntityMention)){
+            corefID = entityID;
+            break;
+          }
+        }
+        EntityMention convertedMention = convertAceEntityMention(aceEntityMention, docId, sentence, tokenOffset, corefID);
+//        EntityMention convertedMention = convertAceEntityMention(aceEntityMention, docId, sentence, tokenOffset);
+        entityCounts.incrementCount(convertedMention.getType());
+        logger.info("CONVERTED MENTION HEAD SPAN: " + convertedMention.getHead());
+        logger.info("CONVERTED ENTITY MENTION: " + convertedMention);
+        AnnotationUtils.addEntityMention(sentence, convertedMention);
+        entityMentionMap.put(aceEntityMention.getId(), convertedMention);
+
+        // TODO: make Entity objects as needed
+      }
+
+      // convert relation mentions
+      for (AceRelationMention aceRelationMention : relationMentions) {
+        RelationMention convertedMention = convertAceRelationMention(aceRelationMention, docId, sentence, entityMentionMap);
+        if(convertedMention != null){
+          relationCounts.incrementCount(convertedMention.getType());
+          logger.info("CONVERTED RELATION MENTION: " + convertedMention);
+          AnnotationUtils.addRelationMention(sentence, convertedMention);
+        }
+
+        // TODO: make Relation objects
+      }
+
+      // convert EventMentions
+      for(AceEventMention aceEventMention: eventMentions){
+        EventMention convertedMention = convertAceEventMention(aceEventMention, docId, sentence, entityMentionMap, tokenOffset);
+        if(convertedMention != null){
+          eventCounts.incrementCount(convertedMention.getType());
+          logger.info("CONVERTED EVENT MENTION: " + convertedMention);
+          AnnotationUtils.addEventMention(sentence, convertedMention);
+        }
+
+        // TODO: make Event objects
+      }
+
+      results.add(sentence);
+      tokenOffset += tokens.size();
+    }
+    return results;
+  }
+
+  private EventMention convertAceEventMention(
+      AceEventMention aceEventMention, String docId,
+      CoreMap sentence, Map<String, EntityMention> entityMap,
+      int tokenOffset) {
+    Set<String> roleSet = aceEventMention.getRoles();
+    List<String> roles = new ArrayList<String>();
+    for(String role: roleSet) roles.add(role);
+    List<ExtractionObject> convertedArgs = new ArrayList<ExtractionObject>();
+
+    int left = Integer.MAX_VALUE;
+    int right = Integer.MIN_VALUE;
+    for(String role: roles){
+      AceEntityMention arg = aceEventMention.getArg(role);
+      ExtractionObject o = entityMap.get(arg.getId());
+      if(o == null){
+        logger.severe("READER ERROR: Failed to find event argument with id " + arg.getId());
+        logger.severe("This happens because a few event mentions illegally span multiple sentences. Will ignore this mention.");
+        return null;
+      }
+      convertedArgs.add(o);
+      if(o.getExtentTokenStart() < left) left = o.getExtentTokenStart();
+      if(o.getExtentTokenEnd() > right) right = o.getExtentTokenEnd();
+    }
+
+    AceCharSeq anchor = aceEventMention.getAnchor();
+    ExtractionObject anchorObject = new ExtractionObject(
+        aceEventMention.getId() + "-anchor",
+        sentence,
+        new Span(anchor.getTokenStart() - tokenOffset, anchor.getTokenEnd() + 1 - tokenOffset),
+        "ANCHOR",
+        null);
+
+    EventMention em = new EventMention(
+        aceEventMention.getId(),
+        sentence,
+        new Span(left, right),
+        aceEventMention.getParent().getType(),
+        aceEventMention.getParent().getSubtype(),
+        anchorObject,
+        convertedArgs,
+        roles);
+    return em;
+  }
+
+  private RelationMention convertAceRelationMention(AceRelationMention aceRelationMention, String docId,
+      CoreMap sentence, Map<String, EntityMention> entityMap) {
+    List<AceRelationMentionArgument> args = Arrays.asList(aceRelationMention.getArgs());
+    List<ExtractionObject> convertedArgs = new ArrayList<ExtractionObject>();
+    List<String> argNames = new ArrayList<String>();
+
+    // the arguments are already stored in semantic order. Make sure we preserve the same ordering!
+    int left = Integer.MAX_VALUE;
+    int right = Integer.MIN_VALUE;
+    for (AceRelationMentionArgument arg : args) {
+      ExtractionObject o = entityMap.get(arg.getContent().getId());
+      if(o == null){
+        logger.severe("READER ERROR: Failed to find relation argument with id " + arg.getContent().getId());
+        logger.severe("This happens because a few relation mentions illegally span multiple sentences. Will ignore this mention.");
+        return null;
+      }
+      convertedArgs.add(o);
+      argNames.add(arg.getRole());
+      if(o.getExtentTokenStart() < left) left = o.getExtentTokenStart();
+      if(o.getExtentTokenEnd() > right) right = o.getExtentTokenEnd();
+    }
+
+    if(argNames.size() != 2 || ! argNames.get(0).equalsIgnoreCase("arg-1") || ! argNames.get(1).equalsIgnoreCase("arg-2")){
+      logger.severe("READER ERROR: Invalid succession of arguments in relation mention: " + argNames);
+      logger.severe("ACE relations must have two arguments. Will ignore this mention.");
+      return null;
+    }
+
+    RelationMention relation = new RelationMention(
+        aceRelationMention.getId(),
+        sentence,
+        new Span(left, right),
+        aceRelationMention.getParent().getType(),
+        aceRelationMention.getParent().getSubtype(),
+        convertedArgs,
+        null);
+    return relation;
+  }
+

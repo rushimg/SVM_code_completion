@@ -1,0 +1,26 @@
+  public boolean typeEquals(SemanticGraphEdge e) {
+    return (this.relation.equals(e.relation));
+  }
+
+  private static class SemanticGraphEdgeTargetComparator implements Comparator<SemanticGraphEdge> {
+
+    public int compare(SemanticGraphEdge o1, SemanticGraphEdge o2) {
+      int targetVal = o1.getTarget().compareTo(o2.getTarget());
+      if (targetVal != 0) {
+        return targetVal;
+      }
+      int sourceVal = o1.getSource().compareTo(o2.getSource());
+      if (sourceVal != 0) {
+        return sourceVal;
+      }
+      return o1.getRelation().toString().compareTo(o2.getRelation().toString()); // todo: cdm: surely we shouldn't have to do toString() now?
+    }
+
+  }
+
+  private static Comparator<SemanticGraphEdge> targetComparator = new SemanticGraphEdgeTargetComparator();
+
+  public static Comparator<SemanticGraphEdge> orderByTargetComparator() {
+    return targetComparator;
+  }
+

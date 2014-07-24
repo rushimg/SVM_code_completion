@@ -1,0 +1,30 @@
+  public boolean containsKey(List<K> key) {
+    //     if(! (key instanceof Object[]))
+    //       return false;
+    //    Object[] o = (Object[]) key;
+    GeneralizedCounter<K> next = this;
+    for (int i=0; i<key.size()-1; i++) {
+      next = next.conditionalizeHelper(key.get(i));
+      if (next==null) return false;
+    }
+    return next.map.containsKey(key.get(key.size()-1));
+  }
+
+  public GeneralizedCounter<K> reverseKeys() {
+    GeneralizedCounter<K> result = new GeneralizedCounter<K>();
+    Set<Map.Entry<List<K>,Double>> entries = entrySet();
+    for (Map.Entry<List<K>,Double> entry: entries) {
+      List<K> list = entry.getKey();
+      double count = entry.getValue();
+      Collections.reverse(list);
+      result.incrementCount(list, count);
+    }
+    return result;
+  }
+
+
+  private void wrongDepth() {
+    throw new RuntimeException("Error -- attempt to operate with key of wrong length. depth=" + depth);
+  }
+
+

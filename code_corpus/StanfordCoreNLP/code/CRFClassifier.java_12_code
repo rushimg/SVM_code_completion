@@ -1,0 +1,49 @@
+  public Triple<int[][][][], int[][], double[][][][]> documentsToDataAndLabels(Collection<List<IN>> documents) {
+
+    // first index is the number of the document
+    // second index is position in the document also the index of the
+    // clique/factor table
+    // third index is the number of elements in the clique/window these features
+    // are for (starting with last element)
+    // fourth index is position of the feature in the array that holds them
+    // element in data[i][j][k][m] is the index of the mth feature occurring in
+    // position k of the jth clique of the ith document
+    // int[][][][] data = new int[documentsSize][][][];
+    List<int[][][]> data = new ArrayList<int[][][]>();
+    List<double[][][]> featureVal = new ArrayList<double[][][]>();
+
+    // first index is the number of the document
+    // second index is the position in the document
+    // element in labels[i][j] is the index of the correct label (if it exists)
+    // at position j in document i
+    // int[][] labels = new int[documentsSize][];
+    List<int[]> labels = new ArrayList<int[]>();
+
+    int numDatums = 0;
+
+    for (List<IN> doc : documents) {
+      Triple<int[][][], int[], double[][][]> docTriple = documentToDataAndLabels(doc);
+      data.add(docTriple.first());
+      labels.add(docTriple.second());
+      if (flags.useEmbedding)
+        featureVal.add(docTriple.third());
+      numDatums += doc.size();
+    }
+
+    System.err.println("numClasses: " + classIndex.size() + ' ' + classIndex);
+    System.err.println("numDocuments: " + data.size());
+    System.err.println("numDatums: " + numDatums);
+    System.err.println("numFeatures: " + featureIndex.size());
+    printFeatures();
+
+    double[][][][] featureValArr = null;
+    if (flags.useEmbedding)
+      featureValArr = featureVal.toArray(new double[data.size()][][][]);
+
+
+    return new Triple<int[][][][], int[][], double[][][][]>(
+            data.toArray(new int[data.size()][][][]),
+            labels.toArray(new int[labels.size()][]),
+            featureValArr);
+  }
+

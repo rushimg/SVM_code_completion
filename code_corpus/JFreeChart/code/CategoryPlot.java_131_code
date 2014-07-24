@@ -1,0 +1,22 @@
+    public void handleClick(int x, int y, PlotRenderingInfo info) {
+
+        Rectangle2D dataArea = info.getDataArea();
+        if (dataArea.contains(x, y)) {
+            // set the anchor value for the range axis...
+            double java2D = 0.0;
+            if (this.orientation == PlotOrientation.HORIZONTAL) {
+                java2D = x;
+            }
+            else if (this.orientation == PlotOrientation.VERTICAL) {
+                java2D = y;
+            }
+            RectangleEdge edge = Plot.resolveRangeAxisLocation(
+                    getRangeAxisLocation(), this.orientation);
+            double value = getRangeAxis().java2DToValue(
+                    java2D, info.getDataArea(), edge);
+            setAnchorValue(value);
+            setRangeCrosshairValue(value);
+        }
+
+    }
+

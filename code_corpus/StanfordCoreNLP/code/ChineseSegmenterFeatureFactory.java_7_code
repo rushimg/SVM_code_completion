@@ -1,0 +1,32 @@
+      (CTB/ASBC/HK/PK/MSR) POS information of each characters.
+      If a character falls into some function categories,
+      it is very likely there is a boundary.
+      A lot of Chinese function words belong to single characters.
+      This feature is also good for numbers and punctuations.
+    if (flags.useCTBChar2 || flags.useASBCChar2 || flags.useHKChar2
+        || flags.usePKChar2 || flags.useMSRChar2) {
+      String[] tagsets;
+      // the "useChPos" now only works for CTB and PK
+      if (flags.useChPos) {
+        if(flags.useCTBChar2) {
+          tagsets = new String[]{"AD", "AS", "BA", "CC", "CD", "CS", "DE", "DT", "ETC", "IJ", "JJ", "LB", "LC", "M",  "NN",  "NR", "NT", "OD", "P", "PN", "PU", "SB", "SP", "VA", "VC", "VE", "VV" };
+        } else if (flags.usePKChar2) {
+          //tagsets = new String[]{"r", "j", "t", "a", "nz", "l", "vn", "i", "m", "ns", "nr", "v", "n", "q", "Ng", "b", "d", "nt"};
+          tagsets = new String[]{"2","3","4"};
+        } else {
+          throw new RuntimeException("only support settings for CTB and PK now.");
+        }
+      } else {
+        //System.err.println("Using Derived features");
+        tagsets = new String[]{"2","3","4"};
+      }
+
+      if (taDetector == null) {
+        taDetector = new TagAffixDetector(flags);
+      }
+      for (int k=0; k<tagsets.length; k++) {
+	features.add(taDetector.checkDic(tagsets[k]+"p", charp) + taDetector.checkDic(tagsets[k]+"i", charp) + taDetector.checkDic(tagsets[k]+"s", charc)+ taDetector.checkInDic(charp)+taDetector.checkInDic(charc)+ tagsets[k]+ "prep-sufc" );
+        // features.add("|ctbchar2");  // Added a constant feature several times!!
+      }
+    }
+

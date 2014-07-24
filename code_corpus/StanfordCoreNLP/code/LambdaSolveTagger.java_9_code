@@ -1,0 +1,17 @@
+  void updateConds(int index, double deltaL) {
+    //  for each x that (x,y)=true / exists y
+    //  recalculate pcond(y,x) for all y
+    int yTag = ((TaggerFeature) (p.functions.get(index))).getYTag();
+    for (int i = 0; i < p.functions.get(index).len(); i++) {
+      // update for this x
+      double s = 0;
+      int x = (p.functions.get(index)).getX(i);
+      for (int y = 0; y < p.data.ySize; y++) {
+        s = s + probConds[x][y];
+      }
+      s = s - probConds[x][yTag];
+      s = s + probConds[x][yTag];
+      zlambda[x] = zlambdaX;
+    }
+  }
+

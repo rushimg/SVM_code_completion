@@ -1,0 +1,31 @@
+  public TreeReaderFactory treeReaderFactory() {
+    return new ArabicTreeReaderFactory(retainNPTmp, retainPRD,
+        changeNoLabels, discardX,
+        retainNPSbj, false, retainPPClr);
+  }
+
+  //NOTE (WSG): This method is called by main() to load the test treebank
+  @Override
+  public MemoryTreebank memoryTreebank() {
+    return new MemoryTreebank(treeReaderFactory(), inputEncoding);
+  }
+
+  //NOTE (WSG): This method is called to load the training treebank
+  @Override
+  public DiskTreebank diskTreebank() {
+    return new DiskTreebank(treeReaderFactory(), inputEncoding);
+  }
+
+  @Override
+  public HeadFinder headFinder() {
+    if(headFinder == null)
+      headFinder = new ArabicHeadFinder(treebankLanguagePack());
+    return headFinder;
+  }
+
+  @Override
+  public HeadFinder typedDependencyHeadFinder() {
+    return headFinder();
+  }
+
+

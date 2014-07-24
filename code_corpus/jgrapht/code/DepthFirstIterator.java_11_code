@@ -1,0 +1,31 @@
+    protected V provideNextVertex()
+    {
+        V v;
+        for (;;) {
+            Object o = stack.removeLast();
+            if (o == SENTINEL) {
+                // This is a finish-time sentinel we previously pushed.
+                recordFinish();
+                // Now carry on with another pop until we find a non-sentinel
+            } else {
+                // Got a real vertex to start working on
+                v = TypeUtil.uncheckedCast(o, vertexTypeDecl);
+                break;
+            }
+        }
+
+        // Push a sentinel for v onto the stack so that we'll know
+        // when we're done with it.
+        stack.addLast(v);
+        stack.addLast(SENTINEL);
+        putSeenData(v, VisitColor.GRAY);
+        return v;
+    }
+
+    private void recordFinish()
+    {
+        V v = TypeUtil.uncheckedCast(stack.removeLast(), vertexTypeDecl);
+        putSeenData(v, VisitColor.BLACK);
+        finishVertex(v);
+    }
+

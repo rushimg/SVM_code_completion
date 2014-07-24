@@ -1,0 +1,25 @@
+  public Collection<SemanticGraph> execute(SemanticGraph sg, SemgrexPattern overridePattern) throws Exception {
+    SemgrexMatcher matcher = overridePattern.matcher(sg);
+    Collection<SemanticGraph> generated = new ArrayList<SemanticGraph>();
+    while (matcher.find()) {
+      if (predicateTest != null) {        
+        if (!predicateTest.test(matcher))
+          continue;
+      }
+      // We reset the named node map with each edit set, since these edits
+      // should exist in a separate graph for each unique Semgrex match.
+      nodeMap = Generics.newHashMap();
+      SemanticGraph tgt = new SemanticGraph(sg);
+      for (SsurgeonEdit edit : editScript) {      
+        edit.evaluate(tgt, matcher);
+      }
+      generated.add(tgt);
+    }
+    return generated;
+  }
+
+
+  public SemgrexPattern getSemgrexPattern() {
+    return semgrexPattern;
+  }
+

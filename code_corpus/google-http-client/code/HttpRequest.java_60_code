@@ -1,0 +1,235 @@
+     HttpResponse response = request.execute();
+     try {
+       // process the HTTP response object
+     } finally {
+       response.disconnect();
+     }
+  @SuppressWarnings("deprecation")
+  public HttpResponse execute() throws IOException {
+    boolean retryRequest = false;
+    Preconditions.checkArgument(numRetries >= 0);
+    int retriesRemaining = numRetries;
+    if (backOffPolicy != null) {
+      // Reset the BackOffPolicy at the start of each execute.
+      backOffPolicy.reset();
+    }
+    HttpResponse response = null;
+    IOException executeException;
+
+    Preconditions.checkNotNull(requestMethod);
+    Preconditions.checkNotNull(url);
+
+    do {
+      // Cleanup any unneeded response from a previous iteration
+      if (response != null) {
+        response.ignore();
+      }
+
+      response = null;
+      executeException = null;
+
+      // run the interceptor
+      if (executeInterceptor != null) {
+        executeInterceptor.intercept(this);
+      }
+      // build low-level HTTP request
+      String urlString = url.build();
+      LowLevelHttpRequest lowLevelHttpRequest = transport.buildRequest(requestMethod, urlString);
+      Logger logger = HttpTransport.LOGGER;
+      boolean loggable = loggingEnabled && logger.isLoggable(Level.CONFIG);
+      StringBuilder logbuf = null;
+      StringBuilder curlbuf = null;
+      // log method and URL
+      if (loggable) {
+        logbuf = new StringBuilder();
+        logbuf.append("-------------- REQUEST  --------------").append(StringUtils.LINE_SEPARATOR);
+        logbuf.append(requestMethod)
+            .append(' ').append(urlString).append(StringUtils.LINE_SEPARATOR);
+
+        // setup curl logging
+        if (curlLoggingEnabled) {
+          curlbuf = new StringBuilder("curl -v --compressed");
+          if (!requestMethod.equals(HttpMethods.GET)) {
+            curlbuf.append(" -X ").append(requestMethod);
+          }
+        }
+      }
+      // add to user agent
+      String originalUserAgent = headers.getUserAgent();
+      if (!suppressUserAgentSuffix) {
+        if (originalUserAgent == null) {
+          headers.setUserAgent(USER_AGENT_SUFFIX);
+        } else {
+          headers.setUserAgent(originalUserAgent + " " + USER_AGENT_SUFFIX);
+        }
+      }
+      // headers
+      HttpHeaders.serializeHeaders(headers, logbuf, curlbuf, logger, lowLevelHttpRequest);
+      if (!suppressUserAgentSuffix) {
+        // set the original user agent back so that retries do not keep appending to it
+        headers.setUserAgent(originalUserAgent);
+      }
+
+      // content
+      StreamingContent streamingContent = content;
+      final boolean contentRetrySupported = streamingContent == null || content.retrySupported();
+      if (streamingContent != null) {
+        final String contentEncoding;
+        final long contentLength;
+        final String contentType = content.getType();
+        // log content
+        if (loggable) {
+          streamingContent = new LoggingStreamingContent(
+              streamingContent, HttpTransport.LOGGER, Level.CONFIG, contentLoggingLimit);
+        }
+        // encoding
+        if (encoding == null) {
+          contentEncoding = null;
+          contentLength = content.getLength();
+        } else {
+          contentEncoding = encoding.getName();
+          streamingContent = new HttpEncodingStreamingContent(streamingContent, encoding);
+          contentLength = contentRetrySupported ? IOUtils.computeLength(streamingContent) : -1;
+        }
+        // append content headers to log buffer
+        if (loggable) {
+          if (contentType != null) {
+            String header = "Content-Type: " + contentType;
+            logbuf.append(header).append(StringUtils.LINE_SEPARATOR);
+            if (curlbuf != null) {
+              curlbuf.append(" -H '" + header + "'");
+            }
+          }
+          if (contentLength >= 0) {
+            String header = "Content-Length: " + contentLength;
+            logbuf.append(header).append(StringUtils.LINE_SEPARATOR);
+            // do not log @ curl as the user will most likely manipulate the content
+          }
+        }
+        if (curlbuf != null) {
+          curlbuf.append(" -d '@-'");
+        }
+        // send content information to low-level HTTP request
+        lowLevelHttpRequest.setContentType(contentType);
+        lowLevelHttpRequest.setContentEncoding(contentEncoding);
+        lowLevelHttpRequest.setContentLength(contentLength);
+        lowLevelHttpRequest.setStreamingContent(streamingContent);
+      }
+      // log from buffer
+      if (loggable) {
+        logger.config(logbuf.toString());
+        if (curlbuf != null) {
+          curlbuf.append(" -- '");
+          curlbuf.append(urlString.replaceAll("\'", "'\"'\"'"));
+          curlbuf.append("'");
+          if (streamingContent != null) {
+            curlbuf.append(" << $$$");
+          }
+          logger.config(curlbuf.toString());
+        }
+      }
+
+      // We need to make sure our content type can support retry
+      // null content is inherently able to be retried
+      retryRequest = contentRetrySupported && retriesRemaining > 0;
+
+      // execute
+      lowLevelHttpRequest.setTimeout(connectTimeout, readTimeout);
+      try {
+        LowLevelHttpResponse lowLevelHttpResponse = lowLevelHttpRequest.execute();
+        // Flag used to indicate if an exception is thrown before the response is constructed.
+        boolean responseConstructed = false;
+        try {
+          response = new HttpResponse(this, lowLevelHttpResponse);
+          responseConstructed = true;
+        } finally {
+          if (!responseConstructed) {
+            InputStream lowLevelContent = lowLevelHttpResponse.getContent();
+            if (lowLevelContent != null) {
+              lowLevelContent.close();
+            }
+          }
+        }
+      } catch (IOException e) {
+        if (!retryOnExecuteIOException && (ioExceptionHandler == null
+            || !ioExceptionHandler.handleIOException(this, retryRequest))) {
+          throw e;
+        }
+        // Save the exception in case the retries do not work and we need to re-throw it later.
+        executeException = e;
+        logger.log(Level.WARNING, "exception thrown while executing request", e);
+      }
+
+      // Flag used to indicate if an exception is thrown before the response has completed
+      // processing.
+      boolean responseProcessed = false;
+      try {
+        if (response != null && !response.isSuccessStatusCode()) {
+          boolean errorHandled = false;
+          if (unsuccessfulResponseHandler != null) {
+            // Even if we don't have the potential to retry, we might want to run the
+            // handler to fix conditions (like expired tokens) that might cause us
+            // trouble on our next request
+            errorHandled = unsuccessfulResponseHandler.handleResponse(this, response, retryRequest);
+          }
+          if (!errorHandled) {
+            if (handleRedirect(response.getStatusCode(), response.getHeaders())) {
+              // The unsuccessful request's error could not be handled and it is a redirect request.
+              errorHandled = true;
+            } else if (retryRequest && backOffPolicy != null
+                && backOffPolicy.isBackOffRequired(response.getStatusCode())) {
+              // The unsuccessful request's error could not be handled and should be backed off
+              // before retrying
+              long backOffTime = backOffPolicy.getNextBackOffMillis();
+              if (backOffTime != BackOffPolicy.STOP) {
+                try {
+                  sleeper.sleep(backOffTime);
+                } catch (InterruptedException exception) {
+                  // ignore
+                }
+                errorHandled = true;
+              }
+            }
+          }
+          // A retry is required if the error was successfully handled or if it is a redirect
+          // request or if the back off policy determined a retry is necessary.
+          retryRequest &= errorHandled;
+          // need to close the response stream before retrying a request
+          if (retryRequest) {
+            response.ignore();
+          }
+        } else {
+          // Retry is not required for a successful status code unless the response is null.
+          retryRequest &= (response == null);
+        }
+        // Once there are no more retries remaining, this will be -1
+        // Count redirects as retries, we want a finite limit of redirects.
+        retriesRemaining--;
+
+        responseProcessed = true;
+      } finally {
+        if (response != null && !responseProcessed) {
+          response.disconnect();
+        }
+      }
+    } while (retryRequest);
+
+    if (response == null) {
+      // Retries did not help resolve the execute exception, re-throw it.
+      throw executeException;
+    }
+    // response interceptor
+    if (responseInterceptor != null) {
+      responseInterceptor.interceptResponse(response);
+    }
+    // throw an exception if unsuccessful response
+    if (throwExceptionOnExecuteError && !response.isSuccessStatusCode()) {
+      try {
+        throw new HttpResponseException(response);
+      } finally {
+        response.disconnect();
+      }
+    }
+    return response;
+  }
+

@@ -1,0 +1,38 @@
+  double newton(double lambda0, int index, double err) {
+    double lambdaN = lambda0;
+    int i = 0;
+    if (fixedFnumXY) {
+      double plambda = fExpected(p.functions.get(index));
+    }
+    do {
+      i++;
+      double lambdaP = lambdaN;
+      double gPrimeVal = gprime(lambdaP, index);
+      if (Double.isNaN(gPrimeVal)) {
+        System.err.println("gPrime of " + lambdaP + " " + index + " is NaN " + gPrimeVal);
+        //lambda_converged[index]=true;
+        //   System.exit(1);
+      }
+      double gVal = g(lambdaP, index);
+      if (gPrimeVal == 0.0) {
+        return 0.0;
+      }
+      lambdaN = lambdaP - gVal / gPrimeVal;
+      if (Double.isNaN(lambdaN)) {
+        System.err.println("the division of " + gVal + " " + gPrimeVal + " " + index + " is NaN " + lambdaN);
+        //lambda_converged[index]=true;
+        return 0;
+      }
+      if (Math.abs(lambdaN - lambdaP) < err) {
+        return lambdaN;
+      }
+      if (i > 100) {
+        if (Math.abs(gVal) > 0.01) {
+          return 0;
+        }
+        return lambdaN;
+      }
+    } while (true);
+  }
+
+

@@ -1,0 +1,69 @@
+  @Override
+  public Set<String> tagSet(Function<String,String> basicCategoryFunction) {
+    Set<String> tagSet = new HashSet<String>();
+    for (String tag : tagIndex.objectsList()) {
+      tagSet.add(basicCategoryFunction.apply(tag));
+    }
+    return tagSet;
+  }
+
+
+  private void ensureProbs(int word) {
+    ensureProbs(word, true);
+  }
+
+  private void ensureProbs(int word, boolean subtractTagScore) {
+    if (word == lastWord) {
+      return;
+    }
+    lastWord = word;
+    if (functionWordTags.containsKey(wordIndex.get(word))) {
+      logProbs = new ClassicCounter<String>();
+      String trueTag = functionWordTags.get(wordIndex.get(word));
+      for (String tag : tagIndex.objectsList()) {
+        if (ctlp.basicCategory(tag).equals(trueTag)) {
+          logProbs.setCount(tag, 0);
+        } else {
+          logProbs.setCount(tag, Double.NEGATIVE_INFINITY);
+        }
+      }
+      return;
+    }
+    Datum datum = new BasicDatum(featExtractor.makeFeatures(wordIndex.get(word)));
+    logProbs = scorer.logProbabilityOf(datum);
+    if (subtractTagScore) {
+      Set<String> tagSet = logProbs.keySet();
+      for (String tag : tagSet) {
+        logProbs.incrementCount(tag, -Math.log(tagDist.probabilityOf(tag)));
+      }
+    }
+  }
+
+  public CollectionValuedMap<String, String> tagsForWord = new CollectionValuedMap<String, String>();
+
+  public Iterator<IntTaggedWord> ruleIteratorByWord(int word, int loc, String featureSpec) {
+    ensureProbs(word);
+    List<IntTaggedWord> rules = new ArrayList<IntTaggedWord>();
+    if (seenTagsOnly) {
+      String wordString = wordIndex.get(word);
+      Collection<String> tags = tagsForWord.get(wordString);
+      for (String tag : tags) {
+        rules.add(new IntTaggedWord(wordString, tag, wordIndex, tagIndex));
+      }
+    } else {
+      double max = Counters.max(logProbs);
+      for (int tag = 0; tag < tagIndex.size(); tag++) {
+        IntTaggedWord iTW = new IntTaggedWord(word, tag);
+        double score = logProbs.getCount(tagIndex.get(tag));
+        if (score > max - iteratorCutoffFactor) {
+          rules.add(iTW);
+        }
+      }
+    }
+    return rules.iterator();
+  }
+
+  public Iterator<IntTaggedWord> ruleIteratorByWord(String word, int loc, String featureSpec) {
+    return ruleIteratorByWord(wordIndex.indexOf(word), loc, featureSpec);
+  }
+

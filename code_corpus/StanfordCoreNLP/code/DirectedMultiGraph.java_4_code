@@ -1,0 +1,29 @@
+  @Override
+  public boolean addVertex(V v) {
+    if (outgoingEdges.containsKey(v))
+      return false;
+    outgoingEdges.put(v, Generics.<V, List<E>>newHashMap());
+    incomingEdges.put(v, Generics.<V, List<E>>newHashMap());
+    return true;
+  }
+
+  private Map<V, List<E>> getOutgoingEdgesMap(V v) {
+    Map<V, List<E>> map = outgoingEdges.get(v);
+    if (map == null) {
+      map = Generics.<V, List<E>>newHashMap();
+      outgoingEdges.put(v, map);
+      incomingEdges.put(v, Generics.<V, List<E>>newHashMap());
+    }
+    return map;
+  }
+
+  private Map<V, List<E>> getIncomingEdgesMap(V v) {
+    Map<V, List<E>> map = incomingEdges.get(v);
+    if (map == null) {
+      outgoingEdges.put(v, Generics.<V, List<E>>newHashMap());
+      map = Generics.<V, List<E>>newHashMap();
+      incomingEdges.put(v, map);
+    }
+    return map;
+  }
+

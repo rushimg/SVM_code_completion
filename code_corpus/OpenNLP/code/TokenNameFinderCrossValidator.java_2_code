@@ -1,0 +1,52 @@
+  private class NameToDocumentSampleStream extends FilterObjectStream<NameSample, DocumentSample> {
+
+    private NameSample beginSample;
+
+    protected NameToDocumentSampleStream(ObjectStream<NameSample> samples) {
+      super(samples);
+    }
+
+    public DocumentSample read() throws IOException {
+
+      List<NameSample> document = new ArrayList<NameSample>();
+
+      if (beginSample == null) {
+        // Assume that the clear flag is set
+        beginSample = samples.read();
+      }
+
+      // Underlying stream is exhausted!
+      if (beginSample == null) {
+        return null;
+      }
+
+      document.add(beginSample);
+
+      NameSample sample;
+      while ((sample = samples.read()) != null) {
+
+        if (sample.isClearAdaptiveDataSet()) {
+          beginSample = sample;
+          break;
+        }
+
+        document.add(sample);
+      }
+
+      // Underlying stream is exhausted,
+      // next call must return null
+      if (sample == null) {
+        beginSample = null;
+      }
+
+      return new DocumentSample(document.toArray(new NameSample[document.size()]));
+    }
+
+    @Override
+    public void reset() throws IOException, UnsupportedOperationException {
+      super.reset();
+
+      beginSample = null;
+    }
+  }
+

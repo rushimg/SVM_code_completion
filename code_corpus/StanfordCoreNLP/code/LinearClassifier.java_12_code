@@ -1,0 +1,10 @@
+  @Override
+  public Counter<L> probabilityOf(Datum<L, F> example) {
+    if(example instanceof RVFDatum<?, ?>)return probabilityOfRVFDatum((RVFDatum<L,F>)example);
+    Counter<L> scores = logProbabilityOf(example);
+    for (L label : scores.keySet()) {
+      scores.setCount(label, Math.exp(scores.getCount(label)));
+    }
+    return scores;
+  }
+

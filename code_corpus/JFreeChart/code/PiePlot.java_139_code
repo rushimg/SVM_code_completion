@@ -1,0 +1,82 @@
+    protected void drawItem(Graphics2D g2, int section, Rectangle2D dataArea,
+                            PiePlotState state, int currentPass) {
+
+        Number n = this.dataset.getValue(section);
+        if (n == null) {
+            return;
+        }
+        double value = n.doubleValue();
+        double angle1 = 0.0;
+        double angle2 = 0.0;
+
+        if (this.direction == Rotation.CLOCKWISE) {
+            angle1 = state.getLatestAngle();
+        }
+        else if (this.direction == Rotation.ANTICLOCKWISE) {
+            angle1 = state.getLatestAngle();
+        }
+        else {
+            throw new IllegalStateException("Rotation type not recognised.");
+        }
+
+        double angle = (angle2 - angle1);
+        if (Math.abs(angle) > getMinimumArcAngleToDraw()) {
+            double ep = 0.0;
+            double mep = getMaximumExplodePercent();
+            if (mep > 0.0) {
+                ep = getExplodePercent(section) / mep;
+            }
+            Rectangle2D arcBounds = getArcBounds(state.getPieArea(),
+                    state.getExplodedPieArea(), angle1, angle, ep);
+            Arc2D.Double arc = new Arc2D.Double(arcBounds, angle1, angle,
+                    Arc2D.PIE);
+
+            if (currentPass == 0) {
+                if (this.shadowPaint != null) {
+                    Shape shadowArc = ShapeUtilities.createTranslatedShape(
+                            arc, (float) this.shadowXOffset,
+                            (float) this.shadowYOffset);
+                    g2.setPaint(this.shadowPaint);
+                    g2.fill(shadowArc);
+                }
+            }
+            else if (currentPass == 1) {
+                Comparable key = getSectionKey(section);
+                Paint paint = lookupSectionPaint(key);
+                g2.setPaint(paint);
+                g2.fill(arc);
+
+                Paint outlinePaint = lookupSectionOutlinePaint(key);
+                Stroke outlineStroke = lookupSectionOutlineStroke(key);
+                if (this.sectionOutlinesVisible) {
+                    g2.setPaint(outlinePaint);
+                    g2.setStroke(outlineStroke);
+                    g2.draw(arc);
+                }
+
+                // update the linking line target for later
+                // add an entity for the pie section
+                if (state.getInfo() != null) {
+                    EntityCollection entities = state.getEntityCollection();
+                    if (entities != null) {
+                        String tip = null;
+                        if (this.toolTipGenerator != null) {
+                            tip = this.toolTipGenerator.generateToolTip(
+                                    this.dataset, key);
+                        }
+                        String url = null;
+                        if (this.urlGenerator != null) {
+                            url = this.urlGenerator.generateURL(this.dataset,
+                                    key, this.pieIndex);
+                        }
+                        PieSectionEntity entity = new PieSectionEntity(
+                                arc, this.dataset, this.pieIndex, section, key,
+                                tip, url);
+                        entities.add(entity);
+                    }
+                }
+            }
+        }
+        state.setLatestAngle(angle2);
+    }
+

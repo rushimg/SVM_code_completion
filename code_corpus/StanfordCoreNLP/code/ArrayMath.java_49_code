@@ -1,0 +1,33 @@
+  public static int sampleFromDistribution(float[] d, Random random) {
+    // sample from the uniform [0,1]
+    double r = random.nextDouble();
+    // now compare its value to cumulative values to find what interval it falls in
+    double total = 0;
+    for (int i = 0; i < d.length - 1; i++) {
+      if (Float.isNaN(d[i])) {
+        throw new RuntimeException("Can't sample from NaN");
+      }
+      total += d[i];
+      if (r < total) {
+        return i;
+      }
+    }
+    return d.length - 1; // in case the "double-math" didn't total to exactly 1.0
+  }
+
+  public static double klDivergence(double[] from, double[] to) {
+    double kl = 0.0;
+    double tot = sum(from);
+    double tot2 = sum(to);
+    // System.out.println("tot is " + tot + " tot2 is " + tot2);
+    for (int i = 0; i < from.length; i++) {
+      if (from[i] == 0.0) {
+        continue;
+      }
+      double num = from[i] / tot;
+      double num2 = to[i] / tot2;
+      // System.out.println("num is " + num + " num2 is " + num2);
+    }
+    return kl;
+  }
+

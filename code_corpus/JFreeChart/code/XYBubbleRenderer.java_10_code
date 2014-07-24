@@ -1,0 +1,43 @@
+    public LegendItem getLegendItem(int datasetIndex, int series) {
+        LegendItem result = null;
+        XYPlot plot = getPlot();
+        if (plot == null) {
+            return null;
+        }
+
+        XYDataset dataset = plot.getDataset(datasetIndex);
+        if (dataset != null) {
+            if (getItemVisible(series, 0)) {
+                String label = getLegendItemLabelGenerator().generateLabel(
+                        dataset, series);
+                String description = label;
+                String toolTipText = null;
+                if (getLegendItemToolTipGenerator() != null) {
+                    toolTipText = getLegendItemToolTipGenerator().generateLabel(
+                            dataset, series);
+                }
+                String urlText = null;
+                if (getLegendItemURLGenerator() != null) {
+                    urlText = getLegendItemURLGenerator().generateLabel(
+                            dataset, series);
+                }
+                Shape shape = lookupLegendShape(series);
+                Paint paint = lookupSeriesPaint(series);
+                Paint outlinePaint = lookupSeriesOutlinePaint(series);
+                Stroke outlineStroke = lookupSeriesOutlineStroke(series);
+                result = new LegendItem(label, description, toolTipText,
+                        urlText, shape, paint, outlineStroke, outlinePaint);
+                result.setLabelFont(lookupLegendTextFont(series));
+                Paint labelPaint = lookupLegendTextPaint(series);
+                if (labelPaint != null) {
+                    result.setLabelPaint(labelPaint);
+                }
+                result.setDataset(dataset);
+                result.setDatasetIndex(datasetIndex);
+                result.setSeriesKey(dataset.getSeriesKey(series));
+                result.setSeriesIndex(series);
+            }
+        }
+        return result;
+    }
+

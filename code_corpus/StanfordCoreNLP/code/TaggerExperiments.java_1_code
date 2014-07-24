@@ -1,0 +1,29 @@
+public class TaggerExperiments extends Experiments {
+
+  private static final boolean DEBUG = true;
+  private static final String zeroSt = "0";
+
+  private final TaggerFeatures feats;
+  private final Set<FeatureKey> sTemplates = Generics.newHashSet();
+  private final HistoryTable tHistories = new HistoryTable();
+
+  private final int numFeatsGeneral;
+  private final int numFeatsAll;
+
+  private final MaxentTagger maxentTagger;
+
+  private final TemplateHash tFeature;
+
+  private byte[][] fnumArr;
+
+
+
+  // This constructor is only used by unit tests.
+  TaggerExperiments(MaxentTagger maxentTagger) {
+    this.maxentTagger = maxentTagger;
+    this.tFeature = new TemplateHash(maxentTagger);
+    numFeatsGeneral = maxentTagger.extractors.size();
+    numFeatsAll = numFeatsGeneral + maxentTagger.extractorsRare.size();
+    feats = new TaggerFeatures(this);
+  }
+

@@ -1,0 +1,35 @@
+public class CRFClassifierEvaluator<IN extends CoreMap> extends CmdEvaluator {
+
+  private CRFClassifier<IN> classifier;
+  // NOTE: Default uses -r, specify without -r if IOB
+  private String cmdStr = "/u/nlp/bin/conlleval -r";
+  private String[] cmd;
+
+  // TODO: Use data structure to hold data + features
+  // Cache already featurized documents
+  // Original object bank
+  Collection<List<IN>> data;
+  // Featurized data
+  List<Triple<int[][][], int[], double[][][]>> featurizedData;
+
+  public CRFClassifierEvaluator(String description,
+                                CRFClassifier<IN> classifier,
+                                Collection<List<IN>> data,
+                                List<Triple<int[][][], int[], double[][][]>> featurizedData)
+  {
+    this.description = description;
+    this.classifier = classifier;
+    this.data = data;
+    this.featurizedData = featurizedData;
+    cmd = getCmd(cmdStr);
+    saveOutput = true;
+  }
+
+  public CRFClassifierEvaluator(String description,
+                                CRFClassifier<IN> classifier)
+  {
+    this.description = description;
+    this.classifier = classifier;
+    saveOutput = true;
+  }
+

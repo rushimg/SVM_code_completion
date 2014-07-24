@@ -1,0 +1,45 @@
+  static class ExtractorTwoTags extends Extractor {
+
+    private static final long serialVersionUID = -7342144764725605134L;
+
+    private final int leftPosition;
+    private final int rightPosition;
+    private final int leftContext, rightContext;
+
+    public ExtractorTwoTags(int position1, int position2) {
+      leftPosition = Math.min(position1, position2);
+      rightPosition = Math.max(position1, position2);
+
+      leftContext = -Math.min(leftPosition, 0);
+      rightContext = Math.max(rightPosition, 0);
+    }
+
+    @Override
+    public int rightContext() {
+      return rightContext;
+    }
+
+    @Override
+    public int leftContext() {
+      return leftContext;
+    }
+
+    @Override
+    String extract(History h, PairsHolder pH) {
+      // I ran a bunch of timing tests that seem to indicate it is
+      // cheaper to simply add string + char + string than use a
+      // StringBuilder or go through the StringBuildMemoizer -horatio
+      return pH.getTag(h, leftPosition) + '!' + pH.getTag(h, rightPosition);
+    }
+
+    @Override public boolean isLocal() { return false; }
+    @Override public boolean isDynamic() { return true; }
+
+    @Override
+    public String toString() {
+      return (getClass().getName() + "(t" + leftPosition +
+              ",t" + rightPosition + ')');
+    }
+  }
+
+

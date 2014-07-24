@@ -1,0 +1,52 @@
+@ThreadSafe
+public class BasicHttpClientConnectionManager implements HttpClientConnectionManager, Closeable {
+
+    private final Log log = LogFactory.getLog(getClass());
+
+    private final HttpClientConnectionOperator connectionOperator;
+    private final HttpConnectionFactory<HttpRoute, ManagedHttpClientConnection> connFactory;
+
+    @GuardedBy("this")
+    private ManagedHttpClientConnection conn;
+
+    @GuardedBy("this")
+    private HttpRoute route;
+
+    @GuardedBy("this")
+    private Object state;
+
+    @GuardedBy("this")
+    private long updated;
+
+    @GuardedBy("this")
+    private long expiry;
+
+    @GuardedBy("this")
+    private boolean leased;
+
+    @GuardedBy("this")
+    private SocketConfig socketConfig;
+
+    @GuardedBy("this")
+    private ConnectionConfig connConfig;
+
+    private final AtomicBoolean isShutdown;
+
+    private static Registry<ConnectionSocketFactory> getDefaultRegistry() {
+        return RegistryBuilder.<ConnectionSocketFactory>create()
+                .register("http", PlainConnectionSocketFactory.getSocketFactory())
+                .register("https", SSLConnectionSocketFactory.getSocketFactory())
+                .build();
+    }
+
+    public BasicHttpClientConnectionManager(
+        final Lookup<ConnectionSocketFactory> socketFactoryRegistry,
+        final HttpConnectionFactory<HttpRoute, ManagedHttpClientConnection> connFactory,
+        final SchemePortResolver schemePortResolver,
+        final DnsResolver dnsResolver) {
+      this(
+          new DefaultHttpClientConnectionOperator(socketFactoryRegistry, schemePortResolver, dnsResolver),
+          connFactory
+      );
+    }
+

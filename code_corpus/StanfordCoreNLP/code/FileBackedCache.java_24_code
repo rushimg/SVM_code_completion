@@ -1,0 +1,103 @@
+  public class AppendingObjectOutputStream extends ObjectOutputStream {
+    public AppendingObjectOutputStream(OutputStream out) throws IOException {
+      super(out);
+    }
+    @Override
+    protected void writeStreamHeader() throws IOException {
+      // do not write a header, but reset
+      reset();
+    }
+  }
+
+  private static RuntimeException throwSafe(Throwable e) {
+    if (e instanceof RuntimeException) return (RuntimeException) e;
+    else if (e.getCause() == null) return new RuntimeException(e);
+    else return throwSafe(e.getCause());
+  }
+
+  private static void robustCreateFile(File candidate) throws IOException {
+    int tries = 0;
+    while (!candidate.exists()) {
+      if (tries > 30) { throw new IOException("Could not create file: " + candidate); }
+      if (candidate.createNewFile()) { break; }
+      try { Thread.sleep(1000); } catch (InterruptedException e) { log(e); }
+    }
+  }
+
+  public static interface CloseAction {
+    public void apply() throws IOException;
+  }
+
+  public static class FileSemaphore {
+    private int licenses = 1;
+    private final FileLock lock;
+    private final FileChannel channel;
+
+    public FileSemaphore(FileLock lock, FileChannel channel) { this.lock = lock; this.channel = channel; }
+
+    public synchronized boolean isActive() {
+      if (licenses == 0) { assert lock == null || !lock.isValid(); }
+      if (licenses != 0 && lock != null) { assert lock.isValid(); }
+      return licenses != 0;
+    }
+
+    public synchronized void take() {
+      if (!isActive()) { throw new IllegalStateException("Taking a file license when the licenses have all been released"); }
+      licenses += 1;
+    }
+
+    public synchronized void release() throws IOException {
+      if (licenses <= 0) { throw new IllegalStateException("Already released all semaphore licenses"); }
+      licenses -= 1;
+      if (licenses <= 0) {
+        if (lock != null) { lock.release(); }
+        channel.close();
+      }
+    }
+  }
+
+  @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
+  protected FileSemaphore acquireFileLock(File f) throws IOException {
+    assert canonicalFile.intern(f.getCanonicalFile()) == f;
+    synchronized (f) {
+      // Check semaphore
+      synchronized (fileLocks) {
+        if (fileLocks.containsKey(f)) {
+          FileSemaphore sem = fileLocks.get(f);
+          if (sem.isActive()) {
+            sem.take();
+            return sem;
+          } else {
+            fileLocks.remove(f);
+          }
+        }
+      }
+      // Get the channel
+      FileChannel channel = new RandomAccessFile(f, "rw").getChannel();
+      FileLock lockOrNull = null;
+      // Try the lock
+      for (int i = 0; i < 1000; ++i) {
+        lockOrNull = channel.tryLock();
+        if (lockOrNull == null || !lockOrNull.isValid()) {
+          try { Thread.sleep(1000); } catch (InterruptedException e) { log(e); }
+          if (i % 60 == 59) { warn("FileBackedCache", "Lock still busy after " + ((i+1)/60) + " minutes"); }
+          //noinspection UnnecessaryContinue
+          continue;
+        } else {
+          break;
+        }
+      }
+      if (lockOrNull == null) { warn("FileBackedCache", "Could not acquire file lock! Continuing without lock"); }
+      // Return
+      FileSemaphore sem = new FileSemaphore(lockOrNull, channel);
+      synchronized (fileLocks) {
+        fileLocks.put(f, sem);
+      }
+      return sem;
+    }
+  }
+
+  //
+  //  POSSIBLE OVERRIDES
+  //
+

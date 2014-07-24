@@ -1,0 +1,24 @@
+  public BeamSearch(int size, BeamSearchContextGenerator<T> cg, MaxentModel model) {
+    this(size, cg, model, null, 0);
+  }
+
+  public BeamSearch(int size, BeamSearchContextGenerator<T> cg, MaxentModel model,
+      int cacheSize) {
+    this (size, cg, model, null, cacheSize);
+  }
+
+  public BeamSearch(int size, BeamSearchContextGenerator<T> cg, MaxentModel model,
+      SequenceValidator<T> validator, int cacheSize) {
+
+    this.size = size;
+    this.cg = cg;
+    this.model = model;
+    this.validator = validator;
+
+    if (cacheSize > 0) {
+      contextsCache = new Cache(cacheSize);
+    }
+
+    this.probs = new double[model.getNumOutcomes()];
+  }
+

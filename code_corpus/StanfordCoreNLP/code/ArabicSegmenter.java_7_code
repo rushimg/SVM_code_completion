@@ -1,0 +1,109 @@
+  private void evaluate(PrintWriter pwOut) {
+    System.err.println("Starting evaluation...");
+    boolean hasSegmentationMarkers = true;
+    boolean hasTags = true;
+    DocumentReaderAndWriter<CoreLabel> docReader = new ArabicDocumentReaderAndWriter(hasSegmentationMarkers,
+                                                                                     hasTags,
+                                                                                     hasDomainLabels,
+                                                                                     domain,
+                                                                                     tf);
+    ObjectBank<List<CoreLabel>> lines =
+      classifier.makeObjectBankFromFile(flags.testFile, docReader);
+    
+    PrintWriter tedEvalGoldTree = null, tedEvalParseTree = null;
+    PrintWriter tedEvalGoldSeg = null, tedEvalParseSeg = null;
+    if (tedEvalPrefix != null) {
+      try {
+        tedEvalGoldTree = new PrintWriter(tedEvalPrefix + "_gold.ftree");
+        tedEvalGoldSeg = new PrintWriter(tedEvalPrefix + "_gold.segmentation");
+        tedEvalParseTree = new PrintWriter(tedEvalPrefix + "_parse.ftree");
+        tedEvalParseSeg = new PrintWriter(tedEvalPrefix + "_parse.segmentation");
+      } catch (FileNotFoundException e) {
+        System.err.printf("%s: %s%n", ArabicSegmenter.class.getName(), e.getMessage());
+      }
+    }
+
+    Counter<String> labelTotal = new ClassicCounter<String>();
+    Counter<String> labelCorrect = new ClassicCounter<String>();
+    int total = 0;
+    int correct = 0;
+    for (List<CoreLabel> line : lines) {
+      final String[] inputTokens = tedEvalSanitize(IOBUtils.IOBToString(line).replaceAll(":", "#pm#")).split(" ");
+      final String[] goldTokens = tedEvalSanitize(IOBUtils.IOBToString(line, ":")).split(" ");
+      line = classifier.classify(line);
+      final String[] parseTokens = tedEvalSanitize(IOBUtils.IOBToString(line, ":")).split(" ");
+      for (CoreLabel label : line) {
+        // Do not evaluate labeling of whitespace
+        String observation = label.get(CoreAnnotations.CharAnnotation.class);
+        if ( ! observation.equals(IOBUtils.getBoundaryCharacter())) {
+          total++;
+          String hypothesis = label.get(CoreAnnotations.AnswerAnnotation.class);
+          String reference = label.get(CoreAnnotations.GoldAnswerAnnotation.class);
+          labelTotal.incrementCount(reference);
+          if (hypothesis.equals(reference)) {
+            correct++;
+            labelCorrect.incrementCount(reference);
+          }
+        }
+      }
+      if (tedEvalParseSeg != null) {
+        tedEvalGoldTree.printf("(root");
+        tedEvalParseTree.printf("(root");
+        int safeLength = inputTokens.length;
+        if (inputTokens.length != goldTokens.length) {
+          System.err.println("In generating TEDEval files: Input and gold do not have the same number of tokens");
+          System.err.println("    (ignoring any extras)");
+          System.err.println("  input: " + Arrays.toString(inputTokens));
+          System.err.println("  gold: " + Arrays.toString(goldTokens));
+          safeLength = Math.min(inputTokens.length, goldTokens.length);
+        }
+        if (inputTokens.length != parseTokens.length) {
+          System.err.println("In generating TEDEval files: Input and parse do not have the same number of tokens");
+          System.err.println("    (ignoring any extras)");
+          System.err.println("  input: " + Arrays.toString(inputTokens));
+          System.err.println("  parse: " + Arrays.toString(parseTokens));
+          safeLength = Math.min(inputTokens.length, parseTokens.length);
+        }
+        for (int i = 0; i < safeLength; i++) {
+          for (String segment : goldTokens[i].split(":"))
+            tedEvalGoldTree.printf(" (seg %s)", segment);
+          tedEvalGoldSeg.printf("%s\t%s%n", inputTokens[i], goldTokens[i]);
+          for (String segment : parseTokens[i].split(":"))
+            tedEvalParseTree.printf(" (seg %s)", segment);
+          tedEvalParseSeg.printf("%s\t%s%n", inputTokens[i], parseTokens[i]);
+        }
+        tedEvalGoldTree.printf(")%n");
+        tedEvalGoldSeg.println();
+        tedEvalParseTree.printf(")%n");
+        tedEvalParseSeg.println();
+      }
+    }
+
+    double accuracy = ((double) correct) / ((double) total);
+
+    pwOut.println("EVALUATION RESULTS");
+    pwOut.printf("#datums:\t%d%n", total);
+    pwOut.printf("#correct:\t%d%n", correct);
+    pwOut.printf("accuracy:\t%.2f%n", accuracy);
+    pwOut.println("==================");
+
+    // Output the per label accuracies
+    pwOut.println("PER LABEL ACCURACIES");
+    for (String refLabel : labelTotal.keySet()) {
+      double nTotal = labelTotal.getCount(refLabel);
+      double nCorrect = labelCorrect.getCount(refLabel);
+      pwOut.printf(" %s\t%.2f%n", refLabel, acc);
+    }
+    
+    if (tedEvalParseSeg != null) {
+      tedEvalGoldTree.close();
+      tedEvalGoldSeg.close();
+      tedEvalParseTree.close();
+      tedEvalParseSeg.close();
+    }
+  }
+
+  private String tedEvalSanitize(String str) {
+    return str.replaceAll("\\(", "#lp#").replaceAll("\\)", "#rp#");
+  }
+

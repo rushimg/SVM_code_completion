@@ -1,0 +1,93 @@
+  private NBWeights trainWeights(int[][] data, int[] labels, int numFeatures, int numClasses) {
+    if (kind == JL) {
+      return trainWeightsJL(data, labels, numFeatures, numClasses);
+    }
+    if (kind == UCL) {
+      return trainWeightsUCL(data, labels, numFeatures, numClasses);
+    }
+    if (kind == CL) {
+      return trainWeightsCL(data, labels, numFeatures, numClasses);
+    }
+    return null;
+  }
+
+  private NBWeights trainWeightsJL(int[][] data, int[] labels, int numFeatures, int numClasses) {
+    int[] numValues = numberValues(data, numFeatures);
+    double[] priors = new double[numClasses];
+    double[][][] weights = new double[numClasses][numFeatures][];
+    //init weights array
+    for (int cl = 0; cl < numClasses; cl++) {
+      for (int fno = 0; fno < numFeatures; fno++) {
+        weights[cl][fno] = new double[numValues[fno]];
+      }
+    }
+    for (int i = 0; i < data.length; i++) {
+      priors[labels[i]]++;
+      for (int fno = 0; fno < numFeatures; fno++) {
+        weights[labels[i]][fno][data[i][fno]]++;
+      }
+    }
+    for (int cl = 0; cl < numClasses; cl++) {
+      for (int fno = 0; fno < numFeatures; fno++) {
+        for (int val = 0; val < numValues[fno]; val++) {
+        }
+      }
+    }
+    return new NBWeights(priors, weights);
+  }
+
+  private NBWeights trainWeightsUCL(int[][] data, int[] labels, int numFeatures, int numClasses) {
+    int[] numValues = numberValues(data, numFeatures);
+    int[] sumValues = new int[numFeatures]; //how many feature-values are before this feature
+    for (int j = 1; j < numFeatures; j++) {
+      sumValues[j] = sumValues[j - 1] + numValues[j - 1];
+    }
+    int[][] newdata = new int[data.length][numFeatures + 1];
+    for (int i = 0; i < data.length; i++) {
+      newdata[i][0] = 0;
+      for (int j = 0; j < numFeatures; j++) {
+        newdata[i][j + 1] = sumValues[j] + data[i][j] + 1;
+      }
+    }
+    int totalFeatures = sumValues[numFeatures - 1] + numValues[numFeatures - 1] + 1;
+    System.err.println("total feats " + totalFeatures);
+    LogConditionalObjectiveFunction<L, F> objective = new LogConditionalObjectiveFunction<L, F>(totalFeatures, numClasses, newdata, labels, prior, sigma, 0.0);
+    Minimizer<DiffFunction> min = new QNMinimizer();
+    double[] argmin = min.minimize(objective, 1e-4, objective.initial());
+    double[][] wts = objective.to2D(argmin);
+    System.out.println("weights have dimension " + wts.length);
+    return new NBWeights(wts, numValues);
+  }
+
+
+  private NBWeights trainWeightsCL(int[][] data, int[] labels, int numFeatures, int numClasses) {
+
+    LogConditionalEqConstraintFunction objective = new LogConditionalEqConstraintFunction(numFeatures, numClasses, data, labels, prior, sigma, 0.0);
+    Minimizer<DiffFunction> min = new QNMinimizer();
+    double[] argmin = min.minimize(objective, 1e-4, objective.initial());
+    double[][][] wts = objective.to3D(argmin);
+    double[] priors = objective.priors(argmin);
+    return new NBWeights(priors, wts);
+  }
+
+  static int[] numberValues(int[][] data, int numFeatures) {
+    int[] numValues = new int[numFeatures];
+    for (int i = 0; i < data.length; i++) {
+      for (int j = 0; j < data[i].length; j++) {
+        if (numValues[j] < data[i][j] + 1) {
+          numValues[j] = data[i][j] + 1;
+        }
+      }
+    }
+    return numValues;
+  }
+
+  static class NBWeights {
+    double[] priors;
+    double[][][] weights;
+
+    NBWeights(double[] priors, double[][][] weights) {
+      this.priors = priors;
+      this.weights = weights;
+    }
+

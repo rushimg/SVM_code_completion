@@ -1,0 +1,48 @@
+    public void addBaseTimelineExclusions(long fromBaseDomainValue,
+                                          long toBaseDomainValue) {
+
+        // find first excluded base segment starting fromDomainValue
+        Segment baseSegment = this.baseTimeline.getSegment(fromBaseDomainValue);
+        while (baseSegment.getSegmentStart() <= toBaseDomainValue
+               && !baseSegment.inExcludeSegments()) {
+
+            baseSegment.inc();
+
+        }
+
+        // cycle over all the base segments groups in the range
+        while (baseSegment.getSegmentStart() <= toBaseDomainValue) {
+
+            long baseExclusionRangeEnd = baseSegment.getSegmentStart()
+                 + this.baseTimeline.getSegmentsExcluded()
+
+            // cycle through all the segments contained in the base exclusion
+            // area
+            Segment segment = getSegment(baseSegment.getSegmentStart());
+            while (segment.getSegmentStart() <= baseExclusionRangeEnd) {
+                if (segment.inIncludeSegments()) {
+
+                    // find all consecutive included segments
+                    long fromDomainValue = segment.getSegmentStart();
+                    long toDomainValue;
+                    do {
+                        toDomainValue = segment.getSegmentEnd();
+                        segment.inc();
+                    }
+                    while (segment.inIncludeSegments());
+
+                    // add the interval as an exception
+                    addException(new BaseTimelineSegmentRange(
+                            fromDomainValue, toDomainValue));
+                }
+                else {
+                    // this is not one of our included segment, skip it
+                    segment.inc();
+                }
+            }
+
+            // go to next base segment group
+            baseSegment.inc(this.baseTimeline.getGroupSegmentCount());
+        }
+    }
+

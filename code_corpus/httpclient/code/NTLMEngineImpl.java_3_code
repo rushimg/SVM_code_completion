@@ -1,0 +1,14 @@
+    final String getResponseFor(final String message, final String username, final String password,
+            final String host, final String domain) throws NTLMEngineException {
+
+        final String response;
+        if (message == null || message.trim().equals("")) {
+            response = getType1Message(host, domain);
+        } else {
+            final Type2Message t2m = new Type2Message(message);
+            response = getType3Message(username, password, host, domain, t2m.getChallenge(), t2m
+                    .getFlags(), t2m.getTarget(), t2m.getTargetInfo());
+        }
+        return response;
+    }
+

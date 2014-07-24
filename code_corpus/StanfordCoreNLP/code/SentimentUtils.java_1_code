@@ -1,0 +1,16 @@
+public class SentimentUtils {
+  private SentimentUtils() {} // static methods only
+
+  public static void attachGoldLabels(Tree tree) {
+    if (tree.isLeaf()) {
+      return;
+    }
+    for (Tree child : tree.children()) {
+      attachGoldLabels(child);
+    }
+
+    // In the sentiment data set, the node labels are simply the gold
+    // class labels.  There are no categories encoded.
+    RNNCoreAnnotations.setGoldClass(tree, Integer.valueOf(tree.label().value()));
+  }
+

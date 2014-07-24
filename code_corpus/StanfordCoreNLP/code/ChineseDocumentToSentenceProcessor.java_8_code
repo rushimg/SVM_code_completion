@@ -1,0 +1,64 @@
+  private static String removeWhitespace(String str, boolean segmented) {
+    if (str.length() > 0) {
+      //System.out.println("Add: "+sentenceString);
+      Pattern replacePattern = START_WHITEPLUS_PATTERN;
+      Matcher replaceMatcher = replacePattern.matcher(str);
+      str = replaceMatcher.replaceAll("");
+      replacePattern = END_WHITEPLUS_PATTERN;
+      replaceMatcher = replacePattern.matcher(str);
+      str = replaceMatcher.replaceAll("");
+
+      if ( ! segmented) {
+        replacePattern = WHITEPLUS_PATTERN;
+        replaceMatcher = replacePattern.matcher(str);
+        str = replaceMatcher.replaceAll("");
+      }
+    }
+    return str;
+  }
+
+
+
+  static class MyHTMLParser extends HTMLEditorKit.ParserCallback {
+
+    protected StringBuffer textBuffer;
+    protected List<String> sentences;
+    protected String title;
+    protected boolean isTitle;
+    protected boolean isBody;
+    protected boolean isScript;
+    protected boolean isBreak;
+
+    public MyHTMLParser() {
+      super();
+      title = "";
+      isTitle = false;
+      isBody = false;
+      isScript = false;
+      isBreak = false;
+    }
+
+
+    @Override
+    public void handleText(char[] data, int pos) {
+      if (data.length == 0) return;
+
+      if (isTitle) {
+        title = new String(data);
+      } else if (isBody && !isScript) {
+        //textBuffer.append(data).append(" ");
+      }
+      //if (isBreak) {
+      if (true) {
+        textBuffer.append(data);
+        String text = textBuffer.toString();
+        text = text.replaceAll("\u00a0","");
+        text = text.trim();
+        if (text.length()==0) return;
+
+
+        sentences.add(text);
+        textBuffer = new StringBuffer(500);
+      }
+    }
+

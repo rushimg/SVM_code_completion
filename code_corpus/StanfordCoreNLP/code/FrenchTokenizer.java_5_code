@@ -1,0 +1,24 @@
+    public static TokenizerFactory<Word> newWordTokenizerFactory(String options) {
+      return new FrenchTokenizerFactory<Word>(new WordTokenFactory(), options);
+    }
+
+
+    private FrenchTokenizerFactory(LexedTokenFactory<T> factory) {
+      this.factory = factory;
+    }
+
+    private FrenchTokenizerFactory(LexedTokenFactory<T> factory, String options) {
+      this(factory);
+      setOptions(options);
+    }
+
+    @Override
+    public Iterator<T> getIterator(Reader r) {
+      return getTokenizer(r);
+    }
+
+    @Override
+    public Tokenizer<T> getTokenizer(Reader r) {
+      return new FrenchTokenizer<T>(r, factory, lexerProperties, splitCompoundOption);
+    }
+

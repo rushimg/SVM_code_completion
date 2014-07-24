@@ -1,0 +1,26 @@
+  public void process(Dictionaries dict, Semantics semantics, MentionExtractor mentionExtractor) throws Exception {
+    setHeadString();
+    setType(dict);
+    setNERString();
+    List<String> mStr = getMentionString();
+    setNumber(dict);
+    setGender(dict, getGender(dict, mStr));
+    setAnimacy(dict);
+    setPerson(dict);
+    setDiscourse();
+    headIndexedWord = dependency.getNodeByIndexSafe(headWord.index());
+    if(semantics!=null) setSemantics(dict, semantics, mentionExtractor);
+  }
+
+  public void process(Dictionaries dict, Semantics semantics, MentionExtractor mentionExtractor,
+      LogisticClassifier<String, String> singletonPredictor) throws Exception {
+    process(dict, semantics, mentionExtractor);
+    if(singletonPredictor != null) setSingleton(singletonPredictor, dict);
+  }
+
+  private void setSingleton(LogisticClassifier<String, String> predictor, Dictionaries dict){
+    double coreference_score = predictor.probabilityOf(
+        new BasicDatum<String, String>(getSingletonFeatures(dict), "1"));
+    if(coreference_score < 0.2) this.isSingleton = true;
+  }
+

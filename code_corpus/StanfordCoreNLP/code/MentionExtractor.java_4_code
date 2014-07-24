@@ -1,0 +1,88 @@
+  public List<List<Mention>> arrange(
+      Annotation anno,
+      List<List<CoreLabel>> words,
+      List<Tree> trees,
+      List<List<Mention>> unorderedMentions,
+      boolean doMergeLabels) throws Exception {
+
+    List<List<Mention>> orderedMentionsBySentence = new ArrayList<List<Mention>>();
+
+    //
+    // traverse all sentences and process each individual one
+    //
+    for (int sent = 0, sz = words.size(); sent < sz; sent ++) {
+      List<CoreLabel> sentence = words.get(sent);
+      Tree tree = trees.get(sent);
+      List<Mention> mentions = unorderedMentions.get(sent);
+      Map<String, List<Mention>> mentionsToTrees = Generics.newHashMap();
+
+      // merge the parse tree of the entire sentence with the sentence words
+      if(doMergeLabels) mergeLabels(tree, sentence);
+
+      //
+      // set the surface information and the syntactic info in each mention
+      // startIndex and endIndex MUST be set before!
+      //
+      for (Mention mention: mentions) {
+        mention.contextParseTree = tree;
+        mention.sentenceWords = sentence;
+        mention.originalSpan = new ArrayList<CoreLabel>(mention.sentenceWords.subList(mention.startIndex, mention.endIndex));
+        if(!((CoreLabel)tree.label()).has(CoreAnnotations.BeginIndexAnnotation.class)) tree.indexSpans(0);
+        if(mention.headWord==null) {
+          Tree headTree = ((RuleBasedCorefMentionFinder) mentionFinder).findSyntacticHead(mention, tree, sentence);
+          mention.headWord = (CoreLabel)headTree.label();
+          mention.headIndex = mention.headWord.get(CoreAnnotations.IndexAnnotation.class) - 1;
+        }
+        if(mention.mentionSubTree==null) {
+          // mentionSubTree = highest NP that has the same head
+          Tree headTree = tree.getLeaves().get(mention.headIndex);
+          if (headTree == null) { throw new RuntimeException("Missing head tree for a mention!"); }
+          Tree t = headTree;
+          while ((t = t.parent(tree)) != null) {
+            if (t.headTerminal(headFinder) == headTree && t.value().equals("NP")) {
+              mention.mentionSubTree = t;
+            } else if(mention.mentionSubTree != null){
+              break;
+            }
+          }
+          if (mention.mentionSubTree == null) {
+            mention.mentionSubTree = headTree;
+          }
+        }
+
+        List<Mention> mentionsForTree = mentionsToTrees.get(treeToKey(mention.mentionSubTree));
+        if(mentionsForTree == null){
+          mentionsForTree = new ArrayList<Mention>();
+          mentionsToTrees.put(treeToKey(mention.mentionSubTree), mentionsForTree);
+        }
+        mentionsForTree.add(mention);
+
+        // generates all fields required for coref, such as gender, number, etc.
+        mention.process(dictionaries, semantics, this, singletonPredictor);
+      }
+
+      //
+      // Order all mentions in tree-traversal order
+      //
+      List<Mention> orderedMentions = new ArrayList<Mention>();
+      orderedMentionsBySentence.add(orderedMentions);
+
+      // extract all mentions in tree traversal order (alternative: tree.postOrderNodeList())
+      for (Tree t : tree.preOrderNodeList()) {
+        List<Mention> lm = mentionsToTrees.get(treeToKey(t));
+        if(lm != null){
+          for(Mention m: lm){
+            orderedMentions.add(m);
+          }
+        }
+      }
+
+      //
+      // find appositions, predicate nominatives, relative pronouns in this sentence
+      //
+      findSyntacticRelations(tree, orderedMentions);
+      assert(mentions.size() == orderedMentions.size());
+    }
+    return orderedMentionsBySentence;
+  }
+

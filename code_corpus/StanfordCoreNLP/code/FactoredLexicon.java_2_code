@@ -1,0 +1,96 @@
+  @Override
+  public Iterator<IntTaggedWord> ruleIteratorByWord(int word, int loc, String featureSpec) {
+  
+    if (word == wordIndex.indexOf(BOUNDARY)) {
+      // Deterministic tagging of the boundary symbol
+      return rulesWithWord[word].iterator();
+    
+    } else if (isKnown(word)) {
+      // We need to copy the word form into the rules, which currently have lemmas in them
+      return rulesWithWord[word].iterator();
+
+    } else {
+      if (DEBUG) System.err.println("UNKNOWN WORD");
+      // Unknown word signatures
+      Set<IntTaggedWord> lexRules = Generics.newHashSet(10);
+      List<IntTaggedWord> uwRules = rulesWithWord[wordIndex.indexOf(UNKNOWN_WORD)];
+      // Inject the word into these rules instead of the UW signature
+      for (IntTaggedWord iTW : uwRules) {
+        lexRules.add(new IntTaggedWord(word, iTW.tag));
+      }
+      return lexRules.iterator();
+    }
+  }
+  
+  @Override
+  public float score(IntTaggedWord iTW, int loc, String word, String featureSpec) {
+    final int wordId = iTW.word();
+    final int tagId = iTW.tag();
+    
+    // Force 1-best path to go through the boundary symbol
+    // (deterministic tagging)
+    final int boundaryId = wordIndex.indexOf(BOUNDARY);
+    final int boundaryTagId = tagIndex.indexOf(BOUNDARY_TAG);
+    if (wordId == boundaryId && tagId == boundaryTagId) {
+      return 0.0f;
+    }
+    
+    // Morphological features
+    String tag = tagIndex.get(iTW.tag());
+    Pair<String,String> lemmaMorph = MorphoFeatureSpecification.splitMorphString(word, featureSpec);
+    String lemma = lemmaMorph.first();
+    int lemmaId = wordIndex.indexOf(lemma);
+    String richMorphTag = lemmaMorph.second();
+    String reducedMorphTag = morphoSpec.strToFeatures(richMorphTag).toString().trim();
+    reducedMorphTag = reducedMorphTag.length() == 0 ? NO_MORPH_ANALYSIS : reducedMorphTag;
+    int morphId = morphIndex.indexOf(reducedMorphTag, true);
+    
+    // Score the factors and create the rule score p_W_T
+    double p_W_Tf = Math.log(probWordTag(word, loc, wordId, tagId));
+//    double p_L_T = Math.log(probLemmaTag(word, loc, tagId, lemmaId));
+    double p_L_T = 0.0;
+    double p_M_T = Math.log(probMorphTag(tagId, morphId));
+    double p_W_T = p_W_Tf + p_L_T + p_M_T;
+    
+    if (DEBUG) {
+//      String tag = tagIndex.get(tagId);
+      System.err.printf("WSGDEBUG: %s --> %s %s %s ||  %.10f (%.5f / %.5f / %.5f)%n", tag, word, lemma, 
+          reducedMorphTag, p_W_T, p_W_Tf, p_L_T, p_M_T);
+    }
+    
+    // Filter low probability taggings
+    return p_W_T > -100.0 ? (float) p_W_T : Float.NEGATIVE_INFINITY;
+  }
+
+  private double probWordTag(String word, int loc, int wordId, int tagId) {
+    double cW = wordTag.totalCount(wordId);
+    double cWT = wordTag.getCount(wordId, tagId);
+    
+    // p_L
+    double p_W = cW / wordTag.totalCount();
+    
+    // p_T
+    double cTseen = tagCounter.getCount(tagId);
+    double p_T = cTseen / tagCounter.totalCount();
+    
+    // p_T_L
+    double p_W_T = 0.0;
+    if (cW > 0.0) { // Seen lemma
+      double p_T_W = 0.0;
+      if (cW > 100.0 && cWT > 0.0) {
+        p_T_W = cWT / cW;
+      } else {
+        double cTunseen = wordTagUnseen.getCount(tagId);
+        // TODO p_T_U is 0?
+        double p_T_U = cTunseen / wordTagUnseen.totalCount();
+      }
+      
+    } else { // Unseen word. Score based on the word signature (of the surface form)
+      IntTaggedWord iTW = new IntTaggedWord(wordId, tagId);
+      double c_T = tagCounter.getCount(tagId);
+      p_W_T = Math.exp(getUnknownWordModel().score(iTW, loc, c_T, tagCounter.totalCount(), smooth[0], word));
+    }
+    
+    return p_W_T;
+  }
+  

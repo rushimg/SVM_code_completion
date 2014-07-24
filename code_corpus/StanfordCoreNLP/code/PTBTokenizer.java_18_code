@@ -1,0 +1,29 @@
+    public static <T extends HasWord> PTBTokenizerFactory<T> newPTBTokenizerFactory(LexedTokenFactory<T> tokenFactory, String options) {
+      return new PTBTokenizerFactory<T>(tokenFactory, options);
+    }
+
+    public static PTBTokenizerFactory<CoreLabel> newPTBTokenizerFactory(boolean tokenizeNLs, boolean invertible) {
+      return new PTBTokenizerFactory<CoreLabel>(tokenizeNLs, invertible, false, new CoreLabelTokenFactory());
+    }
+
+
+    // Constructors
+
+    // This one is historical
+    private PTBTokenizerFactory(boolean tokenizeNLs, boolean invertible, boolean suppressEscaping, LexedTokenFactory<T> factory) {
+      this.factory = factory;
+      StringBuilder optionsSB = new StringBuilder();
+      if (suppressEscaping) {
+        optionsSB.append("ptb3Escaping=false");
+      } else {
+        optionsSB.append("ptb3Escaping=true"); // i.e., turn on all the historical PTB normalizations
+      }
+      if (tokenizeNLs) {
+        optionsSB.append(",tokenizeNLs");
+      }
+      if (invertible) {
+        optionsSB.append(",invertible");
+      }
+      this.options = optionsSB.toString();
+    }
+

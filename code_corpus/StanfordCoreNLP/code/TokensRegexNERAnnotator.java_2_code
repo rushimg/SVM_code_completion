@@ -1,0 +1,31 @@
+            overwriteOriginalNer = myLabels.contains(startNer);
+          }
+        }
+
+      }
+    }
+    return overwriteOriginalNer;
+  }
+
+  private static class Entry {
+    public final String tokensRegex;
+    public final String[] regex; // the regex, tokenized by splitting on white space
+    public final String type; // the associated type
+    public final Set<String> overwritableTypes; // what types can be overwritten by this entry
+    public final double priority;
+    public final int annotateGroup;
+
+    public Entry(String tokensRegex, String[] regex, String type, Set<String> overwritableTypes, double priority, int annotateGroup) {
+      this.tokensRegex = tokensRegex;
+      this.regex = regex;
+      this.type = type.intern();
+      this.overwritableTypes = overwritableTypes;
+      this.priority = priority;
+      this.annotateGroup = annotateGroup;
+    }
+
+    public String toString() {
+      return "Entry{" + ((tokensRegex != null) ? tokensRegex: StringUtils.join(regex)) + ' ' + type + ' ' + overwritableTypes + ' ' + priority + '}';
+    }
+  }
+

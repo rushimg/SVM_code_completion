@@ -1,0 +1,31 @@
+  public boolean contains(ISODateInstance other) {
+    if (this.isUnparseable() || other.isUnparseable()) {
+      return this.isoDate.equals(other.isoDate);
+    }
+    String start = this.getStartDate();
+    if (!start.equals("")) {//we have a start date, need to make sure other is after it
+      String startOther = other.getStartDate();
+      if (startOther.equals("")) {
+        return false;//incompatible
+      } else {
+        if (!isAfter(startOther, start)) {
+          return false;
+        }
+      }
+    }
+    //now we've found out that the start date is appropriate, check the end date
+    String end = this.getEndDate();
+    if (!end.equals("")) {
+      String endOther = other.getEndDate();
+      if (endOther.equals("")) {
+        return false;
+      } else {
+        if (!isAfter(end, endOther)) {
+          return false;
+        }
+      }
+    }
+    return true;//passes both start and end
+  }
+
+

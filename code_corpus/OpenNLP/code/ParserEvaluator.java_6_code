@@ -1,0 +1,28 @@
+  private static Span[] getConstituencySpans(final Parse parse) {
+
+    Stack<Parse> stack = new Stack<Parse>();
+
+    if (parse.getChildCount() > 0) {
+      for (Parse child : parse.getChildren()) {
+        stack.push(child);
+      }
+    }
+    List<Span> consts = new ArrayList<Span>();
+
+    while (!stack.isEmpty()) {
+
+      Parse constSpan = stack.pop();
+
+      if (!constSpan.isPosTag()) {
+        Span span = constSpan.getSpan();
+        consts.add(new Span(span.getStart(), span.getEnd(), constSpan.getType()));
+
+        for (Parse child : constSpan.getChildren()) {
+          stack.push(child);
+        }
+      }
+    }
+
+    return consts.toArray(new Span[consts.size()]);
+  }
+

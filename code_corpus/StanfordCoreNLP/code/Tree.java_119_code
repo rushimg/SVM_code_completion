@@ -1,0 +1,37 @@
+  public void percolateHeadIndices() {
+    if (isPreTerminal()) {
+      int nodeIndex = ((HasIndex) firstChild().label()).index();
+      ((HasIndex) label()).setIndex(nodeIndex);
+      return;
+    }
+
+    // Assign the head index to the first child that we encounter with a matching
+    // surface form. Obviously a head can have the same surface form as its dependent,
+    // and in this case the head index is ambiguous.
+    String wordAnnotation = ((HasWord) label()).word();
+    if (wordAnnotation == null) {
+      wordAnnotation = value();
+    }
+    boolean seenHead = false;
+    for (Tree child : children()) {
+      child.percolateHeadIndices();
+      String childWordAnnotation = ((HasWord) child.label()).word();
+      if (childWordAnnotation == null) {
+        childWordAnnotation = child.value();
+      }
+      if ( !seenHead && wordAnnotation.equals(childWordAnnotation)) {
+        seenHead = true;
+        int nodeIndex = ((HasIndex) child.label()).index();
+        ((HasIndex) label()).setIndex(nodeIndex);
+      }
+    }
+  }
+
+  public void indexSpans() {
+    indexSpans(0);
+  }
+
+  public void indexSpans(int startIndex) {
+    indexSpans(new MutableInteger(startIndex));
+  }
+

@@ -1,0 +1,40 @@
+  public ClassifierCombiner(Properties p) throws FileNotFoundException {
+    super(p);
+    this.combinationMode = extractCombinationModeSafe(p);
+    String loadPath1, loadPath2;
+    List<String> paths = new ArrayList<String>();
+
+    //
+    // preferred configuration: specify up to 10 base classifiers using loadClassifier1 to loadClassifier10 properties
+    //
+    if((loadPath1 = p.getProperty("loadClassifier1")) != null && (loadPath2 = p.getProperty("loadClassifier2")) != null) {
+      paths.add(loadPath1);
+      paths.add(loadPath2);
+      for(int i = 3; i <= 10; i ++){
+        String path;
+        if ((path = p.getProperty("loadClassifier" + i)) != null) {
+          paths.add(path);
+        }
+      }
+      loadClassifiers(paths);
+    }
+
+    //
+    // second accepted setup (backward compatible): two classifier given in loadClassifier and loadAuxClassifier
+    //
+    else if((loadPath1 = p.getProperty("loadClassifier")) != null && (loadPath2 = p.getProperty("loadAuxClassifier")) != null){
+      paths.add(loadPath1);
+      paths.add(loadPath2);
+      loadClassifiers(paths);
+    }
+
+    //
+    // fall back strategy: use the two default paths on NLP machines
+    //
+    else {
+      paths.add(DEFAULT_CLASSIFIER_PATH);
+      paths.add(DEFAULT_AUX_CLASSIFIER_PATH);
+      loadClassifiers(paths);
+    }
+  }
+

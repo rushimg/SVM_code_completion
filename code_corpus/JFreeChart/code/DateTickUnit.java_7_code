@@ -1,0 +1,24 @@
+    public DateTickUnit(DateTickUnitType unitType, int multiple,
+            DateTickUnitType rollUnitType, int rollMultiple,
+            DateFormat formatter) {
+        super(DateTickUnit.getMillisecondCount(unitType, multiple));
+        if (formatter == null) {
+            throw new IllegalArgumentException("Null 'formatter' argument.");
+        }
+        if (multiple <= 0) {
+            throw new IllegalArgumentException("Requires 'multiple' > 0.");
+        }
+        if (rollMultiple <= 0) {
+            throw new IllegalArgumentException("Requires 'rollMultiple' > 0.");
+        }
+        this.unitType = unitType;
+        this.count = multiple;
+        this.rollUnitType = rollUnitType;
+        this.rollCount = rollMultiple;
+        this.formatter = formatter;
+
+        // populate deprecated fields
+        this.unit = unitTypeToInt(unitType);
+        this.rollUnit = unitTypeToInt(rollUnitType);
+    }
+

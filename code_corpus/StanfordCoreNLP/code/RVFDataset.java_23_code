@@ -1,0 +1,18 @@
+  public void writeSVMLightFormat(File file) throws FileNotFoundException {
+    PrintWriter writer = new PrintWriter(file);
+    writeSVMLightFormat(writer);
+    writer.close();
+  }
+
+  public void writeSVMLightFormat(PrintWriter writer) {
+    for (RVFDatum<L, F> datum : this) {
+      writer.print(this.labelIndex.indexOf(datum.label()));
+      Counter<F> features = datum.asFeaturesCounter();
+      for (F feature : features.keySet()) {
+        double count = features.getCount(feature);
+        writer.format(Locale.ENGLISH, " %s:%f", this.featureIndex.indexOf(feature), count);
+      }
+      writer.println();
+    }
+  }
+

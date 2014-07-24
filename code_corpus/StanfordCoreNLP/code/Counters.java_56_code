@@ -1,0 +1,58 @@
+  public static <E> Counter<E> toTiedRankCounter(Counter<E> c) {
+    Counter<E> rankCounter = new ClassicCounter<E>();
+    List<Pair<E, Double>> sortedList = toSortedListWithCounts(c);
+    
+    int i = 0;
+    Iterator<Pair<E, Double>> it = sortedList.iterator();
+    while(it.hasNext()) {
+      Pair<E, Double> iEn = it.next();
+      double icount = iEn.second();
+      E iKey = iEn.first();
+      
+      List<Integer> l = new ArrayList<Integer>();
+      List<E> keys = new ArrayList<E>();
+      
+       
+      l.add(i+1);
+      keys.add(iKey);
+      
+      for(int j = i +1; j < sortedList.size(); j++){
+        Pair<E, Double> jEn = sortedList.get(j);
+        if( icount == jEn.second()){
+          l.add(j+1);
+          keys.add(jEn.first());          
+        }else
+          break;
+      }
+      
+      if(l.size() > 1){
+        double sum = 0;
+        for(Integer d: l)
+          sum += d;
+        double avgRank = sum/l.size();
+        for(int k = 0; k < l.size(); k++){
+          rankCounter.setCount(keys.get(k), avgRank);
+          if(k != l.size()-1 && it.hasNext())
+            it.next();
+          i++;
+        }
+      }else{
+        rankCounter.setCount(iKey, i+1);
+        i++;
+      }
+    }
+    return rankCounter;
+  }
+
+  public static <E> List<Pair<E, Double>> toDescendingMagnitudeSortedListWithCounts(Counter<E> c) {
+    List<E> keys = new ArrayList<E>(c.keySet());
+    Collections.sort(keys, toComparator(c, false, true));
+    List<Pair<E, Double>> l = new ArrayList<Pair<E, Double>>(keys.size());
+
+    for (E key : keys) {
+      l.add(new Pair<E, Double>(key, c.getCount(key)));
+    }
+
+    return l;
+  }
+

@@ -1,0 +1,32 @@
+    public void addBaseTimelineException(long domainValue) {
+
+        Segment baseSegment = this.baseTimeline.getSegment(domainValue);
+        if (baseSegment.inIncludeSegments()) {
+
+            // cycle through all the segments contained in the BaseTimeline
+            // exception segment
+            Segment segment = getSegment(baseSegment.getSegmentStart());
+            while (segment.getSegmentStart() <= baseSegment.getSegmentEnd()) {
+                if (segment.inIncludeSegments()) {
+
+                    // find all consecutive included segments
+                    long fromDomainValue = segment.getSegmentStart();
+                    long toDomainValue;
+                    do {
+                        toDomainValue = segment.getSegmentEnd();
+                        segment.inc();
+                    }
+                    while (segment.inIncludeSegments());
+
+                    // add the interval as an exception
+                    addException(fromDomainValue, toDomainValue);
+
+                }
+                else {
+                    // this is not one of our included segment, skip it
+                    segment.inc();
+                }
+            }
+        }
+    }
+

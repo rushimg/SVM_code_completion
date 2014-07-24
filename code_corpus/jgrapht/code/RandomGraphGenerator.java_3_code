@@ -1,0 +1,30 @@
+public class RandomGraphGenerator<V, E>
+    implements GraphGenerator<V, E, V>
+{
+    //~ Static fields/initializers ---------------------------------------------
+
+    private static long seedUniquifier = 8682522807148012L;
+
+    //~ Instance fields --------------------------------------------------------
+
+    protected int numOfVertexes;
+    protected int numOfEdges;
+    protected Random randomizer;
+    private long randomizerSeed;
+
+    //~ Constructors -----------------------------------------------------------
+
+    public RandomGraphGenerator(int aNumOfVertexes, int aNumOfEdges)
+    {
+        if ((aNumOfVertexes < 0) || (aNumOfEdges < 0)) {
+            throw new IllegalArgumentException("must be non-negative");
+        }
+        this.numOfVertexes = aNumOfVertexes;
+        this.numOfEdges = aNumOfEdges;
+
+        this.randomizerSeed = chooseRandomSeedOnce();
+        this.randomizer = new Random(this.randomizerSeed);
+    }
+
+    //~ Methods ----------------------------------------------------------------
+

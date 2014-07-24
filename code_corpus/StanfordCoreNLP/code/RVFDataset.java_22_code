@@ -1,0 +1,15 @@
+  public void readSVMLightFormat(File file) {
+    for (String line : IOUtils.readLines(file)) {
+      String[] items = line.split("\\s+");
+      Integer label = Integer.parseInt(items[0]);
+      Counter<F> features = new ClassicCounter<F>();
+      for (int i = 1; i < items.length; i++) {
+        String[] featureItems = items[i].split(":");
+        int feature = Integer.parseInt(featureItems[0]);
+        double value = Double.parseDouble(featureItems[1]);
+        features.incrementCount(this.featureIndex.get(feature), value);
+      }
+      this.add(new RVFDatum<L, F>(features, this.labelIndex.get(label)));
+    }
+  }
+

@@ -1,0 +1,81 @@
+  public Collection<String> getCliqueFeatures(PaddedList<IN> cInfo, int loc, Clique clique) {
+    Collection<String> features = Generics.newHashSet();
+
+    if (clique == cliqueC) {
+      addAllInterningAndSuffixing(features, featuresC(cInfo, loc), "C");
+    } else if (clique == cliqueCpC) {
+      addAllInterningAndSuffixing(features, featuresCpC(cInfo, loc), "CpC");
+      addAllInterningAndSuffixing(features, featuresCnC(cInfo, loc-1), "CnC");
+    } 
+    // else if (clique == cliqueCpCp2C) {
+    //   addAllInterningAndSuffixing(features, featuresCpCp2C(cInfo, loc), "CpCp2C");
+    // } else if (clique == cliqueCpCp2Cp3C) {
+    //   addAllInterningAndSuffixing(features, featuresCpCp2Cp3C(cInfo, loc), "CpCp2Cp3C");
+    // } else if (clique == cliqueCpCp2Cp3Cp4C) {
+    //   addAllInterningAndSuffixing(features, featuresCpCp2Cp3Cp4C(cInfo, loc), "CpCp2Cp3Cp4C");
+    // } else if (clique == cliqueCpCp2Cp3Cp4Cp5C) {
+    //   addAllInterningAndSuffixing(features, featuresCpCp2Cp3Cp4Cp5C(cInfo, loc), "CpCp2Cp3Cp4Cp5C");
+    // }
+
+    return features;
+  }
+
+
+
+  private static Pattern patE = Pattern.compile("[a-z]");
+  private static Pattern patEC = Pattern.compile("[A-Z]");
+  private static String isEnglish(String Ep, String Ec) {
+    String chp = Ep;
+    String chc = Ec;
+    Matcher mp = patE.matcher(chp);   // previous char is [a-z]
+    Matcher mc = patE.matcher(chc);   //  current char is [a-z]
+    Matcher mpC = patEC.matcher(chp); // previous char is [A-Z]
+    Matcher mcC = patEC.matcher(chc); //  current char is [A-Z]
+    if (mp.matches() && mcC.matches()){
+      return "BND"; // [a-z][A-Z]
+    } else if (mp.matches() && mc.matches()){
+      return "ENG"; // [a-z][a-z]
+    } else if (mpC.matches() && mcC.matches()){
+      return "BCC"; // [A-Z][A-Z]
+    } else if (mp.matches() && !mc.matches() && !mcC.matches()){
+      return "e1";  // [a-z][^A-Za-z]
+    } else if (mc.matches() && !mp.matches() && !mpC.matches()) {
+      return "e2";  // [^A-Za-z][a-z]
+    } else if (mpC.matches() && !mc.matches() && !mcC.matches()){
+      return "e3";  // [A-Z][^A-Za-z]
+    } else if (mcC.matches() && !mp.matches() && !mpC.matches()) {
+      return "e4";  // [^A-Za-z][A-Z]
+    } else {
+      return "";
+    }
+  }//is English
+
+  private static Pattern patP = Pattern.compile("[\u00b7\\-\\.]");
+  private static String isEngPU(String Ep) {
+    Matcher mp = patP.matcher(Ep);
+    if (mp.matches()){
+      return "1:EngPU";
+    } else {
+      return "";
+    }
+  }//is EnglishPU
+
+
+
+  public Collection<String> featuresC(PaddedList<IN> cInfo, int loc) {
+    Collection<String> features = new ArrayList<String>();
+    CoreLabel c = cInfo.get(loc);
+    CoreLabel c1 = cInfo.get(loc + 1);
+    CoreLabel c2 = cInfo.get(loc + 2);
+    CoreLabel c3 = cInfo.get(loc + 3);
+    CoreLabel p = cInfo.get(loc - 1);
+    CoreLabel p2 = cInfo.get(loc - 2);
+    CoreLabel p3 = cInfo.get(loc - 3);
+    String charc = c.get(CoreAnnotations.CharAnnotation.class);
+    String charc1 = c1.get(CoreAnnotations.CharAnnotation.class);
+    String charc2 = c2.get(CoreAnnotations.CharAnnotation.class);
+    String charc3 = c3.get(CoreAnnotations.CharAnnotation.class);
+    String charp = p.get(CoreAnnotations.CharAnnotation.class);
+    String charp2 = p2.get(CoreAnnotations.CharAnnotation.class);
+    String charp3 = p3.get(CoreAnnotations.CharAnnotation.class);
+

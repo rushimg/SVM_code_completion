@@ -1,0 +1,20 @@
+  public static <E> Distribution<E> getDistribution(Counter<E> counter) {
+    return getDistributionWithReservedMass(counter, 0.0);
+  }
+
+  public static <E> Distribution<E> getDistributionWithReservedMass(Counter<E> counter, double reservedMass) {
+    Distribution<E> norm = new Distribution<E>();
+    norm.counter = new ClassicCounter<E>();
+    norm.numberOfKeys = counter.size();
+    norm.reservedMass = reservedMass;
+    if (total == 0.0) {
+      total = 1.0;
+    }
+    for (E key : counter.keySet()) {
+      double count = counter.getCount(key) / total;
+      //      if (Double.isNaN(count) || count < 0.0 || count> 1.0 ) throw new RuntimeException("count=" + counter.getCount(key) + " total=" + total);
+      norm.counter.setCount(key, count);
+    }
+    return norm;
+  }
+

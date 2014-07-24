@@ -1,0 +1,23 @@
+    public Shape lookupSeriesShape(int series) {
+
+        // return the override, if there is one...
+        if (this.shape != null) {
+            return this.shape;
+        }
+
+        // otherwise look up the shape list
+        Shape result = getSeriesShape(series);
+        if (result == null && this.autoPopulateSeriesShape) {
+            DrawingSupplier supplier = getDrawingSupplier();
+            if (supplier != null) {
+                result = supplier.getNextShape();
+                setSeriesShape(series, result, false);
+            }
+        }
+        if (result == null) {
+            result = this.baseShape;
+        }
+        return result;
+
+    }
+

@@ -1,0 +1,19 @@
+    protected int replace_s(int c_bra, int c_ket, String s)
+    {
+	int adjustment = s.length() - (c_ket - c_bra);
+	current.replace(c_bra, c_ket, s);
+	limit += adjustment;
+	if (cursor >= c_ket) cursor += adjustment;
+	else if (cursor > c_bra) cursor = c_bra;
+	return adjustment;
+    }
+
+    protected void slice_check()
+    {
+	if (bra < 0 ||
+	    bra > ket ||
+	    ket > limit ||
+	    limit > current.length())   // this line could be removed
+	{
+	    System.err.println("faulty slice operation");
+	// FIXME: report error somehow.

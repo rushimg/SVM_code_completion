@@ -1,0 +1,56 @@
+  protected static EndHead treeToDependencyHelper(Tree tree, List<IntDependency> depList, int loc, Index<String> wordIndex, Index<String> tagIndex) {
+    //       try {
+    // 	PrintWriter pw = new PrintWriter(new OutputStreamWriter(System.out,"GB18030"),true);
+    // 	tree.pennPrint(pw);
+    //       }
+    //       catch (UnsupportedEncodingException e) {}
+
+    if (tree.isLeaf() || tree.isPreTerminal()) {
+      EndHead tempEndHead = new EndHead();
+      tempEndHead.head = loc;
+      tempEndHead.end = loc + 1;
+      return tempEndHead;
+    }
+    Tree[] kids = tree.children();
+    if (kids.length == 1) {
+      return treeToDependencyHelper(kids[0], depList, loc, wordIndex, tagIndex);
+    }
+    EndHead tempEndHead = treeToDependencyHelper(kids[0], depList, loc, wordIndex, tagIndex);
+    int lHead = tempEndHead.head;
+    int split = tempEndHead.end;
+    tempEndHead = treeToDependencyHelper(kids[1], depList, tempEndHead.end, wordIndex, tagIndex);
+    int end = tempEndHead.end;
+    int rHead = tempEndHead.head;
+    String hTag = ((HasTag) tree.label()).tag();
+    String lTag = ((HasTag) kids[0].label()).tag();
+    String rTag = ((HasTag) kids[1].label()).tag();
+    String hWord = ((HasWord) tree.label()).word();
+    String lWord = ((HasWord) kids[0].label()).word();
+    String rWord = ((HasWord) kids[1].label()).word();
+    boolean leftHeaded = hWord.equals(lWord);
+    String aTag = (leftHeaded ? rTag : lTag);
+    String aWord = (leftHeaded ? rWord : lWord);
+    int hT = tagIndex.indexOf(hTag);
+    int aT = tagIndex.indexOf(aTag);
+    int hW = (wordIndex.contains(hWord) ? wordIndex.indexOf(hWord) : wordIndex.indexOf(Lexicon.UNKNOWN_WORD));
+    int aW = (wordIndex.contains(aWord) ? wordIndex.indexOf(aWord) : wordIndex.indexOf(Lexicon.UNKNOWN_WORD));
+    int head = (leftHeaded ? lHead : rHead);
+    int arg = (leftHeaded ? rHead : lHead);
+    IntDependency dependency = new IntDependency(hW, hT, aW, aT, leftHeaded, (leftHeaded ? split - head - 1 : head - split));
+    depList.add(dependency);
+    IntDependency stopL = new IntDependency(aW, aT, STOP_WORD_INT, STOP_TAG_INT, false, (leftHeaded ? arg - split : arg - loc));
+    depList.add(stopL);
+    IntDependency stopR = new IntDependency(aW, aT, STOP_WORD_INT, STOP_TAG_INT, true, (leftHeaded ? end - arg - 1 : split - arg - 1));
+    depList.add(stopR);
+    //System.out.println("Adding: "+dependency+" at "+tree.label());
+    tempEndHead.head = head;
+    return tempEndHead;
+  }
+
+
+  public void dumpSizes() {
+//    System.out.println("core dep " + coreDependencies.size());
+    System.out.println("arg counter " + argCounter.size());
+    System.out.println("stop counter " + stopCounter.size());
+  }
+

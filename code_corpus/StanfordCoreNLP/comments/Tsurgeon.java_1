@@ -1,0 +1,62 @@
+/** Tsurgeon provides a way of editing trees based on a set of operations that
+ *  are applied to tree locations matching a tregex pattern.
+ *  A simple example from the command-line:
+ *  <blockquote>
+ * java edu.stanford.nlp.trees.tregex.tsurgeon.Tsurgeon -treeFile atree
+ *        exciseNP renameVerb
+ * </blockquote>
+ * The file {@code atree} has Penn Treebank (S-expression) format trees.
+ * The other (here, two) files have Tsurgeon operations.  These consist of
+ * a list of pairs of a tregex expression on one or more
+ * lines, a blank line, and then some number of lines of Tsurgeon operations and then
+ * another blank line.
+ * <p>
+ * Tsurgeon uses the Tregex engine to match tree patterns on trees;
+ * for more information on Tregex's tree-matching functionality,
+ * syntax, and semantics, please see the documentation for the
+ * {@link TregexPattern} class.
+ * <p>
+ * If you want to use Tsurgeon as an API, the relevant method is
+ * {@link #processPattern}.  You will also need to look at the
+ * {@link TsurgeonPattern} class and the {@link Tsurgeon#parseOperation} method.
+ * <p>
+ * Here's the simplest form of invocation on a single Tree:
+ * <pre>
+ * Tree t = Tree.valueOf("(ROOT (S (NP (NP (NNP Bank)) (PP (IN of) (NP (NNP America)))) (VP (VBD called)) (. .)))");
+ * TregexPattern pat = TregexPattern.compile("NP &lt;1 (NP &lt;&lt; Bank) &lt;2 PP=remove");
+ * TsurgeonPattern surgery = Tsurgeon.parseOperation("excise remove remove");
+ * Tsurgeon.processPattern(pat, surgery, t).pennPrint();
+ * </pre>
+ * <p>
+ * Here is another sample invocation:
+ * <pre>
+ * TregexPattern matchPattern = TregexPattern.compile("SQ=sq &lt; (/^WH/ $++ VP)");
+ * List&lt;TsurgeonPattern&gt; ps = new ArrayList&lt;TsurgeonPattern&gt;();
+ *
+ * TsurgeonPattern p = Tsurgeon.parseOperation("relabel sq S");
+ *
+ * ps.add(p);
+ *
+ * Treebank lTrees;
+ * List&lt;Tree&gt; result = Tsurgeon.processPatternOnTrees(matchPattern,Tsurgeon.collectOperations(ps),lTrees);
+ * </pre>
+ * <p>
+ * <i>Note:</i> If you want to apply multiple surgery patterns, you
+ * will not want to call processPatternOnTrees, for each individual
+ * pattern.  Rather, you should either call processPatternsOnTree and
+ * loop through the trees yourself, or, as above, use
+ * <code>collectOperations</code> to collect all the surgery patterns
+ * into one TsurgeonPattern, and then to call processPatternOnTrees.
+ * Either of these latter methods is much faster.
+ * </p><p>
+ * The parser also has the ability to collect multiple
+ * TsurgeonPatterns into one pattern by itself by enclosing each
+ * pattern in <code>[ ... ]</code>.  For example,
+ * <br>
+ * <code>Tsurgeon.parseOperation("[relabel foo BAR] [prune bar]")</code>
+ * </p><p>
+ * For more information on using Tsurgeon from the command line,
+ * see the {@link #main} method and the package Javadoc.
+ *
+ * @author Roger Levy
+ */

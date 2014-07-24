@@ -1,0 +1,42 @@
+    protected void drawHorizontalCrosshair(Graphics2D g2, Rectangle2D dataArea,
+            double y, Crosshair crosshair) {
+
+        if (y >= dataArea.getMinY() && y <= dataArea.getMaxY()) {
+            Line2D line = new Line2D.Double(dataArea.getMinX(), y,
+                    dataArea.getMaxX(), y);
+            Paint savedPaint = g2.getPaint();
+            Stroke savedStroke = g2.getStroke();
+            g2.setPaint(crosshair.getPaint());
+            g2.setStroke(crosshair.getStroke());
+            g2.draw(line);
+            if (crosshair.isLabelVisible()) {
+                String label = crosshair.getLabelGenerator().generateLabel(
+                        crosshair);
+                RectangleAnchor anchor = crosshair.getLabelAnchor();
+                Point2D pt = calculateLabelPoint(line, anchor, 5, 5);
+                float xx = (float) pt.getX();
+                float yy = (float) pt.getY();
+                TextAnchor alignPt = textAlignPtForLabelAnchorH(anchor);
+                Shape hotspot = TextUtilities.calculateRotatedStringBounds(
+                        label, g2, xx, yy, alignPt, 0.0, TextAnchor.CENTER);
+                if (!dataArea.contains(hotspot.getBounds2D())) {
+                    anchor = flipAnchorV(anchor);
+                    pt = calculateLabelPoint(line, anchor, 5, 5);
+                    xx = (float) pt.getX();
+                    yy = (float) pt.getY();
+                    alignPt = textAlignPtForLabelAnchorH(anchor);
+                    hotspot = TextUtilities.calculateRotatedStringBounds(
+                           label, g2, xx, yy, alignPt, 0.0, TextAnchor.CENTER);
+                }
+
+                g2.setPaint(crosshair.getLabelBackgroundPaint());
+                g2.fill(hotspot);
+                g2.setPaint(crosshair.getLabelOutlinePaint());
+                g2.draw(hotspot);
+                TextUtilities.drawAlignedString(label, g2, xx, yy, alignPt);
+            }
+            g2.setPaint(savedPaint);
+            g2.setStroke(savedStroke);
+        }
+    }
+

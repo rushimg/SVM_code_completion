@@ -1,0 +1,19 @@
+    public Rectangle2D getScreenDataArea(int x, int y) {
+        PlotRenderingInfo plotInfo = this.info.getPlotInfo();
+        Rectangle2D result;
+        if (plotInfo.getSubplotCount() == 0) {
+            result = getScreenDataArea();
+        }
+        else {
+            // get the origin of the zoom selection in the Java2D space used for
+            // drawing the chart (that is, before any scaling to fit the panel)
+            Point2D selectOrigin = translateScreenToJava2D(new Point(x, y));
+            int subplotIndex = plotInfo.getSubplotIndex(selectOrigin);
+            if (subplotIndex == -1) {
+                return null;
+            }
+            result = scale(plotInfo.getSubplotInfo(subplotIndex).getDataArea());
+        }
+        return result;
+    }
+

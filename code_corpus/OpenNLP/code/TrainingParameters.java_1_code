@@ -1,0 +1,37 @@
+
+package opennlp.tools.util;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
+
+import opennlp.tools.ml.EventTrainer;
+
+public class TrainingParameters {
+
+  // TODO: are them duplicated?
+  public static final String ALGORITHM_PARAM = "Algorithm";
+  public static final String TRAINER_TYPE_PARAM = "TrainerType";
+
+  public static final String ITERATIONS_PARAM = "Iterations";
+  public static final String CUTOFF_PARAM = "Cutoff";
+
+  private Map<String, String> parameters = new HashMap<String, String>();
+
+  public TrainingParameters() {
+  }
+
+  public TrainingParameters(InputStream in) throws IOException {
+
+    Properties properties = new Properties();
+    properties.load(in);
+
+    for (Map.Entry<Object, Object> entry : properties.entrySet()) {
+      parameters.put((String) entry.getKey(), (String) entry.getValue());
+    }
+  }
+

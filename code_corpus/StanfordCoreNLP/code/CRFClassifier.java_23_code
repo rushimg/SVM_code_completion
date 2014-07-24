@@ -1,0 +1,26 @@
+  public List<CRFCliqueTree<String>> getCliqueTrees(String filename, DocumentReaderAndWriter<IN> readerAndWriter) {
+    // only for the OCR data does this matter
+    flags.ocrTrain = false;
+
+    List<CRFCliqueTree<String>> cts = new ArrayList<CRFCliqueTree<String>>();
+    ObjectBank<List<IN>> docs = makeObjectBankFromFile(filename, readerAndWriter);
+    for (List<IN> doc : docs) {
+      cts.add(getCliqueTree(doc));
+    }
+
+    return cts;
+  }
+
+  public CRFCliqueTree<String> getCliqueTree(Triple<int[][][], int[], double[][][]> p) {
+    int[][][] data = p.first();
+    double[][][] featureVal = p.third();
+
+    return CRFCliqueTree.getCalibratedCliqueTree(data, labelIndices, classIndex.size(), classIndex,
+        flags.backgroundSymbol, getCliquePotentialFunctionForTest(), featureVal);
+  }
+
+  public CRFCliqueTree<String> getCliqueTree(List<IN> document) {
+    Triple<int[][][], int[], double[][][]> p = documentToDataAndLabels(document);
+    return getCliqueTree(p);
+  }
+

@@ -1,0 +1,15 @@
+  public static void stop(){
+    //--Close logger
+    isClosed = true; // <- not a thread-safe boolean
+    Thread.yield(); //poor man's synchronization attempt (let everything else log that wants to)
+    Thread.yield();
+    //--Close Tracks
+    while(depth > 0){
+      depth -= 1;
+      //(send signal to handlers)
+      handlers.process(null, MessageType.END_TRACK, depth, System.currentTimeMillis());
+    }
+    //--Shutdown
+    handlers.process(null, MessageType.SHUTDOWN, 0, System.currentTimeMillis());
+  }
+

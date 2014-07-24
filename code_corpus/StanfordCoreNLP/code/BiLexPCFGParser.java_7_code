@@ -1,0 +1,58 @@
+    IntDependency dependency = new IntDependency();
+    for (int head = 0; head < words.length; head++) {
+      for (int hTag = 0; hTag < tagIndex.size(); hTag++) {
+        for (int arg = 0; arg < words.length; arg++) {
+          for (int aTag = 0; aTag < tagIndex.size(); aTag++) {
+            Arrays.fill(depScore[head][hTag][arg][aTag],Float.NEGATIVE_INFINITY);
+          }
+        }
+      }
+    }
+    for (int head = 0; head < words.length; head++) {
+      for (int arg = 0; arg < words.length; arg++) {
+        if (head == arg)
+          continue;
+        for (Iterator<IntTaggedWord> headTWI=taggedWordList[head].iterator(); headTWI.hasNext();) {
+          IntTaggedWord headTW = headTWI.next();
+          for (Iterator<IntTaggedWord> argTWI=taggedWordList[arg].iterator(); argTWI.hasNext();) {
+            IntTaggedWord argTW = argTWI.next();
+            dependency.head = headTW;
+            dependency.arg = argTW;
+            dependency.leftHeaded = (head < arg);
+            dependency.distance = Math.abs(head-arg);
+            depScore[head][headTW.tag][arg][argTW.tag] =
+              dg.score(dependency);
+            if (false && depScore[head][headTW.tag][arg][argTW.tag] > -100)
+              System.err.println(wordIndex.get(headTW.word)+"/"+tagIndex.get(headTW.tag)+" -> "+wordIndex.get(argTW.word)+"/"+tagIndex.get(argTW.tag)+" score "+depScore[head][headTW.tag][arg][argTW.tag]);
+          }
+        }
+      }
+    }
+  }
+
+  protected void setGoal(int length) {
+    goal = new Edge(op.testOptions.exhaustiveTest);
+    goal.start = 0;
+    goal.end = length;
+    goal.state = stateIndex.indexOf(op.langpack().startSymbol());
+    goal.tag = tagIndex.indexOf(Lexicon.BOUNDARY_TAG);
+    goal.head = length - 1;
+    //goal = (Edge)interner.intern(goal);
+  }
+
+  protected void initialize(List<? extends HasWord> words) {
+    length = words.size();
+    interner = new Interner();
+    agenda = new ArrayHeap<Item>(ScoredComparator.DESCENDING_COMPARATOR);
+    chart = new HookChart();
+    setGoal(length);
+    List<Item> initialItems = makeInitialItems(words);
+//    scoreDependencies();
+    for (int i = 0, iiSize = initialItems.size(); i < iiSize; i++) {
+      Item item = initialItems.get(i);
+      item = (Item) interner.intern(item);
+      //if (VERBOSE) System.err.println("Initial: "+item);
+      discoverItem(item);
+    }
+  }
+

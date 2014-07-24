@@ -1,0 +1,67 @@
+  public boolean isLocal() {
+    return !isTag && position == 0;
+  }
+
+  String extract(History h, PairsHolder pH) {
+    return isTag ? pH.getTag(h, position) : pH.getWord(h, position);
+  }
+
+  @SuppressWarnings({"MethodMayBeStatic"})
+  String extractLV(History h, PairsHolder pH) {
+    // should extract last verbal word and also the current word
+    int start = h.start;
+    String lastverb = "NA";
+    int current = h.current;
+    int index = current - 1;
+    while (index >= start) {
+      String tag = pH.getTag(index);
+      if (tag.startsWith("VB")) {
+        lastverb = pH.getWord(index);
+        break;
+      }
+      if (tag.startsWith(",")) {
+        break;
+      }
+      index--;
+    }
+    return lastverb;
+  }
+
+  String extractLV(History h, PairsHolder pH, int bound) {
+    // should extract last verbal word and also the current word
+    int start = h.start;
+    String lastverb = "NA";
+    int current = h.current;
+    int index = current - 1;
+    while ((index >= start) && (index >= current - bound)) {
+      String tag = pH.getTag(index);
+      if (tag.startsWith("VB")) {
+        lastverb = pH.getWord(index);
+        break;
+      }
+      if (tag.startsWith(",")) {
+        break;
+      }
+      index--;
+    }
+    return lastverb;
+  }
+
+
+  // By default the bound is ignored, but a few subclasses make use of it.
+  @SuppressWarnings({"UnusedDeclaration"})
+  String extract(History h, PairsHolder pH, int bound) {
+    return extract(h, pH);
+  }
+
+
+  @Override
+  public String toString() {
+    String cl = getClass().getName();
+    int ind = cl.lastIndexOf('.');
+    // MAX_VALUE is the default value and means we aren't using these two arguments
+    String args = (position == Integer.MAX_VALUE) ? "": (position + "," + (isTag ? "tag" : "word"));
+    return cl.substring(ind + 1) + '(' + args + ')';
+  }
+
+

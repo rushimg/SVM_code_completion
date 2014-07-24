@@ -1,0 +1,27 @@
+    public static JFreeChart createWindPlot(String title,
+                                            String xAxisLabel,
+                                            String yAxisLabel,
+                                            WindDataset dataset,
+                                            boolean legend,
+                                            boolean tooltips,
+                                            boolean urls) {
+
+        ValueAxis xAxis = new DateAxis(xAxisLabel);
+        ValueAxis yAxis = new NumberAxis(yAxisLabel);
+        yAxis.setRange(-12.0, 12.0);
+
+        WindItemRenderer renderer = new WindItemRenderer();
+        if (tooltips) {
+            renderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
+        }
+        if (urls) {
+            renderer.setURLGenerator(new StandardXYURLGenerator());
+        }
+        XYPlot plot = new XYPlot(dataset, xAxis, yAxis, renderer);
+        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT,
+                plot, legend);
+        currentTheme.apply(chart);
+        return chart;
+
+    }
+

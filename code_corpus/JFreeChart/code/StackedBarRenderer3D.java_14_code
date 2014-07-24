@@ -1,0 +1,95 @@
+    protected void drawStackHorizontal(List values, Comparable category,
+            Graphics2D g2, CategoryItemRendererState state,
+            Rectangle2D dataArea, CategoryPlot plot,
+            CategoryAxis domainAxis, ValueAxis rangeAxis,
+            CategoryDataset dataset) {
+
+        int column = dataset.getColumnIndex(category);
+        double barX0 = domainAxis.getCategoryMiddle(column,
+                dataset.getColumnCount(), dataArea, plot.getDomainAxisEdge())
+                - state.getBarWidth() / 2.0;
+        double barW = state.getBarWidth();
+
+        // a list to store the series index and bar region, so we can draw
+        // all the labels at the end...
+        List itemLabelList = new ArrayList();
+
+        // draw the blocks
+        boolean inverted = rangeAxis.isInverted();
+        int blockCount = values.size() - 1;
+        for (int k = 0; k < blockCount; k++) {
+            int index = (inverted ? blockCount - k - 1 : k);
+            Object[] prev = (Object[]) values.get(index);
+            Object[] curr = (Object[]) values.get(index + 1);
+            int series = 0;
+            if (curr[0] == null) {
+                series = -((Integer) prev[0]).intValue() - 1;
+            }
+            else {
+                series = ((Integer) curr[0]).intValue();
+                if (series < 0) {
+                    series = -((Integer) prev[0]).intValue() - 1;
+                }
+            }
+            double v0 = ((Double) prev[1]).doubleValue();
+            double vv0 = rangeAxis.valueToJava2D(v0, dataArea,
+                    plot.getRangeAxisEdge());
+
+            double v1 = ((Double) curr[1]).doubleValue();
+            double vv1 = rangeAxis.valueToJava2D(v1, dataArea,
+                    plot.getRangeAxisEdge());
+
+            Shape[] faces = createHorizontalBlock(barX0, barW, vv0, vv1,
+                    inverted);
+            Paint fillPaint = getItemPaint(series, column);
+            Paint fillPaintDark = fillPaint;
+            if (fillPaintDark instanceof Color) {
+                fillPaintDark = ((Color) fillPaint).darker();
+            }
+            boolean drawOutlines = isDrawBarOutline();
+            Paint outlinePaint = fillPaint;
+            if (drawOutlines) {
+                outlinePaint = getItemOutlinePaint(series, column);
+                g2.setStroke(getItemOutlineStroke(series, column));
+            }
+            for (int f = 0; f < 6; f++) {
+                if (f == 5) {
+                    g2.setPaint(fillPaint);
+                }
+                else {
+                    g2.setPaint(fillPaintDark);
+                }
+                g2.fill(faces[f]);
+                if (drawOutlines) {
+                    g2.setPaint(outlinePaint);
+                    g2.draw(faces[f]);
+                }
+            }
+
+            itemLabelList.add(new Object[] {new Integer(series),
+                    faces[5].getBounds2D(),
+                    BooleanUtilities.valueOf(v0 < getBase())});
+
+            // add an item entity, if this information is being collected
+            EntityCollection entities = state.getEntityCollection();
+            if (entities != null) {
+                addItemEntity(entities, dataset, series, column, faces[5]);
+            }
+
+        }
+
+        for (int i = 0; i < itemLabelList.size(); i++) {
+            Object[] record = (Object[]) itemLabelList.get(i);
+            int series = ((Integer) record[0]).intValue();
+            Rectangle2D bar = (Rectangle2D) record[1];
+            boolean neg = ((Boolean) record[2]).booleanValue();
+            CategoryItemLabelGenerator generator
+                    = getItemLabelGenerator(series, column);
+            if (generator != null && isItemLabelVisible(series, column)) {
+                drawItemLabel(g2, dataset, series, column, plot, generator,
+                        bar, neg);
+            }
+
+        }
+    }
+

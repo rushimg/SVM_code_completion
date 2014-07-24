@@ -1,0 +1,13 @@
+  public void preProcessSentences(Annotation dataset) {
+    logger.severe("GenericDataSetReader: Started pre-processing the corpus...");
+    // run the processor, i.e., NER, parse etc.
+    if (processor != null) {
+      // we might already have syntactic annotation from offline files
+      List<CoreMap> sentences = dataset.get(CoreAnnotations.SentencesAnnotation.class);
+      if (sentences.size() > 0 && !sentences.get(0).containsKey(TreeCoreAnnotations.TreeAnnotation.class)) {
+        logger.info("Annotating dataset with " + processor);
+        processor.annotate(dataset);
+      } else {
+        logger.info("Found existing syntactic annotations. Will not use the NLP processor.");
+      }
+    }

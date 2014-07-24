@@ -1,0 +1,28 @@
+  public static Collection<SemanticGraph> removeDuplicates(Collection<SemanticGraph> graphs,
+      Collection<SemanticGraph> tabuGraphs) {
+    Map<String, SemanticGraph> tabuMap = Generics.newHashMap();
+    for (SemanticGraph tabuSg : tabuGraphs) {
+      String keyVal = tabuSg.toString().intern();
+      tabuMap.put(keyVal, tabuSg);
+    }
+    Map<String, SemanticGraph> map = Generics.newHashMap();
+    for (SemanticGraph sg : graphs) {
+      String keyVal = sg.toString().intern();
+      if (tabuMap.containsKey(keyVal))
+        continue;
+      map.put(keyVal, sg);
+    }
+    return map.values();
+  }
+
+  public static Collection<SemanticGraph> removeDuplicates(Collection<SemanticGraph> graphs,
+      SemanticGraph tabuGraph) {
+    Collection<SemanticGraph> tabuSet = Generics.newHashSet();
+    tabuSet.add(tabuGraph);
+    return removeDuplicates(graphs, tabuSet);
+  }
+
+  // -----------------------------------------------------------------------------------------------
+  // Tree matching code
+  // -----------------------------------------------------------------------------------------------
+

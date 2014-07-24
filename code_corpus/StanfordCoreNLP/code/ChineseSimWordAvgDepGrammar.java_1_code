@@ -1,0 +1,78 @@
+@SuppressWarnings("deprecation")
+public class ChineseSimWordAvgDepGrammar extends MLEDependencyGrammar {
+
+  private static final long serialVersionUID = -1845503582705055342L;
+
+  private double simSmooth = 10.0;
+
+  private static final String argHeadFile = "simWords/ArgHead.5";
+  private static final String headArgFile = "simWords/HeadArg.5";
+  private Map<Pair<Integer, String>, List<Triple<Integer, String, Double>>> simArgMap;
+  private Map<Pair<Integer, String>, List<Triple<Integer, String, Double>>> simHeadMap;
+
+  private boolean debug = true;
+
+  private boolean verbose = false;
+  //private static final double MIN_PROBABILITY = Math.exp(-100.0);
+
+  public ChineseSimWordAvgDepGrammar(TreebankLangParserParams tlpParams, boolean directional, boolean distance, boolean coarseDistance, boolean basicCategoryTagsInDependencyGrammar, Options op, Index<String> wordIndex, Index<String> tagIndex) {
+    super(tlpParams, directional, distance, coarseDistance, basicCategoryTagsInDependencyGrammar, op, wordIndex, tagIndex);
+
+    simHeadMap = getMap(headArgFile);
+    simArgMap = getMap(argHeadFile);
+  }
+
+  public Map<Pair<Integer, String>, List<Triple<Integer, String, Double>>> getMap(String filename) {
+    Map<Pair<Integer, String>, List<Triple<Integer, String, Double>>> hashMap = Generics.newHashMap();
+    try {
+      BufferedReader wordMapBReader = new BufferedReader(new InputStreamReader(new FileInputStream(filename), "UTF-8"));
+
+      String wordMapLine;
+      Pattern linePattern = Pattern.compile("sim\\((.+)/(.+):(.+)/(.+)\\)=(.+)");
+      while ((wordMapLine = wordMapBReader.readLine()) != null) {
+        Matcher m = linePattern.matcher(wordMapLine);
+        if (!m.matches()) {
+          System.err.println("Ill-formed line in similar word map file: " + wordMapLine);
+          continue;
+        }
+
+        Pair<Integer, String> iTW = new Pair<Integer, String>(wordIndex.indexOf(m.group(1), true), m.group(2));
+        double score = Double.parseDouble(m.group(5));
+
+        List<Triple<Integer, String, Double>> tripleList = hashMap.get(iTW);
+        if (tripleList == null) {
+          tripleList = new ArrayList<Triple<Integer, String, Double>>();
+          hashMap.put(iTW, tripleList);
+        }
+
+        tripleList.add(new Triple<Integer, String, Double>(wordIndex.indexOf(m.group(3), true), m.group(4), score));
+      }
+    } catch (IOException e) {
+      throw new RuntimeException("Problem reading similar words file!");
+    }
+
+    return hashMap;
+  }
+
+  @Override
+  public double scoreTB(IntDependency dependency) {
+  }
+
+  public void setLex(Lexicon lex) {
+    this.lex = lex;
+  }
+
+  private ClassicCounter<String> statsCounter = new ClassicCounter<String>();
+
+  static {
+    System.runFinalizersOnExit(true);
+  }
+
+  @Override
+  protected void finalize() throws Throwable {
+    super.finalize();
+    System.err.println("SimWordAvg stats:");
+    System.err.println(statsCounter);
+  }
+
+

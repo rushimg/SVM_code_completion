@@ -1,0 +1,30 @@
+public class EnglishUnknownWordModel extends BaseUnknownWordModel {
+
+  private static final long serialVersionUID = 4825624957364628770L;
+
+  private static final boolean DEBUG_UWM = false;
+
+  protected final boolean smartMutation;
+
+  protected final int unknownSuffixSize;
+  protected final int unknownPrefixSize;
+
+  protected final String wordClassesFile;
+
+  private static final int MIN_UNKNOWN = 0;
+  private static final int MAX_UNKNOWN = 8;
+
+  public EnglishUnknownWordModel(Options op, Lexicon lex,
+                                 Index<String> wordIndex,
+                                 Index<String> tagIndex,
+                                 ClassicCounter<IntTaggedWord> unSeenCounter) {
+    super(op, lex, wordIndex, tagIndex, unSeenCounter, null, null, null);
+    if (unknownLevel < MIN_UNKNOWN || unknownLevel > MAX_UNKNOWN) {
+      throw new IllegalArgumentException("Invalid value for useUnknownWordSignatures: " + unknownLevel);
+    }
+    this.smartMutation = op.lexOptions.smartMutation;
+    this.unknownSuffixSize = op.lexOptions.unknownSuffixSize;
+    this.unknownPrefixSize = op.lexOptions.unknownPrefixSize;
+    wordClassesFile = op.lexOptions.wordClassesFile;
+  }
+

@@ -1,0 +1,26 @@
+  protected CoreNLPProtos.Document.Builder toProtoBuilder(Annotation doc, Set<Class<?>> keysToSerialize) {
+    CoreNLPProtos.Document.Builder builder = CoreNLPProtos.Document.newBuilder();
+    // Required fields
+    builder.setText(doc.get(TextAnnotation.class));
+    keysToSerialize.remove(TextAnnotation.class);
+    // Optional fields
+    if (doc.containsKey(SentencesAnnotation.class)) {
+      for (CoreMap sentence : doc.get(SentencesAnnotation.class)) { builder.addSentence(toProto(sentence)); }
+      keysToSerialize.remove(SentencesAnnotation.class);
+    } else if (doc.containsKey(TokensAnnotation.class)) {
+      for (CoreLabel token : doc.get(TokensAnnotation.class)) { builder.addSentencelessToken(toProto(token)); }
+    }
+    if (doc.containsKey(DocIDAnnotation.class)) {
+      builder.setDocID(doc.get(DocIDAnnotation.class));
+      keysToSerialize.remove(DocIDAnnotation.class);
+    }
+    if (doc.containsKey(CorefChainAnnotation.class)) {
+      for (Map.Entry<Integer, CorefChain> chain : doc.get(CorefChainAnnotation.class).entrySet()) {
+       builder.addCorefChain(toProto(chain.getValue()));
+      }
+      keysToSerialize.remove(CorefChainAnnotation.class);
+    }
+    // Return
+    return builder;
+  }
+

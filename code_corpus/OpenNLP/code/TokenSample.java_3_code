@@ -1,0 +1,57 @@
+  public TokenSample(String text, Span tokenSpans[]) {
+
+    if (text == null)
+      throw new IllegalArgumentException("text must not be null!");
+
+    if (tokenSpans == null)
+      throw new IllegalArgumentException("tokenSpans must not be null! ");
+
+    this.text = text;
+    this.tokenSpans = Collections.unmodifiableList(new ArrayList<Span>(Arrays.asList(tokenSpans)));
+
+    for (Span tokenSpan : tokenSpans) {
+      if (tokenSpan.getStart() < 0 || tokenSpan.getStart() > text.length() ||
+          tokenSpan.getEnd() > text.length() || tokenSpan.getEnd() < 0) {
+        throw new IllegalArgumentException("Span " + tokenSpan.toString() +
+            " is out of bounds, text length: " + text.length() + "!");
+      }
+    }
+  }
+
+  public TokenSample(Detokenizer detokenizer, String tokens[]) {
+
+    StringBuilder sentence = new StringBuilder();
+
+    DetokenizationOperation[] operations = detokenizer.detokenize(tokens);
+
+    List<Span> mergedTokenSpans = new ArrayList<Span>();
+
+    for (int i = 0; i < operations.length; i++) {
+
+      boolean isSeparateFromPreviousToken = i > 0 &&
+          !isMergeToRight(operations[i - 1]) &&
+          !isMergeToLeft(operations[i]);
+
+      if (isSeparateFromPreviousToken) {
+        sentence.append(' ');
+      }
+
+      int beginIndex = sentence.length();
+      sentence.append(tokens[i]);
+      mergedTokenSpans.add(new Span(beginIndex, sentence.length()));
+    }
+
+    text = sentence.toString();
+    tokenSpans = Collections.unmodifiableList(mergedTokenSpans);
+  }
+
+  private boolean isMergeToRight(DetokenizationOperation operation) {
+    return DetokenizationOperation.MERGE_TO_RIGHT.equals(operation)
+        || DetokenizationOperation.MERGE_BOTH.equals(operation);
+  }
+
+  private boolean isMergeToLeft(DetokenizationOperation operation) {
+    return DetokenizationOperation.MERGE_TO_LEFT.equals(operation)
+        || DetokenizationOperation.MERGE_BOTH.equals(operation);
+  }
+

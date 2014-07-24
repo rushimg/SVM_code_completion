@@ -1,0 +1,17 @@
+  public DocumentReaderAndWriter<IN> makePlainTextReaderAndWriter() {
+    String readerClassName = flags.plainTextDocumentReaderAndWriter;
+    // We set this default here if needed because there may be models
+    // which don't have the reader flag set
+    if (readerClassName == null) {
+      readerClassName = SeqClassifierFlags.DEFAULT_PLAIN_TEXT_READER;
+    }
+    DocumentReaderAndWriter<IN> readerAndWriter;
+    try {
+      readerAndWriter = ReflectionLoading.loadByReflection(readerClassName);
+    } catch (Exception e) {
+      throw new RuntimeException(String.format("Error loading flags.plainTextDocumentReaderAndWriter: '%s'", flags.plainTextDocumentReaderAndWriter), e);
+    }
+    readerAndWriter.init(flags);
+    return readerAndWriter;
+  }
+

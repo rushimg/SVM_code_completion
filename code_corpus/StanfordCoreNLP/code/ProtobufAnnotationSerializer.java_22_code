@@ -1,0 +1,25 @@
+  protected CoreMap fromProtoNoTokens(CoreNLPProtos.Sentence proto) {
+    CoreMap sentence = new ArrayCoreMap();
+    // Required fields
+    sentence.set(TokenBeginAnnotation.class, proto.getTokenOffsetBegin());
+    sentence.set(TokenEndAnnotation.class, proto.getTokenOffsetEnd());
+    // Optional fields
+    if (proto.hasSentenceIndex()) { sentence.set(SentenceIndexAnnotation.class, proto.getSentenceIndex()); }
+    if (proto.hasCharacterOffsetBegin()) { sentence.set(CharacterOffsetBeginAnnotation.class, proto.getCharacterOffsetBegin()); }
+    if (proto.hasCharacterOffsetEnd()) { sentence.set(CharacterOffsetEndAnnotation.class, proto.getCharacterOffsetEnd()); }
+    if (proto.hasParseTree()) { sentence.set(TreeAnnotation.class, fromProto(proto.getParseTree())); }
+    // Non-default fields
+    if (proto.hasHasRelationAnnotations() && proto.getHasRelationAnnotations()) {
+      // set entities
+      List<EntityMention> entities = new ArrayList<EntityMention>();
+      for (CoreNLPProtos.Entity entity : proto.getEntityList()) { entities.add(fromProto(entity, sentence)); }
+      sentence.set(EntityMentionsAnnotation.class, entities);
+      // set relations
+      List<RelationMention> relations = new ArrayList<RelationMention>();
+      for (CoreNLPProtos.Relation relation : proto.getRelationList()) { relations.add(fromProto(relation, sentence)); }
+      sentence.set(RelationMentionsAnnotation.class, relations);
+    }
+    // Return
+    return sentence;
+  }
+

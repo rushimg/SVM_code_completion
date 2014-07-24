@@ -1,0 +1,36 @@
+    protected void selectVerticalAutoTickUnit(Graphics2D g2,
+                                              Rectangle2D dataArea,
+                                              RectangleEdge edge) {
+
+        // start with the current tick unit...
+        TickUnitSource tickUnits = getStandardTickUnits();
+        double zero = valueToJava2D(0.0, dataArea, edge);
+
+        // start with a unit that is at least 1/10th of the axis length
+        double estimate1 = getRange().getLength() / 10.0;
+        DateTickUnit candidate1
+            = (DateTickUnit) tickUnits.getCeilingTickUnit(estimate1);
+        double labelHeight1 = estimateMaximumTickLabelHeight(g2, candidate1);
+        double y1 = valueToJava2D(candidate1.getSize(), dataArea, edge);
+        double candidate1UnitHeight = Math.abs(y1 - zero);
+
+        // now extrapolate based on label height and unit height...
+        double estimate2
+        DateTickUnit candidate2
+            = (DateTickUnit) tickUnits.getCeilingTickUnit(estimate2);
+        double labelHeight2 = estimateMaximumTickLabelHeight(g2, candidate2);
+        double y2 = valueToJava2D(candidate2.getSize(), dataArea, edge);
+        double unit2Height = Math.abs(y2 - zero);
+
+       // make final selection...
+       DateTickUnit finalUnit;
+       if (labelHeight2 < unit2Height) {
+           finalUnit = candidate2;
+       }
+       else {
+           finalUnit = (DateTickUnit) tickUnits.getLargerTickUnit(candidate2);
+       }
+       setTickUnit(finalUnit, false, false);
+
+    }
+

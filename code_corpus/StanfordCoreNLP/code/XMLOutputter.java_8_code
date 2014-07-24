@@ -1,0 +1,115 @@
+  private static boolean addCorefGraphInfo
+    (Options options, Element corefInfo, List<CoreMap> sentences, Map<Integer, CorefChain> corefChains, String curNS)
+  {
+    boolean foundCoref = false;
+    for (CorefChain chain : corefChains.values()) {
+      if (!options.printSingletons && chain.getMentionsInTextualOrder().size() <= 1)
+        continue;
+      foundCoref = true;
+      Element chainElem = new Element("coreference", curNS);
+      CorefChain.CorefMention source = chain.getRepresentativeMention();
+      addCorefMention(options, chainElem, curNS, sentences, source, true);
+      for (CorefChain.CorefMention mention : chain.getMentionsInTextualOrder()) {
+        if (mention == source)
+          continue;
+        addCorefMention(options, chainElem, curNS, sentences, mention, false);
+      }
+      corefInfo.appendChild(chainElem);
+    }
+    return foundCoref;
+  }
+
+  private static void addCorefMention(Options options,
+                                      Element chainElem, String curNS,
+                                      List<CoreMap> sentences,
+                                      CorefChain.CorefMention mention,
+                                      boolean representative) {
+    Element mentionElem = new Element("mention", curNS);
+    if (representative) {
+      mentionElem.addAttribute(new Attribute("representative", "true"));
+    }
+
+    setSingleElement(mentionElem, "sentence", curNS,
+                     Integer.toString(mention.sentNum));
+    setSingleElement(mentionElem, "start", curNS,
+                     Integer.toString(mention.startIndex));
+    setSingleElement(mentionElem, "end", curNS,
+                     Integer.toString(mention.endIndex));
+    setSingleElement(mentionElem, "head", curNS,
+                     Integer.toString(mention.headIndex));
+
+    String text = mention.mentionSpan;
+    setSingleElement(mentionElem, "text", curNS, text);
+    // Do you want context with your coreference?
+    if (sentences != null && options.coreferenceContextSize > 0) {
+      // If so use sentences to get so context from sentences
+
+      List<CoreLabel> tokens = sentences.get(mention.sentNum - 1).get(CoreAnnotations.TokensAnnotation.class);
+      int contextStart = Math.max(mention.startIndex - 1 - 5, 0);
+      int contextEnd = Math.min(mention.endIndex - 1 + 5, tokens.size());
+      String leftContext = StringUtils.joinWords(tokens, " ", contextStart, mention.startIndex - 1);
+      String rightContext = StringUtils.joinWords(tokens, " ", mention.endIndex - 1, contextEnd);
+      setSingleElement(mentionElem, "leftContext", curNS, leftContext);
+      setSingleElement(mentionElem, "rightContext", curNS, rightContext);
+    }
+
+    chainElem.appendChild(mentionElem);
+  }
+
+  private static void addWordInfo(Element wordInfo, CoreMap token, int id, String curNS) {
+    // store the position of this word in the sentence
+    wordInfo.addAttribute(new Attribute("id", Integer.toString(id)));
+
+    setSingleElement(wordInfo, "word", curNS, token.get(CoreAnnotations.TextAnnotation.class));
+    setSingleElement(wordInfo, "lemma", curNS, token.get(CoreAnnotations.LemmaAnnotation.class));
+
+    if (token.containsKey(CoreAnnotations.CharacterOffsetBeginAnnotation.class) && token.containsKey(CoreAnnotations.CharacterOffsetEndAnnotation.class)) {
+      setSingleElement(wordInfo, "CharacterOffsetBegin", curNS, Integer.toString(token.get(CoreAnnotations.CharacterOffsetBeginAnnotation.class)));
+      setSingleElement(wordInfo, "CharacterOffsetEnd", curNS, Integer.toString(token.get(CoreAnnotations.CharacterOffsetEndAnnotation.class)));
+    }
+
+    if (token.containsKey(CoreAnnotations.PartOfSpeechAnnotation.class)) {
+      setSingleElement(wordInfo, "POS", curNS, token.get(CoreAnnotations.PartOfSpeechAnnotation.class));
+    }
+
+    if (token.containsKey(CoreAnnotations.NamedEntityTagAnnotation.class)) {
+      setSingleElement(wordInfo, "NER", curNS, token.get(CoreAnnotations.NamedEntityTagAnnotation.class));
+    }
+
+    if (token.containsKey(CoreAnnotations.NormalizedNamedEntityTagAnnotation.class)) {
+      setSingleElement(wordInfo, "NormalizedNER", curNS, token.get(CoreAnnotations.NormalizedNamedEntityTagAnnotation.class));
+    }
+
+    if (token.containsKey(CoreAnnotations.SpeakerAnnotation.class)) {
+      setSingleElement(wordInfo, "Speaker", curNS, token.get(CoreAnnotations.SpeakerAnnotation.class));
+    }
+
+    if (token.containsKey(TimeAnnotations.TimexAnnotation.class)) {
+      Timex timex = token.get(TimeAnnotations.TimexAnnotation.class);
+      Element timexElem = new Element("Timex", curNS);
+      timexElem.addAttribute(new Attribute("tid", timex.tid()));
+      timexElem.addAttribute(new Attribute("type", timex.timexType()));
+      timexElem.appendChild(timex.value());
+      wordInfo.appendChild(timexElem);
+    }
+
+    if (token.containsKey(CoreAnnotations.TrueCaseAnnotation.class)) {
+      Element cur = new Element("TrueCase", curNS);
+      cur.appendChild(token.get(CoreAnnotations.TrueCaseAnnotation.class));
+      wordInfo.appendChild(cur);
+    }
+    if (token.containsKey(CoreAnnotations.TrueCaseTextAnnotation.class)) {
+      Element cur = new Element("TrueCaseText", curNS);
+      cur.appendChild(token.get(CoreAnnotations.TrueCaseTextAnnotation.class));
+      wordInfo.appendChild(cur);
+    }
+
+//    IntTuple corefDest;
+//    if((corefDest = label.get(CorefDestAnnotation.class)) != null){
+//      Element cur = new Element("coref", curNS);
+//      String value = Integer.toString(corefDest.get(0)) + "." + Integer.toString(corefDest.get(1));
+//      cur.setText(value);
+//      wordInfo.addContent(cur);
+//    }
+  }
+

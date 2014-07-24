@@ -1,0 +1,28 @@
+      private static final long serialVersionUID = -4001834044987928521L;
+
+      public ZeroGradient() {
+      }
+    }
+
+    public int update(double[] newS, double[] newY, double yy, double sy,
+        double sg, double step) {
+
+      // Initialize diagonal to the identity
+      if (scaleOpt == eScaling.DIAGONAL && d == null) {
+        d = new double[newS.length];
+        for (int i = 0; i < d.length; i++) {
+          d[i] = 1.0;
+        }
+      }
+
+      try {
+
+        if (sy < 0) {
+          throw new NegativeCurvature();
+        }
+
+        if (yy == 0.0) {
+          throw new ZeroGradient();
+        }
+
+        switch (scaleOpt) {

@@ -1,0 +1,30 @@
+    for (int i = 0; i < table.length; i++) {
+      ft.logIncrementValue(i / numClasses, table[i]);
+    }
+    return ft;
+  }
+
+  public FactorTable sumOutFront() {
+    FactorTable ft = new FactorTable(numClasses, windowSize - 1);
+    int stride = ft.size();
+    for (int i = 0; i < stride; i++) {
+      ft.setValue(i, ArrayMath.logSum(table, i, table.length, stride));
+    }
+    return ft;
+  }
+
+  public void divideBy(FactorTable other) {
+    for (int i = 0; i < table.length; i++) {
+      if (table[i] != Double.NEGATIVE_INFINITY || other.table[i] != Double.NEGATIVE_INFINITY) {
+        table[i] -= other.table[i];
+      }
+    }
+  }
+
+
+  public static void main(String[] args) {
+    int numClasses = 6;
+    final int cliqueSize = 3;
+    System.err.printf("Creating factor table with %d classes and window (clique) size %d%n", numClasses, cliqueSize);
+    FactorTable ft = new FactorTable(numClasses, cliqueSize);
+

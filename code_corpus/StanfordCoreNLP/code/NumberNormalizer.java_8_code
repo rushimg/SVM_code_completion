@@ -1,0 +1,47 @@
+  private static final TokenSequencePattern rangePattern = TokenSequencePattern.compile(env, "(?:$NUMCOMPTERM /-|to/ $NUMCOMPTERM) | $NUMRANGE");
+  public static List<CoreMap> findNumberRanges(CoreMap annotation)
+  {
+    List<CoreMap> numerizedTokens = annotation.get(CoreAnnotations.NumerizedTokensAnnotation.class);
+    for (CoreMap token:numerizedTokens) {
+      String w = token.get(CoreAnnotations.TextAnnotation.class);
+      w = w.trim().toLowerCase();
+      Matcher rangeMatcher = NumberNormalizer.numRangePattern.matcher(w);
+      if (rangeMatcher.matches()) {
+        try {
+          String w1 = rangeMatcher.group(1);
+          String w2 = rangeMatcher.group(2);
+          Number v1 = NumberNormalizer.wordToNumber(w1);
+          Number v2 = NumberNormalizer.wordToNumber(w2);
+          if (v2.doubleValue() > v1.doubleValue()) {
+            token.set(CoreAnnotations.NumericTypeAnnotation.class, "NUMBER_RANGE");
+            token.set(CoreAnnotations.NumericCompositeTypeAnnotation.class, "NUMBER_RANGE");
+            Pair<Number,Number> range = new Pair<Number,Number>(v1,v2);
+            token.set(CoreAnnotations.NumericCompositeObjectAnnotation.class, range);
+          }
+        } catch (Exception ex) {
+          logger.warning("Error interpreting number range " + w + ": " + ex.getMessage());
+        }
+      }
+    }
+    List<CoreMap> numberRanges = new ArrayList<CoreMap>();
+    TokenSequenceMatcher matcher = rangePattern.getMatcher(numerizedTokens);
+    while (matcher.find()) {
+      List<CoreMap> matched = matcher.groupNodes();
+      if (matched.size() == 1) {
+        numberRanges.add(matched.get(0));
+      } else {
+        Number v1 = matched.get(0).get(CoreAnnotations.NumericCompositeValueAnnotation.class);
+        Number v2 = matched.get(matched.size()-1).get(CoreAnnotations.NumericCompositeValueAnnotation.class);
+        if (v2.doubleValue() > v1.doubleValue()) {
+          CoreMap newChunk = ChunkAnnotationUtils.getMergedChunk(numerizedTokens,  matcher.start(), matcher.end(),
+                  CoreMapAttributeAggregator.getDefaultAggregators());
+          newChunk.set(CoreAnnotations.NumericCompositeTypeAnnotation.class, "NUMBER_RANGE");
+          Pair<Number,Number> range = new Pair<Number,Number>(v1,v2);
+          newChunk.set(CoreAnnotations.NumericCompositeObjectAnnotation.class, range);
+          numberRanges.add(newChunk);
+        }
+      }
+    }
+    return numberRanges;
+  }
+

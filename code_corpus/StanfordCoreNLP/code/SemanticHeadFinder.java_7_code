@@ -1,0 +1,49 @@
+  private boolean isExistential(Tree t, Tree parent) {
+    if (DEBUG) {
+      System.err.println("isExistential: " + t + ' ' + parent);
+    }
+    boolean toReturn = false;
+    String motherCat = tlp.basicCategory(t.label().value());
+    // affirmative case
+    if (motherCat.equals("VP") && parent != null) {
+      //take t and the sisters
+      Tree[] kids = parent.children();
+      // iterate over the sisters before t and checks if existential
+      for (Tree kid : kids) {
+        if (!kid.value().equals("VP")) {
+          List<Label> tags = kid.preTerminalYield();
+          for (Label tag : tags) {
+            if (tag.value().equals("EX")) {
+              toReturn = true;
+            }
+          }
+        } else {
+          break;
+        }
+      }
+    }
+    // question case
+    else if (motherCat.startsWith("SQ") && parent != null) {
+      //take the daughters
+      Tree[] kids = parent.children();
+      // iterate over the daughters and checks if existential
+      for (Tree kid : kids) {
+        if (!kid.value().startsWith("VB")) {//not necessary to look into the verb
+          List<Label> tags = kid.preTerminalYield();
+          for (Label tag : tags) {
+            if (tag.value().equals("EX")) {
+              toReturn = true;
+            }
+          }
+        }
+      }
+    }
+
+    if (DEBUG) {
+      System.err.println("decision " + toReturn);
+    }
+
+    return toReturn;
+  }
+
+

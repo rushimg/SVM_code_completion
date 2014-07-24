@@ -1,0 +1,86 @@
+  public String getFirstTranslation(String key) {
+    key = key.toLowerCase();
+    key = key.trim();
+    Set<String> strings = map.get(key);
+    if (strings == null) return null;
+    else return strings.iterator().next();
+  }
+
+  public void readCEDict(String dictPath) {
+    readCEDict(dictPath, defaultPattern, defaultDelimiter, defaultCharset);
+  }
+
+
+  private String normalize(String t) {
+    String origT;
+    if (DEBUG) { origT = t; }
+
+    if ( ! this.normalized) {
+      return t;
+    }
+    for (String punc : punctuations) {
+      t = t.replaceAll(punc, "");
+    }
+    t = t.trim();
+    if (DEBUG && !origT.equals(t)) {
+      System.err.println("orig="+origT);
+      System.err.println("norm="+t);
+    }
+    return t;
+  }
+
+  private Set<String> normalize(Set<String> trans) {
+    if (!this.normalized) {
+      return trans;
+    }
+
+    Set<String> set = Generics.newHashSet();
+
+    for (String t : trans) {
+      t = normalize(t);
+      if ( ! t.equals("")) {
+        set.add(t);
+      }
+    }
+    return set;
+  }
+
+  public void readCEDict(String dictPath, String pattern, String delimiter, String charset) {
+    try {
+      BufferedReader infile = new BufferedReader(new InputStreamReader(new FileInputStream(dictPath), charset));
+
+      Pattern p = Pattern.compile(pattern);
+      for (String line = infile.readLine(); line != null; line = infile.readLine()) {
+        Matcher m = p.matcher(line);
+        if (m.matches()) {
+          String word = (m.group(1)).toLowerCase();
+          word = word.trim(); // don't want leading or trailing spaces
+          String transGroup = m.group(2);
+          String[] trans = transGroup.split(delimiter);
+          // TODO: strip out punctuations from translation
+          if (map.containsKey(word)) {
+            Set<String> oldtrans = map.get(word);
+            for (String t : trans) {
+              t = normalize(t);
+              if ( ! t.equals("")) {
+                if ( ! oldtrans.contains(t)) {
+                  oldtrans.add(t);
+                }
+              }
+            }
+          } else {
+            Set<String> transList = new LinkedHashSet<String>(Arrays.asList(trans));
+            String normW = normalize(word);
+            Set<String> normSet = normalize(transList);
+            if ( ! normW.equals("") && normSet.size() > 0) {
+              map.put(normW, normSet);
+            }
+          }
+        }
+      }
+      infile.close();
+    } catch (IOException e) {
+      throw new RuntimeException("IOException reading CEDict from file " + dictPath, e);
+    }
+  }
+

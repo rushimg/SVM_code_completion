@@ -1,0 +1,55 @@
+  private SemanticGraph fromProto(CoreNLPProtos.DependencyGraph proto, List<CoreLabel> sentence, String docid) {
+    SemanticGraph graph = new SemanticGraph();
+
+    // first construct the actual nodes; keep them indexed by their index
+    // This block is optimized as one of the places which take noticeable time
+    // in datum caching
+    int min = Integer.MAX_VALUE;
+    int max = Integer.MIN_VALUE;
+    for(CoreNLPProtos.DependencyGraph.Node in: proto.getNodeList()){
+      min = in.getIndex() < min ? in.getIndex() : min;
+      max = in.getIndex() > max ? in.getIndex() : max;
+    }
+    IndexedWord[] nodes = new IndexedWord[max - min >= 0 ? max - min + 1 : 0];
+    for(CoreNLPProtos.DependencyGraph.Node in: proto.getNodeList()){
+      CoreLabel token = sentence.get(in.getIndex() - 1); // index starts at 1!
+      IndexedWord word = new IndexedWord(docid, in.getSentenceIndex(), in.getIndex(), token);
+      word.set(ValueAnnotation.class, word.get(TextAnnotation.class));
+      if(in.hasCopyAnnotation()){ word.set(CopyAnnotation.class, in.getCopyAnnotation()); }
+      assert in.getIndex() == word.index();
+      nodes[in.getIndex() - min] = word;
+    }
+    for (IndexedWord node : nodes) {
+      if (node != null) { graph.addVertex(node); }
+    }
+
+    // add all edges to the actual graph
+    for(CoreNLPProtos.DependencyGraph.Edge ie: proto.getEdgeList()){
+      IndexedWord source = nodes[ie.getSource() - min];
+      assert(source != null);
+      IndexedWord target = nodes[ie.getTarget() - min];
+      assert(target != null);
+      synchronized (globalLock) {
+        // this is not thread-safe: there are static fields in GrammaticalRelation
+        assert ie.hasDep();
+        GrammaticalRelation rel = GrammaticalRelation.valueOf(ie.getDep());
+        graph.addEdge(source, target, rel, 1.0, ie.hasIsExtra() && ie.getIsExtra());
+      }
+    }
+
+    if (proto.getRootCount() > 0) {
+      Collection<IndexedWord> roots = new ArrayList<IndexedWord>();
+      for(int rootI : proto.getRootList()){
+        roots.add(nodes[rootI - min]);
+      }
+      graph.setRoots(roots);
+    } else {
+      // Roots were not saved away
+      // compute root nodes if non-empty
+      if(!graph.isEmpty()){
+        graph.resetRoots();
+      }
+    }
+    return graph;
+  }
+

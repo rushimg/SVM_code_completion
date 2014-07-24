@@ -1,0 +1,29 @@
+  private double probMorphTag(int tagId, int morphId) {
+    double cM = morphTag.totalCount(morphId);
+    double cMT = morphTag.getCount(morphId, tagId);
+    
+    // p_M
+    double p_M = cM / morphTag.totalCount();
+    
+    // p_T
+    double cTseen = tagCounter.getCount(tagId);
+    double p_T = cTseen / tagCounter.totalCount();
+    
+    double p_M_T = 0.0;
+    if (cM > 100.0 && cMT > 0.0) {
+      double p_T_M = cMT / cM;
+       
+//      else {
+//        double cTunseen = morphTagUnseen.getCount(tagId);
+//        double p_T_U = cTunseen / morphTagUnseen.totalCount();
+//      }
+      
+    } else { // Unseen morphological analysis
+      // Hack....unseen morph tags are extremely rare
+      // Add+1 smoothing
+      p_M_T = 1.0 / (morphTag.totalCount() + tagIndex.size() + 1.0);
+    }
+    
+    return p_M_T;
+  }
+

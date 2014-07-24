@@ -1,0 +1,152 @@
+  public void heldOutSetC(final GeneralDataset<L, F> trainSet, final GeneralDataset<L, F> devSet, final Scorer<L> scorer, LineSearcher minimizer) {
+
+    useAlphaFile = true;
+    boolean oldUseSigmoid = useSigmoid;
+    useSigmoid = false;
+
+    Function<Double,Double> negativeScorer =
+      new Function<Double,Double> ()
+      {
+        public Double apply(Double cToTry) {
+          C = cToTry;
+          SVMLightClassifier<L, F> classifier = trainClassifierBasic(trainSet);
+          double score = scorer.score(classifier,devSet);
+          return -score;
+        }
+      };
+
+    C = minimizer.minimize(negativeScorer);
+
+    useAlphaFile = false;
+    useSigmoid = oldUseSigmoid;
+  }
+
+  @Deprecated
+  public SVMLightClassifier<L, F> trainClassifier(List<RVFDatum<L, F>> examples) {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  private boolean tuneHeldOut = false;
+  private boolean tuneCV = false;
+  private Scorer<L> scorer = new MultiClassAccuracyStats<L>();
+  private LineSearcher tuneMinimizer = new GoldenSectionLineSearch(true);
+  private int folds;
+  private double heldOutPercent;
+
+  public double getHeldOutPercent() {
+    return heldOutPercent;
+  }
+
+  public void setHeldOutPercent(double heldOutPercent) {
+    this.heldOutPercent = heldOutPercent;
+  }
+
+  public int getFolds() {
+    return folds;
+  }
+
+  public void setFolds(int folds) {
+    this.folds = folds;
+  }
+
+  public LineSearcher getTuneMinimizer() {
+    return tuneMinimizer;
+  }
+
+  public void setTuneMinimizer(LineSearcher minimizer) {
+    this.tuneMinimizer = minimizer;
+  }
+
+  public Scorer getScorer() {
+    return scorer;
+  }
+
+  public void setScorer(Scorer<L> scorer) {
+    this.scorer = scorer;
+  }
+
+  public boolean getTuneCV() {
+    return tuneCV;
+  }
+
+  public void setTuneCV(boolean tuneCV) {
+    this.tuneCV = tuneCV;
+  }
+
+  public boolean getTuneHeldOut() {
+    return tuneHeldOut;
+  }
+
+  public void setTuneHeldOut(boolean tuneHeldOut) {
+    this.tuneHeldOut = tuneHeldOut;
+  }
+
+  public int getSvmLightVerbosity() {
+    return svmLightVerbosity;
+  }
+
+  public void setSvmLightVerbosity(int svmLightVerbosity) {
+    this.svmLightVerbosity = svmLightVerbosity;
+  }
+
+  public SVMLightClassifier<L, F> trainClassifier(GeneralDataset<L, F> dataset) {
+    if (tuneHeldOut) {
+      heldOutSetC(dataset, heldOutPercent, scorer, tuneMinimizer);
+    } else if (tuneCV) {
+      crossValidateSetC(dataset, folds, scorer, tuneMinimizer);
+    }
+    return trainClassifierBasic(dataset);
+  }
+
+  Pattern whitespacePattern = Pattern.compile("\\s+");
+
+  public SVMLightClassifier<L, F> trainClassifierBasic(GeneralDataset<L, F> dataset) {
+    Index<L> labelIndex = dataset.labelIndex();
+    Index<F> featureIndex = dataset.featureIndex;
+    boolean multiclass = (dataset.numClasses() > 2);
+    try {
+
+      // this is the file that the model will be saved to
+      File modelFile = File.createTempFile("svm-", ".model");
+      if (deleteTempFilesOnExit) {
+        modelFile.deleteOnExit();
+      }
+
+      // this is the file that the svm light formated dataset
+      // will be printed to
+      File dataFile = File.createTempFile("svm-", ".data");
+      if (deleteTempFilesOnExit) {
+        dataFile.deleteOnExit();
+      }
+
+      // print the dataset
+      PrintWriter pw = new PrintWriter(new FileWriter(dataFile));
+      dataset.printSVMLightFormat(pw);
+      pw.close();
+
+      // -v 0 makes it not verbose
+      // -m 400 gives it a larger cache, for faster training
+      String cmd = (multiclass ? svmStructLearn : svmLightLearn) + " -v " + svmLightVerbosity + " -m 400 ";
+
+      // set the value of C if we have one specified
+      if (C > 0.0) cmd = cmd + " -c " + C + " ";  // C value
+
+      // Alpha File
+      if (useAlphaFile) {
+        File newAlphaFile = File.createTempFile("svm-", ".alphas");
+        if (deleteTempFilesOnExit) {
+          newAlphaFile.deleteOnExit();
+        }
+        cmd = cmd + " -a " + newAlphaFile.getAbsolutePath();
+        if (alphaFile != null) {
+          cmd = cmd + " -y " + alphaFile.getAbsolutePath();
+        }
+        alphaFile = newAlphaFile;
+      }
+
+      // File and Model Data
+      cmd = cmd + " " + dataFile.getAbsolutePath() + " " + modelFile.getAbsolutePath();
+
+      if (verbose) System.err.println("<< "+cmd+" >>");
+

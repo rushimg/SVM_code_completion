@@ -1,0 +1,33 @@
+  public static class ArabicMorphoFeatures extends MorphoFeatures {
+
+    private static final long serialVersionUID = -4611776415583633186L;
+
+    @Override
+    public MorphoFeatures fromTagString(String str) {
+      String[] feats = str.split("\\-");
+      MorphoFeatures mFeats = new ArabicMorphoFeatures();
+      // First element is the base POS
+//      String baseTag = feats[0];
+      for(int i = 1; i < feats.length; i++) {
+        String[] keyValue = feats[i].split(KEY_VAL_DELIM);
+        if(keyValue.length != 2) continue;
+        MorphoFeatureType fName = MorphoFeatureType.valueOf(keyValue[0].trim());
+        mFeats.addFeature(fName, keyValue[1].trim());
+      }
+      return mFeats;
+    }
+
+    @Override
+    public String getTag(String basePartOfSpeech) {
+      StringBuilder sb = new StringBuilder(basePartOfSpeech);
+      // Iterate over feature list so that features are added in the same order
+      // for every feature spec.
+      for (MorphoFeatureType feat : MorphoFeatureType.values()) {
+        if (hasFeature(feat)) {
+          sb.append(String.format("-%s:%s",feat,fSpec.get(feat)));
+        }
+      }
+      return sb.toString();
+    }
+  }
+

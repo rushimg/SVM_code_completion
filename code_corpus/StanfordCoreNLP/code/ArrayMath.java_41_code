@@ -1,0 +1,68 @@
+  public static double logSum(double[] logInputs, int fromIndex, int afterIndex, int stride) {
+    if (logInputs.length == 0)
+      throw new IllegalArgumentException();
+    if (fromIndex >= 0 && afterIndex < logInputs.length && fromIndex >= afterIndex)
+      return Double.NEGATIVE_INFINITY;
+    int maxIdx = fromIndex;
+    double max = logInputs[fromIndex];
+    for (int i = fromIndex + stride; i < afterIndex; i += stride) {
+      if (logInputs[i] > max) {
+        maxIdx = i;
+        max = logInputs[i];
+      }
+    }
+    boolean haveTerms = false;
+    double intermediate = 0.0;
+    double cutoff = max - SloppyMath.LOGTOLERANCE;
+    // we avoid rearranging the array and so test indices each time!
+    for (int i = fromIndex; i < afterIndex; i += stride) {
+      if (i != maxIdx && logInputs[i] > cutoff) {
+        haveTerms = true;
+        intermediate += Math.exp(logInputs[i] - max);
+      }
+    }
+    if (haveTerms) {
+      return max + Math.log(1.0 + intermediate);  // using Math.log1p(intermediate) may be more accurate, but is slower
+    } else {
+      return max;
+    }
+  }
+
+  public static double logSum(List<Double> logInputs) {
+    return logSum(logInputs, 0, logInputs.size());
+  }
+
+  public static double logSum(List<Double> logInputs, int fromIndex, int toIndex) {
+    int length = logInputs.size();
+    if (length == 0)
+      throw new IllegalArgumentException();
+    if(fromIndex >= 0 && toIndex < length && fromIndex >= toIndex)
+      return Double.NEGATIVE_INFINITY;
+    int maxIdx = fromIndex;
+    double max = logInputs.get(fromIndex);
+    for (int i = fromIndex+1; i < toIndex; i++) {
+      double d = logInputs.get(i);
+      if (d > max) {
+        maxIdx = i;
+        max = d;
+      }
+    }
+    boolean haveTerms = false;
+    double intermediate = 0.0;
+    double cutoff = max - SloppyMath.LOGTOLERANCE;
+    // we avoid rearranging the array and so test indices each time!
+    for (int i = fromIndex; i < toIndex; i++) {
+      double d = logInputs.get(i);
+      if (i != maxIdx && d > cutoff) {
+        haveTerms = true;
+        intermediate += Math.exp(d - max);
+      }
+    }
+    if (haveTerms) {
+      return max + Math.log(1.0 + intermediate);
+    } else {
+      return max;
+    }
+  }
+
+

@@ -1,0 +1,25 @@
+  public CacheMap(int numEntries, float loadFactor, boolean accessOrder,
+                  String backingFile) {
+    // Make sure its capacity is big enough so that we don't have to resize it
+    // even if it gets one more element than we are expecting.  Round up the
+    // division
+    super((int)Math.ceil((numEntries+1)/loadFactor), loadFactor, accessOrder);
+    CACHE_ENTRIES = numEntries;
+    this.backingFile = backingFile;
+    entriesSinceLastWritten = 0;
+    this.frequencyToWrite = numEntries/128 + 1;
+    hits = misses = puts = 0;
+  }
+
+  public CacheMap(int numEntries, float loadFactor, boolean accessOrder) {
+    this(numEntries, loadFactor, accessOrder, null);
+  }
+
+  public CacheMap(int numEntries, float loadFactor) {
+    this(numEntries, loadFactor, false, null);
+  }
+
+  public CacheMap(int numEntries) {
+    this(numEntries, 0.75f, false, null);
+  }
+

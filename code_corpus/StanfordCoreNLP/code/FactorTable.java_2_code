@@ -1,0 +1,51 @@
+    [2,3] -> 11
+     0 1 2 3
+     4 5 6 7
+     8 9 10 11
+    [0,2] -> 2
+
+    summary:
+    index % numClasses -> curr timestamp index
+    index / numClasses -> prev timestamp index
+  private int indexOf(int[] entry) {
+    int index = 0;
+    for (int i = 0; i < entry.length; i++) {
+      index += entry[i];
+    }
+    // if (index < 0) throw new RuntimeException("index=" + index + " entry=" + Arrays.toString(entry)); // only if overflow
+    return index;
+  }
+
+  private int indexOf(int[] front, int end) {
+    int index = 0;
+    for (int i = 0; i < front.length; i++) {
+      index += front[i];
+    }
+    index += end;
+    return index;
+  }
+
+  private int indexOf(int front, int[] end) {
+    int index = front;
+    for (int i = 0; i < end.length; i++) {
+      index += end[i];
+    }
+    return index;
+  }
+
+  private int[] indicesEnd(int[] entries) {
+    int index = 0;
+    for (int i = 0; i < entries.length; i++) {
+      index += entries[i];
+    }
+    int[] indices = new int[SloppyMath.intPow(numClasses, windowSize - entries.length)];
+    final int offset = SloppyMath.intPow(numClasses, entries.length);
+    for (int i = 0; i < indices.length; i++) {
+      indices[i] = index;
+      index += offset;
+    }
+    // System.err.println("indicesEnd returning: " + Arrays.toString(indices));
+    return indices;
+  }
+
+

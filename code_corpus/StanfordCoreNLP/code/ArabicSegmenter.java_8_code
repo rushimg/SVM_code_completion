@@ -1,0 +1,75 @@
+  private void evaluateRawText(PrintWriter pwOut) {
+    // TODO(spenceg): Evaluate raw input w.r.t. a reference that might have different numbers
+    // of characters per sentence. Need to implement a monotonic sequence alignment algorithm
+    // to align the two character strings.
+    //    String gold = flags.answerFile;
+    //    String rawFile = flags.testFile;
+    throw new RuntimeException("Not yet implemented!");
+  }
+
+  public void serializeSegmenter(String filename) {
+    classifier.serializeClassifier(filename);
+  }
+
+  public void loadSegmenter(String filename, Properties p) {
+    classifier = new CRFClassifier<CoreLabel>(p);
+    try {
+      classifier.loadClassifier(new File(filename), p);
+    } catch (ClassCastException e) {
+      e.printStackTrace();
+    } catch (IOException e) {
+      e.printStackTrace();
+    } catch (ClassNotFoundException e) {
+      e.printStackTrace();
+    }
+  }
+
+  @Override
+  public void loadSegmenter(String filename) {
+    loadSegmenter(filename, new Properties());
+  }
+
+
+  private static String usage() {
+    String nl = System.getProperty("line.separator");
+    StringBuilder sb = new StringBuilder();
+    sb.append("Usage: java ").append(ArabicSegmenter.class.getName()).append(" OPTS < file_to_segment").append(nl);
+    sb.append(nl).append(" Options:").append(nl);
+    sb.append("  -help                : Print this message.").append(nl);
+    sb.append("  -orthoOptions str    : Comma-separated list of orthographic normalization options to pass to ArabicTokenizer.").append(nl);
+    sb.append("  -tokenized           : Text is already tokenized. Do not run internal tokenizer.").append(nl);
+    sb.append("  -trainFile file      : Gold segmented IOB training file.").append(nl);
+    sb.append("  -testFile  file      : Gold segmented IOB evaluation file.").append(nl);
+    sb.append("  -textFile  file      : Raw input file to be segmented.").append(nl);
+    sb.append("  -loadClassifier file : Load serialized classifier from file.").append(nl);
+    sb.append("  -prefixMarker char   : Mark segmented prefixes with specified character.").append(nl);
+    sb.append("  -suffixMarker char   : Mark segmented suffixes with specified character.").append(nl);
+    sb.append("  -nthreads num        : Number of threads  (default: 1)").append(nl);
+    sb.append("  -tedEval prefix      : Output TedEval-compliant gold and parse files.").append(nl);
+    sb.append("  -featureFactory cls  : Name of feature factory class  (default: ").append(defaultFeatureFactory);
+    sb.append(")").append(nl);
+    sb.append("  -withDomains         : Train file (if given) and eval file have domain labels.").append(nl);
+    sb.append("  -domain dom          : Assume one domain for all data (default: 123)").append(nl);
+    sb.append(nl).append(" Otherwise, all flags correspond to those present in SeqClassifierFlags.java.").append(nl);
+    return sb.toString();
+  }
+
+  private static Map<String,Integer> optionArgDefs() {
+    Map<String,Integer> optionArgDefs = Generics.newHashMap();
+    optionArgDefs.put("help", 0);
+    optionArgDefs.put("orthoOptions", 1);
+    optionArgDefs.put("tokenized", 0);
+    optionArgDefs.put("trainFile", 1);
+    optionArgDefs.put("testFile", 1);
+    optionArgDefs.put("textFile", 1);
+    optionArgDefs.put("loadClassifier", 1);
+    optionArgDefs.put("prefixMarker", 1);
+    optionArgDefs.put("suffixMarker", 1);
+    optionArgDefs.put("nthreads", 1);
+    optionArgDefs.put("tedEval", 1);
+    optionArgDefs.put("featureFactory", 1);
+    optionArgDefs.put("withDomains", 0);
+    optionArgDefs.put("domain", 1);
+    return optionArgDefs;
+  }
+

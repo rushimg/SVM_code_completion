@@ -1,0 +1,37 @@
+  private double probLemmaTag(String word, int loc, int tagId, int lemmaId) {
+    double cL = lemmaTag.totalCount(lemmaId);
+    double cLT = lemmaTag.getCount(lemmaId, tagId);
+    
+    // p_L
+    double p_L = cL / lemmaTag.totalCount();
+    
+    // p_T
+    double cTseen = tagCounter.getCount(tagId);
+    double p_T = cTseen / tagCounter.totalCount();
+    
+    // p_T_L
+    double p_L_T = 0.0;
+    if (cL > 0.0) { // Seen lemma
+      double p_T_L = 0.0;
+      if (cL > 100.0 && cLT > 0.0) {
+        p_T_L = cLT / cL;
+      } else {
+        double cTunseen = lemmaTagUnseen.getCount(tagId);
+        // TODO(spenceg): p_T_U is 0??
+        double p_T_U = cTunseen / lemmaTagUnseen.totalCount();
+      }
+    
+    } else { // Unseen lemma. Score based on the word signature (of the surface form)
+      // Hack
+      double cTunseen = lemmaTagUnseen.getCount(tagId);
+      p_L_T = cTunseen / tagCounter.totalCount();
+
+      //      int wordId = wordIndex.indexOf(word);
+//      IntTaggedWord iTW = new IntTaggedWord(wordId, tagId);
+//      double c_T = tagCounter.getCount(tagId);
+//      p_L_T = Math.exp(getUnknownWordModel().score(iTW, loc, c_T, tagCounter.totalCount(), smooth[0], word));
+    }
+    
+    return p_L_T;
+  }
+

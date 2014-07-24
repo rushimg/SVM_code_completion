@@ -1,0 +1,86 @@
+  public static MachineReading makeMachineReadingForAnnotation(
+      GenericDataSetReader reader,
+      Extractor entityExtractor, 
+      Extractor relationExtractor,
+      Extractor eventExtractor,
+      Extractor consistencyChecker,
+      Extractor relationPostProcessor,
+      boolean testRelationsUsingPredictedEntities,
+      boolean verbose) {
+    MachineReading mr = new MachineReading();
+    
+    // readers needed to assign syntactic heads to predicted entities
+    mr.reader = reader;
+    mr.auxReader = null;
+    
+    // no results printers needed
+    mr.entityResultsPrinterSet = new HashSet<ResultsPrinter>();
+    mr.setRelationResultsPrinterSet(new HashSet<ResultsPrinter>());
+    
+    // create the storage for the generated annotations
+    mr.predictions = new Annotation[3][1];
+    
+    // create the entity/relation classifiers
+    mr.entityExtractor = entityExtractor;
+    MachineReadingProperties.extractEntities = (entityExtractor != null ? true : false);
+    mr.relationExtractor = relationExtractor;
+    MachineReadingProperties.extractRelations = (relationExtractor != null ? true : false);
+    MachineReadingProperties.testRelationsUsingPredictedEntities = testRelationsUsingPredictedEntities;
+    mr.eventExtractor = eventExtractor;
+    MachineReadingProperties.extractEvents = (eventExtractor != null ? true : false);
+    mr.consistencyChecker = consistencyChecker;
+    mr.relationExtractionPostProcessor = relationPostProcessor;
+
+    Level level = verbose ? Level.FINEST : Level.SEVERE; 
+    if (entityExtractor != null)
+      entityExtractor.setLoggerLevel(level);
+    if (mr.relationExtractor != null)
+      mr.relationExtractor.setLoggerLevel(level);
+    if (mr.eventExtractor != null)
+      mr.eventExtractor.setLoggerLevel(level);
+    
+    return mr;
+  }
+  
+  public static MachineReading makeMachineReading(String [] args) throws IOException {
+    // install global parameters
+    MachineReading mr = new MachineReading(args);
+    //TODO: 
+    Execution.fillOptions(MachineReadingProperties.class, args);
+    //Arguments.parse(args, mr);
+    System.err.println("PERCENTAGE OF TRAIN: " + MachineReadingProperties.percentageOfTrain);
+    
+    // convert args to properties
+    Properties props = StringUtils.argsToProperties(args);
+    if (props == null) {
+      throw new RuntimeException("ERROR: failed to find Properties in the given arguments!");
+    }
+    
+    String logLevel = props.getProperty("logLevel", "INFO");
+    setLoggerLevel(Level.parse(logLevel.toUpperCase()));
+    
+    // install reader specific parameters
+    GenericDataSetReader reader = mr.makeReader(props);
+    GenericDataSetReader auxReader = mr.makeAuxReader();
+    Level readerLogLevel = Level.parse(MachineReadingProperties.readerLogLevel.toUpperCase());
+    reader.setLoggerLevel(readerLogLevel);
+    if (auxReader != null) {
+      auxReader.setLoggerLevel(readerLogLevel);
+    }
+    System.err.println("The reader log level is set to " + readerLogLevel);
+    //Execution.fillOptions(GenericDataSetReaderProps.class, args);
+    //Arguments.parse(args, reader);
+    
+    // create the pre-processing pipeline
+    StanfordCoreNLP pipe = new StanfordCoreNLP(props, false);
+    reader.setProcessor(pipe);
+    if (auxReader != null) {
+      auxReader.setProcessor(pipe);
+    }
+    
+    // create the results printers
+    mr.makeResultsPrinters(args);
+    
+    return mr;
+  }
+  

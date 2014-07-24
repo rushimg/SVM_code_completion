@@ -1,0 +1,79 @@
+    @SuppressWarnings("unchecked")
+    protected CollectionPermutationIter<V> createPermutationIterator(
+        Set<V> vertexSet1,
+        Set<V> vertexSet2)
+    {
+        if (vertexSet1.size() != vertexSet2.size()) {
+            // throw new IllegalArgumentException("the two vertx-sets
+            // parameters must be of"
+            // +"the same size. The first size was:"+vertexSet1.size()
+            // +" the other size was:" +vertexSet2.size() );
+            return null; // only instead of exception
+        }
+
+        // 1//
+        EquivalenceSet [] eqGroupArray1 =
+            EquivalenceSetCreator.createEqualityGroupOrderedArray(
+                vertexSet1,
+                this.vertexComparator,
+                this.graph1);
+
+        // 2//
+        EquivalenceSet [] eqGroupArray2 =
+            EquivalenceSetCreator.createEqualityGroupOrderedArray(
+                vertexSet2,
+                this.vertexComparator,
+                this.graph2);
+
+        // 3//
+        boolean reorderSuccess =
+            reorderTargetArrayToMatchSourceOrder(eqGroupArray1, eqGroupArray2); // 2 is the target
+        if (!reorderSuccess) {
+            // if reordering fail , no match can be done
+            return null;
+        }
+
+        // reorder set1 (source), so when we work with the flat array of the
+        // second array,
+        // the permutations will be relevant.
+        // note that it does not start in any way related to eqGroup sizes.
+
+        V [] reorderingVertexSet1Temp = (V []) new Object[vertexSet1.size()];
+        fillElementsflatArray(eqGroupArray1, reorderingVertexSet1Temp);
+        vertexSet1.clear();
+        vertexSet1.addAll(Arrays.asList(reorderingVertexSet1Temp));
+
+        // 4//use CompoundPermutationIter to permute only inside groups.
+        // the CollectionPermutationIter needs a array/set of objects and a
+        // permuter which will
+        // work on that set/array order. lets make these two:
+        // 1. create array of the vertexes , by flattening the eq.group array
+        // contents
+
+        V [] flatVertexArray = (V []) new Object[vertexSet2.size()];
+        fillElementsflatArray(eqGroupArray2, flatVertexArray);
+
+        // 2. make the permuter according to the groups size
+        int [] groupSizesArray = new int[eqGroupArray1.length];
+
+        // iterate over the EqualityGroup array
+        for (
+            int eqGroupCounter = 0;
+            eqGroupCounter < eqGroupArray2.length;
+            eqGroupCounter++)
+        {
+            // now for (.2.) size count
+            groupSizesArray[eqGroupCounter] =
+                eqGroupArray2[eqGroupCounter].size();
+        }
+
+        ArrayPermutationsIter arrayPermIter =
+            PermutationFactory.createByGroups(groupSizesArray);
+        CollectionPermutationIter<V> vertexPermIter =
+            new CollectionPermutationIter<V>(
+                Arrays.asList(flatVertexArray),
+                arrayPermIter);
+
+        return vertexPermIter;
+    }
+

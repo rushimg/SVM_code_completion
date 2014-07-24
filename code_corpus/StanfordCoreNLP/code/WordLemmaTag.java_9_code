@@ -1,0 +1,22 @@
+  public void setFromString(String labelStr) {
+    setFromString(labelStr, DIVIDER);
+  }
+
+  public void setFromString(String labelStr, String divider) {
+    int first = labelStr.indexOf(divider);
+    int second = labelStr.lastIndexOf(divider);
+    if (first == second) {
+      setWord(labelStr.substring(0, first));
+      setTag(labelStr.substring(first + 1));
+      setLemma(Morphology.stemStatic(labelStr.substring(0, first), labelStr.substring(first + 1)).word());
+    } else if (first >= 0) {
+      setWord(labelStr.substring(0, first));
+      setLemma(labelStr.substring(first + 1, second));
+      setTag(labelStr.substring(second + 1));
+    } else {
+      setWord(labelStr);
+      setLemma(null);
+      setTag(null);
+    }
+  }
+

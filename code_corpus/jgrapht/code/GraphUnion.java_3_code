@@ -1,0 +1,74 @@
+public class GraphUnion<V, E, G extends Graph<V, E>>
+    extends AbstractGraph<V, E>
+    implements Serializable
+{
+    //~ Static fields/initializers ---------------------------------------------
+
+    private static final long serialVersionUID = -740199233080172450L;
+
+    private static final String READ_ONLY = "union of graphs is read-only";
+
+    //~ Instance fields --------------------------------------------------------
+
+    private G g1;
+    private G g2;
+    private WeightCombiner operator;
+
+    //~ Constructors -----------------------------------------------------------
+
+    public GraphUnion(G g1, G g2, WeightCombiner operator)
+    {
+        if (g1 == null) {
+            throw new NullPointerException("g1 is null");
+        }
+        if (g2 == null) {
+            throw new NullPointerException("g2 is null");
+        }
+        if (g1 == g2) {
+            throw new IllegalArgumentException("g1 is equal to g2");
+        }
+        this.g1 = g1;
+        this.g2 = g2;
+        this.operator = operator;
+    }
+
+    public GraphUnion(G g1, G g2)
+    {
+        this(g1, g2, WeightCombiner.SUM);
+    }
+
+    //~ Methods ----------------------------------------------------------------
+
+    public Set<E> getAllEdges(V sourceVertex, V targetVertex)
+    {
+        Set<E> res = new HashSet<E>();
+        if (g1.containsVertex(sourceVertex)
+            && g1.containsVertex(targetVertex))
+        {
+            res.addAll(g1.getAllEdges(sourceVertex, targetVertex));
+        }
+        if (g2.containsVertex(sourceVertex)
+            && g2.containsVertex(targetVertex))
+        {
+            res.addAll(g2.getAllEdges(sourceVertex, targetVertex));
+        }
+        return Collections.unmodifiableSet(res);
+    }
+
+    public E getEdge(V sourceVertex, V targetVertex)
+    {
+        E res = null;
+        if (g1.containsVertex(sourceVertex)
+            && g1.containsVertex(targetVertex))
+        {
+            res = g1.getEdge(sourceVertex, targetVertex);
+        }
+        if ((res == null)
+            && g2.containsVertex(sourceVertex)
+            && g2.containsVertex(targetVertex))
+        {
+            res = g2.getEdge(sourceVertex, targetVertex);
+        }
+        return res;
+    }
+

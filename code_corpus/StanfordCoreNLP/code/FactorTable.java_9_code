@@ -1,0 +1,118 @@
+  public double conditionalLogProbGivenNext(int[] given, int of) {
+    if (given.length != windowSize - 1) {
+      throw new IllegalArgumentException("conditionalLogProbGivenNext requires given one less than clique size (" +
+          windowSize + ") but was " + Arrays.toString(given));
+    }
+    int[] label = indicesEnd(given);
+    double[] masses = new double[label.length];
+    for (int i = 0; i < masses.length; i++) {
+      masses[i] = table[label[i]];
+    }
+    double z = ArrayMath.logSum(masses);
+
+    return table[indexOf(of, given)] - z;
+  }
+
+  public double unnormalizedLogProbFront(int[] labels) {
+    int startIndex = indicesFront(labels);
+    int numCellsToSum = SloppyMath.intPow(numClasses, windowSize - labels.length);
+    // double[] masses = new double[labels.length];
+    // for (int i = 0; i < masses.length; i++) {
+    //   masses[i] = table[labels[i]];
+    // }
+    return ArrayMath.logSum(table, startIndex, startIndex + numCellsToSum);
+  }
+
+  public double logProbFront(int[] label) {
+    return unnormalizedLogProbFront(label) - totalMass();
+  }
+
+  public double unnormalizedLogProbFront(int label) {
+    int[] labels = { label };
+    return unnormalizedLogProbFront(labels);
+  }
+
+  public double logProbFront(int label) {
+    return unnormalizedLogProbFront(label) - totalMass();
+  }
+
+  public double unnormalizedLogProbEnd(int[] labels) {
+    labels = indicesEnd(labels);
+    double[] masses = new double[labels.length];
+    for (int i = 0; i < masses.length; i++) {
+      masses[i] = table[labels[i]];
+    }
+    return ArrayMath.logSum(masses);
+  }
+
+  public double logProbEnd(int[] labels) {
+    return unnormalizedLogProbEnd(labels) - totalMass();
+  }
+
+  public double unnormalizedLogProbEnd(int label) {
+    int[] labels = { label };
+    return unnormalizedLogProbEnd(labels);
+  }
+
+  public double logProbEnd(int label) {
+    return unnormalizedLogProbEnd(label) - totalMass();
+  }
+
+  public double getValue(int index) {
+    return table[index];
+  }
+
+  public double getValue(int[] label) {
+    return table[indexOf(label)];
+  }
+
+  public void setValue(int index, double value) {
+    table[index] = value;
+  }
+
+  public void setValue(int[] label, double value) {
+    // try{
+    table[indexOf(label)] = value;
+    // } catch (Exception e) {
+    // e.printStackTrace();
+    // System.err.println("Table length: " + table.length + " indexOf(label): "
+    // + indexOf(label));
+    // throw new ArrayIndexOutOfBoundsException(e.toString());
+    // // System.exit(1);
+    // }
+  }
+
+  public void incrementValue(int[] label, double value) {
+    incrementValue(indexOf(label), value);
+  }
+
+  public void incrementValue(int index, double value) {
+    table[index] += value;
+  }
+
+  void logIncrementValue(int index, double value) {
+    table[index] = SloppyMath.logAdd(table[index], value);
+  }
+
+  public void logIncrementValue(int[] label, double value) {
+    logIncrementValue(indexOf(label), value);
+  }
+
+  public void multiplyInFront(FactorTable other) {
+    int divisor = SloppyMath.intPow(numClasses, windowSize - other.windowSize());
+    for (int i = 0; i < table.length; i++) {
+      table[i] += other.getValue(i / divisor);
+    }
+  }
+
+  public void multiplyInEnd(FactorTable other) {
+    int divisor = SloppyMath.intPow(numClasses, other.windowSize());
+    for (int i = 0; i < table.length; i++) {
+      table[i] += other.getValue(i % divisor);
+    }
+  }
+
+  public FactorTable sumOutEnd() {
+    FactorTable ft = new FactorTable(numClasses, windowSize - 1);
+    for (int i = 0, sz = ft.size(); i < sz; i++) {
+    }

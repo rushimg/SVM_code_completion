@@ -1,0 +1,55 @@
+  public GrammaticalStructure(Tree t, Collection<GrammaticalRelation> relations,
+                              Lock relationsLock, HeadFinder hf, Filter<String> puncFilter) {
+    super(t); // makes a Tree with TreeGraphNode nodes
+    // add head word and tag to phrase nodes
+    if (hf == null) {
+      throw new AssertionError("Cannot use null HeadFinder");
+    }
+    root.percolateHeads(hf);
+    if (root.value() == null) {
+      root.setValue("ROOT");  // todo: cdm: it doesn't seem like this line should be here
+    }
+    // add dependencies, using heads
+    this.puncFilter = puncFilter;
+    NoPunctFilter puncDepFilter = new NoPunctFilter(puncFilter);
+    NoPunctTypedDependencyFilter puncTypedDepFilter = new NoPunctTypedDependencyFilter(puncFilter);
+
+    DirectedMultiGraph<TreeGraphNode, GrammaticalRelation> basicGraph = new DirectedMultiGraph<TreeGraphNode, GrammaticalRelation>();
+    //DirectedMultiGraph<TreeGraphNode, GrammaticalRelation> ncGraph = new DirectedMultiGraph<TreeGraphNode, GrammaticalRelation>();
+
+    // analyze the root (and its descendants, recursively)
+    if (relationsLock != null) {
+      relationsLock.lock();
+    }
+    try {
+      analyzeNode(root, root, relations, hf, puncFilter, basicGraph);
+    }
+    finally {
+      if (relationsLock != null) {
+        relationsLock.unlock();
+      }
+    }
+
+    attachStrandedNodes(root, root, false, puncFilter, basicGraph);
+
+    addGovernorArcLabels(basicGraph);
+    
+    // add typed dependencies
+    typedDependencies = getDeps(puncTypedDepFilter, basicGraph);
+    allTypedDependencies = Generics.newArrayList(typedDependencies);
+    getExtraDeps(allTypedDependencies, puncTypedDepFilter);
+  }
+
+
+  private static void throwDepFormatException(String dep) {
+     throw new RuntimeException(String.format("Dependencies should be for the format 'type(arg-idx, arg-idx)'. Could not parse '%s'", dep));
+  }
+
+  private static void addGovernorArcLabels(DirectedMultiGraph<TreeGraphNode, GrammaticalRelation> basicGraph) {
+    for (TreeGraphNode gov : basicGraph.getAllVertices()) {
+      for (TreeGraphNode dep : basicGraph.getChildren(gov)) {
+        dep.headWordNode().addArc(GrammaticalRelation.getAnnotationClass(GOVERNOR), gov.headWordNode());
+      }
+    }
+  }
+

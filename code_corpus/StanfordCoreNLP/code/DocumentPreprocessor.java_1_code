@@ -1,0 +1,17 @@
+public class DocumentPreprocessor implements Iterable<List<HasWord>> {
+
+  public static enum DocType {Plain, XML}
+
+  public static final String[] DEFAULT_SENTENCE_DELIMS = {".", "?", "!"};
+
+  // inputReader is used in a fairly yucky way at the moment to communicate
+  // from a XMLIterator across to a PlainTextIterator.  Maybe redo by making
+  // the inner classes static and explicitly passing things around.
+  private Reader inputReader;
+  private final DocType docType;
+
+  //Configurable options
+  private TokenizerFactory<? extends HasWord> tokenizerFactory = PTBTokenizer.coreLabelFactory();
+  private String[] sentenceFinalPuncWords = DEFAULT_SENTENCE_DELIMS;
+  private Function<List<HasWord>,List<HasWord>> escaper = null;
+  private String sentenceDelimiter = null;

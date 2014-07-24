@@ -1,0 +1,48 @@
+public class ExhaustivePCFGParser implements Scorer, KBestViterbiParser {
+
+  // public static long insideTime = 0;  // for profiling
+  // public static long outsideTime = 0;
+
+  protected final String goalStr;
+  protected final Index<String> stateIndex;
+  protected final Index<String> wordIndex;
+  protected final Index<String> tagIndex;
+
+  protected final TreeFactory tf;
+
+  protected final BinaryGrammar bg;
+  protected final UnaryGrammar ug;
+  protected final Lexicon lex;
+  protected final Options op;
+  protected final TreebankLanguagePack tlp;
+
+  protected OutsideRuleFilter orf;
+
+  // inside scores
+  protected float[][][] iScore;  // start idx, end idx, state -> logProb (ragged; null for end <= start)
+  // outside scores
+  protected float[][][] oScore;  // start idx, end idx, state -> logProb
+  protected float bestScore;
+
+  protected int[][][] wordsInSpan; // number of words in span with this state
+
+  protected boolean[][] oFilteredStart; // [start][state]; only used by unused outsideRuleFilter
+  protected boolean[][] oFilteredEnd; // [end][state]; only used by unused outsideRuleFilter
+
+  protected boolean[][] iPossibleByL; // [start][state]
+  protected boolean[][] iPossibleByR; // [end][state]
+  protected boolean[][] oPossibleByL; // [start][state]
+  protected boolean[][] oPossibleByR; // [end][state]
+
+  protected int[] words;  // words of sentence being parsed as word Numberer ints
+  private int[] beginOffsets;
+  private int[] endOffsets;
+  private CoreLabel[] originalCoreLabels;
+  private HasTag[] originalTags;
+  protected int length; // one larger than true length of sentence; includes boundary symbol in count
+  protected boolean[][] tags;
+  protected int myMaxLength = -0xDEADBEEF;
+
+  protected final int numStates;
+  protected int arraySize = 0;
+

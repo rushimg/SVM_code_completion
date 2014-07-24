@@ -1,0 +1,40 @@
+    if (useMaxentDepGrammar) {
+      return new Extractor() {
+        public Object extract(Collection<Tree> trees) {
+          ChineseWordFeatureExtractor wfe = new ChineseWordFeatureExtractor(trees);
+          ChineseWordFeatureExtractor wfe2 = new ChineseWordFeatureExtractor(trees);
+          wfe.setFeatureLevel(2);
+          wfe2.turnOffWordFeatures = true;
+          wfe2.setFeatureLevel(depGramFeatureLevel);
+          MaxentDependencyGrammar dg = new MaxentDependencyGrammar(op.tlpParams, wfe, wfe2, true, false, false);
+          dg.train(trees);
+          return dg;
+        }
+
+        public Object extract(Iterator<Tree> iterator, Function<Tree, Tree> f) {
+          throw new UnsupportedOperationException();
+        }
+      };
+    if (useSimilarWordMap) {
+      return new MLEDependencyGrammarExtractor(op, wordIndex, tagIndex) {
+        @Override
+        public MLEDependencyGrammar formResult() {
+          wordIndex.indexOf(Lexicon.UNKNOWN_WORD, true);
+          ChineseSimWordAvgDepGrammar dg = new ChineseSimWordAvgDepGrammar(tlpParams, directional, useDistance, useCoarseDistance, op.trainOptions.basicCategoryTagsInDependencyGrammar, op, wordIndex, tagIndex);
+          if (lex == null) {
+            throw new RuntimeException("Attempt to create ChineseSimWordAvgDepGrammar before Lexicon!!!");
+          } else {
+            dg.setLex(lex);
+          }
+          for (IntDependency dependency : dependencyCounter.keySet()) {
+            dg.addRule(dependency, dependencyCounter.getCount(dependency));
+          }
+          return dg;
+        }
+
+     };
+    } else {
+      return new MLEDependencyGrammarExtractor(op, wordIndex, tagIndex);
+    }
+  }
+

@@ -1,0 +1,91 @@
+    protected List refreshTicksVertical(Graphics2D g2,
+            Rectangle2D dataArea, RectangleEdge edge) {
+
+        List result = new java.util.ArrayList();
+
+        Font tickLabelFont = getTickLabelFont();
+        g2.setFont(tickLabelFont);
+
+        if (isAutoTickUnitSelection()) {
+            selectAutoTickUnit(g2, dataArea, edge);
+        }
+        DateTickUnit unit = getTickUnit();
+        Date tickDate = calculateLowestVisibleTickValue(unit);
+        Date upperDate = getMaximumDate();
+
+        while (tickDate.before(upperDate)) {
+
+            // could add a flag to make the following correction optional...
+            tickDate = correctTickDateForPosition(tickDate, unit,
+                    this.tickMarkPosition);
+
+            long lowestTickTime = tickDate.getTime();
+            long distance = unit.addToDate(tickDate, this.timeZone).getTime()
+                    - lowestTickTime;
+            int minorTickSpaces = getMinorTickCount();
+            if (minorTickSpaces <= 0) {
+                minorTickSpaces = unit.getMinorTickCount();
+            }
+            for (int minorTick = 1; minorTick < minorTickSpaces; minorTick++) {
+                long minorTickTime = lowestTickTime - distance
+                if (minorTickTime > 0 && getRange().contains(minorTickTime)
+                        && (!isHiddenValue(minorTickTime))) {
+                    result.add(new DateTick(TickType.MINOR,
+                            new Date(minorTickTime), "", TextAnchor.TOP_CENTER,
+                            TextAnchor.CENTER, 0.0));
+                }
+            }
+            if (!isHiddenValue(tickDate.getTime())) {
+                // work out the value, label and position
+                String tickLabel;
+                DateFormat formatter = getDateFormatOverride();
+                if (formatter != null) {
+                    tickLabel = formatter.format(tickDate);
+                }
+                else {
+                    tickLabel = this.tickUnit.dateToString(tickDate);
+                }
+                TextAnchor anchor = null;
+                TextAnchor rotationAnchor = null;
+                double angle = tickLabelAngle;
+                if (isVerticalTickLabels()) {
+                    anchor = TextAnchor.BOTTOM_CENTER;
+                    rotationAnchor = TextAnchor.BOTTOM_CENTER;
+                }
+                else {
+                    if (edge == RectangleEdge.LEFT) {
+                        anchor = TextAnchor.CENTER_RIGHT;
+                        rotationAnchor = TextAnchor.CENTER_RIGHT;
+                    }
+                    else {
+                        anchor = TextAnchor.CENTER_LEFT;
+                        rotationAnchor = TextAnchor.CENTER_LEFT;
+                    }
+                }
+
+                Tick tick = new DateTick(tickDate, tickLabel, anchor,
+                        rotationAnchor, angle);
+                result.add(tick);
+                long currentTickTime = tickDate.getTime();
+                tickDate = unit.addToDate(tickDate, this.timeZone);
+                long nextTickTime = tickDate.getTime();
+                for (int minorTick = 1; minorTick < minorTickSpaces;
+                        minorTick++){
+                    long minorTickTime = currentTickTime
+                            + (nextTickTime - currentTickTime)
+                    if (getRange().contains(minorTickTime)
+                            && (!isHiddenValue(minorTickTime))) {
+                        result.add(new DateTick(TickType.MINOR,
+                                new Date(minorTickTime), "",
+                                TextAnchor.TOP_CENTER, TextAnchor.CENTER,
+                                0.0));
+                    }
+                }
+            }
+            else {
+                tickDate = unit.rollDate(tickDate, this.timeZone);
+            }
+        }
+        return result;
+    }
+

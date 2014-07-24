@@ -1,0 +1,20 @@
+  public CoreNLPProtos.ParseTree toProto(Tree parseTree) {
+    CoreNLPProtos.ParseTree.Builder builder = CoreNLPProtos.ParseTree.newBuilder();
+    // Required fields
+    for (Tree child : parseTree.children()) { builder.addChild(toProto(child)); }
+    // Optional fields
+    IntPair span = parseTree.getSpan();
+    if (span != null) {
+      builder.setYieldBeginIndex(span.getSource());
+      builder.setYieldEndIndex(span.getTarget());
+    }
+    if (parseTree.label() != null) {
+      builder.setValue(parseTree.label().value());
+    }
+    if (!Double.isNaN(parseTree.score())) {
+      builder.setScore(parseTree.score());
+    }
+    // Return
+    return builder.build();
+  }
+

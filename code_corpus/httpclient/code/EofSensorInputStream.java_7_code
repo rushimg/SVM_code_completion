@@ -1,0 +1,17 @@
+    protected void checkEOF(final int eof) throws IOException {
+
+        if ((wrappedStream != null) && (eof < 0)) {
+            try {
+                boolean scws = true; // should close wrapped stream?
+                if (eofWatcher != null) {
+                    scws = eofWatcher.eofDetected(wrappedStream);
+                }
+                if (scws) {
+                    wrappedStream.close();
+                }
+            } finally {
+                wrappedStream = null;
+            }
+        }
+    }
+

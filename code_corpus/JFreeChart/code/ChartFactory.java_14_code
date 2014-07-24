@@ -1,0 +1,44 @@
+    public static JFreeChart createMultiplePieChart3D(String title,
+                                                      CategoryDataset dataset,
+                                                      TableOrder order,
+                                                      boolean legend,
+                                                      boolean tooltips,
+                                                      boolean urls) {
+
+        if (order == null) {
+            throw new IllegalArgumentException("Null 'order' argument.");
+        }
+        MultiplePiePlot plot = new MultiplePiePlot(dataset);
+        plot.setDataExtractOrder(order);
+        plot.setBackgroundPaint(null);
+        plot.setOutlineStroke(null);
+
+        JFreeChart pieChart = new JFreeChart(new PiePlot3D(null));
+        TextTitle seriesTitle = new TextTitle("Series Title",
+                new Font("SansSerif", Font.BOLD, 12));
+        seriesTitle.setPosition(RectangleEdge.BOTTOM);
+        pieChart.setTitle(seriesTitle);
+        pieChart.removeLegend();
+        pieChart.setBackgroundPaint(null);
+        plot.setPieChart(pieChart);
+
+        if (tooltips) {
+            PieToolTipGenerator tooltipGenerator
+                = new StandardPieToolTipGenerator();
+            PiePlot pp = (PiePlot) plot.getPieChart().getPlot();
+            pp.setToolTipGenerator(tooltipGenerator);
+        }
+
+        if (urls) {
+            PieURLGenerator urlGenerator = new StandardPieURLGenerator();
+            PiePlot pp = (PiePlot) plot.getPieChart().getPlot();
+            pp.setURLGenerator(urlGenerator);
+        }
+
+        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT,
+                plot, legend);
+        currentTheme.apply(chart);
+        return chart;
+
+    }
+

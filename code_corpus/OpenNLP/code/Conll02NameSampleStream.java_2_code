@@ -1,0 +1,37 @@
+public class Conll02NameSampleStream implements ObjectStream<NameSample>{
+
+  public enum LANGUAGE {
+    NL,
+    ES
+  }
+
+  public static final int GENERATE_PERSON_ENTITIES = 0x01;
+  public static final int GENERATE_ORGANIZATION_ENTITIES = 0x01 << 1;
+  public static final int GENERATE_LOCATION_ENTITIES = 0x01 << 2;
+  public static final int GENERATE_MISC_ENTITIES = 0x01 << 3;
+
+  public static final String DOCSTART = "-DOCSTART-";
+
+  private final LANGUAGE lang;
+  private final ObjectStream<String> lineStream;
+
+  private final int types;
+
+  public Conll02NameSampleStream(LANGUAGE lang, ObjectStream<String> lineStream, int types) {
+    this.lang = lang;
+    this.lineStream = lineStream;
+    this.types = types;
+  }
+
+  public Conll02NameSampleStream(LANGUAGE lang, InputStreamFactory in, int types) throws IOException {
+    this.lang = lang;
+    try {
+      this.lineStream = new PlainTextByLineStream(in, "UTF-8");
+      System.setOut(new PrintStream(System.out, true, "UTF-8"));
+    } catch (UnsupportedEncodingException e) {
+      // UTF-8 is available on all JVMs, will never happen
+      throw new IllegalStateException(e);
+    }
+    this.types = types;
+  }
+

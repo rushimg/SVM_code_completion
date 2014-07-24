@@ -1,0 +1,40 @@
+  // public boolean containsSpan(Span span) {
+  //   int sentenceStart = tokens[0].beginPosition();
+  //   int sentenceEnd = tokens[tokens.length - 1].endPosition();
+  //   return sentenceStart <= span.start() && sentenceEnd >= span.end();
+  // }
+
+  public List<EntityMention> getEntityMentions() {
+    return Collections.unmodifiableList(entityMentions);
+  }
+
+  public void setEntityMentions(List<EntityMention> newArgs) {
+    entityMentions.clear();
+    entityMentions.addAll(newArgs);
+  }
+
+  public String toString() {
+    StringBuilder sb = new StringBuilder(512);
+    sb.append("\"" + textContent + "\"");
+    sb.append("\n");
+
+    for (RelationMention rel : this.relationMentions) {
+      sb.append("\n");
+      sb.append(rel);
+    }
+
+    // TODO: add event mentions
+
+    return sb.toString();
+  }
+
+  public static String tokensToString(Word [] tokens) {
+    StringBuilder  sb = new StringBuilder(512);
+    for(int i = 0; i < tokens.length; i ++){
+      if(i > 0) sb.append(" ");
+      Word l = tokens[i];
+      sb.append(l.word() + "{" + l.beginPosition() + ", " + l.endPosition() + "}");
+    }
+    return sb.toString();
+  }
+

@@ -1,0 +1,40 @@
+  public String getPrecisionDescription(int numDigits) {
+    NumberFormat nf = NumberFormat.getNumberInstance();
+    nf.setMaximumFractionDigits(numDigits);
+    Triple<Double, Integer, Integer> prec = getPrecisionInfo();
+    return nf.format(prec.first()) + "  (" + prec.second() + "/" + (prec.second() + prec.third()) + ")";
+  }
+
+  public String getPrecisionDescription(int numDigits, L label) {
+    NumberFormat nf = NumberFormat.getNumberInstance();
+    nf.setMaximumFractionDigits(numDigits);
+    Triple<Double, Integer, Integer> prec = getPrecisionInfo(label);
+    return nf.format(prec.first()) + "  (" + prec.second() + "/" + (prec.second() + prec.third()) + ")";
+  }
+
+  public Triple<Double, Integer, Integer> getRecallInfo(L label) {
+    int i = labelIndex.indexOf(label);
+    if (tpCount[i] == 0 && fnCount[i] == 0) {
+      return new Triple<Double, Integer, Integer>(1.0, tpCount[i], fnCount[i]);
+    }
+    return new Triple<Double, Integer, Integer>((((double) tpCount[i]) / (tpCount[i] + fnCount[i])), tpCount[i], fnCount[i]);
+  }
+
+  public double getRecall(L label) {
+    return getRecallInfo(label).first();
+  }
+
+  public Triple<Double, Integer, Integer> getRecallInfo() {
+    int tp = 0, fn = 0;
+    for (int i = 0; i < labelIndex.size(); i++) {
+      if (i == negIndex) { continue; }
+      tp += tpCount[i];
+      fn += fnCount[i];
+    }
+    return new Triple<Double, Integer, Integer>((((double) tp) / (tp + fn)), tp, fn);
+  }
+
+  public double getRecall() {
+    return getRecallInfo().first();
+  }
+

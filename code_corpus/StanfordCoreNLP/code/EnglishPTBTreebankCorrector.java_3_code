@@ -1,0 +1,37 @@
+  private static final String BARE_VP_VERB =
+    " < (__ < /^(?i:help|helps|helping|helped|make|makes|making|made|see|sees|saw|seen|seeing|hear|heard|hears|hearing|let|lets|letting)$/)";
+
+  private static final String SAY_VERB =
+    " < (__ < /^(?i:say|says|said|saying)$/)";
+
+  private final List<Pair<TregexPattern,TsurgeonPattern>> ops;
+
+
+  public EnglishPTBTreebankCorrector() {
+    // initialize the transformations to be done
+    ops = new ArrayList<Pair<TregexPattern,TsurgeonPattern>>();
+    TreebankLanguagePack tlp = new PennTreebankLanguagePack();
+    TregexPatternCompiler tpc = new TregexPatternCompiler(tlp.headFinder(), tlp.getBasicCategoryFunction());
+    Macros.addAllMacros(tpc, getBufferedReader(macroStr));
+    try {
+      BufferedReader br = getBufferedReader(editStr);
+      List<TsurgeonPattern> tsp = new ArrayList<TsurgeonPattern>();
+      for (String line; (line = br.readLine()) != null; ) {
+        TregexPattern matchPattern = tpc.compile(line);
+        tsp.clear();
+        if (DEBUG) System.err.println("Pattern is " + line + " [" + matchPattern + ']');
+        while (continuing(line = br.readLine())) {
+          TsurgeonPattern p = Tsurgeon.parseOperation(line);
+          if (DEBUG) System.err.println("Operation is " + line + " [" + p + ']');
+          tsp.add(p);
+        }
+        if ( ! tsp.isEmpty()) {
+          TsurgeonPattern tp = Tsurgeon.collectOperations(tsp);
+          ops.add(new Pair<TregexPattern,TsurgeonPattern>(matchPattern, tp));
+        }
+      } // while not at end of file
+    } catch (IOException ioe) {
+      ioe.printStackTrace();
+    }
+  }
+

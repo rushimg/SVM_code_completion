@@ -1,0 +1,15 @@
+  private List<CoreMap> readDocument(String prefix, Annotation corpus) throws IOException, SAXException,
+      ParserConfigurationException {
+    logger.info("Reading document: " + prefix);
+    List<CoreMap> results = new ArrayList<CoreMap>();
+    AceDocument aceDocument;
+    if(aceVersion.equals("ACE2004")){
+      aceDocument = AceDocument.parseDocument(prefix, false, aceVersion);
+    } else {
+      aceDocument = AceDocument.parseDocument(prefix, false);
+    }
+    String docId = aceDocument.getId();
+
+    // map entity mention ID strings to their EntityMention counterparts
+    Map<String, EntityMention> entityMentionMap = Generics.newHashMap();
+

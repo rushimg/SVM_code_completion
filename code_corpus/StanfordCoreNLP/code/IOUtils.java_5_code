@@ -1,0 +1,18 @@
+  public static File writeObjectToFileNoExceptions(Object o, String filename) {
+    File file = null;
+    ObjectOutputStream oos = null;
+    try {
+      file = new File(filename);
+      // file.createNewFile(); // cdm may 2005: does nothing needed
+      oos = new ObjectOutputStream(new BufferedOutputStream(
+              new GZIPOutputStream(new FileOutputStream(file))));
+      oos.writeObject(o);
+      oos.close();
+    } catch (Exception e) {
+      e.printStackTrace();
+    } finally {
+      closeIgnoringExceptions(oos);
+    }
+    return file;
+  }
+

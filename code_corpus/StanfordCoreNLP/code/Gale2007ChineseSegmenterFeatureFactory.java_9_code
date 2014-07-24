@@ -1,0 +1,60 @@
+  protected Collection<String> featuresCpCp2C(PaddedList<? extends CoreLabel> cInfo, int loc) {
+    Collection<String> features = new ArrayList<String>();
+    CoreLabel c = cInfo.get(loc);
+    CoreLabel c2 = cInfo.get(loc + 1);
+    CoreLabel c3 = cInfo.get(loc + 2);
+    CoreLabel p = cInfo.get(loc - 1);
+    CoreLabel p2 = cInfo.get(loc - 2);
+    CoreLabel p3 = cInfo.get(loc - 3);
+
+    String charc = c.getString(CoreAnnotations.CharAnnotation.class);
+    String charc2 = c2.getString(CoreAnnotations.CharAnnotation.class);
+    String charc3 = c3.getString(CoreAnnotations.CharAnnotation.class);
+    String charp = p.getString(CoreAnnotations.CharAnnotation.class);
+    String charp2 = p2.getString(CoreAnnotations.CharAnnotation.class);
+    String charp3 = p3.getString(CoreAnnotations.CharAnnotation.class);
+
+    // N-gram features. N is up to 3
+    if (flags.useWord3) {
+      features.add(charc +"::c");
+      features.add(charc2+"::n");
+      features.add(charp +"::p");
+      features.add(charp2 +"::p2");
+      // trying to restore the features that Huihsin described in SIGHAN 2005 paper
+      features.add(charc + charc2  +"::cn");
+      features.add(charc + charc2 + charc3 + "::cnn2");
+      features.add(charp + charc  +"::pc");
+      features.add(charp + charc2  +"::pn");
+      features.add(charp2 + charp  +"::p2p");
+      features.add(charp3 + charp2 + charp + "::p3p2p");
+      features.add(charp2 + charc  +"::p2c");
+      features.add(charc + charc3  +"::cn2");
+
+    }
+
+    if (flags.useShapeStrings) {
+      if (flags.useShapeStrings1) {
+        features.add(p.getString(CoreAnnotations.ShapeAnnotation.class) + "ps");
+        features.add(c.getString(CoreAnnotations.ShapeAnnotation.class) + "cs");
+        features.add(c2.getString(CoreAnnotations.ShapeAnnotation.class) + "c2s");
+      }
+      if (flags.useShapeStrings3) {
+        features.add(p.getString(CoreAnnotations.ShapeAnnotation.class) + c.getString(CoreAnnotations.ShapeAnnotation.class) + c2.getString(CoreAnnotations.ShapeAnnotation.class) + "pscsc2s");
+      }
+      if (flags.useShapeStrings4) {
+        features.add(p2.getString(CoreAnnotations.ShapeAnnotation.class) + p.getString(CoreAnnotations.ShapeAnnotation.class) + c.getString(CoreAnnotations.ShapeAnnotation.class) + c2.getString(CoreAnnotations.ShapeAnnotation.class) + "p2spscsc2s");
+      }
+      if (flags.useShapeStrings5) {
+        features.add(p2.getString(CoreAnnotations.ShapeAnnotation.class) + p.getString(CoreAnnotations.ShapeAnnotation.class) + c.getString(CoreAnnotations.ShapeAnnotation.class) + c2.getString(CoreAnnotations.ShapeAnnotation.class) + c3.getString(CoreAnnotations.ShapeAnnotation.class) + "p2spscsc2sc3s");
+      }
+      if (flags.useWordShapeConjunctions2) {
+        features.add(p.getString(CoreAnnotations.ShapeAnnotation.class) + charc + "pscc");
+        features.add(charp + c.getString(CoreAnnotations.ShapeAnnotation.class) + "pccs");
+      }
+      if (flags.useWordShapeConjunctions3) {
+        features.add(p2.getString(CoreAnnotations.ShapeAnnotation.class) + p.getString(CoreAnnotations.ShapeAnnotation.class) + charc + "p2spscc");
+        features.add(p.getString(CoreAnnotations.ShapeAnnotation.class) + charc + c2.getString(CoreAnnotations.ShapeAnnotation.class) + "psccc2s");
+        features.add(charc + c2.getString(CoreAnnotations.ShapeAnnotation.class) + c3.getString(CoreAnnotations.ShapeAnnotation.class) + "ccc2sc3s");
+      }
+    }
+

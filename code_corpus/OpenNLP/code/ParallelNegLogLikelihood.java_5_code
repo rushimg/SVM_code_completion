@@ -1,0 +1,28 @@
+  private void computeInParallel(double[] x, Class<? extends ComputeTask> taskClass) {
+    ExecutorService executor = Executors.newFixedThreadPool(threads);
+    int taskSize = numContexts / threads;
+    int leftOver = numContexts % threads;
+    
+    try {
+      Constructor<? extends ComputeTask> cons = taskClass.getConstructor(
+          ParallelNegLogLikelihood.class, 
+          int.class, int.class, int.class, double[].class);
+      
+      List<Future<?>> futures = new ArrayList<Future<?>>();
+      for (int i = 0; i < threads; i++) {
+        if (i != threads - 1)
+          futures.add(executor.submit(
+        else 
+          futures.add(executor.submit(
+      }
+
+      for (Future<?> future: futures)
+        future.get();
+
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    
+    executor.shutdown();
+  }
+  

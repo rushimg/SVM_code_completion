@@ -1,0 +1,80 @@
+    public final void layerProtocol(final boolean secure) {
+        // it is possible to layer a protocol over a direct connection,
+        // although this case is probably not considered elsewhere
+        Asserts.check(this.connected, "No layered protocol unless connected");
+        this.layered = LayerType.LAYERED;
+        this.secure  = secure;
+    }
+
+    @Override
+    public final HttpHost getTargetHost() {
+        return this.targetHost;
+    }
+
+    @Override
+    public final InetAddress getLocalAddress() {
+        return this.localAddress;
+    }
+
+    @Override
+    public final int getHopCount() {
+        int hops = 0;
+        if (this.connected) {
+            if (proxyChain == null) {
+                hops = 1;
+            } else {
+                hops = proxyChain.length + 1;
+            }
+        }
+        return hops;
+    }
+
+    @Override
+    public final HttpHost getHopTarget(final int hop) {
+        Args.notNegative(hop, "Hop index");
+        final int hopcount = getHopCount();
+        Args.check(hop < hopcount, "Hop index exceeds tracked route length");
+        HttpHost result = null;
+        if (hop < hopcount-1) {
+            result = this.proxyChain[hop];
+        } else {
+            result = this.targetHost;
+        }
+
+        return result;
+    }
+
+    @Override
+    public final HttpHost getProxyHost() {
+        return (this.proxyChain == null) ? null : this.proxyChain[0];
+    }
+
+    public final boolean isConnected() {
+        return this.connected;
+    }
+
+    @Override
+    public final TunnelType getTunnelType() {
+        return this.tunnelled;
+    }
+
+    @Override
+    public final boolean isTunnelled() {
+        return (this.tunnelled == TunnelType.TUNNELLED);
+    }
+
+    @Override
+    public final LayerType getLayerType() {
+        return this.layered;
+    }
+
+    @Override
+    public final boolean isLayered() {
+        return (this.layered == LayerType.LAYERED);
+    }
+
+    @Override
+    public final boolean isSecure() {
+        return this.secure;
+    }
+

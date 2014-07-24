@@ -1,0 +1,17 @@
+    protected <T> boolean match(int bid, SequenceMatcher.MatchedStates<T> matchedStates, boolean consume, State prevState)
+    {
+      boolean match = false;
+      if (next != null) {
+        int i = 0;
+        for (State s:next) {
+          i++;
+          boolean m = s.match(matchedStates.branchStates.getBranchId(bid,i,next.size()), matchedStates, consume, this);
+          if (m) {
+            // NOTE: We don't break because other branches may have useful state information
+            match = true;
+          }
+        }
+      }
+      return match;
+    }
+

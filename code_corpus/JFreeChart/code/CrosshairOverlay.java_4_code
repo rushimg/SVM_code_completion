@@ -1,0 +1,35 @@
+    public void addDomainCrosshair(Crosshair crosshair) {
+        if (crosshair == null) {
+            throw new IllegalArgumentException("Null 'crosshair' argument.");
+        }
+        this.xCrosshairs.add(crosshair);
+        crosshair.addPropertyChangeListener(this);
+    }
+
+    public void removeDomainCrosshair(Crosshair crosshair) {
+        if (crosshair == null) {
+            throw new IllegalArgumentException("Null 'crosshair' argument.");
+        }
+        if (this.xCrosshairs.remove(crosshair)) {
+            crosshair.removePropertyChangeListener(this);
+            fireOverlayChanged();
+        }
+    }
+
+    public void clearDomainCrosshairs() {
+        if (this.xCrosshairs.isEmpty()) {
+            return;  // nothing to do
+        }
+        List crosshairs = getDomainCrosshairs();
+        for (int i = 0; i < crosshairs.size(); i++) {
+            Crosshair c = (Crosshair) crosshairs.get(i);
+            this.xCrosshairs.remove(c);
+            c.removePropertyChangeListener(this);
+        }
+        fireOverlayChanged();
+    }
+    
+    public List getDomainCrosshairs() {
+        return new ArrayList(this.xCrosshairs);
+    }
+

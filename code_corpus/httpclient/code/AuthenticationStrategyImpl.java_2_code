@@ -1,0 +1,16 @@
+    AuthenticationStrategyImpl(final int challengeCode, final String headerName) {
+        super();
+        this.challengeCode = challengeCode;
+        this.headerName = headerName;
+    }
+
+    @Override
+    public boolean isAuthenticationRequested(
+            final HttpHost authhost,
+            final HttpResponse response,
+            final HttpContext context) {
+        Args.notNull(response, "HTTP response");
+        final int status = response.getStatusLine().getStatusCode();
+        return status == this.challengeCode;
+    }
+

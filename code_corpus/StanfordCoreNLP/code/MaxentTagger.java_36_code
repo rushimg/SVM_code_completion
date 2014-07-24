@@ -1,0 +1,75 @@
+  public void tagFromXML(InputStream input, Writer writer, String ... xmlTags) {
+    OutputStyle outputStyle =
+      OutputStyle.fromShortName(config.getOutputFormat());
+
+    TransformXML<String> txml = new TransformXML<String>();
+    switch(outputStyle) {
+    case XML:
+    case INLINE_XML:
+      txml.transformXML(xmlTags, new TaggerWrapper(this),
+                        input, writer,
+                        new TransformXML.NoEscapingSAXInterface<String>());
+      break;
+    case SLASH_TAGS:
+    case TSV:
+      txml.transformXML(xmlTags, new TaggerWrapper(this),
+                        input, writer,
+                        new TransformXML.SAXInterface<String>());
+      break;
+    default:
+      throw new RuntimeException("Unexpected format " + outputStyle);
+    }
+  }
+
+  public void tagFromXML(Reader input, Writer writer, String ... xmlTags) {
+    OutputStyle outputStyle =
+      OutputStyle.fromShortName(config.getOutputFormat());
+
+    TransformXML<String> txml = new TransformXML<String>();
+    switch(outputStyle) {
+    case XML:
+    case INLINE_XML:
+      txml.transformXML(xmlTags, new TaggerWrapper(this),
+                        input, writer,
+                        new TransformXML.NoEscapingSAXInterface<String>());
+      break;
+    case SLASH_TAGS:
+    case TSV:
+      txml.transformXML(xmlTags, new TaggerWrapper(this),
+                        input, writer,
+                        new TransformXML.SAXInterface<String>());
+      break;
+    default:
+      throw new RuntimeException("Unexpected format " + outputStyle);
+    }
+  }
+
+  private void tagFromXML() {
+    Reader reader = null;
+    Writer w = null;
+    try {
+      // todo [cdm dec 13]: change to use the IOUtils read-from-anywhere routines
+      reader = new BufferedReader(new InputStreamReader(new FileInputStream(config.getFile()), config.getEncoding()));
+
+      String outFile = config.getOutputFile();
+      if (outFile.length() > 0) {
+        w = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outFile),
+                                                      config.getEncoding()));
+      } else {
+        w = new BufferedWriter(new OutputStreamWriter(System.out, config.getEncoding()));
+      }
+      w.write("<?xml version=\"1.0\" encoding=\"" +
+              config.getEncoding() + "\"?>\n");
+      tagFromXML(reader, w, config.getXMLInput());
+    } catch (FileNotFoundException e) {
+      System.err.println("Input file not found: " + config.getFile());
+      e.printStackTrace();
+    } catch (IOException ioe) {
+      System.err.println("tagFromXML: mysterious IO Exception");
+      ioe.printStackTrace();
+    } finally {
+      IOUtils.closeIgnoringExceptions(reader);
+      IOUtils.closeIgnoringExceptions(w);
+    }
+  }
+

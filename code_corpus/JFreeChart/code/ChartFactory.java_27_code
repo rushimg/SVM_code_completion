@@ -1,0 +1,49 @@
+    public static JFreeChart createXYBarChart(String title,
+                                              String xAxisLabel,
+                                              boolean dateAxis,
+                                              String yAxisLabel,
+                                              IntervalXYDataset dataset,
+                                              PlotOrientation orientation,
+                                              boolean legend,
+                                              boolean tooltips,
+                                              boolean urls) {
+
+        if (orientation == null) {
+            throw new IllegalArgumentException("Null 'orientation' argument.");
+        }
+        ValueAxis domainAxis = null;
+        if (dateAxis) {
+            domainAxis = new DateAxis(xAxisLabel);
+        }
+        else {
+            NumberAxis axis = new NumberAxis(xAxisLabel);
+            axis.setAutoRangeIncludesZero(false);
+            domainAxis = axis;
+        }
+        ValueAxis valueAxis = new NumberAxis(yAxisLabel);
+
+        XYBarRenderer renderer = new XYBarRenderer();
+        if (tooltips) {
+            XYToolTipGenerator tt;
+            if (dateAxis) {
+                tt = StandardXYToolTipGenerator.getTimeSeriesInstance();
+            }
+            else {
+                tt = new StandardXYToolTipGenerator();
+            }
+            renderer.setBaseToolTipGenerator(tt);
+        }
+        if (urls) {
+            renderer.setURLGenerator(new StandardXYURLGenerator());
+        }
+
+        XYPlot plot = new XYPlot(dataset, domainAxis, valueAxis, renderer);
+        plot.setOrientation(orientation);
+
+        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT,
+                plot, legend);
+        currentTheme.apply(chart);
+        return chart;
+
+    }
+

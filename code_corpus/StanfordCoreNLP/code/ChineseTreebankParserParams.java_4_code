@@ -1,0 +1,41 @@
+  @Override
+  public Lexicon lex(Options op, Index<String> wordIndex, Index<String> tagIndex) {
+    if (useCharacterBasedLexicon) {
+      return lex = new ChineseCharacterBasedLexicon(this, wordIndex, tagIndex);
+    // } else if (useMaxentLexicon) {
+    // return lex = new ChineseMaxentLexicon();
+    }
+    if (op.lexOptions.uwModelTrainer == null) {
+      op.lexOptions.uwModelTrainer = "edu.stanford.nlp.parser.lexparser.ChineseUnknownWordModelTrainer";
+    }
+    if (segmenterClass != null) {
+      try {
+        segmenter = ReflectionLoading.loadByReflection(segmenterClass, this,
+                                                       wordIndex, tagIndex);
+      } catch (ReflectionLoading.ReflectionLoadingException e) {
+        segmenter = ReflectionLoading.loadByReflection(segmenterClass);
+      }
+    }
+
+    ChineseLexicon clex = new ChineseLexicon(op, this, wordIndex, tagIndex);
+    if (segmenter != null) {
+      lex = new ChineseLexiconAndWordSegmenter(clex, segmenter);
+      ctlp.setTokenizerFactory(WordSegmentingTokenizer.factory(segmenter));
+    } else {
+      lex = clex;
+    }
+
+    return lex;
+  }
+
+  @Override
+  public double[] MLEDependencyGrammarSmoothingParams() {
+    return new double[]{5.8, 17.7, 6.5, 0.4};
+  }
+
+  @Override
+  public TreeReaderFactory treeReaderFactory() {
+    final TreeNormalizer tn = new CTBErrorCorrectingTreeNormalizer(splitNPTMP, splitPPTMP, splitXPTMP, charTags);
+    return new CTBTreeReaderFactory(tn, discardFrags);
+  }
+

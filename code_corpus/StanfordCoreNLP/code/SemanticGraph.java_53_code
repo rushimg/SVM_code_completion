@@ -1,0 +1,34 @@
+  public SemanticGraph(Collection<TypedDependency> dependencies, String docID, int sentIndex) {
+    graph = new DirectedMultiGraph<IndexedWord, SemanticGraphEdge>();
+
+    roots = Generics.newHashSet();
+
+    for (TypedDependency d : dependencies) {
+      TreeGraphNode gov = d.gov();
+      TreeGraphNode dep = d.dep();
+      GrammaticalRelation reln = d.reln();
+
+      if (reln != ROOT) { // the root relation only points to the root: the governor is a fake node that we don't want to add in the graph
+        IndexedWord govVertex = new IndexedWord(docID, sentIndex, gov.index(), gov.label());
+        IndexedWord depVertex = new IndexedWord(docID, sentIndex, dep.index(), dep.label());
+        // It is unnecessary to call addVertex, since addEdge will
+        // implicitly add vertices if needed
+        //addVertex(govVertex);
+        //addVertex(depVertex);
+        addEdge(govVertex, depVertex, reln, Double.NEGATIVE_INFINITY, d.extra());
+      } else { //it's the root and we add it
+        IndexedWord depVertex = new IndexedWord(docID, sentIndex, dep.index(), dep.label());
+
+        addVertex(depVertex);
+        roots.add(depVertex);
+      }
+    }
+
+    // there used to be an if clause that filtered out the case of empty
+    // dependencies. However, I could not understand (or replicate) the error
+    // it alluded to, and it led to empty dependency graphs for very short
+    // fragments,
+    // which meant they were ignored by the RTE system. Changed. (pado)
+    // See also SemanticGraphFactory.makeGraphFromTree().
+  }
+

@@ -1,0 +1,27 @@
+  public String classifyToString(String sentences, String outputFormat, boolean preserveSpacing) {
+    PlainTextDocumentReaderAndWriter.OutputStyle outFormat =
+      PlainTextDocumentReaderAndWriter.OutputStyle.fromShortName(outputFormat);
+
+
+    ObjectBank<List<IN>> documents =
+      makeObjectBankFromString(sentences, plainTextReaderAndWriter);
+
+    StringBuilder sb = new StringBuilder();
+    for (List<IN> doc : documents) {
+      List<IN> docOutput = classify(doc);
+      if (plainTextReaderAndWriter instanceof PlainTextDocumentReaderAndWriter) {
+        // TODO: implement this particular method and its options in
+        // the other documentReaderAndWriters
+        sb.append(((PlainTextDocumentReaderAndWriter<IN>) plainTextReaderAndWriter).getAnswers(docOutput, outFormat, preserveSpacing));
+      } else {
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        plainTextReaderAndWriter.printAnswers(docOutput, pw);
+        pw.flush();
+        sb.append(sw.toString());
+        sb.append("\n");
+      }
+    }
+    return sb.toString();
+  }
+

@@ -1,0 +1,38 @@
+  @Override
+  public void readData(BufferedReader in) throws IOException {
+    final String LEFT = "left";
+    int lineNum = 1;
+    // all lines have one rule per line
+    boolean doingStop = false;
+
+    for (String line = in.readLine(); line != null && line.length() > 0; line = in.readLine()) {
+      try {
+        if (line.equals("BEGIN_STOP")) {
+          doingStop = true;
+          continue;
+        }
+        String[] fields = StringUtils.splitOnCharWithQuoting(line, ' ', '\"', '\\'); // split on spaces, quote with doublequote, and escape with backslash
+        //        System.out.println("fields:\n" + fields[0] + "\n" + fields[1] + "\n" + fields[2] + "\n" + fields[3] + "\n" + fields[4] + "\n" + fields[5]);
+
+        
+        short distance = (short)Integer.parseInt(fields[4]);
+        IntTaggedWord tempHead = new IntTaggedWord(fields[0], '/', wordIndex, tagIndex);
+        IntTaggedWord tempArg = new IntTaggedWord(fields[2], '/', wordIndex, tagIndex);
+        IntDependency tempDependency = new IntDependency(tempHead, tempArg, fields[3].equals(LEFT), distance);
+
+        double count = Double.parseDouble(fields[5]);
+        if (doingStop) {
+          expandStop(tempDependency, distance, count, false);
+        } else {
+          expandArg(tempDependency, distance, count);
+        }
+      } catch (Exception e) {
+        IOException ioe = new IOException("Error on line " + lineNum + ": " + line);
+        ioe.initCause(e);
+        throw ioe;
+      }
+      //      System.out.println("read line " + lineNum + ": " + line);
+      lineNum++;
+    }
+  }
+

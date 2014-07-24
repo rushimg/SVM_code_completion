@@ -1,0 +1,71 @@
+  public static <E> Distribution<E> dynamicCounterWithDirichletPrior(Counter<E> c, Distribution<E> prior, double weight) {
+    double totalWeight = c.totalCount() + weight;
+    Distribution<E> norm = new DynamicDistribution<E>(prior, weight / totalWeight);
+    norm.counter = new ClassicCounter<E>();
+    // this might be done more efficiently with entrySet but there isn't a way to get
+    // the entrySet from a Counter now.  In most cases c will be small(-ish) anyway
+    for (E key : c.keySet()) {
+      double count = c.getCount(key) / totalWeight;
+      prior.addToKeySet(key);
+      norm.counter.setCount(key, count);
+    }
+    norm.numberOfKeys = prior.numberOfKeys;
+    return norm;
+  }
+
+  private static class DynamicDistribution<E> extends Distribution<E> {
+
+    private static final long serialVersionUID = -6073849364871185L;
+    private final Distribution<E> prior;
+    private final double priorMultiplier;
+
+    public DynamicDistribution(Distribution<E> prior, double priorMultiplier) {
+      super();
+      this.prior = prior;
+      this.priorMultiplier = priorMultiplier;
+    }
+
+    @Override
+    public double probabilityOf(E o) {
+    }
+
+    @Override
+    public double totalCount() {
+    }
+
+    @Override
+    public Set<E> keySet() {
+      return prior.keySet();
+    }
+
+    @Override
+    public void addToKeySet(E o) {
+      prior.addToKeySet(o);
+    }
+
+    @Override
+    public boolean containsKey(E key) {
+      return prior.containsKey(key);
+    }
+
+    @Override
+    public E argmax() {
+      return Counters.argmax(Counters.linearCombination(this.counter, 1.0, prior.counter, priorMultiplier));
+    }
+
+    @Override
+    public E sampleFrom() {
+      double d = Math.random();
+      Set<E> s = prior.keySet();
+      for (E o : s) {
+        d -= probabilityOf(o);
+        if (d < 0) {
+          return o;
+        }
+      }
+      System.err.println("ERROR: Distribution sums to less than 1");
+      System.err.println("Sampled " + d + "      sum is " + totalCount());
+      throw new RuntimeException("");
+    }
+  }
+

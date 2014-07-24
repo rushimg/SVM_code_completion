@@ -1,0 +1,13 @@
+  @Override
+  public boolean containsKey(Object key) {
+    // Early exits
+    if (mapping.containsKey(key)) return true;
+    if (!tryFile(key)) return false;
+    // Read the block for this key
+    Collection<Pair<KEY, T>> elementsRead = readBlock(key);
+    for (Pair<KEY, T> pair : elementsRead) {
+      if (pair.first.equals(key)) return true;
+    }
+    return false;
+  }
+

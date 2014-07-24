@@ -1,0 +1,14 @@
+  public ADSentenceSampleStream(InputStreamFactory in, String charsetName,
+      boolean includeHeadlines) throws IOException {
+    try {
+      this.adSentenceStream = new ADSentenceStream(new PlainTextByLineStream(
+          in, charsetName));
+    } catch (UnsupportedEncodingException e) {
+      // UTF-8 is available on all JVMs, will never happen
+      throw new IllegalStateException(e);
+    }
+    ptEosCharacters = Factory.ptEosCharacters;
+    Arrays.sort(ptEosCharacters);
+    this.isIncludeTitles = includeHeadlines;
+  }
+

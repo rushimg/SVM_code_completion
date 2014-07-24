@@ -1,0 +1,82 @@
+/*
+ * This is old stuff from a brief period when this DocumentReaderAndWriter tried
+ * to handle treating SGML tags as part of white space, even though they were
+ * returned as tokens by the tokenizer. If this is to be revived, it seems like
+ * this handling should be moved down into the tokenizer.
+ *
+ * These first two class declarations used to be in CoreAnnotations. The rest
+ * used to be in this class.
+ *
+ * public static class PrevSGMLAnnotation implements CoreAnnotation<String> {
+ * public Class<String> getType() { return String.class; } }
+ *
+ * public static class AfterSGMLAnnotation implements CoreAnnotation<String> {
+ * public Class<String> getType() { return String.class; } }
+ *
+ *
+ *
+ * public Iterator<List<IN>> getIterator(Reader r) { PTBTokenizer<IN> ptb =
+ * PTBTokenizer.newPTBTokenizer(r, false, true); List firstSplit = new
+ * ArrayList(); List<IN> d = new ArrayList<IN>();
+ *
+ * while (ptb.hasNext()) { IN w = ptb.next(); Matcher m =
+ * sgml.matcher(w.word()); if (m.matches()) { if (d.size() > 0) {
+ * firstSplit.add(d); d = new ArrayList<IN>(); } firstSplit.add(w); continue; }
+ * d.add(w); } if (d.size() > 0) { firstSplit.add(d); }
+ *
+ * List secondSplit = new ArrayList(); for (Object o : firstSplit) { if (o
+ * instanceof List) { secondSplit.addAll(wts.process((List) o)); } else {
+ * secondSplit.add(o); } }
+ *
+ * String prevTags = ""; IN lastWord = null;
+ *
+ * List<List<IN>> documents = new ArrayList<List<IN>>();
+ *
+ * boolean first = true;
+ *
+ * for (Object o : secondSplit) { if (o instanceof List) { List doc = (List) o;
+ * List<IN> document = new ArrayList<IN>(); int pos = 0; for (Iterator wordIter
+ * = doc.iterator(); wordIter.hasNext(); pos++) { IN w = (IN) wordIter.next();
+ * w.set(CoreAnnotations.PositionAnnotation.class, Integer.toString(pos)); if (first &&
+ * prevTags.length() > 0) { w.set(PrevSGMLAnnotation.class, prevTags); } first =
+ * false; lastWord = w; document.add(w); } documents.add(document); } else {
+ * //String tag = ((Word) o).word(); IN word = (IN) o; String tag =
+ * word.before() + word.current(); if (first) { System.err.println(word);
+ * prevTags = tag; } else { String t =
+ * lastWord.getString(AfterSGMLAnnotation.class); tag = t + tag;
+ * lastWord.set(AfterSGMLAnnotation.class, tag); } } }
+ *
+ * // this is a hack to deal with the incorrect assumption in the above code
+ * that // SGML only occurs between sentences and never inside of them. List<IN>
+ * allWords = new ArrayList<IN>(); for (List<IN> doc : documents) {
+ * allWords.addAll(doc); }
+ *
+ * List<List<IN>> documentsFinal = wts.process(allWords);
+ * System.err.println(documentsFinal.get(0).get(0)); System.exit(0);
+ *
+ * return documentsFinal.iterator(); // return documents.iterator(); }
+ *
+ *
+ * public void printAnswersInlineXML(List<IN> doc, PrintWriter out) { final
+ * String background = flags.backgroundSymbol; String prevTag = background; for
+ * (Iterator<IN> wordIter = doc.iterator(); wordIter.hasNext(); ) { IN wi =
+ * wordIter.next(); String prev = wi.getString(PrevSGMLAnnotation.class);
+ * out.print(prev); if (prev.length() > 0) { prevTag = background; } String tag
+ * = wi.getString(CoreAnnotations.AnswerAnnotation.class); if ( ! tag.equals(prevTag)) { if ( !
+ * prevTag.equals(background) && ! tag.equals(background)) { out.print("</");
+ * out.print(prevTag); out.print('>');
+ * out.print(wi.getString(CoreAnnotations.BeforeAnnotation.class)); out.print('<');
+ * out.print(tag); out.print('>'); } else if ( ! prevTag.equals(background)) {
+ * out.print("</"); out.print(prevTag); out.print('>');
+ * out.print(wi.getString(CoreAnnotations.BeforeAnnotation.class)); } else if ( !
+ * tag.equals(background)) { out.print(wi.getString(CoreAnnotations.BeforeAnnotation.class));
+ * out.print('<'); out.print(tag); out.print('>'); } } else {
+ * out.print(wi.getString(CoreAnnotations.BeforeAnnotation.class)); }
+ * out.print(wi.getString(CoreAnnotations.OriginalTextAnnotation.class)); String after =
+ * wi.getString(AfterSGMLAnnotation.class); String afterWS =
+ * wi.getString(CoreAnnotations.AfterAnnotation.class);
+ *
+ * if ( ! tag.equals(background) && ( ! wordIter.hasNext() || after.length() >
+ * 0)) { out.print("</"); out.print(tag); out.print('>'); prevTag = background;
+ * } else { prevTag = tag; } out.print(afterWS); out.print(after); } }
+ */

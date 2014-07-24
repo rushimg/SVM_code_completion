@@ -1,0 +1,18 @@
+  static int outputTreeVectors(PrintStream out, Tree tree, int index) {
+    if (tree.isLeaf()) {
+      return index;
+    }
+
+    out.print("  " + index + ":");
+    SimpleMatrix vector = RNNCoreAnnotations.getNodeVector(tree);
+    for (int i = 0; i < vector.getNumElements(); ++i) {
+      out.print("  " + NF.format(vector.get(i)));
+    }
+    out.println();
+    index++;
+    for (Tree child : tree.children()) {
+      index = outputTreeVectors(out, child, index);
+    }
+    return index;
+  }
+

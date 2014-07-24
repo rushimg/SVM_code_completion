@@ -1,0 +1,93 @@
+   public double HearstSimilarity(String name, String acronym) {
+     char[] namechars = name.toLowerCase().toCharArray();
+     char[] acrochars = acronym.toLowerCase().toCharArray();
+
+     int nindex = namechars.length - 1;
+     for (int aindex = acrochars.length - 1; aindex >= 0; --aindex) {
+       if (!Character.isLetter(acrochars[aindex])) {
+         continue;
+       }
+       while ((nindex >= 0 && namechars[nindex] != acrochars[aindex]) || (aindex == 0 && nindex > 0 && Character.isLetterOrDigit(namechars[nindex - 1]))) {
+         nindex--;
+       }
+       if (nindex < 0) {
+         //  System.err.println("\"" + name + "\" does NOT match \"" +
+         //     acronym + "\"\n");
+         return 0;
+       }
+
+       nindex--;
+     }
+
+     //System.err.println("\"" + name + "\" matches \"" + acronym + "\"\n");
+     return 1.0;
+   }
+
+   public static interface Feature {
+     public double value(Alignment alignment);
+
+     public String toString();
+   }
+
+   public static class LettersAligned implements Feature {
+     public String toString() {
+       return "LettersAligned";
+     };
+     public double value(Alignment alignment) {
+       int numAligned = 0;
+       for (int i = 0; i < alignment.pointers.length; ++i) {
+         if (alignment.pointers[i] != -1) {
+           numAligned++;
+         }
+       }
+       double pct = (double) numAligned / (double) alignment.pointers.length;
+       if (DEBUG)
+         System.out.println("LettersAligned=" + pct);
+       return pct;
+     }
+   }
+
+    public static class BegWord implements Feature {
+        public String toString() { return "BegWord"; };
+        public double value(Alignment alignment) {
+            int begAligned = 0;
+            for( int s = 0; s < alignment.pointers.length; ++s) {
+                int idx = alignment.pointers[s];
+                if( idx == 0 ) {
+                    begAligned++;
+                } else if( idx > 0) {
+                    char cur = alignment.longForm[idx];
+                    char prev = alignment.longForm[idx-1];
+                    if( !Character.isLetterOrDigit(prev) &&
+                        Character.isLetterOrDigit(cur) )
+                    {
+                        begAligned++;
+                    }
+                }
+            }
+            return (double)begAligned / (double)alignment.shortForm.length;
+        }
+    }
+
+    public static class EndWord implements Feature {
+        public String toString() { return "EndWord"; };
+        public double value(Alignment alignment) {
+            int endAligned = 0;
+            for( int s = 0; s < alignment.pointers.length; ++s) {
+                int idx = alignment.pointers[s];
+                if( idx == alignment.longForm.length-1 ) {
+                    endAligned++;
+                } else if( idx >= 0) {
+                    char cur = alignment.longForm[idx];
+                    char next = alignment.longForm[idx+1];
+                    if( !Character.isLetterOrDigit(next) &&
+                        Character.isLetterOrDigit(cur) )
+                    {
+                        endAligned++;
+                    }
+                }
+            }
+            return (double)endAligned / (double)alignment.shortForm.length;
+        }
+    }
+

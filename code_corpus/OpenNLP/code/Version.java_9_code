@@ -1,0 +1,27 @@
+  public static Version parse(String version) {
+
+    int indexFirstDot = version.indexOf('.');
+
+    int indexSecondDot = version.indexOf('.', indexFirstDot + 1);
+
+    if (indexFirstDot == -1 || indexSecondDot == -1) {
+        throw new NumberFormatException("Invalid version format '" + version + "', expected two dots!");
+    }
+
+    int indexFirstDash = version.indexOf('-');
+
+    int versionEnd;
+    if (indexFirstDash == -1) {
+      versionEnd = version.length();
+    }
+    else {
+      versionEnd = indexFirstDash;
+    }
+
+    boolean snapshot = version.endsWith(SNAPSHOT_MARKER);
+
+    return new Version(Integer.parseInt(version.substring(0, indexFirstDot)),
+        Integer.parseInt(version.substring(indexFirstDot + 1, indexSecondDot)),
+        Integer.parseInt(version.substring(indexSecondDot + 1, versionEnd)), snapshot);
+  }
+

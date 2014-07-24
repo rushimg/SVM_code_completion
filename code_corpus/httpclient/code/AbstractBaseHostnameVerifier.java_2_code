@@ -1,0 +1,17 @@
+@Immutable
+public abstract class AbstractBaseHostnameVerifier implements X509HostnameVerifier {
+
+    @Override
+    public final void verify(final String host, final SSLSocket ssl)
+          throws IOException {
+        if(host == null) {
+            throw new NullPointerException("host to verify is null");
+        }
+
+        SSLSession session = ssl.getSession();
+        if(session == null) {
+            // In our experience this only happens under IBM 1.4.x when
+            // spurious (unrelated) certificates show up in the server'
+            // chain.  Hopefully this will unearth the real problem:
+            final InputStream in = ssl.getInputStream();
+            in.available();

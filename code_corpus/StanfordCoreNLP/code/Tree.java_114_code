@@ -1,0 +1,19 @@
+  public Tree getNodeNumber(int i) {
+    return getNodeNumberHelper(new MutableInteger(1),i);
+  }
+
+  private Tree getNodeNumberHelper(MutableInteger i, int target) {
+    int i1 = i.intValue();
+    if(i1 == target)
+      return this;
+    if(i1 > target)
+      throw new IndexOutOfBoundsException("Error -- tree does not contain " + i + " nodes.");
+    i.incValue(1);
+    for(int j = 0; j < children().length; j++) {
+      Tree temp = children()[j].getNodeNumberHelper(i, target);
+      if(temp != null)
+        return temp;
+    }
+    return null;
+  }
+

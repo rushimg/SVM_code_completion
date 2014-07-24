@@ -1,0 +1,105 @@
+    public void drawItem(Graphics2D g2,
+                         XYItemRendererState state,
+                         Rectangle2D dataArea,
+                         PlotRenderingInfo info,
+                         XYPlot plot,
+                         ValueAxis domainAxis,
+                         ValueAxis rangeAxis,
+                         XYDataset dataset,
+                         int series,
+                         int item,
+                         CrosshairState crosshairState,
+                         int pass) {
+
+        // do nothing if item is not visible
+        if (!getItemVisible(series, item)) {
+            return;
+        }
+
+        // first pass draws the shading
+        if (pass == 0) {
+            IntervalXYDataset intervalDataset = (IntervalXYDataset) dataset;
+            State drState = (State) state;
+
+            double x = intervalDataset.getXValue(series, item);
+            double yLow = intervalDataset.getStartYValue(series, item);
+            double yHigh  = intervalDataset.getEndYValue(series, item);
+
+            RectangleEdge xAxisLocation = plot.getDomainAxisEdge();
+            RectangleEdge yAxisLocation = plot.getRangeAxisEdge();
+
+            double xx = domainAxis.valueToJava2D(x, dataArea, xAxisLocation);
+            double yyLow = rangeAxis.valueToJava2D(yLow, dataArea,
+                    yAxisLocation);
+            double yyHigh = rangeAxis.valueToJava2D(yHigh, dataArea,
+                    yAxisLocation);
+
+            PlotOrientation orientation = plot.getOrientation();
+            if (orientation == PlotOrientation.HORIZONTAL) {
+                drState.lowerCoordinates.add(new double[] {yyLow, xx});
+                drState.upperCoordinates.add(new double[] {yyHigh, xx});
+            }
+            else if (orientation == PlotOrientation.VERTICAL) {
+                drState.lowerCoordinates.add(new double[] {xx, yyLow});
+                drState.upperCoordinates.add(new double[] {xx, yyHigh});
+            }
+
+            if (item == (dataset.getItemCount(series) - 1)) {
+                // last item in series, draw the lot...
+                // set up the alpha-transparency...
+                Composite originalComposite = g2.getComposite();
+                g2.setComposite(AlphaComposite.getInstance(
+                        AlphaComposite.SRC_OVER, this.alpha));
+                g2.setPaint(getItemFillPaint(series, item));
+                GeneralPath area = new GeneralPath();
+                double[] coords = (double[]) drState.lowerCoordinates.get(0);
+                area.moveTo((float) coords[0], (float) coords[1]);
+                for (int i = 1; i < drState.lowerCoordinates.size(); i++) {
+                    coords = (double[]) drState.lowerCoordinates.get(i);
+                    area.lineTo((float) coords[0], (float) coords[1]);
+                }
+                int count = drState.upperCoordinates.size();
+                coords = (double[]) drState.upperCoordinates.get(count - 1);
+                area.lineTo((float) coords[0], (float) coords[1]);
+                for (int i = count - 2; i >= 0; i--) {
+                    coords = (double[]) drState.upperCoordinates.get(i);
+                    area.lineTo((float) coords[0], (float) coords[1]);
+                }
+                area.closePath();
+                g2.fill(area);
+                g2.setComposite(originalComposite);
+
+                drState.lowerCoordinates.clear();
+                drState.upperCoordinates.clear();
+            }
+        }
+        if (isLinePass(pass)) {
+
+            // the following code handles the line for the y-values...it's
+            // all done by code in the super class
+            if (item == 0) {
+                State s = (State) state;
+                s.seriesPath.reset();
+                s.setLastPointGood(false);
+            }
+
+            if (getItemLineVisible(series, item)) {
+                drawPrimaryLineAsPath(state, g2, plot, dataset, pass,
+                        series, item, domainAxis, rangeAxis, dataArea);
+            }
+        }
+
+        // second pass adds shapes where the items are ..
+        else if (isItemPass(pass)) {
+
+            // setup for collecting optional entity info...
+            EntityCollection entities = null;
+            if (info != null) {
+                entities = info.getOwner().getEntityCollection();
+            }
+
+            drawSecondaryPass(g2, plot, dataset, pass, series, item,
+                    domainAxis, dataArea, rangeAxis, crosshairState, entities);
+        }
+    }
+

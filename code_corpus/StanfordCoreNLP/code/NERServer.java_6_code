@@ -1,0 +1,27 @@
+  @SuppressWarnings({"InfiniteLoopStatement", "ConstantConditions", "null"})
+  public void run() {
+    Socket client = null;
+    while (true) {
+      try {
+        client = listener.accept();
+        if (DEBUG) {
+          System.err.print("Accepted request from ");
+          System.err.println(client.getInetAddress().getHostName());
+        }
+        new Session(client);
+      } catch (Exception e1) {
+        System.err.println("NERServer: couldn't accept");
+        e1.printStackTrace(System.err);
+        try {
+          client.close();
+        } catch (Exception e2) {
+          System.err.println("NERServer: couldn't close client");
+          e2.printStackTrace(System.err);
+        }
+      }
+    }
+  }
+
+
+  //// Inner Classes
+

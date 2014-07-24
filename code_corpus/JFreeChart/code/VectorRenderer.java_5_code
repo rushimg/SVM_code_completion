@@ -1,0 +1,47 @@
+    public Range findRangeBounds(XYDataset dataset) {
+        if (dataset == null) {
+            throw new IllegalArgumentException("Null 'dataset' argument.");
+        }
+        double minimum = Double.POSITIVE_INFINITY;
+        double maximum = Double.NEGATIVE_INFINITY;
+        int seriesCount = dataset.getSeriesCount();
+        double lvalue;
+        double uvalue;
+        if (dataset instanceof VectorXYDataset) {
+            VectorXYDataset vdataset = (VectorXYDataset) dataset;
+            for (int series = 0; series < seriesCount; series++) {
+                int itemCount = dataset.getItemCount(series);
+                for (int item = 0; item < itemCount; item++) {
+                    double delta = vdataset.getVectorYValue(series, item);
+                    if (delta < 0.0) {
+                        uvalue = vdataset.getYValue(series, item);
+                        lvalue = uvalue + delta;
+                    }
+                    else {
+                        lvalue = vdataset.getYValue(series, item);
+                        uvalue = lvalue + delta;
+                    }
+                    minimum = Math.min(minimum, lvalue);
+                    maximum = Math.max(maximum, uvalue);
+                }
+            }
+        }
+        else {
+            for (int series = 0; series < seriesCount; series++) {
+                int itemCount = dataset.getItemCount(series);
+                for (int item = 0; item < itemCount; item++) {
+                    lvalue = dataset.getYValue(series, item);
+                    uvalue = lvalue;
+                    minimum = Math.min(minimum, lvalue);
+                    maximum = Math.max(maximum, uvalue);
+                }
+            }
+        }
+        if (minimum > maximum) {
+            return null;
+        }
+        else {
+            return new Range(minimum, maximum);
+        }
+    }
+

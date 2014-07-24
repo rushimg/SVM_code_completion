@@ -1,0 +1,28 @@
+  public RelType getRelation(Interval<E> other) {
+    // TODO: Handle open/closed intervals?
+    if (other == null) return RelType.NONE;
+    int comp11 = this.first.compareTo(other.first());   // 3 choices
+    int comp22 = this.second.compareTo(other.second());   // 3 choices
+
+    if (comp11 == 0) {
+      if (comp22 == 0) {
+        // |---|  this
+        // |---|   other
+        return RelType.EQUAL;
+      } if (comp22 < 0) {
+        // SAME START - this finishes before other
+        // |---|  this
+        // |------|   other
+        return RelType.INSIDE;
+      } else {
+        // SAME START - this finishes after other
+        // |------|  this
+        // |---|   other
+        return RelType.CONTAIN;
+      }
+    } else if (comp22 == 0) {
+      if (comp11 < 0) {
+        // SAME FINISH - this start before other
+        // |------|  this
+        //    |---|   other
+        return RelType.CONTAIN;

@@ -1,0 +1,19 @@
+  public static Set<SemanticGraphEdge> getSubTreeEdges(IndexedWord vertice, SemanticGraph sg, SemanticGraphEdge excludedEdge) {
+    Set<SemanticGraphEdge> tabu = Generics.newHashSet();
+    tabu.add(excludedEdge);
+    getSubTreeEdgesHelper(vertice, sg, tabu);
+    tabu.remove(excludedEdge); // Do not want this in the returned edges
+    return tabu;
+  }
+
+  public static void getSubTreeEdgesHelper(IndexedWord vertice, SemanticGraph sg, Set<SemanticGraphEdge> tabuEdges) {
+    for (SemanticGraphEdge edge : sg.outgoingEdgeIterable(vertice)) {
+      if (!tabuEdges.contains(edge)) {
+        IndexedWord dep = edge.getDependent();
+        tabuEdges.add(edge);
+        getSubTreeEdgesHelper(dep, sg, tabuEdges);
+      }
+    }
+  }
+
+

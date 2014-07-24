@@ -1,0 +1,112 @@
+  public double condLogProbGivenPrevious(int position, int label, int[] prevLabels) {
+    if (prevLabels.length + 1 == windowSize) {
+      return factorTables[position].conditionalLogProbGivenPrevious(prevLabels, label);
+    } else if (prevLabels.length + 1 < windowSize) {
+      FactorTable ft = factorTables[position].sumOutFront();
+      while (ft.windowSize() > prevLabels.length + 1) {
+        ft = ft.sumOutFront();
+      }
+      return ft.conditionalLogProbGivenPrevious(prevLabels, label);
+    } else {
+      int[] p = new int[windowSize - 1];
+      System.arraycopy(prevLabels, prevLabels.length - p.length, p, 0, p.length);
+      return factorTables[position].conditionalLogProbGivenPrevious(p, label);
+    }
+  }
+
+  public double condLogProbGivenPrevious(int position, E label, E[] prevLabels) {
+    return condLogProbGivenPrevious(position, classIndex.indexOf(label), objectArrayToIntArray(prevLabels));
+  }
+
+  public double condProbGivenPrevious(int position, int label, int[] prevLabels) {
+    return Math.exp(condLogProbGivenPrevious(position, label, prevLabels));
+  }
+
+  public double condProbGivenPrevious(int position, E label, E[] prevLabels) {
+    return Math.exp(condLogProbGivenPrevious(position, label, prevLabels));
+  }
+
+  public Counter<E> condLogProbsGivenPrevious(int position, int[] prevlabels) {
+    Counter<E> c = new ClassicCounter<E>();
+    for (int i = 0, sz = classIndex.size(); i < sz; i++) {
+      E label = classIndex.get(i);
+      c.incrementCount(label, condLogProbGivenPrevious(position, i, prevlabels));
+    }
+    return c;
+  }
+
+  public Counter<E> condLogProbsGivenPrevious(int position, E[] prevlabels) {
+    Counter<E> c = new ClassicCounter<E>();
+    for (int i = 0, sz = classIndex.size(); i < sz; i++) {
+      E label = classIndex.get(i);
+      c.incrementCount(label, condLogProbGivenPrevious(position, label, prevlabels));
+    }
+    return c;
+  }
+
+  //
+  // PROB OF TAG AT SINGLE POSITION CONDITIONED ON FOLLOWING SEQUENCE OF LABELS
+  //
+
+  public double condLogProbGivenNext(int position, int label, int[] nextLabels) {
+    position = position + nextLabels.length;
+    if (nextLabels.length + 1 == windowSize) {
+      return factorTables[position].conditionalLogProbGivenNext(nextLabels, label);
+    } else if (nextLabels.length + 1 < windowSize) {
+      FactorTable ft = factorTables[position].sumOutFront();
+      while (ft.windowSize() > nextLabels.length + 1) {
+        ft = ft.sumOutFront();
+      }
+      return ft.conditionalLogProbGivenPrevious(nextLabels, label);
+    } else {
+      int[] p = new int[windowSize - 1];
+      System.arraycopy(nextLabels, 0, p, 0, p.length);
+      return factorTables[position].conditionalLogProbGivenPrevious(p, label);
+    }
+  }
+
+  public double condLogProbGivenNext(int position, E label, E[] nextLabels) {
+    return condLogProbGivenNext(position, classIndex.indexOf(label), objectArrayToIntArray(nextLabels));
+  }
+
+  public double condProbGivenNext(int position, int label, int[] nextLabels) {
+    return Math.exp(condLogProbGivenNext(position, label, nextLabels));
+  }
+
+  public double condProbGivenNext(int position, E label, E[] nextLabels) {
+    return Math.exp(condLogProbGivenNext(position, label, nextLabels));
+  }
+
+  public Counter<E> condLogProbsGivenNext(int position, int[] nextlabels) {
+    Counter<E> c = new ClassicCounter<E>();
+    for (int i = 0, sz = classIndex.size(); i < sz; i++) {
+      E label = classIndex.get(i);
+      c.incrementCount(label, condLogProbGivenNext(position, i, nextlabels));
+    }
+    return c;
+  }
+
+  public Counter<E> condLogProbsGivenNext(int position, E[] nextlabels) {
+    Counter<E> c = new ClassicCounter<E>();
+    for (int i = 0, sz = classIndex.size(); i < sz; i++) {
+      E label = classIndex.get(i);
+      c.incrementCount(label, condLogProbGivenNext(position, label, nextlabels));
+    }
+    return c;
+  }
+
+  //
+  // PROB OF TAG AT SINGLE POSITION CONDITIONED ON PREVIOUS AND FOLLOWING
+  // SEQUENCE OF LABELS
+  //
+
+  // public double condProbGivenPreviousAndNext(int position, int label, int[]
+  // prevLabels, int[] nextLabels) {
+
+  // }
+
+
+
+  //
+  // JOINT CONDITIONAL PROBS
+  //

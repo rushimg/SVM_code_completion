@@ -1,0 +1,28 @@
+  public void printProbsDocuments(ObjectBank<List<IN>> documents) {
+    for (List<IN> doc : documents) {
+      printProbsDocument(doc);
+      System.out.println();
+    }
+  }
+
+  public void classifyStdin()
+    throws IOException
+  {
+    classifyStdin(plainTextReaderAndWriter);
+  }
+
+  public void classifyStdin(DocumentReaderAndWriter<IN> readerWriter)
+    throws IOException
+  {
+    BufferedReader is = IOUtils.readerFromStdin(flags.inputEncoding);
+    for (String line; (line = is.readLine()) != null; ) {
+      Collection<List<IN>> documents = makeObjectBankFromString(line, readerWriter);
+      if (flags.keepEmptySentences && documents.size() == 0) {
+        documents = Collections.<List<IN>>singletonList(Collections.<IN>emptyList());
+      }
+      classifyAndWriteAnswers(documents, readerWriter);
+    }
+  }
+
+  public abstract void printProbsDocument(List<IN> document);
+

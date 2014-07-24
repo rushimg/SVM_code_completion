@@ -1,0 +1,28 @@
+  static Relation getRelation(String s, String arg,
+                              Function<String,String> basicCatFunction,
+                              HeadFinder headFinder)
+    throws ParseException
+  {
+    if (arg == null) {
+      return getRelation(s, basicCatFunction, headFinder);
+    }
+    Relation r;
+    if (s.equals("<")) {
+      r = new HasIthChild(Integer.parseInt(arg));
+    } else if (s.equals(">")) {
+      r = new IthChildOf(Integer.parseInt(arg));
+    } else if (s.equals("<+")) {
+      r = new UnbrokenCategoryDominates(arg, basicCatFunction);
+    } else if (s.equals(">+")) {
+      r = new UnbrokenCategoryIsDominatedBy(arg, basicCatFunction);
+    } else if (s.equals(".+")) {
+      r = new UnbrokenCategoryPrecedes(arg, basicCatFunction);
+    } else if (s.equals(",+")) {
+      r = new UnbrokenCategoryFollows(arg, basicCatFunction);
+    } else {
+      throw new ParseException("Unrecognized compound relation " + s + ' '
+          + arg);
+    }
+    return Interner.globalIntern(r);
+  }
+

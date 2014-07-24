@@ -1,0 +1,20 @@
+  public double conditionalLogProbGivenFirst(int given, int[] of) {
+    if (of.length != windowSize - 1) {
+      throw new IllegalArgumentException("conditionalLogProbGivenFirst requires of one less than clique size (" +
+          windowSize + ") but was " + Arrays.toString(of));
+    }
+    // compute P(given, of)
+    int[] labels = new int[windowSize];
+    labels[0] = given;
+    System.arraycopy(of, 0, labels, 1, windowSize - 1);
+    // double probAll = logProb(labels);
+    double probAll = unnormalizedLogProb(labels);
+
+    // compute P(given)
+    // double probGiven = logProbFront(given);
+    double probGiven = unnormalizedLogProbFront(given);
+
+    // compute P(given, of) / P(given)
+    return probAll - probGiven;
+  }
+

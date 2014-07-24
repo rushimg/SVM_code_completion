@@ -1,0 +1,121 @@
+    protected void drawItem(Graphics2D g2,
+                            int section,
+                            Rectangle2D dataArea,
+                            PiePlotState state,
+                            int currentPass) {
+
+        PieDataset dataset = getDataset();
+        Number n = dataset.getValue(section);
+        if (n == null) {
+            return;
+        }
+        double value = n.doubleValue();
+        double angle1 = 0.0;
+        double angle2 = 0.0;
+
+        Rotation direction = getDirection();
+        if (direction == Rotation.CLOCKWISE) {
+            angle1 = state.getLatestAngle();
+        }
+        else if (direction == Rotation.ANTICLOCKWISE) {
+            angle1 = state.getLatestAngle();
+        }
+        else {
+            throw new IllegalStateException("Rotation type not recognised.");
+        }
+
+        double angle = (angle2 - angle1);
+        if (Math.abs(angle) > getMinimumArcAngleToDraw()) {
+            Comparable key = getSectionKey(section);
+            double ep = 0.0;
+            double mep = getMaximumExplodePercent();
+            if (mep > 0.0) {
+                ep = getExplodePercent(key) / mep;
+            }
+            Rectangle2D arcBounds = getArcBounds(state.getPieArea(),
+                    state.getExplodedPieArea(), angle1, angle, ep);
+            Arc2D.Double arc = new Arc2D.Double(arcBounds, angle1, angle,
+                    Arc2D.OPEN);
+
+            // create the bounds for the inner arc
+            double depth = this.sectionDepth / 2.0;
+            RectangleInsets s = new RectangleInsets(UnitType.RELATIVE,
+                depth, depth, depth, depth);
+            Rectangle2D innerArcBounds = new Rectangle2D.Double();
+            innerArcBounds.setRect(arcBounds);
+            s.trim(innerArcBounds);
+            // calculate inner arc in reverse direction, for later
+            // GeneralPath construction
+            Arc2D.Double arc2 = new Arc2D.Double(innerArcBounds, angle1
+                    + angle, -angle, Arc2D.OPEN);
+            GeneralPath path = new GeneralPath();
+            path.moveTo((float) arc.getStartPoint().getX(),
+                    (float) arc.getStartPoint().getY());
+            path.append(arc.getPathIterator(null), false);
+            path.append(arc2.getPathIterator(null), true);
+            path.closePath();
+
+            Line2D separator = new Line2D.Double(arc2.getEndPoint(),
+                    arc.getStartPoint());
+
+            if (currentPass == 0) {
+                Paint shadowPaint = getShadowPaint();
+                double shadowXOffset = getShadowXOffset();
+                double shadowYOffset = getShadowYOffset();
+                if (shadowPaint != null) {
+                    Shape shadowArc = ShapeUtilities.createTranslatedShape(
+                            path, (float) shadowXOffset, (float) shadowYOffset);
+                    g2.setPaint(shadowPaint);
+                    g2.fill(shadowArc);
+                }
+            }
+            else if (currentPass == 1) {
+                Paint paint = lookupSectionPaint(key);
+                g2.setPaint(paint);
+                g2.fill(path);
+                Paint outlinePaint = lookupSectionOutlinePaint(key);
+                Stroke outlineStroke = lookupSectionOutlineStroke(key);
+                if (outlinePaint != null && outlineStroke != null) {
+                    g2.setPaint(outlinePaint);
+                    g2.setStroke(outlineStroke);
+                    g2.draw(path);
+                }
+
+                // add an entity for the pie section
+                if (state.getInfo() != null) {
+                    EntityCollection entities = state.getEntityCollection();
+                    if (entities != null) {
+                        String tip = null;
+                        PieToolTipGenerator toolTipGenerator
+                                = getToolTipGenerator();
+                        if (toolTipGenerator != null) {
+                            tip = toolTipGenerator.generateToolTip(dataset,
+                                    key);
+                        }
+                        String url = null;
+                        PieURLGenerator urlGenerator = getURLGenerator();
+                        if (urlGenerator != null) {
+                            url = urlGenerator.generateURL(dataset, key,
+                                    getPieIndex());
+                        }
+                        PieSectionEntity entity = new PieSectionEntity(path,
+                                dataset, getPieIndex(), section, key, tip,
+                                url);
+                        entities.add(entity);
+                    }
+                }
+            }
+            else if (currentPass == 2) {
+                if (this.separatorsVisible) {
+                    Line2D extendedSeparator = extendLine(separator,
+                        this.innerSeparatorExtension,
+                        this.outerSeparatorExtension);
+                    g2.setStroke(this.separatorStroke);
+                    g2.setPaint(this.separatorPaint);
+                    g2.draw(extendedSeparator);
+                }
+            }
+        }
+        state.setLatestAngle(angle2);
+    }
+

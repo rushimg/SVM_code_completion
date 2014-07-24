@@ -1,0 +1,50 @@
+    public void draw(Graphics2D g2,
+                     Rectangle2D area,
+                     Point2D anchor,
+                     PlotState parentState,
+                     PlotRenderingInfo info) {
+
+        // set up info collection...
+        if (info != null) {
+            info.setPlotArea(area);
+        }
+
+        // adjust the drawing area for plot insets (if any)...
+        RectangleInsets insets = getInsets();
+        insets.trim(area);
+
+        setFixedRangeAxisSpaceForSubplots(null);
+        AxisSpace space = calculateAxisSpace(g2, area);
+        Rectangle2D dataArea = space.shrink(area, null);
+
+        // set the width and height of non-shared axis of all sub-plots
+        setFixedRangeAxisSpaceForSubplots(space);
+
+        // draw the shared axis
+        ValueAxis axis = getDomainAxis();
+        RectangleEdge edge = getDomainAxisEdge();
+        double cursor = RectangleEdge.coordinate(dataArea, edge);
+        AxisState axisState = axis.draw(g2, cursor, area, dataArea, edge, info);
+        if (parentState == null) {
+            parentState = new PlotState();
+        }
+        parentState.getSharedAxisStates().put(axis, axisState);
+
+        // draw all the subplots
+        for (int i = 0; i < this.subplots.size(); i++) {
+            XYPlot plot = (XYPlot) this.subplots.get(i);
+            PlotRenderingInfo subplotInfo = null;
+            if (info != null) {
+                subplotInfo = new PlotRenderingInfo(info.getOwner());
+                info.addSubplotInfo(subplotInfo);
+            }
+            plot.draw(g2, this.subplotAreas[i], anchor, parentState,
+                    subplotInfo);
+        }
+
+        if (info != null) {
+            info.setDataArea(dataArea);
+        }
+
+    }
+

@@ -1,0 +1,39 @@
+    protected Size2D arrangeNN(BlockContainer container, Graphics2D g2) {
+        double y = 0.0;
+        double height = 0.0;
+        double maxWidth = 0.0;
+        List blocks = container.getBlocks();
+        int blockCount = blocks.size();
+        if (blockCount > 0) {
+            Size2D[] sizes = new Size2D[blocks.size()];
+            for (int i = 0; i < blocks.size(); i++) {
+                Block block = (Block) blocks.get(i);
+                sizes[i] = block.arrange(g2, RectangleConstraint.NONE);
+                height = height + sizes[i].getHeight();
+                maxWidth = Math.max(sizes[i].width, maxWidth);
+                block.setBounds(
+                    new Rectangle2D.Double(
+                        0.0, y, sizes[i].width, sizes[i].height
+                    )
+                );
+                y = y + sizes[i].height + this.verticalGap;
+            }
+            if (blockCount > 1) {
+            }
+            if (this.horizontalAlignment != HorizontalAlignment.LEFT) {
+                for (int i = 0; i < blocks.size(); i++) {
+                    //Block b = (Block) blocks.get(i);
+                    if (this.horizontalAlignment
+                            == HorizontalAlignment.CENTER) {
+                        //TODO: shift block right by half
+                    }
+                    else if (this.horizontalAlignment
+                            == HorizontalAlignment.RIGHT) {
+                        //TODO: shift block over to right
+                    }
+                }
+            }
+        }
+        return new Size2D(maxWidth, height);
+    }
+

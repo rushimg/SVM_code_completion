@@ -1,0 +1,29 @@
+  public static List<String> valueSplit(String str, String valueRegex, String separatorRegex) {
+    Pattern vPat = Pattern.compile(valueRegex);
+    Pattern sPat = Pattern.compile(separatorRegex);
+    List<String> ret = new ArrayList<String>();
+    while (str.length() > 0) {
+      Matcher vm = vPat.matcher(str);
+      if (vm.lookingAt()) {
+        ret.add(vm.group());
+        str = str.substring(vm.end());
+        // String got = vm.group();
+        // System.err.println("vmatched " + got + "; now str is " + str);
+      } else {
+        throw new IllegalArgumentException("valueSplit: " + valueRegex + " doesn't match " + str);
+      }
+      if (str.length() > 0) {
+        Matcher sm = sPat.matcher(str);
+        if (sm.lookingAt()) {
+          str = str.substring(sm.end());
+          // String got = sm.group();
+          // System.err.println("smatched " + got + "; now str is " + str);
+        } else {
+          throw new IllegalArgumentException("valueSplit: " + separatorRegex + " doesn't match " + str);
+        }
+      }
+    } // end while
+    return ret;
+  }
+
+

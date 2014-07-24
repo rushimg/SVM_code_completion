@@ -1,0 +1,72 @@
+  public static class NERClient {
+
+    private NERClient() {}
+
+    public static void communicateWithNERServer(String host, int port,
+                                                String charset) 
+      throws IOException
+    {
+      System.out.println("Input some text and press RETURN to NER tag it, " +
+                         " or just RETURN to finish.");
+
+      BufferedReader stdIn = 
+        new BufferedReader(new InputStreamReader(System.in, charset));
+      communicateWithNERServer(host, port, charset, stdIn, null, true);
+      stdIn.close();
+    }
+
+    public static void communicateWithNERServer(String host, int port, 
+                                                String charset, 
+                                                BufferedReader input,
+                                                BufferedWriter output,
+                                                boolean closeOnBlank)
+      throws IOException 
+    {
+      if (host == null) {
+        host = "localhost";
+      }
+
+      for (String userInput; (userInput = input.readLine()) != null; ) {
+        if (userInput.matches("\\n?")) {
+          if (closeOnBlank) {
+            break;
+          } else {
+            continue;
+          }
+        }
+        try {
+          // TODO: why not keep the same socket for multiple lines?
+          Socket socket = new Socket(host, port);
+          PrintWriter out = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(), charset), true);
+          BufferedReader in = new BufferedReader(new InputStreamReader(
+                  socket.getInputStream(), charset));
+          // send material to NER to socket
+          out.println(userInput);
+          // Print the results of NER
+          String result;
+          while ((result = in.readLine()) != null) {
+            if (output == null) {
+              EncodingPrintWriter.out.println(result, charset);
+            } else {
+              output.write(result);
+              output.newLine();
+            }
+          }
+          in.close();
+          socket.close();
+        } catch (UnknownHostException e) {
+          System.err.print("Cannot find host: ");
+          System.err.println(host);
+          return;
+        } catch (IOException e) {
+          System.err.print("I/O error in the connection to: ");
+          System.err.println(host);
+          return;
+        }
+      }
+    }
+  } // end static class NERClient
+
+
+  private static final String USAGE = "Usage: NERServer [-loadClassifier file|-loadJarClassifier resource|-client] -port portNumber";
+

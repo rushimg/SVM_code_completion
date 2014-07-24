@@ -1,0 +1,46 @@
+class ExtractorCapLCSeen extends RareExtractor {
+
+  final String tag;
+  int cutoff = 1;
+  private final Extractor cCapDist = new ExtractorCapDistLC();
+
+  private transient Dictionary dict;
+
+  ExtractorCapLCSeen(String tag) {
+    this.tag = tag;
+  }
+
+  @Override
+  protected void setGlobalHolder(MaxentTagger tagger) {
+    this.dict = tagger.dict;
+  }
+
+
+  @Override
+  public boolean precondition(String tag1) {
+    return tag.equals(tag1);
+  }
+
+  @Override
+  String extract(History h, PairsHolder pH) {
+    String res = cCapDist.extract(h, pH);
+    if (res.equals("0")) {
+      return res;
+    }
+    //otherwise it is capitalized
+    String word = pH.getWord(h, 0);
+    if (dict.getCount(word, tag) > cutoff) {
+      return res + tag;
+    } else {
+      return "0";
+    }
+  }
+
+  @Override public boolean isLocal() { return false; }
+  @Override public boolean isDynamic() { return false; }
+
+  private static final long serialVersionUID = 35L;
+
+}
+
+

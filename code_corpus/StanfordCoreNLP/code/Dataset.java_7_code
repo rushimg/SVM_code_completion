@@ -1,0 +1,37 @@
+  public static Dataset<String, String> readSVMLightFormat(String filename, Index<String> featureIndex, Index<String> labelIndex, List<String> lines) {
+    Dataset<String, String> dataset;
+    try {
+      dataset = new Dataset<String, String>(10, featureIndex, labelIndex);
+      for (String line : ObjectBank.getLineIterator(new File(filename))) {
+        if(lines != null)
+          lines.add(line);
+        dataset.add(svmLightLineToDatum(line));
+      }
+
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+    return dataset;
+  }
+
+  private static int line1 = 0;
+
+  public static Datum<String, String> svmLightLineToDatum(String l) {
+    line1++;
+    String[] line = l.split("\\s+");
+    Collection<String> features = new ArrayList<String>();
+    for (int i = 1; i < line.length; i++) {
+      String[] f = line[i].split(":");
+      if (f.length != 2) {
+        System.err.println("Dataset error: line " + line1);
+      }
+      int val = (int) Double.parseDouble(f[1]);
+      for (int j = 0; j < val; j++) {
+        features.add(f[0]);
+      }
+    }
+    features.add(String.valueOf(Integer.MAX_VALUE));  // a constant feature for a class
+    Datum<String, String> d = new BasicDatum<String, String>(features, line[0]);
+    return d;
+  }
+

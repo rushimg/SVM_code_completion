@@ -1,0 +1,18 @@
+  private GenericDataSetReader makeReader(Properties props) {
+    try {
+      if(reader == null){
+        try {
+          reader = MachineReadingProperties.datasetReaderClass.getConstructor(Properties.class).newInstance(props);
+        } catch(java.lang.NoSuchMethodException e) {
+          // if no c'tor with props found let's use the default one
+          reader = MachineReadingProperties.datasetReaderClass.getConstructor().newInstance();
+        }
+      }
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+    
+    reader.setUseNewHeadFinder(MachineReadingProperties.useNewHeadFinder);
+    return reader;
+  }
+  

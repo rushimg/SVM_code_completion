@@ -1,0 +1,26 @@
+  public static Collection<Object> newCollectionInstance(Type type) {
+    if (type instanceof WildcardType) {
+      type = Types.getBound((WildcardType) type);
+    }
+    if (type instanceof ParameterizedType) {
+      type = ((ParameterizedType) type).getRawType();
+    }
+    Class<?> collectionClass = type instanceof Class<?> ? (Class<?>) type : null;
+    if (type == null || type instanceof GenericArrayType || collectionClass != null
+        && (collectionClass.isArray() || collectionClass.isAssignableFrom(ArrayList.class))) {
+      return new ArrayList<Object>();
+    }
+    if (collectionClass == null) {
+      throw new IllegalArgumentException("unable to create new instance of type: " + type);
+    }
+    if (collectionClass.isAssignableFrom(HashSet.class)) {
+      return new HashSet<Object>();
+    }
+    if (collectionClass.isAssignableFrom(TreeSet.class)) {
+      return new TreeSet<Object>();
+    }
+    @SuppressWarnings("unchecked")
+    Collection<Object> result = (Collection<Object>) Types.newInstance(collectionClass);
+    return result;
+  }
+

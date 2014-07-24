@@ -1,0 +1,16 @@
+  public static TokenizerModel train(ObjectStream<TokenSample> samples, TokenizerFactory factory,
+      TrainingParameters mlParams) throws IOException {
+
+    Map<String, String> manifestInfoEntries = new HashMap<String, String>();
+
+    ObjectStream<Event> eventStream = new TokSpanEventStream(samples,
+        factory.isUseAlphaNumericOptmization(),
+        factory.getAlphaNumericPattern(), factory.getContextGenerator());
+
+    MaxentModel maxentModel = TrainUtil.train(eventStream,
+        mlParams.getSettings(), manifestInfoEntries);
+
+    return new TokenizerModel(maxentModel, manifestInfoEntries,
+        factory);
+  }
+

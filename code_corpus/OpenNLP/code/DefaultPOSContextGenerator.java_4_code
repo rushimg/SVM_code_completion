@@ -1,0 +1,27 @@
+  public DefaultPOSContextGenerator(int cacheSize, Dictionary dict) {
+    this.dict = dict;
+    dictGram = new String[1];
+    if (cacheSize > 0) {
+      contextsCache = new Cache(cacheSize);
+    }
+  }
+  protected static String[] getPrefixes(String lex) {
+    String[] prefs = new String[PREFIX_LENGTH];
+    for (int li = 0, ll = PREFIX_LENGTH; li < ll; li++) {
+      prefs[li] = lex.substring(0, Math.min(li + 1, lex.length()));
+    }
+    return prefs;
+  }
+
+  protected static String[] getSuffixes(String lex) {
+    String[] suffs = new String[SUFFIX_LENGTH];
+    for (int li = 0, ll = SUFFIX_LENGTH; li < ll; li++) {
+      suffs[li] = lex.substring(Math.max(lex.length() - li - 1, 0));
+    }
+    return suffs;
+  }
+
+  public String[] getContext(int index, String[] sequence, String[] priorDecisions, Object[] additionalContext) {
+    return getContext(index,sequence,priorDecisions);
+  }
+

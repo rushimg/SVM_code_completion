@@ -1,0 +1,72 @@
+  public Tree originalFindSyntacticHead(EntityMention ent, Tree root, List<CoreLabel> tokens) {
+    logger.fine("Searching for tree matching " + ent);
+    Tree exactMatch = findTreeWithSpan(root, ent.getExtentTokenStart(), ent.getExtentTokenEnd());
+
+    //
+    // found an exact match
+    //
+    if (exactMatch != null) {
+      logger.fine("Mention \"" + ent + "\" mapped to tree: " + printTree(exactMatch));
+      return safeHead(exactMatch);
+    }
+
+    //
+    // no exact match found
+    // in this case, we parse the actual extent of the mention
+    //
+    List<CoreLabel> extentTokens = new ArrayList<CoreLabel>();
+    for (int i = ent.getExtentTokenStart(); i < ent.getExtentTokenEnd(); i++)
+      extentTokens.add(tokens.get(i));
+
+    Tree tree = parse(extentTokens);
+    logger.fine("No exact match found. Local parse:\n" + tree.pennString());
+    convertToCoreLabels(tree);
+    tree.indexSpans(ent.getExtentTokenStart());
+    Tree extentHead = safeHead(tree);
+    assert (extentHead != null);
+    // extentHead is a child in the local extent parse tree. we need to find the
+    // corresponding node in the main tree
+    CoreLabel l = (CoreLabel) extentHead.label();
+    Tree realHead = findTreeWithSpan(root, l.get(CoreAnnotations.BeginIndexAnnotation.class), l.get(CoreAnnotations.EndIndexAnnotation.class));
+    assert (realHead != null);
+
+    return realHead;
+  }
+
+  private static CoreLabel initCoreLabel(String token) {
+    CoreLabel label = new CoreLabel();
+    label.setWord(token);
+    label.setValue(token);
+    label.set(CoreAnnotations.TextAnnotation.class, token);
+    label.set(CoreAnnotations.ValueAnnotation.class, token);
+    
+    return label;
+  }
+
+  protected Tree parseStrings(List<String> tokens) {
+    List<CoreLabel> labels = new ArrayList<CoreLabel>();
+    for (String t : tokens) {
+      CoreLabel l = initCoreLabel(t);
+      labels.add(l);
+    }
+    return parse(labels);
+  }
+
+  protected Tree parse(List<CoreLabel> tokens) {
+    return parse(tokens, null);
+  }
+
+  protected Tree parse(List<CoreLabel> tokens,
+                       List<ParserConstraint> constraints) {
+    CoreMap sent = new Annotation("");
+    sent.set(CoreAnnotations.TokensAnnotation.class, tokens);
+    sent.set(ParserAnnotations.ConstraintAnnotation.class, constraints);
+    Annotation doc = new Annotation("");
+    List<CoreMap> sents = new ArrayList<CoreMap>();
+    sents.add(sent);
+    doc.set(CoreAnnotations.SentencesAnnotation.class, sents);
+    getParser().annotate(doc);
+    sents = doc.get(CoreAnnotations.SentencesAnnotation.class);
+    return sents.get(0).get(TreeCoreAnnotations.TreeAnnotation.class);
+  }
+

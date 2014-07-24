@@ -1,0 +1,60 @@
+    protected void drawChipGrid(Graphics2D g2, Rectangle2D plotArea) {
+
+        Shape savedClip = g2.getClip();
+        g2.setClip(getWaferEdge(plotArea));
+        Rectangle2D chip = new Rectangle2D.Double();
+        int xchips = 35;
+        int ychips = 20;
+        double space = 1d;
+        if (this.dataset != null) {
+            xchips = this.dataset.getMaxChipX() + 2;
+            ychips = this.dataset.getMaxChipY() + 2;
+            space = this.dataset.getChipSpace();
+        }
+        double startX = plotArea.getX();
+        double startY = plotArea.getY();
+        double chipWidth = 1d;
+        double chipHeight = 1d;
+        if (plotArea.getWidth() != plotArea.getHeight()) {
+            double major = 0d;
+            double minor = 0d;
+            if (plotArea.getWidth() > plotArea.getHeight()) {
+                major = plotArea.getWidth();
+                minor = plotArea.getHeight();
+            }
+            else {
+                major = plotArea.getHeight();
+                minor = plotArea.getWidth();
+            }
+            //set upperLeft point
+            if (plotArea.getWidth() == minor) { // x is minor
+                startY += (major - minor) / 2;
+                    / xchips;
+                    / ychips;
+            }
+            else { // y is minor
+                startX += (major - minor) / 2;
+                    / xchips;
+                    / ychips;
+            }
+        }
+
+        for (int x = 1; x <= xchips; x++) {
+            for (int y = 1; y <= ychips; y++) {
+                chip.setFrame(upperLeftX, upperLeftY, chipWidth, chipHeight);
+                g2.setColor(Color.white);
+                if (this.dataset.getChipValue(x - 1, ychips - y - 1) != null) {
+                    g2.setPaint(
+                        this.renderer.getChipColor(
+                            this.dataset.getChipValue(x - 1, ychips - y - 1)
+                        )
+                    );
+                }
+                g2.fill(chip);
+                g2.setColor(Color.lightGray);
+                g2.draw(chip);
+            }
+        }
+        g2.setClip(savedClip);
+    }
+

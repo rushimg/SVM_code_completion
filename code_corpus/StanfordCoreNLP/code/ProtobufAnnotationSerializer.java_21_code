@@ -1,0 +1,15 @@
+  public CoreMap fromProto(CoreNLPProtos.Sentence proto) {
+    CoreMap lossySentence = fromProtoNoTokens(proto);
+    // Add tokens -- missing by default as they're populated as sublists of the
+    // document tokens
+    List<CoreLabel> tokens = new ArrayList<CoreLabel>();
+    for (CoreNLPProtos.Token token : proto.getTokenList()) {
+      tokens.add(fromProto(token));
+    }
+    lossySentence.set(TokensAnnotation.class, tokens);
+    // Add text -- missing by default as it's populated from the Document
+    lossySentence.set(TextAnnotation.class, recoverOriginalText(tokens, proto));
+    // Return
+    return lossySentence;
+  }
+

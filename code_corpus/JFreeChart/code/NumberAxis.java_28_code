@@ -1,0 +1,33 @@
+    public AxisState draw(Graphics2D g2, double cursor, Rectangle2D plotArea,
+            Rectangle2D dataArea, RectangleEdge edge,
+            PlotRenderingInfo plotState) {
+
+        AxisState state = null;
+        // if the axis is not visible, don't draw it...
+        if (!isVisible()) {
+            state = new AxisState(cursor);
+            // even though the axis is not visible, we need ticks for the
+            // gridlines...
+            List ticks = refreshTicks(g2, state, dataArea, edge);
+            state.setTicks(ticks);
+            return state;
+        }
+
+        // draw the tick marks and labels...
+        state = drawTickMarksAndLabels(g2, cursor, plotArea, dataArea, edge);
+
+//        // draw the marker band (if there is one)...
+//        if (getMarkerBand() != null) {
+//            if (edge == RectangleEdge.BOTTOM) {
+//                cursor = cursor - getMarkerBand().getHeight(g2);
+//            }
+//            getMarkerBand().draw(g2, plotArea, dataArea, 0, cursor);
+//        }
+
+        // draw the axis label...
+        state = drawLabel(getLabel(), g2, plotArea, dataArea, edge, state);
+        createAndAddEntity(cursor, state, dataArea, edge, plotState);
+        return state;
+
+    }
+

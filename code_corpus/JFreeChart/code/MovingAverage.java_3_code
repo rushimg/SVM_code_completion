@@ -1,0 +1,23 @@
+    public static TimeSeriesCollection createMovingAverage(
+            TimeSeriesCollection source, String suffix, int periodCount,
+            int skip) {
+
+        if (source == null) {
+            throw new IllegalArgumentException("Null 'source' argument.");
+        }
+        if (periodCount < 1) {
+            throw new IllegalArgumentException("periodCount must be greater "
+                    + "than or equal to 1.");
+        }
+
+        TimeSeriesCollection result = new TimeSeriesCollection();
+        for (int i = 0; i < source.getSeriesCount(); i++) {
+            TimeSeries sourceSeries = source.getSeries(i);
+            TimeSeries maSeries = createMovingAverage(sourceSeries,
+                    sourceSeries.getKey() + suffix, periodCount, skip);
+            result.addSeries(maSeries);
+        }
+        return result;
+
+    }
+

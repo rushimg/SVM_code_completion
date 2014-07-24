@@ -1,0 +1,45 @@
+  private static class NodePatternState extends State {
+    final NodePattern pattern;
+
+    protected NodePatternState(NodePattern p) {
+      this.pattern = p;
+    }
+
+    @Override
+    protected <T> boolean match(int bid, SequenceMatcher.MatchedStates<T> matchedStates, boolean consume, State prevState)
+    {
+      if (consume) {
+        // Get element and return if it matched or not
+        T node = matchedStates.get();
+        // TODO: Fix type checking
+        if (matchedStates.matcher.matchWithResult) {
+          Object obj = pattern.matchWithResult(node);
+          if (obj != null) {
+            if (obj != Boolean.TRUE) {
+              matchedStates.branchStates.setMatchedResult(bid, matchedStates.curPosition, obj);
+            }
+            // If matched, need to add next states to the queue of states to be processed
+            matchedStates.addStates(bid, next);
+            return true;
+          } else {
+            return false;
+          }
+        } else {
+          if (node != null && pattern.match(node)) {
+            // If matched, need to add next states to the queue of states to be processed
+            matchedStates.addStates(bid, next);
+            return true;
+          } else {
+            return false;
+          }
+        }
+      } else {
+        // Not consuming element - add this state back to queue of states to be processed
+        // This state was not successfully matched
+        matchedStates.addState(bid, this);
+        return false;
+      }
+    }
+
+  }
+

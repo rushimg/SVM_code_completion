@@ -1,0 +1,43 @@
+    public Size2D arrange(Graphics2D g2, RectangleConstraint constraint) {
+        RectangleConstraint cc = toContentConstraint(constraint);
+        LengthConstraintType w = cc.getWidthConstraintType();
+        LengthConstraintType h = cc.getHeightConstraintType();
+        Size2D contentSize = null;
+        if (w == LengthConstraintType.NONE) {
+            if (h == LengthConstraintType.NONE) {
+                contentSize = new Size2D(getWidth(), getHeight());
+            }
+            else if (h == LengthConstraintType.RANGE) {
+                throw new RuntimeException("Not yet implemented.");
+            }
+            else if (h == LengthConstraintType.FIXED) {
+                throw new RuntimeException("Not yet implemented.");
+            }
+        }
+        else if (w == LengthConstraintType.RANGE) {
+            if (h == LengthConstraintType.NONE) {
+                throw new RuntimeException("Not yet implemented.");
+            }
+            else if (h == LengthConstraintType.RANGE) {
+                contentSize = arrangeRR(g2, cc.getWidthRange(),
+                        cc.getHeightRange());
+            }
+            else if (h == LengthConstraintType.FIXED) {
+                throw new RuntimeException("Not yet implemented.");
+            }
+        }
+        else if (w == LengthConstraintType.FIXED) {
+            if (h == LengthConstraintType.NONE) {
+                throw new RuntimeException("Not yet implemented.");
+            }
+            else if (h == LengthConstraintType.RANGE) {
+                throw new RuntimeException("Not yet implemented.");
+            }
+            else if (h == LengthConstraintType.FIXED) {
+                throw new RuntimeException("Not yet implemented.");
+            }
+        }
+        return new Size2D(calculateTotalWidth(contentSize.getWidth()),
+                calculateTotalHeight(contentSize.getHeight()));
+    }
+

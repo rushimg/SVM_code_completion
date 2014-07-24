@@ -1,0 +1,49 @@
+    public void draw(Graphics2D g2, Rectangle2D area, Point2D anchor,
+                     PlotState parentState,
+                     PlotRenderingInfo info) {
+
+        // set up info collection...
+        if (info != null) {
+            info.setPlotArea(area);
+        }
+
+        // adjust the drawing area for plot insets (if any)...
+        RectangleInsets insets = getInsets();
+        insets.trim(area);
+
+        AxisSpace space = new AxisSpace();
+        space = this.domainAxis.reserveSpace(g2, this, area,
+                RectangleEdge.BOTTOM, space);
+        space = this.rangeAxis.reserveSpace(g2, this, area, RectangleEdge.LEFT,
+                space);
+        Rectangle2D dataArea = space.shrink(area, null);
+
+        if (info != null) {
+            info.setDataArea(dataArea);
+        }
+
+        // draw the plot background and axes...
+        drawBackground(g2, dataArea);
+
+        AxisState domainAxisState = this.domainAxis.draw(g2,
+                dataArea.getMaxY(), area, dataArea, RectangleEdge.BOTTOM, info);
+        AxisState rangeAxisState = this.rangeAxis.draw(g2, dataArea.getMinX(),
+                area, dataArea, RectangleEdge.LEFT, info);
+        drawDomainGridlines(g2, dataArea, domainAxisState.getTicks());
+        drawRangeGridlines(g2, dataArea, rangeAxisState.getTicks());
+
+        Shape originalClip = g2.getClip();
+        Composite originalComposite = g2.getComposite();
+
+        g2.clip(dataArea);
+        g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER,
+                getForegroundAlpha()));
+
+        render(g2, dataArea, info, null);
+
+        g2.setClip(originalClip);
+        g2.setComposite(originalComposite);
+        drawOutline(g2, dataArea);
+
+    }
+

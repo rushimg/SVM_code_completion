@@ -1,0 +1,54 @@
+  private void calculateCL(double[] x) {
+    value = 0.0;
+    if (derivativeNumerator == null) {
+      derivativeNumerator = new double[x.length];
+      for (int d = 0; d < data.length; d++) {
+        int[] features = data[d];
+        for (int feature : features) {
+          int i = indexOf(feature, labels[d]);
+          if (dataWeights == null) {
+            derivativeNumerator[i] -= 1;
+          } else {
+            derivativeNumerator[i] -= dataWeights[d];
+          }
+        }
+      }
+    }
+    copy(derivative, derivativeNumerator);
+
+    double[] sums = new double[numClasses];
+    double[] probs = new double[numClasses];
+
+    for (int d = 0; d < data.length; d++) {
+      int[] features = data[d];
+      // activation
+      Arrays.fill(sums, 0.0);
+
+      for (int c = 0; c < numClasses; c++) {
+        for (int feature : features) {
+          int i = indexOf(feature, c);
+          sums[c] += x[i];
+        }
+      }
+      double total = ArrayMath.logSum(sums);
+      for (int c = 0; c < numClasses; c++) {
+        probs[c] = Math.exp(sums[c] - total);
+        if (dataWeights != null) {
+        }
+        for (int feature : features) {
+          int i = indexOf(feature, c);
+          derivative[i] += probs[c];
+        }
+      }
+
+      double dV = sums[labels[d]] - total;
+      if (dataWeights != null) {
+      }
+      value -= dV;
+    }
+    //System.err.println("x length="+x.length);
+    //System.err.println("weights length="+weights.length);
+    double[] newX = ArrayMath.pairwiseSubtract(x, weights);
+    value += prior.compute(newX, derivative);
+  }
+

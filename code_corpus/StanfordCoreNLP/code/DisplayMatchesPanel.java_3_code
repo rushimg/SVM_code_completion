@@ -1,0 +1,66 @@
+  public void clearMatches() {
+    JPanel spaceholder = new JPanel();
+    spaceholder.setBackground(Color.white);
+
+    scroller.setViewportView(spaceholder);
+    scroller.validate();
+    scroller.repaint();
+
+    matchedPartCoordinates = null;
+    matchedPartCoordinateIdx = -1;
+  }
+
+  public class FilenameMouseInputAdapter extends MouseInputAdapter {
+    JTextField textField;
+
+    public FilenameMouseInputAdapter(JTextField textField) {
+      this.textField = textField;
+    }
+
+    private boolean dragNDrop = false;
+    @Override
+    public void mousePressed(MouseEvent e) {
+      if (MatchesPanel.getInstance().isEmpty()) return;
+      if(firstMouseEvent == null) {
+        firstMouseEvent = e;
+      }
+      e.consume();
+      if(((e.getModifiersEx()) & InputEvent.SHIFT_DOWN_MASK) == InputEvent.SHIFT_DOWN_MASK) {
+        //shift is being held
+        addHighlight(textField, firstMouseEvent, e);
+      } else if(!HighlightUtils.isInHighlight(e, textField, textField.getHighlighter())) {
+        textField.getHighlighter().removeAllHighlights();
+        firstMouseEvent = e;
+        dragNDrop = false;
+        textField.repaint();
+      } else {
+        //in a highlight, if we drag after this, we'll be DnDing
+        dragNDrop = true;
+      }
+    }
+
+    private boolean addHighlight(JTextField label, MouseEvent mouseEvent1, MouseEvent mouseEvent2) {
+      return HighlightUtils.addHighlight(label, mouseEvent1, mouseEvent2);
+    }
+
+    @Override
+    public void mouseDragged(MouseEvent e) {
+      if (MatchesPanel.getInstance().isEmpty()) return;
+
+      if (firstMouseEvent != null) {
+        e.consume();
+        if(dragNDrop) {
+          if(textField == null)
+            return;
+          if(Point2D.distanceSq(e.getX(), e.getY(), firstMouseEvent.getX(), firstMouseEvent.getY()) > 25) {
+            //do DnD
+            textField.getTransferHandler().exportAsDrag((JComponent) e.getSource(), firstMouseEvent, TransferHandler.COPY);
+          }
+        } else {
+          addHighlight(textField, firstMouseEvent, e);
+        }
+      }
+    }
+  }
+
+

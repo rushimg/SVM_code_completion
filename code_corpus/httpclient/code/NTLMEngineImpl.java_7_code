@@ -1,0 +1,23 @@
+    private static byte[] lmHash(final String password) throws NTLMEngineException {
+        try {
+            final byte[] oemPassword = password.toUpperCase(Locale.ROOT).getBytes(Consts.ASCII);
+            final int length = Math.min(oemPassword.length, 14);
+            final byte[] keyBytes = new byte[14];
+            System.arraycopy(oemPassword, 0, keyBytes, 0, length);
+            final Key lowKey = createDESKey(keyBytes, 0);
+            final Key highKey = createDESKey(keyBytes, 7);
+            final byte[] magicConstant = "KGS!@#$%".getBytes(Consts.ASCII);
+            final Cipher des = Cipher.getInstance("DES/ECB/NoPadding");
+            des.init(Cipher.ENCRYPT_MODE, lowKey);
+            final byte[] lowHash = des.doFinal(magicConstant);
+            des.init(Cipher.ENCRYPT_MODE, highKey);
+            final byte[] highHash = des.doFinal(magicConstant);
+            final byte[] lmHash = new byte[16];
+            System.arraycopy(lowHash, 0, lmHash, 0, 8);
+            System.arraycopy(highHash, 0, lmHash, 8, 8);
+            return lmHash;
+        } catch (final Exception e) {
+            throw new NTLMEngineException(e.getMessage(), e);
+        }
+    }
+

@@ -1,0 +1,147 @@
+
+  // private static final Pattern SINGLE_SPACE_PATTERN = Pattern.compile(" ");
+  private static final Pattern LEFT_PAREN_PATTERN = Pattern.compile("\\(");
+  private static final Pattern RIGHT_PAREN_PATTERN = Pattern.compile("\\)");
+  private static final Pattern AMP_PATTERN = Pattern.compile("(?i:&amp;)");
+
+  private static final Pattern ONE_FOURTH_PATTERN = Pattern.compile("\u00BC");
+  private static final Pattern ONE_HALF_PATTERN = Pattern.compile("\u00BD");
+  private static final Pattern THREE_FOURTHS_PATTERN = Pattern.compile("\u00BE");
+  private static final Pattern ONE_THIRD_PATTERN = Pattern.compile("\u2153");
+  private static final Pattern TWO_THIRDS_PATTERN = Pattern.compile("\u2154");
+
+  private Object normalizeFractions(final String in) {
+    String out = in;
+    if (normalizeFractions) {
+      if (escapeForwardSlashAsterisk) {
+        out = ONE_FOURTH_PATTERN.matcher(out).replaceAll("1\\\\/4");
+        out = ONE_HALF_PATTERN.matcher(out).replaceAll("1\\\\/2");
+        out = THREE_FOURTHS_PATTERN.matcher(out).replaceAll("3\\\\/4");
+        out = ONE_THIRD_PATTERN.matcher(out).replaceAll("1\\\\/3");
+        out = TWO_THIRDS_PATTERN.matcher(out).replaceAll("2\\\\/3");
+     } else {
+        out = ONE_FOURTH_PATTERN.matcher(out).replaceAll("1/4");
+        out = ONE_HALF_PATTERN.matcher(out).replaceAll("1/2");
+        out = THREE_FOURTHS_PATTERN.matcher(out).replaceAll("3/4");
+        out = ONE_THIRD_PATTERN.matcher(out).replaceAll("1/3");
+        out = TWO_THIRDS_PATTERN.matcher(out).replaceAll("2/3");
+      }
+    }
+    //  System.err.println("normalizeFractions="+normalizeFractions+", escapeForwardSlashAsterisk="+escapeForwardSlashAsterisk);
+    //  System.err.println("Mapped |"+in+"| to |" + out + "|.");
+    return getNext(out, in);
+  }
+
+  private static String removeSoftHyphens(String in) {
+    // \u00AD is the soft hyphen character, which we remove, regarding it as inserted only for line-breaking
+    if (in.indexOf('\u00AD') < 0) {
+      // shortcut doing work
+      return in;
+    }
+    int length = in.length();
+    StringBuilder out = new StringBuilder(length - 1);
+    for (int i = 0; i < length; i++) {
+      char ch = in.charAt(i);
+      if (ch != '\u00AD') {
+        out.append(ch);
+      }
+    }
+    if (out.length() == 0) {
+      out.append('-'); // don't create an empty token
+    }
+    return out.toString();
+  }
+
+  private static final Pattern CENTS_PATTERN = Pattern.compile("\u00A2");
+  private static final Pattern POUND_PATTERN = Pattern.compile("\u00A3");
+  private static final Pattern GENERIC_CURRENCY_PATTERN = Pattern.compile("[\u0080\u00A4\u20A0\u20AC]");
+
+  private static String normalizeCurrency(String in) {
+    String s1 = in;
+    s1 = CENTS_PATTERN.matcher(s1).replaceAll("cents");
+    s1 = POUND_PATTERN.matcher(s1).replaceAll("#");  // historically used for pound in PTB3
+    s1 = GENERIC_CURRENCY_PATTERN.matcher(s1).replaceAll("\\$");  // Euro (ECU, generic currency)  -- no good translation!
+    return s1;
+  }
+
+  private static final Pattern singleQuote = Pattern.compile("&apos;|'");
+  private static final Pattern doubleQuote = Pattern.compile("\"|&quot;");
+
+  // 91,92,93,94 aren't valid unicode points, but sometimes they show
+  // up from cp1252 and need to be translated
+  private static final Pattern leftSingleQuote = Pattern.compile("[\u0091\u2018\u201B\u2039]");
+  private static final Pattern rightSingleQuote = Pattern.compile("[\u0092\u2019\u203A]");
+  private static final Pattern leftDoubleQuote = Pattern.compile("[\u0093\u201C\u00AB]");
+  private static final Pattern rightDoubleQuote = Pattern.compile("[\u0094\u201D\u00BB]");
+
+  private static String latexQuotes(String in, boolean probablyLeft) {
+    String s1 = in;
+    if (probablyLeft) {
+      s1 = singleQuote.matcher(s1).replaceAll("`");
+      s1 = doubleQuote.matcher(s1).replaceAll("``");
+    } else {
+      s1 = singleQuote.matcher(s1).replaceAll("'");
+      s1 = doubleQuote.matcher(s1).replaceAll("''");
+    }
+    s1 = leftSingleQuote.matcher(s1).replaceAll("`");
+    s1 = rightSingleQuote.matcher(s1).replaceAll("'");
+    s1 = leftDoubleQuote.matcher(s1).replaceAll("``");
+    s1 = rightDoubleQuote.matcher(s1).replaceAll("''");
+    return s1;
+  }
+
+  private static final Pattern asciiSingleQuote = Pattern.compile("&apos;|[\u0091\u2018\u0092\u2019\u201A\u201B\u2039\u203A']");
+  private static final Pattern asciiDoubleQuote = Pattern.compile("&quot;|[\u0093\u201C\u0094\u201D\u201E\u00AB\u00BB\"]");
+
+  private static String asciiQuotes(String in) {
+    String s1 = in;
+    s1 = asciiSingleQuote.matcher(s1).replaceAll("'");
+    s1 = asciiDoubleQuote.matcher(s1).replaceAll("\"");
+    return s1;
+  }
+
+  private static final Pattern unicodeLeftSingleQuote = Pattern.compile("\u0091");
+  private static final Pattern unicodeRightSingleQuote = Pattern.compile("\u0092");
+  private static final Pattern unicodeLeftDoubleQuote = Pattern.compile("\u0093");
+  private static final Pattern unicodeRightDoubleQuote = Pattern.compile("\u0094");
+
+  private static String unicodeQuotes(String in, boolean probablyLeft) {
+    String s1 = in;
+    if (probablyLeft) {
+      s1 = singleQuote.matcher(s1).replaceAll("\u2018");
+      s1 = doubleQuote.matcher(s1).replaceAll("\u201c");
+    } else {
+      s1 = singleQuote.matcher(s1).replaceAll("\u2019");
+      s1 = doubleQuote.matcher(s1).replaceAll("\u201d");
+    }
+    s1 = unicodeLeftSingleQuote.matcher(s1).replaceAll("\u2018");
+    s1 = unicodeRightSingleQuote.matcher(s1).replaceAll("\u2019");
+    s1 = unicodeLeftDoubleQuote.matcher(s1).replaceAll("\u201c");
+    s1 = unicodeRightDoubleQuote.matcher(s1).replaceAll("\u201d");
+    return s1;
+  }
+
+  private Object handleQuotes(String tok, boolean probablyLeft) {
+    String normTok;
+    if (latexQuotes) {
+      normTok = latexQuotes(tok, probablyLeft);
+    } else if (unicodeQuotes) {
+      normTok = unicodeQuotes(tok, probablyLeft);
+    } else if (asciiQuotes) {
+      normTok = asciiQuotes(tok);
+    } else {
+      normTok = tok;
+    }
+    return getNext(normTok, tok);
+  }
+
+  private Object handleEllipsis(final String tok) {
+    if (ptb3Ellipsis) {
+      return getNext(ptb3EllipsisStr, tok);
+    } else if (unicodeEllipsis) {
+      return getNext(unicodeEllipsisStr, tok);
+    } else {
+      return getNext(tok, tok);
+    }
+  }
+

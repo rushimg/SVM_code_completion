@@ -1,0 +1,27 @@
+    public GeneralPath generateClipPath(Rectangle2D dataArea,
+                                        ValueAxis horizontalAxis,
+                                        ValueAxis verticalAxis) {
+
+        GeneralPath generalPath = new GeneralPath();
+        double transX = horizontalAxis.valueToJava2D(
+            this.xValue[0], dataArea, RectangleEdge.BOTTOM
+        );
+        double transY = verticalAxis.valueToJava2D(
+            this.yValue[0], dataArea, RectangleEdge.LEFT
+        );
+        generalPath.moveTo((float) transX, (float) transY);
+        for (int k = 0; k < this.yValue.length; k++) {
+            transX = horizontalAxis.valueToJava2D(
+                this.xValue[k], dataArea, RectangleEdge.BOTTOM
+            );
+            transY = verticalAxis.valueToJava2D(
+                this.yValue[k], dataArea, RectangleEdge.LEFT
+            );
+            generalPath.lineTo((float) transX, (float) transY);
+        }
+        generalPath.closePath();
+
+        return generalPath;
+
+    }
+

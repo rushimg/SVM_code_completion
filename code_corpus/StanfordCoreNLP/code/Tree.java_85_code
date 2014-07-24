@@ -1,0 +1,37 @@
+  public Tree spliceOut(final Filter<Tree> nodeFilter, final TreeFactory tf) {
+    List<Tree> l = spliceOutHelper(nodeFilter, tf);
+    if (l.isEmpty()) {
+      return null;
+    } else if (l.size() == 1) {
+      return l.get(0);
+    }
+    // for a forest, make a new root
+    return tf.newTreeNode((Label) null, l);
+  }
+
+
+  private List<Tree> spliceOutHelper(Filter<Tree> nodeFilter, TreeFactory tf) {
+    // recurse over all children first
+    Tree[] kids = children();
+    List<Tree> l = new ArrayList<Tree>();
+    for (Tree kid : kids) {
+      l.addAll(kid.spliceOutHelper(nodeFilter, tf));
+    }
+    // check if this node is being spliced out
+    if (nodeFilter.accept(this)) {
+      // no, so add our children and return
+      Tree t;
+      if ( ! l.isEmpty()) {
+        t = tf.newTreeNode(label(), l);
+      } else {
+        t = tf.newLeaf(label());
+      }
+      l = new ArrayList<Tree>(1);
+      l.add(t);
+      return l;
+    }
+    // we're out, so return our children
+    return l;
+  }
+
+

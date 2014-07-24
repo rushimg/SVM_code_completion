@@ -1,0 +1,48 @@
+    public boolean equals(Object o) {
+
+        if (o == null) {
+            return false;
+        }
+        if (o == this) {
+            return true;
+        }
+
+        if (!(o instanceof KeyedValues2D)) {
+            return false;
+        }
+        KeyedValues2D kv2D = (KeyedValues2D) o;
+        if (!getRowKeys().equals(kv2D.getRowKeys())) {
+            return false;
+        }
+        if (!getColumnKeys().equals(kv2D.getColumnKeys())) {
+            return false;
+        }
+        int rowCount = getRowCount();
+        if (rowCount != kv2D.getRowCount()) {
+            return false;
+        }
+
+        int colCount = getColumnCount();
+        if (colCount != kv2D.getColumnCount()) {
+            return false;
+        }
+
+        for (int r = 0; r < rowCount; r++) {
+            for (int c = 0; c < colCount; c++) {
+                Number v1 = getValue(r, c);
+                Number v2 = kv2D.getValue(r, c);
+                if (v1 == null) {
+                    if (v2 != null) {
+                        return false;
+                    }
+                }
+                else {
+                    if (!v1.equals(v2)) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+

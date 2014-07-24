@@ -1,0 +1,194 @@
+  private void doLoadFiles() {
+    if (chooser == null) {
+      chooser = createFileChooser();
+    }
+    String approveText = chooser.getApproveButtonText();
+    chooser.setApproveButtonText("Load with file filters");
+    int status = chooser.showOpenDialog(this);
+    chooser.setApproveButtonText(approveText);
+    if (status == JFileChooser.APPROVE_OPTION) {
+      //now set up the file filters if there are directories
+      File[] selectedFiles = chooser.getSelectedFiles();
+      boolean haveDirectory = false;
+      for (File f : selectedFiles) {
+        if (f.isDirectory()) {
+          haveDirectory = true;
+          break;
+        }
+      }
+      if (haveDirectory) {
+        doFileFilters(selectedFiles);
+      } else {
+        startFileLoadingThread(new EnumMap<FilterType,String>(FilterType.class), selectedFiles);
+      }
+    }
+  }
+
+  public static class TransferActionListener implements ActionListener, PropertyChangeListener {
+
+    private JComponent focusOwner; // = null;
+
+    //This code based on Java DnD tutorial
+    public TransferActionListener() {
+      KeyboardFocusManager manager = KeyboardFocusManager.
+      getCurrentKeyboardFocusManager();
+      manager.addPropertyChangeListener("permanentFocusOwner", this);
+    }
+
+    public void propertyChange(PropertyChangeEvent e) {
+      Object o = e.getNewValue();
+      if (o instanceof JComponent) {
+        focusOwner = (JComponent)o;
+      } else {
+        focusOwner = null;
+      }
+    }
+
+    public void actionPerformed(ActionEvent e) {
+      if (focusOwner == null)
+        return;
+      String action = e.getActionCommand();
+      Action a = focusOwner.getActionMap().get(action);
+      if (a != null) {
+        a.actionPerformed(new ActionEvent(focusOwner,
+            ActionEvent.ACTION_PERFORMED,
+            null));
+      }
+    }
+  }
+
+  private void doFileFilters(File[] files) {
+    //System.out.println("Doing file filters");
+
+    final File[] cFiles = files;
+    final JPanel fileFilterPanel = new JPanel();
+    fileFilterPanel.setLayout(new BoxLayout(fileFilterPanel, BoxLayout.PAGE_AXIS));
+    JLabel text = new JLabel("<html>Please indicate any constraints on the files you want to load. All files in specified folders that satisfy all of the given constraints will be loaded. Just press Okay to load all files.</html>");
+    //text.setBorder(BorderFactory.createLineBorder(Color.black));
+    text.setAlignmentX(SwingConstants.LEADING);
+    JPanel textPanel = new JPanel(new BorderLayout());
+    textPanel.setPreferredSize(new Dimension(100,50));
+    //textPanel.setBorder(BorderFactory.createLineBorder(Color.black));
+    textPanel.add(text);
+    fileFilterPanel.add(textPanel);
+    fileFilterPanel.add(Box.createVerticalStrut(5));
+    Box defaultFilter = getNewFilter();
+    //defaultFilter.setBorder(BorderFactory.createLineBorder(Color.black));
+    //fileFilterPanel.setBorder(BorderFactory.createLineBorder(Color.black));
+    fileFilterPanel.add(defaultFilter);
+    final JOptionPane fileFilterDialog = new JOptionPane();
+    fileFilterDialog.setMessage(fileFilterPanel);
+    JButton[] options = new JButton[3];
+    JButton okay = new JButton("Okay");
+
+    JButton add = new JButton("Add another filter");
+    JButton cancel = new JButton("Cancel");
+    options[0] = okay;
+    options[1] = add;
+    options[2] = cancel;
+
+    fileFilterDialog.setOptions(options);
+
+    final JDialog dialog = fileFilterDialog.createDialog(null, "Set file filters...");
+    okay.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent arg0) {
+        // first check if we have a file range option and make sure it's valid
+        final EnumMap<FilterType,String> filters = getFilters(fileFilterPanel);
+        if (filters.containsKey(FilterType.isInRange)) {
+          try {
+            // if we can creat it, then it's not invalid!
+            new NumberRangesFileFilter(filters.get(FilterType.isInRange), false);
+          } catch(Exception e) {
+            JOptionPane.showMessageDialog(dialog, new JLabel("<html>Please check the range you specified for the file number.  Ranges must be numerical, and disjoint <br>ranges should be separated by commas.  For example \"1-200,250-375\" is a valid range.</html>"), "Error in File Number Range", JOptionPane.ERROR_MESSAGE);
+            return;
+          }
+        }
+        dialog.setVisible(false);
+        startFileLoadingThread(filters, cFiles);
+      }
+    });
+    add.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        fileFilterPanel.add(getNewFilter());
+        dialog.pack();
+      }
+    });
+    cancel.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+       dialog.setVisible(false);
+
+      }
+    });
+    dialog.getRootPane().setDefaultButton(okay);
+    dialog.pack();
+    dialog.setLocationRelativeTo(this);
+    dialog.setVisible(true);
+  }
+
+  private void startFileLoadingThread(final EnumMap<FilterType,String> filters, final File[] cFiles) {
+    Thread t = new Thread() {
+      @Override
+      public void run() {
+        FilePanel.getInstance().loadFiles(filters, cFiles);
+        SwingUtilities.invokeLater(new Runnable() {
+
+          public void run() {
+              clearFileList.setEnabled(true);
+          }
+
+        });
+      }
+    };
+    t.start();
+
+  }
+
+  private static EnumMap<FilterType,String> getFilters(JPanel panel) {
+    EnumMap<FilterType,String> filters = new EnumMap<FilterType, String>(FilterType.class);
+    Component[] components = panel.getComponents();
+    for(Component c : components) {
+      if (c.getClass() != Box.class) {
+        continue;
+      }
+      JComboBox filterType = (JComboBox) ((Container) c).getComponent(0);
+      JTextField filterValue = (JTextField) ((Container) c).getComponent(2);
+      filters.put((FilterType) filterType.getSelectedItem(), filterValue.getText());
+    }
+
+    return filters;
+  }
+
+  private static Box getNewFilter() {
+    Box filter = Box.createHorizontalBox();
+    FilterType[] filterTypeOptions = FilterType.values();
+    JComboBox filterTypes = new JComboBox(filterTypeOptions );
+    filterTypes.setEditable(false);
+    filter.add(filterTypes);
+    filter.add(Box.createHorizontalGlue());
+    JTextField filterInput = new JTextField();
+    //filterInput.setMaximumSize(new Dimension(50,50));
+    filterInput.setEditable(true);
+    filter.add(filterInput);
+    return filter;
+  }
+
+   public enum FilterType {
+    none("None"),
+    hasExtension("Has extension: "),
+    hasPrefix("Has prefix: "),
+//    hasNumGreaterThan("Has number greater than: "),
+//    hasNumLessThan("Has number less than: ");
+    isInRange("Has number in range: ");
+
+    private final String text;
+    private FilterType(String string) {
+      text = string;
+    }
+
+    @Override
+    public String toString() {
+      return text;
+    }
+  }
+
+

@@ -1,0 +1,517 @@
+            return this;
+      return createTemporal(standardTemporalType, timeLabel, mod, new InexactTime(groundedBase, duration, groundedRange));
+      //return new InexactTime(groundedBase, duration, groundedRange);
+    }
+
+    @Override
+    public Instant getJodaTimeInstant() {
+      Instant p = null;
+      if (base != null) {
+        p = base.getJodaTimeInstant();
+      }
+      if (p == null && range != null) {
+        p = range.mid().getJodaTimeInstant();
+      }
+      return p;
+    }
+
+    @Override
+    public Partial getJodaTimePartial() {
+      Partial p = null;
+      if (base != null) {
+        p = base.getJodaTimePartial();
+      }
+      if (p == null && range != null && range.mid() != null) {
+        p = range.mid().getJodaTimePartial();
+      }
+      return p;
+    }
+
+    @Override
+    public String toFormattedString(int flags) {
+      if (getTimeLabel() != null) {
+        return getTimeLabel();
+      }
+
+      if ((flags & FORMAT_ISO) != 0) {
+        return null;
+      } // TODO: is there iso standard?
+      if ((flags & FORMAT_TIMEX3_VALUE) != 0) {
+        return null;
+      } // TODO: is there timex3 standard?
+      StringBuilder sb = new StringBuilder();
+      sb.append("~(");
+      if (base != null) {
+        sb.append(base.toFormattedString(flags));
+      }
+      if (duration != null) {
+        sb.append(":");
+        sb.append(duration.toFormattedString(flags));
+      }
+      if (range != null) {
+        sb.append(" IN ");
+        sb.append(range.toFormattedString(flags));
+      }
+      sb.append(")");
+      return sb.toString();
+    }
+
+    private static final long serialVersionUID = 1;
+  }
+
+  // Relative Time (something not quite resolved)
+  public static class RelativeTime extends Time {
+    Time base = TIME_REF;
+    TemporalOp tempOp;
+    Temporal tempArg;
+    int opFlags;
+
+    public RelativeTime(Time base, TemporalOp tempOp, Temporal tempArg, int flags) {
+      super(base);
+      this.base = base;
+      this.tempOp = tempOp;
+      this.tempArg = tempArg;
+      this.opFlags = flags;
+    }
+
+    public RelativeTime(Time base, TemporalOp tempOp, Temporal tempArg) {
+      super(base);
+      this.base = base;
+      this.tempOp = tempOp;
+      this.tempArg = tempArg;
+    }
+
+    public RelativeTime(TemporalOp tempOp, Temporal tempArg) {
+      this.tempOp = tempOp;
+      this.tempArg = tempArg;
+    }
+
+    public RelativeTime(TemporalOp tempOp, Temporal tempArg, int flags) {
+      this.tempOp = tempOp;
+      this.tempArg = tempArg;
+      this.opFlags = flags;
+    }
+
+    public RelativeTime(Duration offset) {
+      this(TIME_REF, TemporalOp.OFFSET, offset);
+    }
+
+    public RelativeTime(Time base, Duration offset) {
+      this(base, TemporalOp.OFFSET, offset);
+    }
+
+    public RelativeTime(Time base) {
+      super(base);
+      this.base = base;
+    }
+
+    public RelativeTime() {
+    }
+
+    @Override
+    public boolean isGrounded() {
+      return (base != null) && base.isGrounded();
+    }
+
+    // TODO: compute duration/range => uncertainty of this time
+    @Override
+    public Duration getDuration() {
+      return null;
+    }
+
+    @Override
+    public Range getRange(int flags, Duration granularity) {
+      return new Range(this, this);
+    }
+
+    @Override
+    public Map<String, String> getTimexAttributes(TimeIndex timeIndex) {
+      Map<String, String> map = super.getTimexAttributes(timeIndex);
+      String tfid = getTfidString(timeIndex);
+      map.put(TimexAttr.temporalFunction.name(), "true");
+      map.put(TimexAttr.valueFromFunction.name(), tfid);
+      if (base != null) {
+        map.put(TimexAttr.anchorTimeID.name(), base.getTidString(timeIndex));
+      }
+      return map;
+    }
+
+    // / NOTE: This is not ISO or timex standard
+    @Override
+    public String toFormattedString(int flags) {
+      if (getTimeLabel() != null) {
+        return getTimeLabel();
+      }
+      if ((flags & FORMAT_ISO) != 0) {
+        return null;
+      } // TODO: is there iso standard?
+      if ((flags & FORMAT_TIMEX3_VALUE) != 0) {
+        return null;
+      } // TODO: is there timex3 standard?
+      StringBuilder sb = new StringBuilder();
+      if (base != null && base != TIME_REF) {
+        sb.append(base.toFormattedString(flags));
+      }
+      if (tempOp != null) {
+        if (sb.length() > 0) {
+          sb.append(" ");
+        }
+        sb.append(tempOp);
+        if (tempArg != null) {
+          sb.append(" ").append(tempArg.toFormattedString(flags));
+        }
+      }
+      return sb.toString();
+    }
+
+    @Override
+    public Temporal resolve(Time refTime, int flags) {
+      Temporal groundedBase = null;
+      if (base == TIME_REF) {
+        groundedBase = refTime;
+      } else if (base != null) {
+        groundedBase = base.resolve(refTime, flags);
+      }
+      if (tempOp != null) {
+        // NOTE: Should be always safe to resolve and then apply since
+        // we will terminate here (no looping hopefully)
+        Temporal t = tempOp.apply(groundedBase, tempArg, opFlags);
+        if (t != null) {
+          t = t.addModApprox(mod, approx);
+          return t;
+        } else {
+          // NOTE: this can be difficult if applying op
+          // gives back same stuff as before
+          // Try applying op and then resolving
+          t = tempOp.apply(base, tempArg, opFlags);
+          if (t != null) {
+            t = t.addModApprox(mod, approx);
+            if (!this.equals(t)) {
+              return t.resolve(refTime, flags);
+            } else {
+              // Applying op doesn't do much....
+              return this;
+            }
+          } else {
+            return null;
+          }
+        }
+      } else {
+        return (groundedBase != null) ? groundedBase.addModApprox(mod, approx) : null;
+      }
+    }
+
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+
+      RelativeTime that = (RelativeTime) o;
+
+      if (opFlags != that.opFlags) {
+        return false;
+      }
+      if (base != null ? !base.equals(that.base) : that.base != null) {
+        return false;
+      }
+      if (tempArg != null ? !tempArg.equals(that.tempArg) : that.tempArg != null) {
+        return false;
+      }
+      if (tempOp != that.tempOp) {
+        return false;
+      }
+
+      return true;
+    }
+
+    public int hashCode() {
+      int result = base != null ? base.hashCode() : 0;
+      return result;
+    }
+
+    @Override
+    public Time add(Duration offset) {
+      Time t;
+      Duration d = offset;
+      if (this.tempOp == null) {
+        t = new RelativeTime(base, d);
+        t.approx = this.approx;
+        t.mod = this.mod;
+      } else if (this.tempOp == TemporalOp.OFFSET) {
+        d = ((Duration) this.tempArg).add(offset);
+        t = new RelativeTime(base, d);
+        t.approx = this.approx;
+        t.mod = this.mod;
+      } else {
+        t = new RelativeTime(this, d);
+      }
+      return t;
+    }
+
+    @Override
+    public Temporal intersect(Temporal t) {
+      return new RelativeTime(this, TemporalOp.INTERSECT, t);
+    }
+
+    @Override
+    public Time intersect(Time t) {
+      if (base == TIME_REF || base == null) {
+        if (t instanceof PartialTime && tempOp == TemporalOp.OFFSET) {
+          RelativeTime rt = new RelativeTime(this, tempOp, tempArg);
+          rt.base = t;
+          return rt;
+        }
+      }
+      return new RelativeTime(this, TemporalOp.INTERSECT, t);
+    }
+    private static final long serialVersionUID = 1;
+  }
+
+  // Partial time with Joda Time fields
+  public static class PartialTime extends Time {
+    // There is typically some uncertainty/imprecision in the time
+    Partial base; // For representing partial absolute time
+    DateTimeZone dateTimeZone; // Datetime zone associated with this time
+
+    // private static DateTimeFormatter isoDateFormatter =
+    // ISODateTimeFormat.basicDate();
+    // private static DateTimeFormatter isoDateTimeFormatter =
+    // ISODateTimeFormat.basicDateTimeNoMillis();
+    // private static DateTimeFormatter isoTimeFormatter =
+    // ISODateTimeFormat.basicTTimeNoMillis();
+    // private static DateTimeFormatter isoDateFormatter =
+    // ISODateTimeFormat.date();
+    // private static DateTimeFormatter isoDateTimeFormatter =
+    // ISODateTimeFormat.dateTimeNoMillis();
+    // private static DateTimeFormatter isoTimeFormatter =
+    // ISODateTimeFormat.tTimeNoMillis();
+
+    public PartialTime(Time t, Partial p) {
+      super(t);
+      if (t instanceof PartialTime) {
+        this.dateTimeZone = ((PartialTime) t).dateTimeZone;
+      }
+      this.base = p;
+    }
+
+    public PartialTime(PartialTime pt) {
+      super(pt);
+      this.dateTimeZone = pt.dateTimeZone;
+      this.base = pt.base;
+    }
+
+    // public PartialTime(Partial base, String mod) { this.base = base; this.mod
+    // = mod; }
+    public PartialTime(Partial base) {
+      this.base = base;
+    }
+
+    public PartialTime(StandardTemporalType temporalType, Partial base) {
+      this.base = base;
+      this.standardTemporalType = temporalType;
+    }
+
+    public PartialTime() {
+    }
+
+    @Override
+    public PartialTime setTimeZone(DateTimeZone tz) {
+      PartialTime tzPt = new PartialTime(this, base);
+      tzPt.dateTimeZone = tz;
+      return tzPt;
+    }
+
+    @Override
+    public Instant getJodaTimeInstant() {
+      return JodaTimeUtils.getInstant(base);
+    }
+
+    @Override
+    public Partial getJodaTimePartial() {
+      return base;
+    }
+
+    @Override
+    public boolean hasTime() {
+      if (base == null)
+        return false;
+      DateTimeFieldType sdft = JodaTimeUtils.getMostSpecific(base);
+      if (sdft != null && JodaTimeUtils.isMoreGeneral(DateTimeFieldType.dayOfMonth(), sdft, base.getChronology())) {
+        return true;
+      } else {
+        return false;
+      }
+    }
+
+    @Override
+    public TimexType getTimexType() {
+      if (base == null) return null;
+      return super.getTimexType();
+    }
+
+    protected boolean appendDateFormats(DateTimeFormatterBuilder builder, int flags) {
+      boolean alwaysPad = ((flags & FORMAT_PAD_UNKNOWN) != 0);
+      boolean hasDate = true;
+      boolean isISO = ((flags & FORMAT_ISO) != 0);
+      boolean isTimex3 = ((flags & FORMAT_TIMEX3_VALUE) != 0);
+      // ERA
+      if (JodaTimeUtils.hasField(base, DateTimeFieldType.era())) {
+        int era = base.get(DateTimeFieldType.era());
+        if (era == 0) {
+          builder.appendLiteral('-');
+        } else if (era == 1) {
+          builder.appendLiteral('+');
+        }
+      }
+      // YEAR
+      if (JodaTimeUtils.hasField(base, DateTimeFieldType.centuryOfEra()) || JodaTimeUtils.hasField(base, JodaTimeUtils.DecadeOfCentury)
+          || JodaTimeUtils.hasField(base, DateTimeFieldType.yearOfCentury())) {
+        if (JodaTimeUtils.hasField(base, DateTimeFieldType.centuryOfEra())) {
+          builder.appendCenturyOfEra(2, 2);
+        } else {
+          builder.appendLiteral(PAD_FIELD_UNKNOWN2);
+        }
+        if (JodaTimeUtils.hasField(base, JodaTimeUtils.DecadeOfCentury)) {
+          builder.appendDecimal(JodaTimeUtils.DecadeOfCentury, 1, 1);
+          builder.appendLiteral(PAD_FIELD_UNKNOWN);
+        } else if (JodaTimeUtils.hasField(base, DateTimeFieldType.yearOfCentury())) {
+          builder.appendYearOfCentury(2, 2);
+        } else {
+          builder.appendLiteral(PAD_FIELD_UNKNOWN2);
+        }
+      } else if (JodaTimeUtils.hasField(base, DateTimeFieldType.year())) {
+        builder.appendYear(4, 4);
+      } else if (JodaTimeUtils.hasField(base, DateTimeFieldType.weekyear())) {
+        builder.appendWeekyear(4, 4);
+      } else {
+        builder.appendLiteral(PAD_FIELD_UNKNOWN4);
+        hasDate = false;
+      }
+      // Decide whether to include HALF, QUARTER, MONTH/DAY, or WEEK/WEEKDAY
+      boolean appendHalf = false;
+      boolean appendQuarter = false;
+      boolean appendMonthDay = false;
+      boolean appendWeekDay = false;
+      if (isISO || isTimex3) {
+        if (JodaTimeUtils.hasField(base, DateTimeFieldType.monthOfYear()) && JodaTimeUtils.hasField(base, DateTimeFieldType.dayOfMonth())) {
+          appendMonthDay = true;
+        } else if (JodaTimeUtils.hasField(base, DateTimeFieldType.weekOfWeekyear()) || JodaTimeUtils.hasField(base, DateTimeFieldType.dayOfWeek())) {
+          appendWeekDay = true;
+        } else if (JodaTimeUtils.hasField(base, DateTimeFieldType.monthOfYear()) || JodaTimeUtils.hasField(base, DateTimeFieldType.dayOfMonth())) {
+          appendMonthDay = true;
+        } else if (JodaTimeUtils.hasField(base, JodaTimeUtils.QuarterOfYear)) {
+          if (!isISO) appendQuarter = true;
+        } else if (JodaTimeUtils.hasField(base, JodaTimeUtils.HalfYearOfYear)) {
+          if (!isISO) appendHalf = true;
+        }
+      } else {
+        appendHalf = true;
+        appendQuarter = true;
+        appendMonthDay = true;
+        appendWeekDay = true;
+      }
+
+      // Half - Not ISO standard
+      if (appendHalf && JodaTimeUtils.hasField(base, JodaTimeUtils.HalfYearOfYear)) {
+        builder.appendLiteral("-H");
+        builder.appendDecimal(JodaTimeUtils.HalfYearOfYear, 1, 1);
+      }
+      // Quarter  - Not ISO standard
+      if (appendQuarter && JodaTimeUtils.hasField(base, JodaTimeUtils.QuarterOfYear)) {
+        builder.appendLiteral("-Q");
+        builder.appendDecimal(JodaTimeUtils.QuarterOfYear, 1, 1);
+      }
+      // MONTH
+      if (appendMonthDay && (JodaTimeUtils.hasField(base, DateTimeFieldType.monthOfYear()) || JodaTimeUtils.hasField(base, DateTimeFieldType.dayOfMonth()))) {
+        hasDate = true;
+        builder.appendLiteral('-');
+        if (JodaTimeUtils.hasField(base, DateTimeFieldType.monthOfYear())) {
+          builder.appendMonthOfYear(2);
+        } else {
+          builder.appendLiteral(PAD_FIELD_UNKNOWN2);
+        }
+        // Don't indicate day of month if not specified
+        if (JodaTimeUtils.hasField(base, DateTimeFieldType.dayOfMonth())) {
+          builder.appendLiteral('-');
+          builder.appendDayOfMonth(2);
+        } else if (alwaysPad) {
+          builder.appendLiteral(PAD_FIELD_UNKNOWN2);
+        }
+      }
+      if (appendWeekDay && (JodaTimeUtils.hasField(base, DateTimeFieldType.weekOfWeekyear()) || JodaTimeUtils.hasField(base, DateTimeFieldType.dayOfWeek()))) {
+        hasDate = true;
+        builder.appendLiteral("-W");
+        if (JodaTimeUtils.hasField(base, DateTimeFieldType.weekOfWeekyear())) {
+          builder.appendWeekOfWeekyear(2);
+        } else {
+          builder.appendLiteral(PAD_FIELD_UNKNOWN2);
+        }
+        // Don't indicate the day of the week if not specified
+        if (JodaTimeUtils.hasField(base, DateTimeFieldType.dayOfWeek())) {
+          builder.appendLiteral("-");
+          builder.appendDayOfWeek(1);
+        }
+      }
+      return hasDate;
+    }
+
+    protected boolean appendTimeFormats(DateTimeFormatterBuilder builder, int flags) {
+      boolean alwaysPad = ((flags & FORMAT_PAD_UNKNOWN) != 0);
+      boolean hasTime = hasTime();
+      DateTimeFieldType sdft = JodaTimeUtils.getMostSpecific(base);
+      if (hasTime) {
+        builder.appendLiteral("T");
+        if (JodaTimeUtils.hasField(base, DateTimeFieldType.hourOfDay())) {
+          builder.appendHourOfDay(2);
+        } else if (JodaTimeUtils.hasField(base, DateTimeFieldType.clockhourOfDay())) {
+          builder.appendClockhourOfDay(2);
+        } else {
+          builder.appendLiteral(PAD_FIELD_UNKNOWN2);
+        }
+        if (JodaTimeUtils.hasField(base, DateTimeFieldType.minuteOfHour())) {
+          builder.appendLiteral(":");
+          builder.appendMinuteOfHour(2);
+        } else if (alwaysPad || JodaTimeUtils.isMoreGeneral(DateTimeFieldType.minuteOfHour(), sdft, base.getChronology())) {
+          builder.appendLiteral(":");
+          builder.appendLiteral(PAD_FIELD_UNKNOWN2);
+        }
+        if (JodaTimeUtils.hasField(base, DateTimeFieldType.secondOfMinute())) {
+          builder.appendLiteral(":");
+          builder.appendSecondOfMinute(2);
+        } else if (alwaysPad || JodaTimeUtils.isMoreGeneral(DateTimeFieldType.secondOfMinute(), sdft, base.getChronology())) {
+          builder.appendLiteral(":");
+          builder.appendLiteral(PAD_FIELD_UNKNOWN2);
+        }
+        if (JodaTimeUtils.hasField(base, DateTimeFieldType.millisOfSecond())) {
+          builder.appendLiteral(".");
+          builder.appendMillisOfSecond(3);
+        }
+        // builder.append(isoTimeFormatter);
+      }
+      return hasTime;
+    }
+
+    protected DateTimeFormatter getFormatter(int flags) {
+      DateTimeFormatterBuilder builder = new DateTimeFormatterBuilder();
+      boolean hasDate = appendDateFormats(builder, flags);
+      boolean hasTime = hasTime();
+      if (hasTime) {
+        if (!hasDate) {
+          builder.clear();
+        }
+        appendTimeFormats(builder, flags);
+      }
+      return builder.toFormatter();
+    }
+
+    @Override
+    public boolean isGrounded() {
+      return false;
+    }
+
+    // TODO: compute duration/range => uncertainty of this time
+    @Override
+    public Duration getDuration() {

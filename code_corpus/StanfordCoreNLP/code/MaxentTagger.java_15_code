@@ -1,0 +1,31 @@
+  private void readExtractors(InputStream file) throws IOException, ClassNotFoundException {
+    ObjectInputStream in = new ObjectInputStream(file);
+    extractors = (Extractors) in.readObject();
+    extractorsRare = (Extractors) in.readObject();
+    extractors.initTypes();
+    extractorsRare.initTypes();
+    int left = extractors.leftContext();
+    int left_u = extractorsRare.leftContext();
+    if (left_u > left) {
+      left = left_u;
+    }
+    leftContext = left;
+    int right = extractors.rightContext();
+    int right_u = extractorsRare.rightContext();
+    if (right_u > right) {
+      right = right_u;
+    }
+    rightContext = right;
+
+    setExtractorsGlobal();
+  }
+
+  // Sometimes there is data associated with the tagger (such as a
+  // dictionary) that we don't want saved with each extractor.  This
+  // call lets those extractors get that information from the tagger
+  // after being loaded from a data file.
+  private void setExtractorsGlobal() {
+    extractors.setGlobalHolder(this);
+    extractorsRare.setGlobalHolder(this);
+  }
+

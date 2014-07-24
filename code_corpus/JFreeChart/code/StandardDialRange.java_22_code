@@ -1,0 +1,27 @@
+    public void draw(Graphics2D g2, DialPlot plot, Rectangle2D frame,
+            Rectangle2D view) {
+
+        Rectangle2D arcRectInner = DialPlot.rectangleByRadius(frame,
+                this.innerRadius, this.innerRadius);
+        Rectangle2D arcRectOuter = DialPlot.rectangleByRadius(frame,
+                this.outerRadius, this.outerRadius);
+
+        DialScale scale = plot.getScale(this.scaleIndex);
+        if (scale == null) {
+            throw new RuntimeException("No scale for scaleIndex = "
+                    + this.scaleIndex);
+        }
+        double angleMin = scale.valueToAngle(this.lowerBound);
+        double angleMax = scale.valueToAngle(this.upperBound);
+
+        Arc2D arcInner = new Arc2D.Double(arcRectInner, angleMin,
+                angleMax - angleMin, Arc2D.OPEN);
+        Arc2D arcOuter = new Arc2D.Double(arcRectOuter, angleMax,
+                angleMin - angleMax, Arc2D.OPEN);
+
+        g2.setPaint(this.paint);
+        g2.setStroke(new BasicStroke(2.0f));
+        g2.draw(arcInner);
+        g2.draw(arcOuter);
+    }
+

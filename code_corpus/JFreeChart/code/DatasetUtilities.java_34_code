@@ -1,0 +1,120 @@
+    public static Range iterateToFindRangeBounds(CategoryDataset dataset,
+            List visibleSeriesKeys, boolean includeInterval) {
+
+        if (dataset == null) {
+            throw new IllegalArgumentException("Null 'dataset' argument.");
+        }
+        if (visibleSeriesKeys == null) {
+            throw new IllegalArgumentException(
+                    "Null 'visibleSeriesKeys' argument.");
+        }
+
+        double minimum = Double.POSITIVE_INFINITY;
+        double maximum = Double.NEGATIVE_INFINITY;
+        int columnCount = dataset.getColumnCount();
+        if (includeInterval
+                && dataset instanceof BoxAndWhiskerCategoryDataset) {
+            // handle special case of BoxAndWhiskerDataset
+            BoxAndWhiskerCategoryDataset bx
+                    = (BoxAndWhiskerCategoryDataset) dataset;
+            Iterator iterator = visibleSeriesKeys.iterator();
+            while (iterator.hasNext()) {
+                Comparable seriesKey = (Comparable) iterator.next();
+                int series = dataset.getRowIndex(seriesKey);
+                int itemCount = dataset.getColumnCount();
+                for (int item = 0; item < itemCount; item++) {
+                    Number lvalue = bx.getMinRegularValue(series, item);
+                    if (lvalue == null) {
+                        lvalue = bx.getValue(series, item);
+                    }
+                    Number uvalue = bx.getMaxRegularValue(series, item);
+                    if (uvalue == null) {
+                        uvalue = bx.getValue(series, item);
+                    }
+                    if (lvalue != null) {
+                        minimum = Math.min(minimum, lvalue.doubleValue());
+                    }
+                    if (uvalue != null) {
+                        maximum = Math.max(maximum, uvalue.doubleValue());
+                    }
+                }
+            }
+        }
+        else if (includeInterval
+                && dataset instanceof IntervalCategoryDataset) {
+            // handle the special case where the dataset has y-intervals that
+            // we want to measure
+            IntervalCategoryDataset icd = (IntervalCategoryDataset) dataset;
+            Number lvalue, uvalue;
+            Iterator iterator = visibleSeriesKeys.iterator();
+            while (iterator.hasNext()) {
+                Comparable seriesKey = (Comparable) iterator.next();
+                int series = dataset.getRowIndex(seriesKey);
+                for (int column = 0; column < columnCount; column++) {
+                    lvalue = icd.getStartValue(series, column);
+                    uvalue = icd.getEndValue(series, column);
+                    if (lvalue != null && !Double.isNaN(lvalue.doubleValue())) {
+                        minimum = Math.min(minimum, lvalue.doubleValue());
+                    }
+                    if (uvalue != null && !Double.isNaN(uvalue.doubleValue())) {
+                        maximum = Math.max(maximum, uvalue.doubleValue());
+                    }
+                }
+            }
+        }
+        else if (includeInterval 
+                && dataset instanceof StatisticalCategoryDataset) {
+            // handle the special case where the dataset has y-intervals that
+            // we want to measure
+            StatisticalCategoryDataset scd
+                    = (StatisticalCategoryDataset) dataset;
+            Iterator iterator = visibleSeriesKeys.iterator();
+            while (iterator.hasNext()) {
+                Comparable seriesKey = (Comparable) iterator.next();
+                int series = dataset.getRowIndex(seriesKey);
+                for (int column = 0; column < columnCount; column++) {
+                    Number meanN = scd.getMeanValue(series, column);
+                    if (meanN != null) {
+                        double std = 0.0;
+                        Number stdN = scd.getStdDevValue(series, column);
+                        if (stdN != null) {
+                            std = stdN.doubleValue();
+                            if (Double.isNaN(std)) {
+                                std = 0.0;
+                            }
+                        }
+                        double mean = meanN.doubleValue();
+                        if (!Double.isNaN(mean)) {
+                            minimum = Math.min(minimum, mean - std);
+                            maximum = Math.max(maximum, mean + std);
+                        }
+                    }
+                }
+            }
+        }
+        else {
+            // handle the standard case (plain CategoryDataset)
+            Iterator iterator = visibleSeriesKeys.iterator();
+            while (iterator.hasNext()) {
+                Comparable seriesKey = (Comparable) iterator.next();
+                int series = dataset.getRowIndex(seriesKey);
+                for (int column = 0; column < columnCount; column++) {
+                    Number value = dataset.getValue(series, column);
+                    if (value != null) {
+                        double v = value.doubleValue();
+                        if (!Double.isNaN(v)) {
+                            minimum = Math.min(minimum, v);
+                            maximum = Math.max(maximum, v);
+                        }
+                    }
+                }
+            }
+        }
+        if (minimum == Double.POSITIVE_INFINITY) {
+            return null;
+        }
+        else {
+            return new Range(minimum, maximum);
+        }
+    }
+

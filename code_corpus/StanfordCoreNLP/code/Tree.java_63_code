@@ -1,0 +1,66 @@
+  public ArrayList<Label> yield(ArrayList<Label> y) {
+    if (isLeaf()) {
+      y.add(label());
+
+    } else {
+      Tree[] kids = children();
+      for (Tree kid : kids) {
+        kid.yield(y);
+      }
+    }
+    return y;
+  }
+
+  public ArrayList<Word> yieldWords() {
+    return yieldWords(new ArrayList<Word>());
+  }
+
+  public ArrayList<Word> yieldWords(ArrayList<Word> y) {
+    if (isLeaf()) {
+      y.add(new Word(label()));
+    } else {
+      for (Tree kid : children()) {
+        kid.yieldWords(y);
+      }
+    }
+    return y;
+  }
+
+  public <X extends HasWord> ArrayList<X> yieldHasWord() {
+    return yieldHasWord(new ArrayList<X>());
+  }
+
+  @SuppressWarnings("unchecked")
+  public <X extends HasWord> ArrayList<X> yieldHasWord(ArrayList<X> y) {
+    if (isLeaf()) {
+      Label lab = label();
+      // cdm: this is new hacked in stuff in Mar 2007 so we can now have a
+      // well-typed version of a Sentence, whose objects MUST implement HasWord
+      //
+      // wsg (Feb. 2010) - More hacks for trees with CoreLabels in which the type implements
+      // HasWord but only the value field is populated. This can happen if legacy code uses
+      // LabeledScoredTreeFactory but passes in a StringLabel to e.g. newLeaf().
+      if (lab instanceof HasWord) {
+        if(lab instanceof CoreLabel) {
+          CoreLabel cl = (CoreLabel) lab;
+          if(cl.word() == null)
+            cl.setWord(cl.value());
+          y.add((X) cl);
+        } else {
+          y.add((X) lab);
+        }
+
+      } else {
+        y.add((X) new Word(lab));
+      }
+
+    } else {
+      Tree[] kids = children();
+      for (Tree kid : kids) {
+        kid.yield(y);
+      }
+    }
+    return y;
+  }
+
+

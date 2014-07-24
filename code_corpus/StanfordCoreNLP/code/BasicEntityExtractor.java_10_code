@@ -1,0 +1,89 @@
+  public void train(Annotation doc) {
+    List<List<CoreLabel>> trainingSet = AnnotationUtils.entityMentionsToCoreLabels(doc, annotationsToSkip, useSubTypes, useBIO);
+
+    if(SAVE_CONLL_2003){
+      // dump a file in CoNLL-2003 format
+      try {
+        PrintStream os = new PrintStream(new FileOutputStream("train.conll"));
+        // saveCoNLLFiles("/tmp/ace/train/", doc, useSubTypes, useBIO);
+        saveCoNLL(os, trainingSet, useBIO);
+        os.close();
+      } catch (IOException e) {
+        e.printStackTrace();
+        System.exit(1);
+      }
+    }
+
+    this.classifier = createClassifier();
+    if (trainingSet.size() > 0) {
+      this.classifier.train(Collections.unmodifiableCollection(trainingSet));
+    }
+  }
+
+  public static void saveCoNLLFiles(String dir, Annotation dataset, boolean useSubTypes, boolean alreadyBIO) throws IOException {
+    List<CoreMap> sentences = dataset.get(CoreAnnotations.SentencesAnnotation.class);
+
+    String docid = null;
+    PrintStream os = null;
+    for (CoreMap sentence : sentences) {
+    	String myDocid = sentence.get(CoreAnnotations.DocIDAnnotation.class);
+    	if(docid == null || ! myDocid.equals(docid)){
+    		if(os != null){
+    			os.close();
+    		}
+    		docid = myDocid;
+    		os = new PrintStream(new FileOutputStream(dir + File.separator + docid + ".conll"));
+    	}
+      List<CoreLabel> labeledSentence = AnnotationUtils.sentenceEntityMentionsToCoreLabels(sentence, true, null, null, useSubTypes, alreadyBIO);
+      assert(labeledSentence != null);
+
+      String prev = null;
+      for(CoreLabel word: labeledSentence) {
+        String w = word.word().replaceAll("[ \t\n]+", "_");
+        String t = word.get(CoreAnnotations.PartOfSpeechAnnotation.class);
+        String l = word.get(CoreAnnotations.AnswerAnnotation.class);
+        String nl = l;
+        if(! alreadyBIO && ! l.equals("O")){
+          if(prev != null && l.equals(prev)) nl = "I-" + l;
+          else nl = "B-" + l;
+        }
+        String line = w + " " + t + " " + nl;
+        String [] toks = line.split("[ \t\n]+");
+        if(toks.length != 3){
+          throw new RuntimeException("INVALID LINE: \"" + line + "\"");
+        }
+        os.printf("%s %s %s\n", w, t, nl);
+        prev = l;
+      }
+      os.println();
+    }
+    if(os != null){
+    	os.close();
+    }
+  }
+
+  public static void saveCoNLL(PrintStream os, List<List<CoreLabel>> sentences, boolean alreadyBIO) {
+    os.println("-DOCSTART- -X- O\n");
+    for(List<CoreLabel> sent: sentences){
+      String prev = null;
+      for(CoreLabel word: sent) {
+        String w = word.word().replaceAll("[ \t\n]+", "_");
+        String t = word.get(CoreAnnotations.PartOfSpeechAnnotation.class);
+        String l = word.get(CoreAnnotations.AnswerAnnotation.class);
+        String nl = l;
+        if(! alreadyBIO && ! l.equals("O")){
+          if(prev != null && l.equals(prev)) nl = "I-" + l;
+          else nl = "B-" + l;
+        }
+        String line = w + " " + t + " " + nl;
+        String [] toks = line.split("[ \t\n]+");
+        if(toks.length != 3){
+          throw new RuntimeException("INVALID LINE: \"" + line + "\"");
+        }
+        os.printf("%s %s %s\n", w, t, nl);
+        prev = l;
+      }
+      os.println();
+    }
+  }
+

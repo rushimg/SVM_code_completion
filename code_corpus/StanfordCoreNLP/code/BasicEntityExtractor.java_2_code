@@ -1,0 +1,27 @@
+  @Override
+  public void annotate(Annotation doc) {
+    if(SAVE_CONLL_2003) {
+      // dump a file in CoNLL-2003 format
+      try {
+        PrintStream os = new PrintStream(new FileOutputStream("test.conll"));
+        List<List<CoreLabel>> labels = AnnotationUtils.entityMentionsToCoreLabels(doc, annotationsToSkip, useSubTypes, useBIO);
+        BasicEntityExtractor.saveCoNLL(os, labels, true);
+        // saveCoNLLFiles("/tmp/ace/test", doc, useSubTypes, useBIO);
+        os.close();
+      } catch (IOException e) {
+        e.printStackTrace();
+        System.exit(1);
+      }
+    }
+
+    List<CoreMap> sents = doc.get(CoreAnnotations.SentencesAnnotation.class);
+    int sentCount = 1;
+    for (CoreMap sentence : sents) {
+      if(useNERTags){
+        this.makeAnnotationFromAllNERTags(sentence);
+      } 
+      else
+        extractEntities(sentence, sentCount);
+      sentCount ++;
+    }
+

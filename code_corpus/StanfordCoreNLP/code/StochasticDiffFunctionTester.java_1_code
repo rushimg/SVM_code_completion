@@ -1,0 +1,97 @@
+public class StochasticDiffFunctionTester {
+  static private double EPS = 1e-8;
+  static private boolean quiet = false;
+
+  protected int testBatchSize;
+  protected int numBatches;
+  protected AbstractStochasticCachingDiffFunction thisFunc;
+
+  double[]  approxGrad,fullGrad,diff,Hv,HvFD,v,curGrad,gradFD;
+  double diffNorm,diffValue,fullValue,approxValue,diffGrad,maxGradDiff = 0.0,maxHvDiff = 0.0;
+  Random generator;
+  private static NumberFormat nf = new DecimalFormat("00.0");
+
+  public StochasticDiffFunctionTester(Function function){
+
+    // check for derivatives
+    if (!(function instanceof AbstractStochasticCachingDiffFunction)) {
+      System.err.println("Attempt to test non stochastic function using StochasticDiffFunctionTester");
+      throw new UnsupportedOperationException();
+    }
+
+    thisFunc = (AbstractStochasticCachingDiffFunction) function; // Make sure the function is Stochastic
+
+    generator = new Random(System.currentTimeMillis());  // used to generate random test vectors
+
+    //  Look for a good batchSize to test with by getting factors
+    testBatchSize = (int) getTestBatchSize(thisFunc.dataDimension());
+
+    //  Again make sure that our calculated batchSize is actually valid
+    if(testBatchSize < 0 || testBatchSize > thisFunc.dataDimension() || (thisFunc.dataDimension()%testBatchSize != 0)){
+      System.err.println("Invalid testBatchSize found, testing aborted.  Data size: " + thisFunc.dataDimension() + " batchSize: " + testBatchSize);
+      System.exit(1);
+    }
+
+    numBatches = thisFunc.dataDimension()/testBatchSize;
+
+    sayln("StochasticDiffFunctionTester created with:");
+    sayln("   data dimension  = " + thisFunc.dataDimension());
+    sayln("   batch size = " + testBatchSize);
+    sayln("   number of batches = " + numBatches);
+
+  }
+
+
+
+  private void sayln(String s) {
+    if (!quiet) {
+      System.err.println(s);
+    }
+  }
+
+
+
+
+
+
+
+
+  //  Get Prime Factors of an integer ....
+  //  Code was originally from    http://www.idinews.com/sourcecode/IntegerFunction.html
+  //  Decompose integer into prime factors
+  //  ------------------------------------
+
+  //  Upon return result[0] contains the number of factors (0 if N is 0), and
+  //  result[1] . . . result[result[0]] contain the factors in ascending order.
+
+  private static long[] primeFactors(long N)
+  {long [] fctr = new long[64];       //  Result array
+    long n = Math.abs(N);              //  Guard against negative
+
+    short fctrIndex = 0;
+
+    if (n > 0) {                       //  Guard against zero
+
+      //  First do special cases 2 and 3
+
+      while (n % 2 == 0)  {fctr[++fctrIndex] = 2; n /= 2;}
+      while (n % 3 == 0)  {fctr[++fctrIndex] = 3; n /= 3;}
+
+      //  Then every 6n-1 and 6n+1 until the divisor exceeds the square root
+      //  of the current quotient.  NOTE:  Some trial divisors will be
+      //  non-primes, e.g. 25, 35, 49, 55.  They have no effect, however,
+      //  since their prime factors will already have been tried.
+
+        for (int dvsr = k; dvsr <= k+2; dvsr+=2)
+        { while (n % dvsr == 0)
+        {fctr[++fctrIndex] = dvsr;  n /= dvsr;}
+        }
+
+      if (n > 1) fctr[++fctrIndex] = n; //  Store final factor, if any
+    }
+
+    fctr[0] = fctrIndex;                //  Store number of factors
+    return fctr;
+  }
+
+

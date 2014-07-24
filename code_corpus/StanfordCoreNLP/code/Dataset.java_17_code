@@ -1,0 +1,51 @@
+  @Override
+  public void printSparseFeatureMatrix(PrintWriter pw) {
+    String sep = "\t";
+    for (int i = 0; i < size; i++) {
+      pw.print(labelIndex.get(labels[i]));
+      int[] datum = data[i];
+      for (int j : datum) {
+        pw.print(sep + featureIndex.get(j));
+      }
+      pw.println();
+    }
+  }
+
+
+  public void changeLabelIndex(Index<L> newLabelIndex) {
+
+    labels = trimToSize(labels);
+
+    for (int i = 0; i < labels.length; i++) {
+      labels[i] = newLabelIndex.indexOf(labelIndex.get(labels[i]));
+    }
+    labelIndex = newLabelIndex;
+  }
+
+  public void changeFeatureIndex(Index<F> newFeatureIndex) {
+
+    data = trimToSize(data);
+    labels = trimToSize(labels);
+
+    int[][] newData = new int[data.length][];
+    for (int i = 0; i < data.length; i++) {
+      int[] newD = new int[data[i].length];
+      int k = 0;
+      for (int j = 0; j < data[i].length; j++) {
+        int newIndex = newFeatureIndex.indexOf(featureIndex.get(data[i][j]));
+        if (newIndex >= 0) {
+          newD[k++] = newIndex;
+        }
+      }
+      newData[i] = new int[k];
+      System.arraycopy(newD, 0, newData[i], 0, k);
+    }
+    data = newData;
+    featureIndex = newFeatureIndex;
+  }
+
+  public void selectFeaturesBinaryInformationGain(int numFeatures) {
+    double[] scores = getInformationGains();
+    selectFeatures(numFeatures,scores);
+  }
+

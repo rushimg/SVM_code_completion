@@ -1,0 +1,14 @@
+  public static final GrammaticalRelation ADJECTIVAL_MODIFIER =
+    new GrammaticalRelation(Language.English, "amod", "adjectival modifier",
+        AdjectivalModifierGRAnnotation.class, MODIFIER, "NP(?:-TMP|-ADV)?|NX|NML|NAC|WHNP|ADJP", tregexCompiler,
+        new String[] {
+          // QP !< $ is so phrases such as "$ 100 million buyout" get amod(buyout, $)
+          "/^(?:NP(?:-TMP|-ADV)?|NX|NML|NAC|WHNP)$/ < (ADJP|WHADJP|JJ|JJR|JJS|JJP|VBN|VBG|VBD|IN=target !< (QP !< /^[$]$/) !$- CC)",
+                // IN above is needed for "next" in "next week" etc., which is often tagged IN.
+          "ADJP !< CC|CONJP < (JJ|NNP $ JJ|NNP=target)",
+          // Cover the case of "John, 34, works at Stanford" - similar to an expression for appos
+          "WHNP|WHNP-TMP|WHNP-ADV|NP|NP-TMP|NP-ADV < (NP=target <: CD $- /^,$/ $-- /^(?:WH)?NP/ !$ CC|CONJP)",
+        });
+  public static class AdjectivalModifierGRAnnotation extends GrammaticalRelationAnnotation { }
+
+

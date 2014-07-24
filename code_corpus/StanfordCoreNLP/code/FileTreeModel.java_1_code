@@ -1,0 +1,92 @@
+@SuppressWarnings("serial")
+public class FileTreeModel extends DefaultTreeModel implements FileTreeNodeListener {
+
+  private final List<TreeModelListener> listeners;
+  private final FileTreeNode root;
+  private final Map<FileTreeNode, List<FileTreeNode>> treeStructure;
+
+  public static final String DEFAULT_ENCODING = "UTF-8";
+  public static final String DEFAULT_CHINESE_ENCODING = "GB18030";
+  public static final String DEFAULT_NEGRA_ENCODING = " ISO-8859-1";
+
+  private static String curEncoding = DEFAULT_ENCODING; // todo: shouldn't be static, but changing this requires fixing PreferencesPanel
+  private static TreeReaderFactory trf; // todo: shouldn't be static, needs fixing in TreeFromFile
+
+
+  public FileTreeModel(FileTreeNode root) {
+   super(root);
+   this.root = root;
+   root.addListener(this);
+   listeners = new ArrayList<TreeModelListener>();
+   treeStructure = Generics.newHashMap();
+   treeStructure.put(root, new ArrayList<FileTreeNode>());
+
+   //other data
+   trf = new TregexPattern.TRegexTreeReaderFactory();
+  }
+
+  @Override
+  public void addTreeModelListener(TreeModelListener l) {
+    listeners.add(l);
+  }
+
+  protected void fireTreeStructureChanged(TreePath parentPath) {
+    TreeModelEvent e = null;
+    for (TreeModelListener l : listeners) {
+      if (e == null)
+        e = new TreeModelEvent(this, parentPath, null, null);
+      l.treeStructureChanged(e);
+    }
+  }
+
+  @Override
+  public FileTreeNode getChild(Object parent, int childNum) {
+    List<FileTreeNode> children = treeStructure.get(parent);
+    if (children == null || childNum < 0 || children.size() <= childNum) {
+      return null;
+    } else {
+      return children.get(childNum);
+    }
+  }
+
+  @Override
+  public int getChildCount(Object parent) {
+    List<FileTreeNode> children = treeStructure.get(parent);
+    if (children == null) {
+      return 0;
+    } else {
+      return children.size();
+    }
+  }
+
+  @Override
+  public int getIndexOfChild(Object parent, Object child) {
+    if(parent == null || child == null) {
+      return -1;
+    }
+    List<FileTreeNode> children = treeStructure.get(parent);
+    if (children == null) {
+      return -1;
+    } else {
+      return children.indexOf(child);
+    }
+  }
+
+  @Override
+  public boolean isLeaf(Object node) {
+    List<FileTreeNode> children = treeStructure.get(node);
+    return children == null;
+  }
+
+  @Override
+  public void removeTreeModelListener(TreeModelListener l) {
+    listeners.remove(l);
+  }
+
+  public void treeNodeChanged(FileTreeNode n) {
+    TreePath t = new TreePath(makeTreePathArray(n));
+    //System.out.println("Tree path is: " + t);
+    this.fireTreeStructureChanged(t);
+
+  }
+

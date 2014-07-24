@@ -1,0 +1,56 @@
+  private static void addXSubj(Collection<TypedDependency> list) {
+    List<TypedDependency> newDeps = new ArrayList<TypedDependency>();
+
+    for (TypedDependency xcomp : list) {
+      if (xcomp.reln() != XCLAUSAL_COMPLEMENT) {
+        // we only add xsubj dependencies to some xcomp dependencies
+        continue;
+      }
+
+      TreeGraphNode modifier = xcomp.dep();
+      TreeGraphNode head = xcomp.gov();
+
+      boolean hasSubjectDaughter = false;
+      boolean hasAux = false;
+      List<TreeGraphNode> subjects = new ArrayList<TreeGraphNode>();
+      for (TypedDependency dep : list) {
+        // already have a subject dependency
+        if ((dep.reln() == NOMINAL_SUBJECT || dep.reln() == NOMINAL_PASSIVE_SUBJECT) && dep.gov() == modifier) {
+          hasSubjectDaughter = true;
+          break;
+        }
+
+        if (dep.reln() == AUX_MODIFIER && dep.gov() == modifier) {
+          hasAux = true;
+        }
+
+        // TODO: create an xsubjpass to go with the NOMINAL_PASSIVE_SUBJECT
+        if ((dep.reln() == NOMINAL_SUBJECT || dep.reln() == NOMINAL_PASSIVE_SUBJECT) && dep.gov() == head) {
+          subjects.add(dep.dep());
+        }
+      }
+
+      // if we already have an nsubj dependency, no need to add an xsubj
+      if (hasSubjectDaughter) {
+        continue;
+      }
+
+      if ((modifier.label().value().equalsIgnoreCase("to") && hasAux) ||
+          (!modifier.label().value().equalsIgnoreCase("to") && !hasAux)) {
+        continue;
+      }
+
+      for (TreeGraphNode subject : subjects) {
+        TypedDependency newDep = new TypedDependency(CONTROLLING_SUBJECT, modifier, subject);
+        newDeps.add(newDep);
+      }
+    }
+
+    for (TypedDependency newDep : newDeps) {
+      if (!list.contains(newDep)) {
+        newDep.setExtra();
+        list.add(newDep);
+      }
+    }
+  }
+

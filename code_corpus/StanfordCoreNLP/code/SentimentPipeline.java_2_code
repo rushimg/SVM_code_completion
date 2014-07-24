@@ -1,0 +1,17 @@
+  static void setSentimentLabels(Tree tree) {
+    if (tree.isLeaf()) {
+      return;
+    }
+
+    for (Tree child : tree.children()) {
+      setSentimentLabels(child);
+    }
+
+    Label label = tree.label();
+    if (!(label instanceof CoreLabel)) {
+      throw new IllegalArgumentException("Required a tree with CoreLabels");
+    }
+    CoreLabel cl = (CoreLabel) label;
+    cl.setValue(Integer.toString(RNNCoreAnnotations.getPredictedClass(tree)));
+  }
+

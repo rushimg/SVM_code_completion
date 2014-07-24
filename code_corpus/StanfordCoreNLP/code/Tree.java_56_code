@@ -1,0 +1,55 @@
+  public void percolateHeads(HeadFinder hf) {
+    Label nodeLabel = label();
+    if (isLeaf()) {
+      // Sanity check: word() is usually set by the TreeReader.
+      if (nodeLabel instanceof HasWord) {
+        HasWord w = (HasWord) nodeLabel;
+        if (w.word() == null) {
+          w.setWord(nodeLabel.value());
+        }
+      }
+
+    } else {
+      for (Tree kid : children()) {
+        kid.percolateHeads(hf);
+      }
+
+      final Tree head = hf.determineHead(this);
+      if (head != null) {
+        final Label headLabel = head.label();
+
+        // Set the head tag.
+        String headTag = (headLabel instanceof HasTag) ? ((HasTag) headLabel).tag() : null;
+        if (headTag == null && head.isLeaf()) {
+          // below us is a leaf
+          headTag = nodeLabel.value();
+        }
+
+        // Set the head word
+        String headWord = (headLabel instanceof HasWord) ? ((HasWord) headLabel).word() : null;
+        if (headWord == null && head.isLeaf()) {
+          // below us is a leaf
+          // this might be useful despite case for leaf above in
+          // case the leaf label type doesn't support word()
+          headWord = headLabel.value();
+        }
+
+        // Set the head index
+        int headIndex = (headLabel instanceof HasIndex) ? ((HasIndex) headLabel).index() : -1;
+
+        if (nodeLabel instanceof HasWord) {
+          ((HasWord) nodeLabel).setWord(headWord);
+        }
+        if (nodeLabel instanceof HasTag) {
+          ((HasTag) nodeLabel).setTag(headTag);
+        }
+        if (nodeLabel instanceof HasIndex && headIndex >= 0) {
+          ((HasIndex) nodeLabel).setIndex(headIndex);
+        }
+
+      } else {
+        System.err.println("Head is null: " + this);
+      }
+    }
+  }
+

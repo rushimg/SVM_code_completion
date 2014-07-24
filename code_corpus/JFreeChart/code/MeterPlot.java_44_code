@@ -1,0 +1,122 @@
+    public void draw(Graphics2D g2, Rectangle2D area, Point2D anchor,
+                     PlotState parentState,
+                     PlotRenderingInfo info) {
+
+        if (info != null) {
+            info.setPlotArea(area);
+        }
+
+        // adjust for insets...
+        RectangleInsets insets = getInsets();
+        insets.trim(area);
+
+        area.setRect(area.getX() + 4, area.getY() + 4, area.getWidth() - 8,
+                area.getHeight() - 8);
+
+        // draw the background
+        if (this.drawBorder) {
+            drawBackground(g2, area);
+        }
+
+        // adjust the plot area by the interior spacing value
+        double meterX = area.getX() + gapHorizontal / 2;
+        double meterY = area.getY() + gapVertical / 2;
+        double meterW = area.getWidth() - gapHorizontal;
+        double meterH = area.getHeight() - gapVertical
+                + ((this.meterAngle <= 180) && (this.shape != DialShape.CIRCLE)
+                ? area.getHeight() / 1.25 : 0);
+
+        double min = Math.min(meterW, meterH) / 2;
+        meterX = (meterX + meterX + meterW) / 2 - min;
+        meterY = (meterY + meterY + meterH) / 2 - min;
+
+        Rectangle2D meterArea = new Rectangle2D.Double(meterX, meterY, meterW,
+                meterH);
+
+        Rectangle2D.Double originalArea = new Rectangle2D.Double(
+                meterArea.getX() - 4, meterArea.getY() - 4,
+                meterArea.getWidth() + 8, meterArea.getHeight() + 8);
+
+        double meterMiddleX = meterArea.getCenterX();
+        double meterMiddleY = meterArea.getCenterY();
+
+        // plot the data (unless the dataset is null)...
+        ValueDataset data = getDataset();
+        if (data != null) {
+            double dataMin = this.range.getLowerBound();
+            double dataMax = this.range.getUpperBound();
+
+            Shape savedClip = g2.getClip();
+            g2.clip(originalArea);
+            Composite originalComposite = g2.getComposite();
+            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER,
+                    getForegroundAlpha()));
+
+            if (this.dialBackgroundPaint != null) {
+                fillArc(g2, originalArea, dataMin, dataMax,
+                        this.dialBackgroundPaint, true);
+            }
+            drawTicks(g2, meterArea, dataMin, dataMax);
+            drawArcForInterval(g2, meterArea, new MeterInterval("", this.range,
+                    this.dialOutlinePaint, new BasicStroke(1.0f), null));
+
+            Iterator iterator = this.intervals.iterator();
+            while (iterator.hasNext()) {
+                MeterInterval interval = (MeterInterval) iterator.next();
+                drawArcForInterval(g2, meterArea, interval);
+            }
+
+            Number n = data.getValue();
+            if (n != null) {
+                double value = n.doubleValue();
+                drawValueLabel(g2, meterArea);
+
+                if (this.range.contains(value)) {
+                    g2.setPaint(this.needlePaint);
+                    g2.setStroke(new BasicStroke(2.0f));
+
+                    double radius = (meterArea.getWidth() / 2)
+                                    + DEFAULT_BORDER_SIZE + 15;
+                    double valueAngle = valueToAngle(value);
+                    double valueP1 = meterMiddleX
+                    double valueP2 = meterMiddleY
+
+                    Polygon arrow = new Polygon();
+                    if ((valueAngle > 135 && valueAngle < 225)
+                        || (valueAngle < 45 && valueAngle > -45)) {
+
+                        double valueP3 = (meterMiddleY
+                                - DEFAULT_CIRCLE_SIZE / 4);
+                        double valueP4 = (meterMiddleY
+                                + DEFAULT_CIRCLE_SIZE / 4);
+                        arrow.addPoint((int) meterMiddleX, (int) valueP3);
+                        arrow.addPoint((int) meterMiddleX, (int) valueP4);
+
+                    }
+                    else {
+                        arrow.addPoint((int) (meterMiddleX
+                                - DEFAULT_CIRCLE_SIZE / 4), (int) meterMiddleY);
+                        arrow.addPoint((int) (meterMiddleX
+                                + DEFAULT_CIRCLE_SIZE / 4), (int) meterMiddleY);
+                    }
+                    arrow.addPoint((int) valueP1, (int) valueP2);
+                    g2.fill(arrow);
+
+                    Ellipse2D circle = new Ellipse2D.Double(meterMiddleX
+                            - DEFAULT_CIRCLE_SIZE / 2, meterMiddleY
+                            - DEFAULT_CIRCLE_SIZE / 2, DEFAULT_CIRCLE_SIZE,
+                            DEFAULT_CIRCLE_SIZE);
+                    g2.fill(circle);
+                }
+            }
+
+            g2.setClip(savedClip);
+            g2.setComposite(originalComposite);
+
+        }
+        if (this.drawBorder) {
+            drawOutline(g2, area);
+        }
+
+    }
+

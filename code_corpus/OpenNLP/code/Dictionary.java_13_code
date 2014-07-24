@@ -1,0 +1,56 @@
+  public void serialize(OutputStream out) throws IOException {
+
+    Iterator<Entry> entryIterator = new Iterator<Entry>()
+      {
+        private Iterator<StringList> dictionaryIterator = Dictionary.this.iterator();
+
+        public boolean hasNext() {
+          return dictionaryIterator.hasNext();
+        }
+
+        public Entry next() {
+
+          StringList tokens = dictionaryIterator.next();
+
+          return new Entry(tokens, new Attributes());
+        }
+
+        public void remove() {
+          throw new UnsupportedOperationException();
+        }
+
+      };
+
+    DictionarySerializer.serialize(out, entryIterator, isCaseSensitive);
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+
+    boolean result;
+
+    if (obj == this) {
+      result = true;
+    }
+    else if (obj instanceof Dictionary) {
+      Dictionary dictionary  = (Dictionary) obj;
+
+      result = entrySet.equals(dictionary.entrySet);
+    }
+    else {
+      result = false;
+    }
+
+    return result;
+  }
+
+  @Override
+  public int hashCode() {
+    return entrySet.hashCode();
+  }
+
+  @Override
+  public String toString() {
+    return entrySet.toString();
+  }
+

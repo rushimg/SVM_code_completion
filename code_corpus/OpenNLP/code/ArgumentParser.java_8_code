@@ -1,0 +1,42 @@
+  public static <T> String validateArgumentsLoudly(String args[], Class<T>... argProxyInterfaces) {
+    // number of parameters must be always be even
+    if (args.length % 2 != 0) {
+      return "Number of parameters must be always be even";
+    }
+
+    int argumentCount = 0;
+    List<String> parameters = new ArrayList<String>(Arrays.asList(args));
+
+    for (Class<T> argProxyInterface : argProxyInterfaces) {
+      for (Method method : argProxyInterface.getMethods()) {
+        String paramName = methodNameToParameter(method.getName());
+        int paramIndex = CmdLineUtil.getParameterIndex(paramName, args);
+        String valueString = CmdLineUtil.getParameter(paramName, args);
+        if (valueString == null) {
+          OptionalParameter optionalParam = method.getAnnotation(OptionalParameter.class);
+
+          if (optionalParam == null) {
+            if (-1 < paramIndex) {
+              return "Missing mandatory parameter value: " + paramName;
+            } else {
+              return "Missing mandatory parameter: " + paramName;
+            }
+          } else {
+            parameters.remove("-" + paramName);
+          }
+        }
+        else {
+          parameters.remove(paramName);
+          parameters.remove(valueString);
+          argumentCount++;
+        }
+      }
+    }
+
+    if (args.length / 2 > argumentCount) {
+      return "Unrecognized parameters encountered: " + parameters.toString();
+    }
+
+    return null;
+  }
+

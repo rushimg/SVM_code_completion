@@ -1,0 +1,28 @@
+    @Override
+    public void setOptions(String options) {
+      String[] optionList = options.split(",");
+      for (String option : optionList) {
+        lexerProperties.put(option, "true");
+      }
+    }
+
+    @Override
+    public Tokenizer<T> getTokenizer(Reader r, String extraOptions) {
+      setOptions(extraOptions);
+      return getTokenizer(r);
+    }
+
+  } // end static class ArabicTokenizerFactory
+
+  public static TokenizerFactory<CoreLabel> factory() {
+    return ArabicTokenizerFactory.newTokenizerFactory();
+  }
+
+  public static TokenizerFactory<CoreLabel> atbFactory() {
+    TokenizerFactory<CoreLabel> tf = ArabicTokenizerFactory.newTokenizerFactory();
+    for (String option : atbOptions.stringPropertyNames()) {
+      tf.setOptions(option);
+    }
+    return tf;
+  }
+

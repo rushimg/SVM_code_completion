@@ -1,0 +1,148 @@
+
+    JMenuItem loadCRF = new JMenuItem("Load CRF From File");
+    loadCRF.setMnemonic('R');
+    loadCRF.setAccelerator(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_R, InputEvent.CTRL_MASK));
+    loadCRF.addActionListener(actor);
+    classifierMenu.add(loadCRF);
+
+    JMenuItem loadDefaultCRF = new JMenuItem("Load Default CRF");
+    loadDefaultCRF.setMnemonic('L');
+    loadDefaultCRF.setAccelerator(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_L, InputEvent.CTRL_MASK));
+    loadDefaultCRF.addActionListener(actor);
+    classifierMenu.add(loadDefaultCRF);
+
+    extract = new JMenuItem("Run NER");
+    extract.setMnemonic('N');
+    extract.setAccelerator(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_N, InputEvent.CTRL_MASK));
+    extract.addActionListener(actor);
+    classifierMenu.add(extract);
+
+    return menubar;
+  }
+
+
+  private class InputListener implements KeyListener {
+
+    @Override
+    public void keyPressed(KeyEvent e) {
+    }
+
+    @Override
+    public void keyReleased(KeyEvent e) {
+    }
+
+    @Override
+    public void keyTyped(KeyEvent e) {
+      saveTaggedAs.setEnabled(false);
+    }
+
+  }
+
+
+  private class ActionPerformer implements ActionListener {
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+      String com = e.getActionCommand();
+
+      if (com.equals("Open File")) {
+        File file = getFile(true);
+        if (file != null) {
+          openFile(file);
+        }
+      } else if (com.equals("Load URL")) {
+        String url = getURL();
+        if (url != null) {
+          openURL(url);
+        }
+      } else if (com.equals("Exit")) {
+        exit();
+      } else if (com.equals("Clear")) {
+        clearDocument();
+      } else if (com.equals("Cut")) {
+        cutDocument();
+      } else if (com.equals("Copy")) {
+        copyDocument();
+      } else if (com.equals("Paste")) {
+        pasteDocument();
+      } else if (com.equals("Load CRF From File")) {
+        File file = getFile(true);
+        if (file != null) {
+          loadClassifier(file);
+        }
+      } else if (com.equals("Load Default CRF")) {
+        loadClassifier(null);
+      } else if (com.equals("Run NER")) {
+        extract();
+      } else if (com.equals("Save Untagged File")) {
+        saveUntaggedContents(loadedFile);
+      } else if (com.equals("Save Untagged File As ...")) {
+        saveUntaggedContents(getFile(false));
+      } else if (com.equals("Save Tagged File As ...")) {
+        File f = getFile(false);
+        if (f != null) {
+          // i.e., they didn't cancel out of the file dialog
+          saveFile (f, taggedContents);
+        }
+      } else {
+        System.err.println("Unknown Action: "+e);
+      }
+    }
+  }
+
+  public File getFile(boolean open) {
+    File file = null;
+    int returnVal;
+    if (open) {
+      returnVal = fileChooser.showOpenDialog(frame);
+    } else {
+      returnVal = fileChooser.showSaveDialog(frame);
+    }
+    if(returnVal == JFileChooser.APPROVE_OPTION) {
+      file = fileChooser.getSelectedFile();
+      if (open && !checkFile(file)) { file = null; }
+    }
+    return file;
+  }
+
+  public void saveUntaggedContents(File file) {
+    try {
+      String contents;
+      if (editorPane.getContentType().equals("text/html")) {
+        contents = editorPane.getText();
+      } else {
+        Document doc = editorPane.getDocument();
+        contents = doc.getText(0, doc.getLength());
+      }
+      saveFile(file, contents);
+      saveUntagged.setEnabled(true);
+      loadedFile = file;
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public static void saveFile(File file, String contents) {
+    StringUtils.printToFile(file, contents);
+  }
+
+  public String getURL() {
+    String url = JOptionPane.showInputDialog(frame, "URL: ", "Load URL", JOptionPane.QUESTION_MESSAGE);
+    return url;
+  }
+
+  public boolean checkFile(File file) {
+    if (file.isFile()) {
+      fileChooser.setCurrentDirectory(file.getParentFile());
+      return true;
+    } else {
+      String message = "File Not Found: "+file.getAbsolutePath();
+      displayError("File Not Found Error", message);
+      return false;
+    }
+  }
+
+  public void displayError(String title, String message) {
+    JOptionPane.showMessageDialog(frame, message, title, JOptionPane.ERROR_MESSAGE);
+  }
+

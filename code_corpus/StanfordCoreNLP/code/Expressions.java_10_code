@@ -1,0 +1,80 @@
+  private static final Pattern DIGITS_PATTERN = Pattern.compile("\\d+");
+  public static class RegexMatchVarExpression extends SimpleExpression implements AssignableExpression {
+    public RegexMatchVarExpression(String groupname, String... tags) {
+      super(TYPE_REGEXMATCHVAR, groupname, tags);
+    }
+    public RegexMatchVarExpression(Integer groupid, String... tags) {
+      super(TYPE_REGEXMATCHVAR, groupid, tags);
+    }
+    public static RegexMatchVarExpression valueOf(String group) {
+      if (DIGITS_PATTERN.matcher(group).matches()) {
+        Integer n = Integer.valueOf(group);
+        return new RegexMatchVarExpression(n);
+      } else {
+        return new RegexMatchVarExpression(group);
+      }
+    }
+    public Value evaluate(Env env, Object... args) {
+      if (args != null && args.length > 0) {
+        if (args[0] instanceof SequenceMatchResult) {
+          SequenceMatchResult mr = (SequenceMatchResult) args[0];
+          Object v = get();
+          if (v instanceof String) {
+            // TODO: depending if TYPE_STRING, use string version...
+            return new PrimitiveValue<List>(TYPE_TOKENS, mr.groupNodes((String) v));
+          } else if (v instanceof Integer) {
+            return new PrimitiveValue<List>(TYPE_TOKENS, mr.groupNodes((Integer) v));
+          } else {
+            throw new UnsupportedOperationException("String match result must be referred to by group id");
+          }
+        } else if (args[0] instanceof MatchResult) {
+          MatchResult mr = (MatchResult) args[0];
+          Object v = get();
+          if (v instanceof Integer) {
+            String str = mr.group((Integer) get());
+            return new PrimitiveValue<String>(TYPE_STRING, str);
+          } else {
+            throw new UnsupportedOperationException("String match result must be referred to by group id");
+          }
+        }
+      }
+      return null;
+    }
+    public Expression assign(Expression expr) {
+      return new VarAssignmentExpression(value.toString(), expr, false);
+    }
+  }
+
+  public static class RegexMatchResultVarExpression extends SimpleExpression {
+    public RegexMatchResultVarExpression(String groupname, String... tags) {
+      super(TYPE_REGEXMATCHVAR, groupname, tags);
+    }
+    public RegexMatchResultVarExpression(Integer groupid, String... tags) {
+      super(TYPE_REGEXMATCHVAR, groupid, tags);
+    }
+    public static RegexMatchResultVarExpression valueOf(String group) {
+      if (DIGITS_PATTERN.matcher(group).matches()) {
+        Integer n = Integer.valueOf(group);
+        return new RegexMatchResultVarExpression(n);
+      } else {
+        return new RegexMatchResultVarExpression(group);
+      }
+    }
+    public Value evaluate(Env env, Object... args) {
+      if (args != null && args.length > 0) {
+        if (args[0] instanceof SequenceMatchResult) {
+          SequenceMatchResult mr = (SequenceMatchResult) args[0];
+          Object v = get();
+          if (v instanceof String) {
+            return new PrimitiveValue("MATCHED_GROUP_INFO", mr.groupInfo((String) v));
+          } else if (v instanceof Integer) {
+            return new PrimitiveValue("MATCHED_GROUP_INFO", mr.groupInfo((Integer) v));
+          } else {
+            throw new UnsupportedOperationException("String match result must be referred to by group id");
+          }
+        }
+      }
+      return null;
+    }
+  }
+

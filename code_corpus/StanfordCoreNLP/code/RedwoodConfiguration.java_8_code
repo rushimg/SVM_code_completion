@@ -1,0 +1,23 @@
+  public RedwoodConfiguration clear(){
+    this.tasks = new LinkedList<Runnable>();
+    this.tasks.add(new Runnable() {
+      public void run() {
+        Redwood.clearHandlers();
+        Redwood.restoreSystemStreams();
+      }
+    });
+    this.outputHandler = Redwood.ConsoleHandler.out();
+    return this;
+  }
+
+
+
+  public static interface Thunk {
+    public void apply(RedwoodConfiguration config, Redwood.RecordHandlerTree root);
+  }
+
+  @SuppressWarnings("UnusedDeclaration")
+  public static class Handlers {
+    //
+    // Leaf destinations
+    //

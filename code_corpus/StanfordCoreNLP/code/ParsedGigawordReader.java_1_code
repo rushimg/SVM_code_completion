@@ -1,0 +1,88 @@
+public class ParsedGigawordReader implements Iterable<Annotation> {
+
+  private Iterable<File> files;
+
+  public ParsedGigawordReader(File directory) {
+    this.files = IOUtils.iterFilesRecursive(directory);
+  }
+
+  @Override
+  public Iterator<Annotation> iterator() {
+    return new Iterator<Annotation>() {
+      private Iterator<BufferedReader> readers = Iterables.transform(files,
+          new Function<File, BufferedReader>() {
+            @Override
+            public BufferedReader apply(File file) {
+              return IOUtils.readerFromFile(file);
+            }
+      }).iterator();
+
+      private BufferedReader reader = findReader();
+      private Annotation annotation = findAnnotation();
+
+      @Override
+      public boolean hasNext() {
+        return this.annotation != null;
+      }
+
+      @Override
+      public Annotation next() {
+        if (this.annotation == null) {
+          throw new NoSuchElementException();
+        }
+        Annotation toReturn = this.annotation;
+        this.annotation = this.findAnnotation();
+        return toReturn;
+      }
+
+      @Override
+      public void remove() {
+        throw new UnsupportedOperationException();
+      }
+
+      private BufferedReader findReader() {
+        return this.readers.hasNext() ? this.readers.next() : null;
+      }
+
+      private Annotation findAnnotation() {
+        if (this.reader == null) {
+          return null;
+        }
+        try {
+          String line;
+          StringBuilder doc = new StringBuilder();
+          while ((line = this.reader.readLine()) != null) {
+            doc.append(line);
+            doc.append('\n');
+//            if(line.contains("<DOC id")){
+//              System.err.println(line);
+//            }
+            if (line.equals("</DOC>")) {
+              break;
+            }
+            if (line.contains("</DOC>")) {
+              throw new RuntimeException(String.format("invalid line '%s'", line));
+            }
+          }
+          if (line == null) {
+            this.reader.close();
+            this.reader = findReader();
+          }
+          String xml = doc.toString().replaceAll("&", "&amp;");
+          if(xml == null || xml.equals("")) {
+            return findAnnotation();
+          }
+
+          xml = xml.replaceAll("</SENT>\n</DOC>", "</SENT>\n</TEXT>\n</DOC>");
+          xml = new String(xml.getBytes(), "UTF8");
+          //System.err.println("This is what goes in:\n" + xml);
+          return toAnnotation(xml);
+        } catch (IOException e) {
+          throw new RuntimeIOException(e);
+        }
+      }
+    };
+  }
+
+  private static final Pattern datePattern = Pattern.compile("^\\w+_\\w+_(\\d+)\\.");
+

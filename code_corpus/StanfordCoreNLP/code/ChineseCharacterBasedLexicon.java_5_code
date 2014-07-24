@@ -1,0 +1,37 @@
+  public String sampleFrom(String tag) {
+    StringBuilder buf = new StringBuilder();
+    List<Serializable> context = new ArrayList<Serializable>(CONTEXT_LENGTH + 1);
+
+    // context must contain [tag prevChar prevPrevChar]
+    context.add(tag);
+    for (int i = 0; i < CONTEXT_LENGTH; i++) {
+      context.add(Symbol.BEGIN_WORD);
+    }
+    Distribution<Symbol> d = getBackedOffDist(context);
+    Symbol gen = d.sampleFrom();
+    genLoop:
+    while (gen != Symbol.END_WORD) {
+      buf.append(gen.getCh());
+      switch (penaltyType) {
+        case 1:
+          if (Math.random() > Math.pow(lengthPenalty, buf.length())) {
+            break genLoop;
+          }
+          break;
+        case 2:
+          if (Math.random() > lengthPenalty) {
+            break genLoop;
+          }
+          break;
+      }
+      for (int i = 1; i < CONTEXT_LENGTH; i++) {
+        context.set(i + 1, context.get(i));
+      }
+      context.set(1, gen);
+      d = getBackedOffDist(context);
+      gen = d.sampleFrom();
+    }
+
+    return buf.toString();
+  }
+

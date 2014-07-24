@@ -1,0 +1,19 @@
+  public static boolean create(InputStream in, EntryInserter inserter)
+      throws IOException, InvalidFormatException {
+
+    DictionaryContenthandler profileContentHandler =
+        new DictionaryContenthandler(inserter);
+
+    XMLReader xmlReader;
+    try {
+      xmlReader = XMLReaderFactory.createXMLReader();
+      xmlReader.setContentHandler(profileContentHandler);
+      xmlReader.parse(new InputSource(new UncloseableInputStream(in)));
+    }
+    catch (SAXException e) {
+      throw new InvalidFormatException("The profile data stream has " +
+            "an invalid format!", e);
+    }
+    return profileContentHandler.mIsCaseSensitiveDictionary;
+  }
+

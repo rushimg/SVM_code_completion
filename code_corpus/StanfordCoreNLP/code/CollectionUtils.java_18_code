@@ -1,0 +1,29 @@
+  public static <T extends Comparable<T>> int compareLists(List<T> list1, List<T> list2) {
+    if (list1 == null && list2 == null)
+      return 0;
+    if (list1 == null || list2 == null) {
+      throw new IllegalArgumentException();
+    }
+    int size1 = list1.size();
+    int size2 = list2.size();
+    int size = Math.min(size1, size2);
+    for (int i = 0; i < size; i++) {
+      int c = list1.get(i).compareTo(list2.get(i));
+      if (c != 0)
+        return c;
+    }
+    if (size1 < size2)
+      return -1;
+    if (size1 > size2)
+      return 1;
+    return 0;
+  }
+
+  public static <C extends Comparable<C>> Comparator<List<C>> getListComparator() {
+    return new Comparator<List<C>>() {
+      public int compare(List<C> list1, List<C> list2) {
+        return compareLists(list1, list2);
+      }
+    };
+  }
+

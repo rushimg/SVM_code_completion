@@ -1,0 +1,29 @@
+  protected int NUM_PREDS;
+  protected DataReader dataReader;
+
+  public AbstractModelReader(File f) throws IOException {
+    String filename = f.getName();
+    InputStream input;
+    // handle the zipped/not zipped distinction
+    if (filename.endsWith(".gz")) {
+      input = new GZIPInputStream(new FileInputStream(f));
+      filename = filename.substring(0,filename.length()-3);
+    }
+    else {
+      input = new FileInputStream(f);
+    }
+
+    // handle the different formats
+    if (filename.endsWith(".bin")) {
+      this.dataReader = new BinaryFileDataReader(input);
+    }
+    else {  // filename ends with ".txt"
+      this.dataReader = new PlainTextFileDataReader(input);
+    }
+  }
+
+  public AbstractModelReader(DataReader dataReader) {
+    super();
+    this.dataReader = dataReader;
+  }
+

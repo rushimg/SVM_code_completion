@@ -1,0 +1,19 @@
+  public static <T> Collection<T> loadCollection(File file, Class<T> c, CollectionFactory<T> cf) throws Exception {
+    Constructor<T> m = c.getConstructor(new Class[] { String.class });
+    Collection<T> result = cf.newCollection();
+    BufferedReader in = new BufferedReader(new FileReader(file));
+    String line = in.readLine();
+    while (line != null && line.length() > 0) {
+      try {
+        T o = m.newInstance(line);
+        result.add(o);
+      } catch (Exception e) {
+        System.err.println("Couldn't build object from line: " + line);
+        e.printStackTrace();
+      }
+      line = in.readLine();
+    }
+    in.close();
+    return result;
+  }
+

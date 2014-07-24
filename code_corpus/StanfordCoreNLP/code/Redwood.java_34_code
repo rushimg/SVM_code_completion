@@ -1,0 +1,38 @@
+  protected static void formatTimeDifference(long diff, StringBuilder b){
+    //--Get Values
+    int mili = (int) diff % 1000;
+    long rest = diff / 1000;
+    int sec = (int) rest % 60;
+    rest = rest / 60;
+    int min = (int) rest % 60;
+    rest = rest / 60;
+    int hr = (int) rest % 24;
+    rest = rest / 24;
+    int day = (int) rest;
+    //--Make String
+    if(day > 0) b.append(day).append(day > 1 ? " days, " : " day, ");
+    if(hr > 0) b.append(hr).append(hr > 1 ? " hours, " : " hour, ");
+    if(min > 0) {
+      if(min < 10){ b.append("0"); }
+      b.append(min).append(":");
+    }
+    if(min > 0 && sec < 10){ b.append("0"); }
+    b.append(sec).append(".").append(mili);
+    if(min > 0) b.append(" minutes");
+    else b.append(" seconds");
+  }
+
+  public static String formatTimeDifference(long diff){
+    StringBuilder b = new StringBuilder();
+    formatTimeDifference(diff, b);
+    return b.toString();
+  }
+
+
+  public static final boolean supportsAnsi;
+  static {
+    String os = System.getProperty("os.name").toLowerCase();
+    boolean isUnix = os.contains("unix") || os.contains("linux") || os.contains("solaris");
+    supportsAnsi = Boolean.getBoolean("Ansi") || isUnix;
+  }
+

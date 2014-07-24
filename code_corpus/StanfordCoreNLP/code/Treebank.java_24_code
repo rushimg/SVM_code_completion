@@ -1,0 +1,182 @@
+  public String textualSummary(TreebankLanguagePack tlp) {
+    int numTrees = 0;
+    int numTreesLE40 = 0;
+    int numNonUnaryRoots = 0;
+    Tree nonUnaryEg = null;
+    ClassicCounter<Tree> nonUnaries = new ClassicCounter<Tree>();
+    ClassicCounter<String> roots = new ClassicCounter<String>();
+    ClassicCounter<String> starts = new ClassicCounter<String>();
+    ClassicCounter<String> puncts = new ClassicCounter<String>();
+    int numUnenclosedLeaves = 0;
+    int numLeaves = 0;
+    int numNonPhrasal = 0;
+    int numPreTerminalWithMultipleChildren = 0;
+    int numWords = 0;
+    int numTags = 0;
+    int shortestSentence = Integer.MAX_VALUE;
+    int longestSentence = 0;
+    int numNullLabel = 0;
+    Set<String> words = Generics.newHashSet();
+    ClassicCounter<String> tags = new ClassicCounter<String>();
+    ClassicCounter<String> cats = new ClassicCounter<String>();
+    Tree leafEg = null;
+    Tree preTerminalMultipleChildrenEg = null;
+    Tree nullLabelEg = null;
+    Tree rootRewritesAsTaggedWordEg = null;
+    for (Tree t : this) {
+      roots.incrementCount(t.value());
+      numTrees++;
+      int leng = t.yield().size();
+      if (leng <= 40) {
+        numTreesLE40++;
+      }
+      if (leng < shortestSentence) {
+        shortestSentence = leng;
+      }
+      if (leng > longestSentence) {
+        longestSentence = leng;
+      }
+      if (t.numChildren() > 1) {
+        if (numNonUnaryRoots == 0) {
+          nonUnaryEg = t;
+        }
+        if (numNonUnaryRoots < 100) {
+          nonUnaries.incrementCount(t.localTree());
+        }
+        numNonUnaryRoots++;
+      } else if (t.isLeaf()) {
+        numUnenclosedLeaves++;
+      } else {
+        Tree t2 = t.firstChild();
+        if (t2.isLeaf()) {
+          numLeaves++;
+          leafEg = t;
+        } else if (t2.isPreTerminal()) {
+          if (numNonPhrasal == 0) {
+            rootRewritesAsTaggedWordEg = t;
+          }
+          numNonPhrasal++;
+        }
+        starts.incrementCount(t2.value());
+      }
+      for (Tree subtree : t) {
+        Label lab = subtree.label();
+        if (lab == null || lab.value() == null || "".equals(lab.value())) {
+          if (numNullLabel == 0) {
+            nullLabelEg = subtree;
+          }
+          numNullLabel++;
+          if (lab == null) {
+            subtree.setLabel(new StringLabel(""));
+          } else if (lab.value() == null) {
+            subtree.label().setValue("");
+          }
+        }
+        if (subtree.isLeaf()) {
+          numWords++;
+          words.add(subtree.value());
+        } else if (subtree.isPreTerminal()) {
+          numTags++;
+          tags.incrementCount(subtree.value());
+          if (tlp != null && tlp.isPunctuationTag(subtree.value())) {
+            puncts.incrementCount(subtree.firstChild().value());
+          }
+        } else if (subtree.isPhrasal()) {
+          boolean hasLeafChild = false;
+          for (Tree kt : subtree.children()) {
+            if (kt.isLeaf()) {
+              hasLeafChild = true;
+            }
+          }
+          if (hasLeafChild) {
+            numPreTerminalWithMultipleChildren++;
+            if (preTerminalMultipleChildrenEg == null) {
+              preTerminalMultipleChildrenEg = subtree;
+            }
+          }
+          cats.incrementCount(subtree.value());
+        } else {
+          throw new IllegalStateException("Treebank: Bad tree in treebank!: " + subtree);
+        }
+      }
+    }
+    StringWriter sw = new StringWriter(2000);
+    PrintWriter pw = new PrintWriter(sw);
+    NumberFormat nf = NumberFormat.getNumberInstance();
+    nf.setMaximumFractionDigits(0);
+    pw.println("Treebank has " + numTrees + " trees (" + numTreesLE40 + " of length <= 40) and " + numWords + " words (tokens)");
+    if (numTrees > 0) {
+      if (numTags != numWords) {
+        pw.println("  Warning! numTags differs and is " + numTags);
+      }
+      if (roots.size() == 1) {
+        String root = (String) roots.keySet().toArray()[0];
+        pw.println("  The root category is: " + root);
+      } else {
+        pw.println("  Warning! " + roots.size() + " different roots in treebank: " + Counters.toString(roots, nf));
+      }
+      if (numNonUnaryRoots > 0) {
+        pw.print("  Warning! " + numNonUnaryRoots + " trees without unary initial rewrite.  ");
+
+        if (numNonUnaryRoots > 100) {
+          pw.print("First 100 ");
+        }
+        pw.println("Rewrites: " + Counters.toString(nonUnaries, nf));
+        pw.println("    Example: " + nonUnaryEg);
+      }
+      if (numUnenclosedLeaves > 0 || numLeaves > 0 || numNonPhrasal > 0) {
+        pw.println("  Warning! Non-phrasal trees: " + numUnenclosedLeaves + " bare leaves; " + numLeaves + " root rewrites as leaf; and " + numNonPhrasal + " root rewrites as tagged word");
+        if (numLeaves > 0) {
+          pw.println("  Example bad root rewrites as leaf: " + leafEg);
+        }
+        if (numNonPhrasal > 0) {
+          pw.println("  Example bad root rewrites as tagged word: " + rootRewritesAsTaggedWordEg);
+        }
+      }
+      if (numNullLabel > 0) {
+        pw.println("  Warning!  " + numNullLabel + " tree nodes with null or empty string labels, e.g.:");
+        pw.println("    " + nullLabelEg);
+      }
+      if (numPreTerminalWithMultipleChildren > 0) {
+        pw.println("  Warning! " + numPreTerminalWithMultipleChildren + " preterminal nodes with multiple children.");
+        pw.println("    Example: " + preTerminalMultipleChildrenEg);
+      }
+      pw.println("  " + cats.size() + " phrasal category types, " + tags.size() + " tag types, and " + words.size() + " word types");
+      // What a dopey choice using 0 as an empty element name!!
+      // The problem with the below is that words aren't turned into a basic
+      // category, but empties commonly are indexed....  Would need to look
+      // for them with a suffix of -[0-9]+
+      Set<String> knownEmpties = Generics.newHashSet(Arrays.asList(empties));
+      Set<String> emptiesIntersection = Sets.intersection(words, knownEmpties);
+      if ( ! emptiesIntersection.isEmpty()) {
+        pw.println("  Caution! " + emptiesIntersection.size() +
+                " word types are known empty elements: " +
+                emptiesIntersection);
+      }
+      Set<String> joint = Sets.intersection(cats.keySet(), tags.keySet());
+      if ( ! joint.isEmpty()) {
+        pw.println("  Warning! " + joint.size() + " items are tags and categories: " + joint);
+      }
+      for (String cat : cats.keySet()) {
+        if (cat != null && cat.contains("@")) {
+          pw.println("  Warning!!  Stanford Parser does not work with categories containing '@' like: " + cat);
+          break;
+        }
+      }
+      for (String cat : tags.keySet()) {
+        if (cat != null && cat.contains("@")) {
+          pw.println("  Warning!!  Stanford Parser does not work with tags containing '@' like: " + cat);
+          break;
+        }
+      }
+      pw.println("    Cats: " + Counters.toString(cats, nf));
+      pw.println("    Tags: " + Counters.toString(tags, nf));
+      pw.println("    " + starts.size() + " start categories: " + Counters.toString(starts, nf));
+      if ( ! puncts.isEmpty()) {
+        pw.println("    Puncts: " + Counters.toString(puncts, nf));
+      }
+    }
+    return sw.toString();
+  }
+
+

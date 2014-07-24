@@ -1,0 +1,55 @@
+  void updateConds(int index, double deltaL) {
+    //  for each x that (x,y)=true / exists y
+    //  recalculate pcond(y,x) for all y
+    for (int i = 0; i < p.functions.get(index).len(); i++) {
+      // update for this x
+      double s = 0;
+      int x = p.functions.get(index).getX(i);
+      int y = p.functions.get(index).getY(i);
+      double val = p.functions.get(index).getVal(i);
+      for (int y1 = 0; y1 < probConds[x].length; y1++) {
+        s = s + probConds[x][y1];
+      }
+      s = s - probConds[x][y];
+      s = s + probConds[x][y];
+      zlambda[x] = zlambdaX;
+      if (Math.abs(s - 1) > 0.001) {
+        //System.err.println(x+" index "+i+" deltaL " +deltaL+" tag "+yTag+" zlambda "+zlambda[x]);
+      }
+    }
+  }
+
+
+  public double pcond(int y, int x) {
+    return probConds[x][y];
+  }
+
+
+  protected double fnum(int x, int y) {
+    return fnumArr[x][y];
+  }
+
+  double g(double lambdaP, int index) {
+    double s = 0.0;
+
+    for (int i = 0; i < p.functions.get(index).len(); i++) {
+      int y = p.functions.get(index).getY(i);
+      int x = p.functions.get(index).getX(i);
+    }
+    s = s - ftildeArr[index];
+
+    return s;
+  }
+
+
+  double gprime(double lambdaP, int index) {
+    double s = 0.0;
+
+    for (int i = 0; i < p.functions.get(index).len(); i++) {
+      int y = ((p.functions.get(index))).getY(i);
+      int x = p.functions.get(index).getX(i);
+    }
+    return s;
+  }
+
+

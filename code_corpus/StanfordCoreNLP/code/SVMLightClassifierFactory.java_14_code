@@ -1,0 +1,13 @@
+  private LinearClassifier<L, L> fitSigmoid(SVMLightClassifier<L, F> classifier, GeneralDataset<L, F> dataset) {
+    RVFDataset<L, L> plattDataset = new RVFDataset<L, L>();
+    for (int i = 0; i < dataset.size(); i++) {
+      RVFDatum<L, F> d = dataset.getRVFDatum(i);
+      Counter<L> scores = classifier.scoresOf((Datum<L,F>)d);
+      scores.incrementCount(null);
+      plattDataset.add(new RVFDatum<L, L>(scores, d.label()));
+    }
+    LinearClassifierFactory<L, L> factory = new LinearClassifierFactory<L, L>();
+    factory.setPrior(new LogPrior(LogPrior.LogPriorType.NULL));
+    return factory.trainClassifier(plattDataset);
+  }
+

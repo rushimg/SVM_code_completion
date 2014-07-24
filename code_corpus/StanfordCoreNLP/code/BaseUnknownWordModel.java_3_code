@@ -1,0 +1,29 @@
+  private final Lexicon lex;
+
+
+  public BaseUnknownWordModel(Options op, Lexicon lex,
+                              Index<String> wordIndex,
+                              Index<String> tagIndex,
+                              ClassicCounter<IntTaggedWord> unSeenCounter,
+                              Map<Label,ClassicCounter<String>> tagHash,
+                              Map<String,Float> unknownGT,
+                              Set<String> seenEnd) {
+    endLength = op.lexOptions.unknownSuffixSize;
+    // TODO: refactor these terms into BaseUnknownWordModelTrainer
+    useEnd = (op.lexOptions.unknownSuffixSize > 0 &&
+              op.lexOptions.useUnknownWordSignatures > 0);
+    useFirstCap = op.lexOptions.useUnknownWordSignatures > 0;
+    useGT = (op.lexOptions.useUnknownWordSignatures == 0);
+    useFirst = false;
+    this.lex = lex;
+    this.trainOptions = op.trainOptions;
+    this.wordIndex = wordIndex;
+    this.tagIndex = tagIndex;
+    this.unSeenCounter = unSeenCounter;
+    this.tagHash = tagHash;
+    this.seenEnd = seenEnd;
+    this.unknownGT = unknownGT;
+    unknownLevel = op.lexOptions.useUnknownWordSignatures;
+  }
+
+

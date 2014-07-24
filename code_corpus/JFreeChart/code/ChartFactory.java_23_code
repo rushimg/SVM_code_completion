@@ -1,0 +1,32 @@
+    public static JFreeChart createGanttChart(String title,
+                                              String categoryAxisLabel,
+                                              String dateAxisLabel,
+                                              IntervalCategoryDataset dataset,
+                                              boolean legend,
+                                              boolean tooltips,
+                                              boolean urls) {
+
+        CategoryAxis categoryAxis = new CategoryAxis(categoryAxisLabel);
+        DateAxis dateAxis = new DateAxis(dateAxisLabel);
+
+        CategoryItemRenderer renderer = new GanttRenderer();
+        if (tooltips) {
+            renderer.setBaseToolTipGenerator(
+                    new IntervalCategoryToolTipGenerator(
+                    "{3} - {4}", DateFormat.getDateInstance()));
+        }
+        if (urls) {
+            renderer.setBaseItemURLGenerator(
+                    new StandardCategoryURLGenerator());
+        }
+
+        CategoryPlot plot = new CategoryPlot(dataset, categoryAxis, dateAxis,
+                renderer);
+        plot.setOrientation(PlotOrientation.HORIZONTAL);
+        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT,
+                plot, legend);
+        currentTheme.apply(chart);
+        return chart;
+
+    }
+

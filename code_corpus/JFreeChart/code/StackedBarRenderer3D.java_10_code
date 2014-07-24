@@ -1,0 +1,35 @@
+    protected void calculateBarWidth(CategoryPlot plot,
+                                     Rectangle2D dataArea,
+                                     int rendererIndex,
+                                     CategoryItemRendererState state) {
+
+        // calculate the bar width
+        CategoryAxis domainAxis = getDomainAxis(plot, rendererIndex);
+        CategoryDataset data = plot.getDataset(rendererIndex);
+        if (data != null) {
+            PlotOrientation orientation = plot.getOrientation();
+            double space = 0.0;
+            if (orientation == PlotOrientation.HORIZONTAL) {
+                space = dataArea.getHeight();
+            }
+            else if (orientation == PlotOrientation.VERTICAL) {
+                space = dataArea.getWidth();
+            }
+            int columns = data.getColumnCount();
+            double categoryMargin = 0.0;
+            if (columns > 1) {
+                categoryMargin = domainAxis.getCategoryMargin();
+            }
+
+                                     - domainAxis.getUpperMargin()
+                                     - categoryMargin);
+            if (columns > 0) {
+                state.setBarWidth(Math.min(used / columns, maxWidth));
+            }
+            else {
+                state.setBarWidth(Math.min(used, maxWidth));
+            }
+        }
+
+    }
+

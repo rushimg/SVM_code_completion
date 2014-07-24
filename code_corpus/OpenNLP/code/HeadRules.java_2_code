@@ -1,0 +1,49 @@
+public class HeadRules implements opennlp.tools.parser.HeadRules, GapLabeler, SerializableArtifact {
+
+  public static class HeadRulesSerializer implements ArtifactSerializer<opennlp.tools.parser.lang.en.HeadRules> {
+
+    public opennlp.tools.parser.lang.en.HeadRules create(InputStream in) throws IOException,
+        InvalidFormatException {
+      return new opennlp.tools.parser.lang.en.HeadRules(new BufferedReader(new InputStreamReader(in, "UTF-8")));
+    }
+
+    public void serialize(opennlp.tools.parser.lang.en.HeadRules artifact, OutputStream out)
+        throws IOException {
+      artifact.serialize(new OutputStreamWriter(out, "UTF-8"));
+    }
+  }
+
+  private static class HeadRule {
+    public boolean leftToRight;
+    public String[] tags;
+    public HeadRule(boolean l2r, String[] tags) {
+      leftToRight = l2r;
+
+      for (String tag : tags) {
+        if (tag == null)
+            throw new IllegalArgumentException("tags must not contain null values!");
+      }
+
+      this.tags = tags;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (obj == this) {
+        return true;
+      }
+      else if (obj instanceof HeadRule) {
+        HeadRule rule = (HeadRule) obj;
+
+        return (rule.leftToRight == leftToRight) &&
+            Arrays.equals(rule.tags, tags);
+      }
+      else {
+        return false;
+      }
+    }
+  }
+
+  private Map<String, HeadRule> headRules;
+  private Set<String> punctSet;
+

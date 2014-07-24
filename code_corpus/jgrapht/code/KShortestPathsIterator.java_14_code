@@ -1,0 +1,28 @@
+    public Set<V> next()
+    {
+        if (!this.startVertexEncountered) {
+            encounterStartVertex();
+        }
+
+        // at the i-th pass the shortest paths with i edges are calculated.
+        if (hasNext()) {
+            Set<V> improvedVertices = new HashSet<V>();
+
+            for (
+                Iterator<V> iter = this.prevImprovedVertices.iterator();
+                iter.hasNext();)
+            {
+                V vertex = iter.next();
+                if (!vertex.equals(this.endVertex)) {
+                    updateOutgoingVertices(vertex, improvedVertices);
+                }
+            }
+
+            savePassData(improvedVertices);
+            this.passNumber++;
+
+            return improvedVertices;
+        }
+        throw new NoSuchElementException();
+    }
+

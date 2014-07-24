@@ -1,0 +1,31 @@
+  private static AceRelationMention parseRelationMention(Node node,
+							 AceDocument doc) {
+    String id = getAttributeValue(node, "ID");
+    AceCharSeq extent = parseCharSeq(getChildByName(node, "extent"));
+    String lc = getAttributeValue(node, "LEXICALCONDITION");
+
+    // create the mention
+    AceRelationMention mention = new AceRelationMention(id, extent, lc);
+
+    // find the mention args
+    List<Node> args = getChildrenByName(node, "relation_mention_argument");
+    for(Node arg: args){
+      String role = getAttributeValue(arg, "ROLE");
+      String refid = getAttributeValue(arg, "REFID");
+      AceEntityMention am = doc.getEntityMention(refid);
+
+      if(am != null){
+      	am.addRelationMention(mention);
+      	if(role.equalsIgnoreCase("arg-1")){
+      		mention.getArgs()[0] = new AceRelationMentionArgument(role, am);
+      	} else if(role.equalsIgnoreCase("arg-2")){
+      		mention.getArgs()[1] = new AceRelationMentionArgument(role, am);
+      	} else {
+      		throw new RuntimeException("Invalid relation mention argument role: " + role);
+      	}
+      }
+    }
+
+    return mention;
+  }
+

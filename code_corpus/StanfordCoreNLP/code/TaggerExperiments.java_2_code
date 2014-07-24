@@ -1,0 +1,52 @@
+  protected TaggerExperiments(TaggerConfig config, MaxentTagger maxentTagger) throws IOException {
+    this(maxentTagger);
+
+    System.err.println("TaggerExperiments: adding word/tags");
+    PairsHolder pairs = new PairsHolder();
+    ReadDataTagged c = new ReadDataTagged(config, maxentTagger, pairs);
+    vArray = new int[c.getSize()][2];
+
+    initTemplatesNew();
+    System.err.println("Featurizing tagged data tokens...");
+    for (int i = 0, size = c.getSize(); i < size; i++) {
+
+      DataWordTag d = c.get(i);
+      String yS = d.getY();
+      History h = d.getHistory();
+      int indX = tHistories.add(h);
+      int indY = d.getYInd();
+      addTemplatesNew(h, yS);
+      addRareTemplatesNew(h, yS);
+      vArray[i][0] = indX;
+      vArray[i][1] = indY;
+
+      if (i > 0 && (i % 10000) == 0) {
+        System.err.printf("%d ", i);
+        if (i % 100000 == 0) { System.err.println(); }
+      }
+    }
+    System.err.println();
+    System.err.println("Featurized " + c.getSize() + " data tokens [done].");
+    c.release();
+    ptilde();
+    maxentTagger.xSize = xSize;
+    maxentTagger.ySize = ySize;
+    System.err.println("xSize [num Phi templates] = " + xSize + "; ySize [num classes] = " + ySize);
+
+    hashHistories();
+
+    // if we'll look at occurring tags only, we need the histories and pairs still
+    if (!maxentTagger.occurringTagsOnly && !maxentTagger.possibleTagsOnly) {
+      tHistories.release();
+      pairs.clear();
+    }
+
+    getFeaturesNew();
+  }
+
+
+  public TaggerFeatures getTaggerFeatures() {
+    return feats;
+  }
+
+

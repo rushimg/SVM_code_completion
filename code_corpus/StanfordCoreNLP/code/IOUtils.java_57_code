@@ -1,0 +1,19 @@
+  public static String slurpReader(Reader reader) {
+    BufferedReader r = new BufferedReader(reader);
+    StringBuilder buff = new StringBuilder();
+    try {
+      char[] chars = new char[SLURP_BUFFER_SIZE];
+      while (true) {
+        int amountRead = r.read(chars, 0, SLURP_BUFFER_SIZE);
+        if (amountRead < 0) {
+          break;
+        }
+        buff.append(chars, 0, amountRead);
+      }
+      r.close();
+    } catch (Exception e) {
+      throw new RuntimeIOException("slurpReader IO problem", e);
+    }
+    return buff.toString();
+  }
+

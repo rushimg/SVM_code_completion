@@ -1,0 +1,26 @@
+    protected void autoAdjustRange() {
+
+        Plot plot = getPlot();
+        if (plot == null) {
+            return;  // no plot, no data
+        }
+
+        if (plot instanceof ValueAxisPlot) {
+            ValueAxisPlot vap = (ValueAxisPlot) plot;
+
+            Range r = vap.getDataRange(this);
+            if (r == null) {
+                r = getDefaultAutoRange();
+            }
+
+            long upper = Math.round(r.getUpperBound());
+            long lower = Math.round(r.getLowerBound());
+            this.first = createInstance(this.autoRangeTimePeriodClass,
+                    new Date(lower), this.timeZone, this.locale);
+            this.last = createInstance(this.autoRangeTimePeriodClass,
+                    new Date(upper), this.timeZone, this.locale);
+            setRange(r, false, false);
+        }
+
+    }
+

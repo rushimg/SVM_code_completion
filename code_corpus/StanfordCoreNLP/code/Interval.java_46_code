@@ -1,0 +1,71 @@
+  public int getRelationFlags(Interval<E> other)
+  {
+    if (other == null) return 0;
+    int flags = 0;
+    int comp11 = this.first.compareTo(other.first());   // 3 choices
+    flags |= toRelFlags(comp11, REL_FLAGS_SS_SHIFT);
+    int comp22 = this.second.compareTo(other.second());   // 3 choices
+    flags |= toRelFlags(comp22, REL_FLAGS_EE_SHIFT);
+    int comp12 = this.first.compareTo(other.second());   // 3 choices
+    flags |= toRelFlags(comp12, REL_FLAGS_SE_SHIFT);
+    int comp21 = this.second.compareTo(other.first());   // 3 choices
+    flags |= toRelFlags(comp21, REL_FLAGS_ES_SHIFT);
+    flags = addIntervalRelationFlags(flags, false);
+    return flags;
+  }
+
+  protected static int addIntervalRelationFlags(int flags, boolean checkFuzzy) {
+    int f11 = extractRelationSubflags(flags, REL_FLAGS_SS_SHIFT);
+    int f22 = extractRelationSubflags(flags, REL_FLAGS_EE_SHIFT);
+    int f12 = extractRelationSubflags(flags, REL_FLAGS_SE_SHIFT);
+    int f21 = extractRelationSubflags(flags, REL_FLAGS_ES_SHIFT);
+    if (checkFuzzy) {
+      boolean isFuzzy = checkMultipleBitSet(f11) || checkMultipleBitSet(f12) || checkMultipleBitSet(f21) || checkMultipleBitSet(f22);
+      if (isFuzzy) {
+        flags |= REL_FLAGS_INTERVAL_FUZZY;
+      }
+    }
+    if (((f11 & REL_FLAGS_SAME) != 0) && ((f22 & REL_FLAGS_SAME) != 0)) {
+      // SS,EE SAME
+      flags |= REL_FLAGS_INTERVAL_SAME;  // Possible
+    }
+    if (((f21 & REL_FLAGS_BEFORE) != 0)) {
+      // ES BEFORE => SS, SE, EE BEFORE
+      flags |= REL_FLAGS_INTERVAL_BEFORE;  // Possible
+    }
+    if (((f12 & REL_FLAGS_AFTER) != 0)) {
+      // SE AFTER => SS, ES, EE AFTER
+      flags |= REL_FLAGS_INTERVAL_AFTER;  // Possible
+    }
+    if (((f11 & (REL_FLAGS_SAME | REL_FLAGS_AFTER)) != 0) && ((f12 & (REL_FLAGS_SAME | REL_FLAGS_BEFORE)) != 0)) {
+      // SS SAME or AFTER, SE SAME or BEFORE
+      //     |-----|
+      // |------|
+      flags |= REL_FLAGS_INTERVAL_OVERLAP;  // Possible
+    }
+    if (((f11 & (REL_FLAGS_SAME | REL_FLAGS_BEFORE)) != 0) && ((f21 & (REL_FLAGS_SAME | REL_FLAGS_AFTER)) != 0)) {
+      // SS SAME or BEFORE, ES SAME or AFTER
+      // |------|
+      //     |-----|
+      flags |= REL_FLAGS_INTERVAL_OVERLAP;  // Possible
+    }
+    if (((f11 & (REL_FLAGS_SAME | REL_FLAGS_AFTER)) != 0) && ((f22 & (REL_FLAGS_SAME | REL_FLAGS_BEFORE)) != 0)) {
+      // SS SAME or AFTER, EE SAME or BEFORE
+      //     |------|
+      // |---------------|
+      flags |= REL_FLAGS_INTERVAL_INSIDE;  // Possible
+    }
+    if (((f11 & (REL_FLAGS_SAME | REL_FLAGS_BEFORE)) != 0) && ((f22 & (REL_FLAGS_SAME | REL_FLAGS_AFTER)) != 0)) {
+      // SS SAME or BEFORE, EE SAME or AFTER
+      flags |= REL_FLAGS_INTERVAL_CONTAIN;  // Possible
+      // |---------------|
+      //     |------|
+    }
+    return flags;
+  }
+
+  public static int extractRelationSubflags(int flags, int shift)
+  {
+    return (flags >> shift) & 0xf;
+  }
+

@@ -1,0 +1,162 @@
+  public Triple<int[][][], int[], double[][][]> documentToDataAndLabels(List<IN> document) {
+    int docSize = document.size();
+    // first index is position in the document also the index of the
+    // clique/factor table
+    // second index is the number of elements in the clique/window these
+    // features are for (starting with last element)
+    // third index is position of the feature in the array that holds them.
+    // An element in data[j][k][m] is the feature index of the mth feature occurring in
+    // position k of the jth clique
+    int[][][] data = new int[docSize][windowSize][];
+    double[][][] featureVals = new double[docSize][windowSize][];
+    // index is the position in the document.
+    // element in labels[j] is the index of the correct label (if it exists) at
+    // position j of document
+    int[] labels = new int[docSize];
+
+    if (flags.useReverse) {
+      Collections.reverse(document);
+    }
+
+    // System.err.println("docSize:"+docSize);
+    for (int j = 0; j < docSize; j++) {
+      CRFDatum<List<String>, CRFLabel> d = makeDatum(document, j, featureFactories);
+
+      List<List<String>> features = d.asFeatures();
+      List<double[]> featureValList = d.asFeatureVals();
+      for (int k = 0, fSize = features.size(); k < fSize; k++) {
+        Collection<String> cliqueFeatures = features.get(k);
+        data[j][k] = new int[cliqueFeatures.size()];
+        if(featureValList != null) { // CRFBiasedClassifier.makeDatum causes null
+          featureVals[j][k] = featureValList.get(k);
+        }
+        int m = 0;
+        for (String feature : cliqueFeatures) {
+          int index = featureIndex.indexOf(feature);
+          if (index >= 0) {
+            data[j][k][m] = index;
+            m++;
+          } else {
+            // this is where we end up when we do feature threshold cutoffs
+          }
+        }
+
+        if (m < data[j][k].length) {
+          int[] f = new int[m];
+          System.arraycopy(data[j][k], 0, f, 0, m);
+          data[j][k] = f;
+          if (featureVals[j][k] != null) {
+            double[] fVal = new double[m];
+            System.arraycopy(featureVals[j][k], 0, fVal, 0, m);
+            featureVals[j][k] = fVal;
+          }
+        }
+      }
+
+      IN wi = document.get(j);
+      labels[j] = classIndex.indexOf(wi.get(CoreAnnotations.AnswerAnnotation.class));
+    }
+
+    if (flags.useReverse) {
+      Collections.reverse(document);
+    }
+
+    return new Triple<int[][][], int[], double[][][]>(data, labels, featureVals);
+  }
+
+  private int[][][] transformDocData(int[][][] docData) {
+    int[][][] transData = new int[docData.length][][];
+    for (int i = 0; i < docData.length; i++) {
+      transData[i] = new int[docData[i].length][];
+      for (int j = 0; j < docData[i].length; j++) {
+        int[] cliqueFeatures = docData[i][j];
+        transData[i][j] = new int[cliqueFeatures.length];
+        for (int n = 0; n < cliqueFeatures.length; n++) {
+          int transFeatureIndex = -1;
+          if (j == 0) {
+            transFeatureIndex = nodeFeatureIndicesMap.indexOf(cliqueFeatures[n]);
+            if (transFeatureIndex == -1)
+              throw new RuntimeException("node cliqueFeatures[n]="+cliqueFeatures[n]+" not found, nodeFeatureIndicesMap.size="+nodeFeatureIndicesMap.size());
+          } else {
+            transFeatureIndex = edgeFeatureIndicesMap.indexOf(cliqueFeatures[n]);
+            if (transFeatureIndex == -1)
+              throw new RuntimeException("edge cliqueFeatures[n]="+cliqueFeatures[n]+" not found, edgeFeatureIndicesMap.size="+edgeFeatureIndicesMap.size());
+          }
+          transData[i][j][n] = transFeatureIndex;
+        }
+      }
+    }
+    return transData;
+  }
+
+  public void printLabelInformation(String testFile, DocumentReaderAndWriter<IN> readerAndWriter) throws Exception {
+    ObjectBank<List<IN>> documents = makeObjectBankFromFile(testFile, readerAndWriter);
+    for (List<IN> document : documents) {
+      printLabelValue(document);
+    }
+  }
+
+  public void printLabelValue(List<IN> document) {
+
+    if (flags.useReverse) {
+      Collections.reverse(document);
+    }
+
+    NumberFormat nf = new DecimalFormat();
+
+    List<String> classes = new ArrayList<String>();
+    for (int i = 0; i < classIndex.size(); i++) {
+      classes.add(classIndex.get(i));
+    }
+    String[] columnHeaders = classes.toArray(new String[classes.size()]);
+
+    // System.err.println("docSize:"+docSize);
+    for (int j = 0; j < document.size(); j++) {
+
+      System.out.println("--== " + document.get(j).get(CoreAnnotations.TextAnnotation.class) + " ==--");
+
+      List<String[]> lines = new ArrayList<String[]>();
+      List<String> rowHeaders = new ArrayList<String>();
+      List<String> line = new ArrayList<String>();
+
+      for (int p = 0; p < labelIndices.size(); p++) {
+        if (j + p >= document.size()) {
+          continue;
+        }
+        CRFDatum<List<String>, CRFLabel> d = makeDatum(document, j + p, featureFactories);
+
+        List<List<String>> features = d.asFeatures();
+        for (int k = p, fSize = features.size(); k < fSize; k++) {
+          Collection<String> cliqueFeatures = features.get(k);
+          for (String feature : cliqueFeatures) {
+            int index = featureIndex.indexOf(feature);
+            if (index >= 0) {
+              // line.add(feature+"["+(-p)+"]");
+              rowHeaders.add(feature + '[' + (-p) + ']');
+              double[] values = new double[labelIndices.get(0).size()];
+              for (CRFLabel label : labelIndices.get(k)) {
+                int[] l = label.getLabel();
+                double v = weights[index][labelIndices.get(k).indexOf(label)];
+                values[l[l.length - 1 - p]] += v;
+              }
+              for (double value : values) {
+                line.add(nf.format(value));
+              }
+              lines.add(line.toArray(new String[line.size()]));
+              line = new ArrayList<String>();
+            }
+          }
+        }
+        // lines.add(Collections.<String>emptyList());
+        System.out.println(StringUtils.makeTextTable(lines.toArray(new String[lines.size()][0]), rowHeaders
+                .toArray(new String[rowHeaders.size()]), columnHeaders, 0, 1, true));
+        System.out.println();
+      }
+      // System.err.println(edu.stanford.nlp.util.StringUtils.join(lines,"\n"));
+    }
+
+    if (flags.useReverse) {
+      Collections.reverse(document);
+    }
+  }
+

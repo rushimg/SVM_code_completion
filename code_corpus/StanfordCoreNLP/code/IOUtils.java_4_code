@@ -1,0 +1,13 @@
+  public static File writeObjectToFile(Object o, File file, boolean append) throws IOException {
+    // file.createNewFile(); // cdm may 2005: does nothing needed
+    OutputStream os = new FileOutputStream(file, append);
+    if (file.getName().endsWith(".gz")) {
+      os = new GZIPOutputStream(os);
+    }
+    os = new BufferedOutputStream(os);
+    ObjectOutputStream oos = new ObjectOutputStream(os);
+    oos.writeObject(o);
+    oos.close();
+    return file;
+  }
+

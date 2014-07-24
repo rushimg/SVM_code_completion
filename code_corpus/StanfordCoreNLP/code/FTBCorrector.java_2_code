@@ -1,0 +1,58 @@
+  private static final String editStr = 
+    
+    //Delete sentence-initial punctuation
+    ("@PUNC=punc <: __ >, @SENT\n"
+        + "delete punc\n"
+        + "\n") +
+    
+    //Delete sentence final punctuation that is preceded by punctuation (first time)
+    ("@PUNC=punc <: __ >>- @SENT $, @PUNC\n"
+        + "delete punc\n"
+        + "\n") +
+   
+    //Delete sentence final punctuation that is preceded by punctuation (second time)
+    ("@PUNC=punc <: __ >>- @SENT $, @PUNC\n"
+        + "delete punc\n"
+        + "\n") +
+    
+    //Convert remaining sentence-final punctuation to either . if it is not [.!?]
+    ("@PUNC <: /^[^!\\.\\?]$/=term >>- @SENT !$, @PUNC\n"
+        + "relabel term /./\n" 
+        + "\n") +
+    
+    //Delete medial, sentence-final punctuation
+    ("@PUNC=punc <: (/^[!\\.\\?]$/ . __)\n"
+        + "delete punc\n"
+        + "\n") +
+        
+    //Now move the sentence-final mark under SENT
+    ("@PUNC=punc <: /^[\\.!\\?]$/ >>- (@SENT <- __=sfpos) !> @SENT\n"
+        + "move punc $- sfpos\n" 
+        + "\n") +
+    
+    //For those trees that lack a sentence-final punc, add one.
+    ("!@PUNC <: /^[^\\.!\\?]$/ >>- (@SENT <- __=loc)\n"
+        + "insert (PUNC .) $- loc\n"
+        + "\n") +
+    
+    //Finally, delete these punctuation marks, which I can't seem to kill otherwise...
+    ("@PUNC <: /^[\\.!\\?]+$/=punc . (@PUNC <: /[\\.!\\?]/)\n"
+        + "prune punc\n"
+        + "\n") +
+    
+    //A bad MWADV tree in the training set
+    ("@NP=bad > @MWADV\n"
+        + "excise bad bad\n"
+        + "\n") +
+
+    // Not sure why this got a label of X.  Similar trees suggest it
+    // should be A instead
+    ("X=bad < demi\n"
+        + "relabel bad A\n"
+        + "\n") +
+
+    // This also seems to be mislabeled
+    ("PC=pc < D'|depuis|après\n"
+        + "relabel pc P\n"
+        + "\n");
+    

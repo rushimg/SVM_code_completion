@@ -1,0 +1,39 @@
+public abstract class StochasticMinimizer<T extends Function> implements Minimizer<T>, HasEvaluators {
+
+  public boolean outputIterationsToFile = false;
+  public int outputFrequency = 1000;
+  public double gain = 0.1;
+
+  protected double[] x, newX, grad, newGrad,v;
+  protected int numBatches;
+  protected int k;
+  protected int bSize = 15;
+  protected boolean quiet = false;
+  protected List<double[]> gradList = null;
+  protected int memory = 10;
+  protected int numPasses = -1;
+  protected Random gen = new Random(1);
+  protected PrintWriter file = null;
+  protected PrintWriter infoFile = null;
+  protected long maxTime = Long.MAX_VALUE;
+
+  private int evaluateIters = 0;    // Evaluate every x iterations (0 = no evaluation)
+  private Evaluator[] evaluators;  // separate set of evaluators to check how optimization is going
+
+  public void shutUp() {
+    this.quiet = true;
+  }
+
+  protected static final NumberFormat nf = new DecimalFormat("0.000E0");
+
+
+  protected abstract String getName();
+
+  protected abstract void takeStep(AbstractStochasticCachingDiffFunction dfunction);
+
+  public void setEvaluators(int iters, Evaluator[] evaluators)
+  {
+    this.evaluateIters = iters;
+    this.evaluators = evaluators;
+  }
+

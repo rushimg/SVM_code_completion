@@ -1,0 +1,23 @@
+  boolean iterate(int index, double err, MutableDouble ret) {
+    double deltaL = 0.0;
+    deltaL = newton(deltaL, index, err);
+    //System.err.println("delta is "+deltaL+" feature "+index+" expectation "+ftildeArr[index]);
+
+    if (Math.abs(deltaL + lambda[index]) > 200) {
+      if ((deltaL + lambda[index]) > 200) {
+        deltaL = 200 - lambda[index];
+      } else {
+        deltaL = -lambda[index] - 200;
+      }
+
+      System.err.println("set delta to smth " + deltaL);
+    }
+    lambda[index] = lambda[index] + deltaL;
+    if (Double.isNaN(deltaL)) {
+      System.err.println(" NaN " + index + ' ' + deltaL);
+    }
+    ret.set(deltaL);
+    return (Math.abs(deltaL) >= eps);
+  }
+
+

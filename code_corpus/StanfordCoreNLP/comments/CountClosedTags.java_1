@@ -1,0 +1,29 @@
+/**
+ * Implements Chris's heuristic for when a closed tag class can be
+ * treated as a closed tag.  You count how many different words in the
+ * class you see in the first X% of the training data, then make sure
+ * you don't see any new words in the rest of the training or test data.
+ * <br>
+ * This handles tagged training/test data in any format handled by the
+ *  tagger (@see edu.stanford.nlp.tagger.maxent.MaxentTagger).  Files
+ *  are specified as a comma-separated list via the flag
+ *  -TRAIN_FILE_PROPERTY or -TEST_FILE_PROPERTY.  Closed tags are
+ *  specified as a space separated list using the flag
+ *  -CLOSED_TAGS_PROPERTY.
+ * <br>
+ * CountClosedTags then reads each training file to count how many
+ * lines are in it.  First, it reads the first
+ * -TRAINING_RATIO_PROPERTY fraction of the lines and keeps track of
+ * which words show up for each closed tag.  Next, it reads the rest
+ * of the training file and keeps track of which words show up in the
+ * rest of the data that didn't show up in the rest of the training
+ * data.  Finally, it reads all of the test files, once again tracking
+ * the words that didn't show up in the training data.
+ * <br>
+ * CountClosedTags then outputs the number of unique words that showed
+ * up in the TRAINING_RATIO_PROPERTY training data and the total
+ * number of unique words for each tag.  If the -PRINT_WORDS_PROPERTY
+ * flag is set to true, it also prints out the sets of observed words.
+ * <br>
+ * @author John Bauer
+ */

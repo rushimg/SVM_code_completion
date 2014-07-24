@@ -1,0 +1,72 @@
+  public static List<String> fromPlainText(String contentString) throws IOException {
+    return fromPlainText(contentString, false);
+  }
+
+  public static List<String> fromPlainText(String contentString, boolean segmented) throws IOException {
+    if (segmented) {
+      contentString = ChineseUtils.normalize(contentString,
+                                             ChineseUtils.LEAVE,
+                                             ChineseUtils.ASCII);
+    } else {
+      contentString = ChineseUtils.normalize(contentString,
+                                             ChineseUtils.FULLWIDTH,
+                                             ChineseUtils.ASCII);
+    }
+
+    String sentenceString = "";
+
+    char[] content = contentString.toCharArray();
+    boolean sentenceEnd = false;
+    List<String> sentenceList = new ArrayList<String>();
+
+    int lastCh = -1;
+    for (Character c : content) {
+      // EncodingPrintWriter.out.println("Char is |" + c + "|", "UTF-8");
+      String newChar = c.toString();
+
+      if (sentenceEnd == false) {
+        if (segmented && fullStopsSet.contains(c) &&
+            (lastCh == -1 || Character.isSpaceChar(lastCh))) {
+          // require it to be a standalone punctuation mark -- cf. URLs
+          sentenceString += newChar;
+          sentenceEnd = true;
+        } else if ( ! segmented && fullStopsSet.contains(c)) {
+          // EncodingPrintWriter.out.println("  End of sent char", "UTF-8");
+          sentenceString += newChar;
+          sentenceEnd = true;
+        } else {
+          sentenceString += newChar;
+        }
+      } else { // sentenceEnd == true
+        if (rightMarkSet.contains(c)) {
+          sentenceString += newChar;
+          // EncodingPrintWriter.out.println("  Right mark char", "UTF-8");
+        } else if (newChar.matches("\\s")) {
+          sentenceString += newChar;
+        } else if (fullStopsSet.contains(c)) {
+          // EncodingPrintWriter.out.println("  End of sent char (2+)", "UTF-8");
+          sentenceString += newChar;
+        } else { // otherwise
+          if (sentenceString.length() > 0) {
+            sentenceEnd = false;
+          }
+          sentenceString = removeWhitespace(sentenceString, segmented);
+          if (sentenceString.length() > 0) {
+            //System.err.println("<<< "+sentenceString+" >>>");
+            sentenceList.add(sentenceString);
+          }
+          sentenceString = "";
+          sentenceString += newChar;
+        }
+      }
+      lastCh = c.charValue();
+    } // end for (Character c : content)
+
+    sentenceString = removeWhitespace(sentenceString, segmented);
+    if (sentenceString.length() > 0) {
+      //System.err.println("<<< "+sentenceString+" >>>");
+      sentenceList.add(sentenceString);
+    }
+    return sentenceList;
+  }
+

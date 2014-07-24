@@ -1,0 +1,29 @@
+  @Override
+  public void clear() {
+    indexToEntry.clear();
+    objectToEntry.clear();
+  }
+
+  public void dump() {
+    for (int j = 0; j < indexToEntry.size(); j++) {
+      System.err.println(" " + j + " " + ((Scored) indexToEntry.get(j).object).score());
+    }
+  }
+
+  public void verify() {
+    for (int i = 0; i < indexToEntry.size(); i++) {
+      if (i != 0) {
+        // check ordering
+        if (compare(indexToEntry.get(i), indexToEntry.get(parent(i))) < 0) {
+          System.err.println("Error in the ordering of the heap! (" + i + ")");
+          dump();
+          System.exit(0);
+        }
+      }
+      // check placement
+      if (i != indexToEntry.get(i).index) {
+        System.err.println("Error in placement in the heap!");
+      }
+    }
+  }
+

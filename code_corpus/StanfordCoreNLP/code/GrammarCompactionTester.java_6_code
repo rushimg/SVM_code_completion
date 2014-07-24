@@ -1,0 +1,95 @@
+  public static void testAutomatonCompaction() {
+    // make our LossyAutomatonCompactor from the parameters passed at command line
+    // now set up the compactor2 constructor args
+    // extract a bunch of paths
+    Timing.startTime();
+    System.out.print("Extracting paths from treebank...");
+    allTrainPaths = extractPaths(path, trainLow, trainHigh, false);
+    allTestPaths = extractPaths(path, testLow, testHigh, false);
+    Timing.tick("done");
+
+    // for each category, construct an automaton and then compact it
+    for (Iterator catIter = allTrainPaths.keySet().iterator(); catIter.hasNext();) {
+      // construct an automaton from the paths
+      String category = (String) catIter.next();
+      List trainPaths = (List) allTrainPaths.get(category);
+      List testPaths = (List) allTestPaths.get(category);
+      if (testPaths == null) testPaths = new ArrayList();
+      // now make the graph with the training paths (the LossyAutomatonCompactor will reestimate the weights anyway)
+      TransducerGraph graph = TransducerGraph.createGraphFromPaths(trainPaths, 3);
+      System.out.println("Created graph for: " + category);
+
+      System.out.println();
+      int numArcs1 = graph.getArcs().size();
+
+      LossyAutomatonCompactor compactor = new LossyAutomatonCompactor(3, // horizonOrder, 1 means that only exactly compatible merges are considered
+								      0, // min nmber of arcs
+								      10000000.0, // maxMergeCost
+								      0.5, // splitParam
+								      false, //  ignoreUnsupportedSuffixes
+                      -1000, // minArcCost
+								      trainPaths,
+								      testPaths,
+								      LossyAutomatonCompactor.DATA_LIKELIHOOD_COST, // costModel
+								      false); // verbose
+
+      TransducerGraph result = compactor.compactFA(graph);
+      //do we need this?      result = new TransducerGraph(result, ntsp);  // pull out strings from sets returned by minimizer
+      int numArcs2 = result.getArcs().size();
+      System.out.println("LossyGrammarCompactor compacted "+category+" from " + numArcs1 + " to " + numArcs2 + " arcs");
+
+    }
+
+
+  }
+  private static <T> int numTokens(List<List<T>> paths) {
+    int result = 0;
+    for (List<T> path : paths) {
+      result += path.size();
+    }
+    return result;
+  }
+
+  public void buildAndCompactToyGrammars() {
+    // extract a bunch of paths
+    System.out.print("Extracting other paths...");
+    allTrainPaths = extractPaths(path, trainLow, trainHigh, true);
+    TransducerGraph.NodeProcessor ntsp = new TransducerGraph.SetToStringNodeProcessor(new PennTreebankLanguagePack());
+    TransducerGraph.NodeProcessor otsp = new TransducerGraph.ObjectToSetNodeProcessor();
+    TransducerGraph.ArcProcessor isp = new TransducerGraph.InputSplittingProcessor();
+    TransducerGraph.ArcProcessor ocp = new TransducerGraph.OutputCombiningProcessor();
+    TransducerGraph.GraphProcessor normalizer = new TransducerGraph.NormalizingGraphProcessor(false);
+    TransducerGraph.GraphProcessor quasiDeterminizer = new QuasiDeterminizer();
+    AutomatonMinimizer exactMinimizer = new FastExactAutomatonMinimizer();
+    for (String key : allTrainPaths.keySet()) {
+      System.out.println("creating graph for " + key);
+      List<List<String>> paths = allTrainPaths.get(key);
+      ClassicCounter<List<String>> pathCounter = new ClassicCounter<List<String>>();
+      for (List<String> o : paths) {
+        pathCounter.incrementCount(o);
+      }
+      ClassicCounter<List<String>> newPathCounter = removeLowCountPaths(pathCounter, 2);
+      paths.retainAll(newPathCounter.keySet()); // get rid of the low count ones
+      TransducerGraph result = TransducerGraph.createGraphFromPaths(newPathCounter, 1000);
+      // exact compaction
+      int numArcs = result.getArcs().size();
+      int numNodes = result.getNodes().size();
+      if (numArcs == 0) {
+        continue;
+      }
+      System.out.println("initial graph has " + numArcs + " arcs and " + numNodes + " nodes.");
+      GrammarCompactor.writeFile(result, "unminimized", key);
+      // do exact minimization
+      result = normalizer.processGraph(result); // normalize it so that exact minimization works properly
+      result = quasiDeterminizer.processGraph(result); // push probabilities left or down
+      result = new TransducerGraph(result, ocp); // combine outputs into inputs
+      result = exactMinimizer.minimizeFA(result); // minimize the thing
+      result = new TransducerGraph(result, ntsp);  // pull out strings from sets returned by minimizer
+      result = new TransducerGraph(result, isp); // split outputs from inputs
+      numArcs = result.getArcs().size();
+      numNodes = result.getNodes().size();
+
+      System.out.println("after exact minimization graph has " + numArcs + " arcs and " + numNodes + " nodes.");
+      GrammarCompactor.writeFile(result, "exactminimized", key);
+
+      // do additional lossy minimization

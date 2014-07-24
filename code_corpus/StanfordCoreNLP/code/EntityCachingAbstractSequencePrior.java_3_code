@@ -1,0 +1,44 @@
+  public int getNumClasses() {
+    return classIndex.size();
+  }
+
+  public  double[] getConditionalDistribution (int[] sequence, int position) {
+    double[] probs = scoresOf(sequence, position);
+    ArrayMath.logNormalize(probs);
+    probs = ArrayMath.exp(probs);
+    //System.out.println(this);
+    return probs;
+  }
+
+  public  double[] scoresOf (int[] sequence, int position) {
+    double[] probs = new double[numClasses];
+    int origClass = sequence[position];
+    for (int label = 0; label < numClasses; label++) {
+      sequence[position] = label;
+      updateSequenceElement(sequence, position, 0);
+      probs[label] = scoreOf(sequence);
+    }
+    sequence[position] = origClass;
+    //System.out.println(this);
+    return probs;
+  }
+
+  public void setInitialSequence(int[] initialSequence) {
+    this.sequence = initialSequence;
+    entities = new Entity[initialSequence.length];
+    Arrays.fill(entities, null);
+    for (int i = 0; i < initialSequence.length; i++) {
+      if (initialSequence[i] != backgroundSymbol) {
+        Entity entity = extractEntity(initialSequence, i);
+        addEntityToEntitiesArray(entity);
+        i += entity.words.size() - 1;
+      }
+    }
+  }
+
+  private void addEntityToEntitiesArray(Entity entity) {
+    for (int j = entity.startPosition; j < entity.startPosition + entity.words.size(); j++) {
+      entities[j] = entity;
+    }
+  }
+

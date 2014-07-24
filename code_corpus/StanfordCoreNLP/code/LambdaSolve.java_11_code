@@ -1,0 +1,61 @@
+  void initCondsZlambdaEtc() {
+    // init pcond
+    for (int x = 0; x < p.data.xSize; x++) {
+      for (int y = 0; y < probConds[x].length; y++) {
+        probConds[x][y] = 1.0 / probConds[x].length;
+      }
+    }
+
+    if (VERBOSE) {
+      System.err.println(" pcond initialized ");
+    }
+    // init zlambda
+    for (int x = 0; x < p.data.xSize; x++) {
+      zlambda[x] = probConds[x].length;
+    }
+    if (VERBOSE) {
+      System.err.println(" zlambda initialized ");
+    }
+    // init ftildeArr
+    for (int i = 0; i < p.fSize; i++) {
+      ftildeArr[i] = p.functions.get(i).ftilde();
+      p.functions.get(i).setSum();
+
+      // if the expectation of a feature is zero make sure we are not
+      // trying to find a lambda for it
+      // if (ftildeArr[i] == 0) {
+      //   lambda_converged[i]=true;
+      //   lambda[i]=0;
+      // }
+
+      //dumb smoothing that is not sound and doesn't seem to work
+      if (smooth) {
+        double alfa = .015;
+        for (int j = 0; j < p.fSize; j++) {
+        }
+      }
+
+      Feature f = p.functions.get(i);
+      //collecting f#(x,y)
+      for (int j = 0; j < f.len(); j++) {
+        int x = f.getX(j);
+        int y = f.getY(j);
+        fnumArr[x][y] += f.getVal(j);
+      }//j
+    }//i
+    int constAll = fnumArr[0][0];
+    fixedFnumXY = true;
+    for (int x = 0; x < p.data.xSize; x++) {
+      for (int y = 0; y < fnumArr[x].length; y++) {
+        if (fnumArr[x][y] != constAll) {
+          fixedFnumXY = false;
+          break;
+        }
+      }
+    }//x
+    if (VERBOSE) {
+      System.err.println(" ftildeArr initialized " + (fixedFnumXY ? "fixed sum " : ""));
+    }
+  }
+
+

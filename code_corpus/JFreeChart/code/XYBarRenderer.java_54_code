@@ -1,0 +1,62 @@
+    protected void drawItemLabel(Graphics2D g2, XYDataset dataset,
+            int series, int item, XYPlot plot, XYItemLabelGenerator generator,
+            Rectangle2D bar, boolean negative) {
+
+        if (generator == null) {
+            return;  // nothing to do
+        }
+        String label = generator.generateLabel(dataset, series, item);
+        if (label == null) {
+            return;  // nothing to do
+        }
+
+        Font labelFont = getItemLabelFont(series, item);
+        g2.setFont(labelFont);
+        Paint paint = getItemLabelPaint(series, item);
+        g2.setPaint(paint);
+
+        // find out where to place the label...
+        ItemLabelPosition position;
+        if (!negative) {
+            position = getPositiveItemLabelPosition(series, item);
+        }
+        else {
+            position = getNegativeItemLabelPosition(series, item);
+        }
+
+        // work out the label anchor point...
+        Point2D anchorPoint = calculateLabelAnchorPoint(
+                position.getItemLabelAnchor(), bar, plot.getOrientation());
+
+        if (isInternalAnchor(position.getItemLabelAnchor())) {
+            Shape bounds = TextUtilities.calculateRotatedStringBounds(label,
+                    g2, (float) anchorPoint.getX(), (float) anchorPoint.getY(),
+                    position.getTextAnchor(), position.getAngle(),
+                    position.getRotationAnchor());
+
+            if (bounds != null) {
+                if (!bar.contains(bounds.getBounds2D())) {
+                    if (!negative) {
+                        position = getPositiveItemLabelPositionFallback();
+                    }
+                    else {
+                        position = getNegativeItemLabelPositionFallback();
+                    }
+                    if (position != null) {
+                        anchorPoint = calculateLabelAnchorPoint(
+                                position.getItemLabelAnchor(), bar,
+                                plot.getOrientation());
+                    }
+                }
+            }
+
+        }
+
+        if (position != null) {
+            TextUtilities.drawRotatedString(label, g2,
+                    (float) anchorPoint.getX(), (float) anchorPoint.getY(),
+                    position.getTextAnchor(), position.getAngle(),
+                    position.getRotationAnchor());
+        }
+    }
+

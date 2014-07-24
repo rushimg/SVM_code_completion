@@ -1,0 +1,180 @@
+public class SGDWithAdaGradAndFOBOS<T extends DiffFunction> implements Minimizer<T>, HasEvaluators {
+
+  protected double[] x;
+  protected double initRate;  // Initial stochastic iteration count
+  protected double lambda;
+  // when alpha = 1, sg-lasso is just lasso; when alpha = 0, sg-lasso is g-lasso
+  protected double alpha = 1.0;
+  protected boolean quiet = false;
+  private static final int DEFAULT_NUM_PASSES = 50;
+  protected final int numPasses; //-1;
+  protected int bSize = 1;  // NOTE: If bSize does not divide evenly into total number of samples,
+                            // some samples may get accounted for twice in one pass
+  private static final int DEFAULT_TUNING_SAMPLES = Integer.MAX_VALUE;
+  private static final int DEFAULT_BATCH_SIZE = 1000;
+  private double eps = 1e-3;
+  private double TOL = 1e-4;
+
+  // fields for approximating Hessian to feed to QN
+  public List<double[]> yList = null;
+  public List<double[]> sList = null;
+  public double[] diag;
+  private int hessSampleSize = -1;
+  private double[] s,y = null;
+
+  protected Random gen = new Random(1);
+  protected long maxTime = Long.MAX_VALUE;
+
+  private int evaluateIters = 0;    // Evaluate every x iterations (0 = no evaluation)
+  private Evaluator[] evaluators;  // separate set of evaluators to check how optimization is going
+  private Prior prior = Prior.LASSO;
+
+  private boolean useEvalImprovement = false;
+  private boolean useAvgImprovement = false;
+  private boolean suppressTestPrompt = false;
+  private int terminateOnEvalImprovementNumOfEpoch = 1;
+  private double bestEvalSoFar = Double.NEGATIVE_INFINITY;
+  private double[] xBest;
+  private int noImproveItrCount = 0;
+
+  private boolean useAdaDelta = false;
+  private boolean useAdaDiff = false;
+  private double rho = 0.95;
+  private double[] sumGradSquare;
+  private double[] prevGrad, prevDeltaX;
+  private double[] sumDeltaXSquare;
+
+  public void setHessSampleSize(int hessSize) {
+    this.hessSampleSize = hessSize;
+    // (TODO) should initialize relevant data structure as well
+  }
+
+  public void terminateOnEvalImprovement(boolean toTerminate) {
+    useEvalImprovement = toTerminate;
+  }
+
+  public void terminateOnAvgImprovement(boolean toTerminate, double tolerance) {
+    useAvgImprovement = toTerminate;
+    TOL = tolerance;
+  }
+
+  public void suppressTestPrompt(boolean suppressTestPrompt) {
+    this.suppressTestPrompt = suppressTestPrompt;
+  }
+
+  public void setTerminateOnEvalImprovementNumOfEpoch(int terminateOnEvalImprovementNumOfEpoch) {
+    this.terminateOnEvalImprovementNumOfEpoch = terminateOnEvalImprovementNumOfEpoch;
+  }
+
+  public boolean toContinue(double[] x, double currEval) {
+    if (currEval >= bestEvalSoFar) {
+      bestEvalSoFar = currEval;
+      noImproveItrCount = 0;
+      if (xBest == null)
+        xBest = Arrays.copyOf(x, x.length);
+      else
+        System.arraycopy( x, 0, xBest, 0, x.length );
+      return true;
+    } else {
+      noImproveItrCount += 1;
+      return noImproveItrCount <= terminateOnEvalImprovementNumOfEpoch;
+    }
+  }
+
+  public enum Prior {
+    LASSO, RIDGE, GAUSSIAN, aeLASSO, gLASSO, sgLASSO, NONE
+  }
+
+  private static Prior getPrior(String priorType) {
+    if (priorType.equals("none"))
+      return Prior.NONE;
+    else if (priorType.equals("lasso"))
+      return Prior.LASSO;
+    else if (priorType.equals("ridge"))
+      return Prior.RIDGE;
+    else if (priorType.equals("gaussian"))
+      return Prior.GAUSSIAN;
+    else if (priorType.equals("ae-lasso"))
+      return Prior.aeLASSO;
+    else if (priorType.equals("g-lasso"))
+      return Prior.gLASSO;
+    else if (priorType.equals("sg-lasso"))
+      return Prior.sgLASSO;
+    else
+      throw new IllegalArgumentException("prior type " + priorType + " not recognized; supported priors "+
+       "are: lasso, ridge, gaussian, ae-lasso, g-lasso, and sg-lasso");
+  }
+
+  public SGDWithAdaGradAndFOBOS(double initRate, double lambda, int numPasses) {
+    this(initRate, lambda, numPasses, -1);
+  }
+
+  public SGDWithAdaGradAndFOBOS(double initRate, double lambda, int numPasses, int batchSize) {
+    this(initRate, lambda, numPasses, batchSize, "lasso", 1.0, false, false, 1e-3, 0.95);
+  }
+
+
+  public SGDWithAdaGradAndFOBOS(double initRate, double lambda, int numPasses, 
+      int batchSize, String priorType, double alpha, boolean useAdaDelta, boolean useAdaDiff, double adaGradEps, double adaDeltaRho)
+  {
+    this.initRate = initRate;
+    this.prior = getPrior(priorType);
+    this.bSize = batchSize;
+    this.lambda = lambda;
+    this.eps = adaGradEps;
+    this.rho = adaDeltaRho;
+    this.useAdaDelta = useAdaDelta;
+    this.useAdaDiff = useAdaDiff;
+    this.alpha = alpha;
+    if (numPasses >= 0) {
+      this.numPasses = numPasses;
+    } else {
+      this.numPasses = DEFAULT_NUM_PASSES;
+      sayln("  SGDWithAdaGradAndFOBOS: numPasses=" + numPasses + ", defaulting to " + this.numPasses);
+    }
+  }
+
+  public void shutUp() {
+    this.quiet = true;
+  }
+
+  private static final NumberFormat nf = new DecimalFormat("0.000E0");
+
+  protected String getName() {
+    return "SGDWithAdaGradAndFOBOS" + bSize + "_lambda" + nf.format(lambda) + "_alpha" + nf.format(alpha);
+  }
+
+  @Override
+  public void setEvaluators(int iters, Evaluator[] evaluators)
+  {
+    this.evaluateIters = iters;
+    this.evaluators = evaluators;
+  }
+
+  // really this is the the L2 norm....
+  private static double getNorm(double[] w)
+  {
+    double norm = 0;
+    for (int i = 0; i < w.length; i++) {
+    }
+    return Math.sqrt(norm);
+  }
+
+  private double doEvaluation(double[] x) {
+    // Evaluate solution
+    if (evaluators == null) return Double.NEGATIVE_INFINITY;
+    double score = Double.NEGATIVE_INFINITY;
+    for (Evaluator eval:evaluators) {
+      if (!suppressTestPrompt)
+        sayln("  Evaluating: " + eval.toString());
+      double aScore = eval.evaluate(x);
+      if (aScore != Double.NEGATIVE_INFINITY)
+        score = aScore;
+    }
+    return score;
+  }
+
+  private static double pospart(double number) {
+    return number > 0.0 ? number : 0.0;
+  }
+

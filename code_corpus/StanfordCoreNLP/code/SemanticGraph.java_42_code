@@ -1,0 +1,117 @@
+  public String toPOSList() {
+    StringBuilder buf = new StringBuilder();
+    for (SemanticGraphEdge edge : this.edgeListSorted()) {
+      buf.append(edge.getRelation().toString()).append("(");
+      buf.append(toPOSStyle(edge.getSource())).append(",");
+      buf.append(toPOSStyle(edge.getTarget())).append(")\n");
+    }
+    return buf.toString();
+  }
+
+  // todo [cdm 2013]: These next two methods should really be toString options on indexed word but are different from all the current ones....
+
+  private static String toDepStyle(IndexedWord fl) {
+    StringBuilder buf = new StringBuilder();
+    buf.append(fl.word());
+    buf.append("-");
+    buf.append(fl.index());
+    return buf.toString();
+  }
+
+  private static String toPOSStyle(IndexedWord fl) {
+    StringBuilder buf = new StringBuilder();
+    buf.append(fl.word());
+    buf.append("/");
+    buf.append(fl.tag());
+    buf.append("-");
+    buf.append(fl.index());
+    return buf.toString();
+  }
+
+  private String toReadableString() {
+    StringBuilder buf = new StringBuilder();
+    buf.append(String.format("%-20s%-20s%-20s%n", "dep", "reln", "gov"));
+    buf.append(String.format("%-20s%-20s%-20s%n", "---", "----", "---"));
+    for (IndexedWord root : getRoots()) {
+      buf.append(String.format("%-20s%-20s%-20s%n", toDepStyle(root), "root", "root"));
+    }
+    for (SemanticGraphEdge edge : this.edgeListSorted()) {
+      buf.append(String.format("%-20s%-20s%-20s%n", toDepStyle(edge.getTarget()), edge.getRelation().toString(),
+          toDepStyle(edge.getSource())));
+    }
+    return buf.toString();
+  }
+
+  private String toXMLString() {
+    StringBuilder buf = new StringBuilder("<dependencies style=\"typed\">\n");
+    for (SemanticGraphEdge edge : this.edgeListSorted()) {
+      String reln = edge.getRelation().toString();
+      String gov = (edge.getSource()).word();
+      int govIdx = (edge.getSource()).index();
+      String dep = (edge.getTarget()).word();
+      int depIdx = (edge.getTarget()).index();
+      buf.append("  <dep type=\"").append(reln).append("\">\n");
+      buf.append("    <governor idx=\"").append(govIdx).append("\">").append(gov).append("</governor>\n");
+      buf.append("    <dependent idx=\"").append(depIdx).append("\">").append(dep).append("</dependent>\n");
+      buf.append("  </dep>\n");
+    }
+    buf.append("</dependencies>\n");
+    return buf.toString();
+  }
+
+  public String toCompactString() {
+    return toCompactString(false);
+  }
+
+  public String toCompactString(boolean showTags) {
+    StringBuilder sb = new StringBuilder();
+    Set<IndexedWord> used = Generics.newHashSet();
+    Collection<IndexedWord> roots = getRoots();
+    if (roots.isEmpty()) {
+      if (size() == 0) {
+        return "[EMPTY_SEMANTIC_GRAPH]";
+      } else {
+        return "[UNROOTED_SEMANTIC_GRAPH]";
+      }
+      // return toString("readable");
+    }
+    for (IndexedWord root : roots) {
+      toCompactStringHelper(root, sb, used, showTags);
+    }
+    return sb.toString();
+  }
+
+  private void toCompactStringHelper(IndexedWord node, StringBuilder sb, Set<IndexedWord> used, boolean showTags) {
+    used.add(node);
+    try {
+      boolean isntLeaf = (outDegree(node) > 0);
+      if (isntLeaf) {
+        sb.append("[");
+      }
+      sb.append(node.word());
+      if (showTags) {
+        sb.append("/");
+        sb.append(node.tag());
+      }
+      for (SemanticGraphEdge edge : getOutEdgesSorted(node)) {
+        IndexedWord target = edge.getTarget();
+        sb.append(" ").append(edge.getRelation()).append(":");
+        if (!used.contains(target)) { // avoid infinite loop
+          toCompactStringHelper(target, sb, used, showTags);
+        } else {
+          sb.append(target.word());
+          if (showTags) {
+            sb.append("/");
+            sb.append(target.tag());
+          }
+        }
+      }
+      if (isntLeaf) {
+        sb.append("]");
+      }
+    } catch (IllegalArgumentException e) {
+      System.err.println("WHOA!  SemanticGraph.toCompactStringHelper() ran into problems at node " + node);
+      throw new IllegalArgumentException(e);
+    }
+  }
+

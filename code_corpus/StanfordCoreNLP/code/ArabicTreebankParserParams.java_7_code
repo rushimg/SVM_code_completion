@@ -1,0 +1,49 @@
+  @Override
+  public TreeTransformer collinizerEvalb() {
+    return collinizer();
+  }
+
+  @Override
+  public String[] sisterSplitters() {
+    return EMPTY_STRING_ARRAY;
+  }
+
+  // WSGDEBUG -- Annotate POS tags with nominal (grammatical) gender
+  private static final MorphoFeatureSpecification tagSpec = new ArabicMorphoFeatureSpecification();
+  static {
+    tagSpec.activate(MorphoFeatureType.NGEN);
+  }
+  
+  @Override
+  public Tree transformTree(Tree t, Tree root) {
+
+    String baseCat = t.value();
+    StringBuilder newCategory = new StringBuilder();
+
+    //Add manual state splits
+    for (Pair<TregexPattern,Function<TregexMatcher,String>> e : activeAnnotations) {
+      TregexMatcher m = e.first().matcher(root);
+      if (m.matchesAt(t))
+        newCategory.append(e.second().apply(m));
+    }
+
+    // WSGDEBUG
+    //Add morphosyntactic features if this is a POS tag
+    if(t.isPreTerminal() && tagSpec != null) {
+      if( !(t.firstChild().label() instanceof CoreLabel) || ((CoreLabel) t.firstChild().label()).originalText() == null )
+        throw new RuntimeException(String.format("%s: Term lacks morpho analysis: %s",this.getClass().getName(),t.toString()));
+
+      String morphoStr = ((CoreLabel) t.firstChild().label()).originalText();
+      MorphoFeatures feats = tagSpec.strToFeatures(morphoStr);
+      baseCat = feats.getTag(baseCat);
+    }
+
+    //Update the label(s)
+    String newCat = baseCat + newCategory.toString();
+    t.setValue(newCat);
+    if (t.isPreTerminal() && t.label() instanceof HasTag)
+      ((HasTag) t.label()).setTag(newCat);
+
+    return t;
+  }
+

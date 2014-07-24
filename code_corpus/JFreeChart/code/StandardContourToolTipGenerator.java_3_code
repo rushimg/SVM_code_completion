@@ -1,0 +1,32 @@
+    public String generateToolTip(ContourDataset data, int item) {
+
+        double x = data.getXValue(0, item);
+        double y = data.getYValue(0, item);
+        double z = data.getZValue(0, item);
+        String xString = null;
+
+        if (data.isDateAxis(0)) {
+            SimpleDateFormat formatter
+                = new java.text.SimpleDateFormat("MM/dd/yyyy hh:mm:ss");
+            StringBuffer strbuf = new StringBuffer();
+            strbuf = formatter.format(
+                new Date((long) x), strbuf, new java.text.FieldPosition(0)
+            );
+            xString = strbuf.toString();
+        }
+        else {
+            xString = this.valueForm.format(x);
+        }
+        if (!Double.isNaN(z)) {
+            return "X: " + xString
+                   + ", Y: " + this.valueForm.format(y)
+                   + ", Z: " + this.valueForm.format(z);
+        }
+        else {
+            return "X: " + xString
+                 + ", Y: " + this.valueForm.format(y)
+                 + ", Z: no data";
+        }
+
+    }
+

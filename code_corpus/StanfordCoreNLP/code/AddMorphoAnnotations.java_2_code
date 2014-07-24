@@ -1,0 +1,82 @@
+  private static class YieldIterator implements Iterator<List<String>> {
+
+    private List<String> nextYield = null;
+    BufferedReader fileReader = null;
+    TreeReader treeReader = null;
+    
+    public YieldIterator(String fileName, boolean isTree) {
+      try {
+        if (isTree) {
+          TreeReaderFactory trf = new ArabicTreeReaderFactory.ArabicRawTreeReaderFactory(true);
+          treeReader = trf.newTreeReader(new InputStreamReader(new FileInputStream(fileName), "UTF-8"));
+        } else {
+          fileReader = new BufferedReader(new InputStreamReader(new FileInputStream(fileName), "UTF-8"));
+        }
+      } catch (UnsupportedEncodingException e) {
+        e.printStackTrace();
+      } catch (FileNotFoundException e) {
+        e.printStackTrace();
+      }
+      primeNext();
+    }
+    
+    private void primeNext() {
+      try {
+        if (treeReader != null) {
+            Tree tree = treeReader.readTree();
+            if (tree == null) {
+              nextYield = null;
+            } else {
+              List<CoreLabel> mLabeledLeaves = tree.taggedLabeledYield();
+              nextYield = new ArrayList<String>(mLabeledLeaves.size());
+              for (CoreLabel label : mLabeledLeaves) {
+                nextYield.add(label.tag());
+              }
+            }
+        } else {
+          String line = fileReader.readLine();
+          if (line == null) {
+            nextYield = null;
+          } else {
+            nextYield = Arrays.asList(line.split("\\s+"));
+          }
+        }
+      } catch (IOException e) {
+        nextYield = null;
+        e.printStackTrace();
+      }
+    }
+    
+    @Override
+    public boolean hasNext() {
+      return nextYield != null;
+    }
+
+    @Override
+    public List<String> next() {
+      if (nextYield == null) {
+        try {
+          if (fileReader != null) {
+            fileReader.close();
+            fileReader = null;
+          } else if (treeReader != null) {
+            treeReader.close();
+            treeReader = null;
+          }
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
+        return null;
+      } else {
+        List<String> next = nextYield;
+        primeNext();
+        return next;
+      }
+    }
+
+    @Override
+    public void remove() {
+      throw new UnsupportedOperationException();
+    }
+  }
+

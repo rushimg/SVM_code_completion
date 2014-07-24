@@ -1,0 +1,67 @@
+  public class Record {
+    // convergence options.
+    // have average difference like before
+    // zero gradient.
+
+    // for convergence test
+    private final List<Double> evals = new ArrayList<Double>();
+    private final List<Double> values = new ArrayList<Double>();
+    List<Double> gNorms = new ArrayList<Double>();
+    // List<Double> xNorms = new ArrayList<Double>();
+    private final List<Integer> funcEvals = new ArrayList<Integer>();
+    private final List<Double> time = new ArrayList<Double>();
+    // gNormInit: This makes it so that if for some reason
+    // you try and divide by the initial norm before it's been
+    // initialized you don't get a NAN but you will also never
+    // get false convergence.
+    private double gNormInit = Double.MIN_VALUE;
+    private double relativeTOL = 1e-8;
+    private double TOL = 1e-6;
+    private double EPS = 1e-6;
+    private long startTime;
+    private double gNormLast; // This is used for convergence.
+    private double[] xLast;
+    private int maxSize = 100; // This will control the number of func values /
+                                // gradients to retain.
+    private Function mon = null;
+    private boolean quiet = false;
+    private boolean memoryConscious = true;
+    private PrintWriter outputFile = null;
+
+    private int noImproveItrCount = 0;
+    private double[] xBest;
+
+    public Record(boolean beQuiet, Function monitor, double tolerance) {
+      this.quiet = beQuiet;
+      this.mon = monitor;
+      this.TOL = tolerance;
+    }
+
+    public Record(boolean beQuiet, Function monitor, double tolerance,
+        PrintWriter output) {
+      this.quiet = beQuiet;
+      this.mon = monitor;
+      this.TOL = tolerance;
+      this.outputFile = output;
+    }
+
+    public Record(boolean beQuiet, Function monitor, double tolerance,
+        double eps) {
+      this.quiet = beQuiet;
+      this.mon = monitor;
+      this.TOL = tolerance;
+      this.EPS = eps;
+    }
+
+    public void setEPS(double eps) {
+      EPS = eps;
+    }
+
+    public void setTOL(double tolerance) {
+      TOL = tolerance;
+    }
+
+    public void start(double val, double[] grad) {
+      start(val, grad, null);
+    }
+

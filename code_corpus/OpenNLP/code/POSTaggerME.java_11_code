@@ -1,0 +1,25 @@
+  public String[][] tag(int numTaggings, String[] sentence) {
+    Sequence[] bestSequences = model.bestSequences(numTaggings, sentence, null,
+        contextGen, sequenceValidator);
+    String[][] tags = new String[bestSequences.length][];
+    for (int si=0;si<tags.length;si++) {
+      List<String> t = bestSequences[si].getOutcomes();
+      tags[si] = t.toArray(new String[t.size()]);
+    }
+    return tags;
+  }
+
+  @Deprecated
+  public Sequence[] topKSequences(List<String> sentence) {
+    return model.bestSequences(size, sentence.toArray(new String[sentence.size()]), null,
+        contextGen, sequenceValidator);
+  }
+
+  public Sequence[] topKSequences(String[] sentence) {
+    return this.topKSequences(sentence, null);
+  }
+
+  public Sequence[] topKSequences(String[] sentence, Object[] additionaContext) {
+    return model.bestSequences(size, sentence, additionaContext, contextGen, sequenceValidator);
+  }
+

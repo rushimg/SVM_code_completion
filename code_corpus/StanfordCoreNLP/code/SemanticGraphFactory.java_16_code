@@ -1,0 +1,36 @@
+  public static SemanticGraph makeFromVertices(SemanticGraph sg, Collection<IndexedWord> nodes) {
+    List<SemanticGraphEdge> edgesToAdd = new ArrayList<SemanticGraphEdge>();
+    List<IndexedWord> nodesToAdd = new ArrayList<IndexedWord>(nodes);
+    for (IndexedWord nodeA :nodes) {
+      for (IndexedWord nodeB : nodes) {
+        if (nodeA != nodeB) {
+          List<SemanticGraphEdge> edges = sg.getShortestDirectedPathEdges(nodeA, nodeB);
+          if (edges != null) {
+            edgesToAdd.addAll(edges);
+            for (SemanticGraphEdge edge : edges) {
+              IndexedWord gov = edge.getGovernor();
+              IndexedWord dep = edge.getDependent();
+              if (gov != null && !nodesToAdd.contains(gov)) {
+                nodesToAdd.add(gov);
+              }
+              if (dep != null && !nodesToAdd.contains(dep)) {
+                nodesToAdd.add(dep);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    SemanticGraph retSg = new SemanticGraph();
+    for (IndexedWord node : nodesToAdd) {
+      retSg.addVertex(node);
+    }
+    for (SemanticGraphEdge edge : edgesToAdd) {
+      retSg.addEdge(edge.getGovernor(), edge.getDependent(), edge.getRelation(), edge.getWeight(), edge.isExtra());
+    }
+
+    retSg.resetRoots();
+    return retSg;
+  }
+

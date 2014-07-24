@@ -1,0 +1,186 @@
+  private static void runTraining(TaggerConfig config)
+    throws IOException
+  {
+    Date now = new Date();
+
+    System.err.println("## tagger training invoked at " + now + " with arguments:");
+    config.dump();
+    Timing tim = new Timing();
+
+    PrintFile log = new PrintFile(config.getModel() + ".props");
+    log.println("## tagger training invoked at " + now + " with arguments:");
+    config.dump(log);
+    log.close();
+
+    trainAndSaveModel(config);
+    tim.done("Training POS tagger");
+  }
+
+
+  private static void printErrWordsPerSec(long milliSec, int numWords) {
+    double wordsPerSec = numWords / (((double) milliSec) / 1000);
+    NumberFormat nf = new DecimalFormat("0.00");
+    System.err.println("Tagged " + numWords + " words at " +
+        nf.format(wordsPerSec) + " words per second.");
+  }
+
+
+  // not so much a wrapper as a class with some various functionality
+  // extending the MaxentTagger...
+  // TODO: can we get rid of this? [cdm: sure. I'm not quite sure why Anna added it.  It seems like it could just be inside MaxentTagger]
+  static class TaggerWrapper implements Function<String, String> {
+
+    private final TaggerConfig config;
+    private final MaxentTagger tagger;
+    private TokenizerFactory<? extends HasWord> tokenizerFactory;
+    private int sentNum; // = 0;
+
+    private final boolean tokenize;
+    private final boolean outputVerbosity, outputLemmas;
+    private final OutputStyle outputStyle;
+    private final String tagSeparator;
+    private final Morphology morpha;
+
+    protected TaggerWrapper(MaxentTagger tagger) {
+      this.tagger = tagger;
+      this.config = tagger.config;
+
+      try {
+        tokenizerFactory =
+          chooseTokenizerFactory(config.getTokenize(),
+                                 config.getTokenizerFactory(),
+                                 config.getTokenizerOptions(),
+                                 config.getTokenizerInvertible());
+      } catch (Exception e) {
+        System.err.println("Error in tokenizer factory instantiation for class: " + config.getTokenizerFactory());
+        e.printStackTrace();
+        tokenizerFactory = PTBTokenizerFactory.newWordTokenizerFactory(config.getTokenizerOptions());
+      }
+
+      outputStyle = OutputStyle.fromShortName(config.getOutputFormat());
+      outputVerbosity = config.getOutputVerbosity();
+      outputLemmas = config.getOutputLemmas();
+      morpha = (outputLemmas) ? new Morphology() : null;
+      tokenize = config.getTokenize();
+      tagSeparator = config.getTagSeparator();
+    }
+
+    @Override
+    public String apply(String o) {
+      StringWriter taggedResults = new StringWriter();
+
+      List<List<HasWord>> sentences;
+      if (tokenize) {
+        sentences = tokenizeText(new StringReader(o), tokenizerFactory);
+      } else {
+        sentences = Generics.newArrayList();
+        sentences.add(Sentence.toWordList(o.split("\\s+")));
+      }
+
+      // TODO: there is another almost identical block of code elsewhere.  Refactor
+      if (config.getNThreads() != 1) {
+        MulticoreWrapper<List<? extends HasWord>, List<? extends HasWord>> wrapper = new MulticoreWrapper<List<? extends HasWord>, List<? extends HasWord>>(config.getNThreads(), new SentenceTaggingProcessor(tagger, outputLemmas));
+        for (List<? extends HasWord> sentence : sentences) {
+          wrapper.put(sentence);
+          while (wrapper.peek()) {
+            List<? extends HasWord> taggedSentence = wrapper.poll();
+            tagger.outputTaggedSentence(taggedSentence, outputLemmas, outputStyle, outputVerbosity, sentNum++, " ", taggedResults);
+          }
+        }
+        wrapper.join();
+        while (wrapper.peek()) {
+          List<? extends HasWord> taggedSentence = wrapper.poll();
+          tagger.outputTaggedSentence(taggedSentence, outputLemmas, outputStyle, outputVerbosity, sentNum++, " ", taggedResults);
+        }
+      } else {
+        for (List<? extends HasWord> sent : sentences) {
+          Morphology morpha = (outputLemmas) ? new Morphology() : null;
+          sent = tagger.tagCoreLabelsOrHasWords(sent, morpha, outputLemmas);
+          tagger.outputTaggedSentence(sent, outputLemmas, outputStyle, outputVerbosity, sentNum++, " ", taggedResults);
+        }
+      }
+      return taggedResults.toString();
+    }
+
+  } // end class TaggerWrapper
+
+  private static String getXMLWords(List<? extends HasWord> sentence,
+                                    int sentNum, boolean outputLemmas) {
+    boolean hasCoreLabels = (sentence != null &&
+                             sentence.size() > 0 &&
+                             sentence.get(0) instanceof CoreLabel);
+    StringBuilder sb = new StringBuilder();
+    sb.append("<sentence id=\"").append(sentNum).append("\">\n");
+    int wordIndex = 0;
+    for (HasWord hw : sentence) {
+      String word = hw.word();
+      if (!(hw instanceof HasTag)) {
+        throw new IllegalArgumentException("Expected HasTags, got " +
+                                           hw.getClass());
+      }
+      String tag = ((HasTag) hw).tag();
+      sb.append("  <word wid=\"").append(wordIndex).append("\" pos=\"").append(XMLUtils.escapeAttributeXML(tag)).append("\"");
+      if (outputLemmas && hasCoreLabels) {
+        if (!(hw instanceof CoreLabel)) {
+          throw new IllegalArgumentException("You mixed CoreLabels with " +
+                                             hw.getClass() + "?  " +
+                                             "Why would you do that?");
+        }
+        CoreLabel label = (CoreLabel) hw;
+        String lemma = label.lemma();
+        if (lemma != null) {
+          sb.append(" lemma=\"").append(XMLUtils.escapeElementXML(lemma)).append('\"');
+        }
+      }
+      sb.append(">").append(XMLUtils.escapeElementXML(word)).append("</word>\n");
+      ++wordIndex;
+    }
+    sb.append("</sentence>\n");
+    return sb.toString();
+  }
+
+  private static String getTsvWords(boolean verbose, boolean outputLemmas,
+                                    List<? extends HasWord> sentence) {
+    StringBuilder sb = new StringBuilder();
+    if (verbose && sentence.size() > 0 &&
+        sentence.get(0) instanceof CoreLabel) {
+      for (HasWord hw : sentence) {
+        if (!(hw instanceof CoreLabel)) {
+          throw new IllegalArgumentException("You mixed CoreLabels with " +
+                                             hw.getClass() + "?  " +
+                                             "Why would you do that?");
+        }
+        CoreLabel label = (CoreLabel) hw;
+        sb.append(label.word());
+        sb.append("\t");
+        sb.append(label.originalText());
+        sb.append("\t");
+        if (outputLemmas) {
+          sb.append(label.lemma());
+          sb.append("\t");
+        }
+        sb.append(label.tag());
+        sb.append("\t");
+        sb.append(label.beginPosition());
+        sb.append("\t");
+        sb.append(label.endPosition());
+        sb.append("\n");
+      }
+      sb.append('\n');
+      return sb.toString();
+    } // otherwise, fall through
+
+    // either not verbose, or not CoreLabels
+    for (HasWord hw : sentence) {
+      String word = hw.word();
+      if (!(hw instanceof HasTag)) {
+        throw new IllegalArgumentException("Expected HasTags, got " +
+                                           hw.getClass());
+      }
+      String tag = ((HasTag) hw).tag();
+      sb.append(word).append('\t').append(tag).append('\n');
+    }
+    sb.append('\n');
+    return sb.toString();
+  }
+

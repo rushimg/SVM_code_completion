@@ -1,0 +1,29 @@
+  public String[] sentDetect(String s) {
+    Span[] spans = sentPosDetect(s);
+    String sentences[];
+    if (spans.length != 0) {
+
+      sentences = new String[spans.length];
+
+      for (int si = 0; si < spans.length; si++) {
+        sentences[si] = spans[si].getCoveredText(s).toString();
+      }
+    }
+    else {
+      sentences = new String[] {};
+    }
+    return sentences;
+  }
+
+  private int getFirstWS(String s, int pos) {
+    while (pos < s.length() && !StringUtil.isWhitespace(s.charAt(pos)))
+      pos++;
+    return pos;
+  }
+
+  private int getFirstNonWS(String s, int pos) {
+    while (pos < s.length() && StringUtil.isWhitespace(s.charAt(pos)))
+      pos++;
+    return pos;
+  }
+

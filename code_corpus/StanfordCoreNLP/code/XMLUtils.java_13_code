@@ -1,0 +1,85 @@
+  public static String readTag(Reader r) throws IOException {
+    if ( ! r.ready()) {
+      return null;
+    }
+    StringBuilder b = new StringBuilder("<");
+    int c = r.read();
+    while (c >= 0) {
+      b.append((char) c);
+      if (c == '>') {
+        break;
+      }
+      c = r.read();
+    }
+    if (b.length() == 1) {
+      return null;
+    }
+    return b.toString();
+  }
+
+  public static XMLTag parseTag(String tagString) {
+    if (tagString == null || tagString.length() == 0) {
+      return null;
+    }
+    if (tagString.charAt(0) != '<' ||
+        tagString.charAt(tagString.length() - 1) != '>') {
+      return null;
+    }
+    return new XMLTag(tagString);
+  }
+
+  public static Document readDocumentFromFile(String filename)
+    throws Exception
+  {
+    InputSource in = new InputSource(new FileReader(filename));
+    DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+    factory.setNamespaceAware(false);
+    DocumentBuilder db = factory.newDocumentBuilder();
+    db.setErrorHandler(new SAXErrorHandler());
+    return db.parse(in);
+  }
+
+  private static class SAXErrorHandler implements ErrorHandler {
+
+    public static String makeBetterErrorString(String msg,
+                                               SAXParseException ex) {
+      StringBuilder sb = new StringBuilder(msg);
+      sb.append(": ");
+      String str = ex.getMessage();
+      if (str.lastIndexOf(".") == str.length() - 1) {
+        str = str.substring(0, str.length() - 1);
+      }
+      sb.append(str);
+      sb.append(" at document line ").append(ex.getLineNumber());
+      sb.append(", column ").append(ex.getColumnNumber());
+      if (ex.getSystemId() != null) {
+        sb.append(" in entity from systemID ").append(ex.getSystemId());
+      } else if (ex.getPublicId() != null) {
+        sb.append(" in entity from publicID ").append(ex.getPublicId());
+      }
+      sb.append(".");
+      return sb.toString();
+    }
+
+    public void warning(SAXParseException exception) {
+      System.err.println(makeBetterErrorString("Warning", exception));
+    }
+
+    public void error(SAXParseException exception) {
+      System.err.println(makeBetterErrorString("Error", exception));
+    }
+
+    public void fatalError(SAXParseException ex) throws SAXParseException {
+      throw new SAXParseException(makeBetterErrorString("Fatal Error", ex), ex.getPublicId(), ex.getSystemId(), ex.getLineNumber(), ex.getColumnNumber());
+      // throw new RuntimeException(makeBetterErrorString("Fatal Error", ex));
+    }
+
+  } // end class SAXErrorHandler
+
+  public static Document readDocumentFromString(String s) throws Exception {
+    InputSource in = new InputSource(new StringReader(s));
+    DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+    factory.setNamespaceAware(false);
+    return factory.newDocumentBuilder().parse(in);
+  }
+

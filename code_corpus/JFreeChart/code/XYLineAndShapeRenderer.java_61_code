@@ -1,0 +1,55 @@
+    protected void drawPrimaryLine(XYItemRendererState state,
+                                   Graphics2D g2,
+                                   XYPlot plot,
+                                   XYDataset dataset,
+                                   int pass,
+                                   int series,
+                                   int item,
+                                   ValueAxis domainAxis,
+                                   ValueAxis rangeAxis,
+                                   Rectangle2D dataArea) {
+        if (item == 0) {
+            return;
+        }
+
+        // get the data point...
+        double x1 = dataset.getXValue(series, item);
+        double y1 = dataset.getYValue(series, item);
+        if (Double.isNaN(y1) || Double.isNaN(x1)) {
+            return;
+        }
+
+        double x0 = dataset.getXValue(series, item - 1);
+        double y0 = dataset.getYValue(series, item - 1);
+        if (Double.isNaN(y0) || Double.isNaN(x0)) {
+            return;
+        }
+
+        RectangleEdge xAxisLocation = plot.getDomainAxisEdge();
+        RectangleEdge yAxisLocation = plot.getRangeAxisEdge();
+
+        double transX0 = domainAxis.valueToJava2D(x0, dataArea, xAxisLocation);
+        double transY0 = rangeAxis.valueToJava2D(y0, dataArea, yAxisLocation);
+
+        double transX1 = domainAxis.valueToJava2D(x1, dataArea, xAxisLocation);
+        double transY1 = rangeAxis.valueToJava2D(y1, dataArea, yAxisLocation);
+
+        // only draw if we have good values
+        if (Double.isNaN(transX0) || Double.isNaN(transY0)
+            || Double.isNaN(transX1) || Double.isNaN(transY1)) {
+            return;
+        }
+
+        PlotOrientation orientation = plot.getOrientation();
+        if (orientation == PlotOrientation.HORIZONTAL) {
+            state.workingLine.setLine(transY0, transX0, transY1, transX1);
+        }
+        else if (orientation == PlotOrientation.VERTICAL) {
+            state.workingLine.setLine(transX0, transY0, transX1, transY1);
+        }
+
+        if (state.workingLine.intersects(dataArea)) {
+            drawFirstPassShape(g2, pass, series, item, state.workingLine);
+        }
+    }
+

@@ -1,0 +1,112 @@
+  public static void main(String[] args) throws IOException {
+    //String encoding = "GB18030";
+    Properties props = StringUtils.argsToProperties(args);
+    // System.err.println("Here are the properties:");
+    // props.list(System.err);
+    boolean alwaysAddS = props.containsKey("alwaysAddS");
+    ChineseDocumentToSentenceProcessor cp;
+    if (! props.containsKey("file")) {
+      System.err.println("usage: java ChineseDocumentToSentenceProcessor [-segmentIBM] -file filename [-encoding encoding]");
+      return;
+    }
+    cp = new ChineseDocumentToSentenceProcessor();
+    if (props.containsKey("encoding")) {
+      System.err.println("WARNING: for now the default encoding is "+cp.encoding+". It's not changeable for now");
+    }
+    String input = IOUtils.slurpFileNoExceptions(props.getProperty("file"),
+                                                     cp.encoding);
+    // String input = StringUtils.slurpGBURLNoExceptions(new URL(props.getProperty("file")));
+
+    if (props.containsKey("segmentIBM")) {
+      Tokenizer<Word> tok = WhitespaceTokenizer.
+        newWordWhitespaceTokenizer(new StringReader(input), true);
+      String parseInside = props.getProperty("parseInside");
+      if (parseInside == null) parseInside = "";
+
+      Pattern p1, p2, p3, p4;
+      PrintWriter pw = new PrintWriter(new OutputStreamWriter(System.out, cp.encoding), true);
+      StringBuilder buff = new StringBuilder();
+      StringBuilder sgmlbuff = new StringBuilder();
+      String lastSgml = "";
+      try {
+        p2 = Pattern.compile("\uFEFF?<[\\p{Alpha}]+");
+        p3 = Pattern.compile("[A-Za-z0-9=\"]+>");
+        p4 = Pattern.compile("<(?:" + parseInside + ")[ >]");
+      } catch (Exception e) {
+        e.printStackTrace();
+        return;
+      }
+      boolean inSGML = false;
+      int splitItems = 0;
+      int numAdded = 0;
+      while (tok.hasNext()) {
+        String s = tok.next().word();
+        // pw.println("The token is |" + s + "|");
+        if (p2.matcher(s).matches()) {
+          inSGML = true;
+          sgmlbuff.append(s).append(" ");
+        } else if (p1.matcher(s).matches() || inSGML && p3.matcher(s).matches() || "\n".equals(s)) {
+          inSGML = false;
+          if (buff.toString().trim().length() > 0) {
+            // pw.println("Dumping sentences");
+            // pw.println("Buff is " + buff);
+            boolean processIt = false;
+            if (parseInside.equals("")) {
+              processIt = true;
+            } else if (p4.matcher(lastSgml).find()) {
+              processIt = true;
+            }
+            if (processIt) {
+              List<String> sents = ChineseDocumentToSentenceProcessor.fromPlainText(buff.toString(), true);
+              // pw.println("Sents is " + sents);
+              // pw.println();
+              if (alwaysAddS || sents.size() > 1) {
+                int i = 1;
+                for (String str : sents) {
+                  pw.print("<s id=\"" + i + "\">");
+                  pw.print(str);
+                  pw.println("</s>");
+                  i++;
+                }
+                if (sents.size() > 1) {
+                  splitItems++;
+                  numAdded += sents.size() - 1;
+                }
+              } else if (sents.size() == 1) {
+                pw.print(sents.get(0));
+              }
+            } else {
+              pw.print(buff);
+            }
+            buff = new StringBuilder();
+          }
+          sgmlbuff.append(s);
+          // pw.println("sgmlbuff is " + sgmlbuff);
+          pw.print(sgmlbuff);
+          lastSgml = sgmlbuff.toString();
+          sgmlbuff = new StringBuilder();
+        } else {
+          if (inSGML) {
+            sgmlbuff.append(s).append(" ");
+          } else {
+            buff.append(s).append(" ");
+          }
+          // pw.println("Buff is now |" + buff + "|");
+        }
+      } // end while (tok.hasNext()) {
+      // empty remaining buffers
+      pw.flush();
+      pw.close();
+      System.err.println("Split " + splitItems + " segments, adding " +
+                         numAdded + " sentences.");
+    } else {
+      List<String> sent = cp.fromHTML(input);
+      PrintWriter pw = new PrintWriter(new OutputStreamWriter(System.err, cp.encoding), true);
+
+      for (String a : sent) {
+        pw.println(a);
+      }
+    }
+  }
+
+

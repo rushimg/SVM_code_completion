@@ -1,0 +1,17 @@
+  public List<SsurgeonPattern> readFromDirectory(File dir) throws Exception {
+    if (!dir.isDirectory()) throw new Exception("Given path not a directory, path="+dir.getAbsolutePath());
+    if (VERBOSE)
+      System.out.println("Reading Ssurgeon patterns from directory = "+dir.getAbsolutePath());
+    File[] files = dir.listFiles(new FilenameFilter() {
+        public boolean accept(File dir, String name) { return name.toLowerCase().endsWith(".xml");}} );
+    List<SsurgeonPattern> patterns = new ArrayList<SsurgeonPattern>();
+    for (File file : files) {
+      try {
+        patterns.addAll(readFromFile(file));
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+    }
+    return patterns;
+  }
+  

@@ -1,0 +1,193 @@
+  public static SUTime.Time parseDateTime(String dateStr, boolean allowPartial)
+  {
+    if (dateStr == null) return null;
+
+    Matcher m = PATTERN_ISO.matcher(dateStr);
+    if (m.matches()) {
+      String time = m.group(4);
+      SUTime.IsoDate isoDate = new SUTime.IsoDate(m.group(1), m.group(2), m.group(3));
+      if (time != null) {
+        SUTime.IsoTime isoTime = new SUTime.IsoTime(m.group(5), m.group(6), m.group(7), m.group(8));
+        return new SUTime.IsoDateTime(isoDate,isoTime);
+      } else {
+        return isoDate;
+      }
+    }
+
+    m = PATTERN_ISO_DATETIME.matcher(dateStr);
+    if (m.matches()) {
+      SUTime.IsoDate date = new SUTime.IsoDate(m.group(1), m.group(2), m.group(3));
+      SUTime.IsoTime time = new SUTime.IsoTime(m.group(4), m.group(5), null);
+      return new SUTime.IsoDateTime(date,time);
+    }
+
+    m = PATTERN_ISO_TIME.matcher(dateStr);
+    if (m.matches()) {
+      return new SUTime.IsoTime(m.group(1), m.group(2), m.group(3), m.group(4));
+    }
+
+    SUTime.IsoDate isoDate = null;
+    if (isoDate == null) {
+      m = PATTERN_ISO_DATE_1.matcher(dateStr);
+
+      if (m.matches()) {
+        isoDate = new SUTime.IsoDate(m.group(1), m.group(2), m.group(3));
+      }
+    }
+
+    if (isoDate == null) {
+      m = PATTERN_ISO_DATE_2.matcher(dateStr);
+      if (m.matches()) {
+        isoDate = new SUTime.IsoDate(m.group(1), m.group(2), m.group(3));
+      }
+    }
+
+    if (allowPartial) {
+      m = PATTERN_ISO_DATE_PARTIAL.matcher(dateStr);
+      if (m.matches()) {
+        if (!(m.group(1).equals("XXXX") && m.group(2).equals("XX") && m.group(3).equals("XX"))) {
+          isoDate = new SUTime.IsoDate(m.group(1), m.group(2), m.group(3));
+        }
+      }
+    }
+
+    if (isoDate == null) {
+      m = PATTERN_ISO_AMBIGUOUS_1.matcher(dateStr);
+
+      if (m.matches()) {
+        isoDate = new SUTime.IsoDate(m.group(3), m.group(1), m.group(2));
+      }
+    }
+
+    if (isoDate == null) {
+      m = PATTERN_ISO_AMBIGUOUS_2.matcher(dateStr);
+      if (m.matches()) {
+        isoDate = new SUTime.IsoDate(m.group(3), m.group(1), m.group(2));
+      }
+    }
+
+    if (isoDate == null) {
+      m = PATTERN_ISO_AMBIGUOUS_3.matcher(dateStr);
+      if (m.matches()) {
+        isoDate = new SUTime.IsoDate(m.group(3), m.group(2), m.group(1));
+      }
+    }
+
+    // Now add Time of Day
+    SUTime.IsoTime isoTime = null;
+    if (isoTime == null) {
+      m = PATTERN_ISO_TIME_OF_DAY.matcher(dateStr);
+      if (m.matches()) {
+        // TODO: Fix
+        isoTime = new SUTime.IsoTime(m.group(1), m.group(2), m.group(4));
+      }
+    }
+
+    if (isoDate != null && isoTime != null) {
+      return new SUTime.IsoDateTime(isoDate, isoTime);
+    } else if (isoDate != null) {
+      return isoDate;
+    } else {
+      return isoTime;
+    }
+  }
+
+  public static SUTime.Time parseDateTime(String dateStr) {
+    return parseDateTime(dateStr, false);
+  }
+
+  public static class GroundedTime extends Time {
+    // Represents an absolute time
+    ReadableInstant base;
+
+    public GroundedTime(Time p, ReadableInstant base) {
+      super(p);
+      this.base = base;
+    }
+
+    public GroundedTime(ReadableInstant base) {
+      this.base = base;
+    }
+
+    @Override
+    public GroundedTime setTimeZone(DateTimeZone tz) {
+      MutableDateTime tzBase = base.toInstant().toMutableDateTime();
+      tzBase.setZone(tz);           // TODO: setZoneRetainFields?
+      return new GroundedTime(this, tzBase);
+    }
+
+    @Override
+    public boolean hasTime() {
+      return true;
+    }
+
+    @Override
+    public boolean isGrounded() {
+      return true;
+    }
+
+    @Override
+    public Duration getDuration() {
+      return DURATION_NONE;
+    }
+
+    @Override
+    public Range getRange(int flags, Duration granularity) {
+      return new Range(this, this);
+    }
+
+    @Override
+    public String toFormattedString(int flags) {
+      return base.toString();
+    }
+
+    @Override
+    public Time resolve(Time refTime, int flags) {
+      return this;
+    }
+
+    @Override
+    public Time add(Duration offset) {
+      Period p = offset.getJodaTimePeriod();
+      GroundedTime g = new GroundedTime(base.toInstant().withDurationAdded(p.toDurationFrom(base), 1));
+      g.approx = this.approx;
+      g.mod = this.mod;
+      return g;
+    }
+
+    @Override
+    public Time intersect(Time t) {
+      if (t.getRange().contains(this.getRange())) {
+        return this;
+      } else {
+        return null;
+      }
+    }
+
+    @Override
+    public Temporal intersect(Temporal other) {
+      if (other == null)
+        return this;
+      if (other == TIME_UNKNOWN)
+        return this;
+      if (other.getRange().contains(this.getRange())) {
+        return this;
+      } else {
+        return null;
+      }
+    }
+
+    @Override
+    public Instant getJodaTimeInstant() {
+      return base.toInstant();
+    }
+
+    @Override
+    public Partial getJodaTimePartial() {
+      return JodaTimeUtils.getPartial(base.toInstant(), JodaTimeUtils.EMPTY_ISO_PARTIAL);
+    }
+
+    private static final long serialVersionUID = 1;
+  }
+
+  // Duration classes

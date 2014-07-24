@@ -1,0 +1,24 @@
+  public void listen() 
+    throws IOException
+  {
+    while (stillRunning) {
+      Socket clientSocket = null;
+      try {
+        clientSocket = serverSocket.accept();
+        System.err.println("Got a connection");
+        processRequest(clientSocket);
+        System.err.println("Goodbye!");
+        System.err.println();
+      } catch (IOException e) {
+        // accidental multiple closes don't seem to have any bad effect
+        clientSocket.close();
+        System.err.println(e);
+        continue;
+      }
+    }
+    serverSocket.close();
+  }
+
+
+
+  // TODO: handle multiple requests in one connection?  why not?

@@ -1,0 +1,31 @@
+  public void visitTree(Tree tree) {
+    if (tree == null) return;
+    String yield = Sentence.listToString(tree.yield());
+    if (mweDictionary.contains(yield)) {
+      List<Tree> children = getPreterminalSubtrees(tree);
+      String newLabel = "MW" + tree.value();
+      tree.setValue(newLabel);
+      tree.setChildren(children);
+      // Bottom out of the recursion
+      return;
+      
+    } else {
+      for (Tree subTree : tree.children()) {
+        if (subTree.isPhrasal()) {
+          // Only phrasal trees can have yields > 1!!
+          visitTree(subTree);
+        }
+      }
+    }
+  }
+  
+  private List<Tree> getPreterminalSubtrees(Tree tree) {
+    List<Tree> preterminals = new ArrayList<Tree>();
+    for (Tree subTree : tree) {
+      if (subTree.isPreTerminal()) {
+        preterminals.add(subTree);
+      }
+    }
+    return preterminals;
+  }
+  

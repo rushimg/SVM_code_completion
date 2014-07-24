@@ -1,0 +1,64 @@
+    public void drawTickMarks(Graphics2D g2, double cursor,
+            Rectangle2D dataArea, RectangleEdge edge, AxisState state) {
+
+        Plot p = getPlot();
+        if (p == null) {
+            return;
+        }
+        CategoryPlot plot = (CategoryPlot) p;
+        double il = getTickMarkInsideLength();
+        double ol = getTickMarkOutsideLength();
+        Line2D line = new Line2D.Double();
+        List categories = plot.getCategoriesForAxis(this);
+        g2.setPaint(getTickMarkPaint());
+        g2.setStroke(getTickMarkStroke());
+        if (edge.equals(RectangleEdge.TOP)) {
+            Iterator iterator = categories.iterator();
+            while (iterator.hasNext()) {
+                Comparable key = (Comparable) iterator.next();
+                double x = getCategoryMiddle(key, categories, dataArea, edge);
+                line.setLine(x, cursor, x, cursor + il);
+                g2.draw(line);
+                line.setLine(x, cursor, x, cursor - ol);
+                g2.draw(line);
+            }
+            state.cursorUp(ol);
+        }
+        else if (edge.equals(RectangleEdge.BOTTOM)) {
+            Iterator iterator = categories.iterator();
+            while (iterator.hasNext()) {
+                Comparable key = (Comparable) iterator.next();
+                double x = getCategoryMiddle(key, categories, dataArea, edge);
+                line.setLine(x, cursor, x, cursor - il);
+                g2.draw(line);
+                line.setLine(x, cursor, x, cursor + ol);
+                g2.draw(line);
+            }
+            state.cursorDown(ol);
+        }
+        else if (edge.equals(RectangleEdge.LEFT)) {
+            Iterator iterator = categories.iterator();
+            while (iterator.hasNext()) {
+                Comparable key = (Comparable) iterator.next();
+                double y = getCategoryMiddle(key, categories, dataArea, edge);
+                line.setLine(cursor, y, cursor + il, y);
+                g2.draw(line);
+                line.setLine(cursor, y, cursor - ol, y);
+                g2.draw(line);
+            }
+            state.cursorLeft(ol);
+        }
+        else if (edge.equals(RectangleEdge.RIGHT)) {
+            Iterator iterator = categories.iterator();
+            while (iterator.hasNext()) {
+                Comparable key = (Comparable) iterator.next();
+                double y = getCategoryMiddle(key, categories, dataArea, edge);
+                line.setLine(cursor, y, cursor - il, y);
+                g2.draw(line);
+                line.setLine(cursor, y, cursor + ol, y);
+                g2.draw(line);
+            }
+            state.cursorRight(ol);
+        }
+    }
+

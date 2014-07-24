@@ -1,0 +1,120 @@
+  private boolean relaxRule(UnaryRule ur) {
+    UnaryRule bestR = bestRulesUnderMax.get(ur);
+    if (bestR == null) {
+      bestRulesUnderMax.put(ur, ur);
+      closedRulesWithParent[ur.parent].add(ur);
+      closedRulesWithChild[ur.child].add(ur);
+      return true;
+    } else {
+      if (bestR.score < ur.score) {
+        bestR.score = ur.score;
+        return true;
+      }
+      return false;
+    }
+  }
+
+  public double scoreRule(UnaryRule ur) {
+    UnaryRule bestR = bestRulesUnderMax.get(ur);
+    return (bestR != null ? bestR.score : Double.NEGATIVE_INFINITY);
+  }
+
+  public final void addRule(UnaryRule ur) {
+    // add rules' closure
+    closeRulesUnderMax(ur);
+    coreRules.put(ur, ur);
+    rulesWithParent[ur.parent].add(ur);
+    rulesWithChild[ur.child].add(ur);
+  }
+
+  //public Iterator closedRuleIterator() {
+  //  return bestRulesUnderMax.keySet().iterator();
+  //}
+
+  private static final UnaryRule[] EMPTY_UNARY_RULE_ARRAY = new UnaryRule[0];
+
+  void makeCRArrays() {
+    int numStates = index.size();
+    closedRulesWithP = new UnaryRule[numStates][];
+    closedRulesWithC = new UnaryRule[numStates][];
+    for (int i = 0; i < numStates; i++) {
+      // cdm [2012]: Would it be faster to use same EMPTY_UNARY_RULE_ARRAY when of size zero?  It must be!
+      closedRulesWithP[i] = closedRulesWithParent[i].toArray(new UnaryRule[closedRulesWithParent[i].size()]);
+      closedRulesWithC[i] = closedRulesWithChild[i].toArray(new UnaryRule[closedRulesWithChild[i].size()]);
+    }
+  }
+
+  public UnaryRule[] closedRulesByParent(int state) {
+    if (state >= closedRulesWithP.length) {  // cdm [2012]: This check shouldn't be needed; delete
+      return EMPTY_UNARY_RULE_ARRAY;
+    }
+    return closedRulesWithP[state];
+  }
+
+  public UnaryRule[] closedRulesByChild(int state) {
+    if (state >= closedRulesWithC.length) {  // cdm [2012]: This check shouldn't be needed; delete
+      return EMPTY_UNARY_RULE_ARRAY;
+    }
+    return closedRulesWithC[state];
+  }
+
+  public Iterator<UnaryRule> closedRuleIteratorByParent(int state) {
+    if (state >= closedRulesWithParent.length) {
+      List<UnaryRule> lur = Collections.emptyList();
+      return lur.iterator();
+    }
+    return closedRulesWithParent[state].iterator();
+  }
+
+  public Iterator<UnaryRule> closedRuleIteratorByChild(int state) {
+    if (state >= closedRulesWithChild.length) {
+      List<UnaryRule> lur = Collections.emptyList();
+      return lur.iterator();
+    }
+    return closedRulesWithChild[state].iterator();
+  }
+
+  public Iterator<UnaryRule> ruleIteratorByParent(int state) {
+    if (state >= rulesWithParent.length) {
+      List<UnaryRule> lur = Collections.emptyList();
+      return lur.iterator();
+    }
+    return rulesWithParent[state].iterator();
+  }
+
+  public Iterator<UnaryRule> ruleIteratorByChild(int state) {
+    if (state >= rulesWithChild.length) {
+      List<UnaryRule> lur = Collections.emptyList();
+      return lur.iterator();
+    }
+    return rulesWithChild[state].iterator();
+  }
+
+  public List<UnaryRule> rulesByParent(int state) {
+    if (state >= rulesWithParent.length) {
+      return Collections.emptyList();
+    }
+    return rulesWithParent[state];
+  }
+
+  public List<UnaryRule> rulesByChild(int state) {
+    if (state >= rulesWithChild.length) {
+      return Collections.emptyList();
+    }
+    return rulesWithChild[state];
+  }
+
+  public List<UnaryRule>[] rulesWithParent() {
+    return rulesWithParent;
+  }
+
+  private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
+    stream.defaultReadObject();
+    Set<UnaryRule> allRules = Generics.newHashSet(coreRules.keySet());
+    init();
+    for (UnaryRule ur : allRules) {
+      addRule(ur);
+    }
+    purgeRules();
+  }
+

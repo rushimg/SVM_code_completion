@@ -1,0 +1,33 @@
+    public void mouseClicked(MouseEvent event) {
+
+        Insets insets = getInsets();
+        int x = (int) ((event.getX() - insets.left) / this.scaleX);
+        int y = (int) ((event.getY() - insets.top) / this.scaleY);
+
+        this.anchor = new Point2D.Double(x, y);
+        if (this.chart == null) {
+            return;
+        }
+        this.chart.setNotify(true);  // force a redraw
+        // new entity code...
+        Object[] listeners = this.chartMouseListeners.getListeners(
+                ChartMouseListener.class);
+        if (listeners.length == 0) {
+            return;
+        }
+
+        ChartEntity entity = null;
+        if (this.info != null) {
+            EntityCollection entities = this.info.getEntityCollection();
+            if (entities != null) {
+                entity = entities.getEntity(x, y);
+            }
+        }
+        ChartMouseEvent chartEvent = new ChartMouseEvent(getChart(), event,
+                entity);
+        for (int i = listeners.length - 1; i >= 0; i -= 1) {
+            ((ChartMouseListener) listeners[i]).chartMouseClicked(chartEvent);
+        }
+
+    }
+

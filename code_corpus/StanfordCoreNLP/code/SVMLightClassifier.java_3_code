@@ -1,0 +1,12 @@
+  @Override
+  public Counter<L> logProbabilityOf(Datum<L, F> example) {
+    if (platt == null) {
+      throw new UnsupportedOperationException("If you want to ask for the probability, you must train a Platt model!");
+    }
+    Counter<L> scores = scoresOf(example);
+    scores.incrementCount(null);
+    Counter<L> probs = platt.logProbabilityOf(new RVFDatum<L, L>(scores));
+    //System.out.println(scores+" "+probs);
+    return probs;
+  }
+

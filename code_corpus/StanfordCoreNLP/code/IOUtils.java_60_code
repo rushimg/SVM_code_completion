@@ -1,0 +1,66 @@
+  public static LinkedList<String[]> readCSVStrictly(char[] csvContents, int numColumns){
+    //--Variables
+    StringBuilder[] buffer = new StringBuilder[numColumns];
+    buffer[0] = new StringBuilder();
+    LinkedList<String[]> lines = new LinkedList<String[]>();
+    //--State
+    boolean inQuotes = false;
+    boolean nextIsEscaped = false;
+    int columnI = 0;
+    //--Read
+    for(int offset=0; offset<csvContents.length; offset++){
+      if(nextIsEscaped){
+        buffer[columnI].append(csvContents[offset]);
+        nextIsEscaped = false;
+      } else {
+        switch(csvContents[offset]){
+          case '"':
+            //(case: quotes)
+            inQuotes = !inQuotes;
+            break;
+          case ',':
+            //(case: field separator)
+            if(inQuotes){
+              buffer[columnI].append(',');
+            } else {
+              columnI += 1;
+              if(columnI >= numColumns){
+                throw new IllegalArgumentException("Too many columns: "+columnI+"/"+numColumns+" (offset: " + offset + ")");
+              }
+              buffer[columnI] = new StringBuilder();
+            }
+            break;
+          case '\n':
+            //(case: newline)
+            if(inQuotes){
+              buffer[columnI].append('\n');
+            } else {
+              //((error checks))
+              if(columnI != numColumns-1){
+                throw new IllegalArgumentException("Too few columns: "+columnI+"/"+numColumns+" (offset: " + offset + ")");
+              }
+              //((create line))
+              String[] rtn = new String[buffer.length];
+              for(int i=0; i<buffer.length; i++){ rtn[i] = buffer[i].toString(); }
+              lines.add(rtn);
+              //((update state))
+              columnI = 0;
+              buffer[columnI] = new StringBuilder();
+            }
+            break;
+          case '\\':
+            nextIsEscaped = true;
+            break;
+          default:
+            buffer[columnI].append(csvContents[offset]);
+        }
+      }
+    }
+    //--Return
+    return lines;
+  }
+
+  public static LinkedList<String[]> readCSVStrictly(String filename, int numColumns) throws IOException {
+    return readCSVStrictly(slurpFile(filename).toCharArray(), numColumns);
+  }
+

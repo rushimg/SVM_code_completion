@@ -1,0 +1,18 @@
+  public static void main(String[] args) {
+    try {
+      printState(BasicDocument.init("this is the text", "this is the title [String]", true));
+      printState(BasicDocument.init(new StringReader("this is the text"), "this is the title [Reader]", true));
+
+      File f = File.createTempFile("BasicDocumentTestFile", null);
+      f.deleteOnExit();
+      PrintWriter out = new PrintWriter(new FileWriter(f));
+      out.print("this is the text");
+      out.flush();
+      out.close();
+      printState(new BasicDocument<String>().init(f, "this is the title [File]", true));
+      printState(new BasicDocument<String>().init(new URL("http://www.stanford.edu/~jsmarr/BasicDocumentTestFile.txt"), "this is the title [URL]", true));
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+

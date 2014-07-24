@@ -1,0 +1,41 @@
+
+// TODO: if it's rotted and not used anywhere, can we just get rid of it all?  [CDM: It would be nice to keep and revive someday. It is a nice and sometimes useful idea.]
+
+public class AmbiguityClasses {
+
+  private final Index<AmbiguityClass> classes;
+  private static final String naWord = "NA";
+
+  // TODO: this isn't used anywhere, either
+  // protected final AmbiguityClass naClass = new AmbiguityClass(null, false, null, null);
+
+  public AmbiguityClasses(TTags ttags) {
+    classes = new HashIndex<AmbiguityClass>();
+    // naClass.init(naWord, ttags);
+  }
+
+  private int add(AmbiguityClass a) {
+    if(classes.contains(a)) {
+      return classes.indexOf(a);
+    }
+    classes.add(a);
+    return classes.indexOf(a);
+  }
+
+  protected int getClass(String word, Dictionary dict, int veryCommonWordThresh, TTags ttags) {
+    if (word.equals(naWord)) {
+      return -2;
+    }
+    if (dict.isUnknown(word)) {
+      return -1;
+    }
+    boolean veryCommon = dict.sum(word) > veryCommonWordThresh;
+    AmbiguityClass a = new AmbiguityClass(word, veryCommon, dict, ttags);
+    // TODO: surely it would be faster and not too expensive to cache
+    // the results of creating a whole bunch of these, since we're
+    // probably constructing the same AmbiguityClass multiple times
+    // for each word.  Furthermore, the separation of having two
+    // constructors here is pretty awful, quite frankly.
+    return add(a);
+  }
+

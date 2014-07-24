@@ -1,0 +1,36 @@
+  String getTaggedNice() {
+    StringBuilder sb = new StringBuilder();
+    // size - 1 means to exclude the EOS (end of string) symbol
+    for (int i = 0; i < size - 1; i++) {
+      sb.append(toNice(sent.get(i))).append(tagSeparator).append(toNice(finalTags[i]));
+      sb.append(' ');
+    }
+    return sb.toString();
+  }
+
+
+  ArrayList<TaggedWord> getTaggedSentence() {
+    final boolean hasOffset;
+    hasOffset = origWords != null && origWords.size() > 0 && (origWords.get(0) instanceof HasOffset);
+    ArrayList<TaggedWord> taggedSentence = new ArrayList<TaggedWord>();
+    for (int j = 0; j < size - 1; j++) {
+      String tag = finalTags[j];
+      TaggedWord w = new TaggedWord(sent.get(j), tag);
+      if (hasOffset) {
+        HasOffset offset = (HasOffset) origWords.get(j);
+        w.setBeginPosition(offset.beginPosition());
+        w.setEndPosition(offset.endPosition());
+      }
+      taggedSentence.add(w);
+    }
+    return taggedSentence;
+  }
+
+  static String toNice(String s) {
+    if (s == null) {
+      return naTag;
+    } else {
+      return s;
+    }
+  }
+

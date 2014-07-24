@@ -1,0 +1,99 @@
+  public ListHeap(int sz) {
+    this(sz, null);
+  }
+
+  private int parent(int i) {
+    return (i - 1) / 2;
+  }
+
+  private int left(int i) {
+  }
+
+  private int right(int i) {
+  }
+
+  public int size() {
+    return list.size();
+  }
+
+  private void swap(int x, int y) {
+    E ox = list.get(x);
+    E oy = list.get(y);
+
+    list.set(y, ox);
+    list.set(x, oy);
+  }
+
+  private boolean lt(E o1, E o2) {
+    if (comp != null) {
+      return comp.compare(o1, o2) < 0;
+    }
+    else {
+      return o1.compareTo(o2) < 0;
+    }
+  }
+
+  private boolean gt(E o1, E o2) {
+    if (comp != null) {
+      return comp.compare(o1, o2) > 0;
+    }
+    else {
+      return o1.compareTo(o2) > 0;
+    }
+  }
+
+  private void heapify(int i) {
+    while (true) {
+      int l = left(i);
+      int r = right(i);
+      int smallest;
+
+      if (l < list.size() && lt(list.get(l), list.get(i)))
+        smallest = l;
+      else
+        smallest = i;
+
+      if (r < list.size() && lt(list.get(r), list.get(smallest)))
+        smallest = r;
+
+      if (smallest != i) {
+        swap(smallest, i);
+        i = smallest;
+      }
+      else
+        break;
+    }
+  }
+
+  public E extract() {
+    if (list.size() == 0) {
+      throw new RuntimeException("Heap Underflow");
+    }
+    E top = list.get(0);
+    int last = list.size() - 1;
+    if (last != 0) {
+      list.set(0, list.remove(last));
+      heapify(0);
+    }
+    else {
+      list.remove(last);
+    }
+
+    return top;
+  }
+
+  public E first() {
+    if (list.size() == 0) {
+      throw new RuntimeException("Heap Underflow");
+    }
+    return list.get(0);
+  }
+
+  public E last() {
+    if (list.size() == 0) {
+      throw new RuntimeException("Heap Underflow");
+    }
+    return max;
+  }
+
+  public void add(E o) {

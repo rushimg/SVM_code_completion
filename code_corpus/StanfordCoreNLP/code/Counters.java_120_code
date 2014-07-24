@@ -1,0 +1,44 @@
+  public static <E> Map<E, Double> asMap(final Counter<E> counter) {
+    return new AbstractMap<E, Double>() {
+      @Override
+      public int size() {
+        return counter.size();
+      }
+
+      @Override
+      public Set<Entry<E, Double>> entrySet() {
+        return counter.entrySet();
+      }
+
+      @Override
+      @SuppressWarnings("unchecked")
+      public boolean containsKey(Object key) {
+        return counter.containsKey((E) key);
+      }
+
+      @Override
+      @SuppressWarnings("unchecked")
+      public Double get(Object key) {
+        return counter.getCount((E) key);
+      }
+
+      @Override
+      public Double put(E key, Double value) {
+        double last = counter.getCount(key);
+        counter.setCount(key, value);
+        return last;
+      }
+
+      @Override
+      @SuppressWarnings("unchecked")
+      public Double remove(Object key) {
+        return counter.remove((E) key);
+      }
+
+      @Override
+      public Set<E> keySet() {
+        return counter.keySet();
+      }
+    };
+  }
+

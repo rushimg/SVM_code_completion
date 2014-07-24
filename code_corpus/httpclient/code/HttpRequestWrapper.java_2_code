@@ -1,0 +1,75 @@
+@SuppressWarnings("deprecation")
+@NotThreadSafe
+public class HttpRequestWrapper extends AbstractHttpMessage implements HttpUriRequest {
+
+    private final HttpRequest original;
+    private final HttpHost target;
+    private final String method;
+    private ProtocolVersion version;
+    private URI uri;
+
+    private HttpRequestWrapper(final HttpRequest request, final HttpHost target) {
+        super();
+        this.original = Args.notNull(request, "HTTP request");
+        this.target = target;
+        this.version = this.original.getRequestLine().getProtocolVersion();
+        this.method = this.original.getRequestLine().getMethod();
+        if (request instanceof HttpUriRequest) {
+            this.uri = ((HttpUriRequest) request).getURI();
+        } else {
+            this.uri = null;
+        }
+        setHeaders(request.getAllHeaders());
+    }
+
+    @Override
+    public ProtocolVersion getProtocolVersion() {
+        return this.version != null ? this.version : this.original.getProtocolVersion();
+    }
+
+    public void setProtocolVersion(final ProtocolVersion version) {
+        this.version = version;
+    }
+
+    @Override
+    public URI getURI() {
+        return this.uri;
+    }
+
+    public void setURI(final URI uri) {
+        this.uri = uri;
+    }
+
+    @Override
+    public String getMethod() {
+        return method;
+    }
+
+    @Override
+    public void abort() throws UnsupportedOperationException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean isAborted() {
+        return false;
+    }
+
+    @Override
+    public RequestLine getRequestLine() {
+        String requestUri = null;
+        if (this.uri != null) {
+            requestUri = this.uri.toASCIIString();
+        } else {
+            requestUri = this.original.getRequestLine().getUri();
+        }
+        if (requestUri == null || requestUri.isEmpty()) {
+            requestUri = "/";
+        }
+        return new BasicRequestLine(this.method, requestUri, getProtocolVersion());
+    }
+
+    public HttpRequest getOriginal() {
+        return this.original;
+    }
+

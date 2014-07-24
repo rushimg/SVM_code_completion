@@ -1,0 +1,45 @@
+    public void drawColorBar(Graphics2D g2, Rectangle2D colorBarArea,
+                             RectangleEdge edge) {
+
+        Object antiAlias = g2.getRenderingHint(RenderingHints.KEY_ANTIALIASING);
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                            RenderingHints.VALUE_ANTIALIAS_OFF);
+
+        // setTickValues was missing from ColorPalette v. 0.96
+        //colorPalette.setTickValues(this.axis.getTicks());
+
+        Stroke strokeSaved = g2.getStroke();
+        g2.setStroke(new BasicStroke(1.0f));
+
+        if (RectangleEdge.isTopOrBottom(edge)) {
+            double y1 = colorBarArea.getY();
+            double y2 = colorBarArea.getMaxY();
+            double xx = colorBarArea.getX();
+            Line2D line = new Line2D.Double();
+            while (xx <= colorBarArea.getMaxX()) {
+                double value = this.axis.java2DToValue(xx, colorBarArea, edge);
+                line.setLine(xx, y1, xx, y2);
+                g2.setPaint(getPaint(value));
+                g2.draw(line);
+                xx += 1;
+            }
+        }
+        else {
+            double y1 = colorBarArea.getX();
+            double y2 = colorBarArea.getMaxX();
+            double xx = colorBarArea.getY();
+            Line2D line = new Line2D.Double();
+            while (xx <= colorBarArea.getMaxY()) {
+                double value = this.axis.java2DToValue(xx, colorBarArea, edge);
+                line.setLine(y1, xx, y2, xx);
+                g2.setPaint(getPaint(value));
+                g2.draw(line);
+                xx += 1;
+            }
+        }
+
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, antiAlias);
+        g2.setStroke(strokeSaved);
+
+    }
+

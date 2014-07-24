@@ -1,0 +1,31 @@
+    protected Size2D arrangeRR(Graphics2D g2, Range widthRange,
+            Range heightRange) {
+
+        RectangleEdge position = getPosition();
+        if (position == RectangleEdge.TOP || position == RectangleEdge.BOTTOM) {
+
+
+            float maxWidth = (float) widthRange.getUpperBound();
+
+            // determine the space required for the axis
+            AxisSpace space = this.axis.reserveSpace(g2, null,
+                    new Rectangle2D.Double(0, 0, maxWidth, 100),
+                    RectangleEdge.BOTTOM, null);
+
+            return new Size2D(maxWidth, this.stripWidth + this.axisOffset
+                    + space.getTop() + space.getBottom());
+        }
+        else if (position == RectangleEdge.LEFT || position
+                == RectangleEdge.RIGHT) {
+            float maxHeight = (float) heightRange.getUpperBound();
+            AxisSpace space = this.axis.reserveSpace(g2, null,
+                    new Rectangle2D.Double(0, 0, 100, maxHeight),
+                    RectangleEdge.RIGHT, null);
+            return new Size2D(this.stripWidth + this.axisOffset
+                    + space.getLeft() + space.getRight(), maxHeight);
+        }
+        else {
+            throw new RuntimeException("Unrecognised position.");
+        }
+    }
+

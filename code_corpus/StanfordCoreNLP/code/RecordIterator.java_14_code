@@ -1,0 +1,38 @@
+  public static int determineNumFields(String filename) throws FileNotFoundException {
+    return determineNumFields(filename, WHITESPACE);
+  }
+
+
+  // private methods -------------------------------------------------------
+
+  private void advance() {
+    nextResult = null;
+    while (true) {                      // 2 exits in body of loop
+
+      String line = null;
+      try {
+        line = reader.readLine();       // could block if reader is not ready
+      } catch (IOException e) {
+        // swallow it, yikes!
+      }
+      if (line == null) return;         // end of input: nextResult remains null
+        
+
+      String[] tokens = line.split(delim);
+      if (fields < 0) fields = tokens.length; // remember number of fields in first line
+
+      if (filter && 
+          (tokens.length != fields ||   // wrong number of fields
+           (tokens.length == 1 && tokens[0].equals("")))) // it's a blank line
+        continue;                       // skip this line
+      
+      nextResult = new ArrayList<String>();
+      for (String token : tokens) nextResult.add(token);
+      return;                           // this line will be our next result
+
+    }
+  }
+
+  
+  // -----------------------------------------------------------------------
+  

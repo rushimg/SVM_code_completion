@@ -1,0 +1,42 @@
+  private void moneyAndPercentRecognizer(List<CoreLabel> tokenSequence) {
+    for(int i = 0; i < tokenSequence.size(); i ++){
+      CoreLabel crt = tokenSequence.get(i);
+      CoreLabel next = (i < tokenSequence.size() - 1 ? tokenSequence.get(i + 1) : null);
+      CoreLabel prev = (i > 0 ? tokenSequence.get(i - 1) : null);
+
+      // $5
+      if(CURRENCY_SYMBOL_PATTERN.matcher(crt.word()).matches() && next != null &&
+         (next.get(CoreAnnotations.AnswerAnnotation.class).equals("NUMBER") || next.tag().equals("CD"))){
+        crt.set(CoreAnnotations.AnswerAnnotation.class, "MONEY");
+        i = changeLeftToRight(tokenSequence, i + 1,
+            next.get(CoreAnnotations.AnswerAnnotation.class),
+            next.tag(), "MONEY") - 1;
+      }
+
+      // 5$, 5 dollars
+      else if((CURRENCY_WORD_PATTERN.matcher(crt.word()).matches() ||
+               CURRENCY_SYMBOL_PATTERN.matcher(crt.word()).matches()) &&
+               prev != null &&
+               (prev.get(CoreAnnotations.AnswerAnnotation.class).equals("NUMBER") ||
+                prev.tag().equals("CD")) &&
+               ! leftScanFindsWeightWord(tokenSequence, i)){
+        crt.set(CoreAnnotations.AnswerAnnotation.class, "MONEY");
+        changeRightToLeft(tokenSequence, i - 1,
+            prev.get(CoreAnnotations.AnswerAnnotation.class),
+            prev.tag(), "MONEY");
+      }
+
+      // 5%, 5 percent
+      else if((PERCENT_WORD_PATTERN.matcher(crt.word()).matches() ||
+               PERCENT_SYMBOL_PATTERN.matcher(crt.word()).matches()) &&
+               prev != null &&
+               (prev.get(CoreAnnotations.AnswerAnnotation.class).equals("NUMBER") ||
+                prev.tag().equals("CD"))){
+        crt.set(CoreAnnotations.AnswerAnnotation.class, "PERCENT");
+        changeRightToLeft(tokenSequence, i - 1,
+            prev.get(CoreAnnotations.AnswerAnnotation.class),
+            prev.tag(), "PERCENT");
+      }
+    }
+  }
+

@@ -1,0 +1,44 @@
+public class MorphoFeatures implements Serializable {
+  
+  private static final long serialVersionUID = -3893316324305154940L;
+
+  public static final String KEY_VAL_DELIM = ":";
+  
+  protected final Map<MorphoFeatureType,String> fSpec;
+  protected String altTag;
+  
+  public MorphoFeatures() {
+    fSpec = Generics.newHashMap();
+  }
+  
+  public MorphoFeatures(MorphoFeatures other) {
+    this();
+    for(Map.Entry<MorphoFeatureType, String> entry : other.fSpec.entrySet())
+      this.fSpec.put(entry.getKey(), entry.getValue());
+    this.altTag = other.altTag;
+  }
+  
+  public void addFeature(MorphoFeatureType feat, String val) {
+    fSpec.put(feat, val);
+  }
+  
+  public boolean hasFeature(MorphoFeatureType feat) {
+    return fSpec.containsKey(feat);
+  }
+  
+  public String getValue(MorphoFeatureType feat) {
+    return hasFeature(feat) ? fSpec.get(feat) : "";
+  }
+  
+  public int numFeatureMatches(MorphoFeatures other) {
+    int nMatches = 0;
+    for(Map.Entry<MorphoFeatureType, String> fPair : fSpec.entrySet()) {
+      if(other.hasFeature(fPair.getKey()) && other.getValue(fPair.getKey()).equals(fPair.getValue()))
+        nMatches++;
+    }
+    
+    return nMatches;
+  }
+  
+  public int numActiveFeatures() { return fSpec.keySet().size(); }
+  

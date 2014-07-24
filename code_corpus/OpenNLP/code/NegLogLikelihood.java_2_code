@@ -1,0 +1,49 @@
+public class NegLogLikelihood implements Function {
+  
+  protected int dimension;
+  protected int numOutcomes;
+  protected int numFeatures;
+  protected int numContexts;
+
+  // Information from data index
+  protected final float[][] values;
+  protected final int[][] contexts;
+  protected final int[] outcomeList;
+  protected final int[] numTimesEventsSeen;
+
+  // For calculating negLogLikelihood and gradient 
+  protected double[] tempSums;
+  protected double[] expectation;
+  
+  protected double[] gradient;
+  
+  public NegLogLikelihood(DataIndexer indexer) {
+    
+    // Get data from indexer.
+    if (indexer instanceof OnePassRealValueDataIndexer) {
+      this.values = indexer.getValues();
+    } else {
+      this.values = null;
+    }
+
+    this.contexts    = indexer.getContexts();
+    this.outcomeList = indexer.getOutcomeList();
+    this.numTimesEventsSeen = indexer.getNumTimesEventsSeen();
+
+    this.numOutcomes = indexer.getOutcomeLabels().length;
+    this.numFeatures = indexer.getPredLabels().length;
+    this.numContexts = this.contexts.length;
+    
+    this.expectation = new double[numOutcomes];
+    this.tempSums    = new double[numOutcomes];
+    this.gradient    = new double[dimension];
+  }
+
+  public int getDimension() {
+    return this.dimension;
+  }
+
+  public double[] getInitialPoint() {
+    return new double[dimension];
+  }
+

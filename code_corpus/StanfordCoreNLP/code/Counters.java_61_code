@@ -1,0 +1,13 @@
+  public static <E> Counter<E> intersection(Counter<E> c1, Counter<E> c2) {
+    Counter<E> result = c1.getFactory().create();
+    for (E key : Sets.union(c1.keySet(), c2.keySet())) {
+      double count1 = c1.getCount(key);
+      double count2 = c2.getCount(key);
+      double minCount = (count1 < count2 ? count1 : count2);
+      if (minCount > 0) {
+        result.setCount(key, minCount);
+      }
+    }
+    return result;
+  }
+

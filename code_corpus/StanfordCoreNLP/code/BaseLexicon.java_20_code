@@ -1,0 +1,48 @@
+  public double evaluateCoverage(Collection<Tree> trees, Set<String> missingWords,
+                                 Set<String> missingTags, Set<IntTaggedWord> missingTW) {
+
+    List<IntTaggedWord> iTW1 = new ArrayList<IntTaggedWord>();
+    for (Tree t : trees) {
+      iTW1.addAll(treeToEvents(t));
+    }
+
+    int total = 0;
+    int unseen = 0;
+
+    for (IntTaggedWord itw : iTW1) {
+      total++;
+      if (!words.contains(new IntTaggedWord(itw.word(), nullTag))) {
+        missingWords.add(wordIndex.get(itw.word()));
+      }
+      if (!tags.contains(new IntTaggedWord(nullWord, itw.tag()))) {
+        missingTags.add(tagIndex.get(itw.tag()));
+      }
+      // if (!rules.contains(itw)) {
+      if (seenCounter.getCount(itw) == 0.0) {
+        unseen++;
+        missingTW.add(itw);
+      }
+    }
+    return (double) unseen / total;
+  }
+
+  int[] tagsToBaseTags = null;
+
+  public int getBaseTag(int tag, TreebankLanguagePack tlp) {
+    if (tagsToBaseTags == null) {
+      populateTagsToBaseTags(tlp);
+    }
+    return tagsToBaseTags[tag];
+  }
+
+  private void populateTagsToBaseTags(TreebankLanguagePack tlp) {
+    int total = tagIndex.size();
+    tagsToBaseTags = new int[total];
+    for (int i = 0; i < total; i++) {
+      String tag = tagIndex.get(i);
+      String baseTag = tlp.basicCategory(tag);
+      int j = tagIndex.indexOf(baseTag, true);
+      tagsToBaseTags[i] = j;
+    }
+  }
+

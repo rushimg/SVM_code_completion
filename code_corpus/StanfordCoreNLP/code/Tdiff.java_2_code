@@ -1,0 +1,25 @@
+  public static Set<Constituent> markDiff(Tree t1, Tree t2) {
+//    if (t1 == null || t2 == null || ! t1.value().equals(t2.value())) {
+//      System.err.printf("t1 value is %s; t2 value is %s; t1 is %s t2 is %s", t1.value(), t2.value(), t1, t2);
+//    }
+    Set<Constituent> t1Labels = (t1 == null) ? Generics.<Constituent>newHashSet() : t1.constituents(cf);
+    if(t2 != null) {
+      t2.setSpans();
+      for(Tree subTree : t2) {
+        if(subTree.isPhrasal()) {
+          IntPair span = subTree.getSpan();
+          Constituent c = cf.newConstituent(span.getSource(), span.getTarget(), subTree.label(), 0.0);
+          if(t1Labels.contains(c)) {
+            t1Labels.remove(c);
+            ((CoreLabel) subTree.label()).set(CoreAnnotations.DoAnnotation.class, false);
+          } else {
+            ((CoreLabel) subTree.label()).set(CoreAnnotations.DoAnnotation.class, true);
+          }
+        }
+      }
+    }
+
+    return t1Labels;
+  }
+
+

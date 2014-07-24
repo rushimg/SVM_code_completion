@@ -1,0 +1,35 @@
+  public void makeAnnotationFromGivenNERTag(CoreMap sentence, String nerTag, String entityType) {
+    List<CoreLabel> words = sentence.get(CoreAnnotations.TokensAnnotation.class);
+    List<EntityMention> mentions = sentence.get(MachineReadingAnnotations.EntityMentionsAnnotation.class);
+    assert words != null;
+    assert mentions != null;
+    
+    for (int start = 0; start < words.size(); start ++) {
+      int end;
+      // find the first token after start that isn't of nerType
+      for (end = start; end < words.size(); end ++) {
+        String ne = words.get(end).get(NamedEntityTagAnnotation.class);
+        if(! ne.equals(nerTag)){
+          break;
+        }
+      }
+
+      if (end > start) {
+        
+        // found a match!
+        EntityMention m = entityMentionFactory.constructEntityMention(
+            EntityMention.makeUniqueId(),
+            sentence,
+            new Span(start, end),
+            new Span(start, end),
+            entityType, null, null);
+        logger.info("Created " + entityType + " entity mention: " + m);
+        start = end - 1;
+        mentions.add(m);
+      }
+    }
+
+    sentence.set(MachineReadingAnnotations.EntityMentionsAnnotation.class, mentions);
+  }
+
+  

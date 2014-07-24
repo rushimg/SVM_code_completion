@@ -1,0 +1,20 @@
+  public static final GrammaticalRelation NP_ADVERBIAL_MODIFIER =
+    new GrammaticalRelation(Language.English, "npadvmod", "noun phrase adverbial modifier",
+        NpAdverbialModifierGRAnnotation.class, MODIFIER, "VP|(?:WH)?(?:NP|ADJP|ADVP|PP)(?:-TMP|-ADV)?", tregexCompiler,
+        new String[] {
+          // measure phrases pattern (don't allow VBG/VBN cases, as often participles)
+          "@ADVP|ADJP|WHADJP|WHADVP|PP|WHPP <# (JJ|JJR|IN|RB|RBR !< notwithstanding $- (@NP=target !< NNP|NNPS))",
+          // one word nouns like "cost efficient", "ice-free"
+          "@ADJP < (NN=target $++ /^JJ/) !< CC|CONJP",
+          "@NP|WHNP < /^NP-ADV/=target",
+          // Mr. Bush himself ..., in a couple different parse
+          // patterns.  Looking for CC|CONJP leaves out phrases such
+          // as "he and myself"
+          "@NP|WHNP [ < (NP=target <: (PRP < " + selfRegex + ")) | < (PRP=target < " + selfRegex + ") ] : (=target $-- NP|NN|NNS|NNP|NNPS|PRP=noun !$-- (/^,|CC|CONJP$/ $-- =noun))",
+          // this next one is for weird financial listings: 4.7% three months
+          "@NP <1 (@NP <<# /^%$/) <2 (@NP=target <<# days|month|months) !<3 __",
+          "@VP < /^NP-ADV/=target",
+        });
+  public static class NpAdverbialModifierGRAnnotation extends GrammaticalRelationAnnotation { }
+
+

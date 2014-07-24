@@ -1,0 +1,30 @@
+  private static List<Entry> readEntries(String annotatorName,
+                                         Set<String> noDefaultOverwriteLabels,
+                                         boolean ignoreCase, boolean verbose,
+                                         String... mappings) {
+    // Unlike RegexNERClassifier, we don't bother sorting the entries
+    // We leave it to TokensRegex NER to sort out the priorities and matches
+    //   (typically after all the matches has been made since for some TokenRegex expression,
+    //       we don't know how many tokens are matched until after the matching is done)
+    List<Entry> entries = new ArrayList<Entry>();
+    TrieMap<String,Entry> seenRegexes = new TrieMap<String,Entry>();
+    Arrays.sort(mappings);
+    for (String mapping:mappings) {
+      BufferedReader rd = null;
+      try {
+        rd = IOUtils.readerFromString(mapping);
+        readEntries(annotatorName, entries, seenRegexes, mapping, rd, noDefaultOverwriteLabels, ignoreCase, verbose);
+      } catch (IOException e) {
+        throw new RuntimeIOException("Couldn't read TokensRegexNER from " + mapping, e);
+      } finally {
+        IOUtils.closeIgnoringExceptions(rd);
+      }
+    }
+
+    if (mappings.length != 1) {
+      logger.log("TokensRegexNERAnnotator " + annotatorName +
+            ": Read " + entries.size() + " unique entries from " + mappings.length + " files");
+    }
+    return entries;
+  }
+

@@ -1,0 +1,349 @@
+  protected void addProcessedData(List<List<CRFDatum<Collection<String>, String>>> processedData, int[][][][] data,
+      int[][] labels, double[][][][] featureVals, int offset) {
+    for (int i = 0, pdSize = processedData.size(); i < pdSize; i++) {
+      int dataIndex = i + offset;
+      List<CRFDatum<Collection<String>, String>> document = processedData.get(i);
+      int dsize = document.size();
+      labels[dataIndex] = new int[dsize];
+      data[dataIndex] = new int[dsize][][];
+      if (featureVals != null)
+        featureVals[dataIndex] = new double[dsize][][];
+      for (int j = 0; j < dsize; j++) {
+        CRFDatum<Collection<String>, String> crfDatum = document.get(j);
+        // add label, they are offset by extra context
+        labels[dataIndex][j] = classIndex.indexOf(crfDatum.label());
+        // add featureVals
+        List<double[]> featureValList = null;
+        if (featureVals != null)
+          featureValList = crfDatum.asFeatureVals();
+        // add features
+        List<Collection<String>> cliques = crfDatum.asFeatures();
+        int csize = cliques.size();
+        data[dataIndex][j] = new int[csize][];
+        if (featureVals != null)
+          featureVals[dataIndex][j] = new double[csize][];
+        for (int k = 0; k < csize; k++) {
+          Collection<String> features = cliques.get(k);
+
+          data[dataIndex][j][k] = new int[features.size()];
+          if (featureVals != null)
+            featureVals[dataIndex][j][k] = featureValList.get(k);
+
+          int m = 0;
+          try {
+            for (String feature : features) {
+              // System.err.println("feature " + feature);
+              // if (featureIndex.indexOf(feature)) ;
+              if (featureIndex == null) {
+                System.out.println("Feature is NULL!");
+              }
+              data[dataIndex][j][k][m] = featureIndex.indexOf(feature);
+              m++;
+            }
+          } catch (Exception e) {
+            e.printStackTrace();
+            System.err.printf("[index=%d, j=%d, k=%d, m=%d]%n", dataIndex, j, k, m);
+            System.err.println("data.length                    " + data.length);
+            System.err.println("data[dataIndex].length         " + data[dataIndex].length);
+            System.err.println("data[dataIndex][j].length      " + data[dataIndex][j].length);
+            System.err.println("data[dataIndex][j][k].length   " + data[dataIndex][j].length);
+            System.err.println("data[dataIndex][j][k][m]       " + data[dataIndex][j][k][m]);
+            return;
+          }
+        }
+      }
+    }
+  }
+
+  protected static void saveProcessedData(List datums, String filename) {
+    System.err.print("Saving processed data of size " + datums.size() + " to serialized file...");
+    ObjectOutputStream oos = null;
+    try {
+      oos = new ObjectOutputStream(new FileOutputStream(filename));
+      oos.writeObject(datums);
+    } catch (IOException e) {
+      // do nothing
+    } finally {
+      IOUtils.closeIgnoringExceptions(oos);
+    }
+    System.err.println("done.");
+  }
+
+  protected static List<List<CRFDatum<Collection<String>, String>>> loadProcessedData(String filename) {
+    System.err.print("Loading processed data from serialized file...");
+    ObjectInputStream ois = null;
+    List<List<CRFDatum<Collection<String>, String>>> result = Collections.emptyList();
+    try {
+      ois = new ObjectInputStream(new FileInputStream(filename));
+      result = (List<List<CRFDatum<Collection<String>, String>>>) ois.readObject();
+    } catch (Exception e) {
+      e.printStackTrace();
+    } finally {
+      IOUtils.closeIgnoringExceptions(ois);
+    }
+    System.err.println("done. Got " + result.size() + " datums.");
+    return result;
+  }
+
+  protected void loadTextClassifier(BufferedReader br) throws Exception {
+    String line = br.readLine();
+    // first line should be this format:
+    // labelIndices.size()=\t%d
+    String[] toks = line.split("\\t");
+    if (!toks[0].equals("labelIndices.length=")) {
+      throw new RuntimeException("format error");
+    }
+    int size = Integer.parseInt(toks[1]);
+    labelIndices = new ArrayList<Index<CRFLabel>>(size);
+    for (int labelIndicesIdx = 0; labelIndicesIdx < size; labelIndicesIdx++) {
+      line = br.readLine();
+      // first line should be this format:
+      // labelIndices.length=\t%d
+      // labelIndices[0].size()=\t%d
+      toks = line.split("\\t");
+      if (!(toks[0].startsWith("labelIndices[") && toks[0].endsWith("].size()="))) {
+        throw new RuntimeException("format error");
+      }
+      int labelIndexSize = Integer.parseInt(toks[1]);
+      labelIndices.add(new HashIndex<CRFLabel>());
+      int count = 0;
+      while (count < labelIndexSize) {
+        line = br.readLine();
+        toks = line.split("\\t");
+        int idx = Integer.parseInt(toks[0]);
+        if (count != idx) {
+          throw new RuntimeException("format error");
+        }
+
+        String[] crflabelstr = toks[1].split(" ");
+        int[] crflabel = new int[crflabelstr.length];
+        for (int i = 0; i < crflabelstr.length; i++) {
+          crflabel[i] = Integer.parseInt(crflabelstr[i]);
+        }
+        CRFLabel crfL = new CRFLabel(crflabel);
+
+        labelIndices.get(labelIndicesIdx).add(crfL);
+        count++;
+      }
+    }
+
+    for (Index<CRFLabel> index : labelIndices) {
+      for (int j = 0; j < index.size(); j++) {
+        int[] label = index.get(j).getLabel();
+        List<Integer> list = new ArrayList<Integer>();
+        for (int l : label) {
+          list.add(l);
+        }
+      }
+    }
+
+    line = br.readLine();
+    toks = line.split("\\t");
+    if (!toks[0].equals("classIndex.size()=")) {
+      throw new RuntimeException("format error");
+    }
+    int classIndexSize = Integer.parseInt(toks[1]);
+    classIndex = new HashIndex<String>();
+    int count = 0;
+    while (count < classIndexSize) {
+      line = br.readLine();
+      toks = line.split("\\t");
+      int idx = Integer.parseInt(toks[0]);
+      if (count != idx) {
+        throw new RuntimeException("format error");
+      }
+      classIndex.add(toks[1]);
+      count++;
+    }
+
+    line = br.readLine();
+    toks = line.split("\\t");
+    if (!toks[0].equals("featureIndex.size()=")) {
+      throw new RuntimeException("format error");
+    }
+    int featureIndexSize = Integer.parseInt(toks[1]);
+    featureIndex = new HashIndex<String>();
+    count = 0;
+    while (count < featureIndexSize) {
+      line = br.readLine();
+      toks = line.split("\\t");
+      int idx = Integer.parseInt(toks[0]);
+      if (count != idx) {
+        throw new RuntimeException("format error");
+      }
+      featureIndex.add(toks[1]);
+      count++;
+    }
+
+    line = br.readLine();
+    if (!line.equals("<flags>")) {
+      throw new RuntimeException("format error");
+    }
+    Properties p = new Properties();
+    line = br.readLine();
+
+    while (!line.equals("</flags>")) {
+      // System.err.println("DEBUG: flags line: "+line);
+      String[] keyValue = line.split("=");
+      // System.err.printf("DEBUG: p.setProperty(%s,%s)%n", keyValue[0],
+      // keyValue[1]);
+      p.setProperty(keyValue[0], keyValue[1]);
+      line = br.readLine();
+    }
+
+    // System.err.println("DEBUG: out from flags");
+    flags = new SeqClassifierFlags(p);
+
+    if (flags.useEmbedding) {
+      line = br.readLine();
+      toks = line.split("\\t");
+      if (!toks[0].equals("embeddings.size()=")) {
+        throw new RuntimeException("format error in embeddings");
+      }
+      int embeddingSize = Integer.parseInt(toks[1]);
+      embeddings = Generics.newHashMap(embeddingSize);
+      count = 0;
+      while (count < embeddingSize) {
+        line = br.readLine().trim();
+        toks = line.split("\\t");
+        String word = toks[0];
+        double[] arr = ArrayUtils.toDoubleArray(toks[1].split(" "));
+        embeddings.put(word, arr);
+        count++;
+      }
+    }
+
+    // <featureFactory>
+    // edu.stanford.nlp.wordseg.Gale2007ChineseSegmenterFeatureFactory
+    // </featureFactory>
+    line = br.readLine();
+
+    String[] featureFactoryName = line.split(" ");
+    if (featureFactoryName.length < 2 || !featureFactoryName[0].equals("<featureFactory>") || !featureFactoryName[featureFactoryName.length - 1].equals("</featureFactory>")) {
+      throw new RuntimeException("format error unexpected featureFactory line: " + line);
+    }
+    featureFactories = Generics.newArrayList();
+    for (int ff = 1; ff < featureFactoryName.length - 1; ++ff) {
+      FeatureFactory featureFactory = (edu.stanford.nlp.sequences.FeatureFactory<IN>) Class.forName(featureFactoryName[1]).newInstance();
+      featureFactory.init(flags);
+      featureFactories.add(featureFactory);
+    }
+
+    reinit();
+
+    // <windowSize> 2 </windowSize>
+    line = br.readLine();
+
+    String[] windowSizeName = line.split(" ");
+    if (!windowSizeName[0].equals("<windowSize>") || !windowSizeName[2].equals("</windowSize>")) {
+      throw new RuntimeException("format error");
+    }
+    windowSize = Integer.parseInt(windowSizeName[1]);
+
+    // weights.length= 2655170
+    line = br.readLine();
+
+    toks = line.split("\\t");
+    if (!toks[0].equals("weights.length=")) {
+      throw new RuntimeException("format error");
+    }
+    int weightsLength = Integer.parseInt(toks[1]);
+    weights = new double[weightsLength][];
+    count = 0;
+    while (count < weightsLength) {
+      line = br.readLine();
+
+      toks = line.split("\\t");
+      int weights2Length = Integer.parseInt(toks[0]);
+      weights[count] = new double[weights2Length];
+      String[] weightsValue = toks[1].split(" ");
+      if (weights2Length != weightsValue.length) {
+        throw new RuntimeException("weights format error");
+      }
+
+      for (int i2 = 0; i2 < weights2Length; i2++) {
+        weights[count][i2] = Double.parseDouble(weightsValue[i2]);
+      }
+      count++;
+    }
+    System.err.printf("DEBUG: double[%d][] weights loaded%n", weightsLength);
+    line = br.readLine();
+
+    if (line != null) {
+      throw new RuntimeException("weights format error");
+    }
+  }
+
+  public void loadTextClassifier(String text, Properties props) throws ClassCastException, IOException,
+      ClassNotFoundException, InstantiationException, IllegalAccessException {
+    // System.err.println("DEBUG: in loadTextClassifier");
+    System.err.println("Loading Text Classifier from " + text);
+    try {
+      BufferedReader br = IOUtils.readerFromString(text);
+      loadTextClassifier(br);
+      br.close();
+    } catch (Exception ex) {
+      System.err.println("Exception in loading text classifier from " + text);
+      ex.printStackTrace();
+    }
+  }
+
+  protected void serializeTextClassifier(PrintWriter pw) throws Exception {
+    pw.printf("labelIndices.length=\t%d%n", labelIndices.size());
+    for (int i = 0; i < labelIndices.size(); i++) {
+      pw.printf("labelIndices[%d].size()=\t%d%n", i, labelIndices.get(i).size());
+      for (int j = 0; j < labelIndices.get(i).size(); j++) {
+        int[] label = labelIndices.get(i).get(j).getLabel();
+        List<Integer> list = new ArrayList<Integer>();
+        for (int l : label) {
+          list.add(l);
+        }
+        pw.printf("%d\t%s%n", j, StringUtils.join(list, " "));
+      }
+    }
+
+    pw.printf("classIndex.size()=\t%d%n", classIndex.size());
+    for (int i = 0; i < classIndex.size(); i++) {
+      pw.printf("%d\t%s%n", i, classIndex.get(i));
+    }
+    // pw.printf("</classIndex>%n");
+
+    pw.printf("featureIndex.size()=\t%d%n", featureIndex.size());
+    for (int i = 0; i < featureIndex.size(); i++) {
+      pw.printf("%d\t%s%n", i, featureIndex.get(i));
+    }
+    // pw.printf("</featureIndex>%n");
+
+    pw.println("<flags>");
+    pw.print(flags.toString());
+    pw.println("</flags>");
+
+    if (flags.useEmbedding) {
+      pw.printf("embeddings.size()=\t%d%n", embeddings.size());
+      for (String word: embeddings.keySet()) {
+        double[] arr = embeddings.get(word);
+        Double[] arrUnboxed = new Double[arr.length];
+        for(int i = 0; i < arr.length; i++)
+          arrUnboxed[i] = arr[i];
+        pw.printf("%s\t%s%n", word, StringUtils.join(arrUnboxed, " "));
+      }
+    }
+
+    pw.printf("<featureFactory>");
+    for (FeatureFactory featureFactory : featureFactories) {
+      pw.printf(" %s ", featureFactory.getClass().getName());
+    }
+    pw.printf("</featureFactory>%n");
+
+    pw.printf("<windowSize> %d </windowSize>%n", windowSize);
+
+    pw.printf("weights.length=\t%d%n", weights.length);
+    for (double[] ws : weights) {
+      ArrayList<Double> list = new ArrayList<Double>();
+      for (double w : ws) {
+        list.add(w);
+      }
+      pw.printf("%d\t%s%n", ws.length, StringUtils.join(list, " "));
+    }
+  }
+

@@ -1,0 +1,31 @@
+    public E addEdge(V sourceVertex, V targetVertex)
+    {
+        assertVertexExist(sourceVertex);
+        assertVertexExist(targetVertex);
+
+        if (!allowingMultipleEdges
+            && containsEdge(sourceVertex, targetVertex))
+        {
+            return null;
+        }
+
+        if (!allowingLoops && sourceVertex.equals(targetVertex)) {
+            throw new IllegalArgumentException(LOOPS_NOT_ALLOWED);
+        }
+
+        E e = edgeFactory.createEdge(sourceVertex, targetVertex);
+
+        if (containsEdge(e)) { // this restriction should stay!
+
+            return null;
+        } else {
+            IntrusiveEdge intrusiveEdge =
+                createIntrusiveEdge(e, sourceVertex, targetVertex);
+
+            edgeMap.put(e, intrusiveEdge);
+            specifics.addEdgeToTouchingVertices(e);
+
+            return e;
+        }
+    }
+

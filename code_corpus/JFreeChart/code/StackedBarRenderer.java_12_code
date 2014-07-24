@@ -1,0 +1,130 @@
+    public void drawItem(Graphics2D g2,
+                         CategoryItemRendererState state,
+                         Rectangle2D dataArea,
+                         CategoryPlot plot,
+                         CategoryAxis domainAxis,
+                         ValueAxis rangeAxis,
+                         CategoryDataset dataset,
+                         int row,
+                         int column,
+                         int pass) {
+
+        if (!isSeriesVisible(row)) {
+            return;
+        }
+
+        // nothing is drawn for null values...
+        Number dataValue = dataset.getValue(row, column);
+        if (dataValue == null) {
+            return;
+        }
+
+        double value = dataValue.doubleValue();
+        double total = 0.0;  // only needed if calculating percentages
+        if (this.renderAsPercentages) {
+            total = DataUtilities.calculateColumnTotal(dataset, column,
+                    state.getVisibleSeriesArray());
+            value = value / total;
+        }
+
+        PlotOrientation orientation = plot.getOrientation();
+        double barW0 = domainAxis.getCategoryMiddle(column, getColumnCount(),
+                dataArea, plot.getDomainAxisEdge())
+                - state.getBarWidth() / 2.0;
+
+        double positiveBase = getBase();
+        double negativeBase = positiveBase;
+
+        for (int i = ((rowPlacementOrder == SortOrder.DESCENDING) ? 0 : row + 1);
+        		i < ((rowPlacementOrder == SortOrder.DESCENDING) ? row : getRowCount()); i++) {
+
+            Number v = dataset.getValue(i, column);
+            if (v != null && isSeriesVisible(i)) {
+                double d = v.doubleValue();
+                if (this.renderAsPercentages) {
+                    d = d / total;
+                }
+                if (d > 0) {
+                    positiveBase = positiveBase + d;
+                }
+                else {
+                    negativeBase = negativeBase + d;
+                }
+            }
+        }
+
+        double translatedBase;
+        double translatedValue;
+        boolean positive = (value > 0.0);
+        boolean inverted = rangeAxis.isInverted();
+        RectangleEdge barBase;
+        if (orientation == PlotOrientation.HORIZONTAL) {
+            if (positive && inverted || !positive && !inverted) {
+                barBase = RectangleEdge.RIGHT;
+            }
+            else {
+                barBase = RectangleEdge.LEFT;
+            }
+        }
+        else {
+            if (positive && !inverted || !positive && inverted) {
+                barBase = RectangleEdge.BOTTOM;
+            }
+            else {
+                barBase = RectangleEdge.TOP;
+            }
+        }
+
+        RectangleEdge location = plot.getRangeAxisEdge();
+        if (positive) {
+            translatedBase = rangeAxis.valueToJava2D(positiveBase, dataArea,
+                    location);
+            translatedValue = rangeAxis.valueToJava2D(positiveBase + value,
+                    dataArea, location);
+        }
+        else {
+            translatedBase = rangeAxis.valueToJava2D(negativeBase, dataArea,
+                    location);
+            translatedValue = rangeAxis.valueToJava2D(negativeBase + value,
+                    dataArea, location);
+        }
+        double barL0 = Math.min(translatedBase, translatedValue);
+        double barLength = Math.max(Math.abs(translatedValue - translatedBase),
+                getMinimumBarLength());
+
+        Rectangle2D bar = null;
+        if (orientation == PlotOrientation.HORIZONTAL) {
+            bar = new Rectangle2D.Double(barL0, barW0, barLength,
+                    state.getBarWidth());
+        }
+        else {
+            bar = new Rectangle2D.Double(barW0, barL0, state.getBarWidth(),
+                    barLength);
+        }
+        if (pass == 0) {
+            if (getShadowsVisible()) {
+                boolean pegToBase = (positive && (positiveBase == getBase()))
+                        || (!positive && (negativeBase == getBase()));
+                getBarPainter().paintBarShadow(g2, this, row, column, bar,
+                        barBase, pegToBase);
+            }
+        }
+        else if (pass == 1) {
+            getBarPainter().paintBar(g2, this, row, column, bar, barBase);
+
+            // add an item entity, if this information is being collected
+            EntityCollection entities = state.getEntityCollection();
+            if (entities != null) {
+                addItemEntity(entities, dataset, row, column, bar);
+            }
+        }
+        else if (pass == 2) {
+            CategoryItemLabelGenerator generator = getItemLabelGenerator(row,
+                    column);
+            if (generator != null && isItemLabelVisible(row, column)) {
+                drawItemLabel(g2, dataset, row, column, plot, generator, bar,
+                        (value < 0.0));
+            }
+        }
+    }
+

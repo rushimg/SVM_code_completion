@@ -1,0 +1,68 @@
+public class ATBArabicDataset extends AbstractDataset {
+
+  public ATBArabicDataset() {
+    super();
+
+    //Read the raw file as UTF-8 irrespective of output encoding
+    treebank = new DiskTreebank(new ArabicTreeReaderFactory.ArabicRawTreeReaderFactory(true), "UTF-8");
+  }
+
+  public void build() {
+    for(File path : pathsToData) {
+      if(splitFilter == null) {
+        treebank.loadPath(path,treeFileExtension,false);
+      } else {
+        treebank.loadPath(path,splitFilter);
+      }
+    }
+
+    PrintWriter outfile = null;
+    PrintWriter flatFile = null;
+    try {
+      outfile = new PrintWriter(new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outFileName),"UTF-8")));
+      flatFile = (makeFlatFile) ? new PrintWriter(new BufferedWriter(new OutputStreamWriter(new FileOutputStream(flatFileName),"UTF-8"))) : null;
+
+      treebank.apply(new ArabicRawTreeNormalizer(outfile,flatFile));
+
+      outputFileList.add(outFileName);
+
+      if(makeFlatFile) {
+        outputFileList.add(flatFileName);
+        toStringBuffer.append(" Made flat files\n");
+      }
+
+    } catch (UnsupportedEncodingException e) {
+      System.err.printf("%s: Filesystem does not support UTF-8 output\n", this.getClass().getName());
+      e.printStackTrace();
+    } catch (FileNotFoundException e) {
+      System.err.printf("%s: Could not open %s for writing\n", this.getClass().getName(), outFileName);
+    } finally {
+      if(outfile != null)
+        outfile.close();
+      if(flatFile != null)
+        flatFile.close();
+    }
+  }
+
+
+  public boolean setOptions(Properties opts) {
+    boolean ret = super.setOptions(opts);
+
+    if(lexMapper == null) {
+      lexMapper = new DefaultLexicalMapper();
+      lexMapper.setup(null, lexMapOptions.split(","));
+    }
+
+    if(pathsToMappings.size() != 0) {
+      if(posMapper == null) {
+      	posMapper = new LDCPosMapper(addDeterminer);
+      }
+      String[] mapOpts = posMapOptions.split(",");
+      for(File path : pathsToMappings)
+        posMapper.setup(path,mapOpts);
+    }
+
+    return ret;
+  }
+
+

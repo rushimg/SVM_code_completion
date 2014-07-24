@@ -1,0 +1,27 @@
+    protected void drawDomainCrosshair(Graphics2D g2, Rectangle2D dataArea,
+            PlotOrientation orientation, int datasetIndex,
+            Comparable rowKey, Comparable columnKey, Stroke stroke,
+            Paint paint) {
+
+        CategoryDataset dataset = getDataset(datasetIndex);
+        CategoryAxis axis = getDomainAxisForDataset(datasetIndex);
+        CategoryItemRenderer renderer = getRenderer(datasetIndex);
+        Line2D line = null;
+        if (orientation == PlotOrientation.VERTICAL) {
+            double xx = renderer.getItemMiddle(rowKey, columnKey, dataset, axis,
+                    dataArea, RectangleEdge.BOTTOM);
+            line = new Line2D.Double(xx, dataArea.getMinY(), xx,
+                    dataArea.getMaxY());
+        }
+        else {
+            double yy = renderer.getItemMiddle(rowKey, columnKey, dataset, axis,
+                    dataArea, RectangleEdge.LEFT);
+            line = new Line2D.Double(dataArea.getMinX(), yy,
+                    dataArea.getMaxX(), yy);
+        }
+        g2.setStroke(stroke);
+        g2.setPaint(paint);
+        g2.draw(line);
+
+    }
+

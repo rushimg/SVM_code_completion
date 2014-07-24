@@ -1,0 +1,21 @@
+  @Override
+  public double[] gradientAt(double[] x) {
+    
+    if (x.length != dimension)
+      throw new IllegalArgumentException(
+          "x is invalid, its dimension is not equal to the function.");
+    
+    // Compute partial gradient in each thread
+    computeInParallel(x, GradientComputeTask.class);
+    
+    // Accumulate gradient
+    for (int i = 0; i < dimension; i++) {
+      gradient[i] = 0;
+      for (int t = 0; t < threads; t++) {
+        gradient[i] += gradientThread[t][i];
+      }
+    }
+    
+    return gradient;
+  }
+

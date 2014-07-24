@@ -1,0 +1,13 @@
+  protected Pair<? extends OutputStream, CloseAction> newOutputStream(File f, boolean isAppend) throws IOException {
+    final FileOutputStream stream = new FileOutputStream(f, isAppend);
+    final FileSemaphore lock = acquireFileLock(f);
+    final ObjectOutputStream rtn = isAppend
+        ? new AppendingObjectOutputStream(new GZIPOutputStream(new BufferedOutputStream(stream)))
+        : new ObjectOutputStream(new GZIPOutputStream(new BufferedOutputStream(stream)));
+    return new Pair<ObjectOutputStream, CloseAction>(rtn,
+        new CloseAction(){
+          @Override
+          public void apply() throws IOException { rtn.flush(); lock.release(); rtn.close(); }
+        });
+  }
+

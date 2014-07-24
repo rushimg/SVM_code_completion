@@ -1,0 +1,55 @@
+  public List<IndexedWord> topologicalSort() {
+    List<IndexedWord> result = Generics.newArrayList();
+    Set<IndexedWord> temporary = Generics.newHashSet();
+    Set<IndexedWord> permanent = Generics.newHashSet();
+    for (IndexedWord vertex : vertexSet()) {
+      if (!temporary.contains(vertex)) {
+        topologicalSortHelper(vertex, temporary, permanent, result);
+      }
+    }
+    Collections.reverse(result);
+    return result;
+  }
+
+  private void topologicalSortHelper(IndexedWord vertex, Set<IndexedWord> temporary, Set<IndexedWord> permanent, List<IndexedWord> result) {
+    temporary.add(vertex);
+    for (SemanticGraphEdge edge : outgoingEdgeIterable(vertex)) {
+      IndexedWord target = edge.getTarget();
+      if (permanent.contains(target)) {
+        continue;
+      }
+      if (temporary.contains(target)) {
+        throw new IllegalStateException("This graph has cycles. Topological sort not possible: " + this.toString());
+      }
+      topologicalSortHelper(target, temporary, permanent, result);
+    }
+    result.add(vertex);
+    permanent.add(vertex);
+  }
+
+
+  public boolean hasChild(IndexedWord vertex, GrammaticalRelation reln, String childLemma) {
+    if (!vertexSet().contains(vertex)) {
+      throw new IllegalArgumentException();
+    }
+    for (SemanticGraphEdge edge : outgoingEdgeIterable(vertex)) {
+      if (edge.getRelation().equals(reln)) {
+        if (edge.getTarget().get(CoreAnnotations.LemmaAnnotation.class).equals(childLemma))
+          return true;
+      }
+    }
+    return false;
+  }
+
+  public boolean hasChildWithReln(IndexedWord vertex, GrammaticalRelation reln) {
+    if (!vertexSet().contains(vertex)) {
+      throw new IllegalArgumentException();
+    }
+    for (SemanticGraphEdge edge : outgoingEdgeIterable(vertex)) {
+      if (edge.getRelation().equals(reln)) {
+        return true;
+      }
+    }
+    return false;
+  }
+

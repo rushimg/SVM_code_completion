@@ -1,0 +1,26 @@
+  public static List<List<HasWord>> tokenizeText(Reader r,
+                 TokenizerFactory<? extends HasWord> tokenizerFactory) {
+    DocumentPreprocessor documentPreprocessor = new DocumentPreprocessor(r);
+    if (tokenizerFactory != null) {
+      documentPreprocessor.setTokenizerFactory(tokenizerFactory);
+    }
+    List<List<HasWord>> out = Generics.newArrayList();
+    for (List<HasWord> item : documentPreprocessor) {
+      out.add(item);
+    }
+    return out;
+  }
+
+
+  private static void dumpModel(TaggerConfig config) {
+    try {
+      MaxentTagger tagger = new MaxentTagger(config.getModel(), config, false);
+      System.out.println("Serialized tagger built with config:");
+      tagger.config.dump(System.out);
+      tagger.dumpModel(System.out);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+
+

@@ -1,0 +1,34 @@
+  private static final long serialVersionUID = 1360822168806852921L;
+
+
+  static class MutableInternedPair extends Pair<String, String> {
+
+    private MutableInternedPair(Pair<String, String> p) {
+      super(p.first, p.second);
+      internStrings();
+    }
+
+    private MutableInternedPair(String first, String second) {
+      super(first, second);
+      internStrings();
+    }
+
+    protected Object readResolve() {
+      internStrings();
+      return this;
+    }
+
+    private void internStrings() {
+      if (first != null) {
+        first = first.intern();
+      }
+      if (second != null) {
+        second = second.intern();
+      }
+    }
+
+    // use serialVersionUID for cross version serialization compatibility
+    private static final long serialVersionUID = 1360822168806852922L;
+
+  }
+

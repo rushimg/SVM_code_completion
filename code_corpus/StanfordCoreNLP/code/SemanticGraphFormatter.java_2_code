@@ -1,0 +1,27 @@
+  public String formatSemanticGraph(SemanticGraph sg) {
+    if (sg.vertexSet().isEmpty()) {
+      return "[]";
+    }
+    out = new StringBuilder();           // not thread-safe!!!
+    used = Generics.newHashSet();
+    if (sg.getRoots().size() == 1) {
+      formatSGNode(sg, sg.getFirstRoot(), 1);
+    } else {
+      int index = 0;
+      for (IndexedWord root: sg.getRoots()) {
+        index+=1;
+        out.append("root_").append(index).append(": ");
+        formatSGNode(sg, root, 9);
+        out.append("\n");
+      }
+    }
+    String result = out.toString();
+    if (!result.startsWith("[")) {
+      result = "[" + result + "]";
+    }
+    return result;
+  }
+
+
+  // private methods ------------------------------------------------------------
+

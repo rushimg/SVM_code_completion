@@ -1,0 +1,34 @@
+  static class CallableJob<I,O> implements Callable<Integer> {
+    final I item;
+    private final int itemId;
+    private final ThreadsafeProcessor<I,O> processor;
+    private final int processorId;
+    private final JobCallback<O> callback;
+    
+    public CallableJob(I item, int itemId, ThreadsafeProcessor<I,O> processor, int processorId, 
+        JobCallback<O> callback) {
+      this.item = item;
+      this.itemId = itemId;
+      this.processor = processor;
+      this.processorId = processorId;
+      this.callback = callback;
+    }
+
+    @Override
+    public Integer call() {
+      try {
+        O result = processor.process(item);
+        QueueItem<O> output = new QueueItem<O>(result, itemId);
+        callback.call(output, processorId);
+        return itemId;
+      
+      } catch (Exception e) {
+        e.printStackTrace();
+        // Hope that the consumer knows how to handle null!
+        QueueItem<O> output = new QueueItem<O>(null, itemId);
+        callback.call(output, processorId);
+        return itemId;
+      }
+    }
+  }
+

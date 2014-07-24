@@ -1,0 +1,17 @@
+    protected Size2D arrangeRR(BlockContainer container, Graphics2D g2,
+                               RectangleConstraint constraint) {
+
+        // first arrange without constraints, and see if this fits within
+        // the required ranges...
+        Size2D s1 = arrangeNN(container, g2);
+        if (constraint.getWidthRange().contains(s1.width)) {
+            return s1;  // TODO: we didn't check the height yet
+        }
+        else {
+            RectangleConstraint c = constraint.toFixedWidth(
+                constraint.getWidthRange().getUpperBound()
+            );
+            return arrangeFR(container, g2, c);
+        }
+    }
+

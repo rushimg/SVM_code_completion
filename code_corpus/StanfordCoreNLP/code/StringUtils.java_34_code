@@ -1,0 +1,68 @@
+  public static Properties argsToProperties(String[] args, Map<String,Integer> flagsToNumArgs) {
+    Properties result = new Properties();
+    List<String> remainingArgs = new ArrayList<String>();
+    for (int i = 0; i < args.length; i++) {
+      String key = args[i];
+      if (key.length() > 0 && key.charAt(0) == '-') { // found a flag
+        if (key.length() > 1 && key.charAt(1) == '-')
+          key = key.substring(2); // strip off 2 hyphens
+        else
+          key = key.substring(1); // strip off the hyphen
+
+        Integer maxFlagArgs = flagsToNumArgs.get(key);
+        int max = maxFlagArgs == null ? 1 : maxFlagArgs;
+        int min = maxFlagArgs == null ? 0 : maxFlagArgs;
+        List<String> flagArgs = new ArrayList<String>();
+        // cdm oct 2007: add length check to allow for empty string argument!
+        for (int j = 0; j < max && i + 1 < args.length && (j < min || args[i + 1].length() == 0 || args[i + 1].charAt(0) != '-'); i++, j++) {
+          flagArgs.add(args[i + 1]);
+        }
+        if (flagArgs.isEmpty()) {
+          result.setProperty(key, "true");
+        } else {
+          result.setProperty(key, join(flagArgs, " "));
+          if (key.equalsIgnoreCase(PROP) || key.equalsIgnoreCase(PROPS) || key.equalsIgnoreCase(PROPERTIES) || key.equalsIgnoreCase(ARGUMENTS) || key.equalsIgnoreCase(ARGS))
+          {
+            try {
+              InputStream is = IOUtils.getInputStreamFromURLOrClasspathOrFileSystem(result.getProperty(key));
+              InputStreamReader reader = new InputStreamReader(is, "utf-8");
+              result.remove(key); // location of this line is critical
+              result.load(reader);
+              // trim all values
+              for(Object propKey : result.keySet()){
+                String newVal = result.getProperty((String)propKey);
+                result.setProperty((String)propKey,newVal.trim());
+              }
+              is.close();
+            } catch (IOException e) {
+              result.remove(key);
+              System.err.println("argsToProperties could not read properties file: " + result.getProperty(key));
+              throw new RuntimeIOException(e);
+            }
+          }
+        }
+      } else {
+        remainingArgs.add(args[i]);
+      }
+    }
+    if (!remainingArgs.isEmpty()) {
+      result.setProperty("", join(remainingArgs, " "));
+    }
+
+    if (result.containsKey(PROP)) {
+      String file = result.getProperty(PROP);
+      result.remove(PROP);
+      Properties toAdd = argsToProperties(new String[]{"-prop", file});
+      for (Enumeration<?> e = toAdd.propertyNames(); e.hasMoreElements(); ) {
+        String key = (String) e.nextElement();
+        String val = toAdd.getProperty(key);
+        if (!result.containsKey(key)) {
+          result.setProperty(key, val);
+        }
+      }
+    }
+
+    return result;
+  }
+
+

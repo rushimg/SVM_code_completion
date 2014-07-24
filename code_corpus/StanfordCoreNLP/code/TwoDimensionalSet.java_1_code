@@ -1,0 +1,35 @@
+public class TwoDimensionalSet<K1, K2> implements Serializable, Iterable<Pair<K1, K2>> {
+  private static final long serialVersionUID = 2L;
+
+  private final TwoDimensionalMap<K1, K2, Boolean> backingMap;
+
+  public TwoDimensionalSet() {
+    this(new TwoDimensionalMap<K1, K2, Boolean>());
+  }
+
+  public TwoDimensionalSet(TwoDimensionalMap<K1, K2, Boolean> backingMap) {
+    this.backingMap = backingMap;
+  }
+
+  public static <K1, K2> TwoDimensionalSet<K1, K2> treeSet() { 
+    return new TwoDimensionalSet<K1, K2>(TwoDimensionalMap.<K1, K2, Boolean>treeMap()); 
+  }
+
+  public static <K1, K2> TwoDimensionalSet<K1, K2> hashSet() { 
+    return new TwoDimensionalSet<K1, K2>(TwoDimensionalMap.<K1, K2, Boolean>hashMap()); 
+  }
+
+  public boolean add(K1 k1, K2 k2) {
+    return (backingMap.put(k1, k2, true) != null);
+  }
+
+  public boolean addAll(TwoDimensionalSet<? extends K1, ? extends K2> set) {
+    boolean result = false;
+    for (Pair<? extends K1, ? extends K2> pair : set) {
+      if (add(pair.first, pair.second)) {
+        result = true;
+      }
+    }
+    return result;
+  }
+

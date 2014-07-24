@@ -1,0 +1,36 @@
+  private static String lemmatize(String word, String tag, Morpha lexer, boolean lowercase) {
+    boolean wordHasForbiddenChar = word.indexOf('_') >= 0 || word.indexOf(' ') >= 0 || word.indexOf('\n') >= 0;
+    String quotedWord = word;
+    if (wordHasForbiddenChar) {
+      // choose something unlikely. Classical Vedic!
+      quotedWord = quotedWord.replaceAll("_", "\u1CF0");
+      quotedWord = quotedWord.replaceAll(" ", "\u1CF1");
+      quotedWord = quotedWord.replaceAll("\n", "\u1CF2");
+    }
+    String wordtag = quotedWord + '_' + tag;
+    if (DEBUG) System.err.println("Trying to normalize |" + wordtag + "|");
+    try {
+      lexer.setOption(1, lowercase);
+      lexer.yyreset(new StringReader(wordtag));
+      lexer.yybegin(Morpha.scan);
+      String wordRes = lexer.next();
+      lexer.next(); // go past tag
+      if (wordHasForbiddenChar) {
+        if (DEBUG) System.err.println("Restoring forbidden chars");
+        wordRes = wordRes.replaceAll("\u1CF0", "_");
+        wordRes = wordRes.replaceAll("\u1CF1", " ");
+        wordRes = wordRes.replaceAll("\u1CF2", "\n");
+      }
+      return wordRes;
+    } catch (IOException e) {
+      LOGGER.warning("Morphology.stem() had error on word " + word + "/" + tag);
+      return word;
+    }
+  }
+
+  private static synchronized void initStaticLexer() {
+    if (staticLexer == null) {
+      staticLexer = new Morpha(System.in);
+    }
+  }
+

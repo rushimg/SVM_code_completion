@@ -1,0 +1,28 @@
+    public Range getDomainBounds(boolean includeInterval) {
+        if (includeInterval) {
+            return this.intervalDelegate.getDomainBounds(includeInterval);
+        }
+        else {
+            double lower = Double.POSITIVE_INFINITY;
+            double upper = Double.NEGATIVE_INFINITY;
+            int seriesCount = getSeriesCount();
+            for (int s = 0; s < seriesCount; s++) {
+                XYSeries series = getSeries(s);
+                double minX = series.getMinX();
+                if (!Double.isNaN(minX)) {
+                    lower = Math.min(lower, minX);
+                }
+                double maxX = series.getMaxX();
+                if (!Double.isNaN(maxX)) {
+                    upper = Math.max(upper, maxX);
+                }
+            }
+            if (lower > upper) {
+                return null;
+            }
+            else {
+                return new Range(lower, upper);
+            }
+        }
+    }
+

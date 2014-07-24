@@ -1,0 +1,38 @@
+class AuxiliaryTree {
+
+  private final String originalTreeString;
+  final Tree tree;
+  Tree foot;
+  private final IdentityHashMap<Tree,String> nodesToNames; // no one else should be able to get this one.
+  private final Map<String,Tree> namesToNodes; // this one has a getter.
+
+
+  public AuxiliaryTree(Tree tree, boolean mustHaveFoot) {
+    originalTreeString = tree.toString();
+    this.tree = tree;
+    this.foot = findFootNode(tree);
+    if (foot == null && mustHaveFoot) {
+      throw new TsurgeonParseException("Error -- no foot node found for " + originalTreeString);
+    }
+    namesToNodes = Generics.newHashMap();
+    nodesToNames = new IdentityHashMap<Tree,String>();
+    initializeNamesNodesMaps(tree);
+  }
+
+  private AuxiliaryTree(Tree tree, Tree foot, Map<String, Tree> namesToNodes, String originalTreeString) {
+    this.originalTreeString = originalTreeString;
+    this.tree = tree;
+    this.foot = foot;
+    this.namesToNodes = namesToNodes;
+    nodesToNames = null;
+  }
+
+  public Map<String, Tree> namesToNodes() {
+    return namesToNodes;
+  }
+
+  @Override
+  public String toString() {
+    return originalTreeString;
+  }
+

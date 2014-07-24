@@ -1,0 +1,92 @@
+public class BiLexPCFGParser implements KBestViterbiParser {
+
+  protected static final boolean VERBOSE = false;
+  protected static final boolean VERY_VERBOSE = false;
+
+  protected HookChart chart;
+  protected Heap<Item> agenda;
+  protected int length;
+  protected int[] words;
+  protected Edge goal;
+  protected Interner interner;
+  protected Scorer scorer;
+  protected ExhaustivePCFGParser fscorer;
+  protected ExhaustiveDependencyParser dparser;
+  protected GrammarProjection projection;
+  //pair dep scores
+
+  protected BinaryGrammar bg;
+  protected UnaryGrammar ug;
+  protected DependencyGrammar dg;
+  protected Lexicon lex;
+  protected Options op;
+  protected List<IntTaggedWord>[] taggedWordList;
+
+  protected final Index<String> wordIndex;
+  protected final Index<String> tagIndex;
+  protected final Index<String> stateIndex;
+  protected CoreLabel[] originalLabels;
+
+  protected TreeFactory tf = new LabeledScoredTreeFactory();
+
+  // temp
+  protected long relaxHook1 = 0;
+  protected long relaxHook2 = 0;
+  protected long relaxHook3 = 0;
+  protected long relaxHook4 = 0;
+
+  protected long builtHooks = 0;
+  protected long builtEdges = 0;
+  protected long extractedHooks = 0;
+  protected long extractedEdges = 0;
+
+
+  private static final double TOL = 1e-10;
+
+  protected static boolean better(double x, double y) {
+    return ((x - y) / (Math.abs(x) + Math.abs(y) + 1e-100) > TOL);
+  }
+
+
+  public double getBestScore() {
+    if (goal == null) {
+      return Double.NEGATIVE_INFINITY;
+    } else {
+      return goal.score();
+    }
+  }
+
+
+  protected Tree extractParse(Edge edge) {
+    String head = wordIndex.get(words[edge.head]);
+    String tag = tagIndex.get(edge.tag);
+    String state = stateIndex.get(edge.state);
+    Label label = new CategoryWordTag(state, head, tag);
+    if (edge.backEdge == null && edge.backHook == null) {
+      // leaf, but needs word terminal
+      Tree leaf;
+      if (originalLabels[edge.head] != null) {
+        leaf = tf.newLeaf(originalLabels[edge.head]);
+      } else {
+        leaf = tf.newLeaf(head);
+      }
+      List<Tree> childList = Collections.singletonList(leaf);
+      return tf.newTreeNode(label, childList);
+    }
+    if (edge.backHook == null) {
+      // unary
+      List<Tree> childList = Collections.singletonList(extractParse(edge.backEdge));
+      return tf.newTreeNode(label, childList);
+    }
+    // binary
+    List<Tree> children = new ArrayList<Tree>();
+    if (edge.backHook.isPreHook()) {
+      children.add(extractParse(edge.backEdge));
+      children.add(extractParse(edge.backHook.backEdge));
+    } else {
+      children.add(extractParse(edge.backHook.backEdge));
+      children.add(extractParse(edge.backEdge));
+    }
+    return tf.newTreeNode(label, children);
+  }
+

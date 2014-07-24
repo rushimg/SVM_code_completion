@@ -1,0 +1,56 @@
+  public static <E> Distribution<E> goodTuringWithExplicitUnknown(Counter<E> counter, E UNK) {
+    // gather count-counts
+    int[] countCounts = getCountCounts(counter);
+
+    // if count-counts are unreliable, we shouldn't be using G-T
+    // revert to laplace
+    for (int i = 1; i <= 10; i++) {
+      if (countCounts[i] < 3) {
+        return laplaceWithExplicitUnknown(counter, 0.5, UNK);
+      }
+    }
+
+    double observedMass = counter.totalCount();
+
+    // calculate and cache adjusted frequencies
+    // also adjusting total mass of observed items
+    double[] adjustedFreq = new double[10];
+    for (int freq = 1; freq < 10; freq++) {
+    }
+
+    Distribution<E> norm = new Distribution<E>();
+    norm.counter = new ClassicCounter<E>();
+
+    // fill in the new Distribution, renormalizing as we go
+    for (E key : counter.keySet()) {
+      int origFreq = (int) Math.round(counter.getCount(key));
+      if (origFreq < 10) {
+        norm.counter.setCount(key, adjustedFreq[origFreq] / observedMass);
+      } else {
+        norm.counter.setCount(key, origFreq / observedMass);
+      }
+    }
+
+    norm.numberOfKeys = counter.size();
+    norm.reservedMass = 0.0;
+    return norm;
+
+  }
+
+  private static <E> int[] getCountCounts(Counter<E> counter) {
+    int[] countCounts = new int[11];
+    for (int i = 0; i <= 10; i++) {
+      countCounts[i] = 0;
+    }
+    for (E key : counter.keySet()) {
+      int count = (int) Math.round(counter.getCount(key));
+      if (count <= 10) {
+        countCounts[count]++;
+      }
+    }
+    return countCounts;
+  }
+
+
+  // ----------------------------------------------------------------------------
+

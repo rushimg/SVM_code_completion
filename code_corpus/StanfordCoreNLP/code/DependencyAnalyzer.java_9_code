@@ -1,0 +1,38 @@
+  public static void main(String[] args) throws Exception {
+
+    DependencyAnalyzer da = new DependencyAnalyzer(args[0]);
+
+    ArrayList<String> startingClasses = new ArrayList<String>(args.length - 1);
+    for (int i = 1; i < args.length; ++i) {
+      startingClasses.add(args[i]);
+    }
+
+    Collection<Identifier> closure = da.transitiveClosure(startingClasses);
+
+    ArrayList<Identifier> sortedClosure = new ArrayList<Identifier>(closure);
+    Collections.sort(sortedClosure);
+    Set<String> alreadyOutput = Generics.newHashSet();
+    for (Identifier identifier : sortedClosure) {
+      String name = identifier.name;
+      if (name.startsWith("edu.stanford.nlp")) {
+        name = name.replace('.', '/') + ".class";
+        // no need to output [] in the class names
+        name = name.replaceAll("\\[\\]", "");
+        // filter by uniqueness in case there were array classes found
+        if (alreadyOutput.contains(name))
+          continue;
+
+        alreadyOutput.add(name);
+        System.out.println(name);
+      }
+    }
+  }
+
+  public static String prependPackage(String pkgname, String classname) {
+    if( pkgname.equals("") ) {
+      return classname;
+    } else {
+      return pkgname + "." + classname;
+    }
+  }
+

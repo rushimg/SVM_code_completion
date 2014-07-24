@@ -1,0 +1,26 @@
+    public String generateToolTip(XYDataset data, int series, int item) {
+
+        String xStr, yStr;
+        if (data instanceof YisSymbolic) {
+            yStr = ((YisSymbolic) data).getYSymbolicValue(series, item);
+        }
+        else {
+            double y = data.getYValue(series, item);
+            yStr = Double.toString(round(y, 2));
+        }
+        if (data instanceof XisSymbolic) {
+            xStr = ((XisSymbolic) data).getXSymbolicValue(series, item);
+        }
+        else if (data instanceof TimeSeriesCollection) {
+            RegularTimePeriod p
+                = ((TimeSeriesCollection) data).getSeries(series)
+                    .getTimePeriod(item);
+            xStr = p.toString();
+        }
+        else {
+            double x = data.getXValue(series, item);
+            xStr = Double.toString(round(x, 2));
+        }
+        return "X: " + xStr + ", Y: " + yStr;
+    }
+

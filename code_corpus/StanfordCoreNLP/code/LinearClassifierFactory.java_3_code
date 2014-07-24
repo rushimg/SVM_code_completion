@@ -1,0 +1,28 @@
+  public LinearClassifierFactory(Minimizer<DiffFunction> min, double tol, boolean useSum, int prior, double sigma, double epsilon) {
+    this(min, tol, useSum, new LogPrior(prior, sigma, epsilon));
+  }
+  public LinearClassifierFactory(Factory<Minimizer<DiffFunction>> min, double tol, boolean useSum, int prior, double sigma, double epsilon) {
+    this(min, tol, useSum, new LogPrior(prior, sigma, epsilon));
+  }
+
+  public LinearClassifierFactory(final Minimizer<DiffFunction> min, double tol, boolean useSum, LogPrior logPrior) {
+    this.minimizerCreator = new Factory<Minimizer<DiffFunction>>() {
+      private static final long serialVersionUID = -6439748445540743949L;
+
+      @Override
+      public Minimizer<DiffFunction> create() {
+        return min;
+      }
+    };
+    this.TOL = tol;
+    //this.useSum = useSum;
+    this.logPrior = logPrior;
+  }
+
+  public LinearClassifierFactory(Factory<Minimizer<DiffFunction>> minimizerCreator, double tol, boolean useSum, LogPrior logPrior) {
+    this.minimizerCreator = minimizerCreator;
+    this.TOL = tol;
+    //this.useSum = useSum;
+    this.logPrior = logPrior;
+  }
+

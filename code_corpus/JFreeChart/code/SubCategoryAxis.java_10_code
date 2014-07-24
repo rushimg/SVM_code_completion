@@ -1,0 +1,21 @@
+    private double getMaxDim(Graphics2D g2, RectangleEdge edge) {
+        double result = 0.0;
+        g2.setFont(this.subLabelFont);
+        FontMetrics fm = g2.getFontMetrics();
+        Iterator iterator = this.subCategories.iterator();
+        while (iterator.hasNext()) {
+            Comparable subcategory = (Comparable) iterator.next();
+            String label = subcategory.toString();
+            Rectangle2D bounds = TextUtilities.getTextBounds(label, g2, fm);
+            double dim = 0.0;
+            if (RectangleEdge.isLeftOrRight(edge)) {
+                dim = bounds.getWidth();
+            }
+            else {  // must be top or bottom
+                dim = bounds.getHeight();
+            }
+            result = Math.max(result, dim);
+        }
+        return result;
+    }
+

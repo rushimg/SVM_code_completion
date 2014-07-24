@@ -1,0 +1,24 @@
+    public void fillRangeGridBand(Graphics2D g2, XYPlot plot, ValueAxis axis,
+            Rectangle2D dataArea, double start, double end) {
+
+        double y1 = axis.valueToJava2D(start, dataArea,
+                plot.getRangeAxisEdge());
+        double y2 = axis.valueToJava2D(end, dataArea, plot.getRangeAxisEdge());
+        Rectangle2D band;
+        if (plot.getOrientation() == PlotOrientation.VERTICAL) {
+            band = new Rectangle2D.Double(dataArea.getMinX(), Math.min(y1, y2),
+                dataArea.getWidth(), Math.abs(y2 - y1));
+        }
+        else {
+            band = new Rectangle2D.Double(Math.min(y1, y2), dataArea.getMinY(),
+                    Math.abs(y2 - y1), dataArea.getHeight());
+        }
+        Paint paint = plot.getRangeTickBandPaint();
+
+        if (paint != null) {
+            g2.setPaint(paint);
+            g2.fill(band);
+        }
+
+    }
+

@@ -1,0 +1,33 @@
+    public void drawOutline(Graphics2D g2, CategoryPlot plot,
+                            Rectangle2D dataArea) {
+
+        float x0 = (float) dataArea.getX();
+        float x1 = x0 + (float) Math.abs(this.xOffset);
+        float x3 = (float) dataArea.getMaxX();
+        float x2 = x3 - (float) Math.abs(this.xOffset);
+
+        float y0 = (float) dataArea.getMaxY();
+        float y1 = y0 - (float) Math.abs(this.yOffset);
+        float y3 = (float) dataArea.getMinY();
+        float y2 = y3 + (float) Math.abs(this.yOffset);
+
+        GeneralPath clip = new GeneralPath();
+        clip.moveTo(x0, y0);
+        clip.lineTo(x0, y2);
+        clip.lineTo(x1, y3);
+        clip.lineTo(x3, y3);
+        clip.lineTo(x3, y1);
+        clip.lineTo(x2, y0);
+        clip.closePath();
+
+        // put an outline around the data area...
+        Stroke outlineStroke = plot.getOutlineStroke();
+        Paint outlinePaint = plot.getOutlinePaint();
+        if ((outlineStroke != null) && (outlinePaint != null)) {
+            g2.setStroke(outlineStroke);
+            g2.setPaint(outlinePaint);
+            g2.draw(clip);
+        }
+
+    }
+

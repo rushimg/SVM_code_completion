@@ -1,0 +1,17 @@
+  public void loadParser(String filename) {
+    if (filename == null) {
+      return;
+    }
+
+    // check if file exists before we start the worker thread and progress monitor
+    File file = new File(filename);
+    if (file.exists()) {
+      lpThread = new LoadParserThread(filename);
+      lpThread.start();
+      startProgressMonitor("Loading Parser", PARSER_LOAD_TIME);
+    } else {
+      JOptionPane.showMessageDialog(this, "Could not find file " + filename, null, JOptionPane.ERROR_MESSAGE);
+      setStatus("Error loading parser");
+    }
+  }
+

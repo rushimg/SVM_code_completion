@@ -1,0 +1,28 @@
+  public void classifyAndWriteViterbiSearchGraph(String testFile, String searchGraphPrefix, DocumentReaderAndWriter<IN> readerAndWriter) throws IOException {
+    Timing timer = new Timing();
+    ObjectBank<List<IN>> documents =
+      makeObjectBankFromFile(testFile, readerAndWriter);
+    int numWords = 0;
+    int numSentences = 0;
+
+    for (List<IN> doc : documents) {
+      DFSA<String, Integer> tagLattice = getViterbiSearchGraph(doc, CoreAnnotations.AnswerAnnotation.class);
+      numWords += doc.size();
+      PrintWriter latticeWriter = new PrintWriter(new FileOutputStream(searchGraphPrefix + '.' + numSentences
+          + ".wlattice"));
+      PrintWriter vsgWriter = new PrintWriter(new FileOutputStream(searchGraphPrefix + '.' + numSentences + ".lattice"));
+      if (readerAndWriter instanceof LatticeWriter)
+        ((LatticeWriter<IN, String, Integer>) readerAndWriter).printLattice(tagLattice, doc, latticeWriter);
+      tagLattice.printAttFsmFormat(vsgWriter);
+      latticeWriter.close();
+      vsgWriter.close();
+      numSentences++;
+    }
+
+    long millis = timer.stop();
+    double wordspersec = numWords / (((double) millis) / 1000);
+    NumberFormat nf = new DecimalFormat("0.00"); // easier way!
+    System.err.println(this.getClass().getName() + " tagged " + numWords + " words in " + numSentences
+        + " documents at " + nf.format(wordspersec) + " words per second.");
+  }
+

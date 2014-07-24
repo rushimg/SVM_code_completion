@@ -1,0 +1,33 @@
+  @Override
+  @SuppressWarnings("unchecked")
+  public <VALUE> VALUE set(Class<? extends Key<VALUE>> key, VALUE value) {
+
+    // search array for existing value to replace
+    for (int i = 0; i < size; i++) {
+      if (keys[i] == key) {
+        VALUE rv = (VALUE)values[i];
+        values[i] = value;
+        return rv;
+      }
+    }
+    // not found in arrays, add to end ...
+
+    // increment capacity of arrays if necessary
+    if (size >= keys.length) {
+      int capacity = keys.length + (keys.length < 16 ? 4: 8);
+      Class[] newKeys = new Class[capacity];
+      Object[] newValues = new Object[capacity];
+      System.arraycopy(keys, 0, newKeys, 0, size);
+      System.arraycopy(values, 0, newValues, 0, size);
+      keys = newKeys;
+      values = newValues;
+    }
+
+    // store value
+    keys[size] = key;
+    values[size] = value;
+    size++;
+
+    return null;
+  }
+

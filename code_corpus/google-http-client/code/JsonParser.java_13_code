@@ -1,0 +1,18 @@
+  private JsonToken startParsingObjectOrArray() throws IOException {
+    JsonToken currentToken = startParsing();
+    switch (currentToken) {
+      case START_OBJECT:
+        currentToken = nextToken();
+        Preconditions.checkArgument(
+            currentToken == JsonToken.FIELD_NAME || currentToken == JsonToken.END_OBJECT,
+            currentToken);
+        break;
+      case START_ARRAY:
+        currentToken = nextToken();
+        break;
+      default:
+        break;
+    }
+    return currentToken;
+  }
+

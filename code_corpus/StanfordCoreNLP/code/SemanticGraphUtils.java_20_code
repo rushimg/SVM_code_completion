@@ -1,0 +1,17 @@
+  public static void killNonRooted(SemanticGraph sg) {
+    List<IndexedWord> nodes = new ArrayList<IndexedWord>(sg.vertexSet());
+
+    // Hack: store all of the nodes we know are in the rootset
+    Set<IndexedWord> guaranteed = Generics.newHashSet();
+    for (IndexedWord root : sg.getRoots()) {
+      guaranteed.add(root);
+      guaranteed.addAll(sg.descendants(root));
+    }
+
+    for (IndexedWord node : nodes) {
+      if (!guaranteed.contains(node)) {
+        sg.removeVertex(node);
+      }
+    }
+  }
+

@@ -1,0 +1,76 @@
+    public void draw(Graphics2D g2, Rectangle2D area, Point2D anchor,
+            PlotState parentState, PlotRenderingInfo info) {
+
+        Shape origClip = g2.getClip();
+        g2.setClip(area);
+
+        // first, expand the viewing area into a drawing frame
+        Rectangle2D frame = viewToFrame(area);
+
+        // draw the background if there is one...
+        if (this.background != null && this.background.isVisible()) {
+            if (this.background.isClippedToWindow()) {
+                Shape savedClip = g2.getClip();
+                g2.clip(this.dialFrame.getWindow(frame));
+                this.background.draw(g2, this, frame, area);
+                g2.setClip(savedClip);
+            }
+            else {
+                this.background.draw(g2, this, frame, area);
+            }
+        }
+
+        Iterator iterator = this.layers.iterator();
+        while (iterator.hasNext()) {
+            DialLayer current = (DialLayer) iterator.next();
+            if (current.isVisible()) {
+                if (current.isClippedToWindow()) {
+                    Shape savedClip = g2.getClip();
+                    g2.clip(this.dialFrame.getWindow(frame));
+                    current.draw(g2, this, frame, area);
+                    g2.setClip(savedClip);
+                }
+                else {
+                    current.draw(g2, this, frame, area);
+                }
+            }
+        }
+
+        // draw the pointers
+        iterator = this.pointers.iterator();
+        while (iterator.hasNext()) {
+            DialPointer current = (DialPointer) iterator.next();
+            if (current.isVisible()) {
+                if (current.isClippedToWindow()) {
+                    Shape savedClip = g2.getClip();
+                    g2.clip(this.dialFrame.getWindow(frame));
+                    current.draw(g2, this, frame, area);
+                    g2.setClip(savedClip);
+                }
+                else {
+                    current.draw(g2, this, frame, area);
+                }
+            }
+        }
+
+        // draw the cap if there is one...
+        if (this.cap != null && this.cap.isVisible()) {
+            if (this.cap.isClippedToWindow()) {
+                Shape savedClip = g2.getClip();
+                g2.clip(this.dialFrame.getWindow(frame));
+                this.cap.draw(g2, this, frame, area);
+                g2.setClip(savedClip);
+            }
+            else {
+                this.cap.draw(g2, this, frame, area);
+            }
+        }
+
+        if (this.dialFrame.isVisible()) {
+            this.dialFrame.draw(g2, this, frame, area);
+        }
+
+        g2.setClip(origClip);
+
+    }
+

@@ -1,0 +1,50 @@
+public abstract class SemgrexMatcher {
+	
+  SemanticGraph sg;
+  Map<String, IndexedWord> namesToNodes;
+  Map<String, String> namesToRelations;
+  VariableStrings variableStrings;
+
+  LinkedList<IndexedWord> nodesToCheck;
+  List<IndexedWord> seenNodes;
+
+  IndexedWord node;
+
+  // to be used for patterns involving "@"
+  Alignment alignment;
+  SemanticGraph sg_aligned;
+  boolean hyp;
+
+  // these things are used by "find"
+  Iterator<IndexedWord> findIterator;
+  IndexedWord findCurrent;
+
+  SemgrexMatcher(SemanticGraph sg, 
+                 Alignment alignment,
+                 SemanticGraph sg_aligned,
+                 boolean hyp, 
+                 IndexedWord node,
+                 Map<String, IndexedWord> namesToNodes,
+                 Map<String, String> namesToRelations,
+                 VariableStrings variableStrings) {
+    this.sg = sg;
+    this.alignment = (alignment == null) ? null : alignment;
+    this.sg_aligned = (sg_aligned == null) ? null : sg_aligned;
+    this.hyp = hyp;
+    this.node = node;
+    this.namesToNodes = namesToNodes;
+    this.namesToRelations = namesToRelations;
+    this.variableStrings = variableStrings;
+    nodesToCheck = new LinkedList<IndexedWord>();
+    nodesToCheck.add(sg.getFirstRoot());
+    seenNodes = new ArrayList<IndexedWord>();
+  }
+  
+  SemgrexMatcher(SemanticGraph sg,
+                 IndexedWord node,
+                 Map<String, IndexedWord> namesToNodes,
+                 Map<String, String> namesToRelations,
+                 VariableStrings variableStrings) {
+    this(sg, null, null, true, node, namesToNodes, namesToRelations, variableStrings);
+  }
+

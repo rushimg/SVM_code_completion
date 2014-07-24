@@ -1,0 +1,18 @@
+    public void setRenderer(int index, XYItemRenderer renderer,
+                            boolean notify) {
+        XYItemRenderer existing = getRenderer(index);
+        if (existing != null) {
+            existing.removeChangeListener(this);
+        }
+        this.renderers.set(index, renderer);
+        if (renderer != null) {
+            renderer.setPlot(this);
+            renderer.addChangeListener(this);
+        }
+        configureDomainAxes();
+        configureRangeAxes();
+        if (notify) {
+            fireChangeEvent();
+        }
+    }
+

@@ -1,0 +1,25 @@
+    protected void drawDomainGridlines(Graphics2D g2, Rectangle2D dataArea) {
+
+        if (!isDomainGridlinesVisible()) {
+            return;
+        }
+        CategoryAnchor anchor = getDomainGridlinePosition();
+        RectangleEdge domainAxisEdge = getDomainAxisEdge();
+        CategoryDataset dataset = getDataset();
+        if (dataset == null) {
+            return;
+        }
+        CategoryAxis axis = getDomainAxis();
+        if (axis != null) {
+            int columnCount = dataset.getColumnCount();
+            for (int c = 0; c < columnCount; c++) {
+                double xx = axis.getCategoryJava2DCoordinate(anchor, c,
+                        columnCount, dataArea, domainAxisEdge);
+                CategoryItemRenderer renderer1 = getRenderer();
+                if (renderer1 != null) {
+                    renderer1.drawDomainGridline(g2, this, dataArea, xx);
+                }
+            }
+        }
+    }
+

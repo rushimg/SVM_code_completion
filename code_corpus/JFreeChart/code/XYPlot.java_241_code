@@ -1,0 +1,31 @@
+    public LegendItemCollection getLegendItems() {
+        if (this.fixedLegendItems != null) {
+            return this.fixedLegendItems;
+        }
+        LegendItemCollection result = new LegendItemCollection();
+        int count = this.datasets.size();
+        for (int datasetIndex = 0; datasetIndex < count; datasetIndex++) {
+            XYDataset dataset = getDataset(datasetIndex);
+            if (dataset != null) {
+                XYItemRenderer renderer = getRenderer(datasetIndex);
+                if (renderer == null) {
+                    renderer = getRenderer(0);
+                }
+                if (renderer != null) {
+                    int seriesCount = dataset.getSeriesCount();
+                    for (int i = 0; i < seriesCount; i++) {
+                        if (renderer.isSeriesVisible(i)
+                                && renderer.isSeriesVisibleInLegend(i)) {
+                            LegendItem item = renderer.getLegendItem(
+                                    datasetIndex, i);
+                            if (item != null) {
+                                result.add(item);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return result;
+    }
+

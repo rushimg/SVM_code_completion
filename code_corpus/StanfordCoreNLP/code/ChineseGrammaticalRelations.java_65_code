@@ -1,0 +1,98 @@
+  public static final GrammaticalRelation CONTROLLED_SUBJECT =
+    new GrammaticalRelation(Language.Chinese,
+      "xsubj", "controlled subject",
+      ControllingSubjectGRAnnotation.class, DEPENDENT, "VP", tregexCompiler,
+      new String[] {
+        "VP !< NP < VP > (IP !$- NP !< NP !>> (VP < VC ) >+(VP) (VP $-- NP=target))"
+      });
+  public static class ControllingSubjectGRAnnotation
+    extends GrammaticalRelationAnnotation { }
+
+  // Universal GrammaticalRelation's
+  private static final GrammaticalRelation chineseOnly = null;  // Place-holder: put this after a relation to mark it as Chinese-only
+  private static final GrammaticalRelation[] rawValues = {
+    DEPENDENT,
+    ARGUMENT,
+      SUBJECT,
+        NOMINAL_SUBJECT,
+        NOMINAL_PASSIVE_SUBJECT,
+        //CLAUSAL_SUBJECT,  // Exists in Chinese?
+        //CLAUSAL_PASSIVE_SUBJECT,  // Exists in Chinese?
+      COMPLEMENT,
+        OBJECT,
+          DIRECT_OBJECT,
+          INDIRECT_OBJECT,
+            RANGE,  // Chinese only
+        CLAUSAL_COMPLEMENT,
+        //XCLAUSAL_COMPLEMENT,  // Exists in Chinese?
+    MODIFIER,
+      // Nominal heads, nominal dependents
+      NUMERIC_MODIFIER,
+        ORDINAL_MODIFIER, chineseOnly,
+      APPOSITIONAL_MODIFIER,
+        PARENTHETICAL_MODIFIER, chineseOnly,
+      NOUN_MODIFIER,
+        ASSOCIATIVE_MODIFIER, chineseOnly,
+        TEMPORAL_MODIFIER, chineseOnly,
+      // Nominal heads, predicate dependents
+      RELATIVE_CLAUSE_MODIFIER,
+      NONFINITE_CLAUSE_MODIFIER,
+      //NOMINALIZED_CLAUSE_MODIFIER,  // Exists in Chinese?
+      ADJECTIVAL_MODIFIER,
+      DETERMINER,
+      NEGATION_MODIFIER,
+      // Predicate heads
+      //ADVERBIAL_CLAUSE_MODIFIER,  // TODO(pliang): some of the existing advmod should be changed to this (advcl)
+      ADVERBIAL_MODIFIER,
+        DVPM_MODIFIER, chineseOnly,
+    // Special clausal dependents
+      //VOCATIVE,
+      //DISCOURSE,
+      //EXPL,
+      AUX_MODIFIER,
+        MODAL_VERB, chineseOnly,
+        ASPECT_MARKER, chineseOnly,
+      AUX_PASSIVE_MODIFIER,
+      COPULA,
+      MARK,
+      PUNCTUATION,
+    // Other
+      COMPOUND,
+        NOUN_COMPOUND, chineseOnly,
+        VERB_COMPOUND, chineseOnly,
+      CONJUNCT,
+      COORDINATION,
+      CASE,
+    // Don't know what to do about these
+      PREPOSITIONAL_LOCALIZER_MODIFIER, chineseOnly,
+      LOCALIZER_COMPLEMENT, chineseOnly,
+      RESULTATIVE_COMPLEMENT, chineseOnly,
+      BA, chineseOnly,
+      CLASSIFIER_MODIFIER, chineseOnly,
+      PREPOSITIONAL_MODIFIER, chineseOnly,
+      PART_VERB, chineseOnly,
+      ETC, chineseOnly,
+      CONTROLLED_SUBJECT, chineseOnly,
+  };
+
+  private static final List<GrammaticalRelation> values = new ArrayList<GrammaticalRelation>();
+  public static final Set<GrammaticalRelation> universalValues = new HashSet<GrammaticalRelation>();
+
+  // Map from GrammaticalRelation short names to their corresponding
+  // GrammaticalRelation objects
+  public static final Map<String, GrammaticalRelation> shortNameToGRel = new ConcurrentHashMap<String, GrammaticalRelation>();
+  static {
+    for (int i = 0; i < rawValues.length; i++) {
+      GrammaticalRelation gr = rawValues[i];
+      if (gr == chineseOnly) continue;
+      values.add(gr);
+      if (i+1 == rawValues.length || rawValues[i+1] != chineseOnly) {
+        universalValues.add(gr);
+      }
+    }
+
+    for (GrammaticalRelation gr : ChineseGrammaticalRelations.values()) {
+      shortNameToGRel.put(gr.getShortName(), gr);
+    }
+  }
+

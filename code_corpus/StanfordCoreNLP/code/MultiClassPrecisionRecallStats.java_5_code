@@ -1,0 +1,26 @@
+  public Triple<Double, Integer, Integer> getPrecisionInfo(L label) {
+    int i = labelIndex.indexOf(label);
+    if (tpCount[i] == 0 && fpCount[i] == 0) {
+      return new Triple<Double, Integer, Integer>(1.0, tpCount[i], fpCount[i]);
+    }
+    return new Triple<Double, Integer, Integer>((((double) tpCount[i]) / (tpCount[i] + fpCount[i])), tpCount[i], fpCount[i]);
+  }
+
+  public double getPrecision(L label) {
+    return getPrecisionInfo(label).first();
+  }
+
+  public Triple<Double, Integer, Integer> getPrecisionInfo() {
+    int tp = 0, fp = 0;
+    for (int i = 0; i < labelIndex.size(); i++) {
+      if (i == negIndex) { continue; }
+      tp += tpCount[i];
+      fp += fpCount[i];
+    }
+    return new Triple<Double, Integer, Integer>((((double) tp) / (tp + fp)), tp, fp);
+  }
+
+  public double getPrecision() {
+    return getPrecisionInfo().first();
+  }
+

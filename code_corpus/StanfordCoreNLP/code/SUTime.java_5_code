@@ -1,0 +1,281 @@
+         this.mod = mod;
+
+    public Temporal addMod(String mod) {
+      try {
+        Temporal t = (Temporal) this.clone();
+        t.mod = mod;
+        return t;
+      } catch (CloneNotSupportedException ex) {
+        throw new RuntimeException(ex);
+      }
+    }
+
+    public Temporal addModApprox(String mod, boolean approx) {
+      try {
+        Temporal t = (Temporal) this.clone();
+        t.mod = mod;
+        t.approx = approx;
+        return t;
+      } catch (CloneNotSupportedException ex) {
+        throw new RuntimeException(ex);
+      }
+    }
+
+    private static final long serialVersionUID = 1;
+  }
+
+  public static <T extends Temporal> T createTemporal(StandardTemporalType timeType, T temporal)
+  {
+    temporal.standardTemporalType = timeType;
+    return temporal;
+  }
+
+  public static <T extends Temporal> T createTemporal(StandardTemporalType timeType, String label, T temporal)
+  {
+    temporal.standardTemporalType = timeType;
+    temporal.timeLabel = label;
+    return temporal;
+  }
+
+  public static <T extends Temporal> T createTemporal(StandardTemporalType timeType, String label, String mod, T temporal)
+  {
+    temporal.standardTemporalType = timeType;
+    temporal.timeLabel = label;
+    temporal.mod = mod;
+    return temporal;
+  }
+  // Basic time units (durations)
+
+  public static final Duration YEAR = new DurationWithFields(Period.years(1)) {
+    @Override
+    public DateTimeFieldType[] getDateTimeFields() {
+      return new DateTimeFieldType[] { DateTimeFieldType.year(), DateTimeFieldType.yearOfCentury(), DateTimeFieldType.yearOfEra() };
+    }
+    private static final long serialVersionUID = 1;
+  };
+  public static final Duration DAY = new DurationWithFields(Period.days(1)) {
+    @Override
+    public DateTimeFieldType[] getDateTimeFields() {
+      return new DateTimeFieldType[] { DateTimeFieldType.dayOfMonth(), DateTimeFieldType.dayOfWeek(), DateTimeFieldType.dayOfYear() };
+    }
+    private static final long serialVersionUID = 1;
+  };
+  public static final Duration WEEK = new DurationWithFields(Period.weeks(1)) {
+    @Override
+    public DateTimeFieldType[] getDateTimeFields() {
+      return new DateTimeFieldType[] { DateTimeFieldType.weekOfWeekyear() };
+    }
+    private static final long serialVersionUID = 1;
+  };
+  public static final Duration FORTNIGHT = new DurationWithFields(Period.weeks(2));
+  public static final Duration MONTH = new DurationWithFields(Period.months(1)) {
+    @Override
+    public DateTimeFieldType[] getDateTimeFields() {
+      return new DateTimeFieldType[] { DateTimeFieldType.monthOfYear() };
+    }
+    private static final long serialVersionUID = 1;
+  };
+  // public static final Duration QUARTER = new DurationWithFields(new
+  // Period(JodaTimeUtils.Quarters)) {
+  public static final Duration QUARTER = new DurationWithFields(Period.months(3)) {
+    @Override
+    public DateTimeFieldType[] getDateTimeFields() {
+      return new DateTimeFieldType[] { JodaTimeUtils.QuarterOfYear };
+    }
+    private static final long serialVersionUID = 1;
+  };
+  public static final Duration HALFYEAR = new DurationWithFields(Period.months(6)) {
+    @Override
+    public DateTimeFieldType[] getDateTimeFields() {
+      return new DateTimeFieldType[] { JodaTimeUtils.HalfYearOfYear };
+    }
+    private static final long serialVersionUID = 1;
+  };
+  public static final Duration MILLIS = new DurationWithFields(Period.millis(1)) {
+    @Override
+    public DateTimeFieldType[] getDateTimeFields() {
+      return new DateTimeFieldType[] { DateTimeFieldType.millisOfSecond(), DateTimeFieldType.millisOfDay() };
+    }
+    private static final long serialVersionUID = 1;
+  };
+  public static final Duration SECOND = new DurationWithFields(Period.seconds(1)) {
+    @Override
+    public DateTimeFieldType[] getDateTimeFields() {
+      return new DateTimeFieldType[] { DateTimeFieldType.secondOfMinute(), DateTimeFieldType.secondOfDay() };
+    }
+    private static final long serialVersionUID = 1;
+  };
+  public static final Duration MINUTE = new DurationWithFields(Period.minutes(1)) {
+    @Override
+    public DateTimeFieldType[] getDateTimeFields() {
+      return new DateTimeFieldType[] { DateTimeFieldType.minuteOfHour(), DateTimeFieldType.minuteOfDay() };
+    }
+    private static final long serialVersionUID = 1;
+  };
+  public static final Duration HOUR = new DurationWithFields(Period.hours(1)) {
+    @Override
+    public DateTimeFieldType[] getDateTimeFields() {
+      return new DateTimeFieldType[] { DateTimeFieldType.hourOfDay(), DateTimeFieldType.hourOfHalfday() };
+    }
+    private static final long serialVersionUID = 1;
+  };
+  public static final Duration HALFHOUR = new DurationWithFields(Period.minutes(30));
+  public static final Duration QUARTERHOUR = new DurationWithFields(Period.minutes(15));
+  public static final Duration DECADE = new DurationWithFields(Period.years(10)) {
+    @Override
+    public DateTimeFieldType[] getDateTimeFields() {
+      return new DateTimeFieldType[] { JodaTimeUtils.DecadeOfCentury };
+    }
+    private static final long serialVersionUID = 1;
+  };
+  public static final Duration CENTURY = new DurationWithFields(Period.years(100)) {
+    @Override
+    public DateTimeFieldType[] getDateTimeFields() {
+      return new DateTimeFieldType[] { DateTimeFieldType.centuryOfEra() };
+    }
+    private static final long serialVersionUID = 1;
+  };
+  public static final Duration MILLENNIUM = new DurationWithFields(Period.years(1000));
+
+  public static final Time TIME_REF = new RefTime("REF") {
+    private static final long serialVersionUID = 1;
+  };
+  public static final Time TIME_REF_UNKNOWN = new RefTime("UNKNOWN");
+  public static final Time TIME_UNKNOWN = new SimpleTime("UNKNOWN");
+  public static final Time TIME_NONE = null; // No time
+  public static final Time TIME_NONE_OK = new SimpleTime("NOTIME");
+
+  // The special time of now
+  public static final Time TIME_NOW = new RefTime(StandardTemporalType.REFTIME, "PRESENT_REF", "NOW");
+  public static final Time TIME_PRESENT = createTemporal(StandardTemporalType.REFDATE, "PRESENT_REF", new InexactTime(new Range(TIME_NOW, TIME_NOW)));
+  public static final Time TIME_PAST = createTemporal(StandardTemporalType.REFDATE, "PAST_REF",new InexactTime(new Range(TIME_UNKNOWN, TIME_NOW)));
+  public static final Time TIME_FUTURE = createTemporal(StandardTemporalType.REFDATE, "FUTURE_REF", new InexactTime(new Range(TIME_NOW, TIME_UNKNOWN)));
+
+  public static final Duration DURATION_UNKNOWN = new DurationWithFields();
+  public static final Duration DURATION_NONE = new DurationWithFields(Period.ZERO);
+
+  // Basic dates/times
+
+  // Day of week
+  // Use constructors rather than calls to
+  // StandardTemporalType.createTemporal because sometimes the class
+  // loader seems to load objects in an incorrect order, resulting in
+  // an exception.  This is especially evident when deserializing
+  public static final Time MONDAY = new PartialTime(StandardTemporalType.DAY_OF_WEEK, new Partial(DateTimeFieldType.dayOfWeek(), 1));
+  public static final Time TUESDAY = new PartialTime(StandardTemporalType.DAY_OF_WEEK, new Partial(DateTimeFieldType.dayOfWeek(), 2));
+  public static final Time WEDNESDAY = new PartialTime(StandardTemporalType.DAY_OF_WEEK, new Partial(DateTimeFieldType.dayOfWeek(), 3));
+  public static final Time THURSDAY = new PartialTime(StandardTemporalType.DAY_OF_WEEK, new Partial(DateTimeFieldType.dayOfWeek(), 4));
+  public static final Time FRIDAY = new PartialTime(StandardTemporalType.DAY_OF_WEEK, new Partial(DateTimeFieldType.dayOfWeek(), 5));
+  public static final Time SATURDAY = new PartialTime(StandardTemporalType.DAY_OF_WEEK, new Partial(DateTimeFieldType.dayOfWeek(), 6));
+  public static final Time SUNDAY = new PartialTime(StandardTemporalType.DAY_OF_WEEK, new Partial(DateTimeFieldType.dayOfWeek(), 7));
+
+  public static final Time WEEKDAY = createTemporal(StandardTemporalType.DAYS_OF_WEEK, "WD",
+          new InexactTime(null, SUTime.DAY, new SUTime.Range(SUTime.MONDAY, SUTime.FRIDAY)) {
+            @Override
+            public Duration getDuration() {
+              return SUTime.DAY;
+            }
+            private static final long serialVersionUID = 1;
+          });
+  public static final Time WEEKEND = createTemporal(StandardTemporalType.DAYS_OF_WEEK, "WE",
+          new TimeWithRange(new SUTime.Range(SUTime.SATURDAY, SUTime.SUNDAY, SUTime.DAY.multiplyBy(2))));
+
+  // Months
+  // Use constructors rather than calls to
+  // StandardTemporalType.createTemporal because sometimes the class
+  // loader seems to load objects in an incorrect order, resulting in
+  // an exception.  This is especially evident when deserializing
+  public static final Time JANUARY = new IsoDate(StandardTemporalType.MONTH_OF_YEAR, -1, 1, -1);
+  public static final Time FEBRUARY = new IsoDate(StandardTemporalType.MONTH_OF_YEAR, -1, 2, -1);
+  public static final Time MARCH = new IsoDate(StandardTemporalType.MONTH_OF_YEAR, -1, 3, -1);
+  public static final Time APRIL = new IsoDate(StandardTemporalType.MONTH_OF_YEAR, -1, 4, -1);
+  public static final Time MAY = new IsoDate(StandardTemporalType.MONTH_OF_YEAR, -1, 5, -1);
+  public static final Time JUNE = new IsoDate(StandardTemporalType.MONTH_OF_YEAR, -1, 6, -1);
+  public static final Time JULY = new IsoDate(StandardTemporalType.MONTH_OF_YEAR, -1, 7, -1);
+  public static final Time AUGUST = new IsoDate(StandardTemporalType.MONTH_OF_YEAR, -1, 8, -1);
+  public static final Time SEPTEMBER = new IsoDate(StandardTemporalType.MONTH_OF_YEAR, -1, 9, -1);
+  public static final Time OCTOBER = new IsoDate(StandardTemporalType.MONTH_OF_YEAR, -1, 10, -1);
+  public static final Time NOVEMBER = new IsoDate(StandardTemporalType.MONTH_OF_YEAR, -1, 11, -1);
+  public static final Time DECEMBER = new IsoDate(StandardTemporalType.MONTH_OF_YEAR, -1, 12, -1);
+
+  // Dates are rough with respect to northern hemisphere (actual
+  // solstice/equinox days depend on the year)
+  public static final Time SPRING_EQUINOX = createTemporal(StandardTemporalType.DAY_OF_YEAR, "SP", new SUTime.InexactTime(new SUTime.Range(new IsoDate(-1, 3, 20), new IsoDate(-1, 3, 21))));
+  public static final Time SUMMER_SOLSTICE = createTemporal(StandardTemporalType.DAY_OF_YEAR, "SU", new SUTime.InexactTime(new SUTime.Range(new IsoDate(-1, 6, 20), new IsoDate(-1, 6, 21))));
+  public static final Time WINTER_SOLSTICE = createTemporal(StandardTemporalType.DAY_OF_YEAR, "WI", new SUTime.InexactTime(new SUTime.Range(new IsoDate(-1, 12, 21), new IsoDate(-1, 12, 22))));
+  public static final Time FALL_EQUINOX = createTemporal(StandardTemporalType.DAY_OF_YEAR, "FA", new SUTime.InexactTime(new SUTime.Range(new IsoDate(-1, 9, 22), new IsoDate(-1, 9, 23))));
+
+  // Dates for seasons are rough with respect to northern hemisphere
+  public static final Time SPRING = createTemporal(StandardTemporalType.SEASON_OF_YEAR, "SP",
+           new SUTime.InexactTime(SPRING_EQUINOX, QUARTER, new SUTime.Range(SUTime.MARCH, SUTime.JUNE, SUTime.QUARTER)));
+  public static final Time SUMMER = createTemporal(StandardTemporalType.SEASON_OF_YEAR, "SU",
+           new SUTime.InexactTime(SUMMER_SOLSTICE, QUARTER, new SUTime.Range(SUTime.JUNE, SUTime.SEPTEMBER, SUTime.QUARTER)));
+  public static final Time FALL = createTemporal(StandardTemporalType.SEASON_OF_YEAR, "FA",
+          new SUTime.InexactTime(FALL_EQUINOX, QUARTER, new SUTime.Range(SUTime.SEPTEMBER, SUTime.DECEMBER, SUTime.QUARTER)));
+  public static final Time WINTER = createTemporal(StandardTemporalType.SEASON_OF_YEAR, "WI",
+          new SUTime.InexactTime(WINTER_SOLSTICE, QUARTER, new SUTime.Range(SUTime.DECEMBER, SUTime.MARCH, SUTime.QUARTER)));
+
+  // Time of day
+  public static final PartialTime NOON = createTemporal(StandardTemporalType.TIME_OF_DAY, "MI", new IsoTime(12, 0, -1));
+  public static final PartialTime MIDNIGHT = createTemporal(StandardTemporalType.TIME_OF_DAY, new IsoTime(0, 0, -1));
+  public static final Time MORNING = createTemporal(StandardTemporalType.TIME_OF_DAY, "MO", new InexactTime(new Range(new InexactTime(new Partial(DateTimeFieldType.hourOfDay(), 6)), NOON)));
+  public static final Time AFTERNOON = createTemporal(StandardTemporalType.TIME_OF_DAY, "AF", new InexactTime(new Range(NOON, new InexactTime(new Partial(DateTimeFieldType.hourOfDay(), 18)))));
+  public static final Time EVENING = createTemporal(StandardTemporalType.TIME_OF_DAY, "EV", new InexactTime(new Range(new InexactTime(new Partial(DateTimeFieldType.hourOfDay(), 18)), new InexactTime(new Partial(DateTimeFieldType
+      .hourOfDay(), 20)))));
+  public static final Time NIGHT = createTemporal(StandardTemporalType.TIME_OF_DAY, "NI", new InexactTime(new Range(new InexactTime(new Partial(DateTimeFieldType.hourOfDay(), 19)), new InexactTime(new Partial(DateTimeFieldType
+      .hourOfDay(), 5)))));
+  public static final Time SUNRISE = createTemporal(StandardTemporalType.TIME_OF_DAY, "MO", TimexMod.EARLY.name(), new PartialTime());
+  public static final Time SUNSET = createTemporal(StandardTemporalType.TIME_OF_DAY, "EV", TimexMod.EARLY.name(), new PartialTime());
+  public static final Time DAWN = createTemporal(StandardTemporalType.TIME_OF_DAY, "MO", TimexMod.EARLY.name(), new PartialTime());
+  public static final Time DUSK = createTemporal(StandardTemporalType.TIME_OF_DAY, "EV", new PartialTime());
+  public static final Time DAYTIME = createTemporal(StandardTemporalType.TIME_OF_DAY, "DT", new InexactTime(new Range(SUNRISE, SUNSET)));
+  public static final Time LUNCHTIME = createTemporal(StandardTemporalType.TIME_OF_DAY, "MI", new InexactTime(new Range(new InexactTime(new Partial(DateTimeFieldType.hourOfDay(), 12)), new InexactTime(new Partial(DateTimeFieldType
+      .hourOfDay(), 14)))));
+  public static final Time TEATIME = createTemporal(StandardTemporalType.TIME_OF_DAY, "AF", new InexactTime(new Range(new InexactTime(new Partial(DateTimeFieldType.hourOfDay(), 15)), new InexactTime(new Partial(DateTimeFieldType
+      .hourOfDay(), 17)))));
+  public static final Time DINNERTIME = createTemporal(StandardTemporalType.TIME_OF_DAY, "EV", new InexactTime(new Range(new InexactTime(new Partial(DateTimeFieldType.hourOfDay(), 18)), new InexactTime(new Partial(DateTimeFieldType
+      .hourOfDay(), 20)))));
+
+  public static final Time MORNING_TWILIGHT = createTemporal(StandardTemporalType.TIME_OF_DAY, "MO", new InexactTime(new Range(DAWN, SUNRISE)));
+  public static final Time EVENING_TWILIGHT = createTemporal(StandardTemporalType.TIME_OF_DAY, "EV", new InexactTime(new Range(SUNSET, DUSK)));
+  public static final TemporalSet TWILIGHT = createTemporal(StandardTemporalType.TIME_OF_DAY, "NI", new ExplicitTemporalSet(EVENING_TWILIGHT, MORNING_TWILIGHT));
+
+  // Relative days
+  public static final RelativeTime YESTERDAY = new RelativeTime(DAY.multiplyBy(-1));
+  public static final RelativeTime TOMORROW = new RelativeTime(DAY.multiplyBy(+1));
+  public static final RelativeTime TODAY = new RelativeTime(TemporalOp.THIS, SUTime.DAY);
+  public static final RelativeTime TONIGHT = new RelativeTime(TemporalOp.THIS, SUTime.NIGHT);
+
+  public static enum TimeUnit {
+    // Basic time units
+    MILLIS(SUTime.MILLIS), SECOND(SUTime.SECOND), MINUTE(SUTime.MINUTE), HOUR(SUTime.HOUR),
+    DAY(SUTime.DAY), WEEK(SUTime.WEEK), MONTH(SUTime.MONTH), QUARTER(SUTime.QUARTER), HALFYEAR(SUTime.HALFYEAR),
+    YEAR(SUTime.YEAR), DECADE(SUTime.DECADE), CENTURY(SUTime.CENTURY), MILLENNIUM(SUTime.MILLENNIUM),
+    UNKNOWN(SUTime.DURATION_UNKNOWN);
+
+    protected Duration duration;
+
+    TimeUnit(Duration d) {
+      this.duration = d;
+    }
+
+    public Duration getDuration() {
+      return duration;
+    } // How long does this time last?
+
+    public Duration getPeriod() {
+      return duration;
+    } // How often does this type of time occur?
+
+    public Duration getGranularity() {
+      return duration;
+    } // What is the granularity of this time?
+
+    public Temporal createTemporal(int n) {
+      return duration.multiplyBy(n);
+    }
+  }
+
+  public static enum StandardTemporalType {
+    REFDATE(TimexType.DATE),
+    REFTIME(TimexType.TIME),

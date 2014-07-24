@@ -1,0 +1,20 @@
+  public List<SequenceMatchResult<T>> findNonOverlapping(List<? extends T> elements,
+                                                         Comparator<? super SequenceMatchResult> cmp)
+  {
+    Collection<SequencePattern<T>> triggered = getTriggeredPatterns(elements);
+    List<SequenceMatchResult<T>> all = new ArrayList<SequenceMatchResult<T>>();
+    int i = 0;
+    for (SequencePattern<T> p:triggered) {
+      SequenceMatcher<T> m = p.getMatcher(elements);
+      m.setOrder(i);
+      while (m.find()) {
+        all.add(m.toBasicSequenceMatchResult());
+      }
+      i++;
+    }
+    List<SequenceMatchResult<T>> res = IntervalTree.getNonOverlapping( all, SequenceMatchResult.TO_INTERVAL, cmp);
+    Collections.sort(res, SequenceMatchResult.OFFSET_COMPARATOR);
+
+    return res;
+  }
+

@@ -1,0 +1,32 @@
+  public static Map<String, String[]> argsToMap(String[] args, Map<String, Integer> flagsToNumArgs) {
+    Map<String, String[]> result = Generics.newHashMap();
+    List<String> remainingArgs = new ArrayList<String>();
+    for (int i = 0; i < args.length; i++) {
+      String key = args[i];
+      if (key.charAt(0) == '-') { // found a flag
+        Integer numFlagArgs = flagsToNumArgs.get(key);
+        int max = numFlagArgs == null ? 1 : numFlagArgs.intValue();
+        int min = numFlagArgs == null ? 0 : numFlagArgs.intValue();
+        List<String> flagArgs = new ArrayList<String>();
+        for (int j = 0; j < max && i + 1 < args.length && (j < min || args[i + 1].length() == 0 || args[i + 1].charAt(0) != '-'); i++, j++) {
+          flagArgs.add(args[i + 1]);
+        }
+        if (result.containsKey(key)) { // append the second specification into the args.
+          String[] newFlagArg = new String[result.get(key).length + flagsToNumArgs.get(key)];
+          int oldNumArgs = result.get(key).length;
+          System.arraycopy(result.get(key), 0, newFlagArg, 0, oldNumArgs);
+          for (int j = 0; j < flagArgs.size(); j++) {
+            newFlagArg[j + oldNumArgs] = flagArgs.get(j);
+          }
+          result.put(key, newFlagArg);
+        } else {
+          result.put(key, flagArgs.toArray(new String[flagArgs.size()]));
+        }
+      } else {
+        remainingArgs.add(args[i]);
+      }
+    }
+    result.put(null, remainingArgs.toArray(new String[remainingArgs.size()]));
+    return result;
+  }
+

@@ -1,0 +1,48 @@
+  public static void endThreads(String check){
+    //(error check)
+    isThreaded = false;
+    if(currentThread != -1L){
+      Redwood.log(Flag.WARN, "endThreads() called, but thread " + currentThread + " has not finished (exception in thread?)");
+    }
+    //(end threaded environment)
+    assert !control.isHeldByCurrentThread();
+    //(write remaining threads)
+    boolean cleanPass = false;
+    while(!cleanPass){
+      cleanPass = true;
+      for(long thread : threadedLogQueue.keySet()){
+        assert currentThread < 0L;
+        if(threadedLogQueue.get(thread) != null && !threadedLogQueue.get(thread).isEmpty()){
+          //(mark queue as unclean)
+          cleanPass = false;
+          //(variables)
+          Queue<Runnable> backlog = threadedLogQueue.get(thread);
+          currentThread = thread;
+          //(clear buffer)
+          while(currentThread >= 0){
+            if(backlog.isEmpty()){ Redwood.log(Flag.WARN, "Forgot to call finishThread() on thread " + currentThread); }
+            assert !control.isHeldByCurrentThread();
+            backlog.poll().run();
+          }
+          //(unregister thread)
+          threadsWaiting.remove(thread);
+        }
+      }
+    }
+    while(threadsWaiting.size() > 0){
+      assert currentThread < 0L;
+      assert control.tryLock();
+      assert !threadsWaiting.isEmpty();
+      control.lock();
+      attemptThreadControlThreadsafe(-1);
+      control.unlock();
+    }
+    //(clean up)
+    for(Map.Entry<Long, Queue<Runnable>> longQueueEntry : threadedLogQueue.entrySet()){
+      assert longQueueEntry.getValue().isEmpty();
+    }
+    assert threadsWaiting.isEmpty();
+    assert currentThread == -1L;
+    endTrack("Threads( "+check+" )");
+  }
+

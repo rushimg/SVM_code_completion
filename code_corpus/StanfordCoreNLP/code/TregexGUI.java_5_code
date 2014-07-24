@@ -1,0 +1,129 @@
+  private static JSplitPane setUpTopPanels() {
+    JPanel filePanel = FilePanel.getInstance();
+    JPanel inputPanel = InputPanel.getInstance();
+    JPanel matchesPanel = MatchesPanel.getInstance();
+    JSplitPane inputAndMatchesPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, true, inputPanel, matchesPanel);
+    inputAndMatchesPane.setDividerLocation(450);
+    inputAndMatchesPane.setResizeWeight(.5);
+    inputAndMatchesPane.setBorder(BorderFactory.createEmptyBorder());
+    JSplitPane fullTopPanel = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, true, filePanel, inputAndMatchesPane);
+    fullTopPanel.setDividerLocation(275);
+    fullTopPanel.setBorder(BorderFactory.createEmptyBorder());
+    return fullTopPanel;
+  }
+
+  private TregexGUI(Properties props, List<String> initialFiles) {
+    super("Tregex");
+    TregexGUI.instance = this;
+    setDefaultLookAndFeelDecorated(true);
+    setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+    String transformerClass = props.getProperty(TRANSFORMER, null);
+    if (transformerClass == null) {
+      transformer = null;
+    } else {
+      transformer = ReflectionLoading.loadByReflection(transformerClass);
+    }
+
+    initAboutBox();
+    Container content = getContentPane();
+    content.setBackground(Color.lightGray);
+    // NB: The menu has to exist before you can successfully create an input.  Bad side effect dependency!
+    JMenuBar mbar = getMenu();
+    JPanel displayMatchesPanel = DisplayMatchesPanel.getInstance();
+    JSplitPane inputAndMatchesPanel = setUpTopPanels();
+    MatchesPanel.getInstance().addListener(this);
+    this.setFocusTraversalKeysEnabled(true);
+    macOSXRegistration();
+    // stick it all together now
+    setJMenuBar(mbar);
+    content.setLayout(new BorderLayout());
+    JSplitPane verticalSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, inputAndMatchesPanel, displayMatchesPanel);
+    verticalSplit.setResizeWeight(.2);
+    this.add(verticalSplit, BorderLayout.CENTER);
+
+
+
+    // make size
+    Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+    if (screenSize.width > 1200) { screenSize.width = 1200; }
+    if (screenSize.height > 800) { screenSize.height = 800; }
+    setPreferredSize(screenSize);
+    displayMatchesPanel.setPreferredSize(displayMatchesSize);
+    // center it
+    setBounds(begX, begY, screenSize.width, screenSize.height);
+    pack();
+
+    if (initialFiles.size() > 0) {
+      File[] files = new File[initialFiles.size()];
+      for (int i = 0; i < initialFiles.size(); ++i) {
+        files[i] = new File(initialFiles.get(i));
+      }
+      startFileLoadingThread(new EnumMap<FilterType,String>(FilterType.class), files);
+    }
+
+    setVisible(true);
+  }
+
+  // Generic registration with the Mac OS X application menu.  Checks the platform, then attempts
+  // to register with the Apple EAWT.
+  // This is based heavily on the Apple sample code for dealing with this issue
+  private void macOSXRegistration() {
+    if (isMacOSX()) {
+      try {
+        Class<?> osxAdapter = ClassLoader.getSystemClassLoader().loadClass("edu.stanford.nlp.trees.tregex.gui.OSXAdapter");
+
+        Class<?>[] defArgs = {TregexGUI.class};
+        Method registerMethod = osxAdapter.getDeclaredMethod("registerMacOSXApplication", defArgs);
+        if (registerMethod != null) {
+          Object[] args = { this };
+          registerMethod.invoke(osxAdapter, args);
+        }
+        defArgs[0] = boolean.class;
+        Method prefsEnableMethod =  osxAdapter.getDeclaredMethod("enablePrefs", defArgs);
+        if (prefsEnableMethod != null) {
+          Object[] args = {Boolean.TRUE};
+          prefsEnableMethod.invoke(osxAdapter, args);
+        }
+      } catch (NoClassDefFoundError e) {
+        // This will be thrown first if the OSXAdapter is loaded on a system without the EAWT
+        // because OSXAdapter extends ApplicationAdapter in its def
+        System.err.println("This version of Mac OS X does not support the Apple EAWT.  Application Menu handling has been disabled (" + e + ")");
+      } catch (ClassNotFoundException e) {
+        // This shouldn't be reached; if there's a problem with the OSXAdapter we should get the
+        // above NoClassDefFoundError first.
+        System.err.println("This version of Mac OS X does not support the Apple EAWT.  Application Menu handling has been disabled (" + e + ")");
+      } catch (Exception e) {
+        System.err.println("Exception while loading the OSXAdapter:");
+        e.printStackTrace();
+      }
+    }
+  }
+
+
+
+  //Creates a new JFileChooser, doing the boilerplate
+  // to start it in the current directory.
+  private static JFileChooser createFileChooser() {
+    final JFileChooser chooser = new JFileChooser();
+    //  sets up default file view
+    try {
+      chooserFile = new File((new File(".").getCanonicalPath()));
+    } catch (Exception e) {
+      // go with current directory.
+    }
+    chooser.setCurrentDirectory(chooserFile);
+
+    chooser.addActionListener( new ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        if(e.getActionCommand().equals("ApproveSelection")) {
+          chooserFile = chooser.getSelectedFile();
+        }
+      }
+    });
+    chooser.setMultiSelectionEnabled(true);
+    chooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
+    return chooser;
+  }
+
+

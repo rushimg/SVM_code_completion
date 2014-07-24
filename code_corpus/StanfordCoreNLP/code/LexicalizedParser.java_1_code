@@ -1,0 +1,36 @@
+public class LexicalizedParser extends ParserGrammar implements Serializable {
+
+  public Lexicon lex;
+  public BinaryGrammar bg;
+  public UnaryGrammar ug;
+  public DependencyGrammar dg;
+  public Index<String> stateIndex, wordIndex, tagIndex;
+
+  private Options op;
+
+  @Override
+  public Options getOp() { return op; }
+
+  public Reranker reranker = null;
+
+  @Override
+  public TreebankLangParserParams getTLPParams() { return op.tlpParams; }
+
+  @Override
+  public TreebankLanguagePack treebankLanguagePack() { return getTLPParams().treebankLanguagePack(); }
+
+  @Override
+  public String[] defaultCoreNLPFlags() {
+    return getTLPParams().defaultCoreNLPFlags();
+  }
+
+  @Override
+  public boolean requiresTags() {
+    return false;
+  }
+
+  private static final String SERIALIZED_PARSER_PROPERTY = "edu.stanford.nlp.SerializedLexicalizedParser";
+  public static final String DEFAULT_PARSER_LOC = ((System.getenv("NLP_PARSER") != null) ?
+                                                   System.getenv("NLP_PARSER") :
+                                                   "edu/stanford/nlp/models/lexparser/englishPCFG.ser.gz");
+

@@ -1,0 +1,12 @@
+    private static byte[] lmv2Response(final byte[] hash, final byte[] challenge, final byte[] clientData)
+            throws NTLMEngineException {
+        final HMACMD5 hmacMD5 = new HMACMD5(hash);
+        hmacMD5.update(challenge);
+        hmacMD5.update(clientData);
+        final byte[] mac = hmacMD5.getOutput();
+        final byte[] lmv2Response = new byte[mac.length + clientData.length];
+        System.arraycopy(mac, 0, lmv2Response, 0, mac.length);
+        System.arraycopy(clientData, 0, lmv2Response, mac.length, clientData.length);
+        return lmv2Response;
+    }
+

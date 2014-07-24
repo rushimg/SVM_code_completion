@@ -1,0 +1,53 @@
+  public ArrayList<TaggedWord> tagSentence(List<? extends HasWord> s,
+                                           boolean reuseTags) {
+    this.origWords = new ArrayList<HasWord>(s);
+    int sz = s.size();
+    this.sent = new ArrayList<String>(sz + 1);
+    for (int j = 0; j < sz; j++) {
+      if (maxentTagger.wordFunction != null) {
+        sent.add(maxentTagger.wordFunction.apply(s.get(j).word()));
+      } else {
+        sent.add(s.get(j).word());
+      }
+    }
+    sent.add(Tagger.EOS_WORD);
+    if (reuseTags) {
+      this.originalTags = new ArrayList<String>(sz + 1);
+      for (int j = 0; j < sz; ++j) {
+        if (s.get(j) instanceof HasTag) {
+          originalTags.add(((HasTag) s.get(j)).tag());
+        } else {
+          originalTags.add(null);
+        }
+      }
+      originalTags.add(Tagger.EOS_TAG);
+    }
+    size = sz + 1;
+    if (VERBOSE) {
+      System.err.println("Sentence is " + Sentence.listToString(sent, false, tagSeparator));
+    }
+    init();
+    result = testTagInference();
+    if (maxentTagger.wordFunction != null) {
+      for (int j = 0; j < sz; ++j) {
+        result.get(j).setWord(s.get(j).word());
+      }
+    }
+    return result;
+  }
+
+
+  protected void revert(int prevSize) {
+    endSizePairs = prevSize;
+  }
+
+  protected void init() {
+    //the eos are assumed already there
+    localContextScores = new double[size][];
+    for (int i = 0; i < size - 1; i++) {
+      if (maxentTagger.dict.isUnknown(sent.get(i))) {
+        numUnknown++;
+      }
+    }
+  }
+

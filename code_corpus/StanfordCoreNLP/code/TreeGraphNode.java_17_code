@@ -1,0 +1,20 @@
+  private int indexLeaves(int startIndex) {
+    if (isLeaf()) {
+      int oldIndex = index();
+      if (oldIndex>=0) {
+        startIndex = oldIndex;
+      } else {
+        setIndex(startIndex);
+      }
+      if (tg != null) {
+        tg.addNodeToIndexMap(startIndex, this);
+      }
+      startIndex++;
+    } else {
+      for (TreeGraphNode child : children) {
+        startIndex = child.indexLeaves(startIndex);
+      }
+    }
+    return startIndex;
+  }
+

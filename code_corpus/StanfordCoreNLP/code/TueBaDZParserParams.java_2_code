@@ -1,0 +1,43 @@
+  @Override
+  public List<? extends HasWord> defaultTestSentence() {
+    return Sentence.toWordList("Veruntreute", "die", "AWO", "Spendengeld", "?");
+  }
+
+  @Override
+  public String[] sisterSplitters() {
+    return new String[0];
+  }
+
+  @Override
+  public TreeTransformer collinizer() {
+    return new TreeCollinizer(treebankLanguagePack());
+  }
+
+  @Override
+  public TreeTransformer collinizerEvalb() {
+    return new TreeCollinizer(treebankLanguagePack());
+  }
+
+  @Override
+  public MemoryTreebank memoryTreebank() {
+    return new MemoryTreebank(treeReaderFactory());
+  }
+
+  @Override
+  public DiskTreebank diskTreebank() {
+    return new DiskTreebank(treeReaderFactory());
+  }
+
+  @Override
+  public TreeReaderFactory treeReaderFactory() {
+    return new TueBaDZTreeReaderFactory(treebankLanguagePack(), nodeCleanup);
+  }
+
+  @Override
+  public Lexicon lex(Options op, Index<String> wordIndex, Index<String> tagIndex) {
+    if (op.lexOptions.uwModelTrainer == null) {
+      op.lexOptions.uwModelTrainer = "edu.stanford.nlp.parser.lexparser.GermanUnknownWordModelTrainer";
+    }
+    return new BaseLexicon(op, wordIndex, tagIndex);
+  }
+

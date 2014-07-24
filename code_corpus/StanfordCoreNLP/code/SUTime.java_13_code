@@ -1,0 +1,217 @@
+      if (tl != null) {
+        return tl.getDuration();
+      StandardTemporalType tlt = getStandardTemporalType();
+      if (tlt != null) {
+        return tlt.getDuration();
+      }
+      return Duration.getDuration(JodaTimeUtils.getJodaTimePeriod(base));
+    }
+
+    @Override
+    public Range getRange(int flags, Duration inputGranularity) {
+      Duration d = getDuration();
+      if (d != null) {
+        int padType = (flags & RANGE_FLAGS_PAD_MASK);
+        Time start = this;
+        Duration granularity = inputGranularity;
+        switch (padType) {
+        case RANGE_FLAGS_PAD_NONE:
+          // The most basic range
+          start = this;
+          break;
+        case RANGE_FLAGS_PAD_AUTO:
+          // More complex range
+          if (hasTime()) {
+            granularity = SUTime.MILLIS;
+          } else {
+            granularity = SUTime.DAY;
+          }
+          start = padMoreSpecificFields(granularity);
+          break;
+        case RANGE_FLAGS_PAD_FINEST:
+          granularity = SUTime.MILLIS;
+          start = padMoreSpecificFields(granularity);
+          break;
+        case RANGE_FLAGS_PAD_SPECIFIED:
+          start = padMoreSpecificFields(granularity);
+          break;
+        default:
+          throw new UnsupportedOperationException("Unsupported pad type for getRange: " + flags);
+        }
+        if (start instanceof PartialTime) {
+          ((PartialTime) start).withStandardFields();
+        }
+        Time end = start.add(d);
+        if (granularity != null) {
+          end = end.subtract(granularity);
+        }
+        return new Range(start, end, d);
+      } else {
+        return new Range(this, this);
+      }
+    }
+
+    protected void withStandardFields() {
+      if (base.isSupported(DateTimeFieldType.dayOfWeek())) {
+        base = JodaTimeUtils.resolveDowToDay(base);
+      } else if (base.isSupported(DateTimeFieldType.monthOfYear()) && base.isSupported(DateTimeFieldType.dayOfMonth())) {
+        if (base.isSupported(DateTimeFieldType.weekOfWeekyear())) {
+          base = base.without(DateTimeFieldType.weekOfWeekyear());
+        }
+        if (base.isSupported(DateTimeFieldType.dayOfWeek())) {
+          base = base.without(DateTimeFieldType.dayOfWeek());
+        }
+      }
+    }
+
+    @Override
+    public PartialTime reduceGranularityTo(Duration granularity) {
+      Partial pbase = base;
+      if (JodaTimeUtils.hasField(granularity.getJodaTimePeriod(), DurationFieldType.weeks())) {
+        // Make sure the partial time has weeks in it
+        if (!JodaTimeUtils.hasField(pbase, DateTimeFieldType.weekOfWeekyear())) {
+          // Add week year to it
+          pbase = JodaTimeUtils.resolveWeek(pbase);
+        }
+      }
+      Partial p = JodaTimeUtils.discardMoreSpecificFields( pbase,
+        JodaTimeUtils.getMostSpecific(granularity.getJodaTimePeriod()) );
+      return new PartialTime(this,p);
+    }
+
+    public PartialTime padMoreSpecificFields(Duration granularity) {
+      Period period = null;
+      if (granularity != null) {
+        period = granularity.getJodaTimePeriod();
+      }
+      Partial p = JodaTimeUtils.padMoreSpecificFields(base, period);
+      return new PartialTime(this,p);
+    }
+
+    @Override
+    public String toFormattedString(int flags) {
+      if (getTimeLabel() != null) {
+        return getTimeLabel();
+      }
+      String s = null;
+      if (base != null) {
+        // String s = ISODateTimeFormat.basicDateTime().print(base);
+        // return s.replace('\ufffd', 'X');
+        DateTimeFormatter formatter = getFormatter(flags);
+        s = formatter.print(base);
+      } else {
+        s = "XXXX-XX-XX";
+      }
+      if (dateTimeZone != null) {
+        DateTimeFormatter formatter = DateTimeFormat.forPattern("Z");
+        formatter = formatter.withZone(dateTimeZone);
+        s = s + formatter.print(0);
+      }
+      return s;
+    }
+
+    @Override
+    public Time resolve(Time ref, int flags) {
+      if (ref == null || ref == TIME_UNKNOWN || ref == TIME_REF) {
+        return this;
+      }
+      if (this == TIME_REF) {
+        return ref;
+      }
+      if (this == TIME_UNKNOWN) {
+        return this;
+      }
+      Partial partialRef = ref.getJodaTimePartial();
+      if (partialRef == null) {
+        throw new UnsupportedOperationException("Cannot resolve if reftime is of class: " + ref.getClass());
+      }
+
+      Partial p = (base != null) ? JodaTimeUtils.combineMoreGeneralFields(base, partialRef) : partialRef;
+      p = JodaTimeUtils.resolveDowToDay(p, partialRef);
+
+      Time resolved;
+      if (p == base) {
+        resolved = this;
+      } else {
+        resolved = new PartialTime(this, p);
+        // System.err.println("Resolved " + this + " to " + resolved + ", ref=" + ref);
+      }
+
+      Duration resolvedGranularity = resolved.getGranularity();
+      Duration refGranularity = ref.getGranularity();
+      // System.err.println("refGranularity is " + refGranularity);
+      // System.err.println("resolvedGranularity is " + resolvedGranularity);
+      if (resolvedGranularity != null && refGranularity != null && resolvedGranularity.compareTo(refGranularity) >= 0) {
+        if ((flags & RESOLVE_TO_PAST) != 0) {
+          if (resolved.compareTo(ref) > 0) {
+            Time t = (Time) this.prev();
+            if (t != null) {
+              resolved = (Time) t.resolve(ref, 0);
+            }
+          }
+          // System.err.println("Resolved " + this + " to past " + resolved + ", ref=" + ref);
+        } else if ((flags & RESOLVE_TO_FUTURE) != 0) {
+          if (resolved.compareTo(ref) < 0) {
+            Time t = (Time) this.next();
+            if (t != null) {
+              resolved = (Time) t.resolve(ref, 0);
+            }
+          }
+          // System.err.println("Resolved " + this + " to future " + resolved + ", ref=" + ref);
+        } else if ((flags & RESOLVE_TO_CLOSEST) != 0) {
+          if (resolved.compareTo(ref) > 0) {
+            Time t = (Time) this.prev();
+            if (t != null) {
+              Time resolved2 = (Time) t.resolve(ref, 0);
+              resolved = Time.closest(ref, resolved, resolved2);
+            }
+          } if (resolved.compareTo(ref) < 0) {
+            Time t = (Time) this.next();
+            if (t != null) {
+              Time resolved2 = (Time) t.resolve(ref, 0);
+              resolved = Time.closest(ref, resolved, resolved2);
+            }
+          }
+          // System.err.println("Resolved " + this + " to closest " + resolved + ", ref=" + ref);
+        }
+      }
+
+      return resolved;
+    }
+
+    public boolean isCompatible(PartialTime time) {
+      return JodaTimeUtils.isCompatible(base, time.base);
+    }
+
+    public static Pair<PartialTime, PartialTime> getCompatible(PartialTime t1, PartialTime t2) {
+      // Incompatible timezones
+      if (t1.dateTimeZone != null && t2.dateTimeZone != null &&
+          !t1.dateTimeZone.equals(t2.dateTimeZone))
+        return null;
+      if (t1.isCompatible(t2)) return Pair.makePair(t1,t2);
+      if (t1.uncertaintyGranularity != null && t2.uncertaintyGranularity == null) {
+        if (t1.uncertaintyGranularity.compareTo(t2.getDuration()) > 0) {
+          // Drop the uncertain fields from t1
+          Duration d = t1.uncertaintyGranularity;
+          PartialTime t1b = t1.reduceGranularityTo(d);
+          if (t1b.isCompatible(t2)) return Pair.makePair(t1b,t2);
+        }
+      } else if (t1.uncertaintyGranularity == null && t2.uncertaintyGranularity != null) {
+        if (t2.uncertaintyGranularity.compareTo(t1.getDuration()) > 0) {
+          // Drop the uncertain fields from t2
+          Duration d = t2.uncertaintyGranularity;
+          PartialTime t2b = t2.reduceGranularityTo(d);
+          if (t1.isCompatible(t2b)) return Pair.makePair(t1,t2b);
+        }
+      } else if (t1.uncertaintyGranularity != null && t2.uncertaintyGranularity != null) {
+        Duration d1 = Duration.max(t1.uncertaintyGranularity, t2.getDuration());
+        Duration d2 = Duration.max(t2.uncertaintyGranularity, t1.getDuration());
+        PartialTime t1b = t1.reduceGranularityTo(d1);
+        PartialTime t2b = t2.reduceGranularityTo(d2);
+        if (t1b.isCompatible(t2b)) return Pair.makePair(t1b,t2b);
+      }
+      return null;
+    }
+
+    @Override
+    public Duration getPeriod() {

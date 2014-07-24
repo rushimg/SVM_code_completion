@@ -1,0 +1,34 @@
+  public GenericData(EnumSet<Flags> flags) {
+    classInfo = ClassInfo.of(getClass(), flags.contains(Flags.IGNORE_CASE));
+  }
+
+  @Override
+  public final Object get(Object name) {
+    if (!(name instanceof String)) {
+      return null;
+    }
+    String fieldName = (String) name;
+    FieldInfo fieldInfo = classInfo.getFieldInfo(fieldName);
+    if (fieldInfo != null) {
+      return fieldInfo.getValue(this);
+    }
+    if (classInfo.getIgnoreCase()) {
+      fieldName = fieldName.toLowerCase();
+    }
+    return unknownFields.get(fieldName);
+  }
+
+  @Override
+  public final Object put(String fieldName, Object value) {
+    FieldInfo fieldInfo = classInfo.getFieldInfo(fieldName);
+    if (fieldInfo != null) {
+      Object oldValue = fieldInfo.getValue(this);
+      fieldInfo.setValue(this, value);
+      return oldValue;
+    }
+    if (classInfo.getIgnoreCase()) {
+      fieldName = fieldName.toLowerCase();
+    }
+    return unknownFields.put(fieldName, value);
+  }
+

@@ -1,0 +1,28 @@
+  private static void removeDep(Collection<TypedDependency> list) {
+    Set<GrammaticalRelation> prepRels = Generics.newHashSet(EnglishGrammaticalRelations.getPreps());
+    prepRels.addAll(EnglishGrammaticalRelations.getPrepsC());
+    for (TypedDependency td1 : list) {
+      if (prepRels.contains(td1.reln())) { // if we have a prep_ relation
+        TreeGraphNode gov = td1.gov();
+        TreeGraphNode dep = td1.dep();
+
+        for (TypedDependency td2 : list) {
+          if (td2.reln() == DEPENDENT && td2.gov() == gov && td2.dep() == dep) {
+            td2.setReln(KILL);
+          }
+        }
+      }
+    }
+
+    // now remove typed dependencies with reln "kill"
+    for (Iterator<TypedDependency> iter = list.iterator(); iter.hasNext();) {
+      TypedDependency td = iter.next();
+      if (td.reln() == KILL) {
+        if (DEBUG) {
+          System.err.println("Removing duplicate relation: " + td);
+        }
+        iter.remove();
+      }
+    }
+  }
+

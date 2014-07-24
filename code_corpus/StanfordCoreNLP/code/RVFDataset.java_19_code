@@ -1,0 +1,30 @@
+  public void selectFeaturesFromSet(Set<F> featureSet) {
+    HashIndex<F> newFeatureIndex = new HashIndex<F>();
+    int[] featMap = new int[featureIndex.size()];
+    Arrays.fill(featMap, -1);
+    for (F feature : featureSet) {
+      int oldID = featureIndex.indexOf(feature);
+      if (oldID >= 0) { // it's a valid feature in the index
+        int newID = newFeatureIndex.indexOf(feature, true);
+        featMap[oldID] = newID;
+      }
+    }
+    featureIndex = newFeatureIndex;
+    for (int i = 0; i < size; i++) {
+      List<Integer> featList = new ArrayList<Integer>(data[i].length);
+      List<Double> valueList = new ArrayList<Double>(values[i].length);
+      for (int j = 0; j < data[i].length; j++) {
+        if (featMap[data[i][j]] >= 0) {
+          featList.add(featMap[data[i][j]]);
+          valueList.add(values[i][j]);
+        }
+      }
+      data[i] = new int[featList.size()];
+      values[i] = new double[valueList.size()];
+      for (int j = 0; j < data[i].length; j++) {
+        data[i][j] = featList.get(j);
+        values[i][j] = valueList.get(j);
+      }
+    }
+  }
+

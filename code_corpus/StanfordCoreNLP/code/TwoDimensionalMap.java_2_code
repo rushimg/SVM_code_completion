@@ -1,0 +1,46 @@
+  public void remove(K1 key1) {
+    map.remove(key1);
+  }
+
+  public void clear() {
+    map.clear();
+  }
+
+  public boolean containsKey(K1 key1) {
+    return map.containsKey(key1);
+  }
+
+  public Map<K2, V> get(K1 key1) {
+    return getMap(key1);
+  }
+
+  public Map<K2, V> getMap(K1 key1) {
+    Map<K2, V> m = map.get(key1);
+    if (m == null) {
+      m = mf2.newMap();
+      map.put(key1, m);
+    }
+    return m;
+  }
+
+  public Collection<V> values() {
+    // TODO: Should return a specialized class
+    List<V> s = Generics.newArrayList();
+    for (Map<K2, V> innerMap : map.values()) {
+      s.addAll(innerMap.values());
+    }
+    return s;
+  }
+
+  public Set<K1> firstKeySet() {
+    return map.keySet();
+  }
+
+  public Set<K2> secondKeySet() {
+    Set<K2> keys = Generics.newHashSet();
+    for (K1 k1 : map.keySet()) {
+      keys.addAll(get(k1).keySet());
+    }
+    return keys;
+  }
+

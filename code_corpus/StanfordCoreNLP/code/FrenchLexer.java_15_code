@@ -1,0 +1,26 @@
+  private static String removeSoftHyphens(String in) {
+    String result = in.replaceAll("\u00AD", "");
+    return result.length() == 0 ? "-" : result;
+  }
+
+  private static String asciiQuotes(String in) {
+    String s1 = in;
+    s1 = s1.replaceAll("&apos;|[\u0091\u2018\u0092\u2019\u201A\u201B\u2039\u203A']", "'");
+    s1 = s1.replaceAll("&quot;|[\u0093\u201C\u0094\u201D\u201E\u00AB\u00BB\"]", "\"");
+    return s1;
+  }
+
+  private static String asciiDash(String in) {
+    return in.replaceAll("[_\u058A\u2010\u2011]","-");
+  }
+
+  private Object handleEllipsis(final String tok) {
+    if (ptb3Ellipsis) {
+      return getNext(ptb3EllipsisStr, tok);
+    } else if (unicodeEllipsis) {
+      return getNext(unicodeEllipsisStr, tok);
+    } else {
+      return getNext(tok, tok);
+    }
+  }
+

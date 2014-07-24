@@ -1,0 +1,14 @@
+  public Span[] find(String[] tokens, String[][] additionalContext) {
+
+    additionalContextFeatureGenerator.setCurrentContext(additionalContext);
+
+    bestSequence = model.bestSequence(tokens, additionalContext, contextGenerator, sequenceValidator);
+
+    List<String> c = bestSequence.getOutcomes();
+
+    contextGenerator.updateAdaptiveData(tokens, c.toArray(new String[c.size()]));
+    Span[] spans = seqCodec.decode(c);
+    spans = setProbs(spans);
+    return spans;
+  }
+

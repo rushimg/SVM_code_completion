@@ -1,0 +1,139 @@
+  private final boolean allowFlawedXml;
+
+  public static final boolean DEFAULT_ALLOW_FLAWS = true;
+
+  public CleanXmlAnnotator() {
+    this(DEFAULT_XML_TAGS, DEFAULT_SENTENCE_ENDERS, DEFAULT_DATE_TAGS, DEFAULT_ALLOW_FLAWS);
+  }
+
+  public CleanXmlAnnotator(String xmlTagsToRemove,
+                           String sentenceEndingTags,
+                           String dateTags,
+                           boolean allowFlawedXml) {
+    this.allowFlawedXml = allowFlawedXml;
+    if (xmlTagsToRemove != null) {
+      xmlTagMatcher = toCaseInsensitivePattern(xmlTagsToRemove);
+      if (sentenceEndingTags != null &&
+          sentenceEndingTags.length() > 0) {
+        sentenceEndingTagMatcher = toCaseInsensitivePattern(sentenceEndingTags);
+      } else {
+        sentenceEndingTagMatcher = null;
+      }
+    } else {
+      xmlTagMatcher = null;
+      sentenceEndingTagMatcher = null;
+    }
+
+    dateTagMatcher = toCaseInsensitivePattern(dateTags);
+  }
+
+  private Pattern toCaseInsensitivePattern(String tags) {
+    if(tags != null){
+      return Pattern.compile(tags, Pattern.CASE_INSENSITIVE);
+    } else {
+      return null;
+    }
+  }
+
+  public void setSsplitDiscardTokensMatcher(String tags) {
+    ssplitDiscardTokensMatcher = toCaseInsensitivePattern(tags);
+  }
+
+  public void setSingleSentenceTagMatcher(String tags) {
+    singleSentenceTagMatcher = toCaseInsensitivePattern(tags);
+  }
+
+  public void setDocIdTagMatcher(String docIdTags) {
+    docIdTagMatcher = toCaseInsensitivePattern(docIdTags);
+  }
+
+  public void setDocTypeTagMatcher(String docTypeTags) {
+    docTypeTagMatcher = toCaseInsensitivePattern(docTypeTags);
+  }
+
+  public void setSectionTagMatcher(String sectionTags) {
+    sectionTagMatcher = toCaseInsensitivePattern(sectionTags);
+  }
+
+  public void setDiscourseTags(String utteranceTurnTags, String speakerTags) {
+    utteranceTurnTagMatcher = toCaseInsensitivePattern(utteranceTurnTags);
+    speakerTagMatcher = toCaseInsensitivePattern(speakerTags);
+  }
+
+  public void setDocAnnotationPatterns(String conf) {
+    docAnnotationPatterns.clear();
+    // Patterns can only be tag attributes
+    addAnnotationPatterns(docAnnotationPatterns, conf, true);
+  }
+
+  public void setTokenAnnotationPatterns(String conf) {
+    tokenAnnotationPatterns.clear();
+    // Patterns can only be tag attributes
+    addAnnotationPatterns(tokenAnnotationPatterns, conf, true);
+  }
+
+  public void setSectionAnnotationPatterns(String conf) {
+    sectionAnnotationPatterns.clear();
+    addAnnotationPatterns(sectionAnnotationPatterns, conf, false);
+  }
+
+  private void addAnnotationPatterns(CollectionValuedMap<Class, Pair<Pattern,Pattern>> annotationPatterns, String conf, boolean attrOnly) {
+    for (String annoPatternString:annoPatternStrings) {
+      if (annoPattern.length != 2) {
+        throw new IllegalArgumentException("Invalid annotation to tag pattern: " + annoPatternString);
+      }
+      String annoKeyString = annoPattern[0];
+      String pattern = annoPattern[1];
+      Class annoKey = EnvLookup.lookupAnnotationKey(null, annoKeyString);
+      if (annoKey == null) {
+        throw new IllegalArgumentException("Cannot resolve annotation key " + annoKeyString);
+      }
+      Matcher m = TAG_ATTR_PATTERN.matcher(pattern);
+      if (m.matches()) {
+        Pattern tagPattern = toCaseInsensitivePattern(m.group(1));
+        Pattern attrPattern = toCaseInsensitivePattern(m.group(2));
+        annotationPatterns.add(annoKey, Pair.makePair(tagPattern, attrPattern));
+      } else {
+        if (attrOnly) {
+          // attribute is require
+          throw new IllegalArgumentException("Invalid tag pattern: " + pattern + " for annotation key " + annoKeyString);
+        } else {
+          Pattern tagPattern = toCaseInsensitivePattern(pattern);
+          annotationPatterns.add(annoKey, Pair.makePair(tagPattern, (Pattern) null));
+        }
+      }
+    }
+  }
+
+  @Override
+  public void annotate(Annotation annotation) {
+    if (annotation.has(CoreAnnotations.TokensAnnotation.class)) {
+      List<CoreLabel> tokens = annotation.get(CoreAnnotations.TokensAnnotation.class);
+      List<CoreLabel> newTokens = process(annotation, tokens);
+      // We assume that if someone is using this annotator, they don't
+      // want the old tokens any more and get rid of them
+      annotation.set(CoreAnnotations.TokensAnnotation.class, newTokens);
+    }
+  }
+
+  public List<CoreLabel> process(List<CoreLabel> tokens) {
+    return process(null, tokens);
+  }
+
+  private String tokensToString(Annotation annotation, List<CoreLabel> tokens) {
+    if (tokens.isEmpty()) return "";
+    // Try to get original text back?
+    String annotationText = (annotation != null)? annotation.get(CoreAnnotations.TextAnnotation.class) : null;
+    if (annotationText != null) {
+      CoreLabel firstToken = tokens.get(0);
+      CoreLabel lastToken = tokens.get(tokens.size() - 1);
+      int firstCharOffset = firstToken.get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);
+      int lastCharOffset = lastToken.get(CoreAnnotations.CharacterOffsetEndAnnotation.class);
+      return annotationText.substring(firstCharOffset, lastCharOffset);
+    } else {
+      return StringUtils.joinWords(tokens, " ");
+    }
+  }
+
+  // Annotates coremap with information from xml tag
+

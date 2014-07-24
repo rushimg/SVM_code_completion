@@ -1,0 +1,94 @@
+  private static class RepeatState extends State {
+
+    private final State repeatStart;
+    private final int minMatch;
+    private final int maxMatch;
+    private final boolean greedyMatch;
+
+    public RepeatState(State start, int minMatch, int maxMatch, boolean greedyMatch)
+    {
+      this.repeatStart = start;
+      this.minMatch = minMatch;
+      this.maxMatch = maxMatch;
+      this.greedyMatch = greedyMatch;
+      if (minMatch < 0) {
+        throw new IllegalArgumentException("Invalid minMatch=" + minMatch);
+      }
+      if (maxMatch >= 0 && minMatch > maxMatch) {
+        throw new IllegalArgumentException("Invalid minMatch=" + minMatch + ", maxMatch=" + maxMatch);
+      }
+    }
+
+    @Override
+    protected <T> boolean match(int bid, SequenceMatcher.MatchedStates<T> matchedStates, boolean consume, State prevState)
+    {
+      // Get how many times this states has already been matched
+      int matchedCount = matchedStates.getBranchStates().endMatchedCountInc(bid, this);
+      // Get the minimum number of times we still need to match this state
+      int minMatchLeft = minMatch - matchedCount;
+      if (minMatchLeft < 0) {
+        minMatchLeft = 0;
+      }
+      // Get the maximum number of times we can match this state
+      int maxMatchLeft;
+      if (maxMatch < 0) {
+        // Indicate unlimited matching
+        maxMatchLeft = maxMatch;
+      } else {
+        maxMatchLeft = maxMatch - matchedCount;
+        if (maxMatch < 0) {
+          // Already exceeded the maximum number of times we can match this state
+          // indicate state not matched
+          return false;
+        }
+      }
+      boolean match = false;
+      // See how many branching options there are...
+      int totalBranches = 0;
+      if (minMatchLeft == 0 && next != null) {
+         totalBranches += next.size();
+      }
+      if (maxMatchLeft != 0) {
+        totalBranches++;
+      }
+      int i = 0; // branch index
+      // Check if there we have met the minimum number of matches
+      // If so, go ahead and try to match next state
+      //  (if we need to consume an element or end a group)
+      if (minMatchLeft == 0 && next != null) {
+        for (State s:next) {
+          i++;   // Increment branch index
+          // Depending on greedy match or not, different priority to branches
+          int pi = (greedyMatch && maxMatchLeft != 0)? i+1:i;
+          int bid2 = matchedStates.getBranchStates().getBranchId(bid,pi,totalBranches);
+          matchedStates.getBranchStates().clearMatchedCount(bid2, this);
+          boolean m = s.match(bid2, matchedStates, consume);
+          if (m) {
+            match = true;
+          }
+        }
+      }
+      // Check if we have the option of matching more
+      // (maxMatchLeft < 0 indicate unlimited, maxMatchLeft > 0 indicate we are still allowed more matches)
+      if (maxMatchLeft != 0) {
+        i++;    // Increment branch index
+        // Depending on greedy match or not, different priority to branches
+        int pi = greedyMatch? 1:i;
+        int bid2 = matchedStates.getBranchStates().getBranchId(bid,pi,totalBranches);
+        if (consume) {
+          // Consuming - try to see if repeating this pattern does anything
+          boolean m = repeatStart.match(bid2, matchedStates, consume);
+          if (m) {
+            match = true;
+            // Mark how many times we have matched this pattern
+            matchedStates.getBranchStates().startMatchedCountInc(bid2, this);
+          }
+        } else {
+          // Not consuming - don't do anything, just add this back to list of states to be processed
+          matchedStates.addState(bid2, this);
+        }
+      }
+      return match;
+    }
+  }
+

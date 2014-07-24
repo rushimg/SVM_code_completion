@@ -1,0 +1,70 @@
+  public static <E> String toString(Counter<E> counter, NumberFormat nf, String preAppend, String postAppend, String keyValSeparator, String itemSeparator) {
+    StringBuilder sb = new StringBuilder();
+    sb.append(preAppend);
+    // List<E> list = new ArrayList<E>(map.keySet());
+    // try {
+    // Collections.sort(list); // see if it can be sorted
+    // } catch (Exception e) {
+    // }
+    for (Iterator<E> iter = counter.keySet().iterator(); iter.hasNext();) {
+      E key = iter.next();
+      double d = counter.getCount(key);
+      sb.append(key);
+      sb.append(keyValSeparator);
+      sb.append(nf.format(d));
+      if (iter.hasNext()) {
+        sb.append(itemSeparator);
+      }
+    }
+    sb.append(postAppend);
+    return sb.toString();
+  }
+
+  public static <E> String toBiggestValuesFirstString(Counter<E> c) {
+    return toPriorityQueue(c).toString();
+  }
+
+  // TODO this method seems badly written. It should exploit topK printing of
+  // PriorityQueue
+  public static <E> String toBiggestValuesFirstString(Counter<E> c, int k) {
+    PriorityQueue<E> pq = toPriorityQueue(c);
+    PriorityQueue<E> largestK = new BinaryHeapPriorityQueue<E>();
+    // TODO: Is there any reason the original (commented out) line is better
+    // than the one replacing it?
+    // while (largestK.size() < k && ((Iterator<E>)pq).hasNext()) {
+    while (largestK.size() < k && !pq.isEmpty()) {
+      double firstScore = pq.getPriority(pq.getFirst());
+      E first = pq.removeFirst();
+      largestK.changePriority(first, firstScore);
+    }
+    return largestK.toString();
+  }
+
+  public static <T> String toBiggestValuesFirstString(Counter<Integer> c, int k, Index<T> index) {
+    PriorityQueue<Integer> pq = toPriorityQueue(c);
+    PriorityQueue<T> largestK = new BinaryHeapPriorityQueue<T>();
+    // while (largestK.size() < k && ((Iterator)pq).hasNext()) { //same as above
+    while (largestK.size() < k && !pq.isEmpty()) {
+      double firstScore = pq.getPriority(pq.getFirst());
+      int first = pq.removeFirst();
+      largestK.changePriority(index.get(first), firstScore);
+    }
+    return largestK.toString();
+  }
+
+  public static <E> String toVerticalString(Counter<E> c) {
+    return toVerticalString(c, Integer.MAX_VALUE);
+  }
+
+  public static <E> String toVerticalString(Counter<E> c, int k) {
+    return toVerticalString(c, k, "%g\t%s", false);
+  }
+
+  public static <E> String toVerticalString(Counter<E> c, String fmt) {
+    return toVerticalString(c, Integer.MAX_VALUE, fmt, false);
+  }
+
+  public static <E> String toVerticalString(Counter<E> c, int k, String fmt) {
+    return toVerticalString(c, k, fmt, false);
+  }
+

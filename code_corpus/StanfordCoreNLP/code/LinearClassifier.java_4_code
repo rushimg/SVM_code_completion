@@ -1,0 +1,23 @@
+  @Override
+  public Counter<L> scoresOf(Datum<L, F> example) {
+    if(example instanceof RVFDatum<?, ?>)return scoresOfRVFDatum((RVFDatum<L,F>)example);
+    Collection<F> feats = example.asFeatures();
+    int[] features = new int[feats.size()];
+    int i = 0;
+    for (F f : feats) {
+      int index = featureIndex.indexOf(f);
+      if (index >= 0) {
+        features[i++] = index;
+      } else {
+        //System.err.println("FEATURE LESS THAN ZERO: " + f);
+      }
+    }
+    int[] activeFeatures = new int[i];
+    System.arraycopy(features, 0, activeFeatures, 0, i);
+    Counter<L> scores = new ClassicCounter<L>();
+    for (L lab : labels()) {
+      scores.setCount(lab, scoreOf(activeFeatures, lab));
+    }
+    return scores;
+  }
+

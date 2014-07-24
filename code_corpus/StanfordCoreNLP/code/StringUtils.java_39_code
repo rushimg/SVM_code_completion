@@ -1,0 +1,29 @@
+  public static void printToFile(File file, String message, boolean append,
+                                 boolean printLn, String encoding) {
+    PrintWriter pw = null;
+    try {
+      Writer fw;
+      if (encoding != null) {
+        fw = new OutputStreamWriter(new FileOutputStream(file, append),
+                                         encoding);
+      } else {
+        fw = new FileWriter(file, append);
+      }
+      pw = new PrintWriter(fw);
+      if (printLn) {
+        pw.println(message);
+      } else {
+        pw.print(message);
+      }
+    } catch (Exception e) {
+      System.err.println("Exception: in printToFile " + file.getAbsolutePath());
+      e.printStackTrace();
+    } finally {
+      if (pw != null) {
+        pw.flush();
+        pw.close();
+      }
+    }
+  }
+
+

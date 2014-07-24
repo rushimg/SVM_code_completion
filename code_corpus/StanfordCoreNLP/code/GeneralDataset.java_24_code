@@ -1,0 +1,43 @@
+      for (int f: features) {
+        sb.append((f + 1)).append(":").append(c.getCount(f)).append(" ");
+      }
+      //I think this is what was meant (using printC rather than c), but not sure
+      // ~Sarah Spikes (sdspikes@cs.stanford.edu)
+      for (int f: features) {
+        sb.append((f + 1)).append(':').append(printC.getCount(f)).append(' ');
+      }
+      pw.println(sb.toString());
+    }
+  }
+
+
+  public Iterator<RVFDatum<L, F>> iterator() {
+    return new Iterator<RVFDatum<L,F>>() {
+      private int id; // = 0;
+
+      public boolean hasNext() {
+        return id < size();
+      }
+
+      public RVFDatum<L, F> next() {
+        if (id >= size()) {
+          throw new NoSuchElementException();
+        }
+        return getRVFDatum(id++);
+      }
+
+      public void remove() {
+        throw new UnsupportedOperationException();
+      }
+
+    };
+  }
+
+  public ClassicCounter<L> numDatumsPerLabel(){
+    ClassicCounter<L> numDatums = new ClassicCounter<L>();
+    for(int i : labels){
+      numDatums.incrementCount(labelIndex.get(i));
+    }
+    return numDatums;
+  }
+

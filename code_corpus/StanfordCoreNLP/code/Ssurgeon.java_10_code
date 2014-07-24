@@ -1,0 +1,31 @@
+  @SuppressWarnings("unchecked")
+  public List<SsurgeonPattern> readFromFile(File file) throws Exception {
+    List<SsurgeonPattern> retList = new ArrayList<SsurgeonPattern>();
+    Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(file);
+    
+    if (VERBOSE)
+      System.out.println("Reading ssurgeon file="+file.getAbsolutePath());
+    
+    NodeList patternNodes = doc.getElementsByTagName(SsurgeonPattern.SSURGEON_ELEM_TAG);
+    for (int i=0; i<patternNodes.getLength(); i++) {
+      Node node = patternNodes.item(i);
+      if (node.getNodeType() == Node.ELEMENT_NODE) {
+        Element elt = (Element) node;
+        SsurgeonPattern pattern = ssurgeonPatternFromXML(elt);
+        retList.add(pattern);
+      }
+    }
+    
+    NodeList resourceNodes = doc.getElementsByTagName(SsurgeonPattern.RESOURCE_TAG);
+    for (int i=0; i < resourceNodes.getLength(); i++) {
+      Node node = patternNodes.item(i);
+      if (node.getNodeType() == Node.ELEMENT_NODE) {
+        Element resourceElt = (Element) node;
+        SsurgeonWordlist wlRsrc = new SsurgeonWordlist(resourceElt);
+        addResource(wlRsrc);
+      }
+    }
+    
+    return retList;
+  }
+  

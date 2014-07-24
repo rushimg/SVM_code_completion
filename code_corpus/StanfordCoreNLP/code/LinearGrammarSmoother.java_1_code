@@ -1,0 +1,26 @@
+public class LinearGrammarSmoother implements Function<Pair<UnaryGrammar,BinaryGrammar>, Pair<UnaryGrammar,BinaryGrammar>> {
+
+  private static final boolean DEBUG = false;
+  
+  private double ALPHA = 0.01;
+
+//  private static final String SYNTH_NODE_MARK = "@";
+//  
+//  private static final Pattern pContext = Pattern.compile("(\\|.+)$");
+  
+  // Do not include @ in this list! @ marks synthetic nodes!
+  // Stole these from PennTreebankLanguagePack
+  private final String[] annotationIntroducingChars = {"-", "=", "|", "#", "^", "~", "_"};
+  private final Set<String> annoteChars = Generics.newHashSet(Arrays.asList(annotationIntroducingChars));
+
+  private final TrainOptions trainOptions;
+
+  private final Index<String> stateIndex;
+  private final Index<String> tagIndex;
+
+  public LinearGrammarSmoother(TrainOptions trainOptions, Index<String> stateIndex, Index<String> tagIndex) {
+    this.trainOptions = trainOptions;
+    this.stateIndex = stateIndex;
+    this.tagIndex = tagIndex;
+  }
+

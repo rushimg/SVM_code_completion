@@ -1,0 +1,18 @@
+  @SuppressWarnings("unchecked")
+  public <T> List<T> yield(List<T> y) {
+    if (isLeaf()) {
+      if(label() instanceof HasWord) {
+        HasWord hw = (HasWord) label();
+        hw.setWord(label().value());
+      }
+      y.add((T) label());
+
+    } else {
+      Tree[] kids = children();
+      for (Tree kid : kids) {
+        kid.yield(y);
+      }
+    }
+    return y;
+  }
+

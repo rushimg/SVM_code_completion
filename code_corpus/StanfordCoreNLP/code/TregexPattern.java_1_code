@@ -1,0 +1,58 @@
+
+public abstract class TregexPattern implements Serializable {
+  private boolean neg = false;
+  private boolean opt = false;
+  private String patternString;
+
+  void negate() {
+    neg = true;
+    if (opt) {
+      throw new RuntimeException("Node cannot be both negated and optional.");
+    }
+  }
+
+  void makeOptional() {
+    opt = true;
+    if (neg) {
+      throw new RuntimeException("Node cannot be both negated and optional.");
+    }
+  }
+
+  private void prettyPrint(PrintWriter pw, int indent) {
+    for (int i = 0; i < indent; i++) {
+      pw.print("   ");
+    }
+    if (neg) {
+      pw.print('!');
+    }
+    if (opt) {
+      pw.print('?');
+    }
+    pw.println(localString());
+    for (TregexPattern child : getChildren()) {
+      child.prettyPrint(pw, indent + 1);
+    }
+  }
+
+  // package private constructor
+  TregexPattern() {
+  }
+
+  abstract List<TregexPattern> getChildren();
+
+  abstract String localString();
+
+  boolean isNegated() {
+    return neg;
+  }
+
+  boolean isOptional() {
+    return opt;
+  }
+
+  abstract TregexMatcher matcher(Tree root, Tree tree,
+                                 IdentityHashMap<Tree, Tree> nodesToParents,
+                                 Map<String, Tree> namesToNodes,
+                                 VariableStrings variableStrings,
+                                 HeadFinder headFinder);
+

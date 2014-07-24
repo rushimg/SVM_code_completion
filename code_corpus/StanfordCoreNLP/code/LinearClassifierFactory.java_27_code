@@ -1,0 +1,26 @@
+  public void setHeldOutSearcher(LineSearcher heldOutSearcher) {
+    this.heldOutSearcher = heldOutSearcher;
+  }
+
+  private LineSearcher heldOutSearcher = null;
+  public double[] heldOutSetSigma(GeneralDataset<L, F> train) {
+    Pair<GeneralDataset<L, F>, GeneralDataset<L, F>> data = train.split(0.3);
+    return heldOutSetSigma(data.first(), data.second());
+  }
+
+  public double[] heldOutSetSigma(GeneralDataset<L, F> train, Scorer<L> scorer) {
+    Pair<GeneralDataset<L, F>, GeneralDataset<L, F>> data = train.split(0.3);
+    return heldOutSetSigma(data.first(), data.second(), scorer);
+  }
+
+  public double[] heldOutSetSigma(GeneralDataset<L, F> train, GeneralDataset<L, F> dev) {
+    return heldOutSetSigma(train, dev, new MultiClassAccuracyStats<L>(MultiClassAccuracyStats.USE_LOGLIKELIHOOD), heldOutSearcher == null ? new GoldenSectionLineSearch(true, 1e-2, min, max) : heldOutSearcher);
+  }
+
+  public double[] heldOutSetSigma(GeneralDataset<L, F> train, GeneralDataset<L, F> dev, final Scorer<L> scorer) {
+    return heldOutSetSigma(train, dev, scorer, new GoldenSectionLineSearch(true, 1e-2, min, max));
+  }
+  public double[]  heldOutSetSigma(GeneralDataset<L, F> train, GeneralDataset<L, F> dev, LineSearcher minimizer) {
+    return heldOutSetSigma(train, dev, new MultiClassAccuracyStats<L>(MultiClassAccuracyStats.USE_LOGLIKELIHOOD), minimizer);
+  }
+

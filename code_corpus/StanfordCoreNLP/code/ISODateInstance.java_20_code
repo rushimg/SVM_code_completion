@@ -1,0 +1,51 @@
+  static boolean isAfter(String date1, String date2) {
+    if (!isDateFormat(date1) || !isDateFormat(date2)) {
+      return false;
+    }
+    boolean after = true;
+    //first check years
+    String year = date1.substring(0, 4);
+    String yearOther = date2.substring(0, 4);
+      after = after && checkWildcardCompatibility(year, yearOther);
+    } else if (Integer.parseInt(year) > Integer.parseInt(yearOther)) {
+      return true;
+    } else if (Integer.parseInt(year) < Integer.parseInt(yearOther)) {
+      return false;
+    }
+
+    if (date1.length() < 6 || date2.length() < 6) {
+        return after;
+      } else {
+        return after && (Integer.parseInt(year) != Integer.parseInt(yearOther));
+      }
+    }
+    //then check months
+    String month = date1.substring(4, 6);
+    String monthOther = date2.substring(4, 6);
+      after = after && checkWildcardCompatibility(month, monthOther);
+    } else if (Integer.parseInt(month) > Integer.parseInt(monthOther)) {
+      return true;
+    } else if (Integer.parseInt(month) < Integer.parseInt(monthOther)) {
+      return false;
+    }
+
+    if (date1.length() < 8 || date2.length() < 8) {
+        return after;
+      } else {
+        return after && (Integer.parseInt(month) != Integer.parseInt(monthOther));
+      }
+    }
+
+    //then check days
+    String day = date1.substring(6, 8);
+    String dayOther = date2.substring(6, 8);
+      after = after && checkWildcardCompatibility(day, dayOther);
+    } else if (Integer.parseInt(day) > Integer.parseInt(dayOther)) {
+      return true;
+    } else if (Integer.parseInt(day) <= Integer.parseInt(dayOther)) {
+      return false;
+    }
+
+    return after;
+  }
+

@@ -1,0 +1,39 @@
+class Oracle {
+  List<Tree> binarizedTrees;
+
+  List<IdentityHashMap<Tree, Tree>> parentMaps;
+
+  List<List<Tree>> leafLists;
+
+  boolean compoundUnaries;
+
+  Oracle(List<Tree> binarizedTrees, boolean compoundUnaries) {
+    this.binarizedTrees = binarizedTrees;
+
+    parentMaps = Generics.newArrayList(binarizedTrees.size());
+    leafLists = Generics.newArrayList();
+    for (Tree tree : binarizedTrees) {
+      parentMaps.add(buildParentMap(tree));
+      leafLists.add(Trees.leaves(tree));
+    }
+
+    this.compoundUnaries = compoundUnaries;
+  }
+
+  static IdentityHashMap<Tree, Tree> buildParentMap(Tree tree) {
+    IdentityHashMap<Tree, Tree> map = Generics.newIdentityHashMap();
+    buildParentMapHelper(tree, null, map);
+    return map;
+  }
+
+  static void buildParentMapHelper(Tree tree, Tree parent, IdentityHashMap<Tree, Tree> map) {
+    if (parent != null) {
+      map.put(tree, parent);
+    }
+    if (!tree.isLeaf()) {
+      for (Tree child : tree.children()) {
+        buildParentMapHelper(child, tree, map);
+      }
+    }
+  }
+

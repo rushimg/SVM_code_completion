@@ -1,0 +1,16 @@
+  public static String expand(String baseUrl, String uriTemplate, Object parameters,
+      boolean addUnusedParamsAsQueryParams) {
+    String pathUri;
+    if (uriTemplate.startsWith("/")) {
+      // Remove the base path from the base URL.
+      GenericUrl url = new GenericUrl(baseUrl);
+      url.setRawPath(null);
+      pathUri = url.build() + uriTemplate;
+    } else if (uriTemplate.startsWith("http://") || uriTemplate.startsWith("https://")) {
+      pathUri = uriTemplate;
+    } else {
+      pathUri = baseUrl + uriTemplate;
+    }
+    return expand(pathUri, parameters, addUnusedParamsAsQueryParams);
+  }
+

@@ -1,0 +1,30 @@
+  public static void log(Object... args) {
+    //--Argument Check
+    if(args.length == 0){ return; }
+    if(isClosed){ return; }
+    //--Create Record
+    final Object content = args[args.length-1];
+    final Object[] tags = new Object[args.length-1];
+    System.arraycopy(args,0,tags,0,args.length-1);
+    final long timestamp = System.currentTimeMillis();
+    //--Handle Record
+    if(isThreaded){
+      //(case: multithreaded)
+      final Runnable log = new Runnable(){
+        @Override
+        public void run(){
+          assert !isThreaded || control.isHeldByCurrentThread();
+          Record toPass = new Record(content,tags,depth,timestamp);
+          handlers.process(toPass, MessageType.SIMPLE,depth, toPass.timesstamp);
+          assert !isThreaded || control.isHeldByCurrentThread();
+        }
+      };
+      long threadId = Thread.currentThread().getId();
+      attemptThreadControl( threadId, log );
+    } else {
+      //(case: no threading)
+      Record toPass = new Record(content,tags,depth,timestamp);
+      handlers.process(toPass, MessageType.SIMPLE,depth, toPass.timesstamp);
+    }
+  }
+

@@ -1,0 +1,76 @@
+    protected AxisSpace calculateAxisSpace(Graphics2D g2,
+                                           Rectangle2D plotArea) {
+
+        AxisSpace space = new AxisSpace();
+        PlotOrientation orientation = getOrientation();
+
+        // work out the space required by the domain axis...
+        AxisSpace fixed = getFixedDomainAxisSpace();
+        if (fixed != null) {
+            if (orientation == PlotOrientation.HORIZONTAL) {
+                space.setLeft(fixed.getLeft());
+                space.setRight(fixed.getRight());
+            }
+            else if (orientation == PlotOrientation.VERTICAL) {
+                space.setTop(fixed.getTop());
+                space.setBottom(fixed.getBottom());
+            }
+        }
+        else {
+            CategoryAxis categoryAxis = getDomainAxis();
+            RectangleEdge categoryEdge = Plot.resolveDomainAxisLocation(
+                    getDomainAxisLocation(), orientation);
+            if (categoryAxis != null) {
+                space = categoryAxis.reserveSpace(g2, this, plotArea,
+                        categoryEdge, space);
+            }
+            else {
+                if (getDrawSharedDomainAxis()) {
+                    space = getDomainAxis().reserveSpace(g2, this, plotArea,
+                            categoryEdge, space);
+                }
+            }
+        }
+
+        Rectangle2D adjustedPlotArea = space.shrink(plotArea, null);
+
+        // work out the maximum height or width of the non-shared axes...
+        int n = this.subplots.size();
+        int totalWeight = 0;
+        for (int i = 0; i < n; i++) {
+            CategoryPlot sub = (CategoryPlot) this.subplots.get(i);
+            totalWeight += sub.getWeight();
+        }
+        this.subplotAreas = new Rectangle2D[n];
+        double x = adjustedPlotArea.getX();
+        double y = adjustedPlotArea.getY();
+        double usableSize = 0.0;
+        if (orientation == PlotOrientation.HORIZONTAL) {
+        }
+        else if (orientation == PlotOrientation.VERTICAL) {
+        }
+
+        for (int i = 0; i < n; i++) {
+            CategoryPlot plot = (CategoryPlot) this.subplots.get(i);
+
+            // calculate sub-plot area
+            if (orientation == PlotOrientation.HORIZONTAL) {
+                this.subplotAreas[i] = new Rectangle2D.Double(x, y, w,
+                        adjustedPlotArea.getHeight());
+                x = x + w + this.gap;
+            }
+            else if (orientation == PlotOrientation.VERTICAL) {
+                this.subplotAreas[i] = new Rectangle2D.Double(x, y,
+                        adjustedPlotArea.getWidth(), h);
+                y = y + h + this.gap;
+            }
+
+            AxisSpace subSpace = plot.calculateRangeAxisSpace(g2,
+                    this.subplotAreas[i], null);
+            space.ensureAtLeast(subSpace);
+
+        }
+
+        return space;
+    }
+

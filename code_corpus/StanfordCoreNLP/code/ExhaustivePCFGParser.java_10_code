@@ -1,0 +1,260 @@
+  private Tree getTree(Vertex v, int k, int kPrime) {
+    lazyKthBest(v, k, kPrime);
+    String goalStr = stateIndex.get(v.goal);
+    int start = v.start;
+    // int end = v.end;
+
+    List<Derivation> dHatV = dHat.get(v);
+
+    if (isTag[v.goal] && v.start + 1 == v.end) {
+      IntTaggedWord tagging = new IntTaggedWord(words[start], tagIndex.indexOf(goalStr));
+      String contextStr = getCoreLabel(start).originalText();
+      float tagScore = lex.score(tagging, start, wordIndex.get(words[start]), contextStr);
+      if (tagScore > Float.NEGATIVE_INFINITY || floodTags) {
+        // return a pre-terminal tree
+        CoreLabel terminalLabel = getCoreLabel(start);
+
+        Tree wordNode = tf.newLeaf(terminalLabel);
+        Tree tagNode = tf.newTreeNode(goalStr, Collections.singletonList(wordNode));
+        if (originalTags[start] != null) {
+          tagNode.label().setValue(originalTags[start].tag());
+        }
+        if (tagNode.label() instanceof HasTag) {
+          ((HasTag) tagNode.label()).setTag(tagNode.label().value());
+        }
+        return tagNode;
+      } else {
+        assert false;
+      }
+    }
+
+    if (k-1 >= dHatV.size()) {
+      return null;
+    }
+
+    Derivation d = dHatV.get(k-1);
+
+    List<Tree> children = new ArrayList<Tree>();
+    for (int i = 0; i < d.arc.size(); i++) {
+      Vertex child = d.arc.tails.get(i);
+      Tree t = getTree(child, d.j.get(i), kPrime);
+      assert (t != null);
+      children.add(t);
+    }
+
+    return tf.newTreeNode(goalStr,children);
+  }
+
+  private static class Vertex {
+    public final int goal;
+    public final int start;
+    public final int end;
+
+    public Vertex(int goal, int start, int end) {
+      this.goal = goal;
+      this.start = start;
+      this.end = end;
+    }
+
+    public boolean equals(Object o) {
+      if (!(o instanceof Vertex)) { return false; }
+      Vertex v = (Vertex)o;
+      return (v.goal == goal && v.start == start && v.end == end);
+    }
+
+    private int hc = -1;
+
+    public int hashCode() {
+      if (hc == -1) {
+      }
+      return hc;
+    }
+
+    public String toString() {
+      return goal+"["+start+","+end+"]";
+    }
+  }
+
+  private static class Arc {
+    public final List<Vertex> tails;
+    public final Vertex head;
+    public final double ruleScore; // for convenience
+
+    public Arc(List<Vertex> tails, Vertex head, double ruleScore) {
+      this.tails = Collections.unmodifiableList(tails);
+      this.head = head;
+      this.ruleScore = ruleScore;
+      // TODO: add check that rule is compatible with head and tails!
+    }
+
+    public boolean equals(Object o) {
+      if (!(o instanceof Arc)) { return false; }
+      Arc a = (Arc) o;
+      return a.head.equals(head) && a.tails.equals(tails);
+    }
+
+    private int hc = -1;
+
+    public int hashCode() {
+      if (hc == -1) {
+      }
+      return hc;
+    }
+
+    public int size() { return tails.size(); }
+  }
+
+  private static class Derivation {
+    public final Arc arc;
+    public final List<Integer> j;
+    public final double score;  // score does not affect equality (?)
+    public final List<Double> childrenScores;
+
+    public Derivation(Arc arc, List<Integer> j, double score, List<Double> childrenScores) {
+      this.arc = arc;
+      this.j = Collections.unmodifiableList(j);
+      this.score = score;
+      this.childrenScores = Collections.unmodifiableList(childrenScores);
+    }
+
+    public boolean equals(Object o) {
+      if (!(o instanceof Derivation)) { return false; }
+      Derivation d = (Derivation)o;
+      if (arc == null && d.arc != null || arc != null && d.arc == null) { return false; }
+      return ((arc == null && d.arc == null || d.arc.equals(arc)) && d.j.equals(j));
+    }
+
+    private int hc = -1;
+
+    public int hashCode() {
+      if (hc == -1) {
+      }
+      return hc;
+    }
+  }
+
+  private List<Arc> getBackwardsStar(Vertex v) {
+
+    List<Arc> bs = new ArrayList<Arc>();
+
+    // pre-terminal??
+    if (isTag[v.goal] && v.start + 1 == v.end) {
+      List<Vertex> tails = new ArrayList<Vertex>();
+      double score = iScore[v.start][v.end][v.goal];
+      Arc arc = new Arc(tails, v, score);
+      bs.add(arc);
+    }
+
+    // check binaries
+    for (int split = v.start + 1; split < v.end; split++) {
+      for (BinaryRule br : bg.ruleListByParent(v.goal)) {
+        Vertex lChild = new Vertex(br.leftChild, v.start, split);
+        Vertex rChild = new Vertex(br.rightChild, split, v.end);
+        List<Vertex> tails = new ArrayList<Vertex>();
+        tails.add(lChild);
+        tails.add(rChild);
+        Arc arc = new Arc(tails, v, br.score);
+        bs.add(arc);
+      }
+    }
+
+    // check unaries
+    for (UnaryRule ur : ug.rulesByParent(v.goal)) {
+      Vertex child = new Vertex(ur.child, v.start, v.end);
+      List<Vertex> tails = new ArrayList<Vertex>();
+      tails.add(child);
+      Arc arc = new Arc(tails, v, ur.score);
+      bs.add(arc);
+    }
+
+    return bs;
+  }
+
+  private Map<Vertex,PriorityQueue<Derivation>> cand = Generics.newHashMap();
+  private Map<Vertex,LinkedList<Derivation>> dHat = Generics.newHashMap();
+
+  private PriorityQueue<Derivation> getCandidates(Vertex v, int k) {
+    PriorityQueue<Derivation> candV = cand.get(v);
+    if (candV == null) {
+      candV = new BinaryHeapPriorityQueue<Derivation>();
+      List<Arc> bsV = getBackwardsStar(v);
+
+      for (Arc arc : bsV) {
+        int size = arc.size();
+        double score = arc.ruleScore;
+        List<Double> childrenScores = new ArrayList<Double>();
+        for (int i = 0; i < size; i++) {
+          Vertex child = arc.tails.get(i);
+          double s = iScore[child.start][child.end][child.goal];
+          childrenScores.add(s);
+          score += s;
+        }
+        if (score == Double.NEGATIVE_INFINITY) { continue; }
+        List<Integer> j = new ArrayList<Integer>();
+        for (int i = 0; i < size; i++) {
+          j.add(1);
+        }
+        Derivation d = new Derivation(arc, j, score, childrenScores);
+        candV.add(d, score);
+      }
+      PriorityQueue<Derivation> tmp = new BinaryHeapPriorityQueue<Derivation>();
+      for (int i = 0; i < k; i++) {
+        if (candV.isEmpty()) { break; }
+        Derivation d = candV.removeFirst();
+        tmp.add(d, d.score);
+      }
+      candV = tmp;
+      cand.put(v, candV);
+    }
+    return candV;
+  }
+
+  // note: kPrime is the original k
+  private void lazyKthBest(Vertex v, int k, int kPrime) {
+    PriorityQueue<Derivation> candV = getCandidates(v, kPrime);
+
+    LinkedList<Derivation> dHatV = dHat.get(v);
+    if (dHatV == null) {
+      dHatV = new LinkedList<Derivation>();
+      dHat.put(v,dHatV);
+    }
+    while (dHatV.size() < k) {
+      if (!dHatV.isEmpty()) {
+        Derivation derivation = dHatV.getLast();
+        lazyNext(candV, derivation, kPrime);
+      }
+      if (!candV.isEmpty()) {
+        Derivation d = candV.removeFirst();
+        dHatV.add(d);
+      } else {
+        break;
+      }
+    }
+  }
+
+  private void lazyNext(PriorityQueue<Derivation> candV, Derivation derivation, int kPrime) {
+    List<Vertex> tails = derivation.arc.tails;
+    for  (int i = 0, sz = derivation.arc.size(); i < sz; i++) {
+      List<Integer> j = new ArrayList<Integer>(derivation.j);
+      j.set(i, j.get(i)+1);
+      Vertex Ti = tails.get(i);
+      lazyKthBest(Ti, j.get(i), kPrime);
+      LinkedList<Derivation> dHatTi = dHat.get(Ti);
+      // compute score for this derivation
+      if (j.get(i)-1 >= dHatTi.size()) { continue; }
+      Derivation d = dHatTi.get(j.get(i)-1);
+      double newScore = derivation.score - derivation.childrenScores.get(i) + d.score;
+      List<Double> childrenScores = new ArrayList<Double>(derivation.childrenScores);
+      childrenScores.set(i, d.score);
+      Derivation newDerivation = new Derivation(derivation.arc, j, newScore, childrenScores);
+      if (!candV.contains(newDerivation) && newScore > Double.NEGATIVE_INFINITY) {
+        candV.add(newDerivation, newScore);
+      }
+    }
+  }
+
+  //
+  // END K-BEST STUFF
+  //
+
+

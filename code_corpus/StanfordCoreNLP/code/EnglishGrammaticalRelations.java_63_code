@@ -1,0 +1,19 @@
+  private static void threadSafeAddRelation(GrammaticalRelation relation) {
+    valuesLock.writeLock().lock();
+    try { // try-finally structure taken from Javadoc code sample for ReentrantReadWriteLock
+      synchronizedValues.add(relation);
+      shortNameToGRel.put(relation.toString(), relation);
+    } finally {
+      valuesLock.writeLock().unlock();
+    }
+  }
+
+
+
+  // the exhaustive list of conjunction relations
+  private static final Map<String, GrammaticalRelation> conjs = Generics.newConcurrentHashMap();
+
+  public static Collection<GrammaticalRelation> getConjs() {
+    return conjs.values();
+  }
+

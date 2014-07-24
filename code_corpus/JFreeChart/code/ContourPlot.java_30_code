@@ -1,0 +1,185 @@
+    public void contourRenderer(Graphics2D g2,
+                                Rectangle2D dataArea,
+                                PlotRenderingInfo info,
+                                ContourPlot plot,
+                                ValueAxis horizontalAxis,
+                                ValueAxis verticalAxis,
+                                ColorBar colorBar,
+                                ContourDataset data,
+                                CrosshairState crosshairState) {
+
+        // setup for collecting optional entity info...
+        Rectangle2D.Double entityArea = null;
+        EntityCollection entities = null;
+        if (info != null) {
+            entities = info.getOwner().getEntityCollection();
+        }
+
+        Rectangle2D.Double rect = null;
+        rect = new Rectangle2D.Double();
+
+        //turn off anti-aliasing when filling rectangles
+        Object antiAlias = g2.getRenderingHint(RenderingHints.KEY_ANTIALIASING);
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                RenderingHints.VALUE_ANTIALIAS_OFF);
+
+        // get the data points
+        Number[] xNumber = data.getXValues();
+        Number[] yNumber = data.getYValues();
+        Number[] zNumber = data.getZValues();
+
+        double[] x = new double[xNumber.length];
+        double[] y = new double[yNumber.length];
+
+        for (int i = 0; i < x.length; i++) {
+            x[i] = xNumber[i].doubleValue();
+            y[i] = yNumber[i].doubleValue();
+        }
+
+        int[] xIndex = data.indexX();
+        int[] indexX = data.getXIndices();
+        boolean vertInverted = ((NumberAxis) verticalAxis).isInverted();
+        boolean horizInverted = false;
+        if (horizontalAxis instanceof NumberAxis) {
+            horizInverted = ((NumberAxis) horizontalAxis).isInverted();
+        }
+        double transX = 0.0;
+        double transXm1 = 0.0;
+        double transXp1 = 0.0;
+        double transDXm1 = 0.0;
+        double transDXp1 = 0.0;
+        double transDX = 0.0;
+        double transY = 0.0;
+        double transYm1 = 0.0;
+        double transYp1 = 0.0;
+        double transDYm1 = 0.0;
+        double transDYp1 = 0.0;
+        double transDY = 0.0;
+        int iMax = xIndex[xIndex.length - 1];
+        for (int k = 0; k < x.length; k++) {
+            int i = xIndex[k];
+            if (indexX[i] == k) { // this is a new column
+                if (i == 0) {
+                    transX = horizontalAxis.valueToJava2D(x[k], dataArea,
+                            RectangleEdge.BOTTOM);
+                    transXm1 = transX;
+                    transXp1 = horizontalAxis.valueToJava2D(
+                            x[indexX[i + 1]], dataArea, RectangleEdge.BOTTOM);
+                }
+                else if (i == iMax) {
+                    transX = horizontalAxis.valueToJava2D(x[k], dataArea,
+                            RectangleEdge.BOTTOM);
+                    transXm1 = horizontalAxis.valueToJava2D(x[indexX[i - 1]],
+                            dataArea, RectangleEdge.BOTTOM);
+                    transXp1 = transX;
+                }
+                else {
+                    transX = horizontalAxis.valueToJava2D(x[k], dataArea,
+                            RectangleEdge.BOTTOM);
+                    transXp1 = horizontalAxis.valueToJava2D(x[indexX[i + 1]],
+                            dataArea, RectangleEdge.BOTTOM);
+                    transDXm1 = transDXp1;
+                }
+
+                if (horizInverted) {
+                    transX -= transDXp1;
+                }
+                else {
+                    transX -= transDXm1;
+                }
+
+                transDX = transDXm1 + transDXp1;
+
+                transY = verticalAxis.valueToJava2D(y[k], dataArea,
+                        RectangleEdge.LEFT);
+                transYm1 = transY;
+                if (k + 1 == y.length) {
+                    continue;
+                }
+                transYp1 = verticalAxis.valueToJava2D(y[k + 1], dataArea,
+                        RectangleEdge.LEFT);
+            }
+            else if ((i < indexX.length - 1
+                     && indexX[i + 1] - 1 == k) || k == x.length - 1) {
+                // end of column
+                transY = verticalAxis.valueToJava2D(y[k], dataArea,
+                        RectangleEdge.LEFT);
+                transYm1 = verticalAxis.valueToJava2D(y[k - 1], dataArea,
+                        RectangleEdge.LEFT);
+                transYp1 = transY;
+            }
+            else {
+                transY = verticalAxis.valueToJava2D(y[k], dataArea,
+                        RectangleEdge.LEFT);
+                transYp1 = verticalAxis.valueToJava2D(y[k + 1], dataArea,
+                        RectangleEdge.LEFT);
+                transDYm1 = transDYp1;
+            }
+            if (vertInverted) {
+                transY -= transDYm1;
+            }
+            else {
+                transY -= transDYp1;
+            }
+
+            transDY = transDYm1 + transDYp1;
+
+            rect.setRect(transX, transY, transDX, transDY);
+            if (zNumber[k] != null) {
+                g2.setPaint(colorBar.getPaint(zNumber[k].doubleValue()));
+                g2.fill(rect);
+            }
+            else if (this.missingPaint != null) {
+                g2.setPaint(this.missingPaint);
+                g2.fill(rect);
+            }
+
+            entityArea = rect;
+
+            // add an entity for the item...
+            if (entities != null) {
+                String tip = "";
+                if (getToolTipGenerator() != null) {
+                    tip = this.toolTipGenerator.generateToolTip(data, k);
+                }
+//              Shape s = g2.getClip();
+//              if (s.contains(rect) || s.intersects(rect)) {
+                String url = null;
+                // if (getURLGenerator() != null) {    //dmo: look at this later
+                //      url = getURLGenerator().generateURL(data, series, item);
+                // }
+                // Unlike XYItemRenderer, we need to clone entityArea since it
+                // reused.
+                ContourEntity entity = new ContourEntity(
+                        (Rectangle2D.Double) entityArea.clone(), tip, url);
+                entity.setIndex(k);
+                entities.add(entity);
+//              }
+            }
+
+            // do we need to update the crosshair values?
+            if (plot.isDomainCrosshairLockedOnData()) {
+                if (plot.isRangeCrosshairLockedOnData()) {
+                    // both axes
+                    crosshairState.updateCrosshairPoint(x[k], y[k], transX,
+                            transY, PlotOrientation.VERTICAL);
+                }
+                else {
+                    // just the horizontal axis...
+                    crosshairState.updateCrosshairX(transX);
+                }
+            }
+            else {
+                if (plot.isRangeCrosshairLockedOnData()) {
+                    // just the vertical axis...
+                    crosshairState.updateCrosshairY(transY);
+                }
+            }
+        }
+
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, antiAlias);
+
+        return;
+
+    }
+

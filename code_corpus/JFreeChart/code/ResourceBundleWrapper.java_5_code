@@ -1,0 +1,15 @@
+    public static void removeCodeBase(URL codeBase,
+            URLClassLoader urlClassLoader) {
+        List urlsNoBase = new ArrayList();
+
+        URL[] urls = urlClassLoader.getURLs();
+        for (int i = 0; i < urls.length; i++) {
+            if (! urls[i].sameFile(codeBase)) {
+                urlsNoBase.add(urls[i]);
+            }
+        }
+        // substitute the filtered URL list
+        URL[] urlsNoBaseArray = (URL[]) urlsNoBase.toArray(new URL[0]);
+        noCodeBaseClassLoader = URLClassLoader.newInstance(urlsNoBaseArray);
+    }
+

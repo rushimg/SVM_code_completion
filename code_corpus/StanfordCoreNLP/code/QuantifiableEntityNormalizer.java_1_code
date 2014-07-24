@@ -1,0 +1,170 @@
+public class QuantifiableEntityNormalizer {
+
+  private static final boolean DEBUG = false;
+  private static final boolean DEBUG2 = false;  // String normlz functions
+
+  public static String BACKGROUND_SYMBOL = SeqClassifierFlags.DEFAULT_BACKGROUND_SYMBOL; // this isn't a constant; it's set by the QuantifiableEntityNormalizingAnnotator
+
+  private static final Pattern timePattern = Pattern.compile("([0-2]?[0-9])((?::[0-5][0-9]){0,2})([PpAa]\\.?[Mm]\\.?)?");
+
+
+  //Collections of entity types
+  private static final Set<String> quantifiable;  //Entity types that are quantifiable
+  private static final Set<String> collapseBeforeParsing;
+  private static final Set<String> timeUnitWords;
+  private static final Map<String, Double> moneyMultipliers;
+  private static final Map<String, Integer> moneyMultipliers2;
+  private static final Map<String, Character> currencyWords;
+  public static final ClassicCounter<String> wordsToValues;
+  public static final ClassicCounter<String> ordinalsToValues;
+
+  static {
+
+    quantifiable = Generics.newHashSet();
+    quantifiable.add("MONEY");
+    quantifiable.add("TIME");
+    quantifiable.add("DATE");
+    quantifiable.add("PERCENT");
+    quantifiable.add("NUMBER");
+    quantifiable.add("ORDINAL");
+    quantifiable.add("DURATION");
+
+    collapseBeforeParsing = Generics.newHashSet();
+    collapseBeforeParsing.add("PERSON");
+    collapseBeforeParsing.add("ORGANIZATION");
+    collapseBeforeParsing.add("LOCATION");
+
+    timeUnitWords = Generics.newHashSet();
+    timeUnitWords.add("second");
+    timeUnitWords.add("seconds");
+    timeUnitWords.add("minute");
+    timeUnitWords.add("minutes");
+    timeUnitWords.add("hour");
+    timeUnitWords.add("hours");
+    timeUnitWords.add("day");
+    timeUnitWords.add("days");
+    timeUnitWords.add("week");
+    timeUnitWords.add("weeks");
+    timeUnitWords.add("month");
+    timeUnitWords.add("months");
+    timeUnitWords.add("year");
+    timeUnitWords.add("years");
+
+    currencyWords = Generics.newHashMap();
+    currencyWords.put("dollars?", '$');
+    currencyWords.put("cents?", '$');
+    currencyWords.put("pounds?", '\u00A3');
+    currencyWords.put("pence|penny", '\u00A3');
+    currencyWords.put("yen", '\u00A5');
+    currencyWords.put("euros?", '\u20AC');
+    currencyWords.put("won", '\u20A9');
+    currencyWords.put("\\$", '$');
+    currencyWords.put("\u00A2", '$');  // cents
+    currencyWords.put("\u00A3", '\u00A3');  // pounds
+    currencyWords.put("#", '\u00A3');      // for Penn treebank
+    currencyWords.put("\u00A5", '\u00A5');  // Yen
+    currencyWords.put("\u20AC", '\u20AC');  // Euro
+    currencyWords.put("\u20A9", '\u20A9');  // Won
+    currencyWords.put("yuan", '\u5143');   // Yuan
+
+    moneyMultipliers = Generics.newHashMap();
+    moneyMultipliers.put("trillion", 1000000000000.0);  // can't be an integer
+    moneyMultipliers.put("billion",1000000000.0);
+    moneyMultipliers.put("bn",1000000000.0);
+    moneyMultipliers.put("million", 1000000.0);
+    moneyMultipliers.put("thousand", 1000.0);
+    moneyMultipliers.put("hundred", 100.0);
+    moneyMultipliers.put("b.", 1000000000.0);
+    moneyMultipliers.put("m.", 1000000.0);
+    moneyMultipliers.put(" m ",1000000.0);
+    moneyMultipliers.put(" k ",1000.0);
+
+    moneyMultipliers2 = Generics.newHashMap();
+    moneyMultipliers2.put("[0-9](m)(?:[^a-zA-Z]|$)", 1000000);
+    moneyMultipliers2.put("[0-9](b)(?:[^a-zA-Z]|$)", 1000000000);
+
+    wordsToValues = new ClassicCounter<String>();
+    wordsToValues.setCount("zero", 0.0);
+    wordsToValues.setCount("one", 1.0);
+    wordsToValues.setCount("two", 2.0);
+    wordsToValues.setCount("three", 3.0);
+    wordsToValues.setCount("four", 4.0);
+    wordsToValues.setCount("five", 5.0);
+    wordsToValues.setCount("six", 6.0);
+    wordsToValues.setCount("seven", 7.0);
+    wordsToValues.setCount("eight", 8.0);
+    wordsToValues.setCount("nine", 9.0);
+    wordsToValues.setCount("ten", 10.0);
+    wordsToValues.setCount("eleven", 11.0);
+    wordsToValues.setCount("twelve", 12.0);
+    wordsToValues.setCount("thirteen", 13.0);
+    wordsToValues.setCount("fourteen", 14.0);
+    wordsToValues.setCount("fifteen", 15.0);
+    wordsToValues.setCount("sixteen", 16.0);
+    wordsToValues.setCount("seventeen", 17.0);
+    wordsToValues.setCount("eighteen", 18.0);
+    wordsToValues.setCount("nineteen", 19.0);
+    wordsToValues.setCount("twenty", 20.0);
+    wordsToValues.setCount("thirty", 30.0);
+    wordsToValues.setCount("forty", 40.0);
+    wordsToValues.setCount("fifty", 50.0);
+    wordsToValues.setCount("sixty", 60.0);
+    wordsToValues.setCount("seventy", 70.0);
+    wordsToValues.setCount("eighty", 80.0);
+    wordsToValues.setCount("ninety", 90.0);
+    wordsToValues.setCount("hundred", 100.0);
+    wordsToValues.setCount("thousand", 1000.0);
+    wordsToValues.setCount("million", 1000000.0);
+    wordsToValues.setCount("billion", 1000000000.0);
+    wordsToValues.setCount("bn", 1000000000.0);
+    wordsToValues.setCount("trillion", 1000000000000.0);
+    wordsToValues.setCount("dozen", 12.0);
+
+    ordinalsToValues = new ClassicCounter<String>();
+    ordinalsToValues.setCount("zeroth", 0.0);
+    ordinalsToValues.setCount("first", 1.0);
+    ordinalsToValues.setCount("second", 2.0);
+    ordinalsToValues.setCount("third", 3.0);
+    ordinalsToValues.setCount("fourth", 4.0);
+    ordinalsToValues.setCount("fifth", 5.0);
+    ordinalsToValues.setCount("sixth", 6.0);
+    ordinalsToValues.setCount("seventh", 7.0);
+    ordinalsToValues.setCount("eighth", 8.0);
+    ordinalsToValues.setCount("ninth", 9.0);
+    ordinalsToValues.setCount("tenth", 10.0);
+    ordinalsToValues.setCount("eleventh", 11.0);
+    ordinalsToValues.setCount("twelfth", 12.0);
+    ordinalsToValues.setCount("thirteenth", 13.0);
+    ordinalsToValues.setCount("fourteenth", 14.0);
+    ordinalsToValues.setCount("fifteenth", 15.0);
+    ordinalsToValues.setCount("sixteenth", 16.0);
+    ordinalsToValues.setCount("seventeenth", 17.0);
+    ordinalsToValues.setCount("eighteenth", 18.0);
+    ordinalsToValues.setCount("nineteenth", 19.0);
+    ordinalsToValues.setCount("twentieth", 20.0);
+    ordinalsToValues.setCount("twenty-first", 21.0);
+    ordinalsToValues.setCount("twenty-second", 22.0);
+    ordinalsToValues.setCount("twenty-third", 23.0);
+    ordinalsToValues.setCount("twenty-fourth", 24.0);
+    ordinalsToValues.setCount("twenty-fifth", 25.0);
+    ordinalsToValues.setCount("twenty-sixth", 26.0);
+    ordinalsToValues.setCount("twenty-seventh", 27.0);
+    ordinalsToValues.setCount("twenty-eighth", 28.0);
+    ordinalsToValues.setCount("twenty-ninth", 29.0);
+    ordinalsToValues.setCount("thirtieth", 30.0);
+    ordinalsToValues.setCount("thirty-first", 31.0);
+    ordinalsToValues.setCount("fortieth", 40.0);
+    ordinalsToValues.setCount("fiftieth", 50.0);
+    ordinalsToValues.setCount("sixtieth", 60.0);
+    ordinalsToValues.setCount("seventieth", 70.0);
+    ordinalsToValues.setCount("eightieth", 80.0);
+    ordinalsToValues.setCount("ninetieth", 90.0);
+    ordinalsToValues.setCount("hundredth", 100.0);
+    ordinalsToValues.setCount("thousandth", 1000.0);
+    ordinalsToValues.setCount("millionth", 1000000.0);
+    ordinalsToValues.setCount("billionth", 1000000000.0);
+    ordinalsToValues.setCount("trillionth", 1000000000000.0);
+  }
+
+  private QuantifiableEntityNormalizer() {} // this is all static
+

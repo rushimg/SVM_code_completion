@@ -1,0 +1,31 @@
+  public static <T> Iterable<T> take(
+      final Iterable<T> iterable, final int max) {
+
+    return new Iterable<T>() {
+      final Iterator<T> iterator = iterable.iterator();
+
+      // @Override
+      public Iterator<T> iterator() {
+        return new Iterator<T>() {
+          int i = 0;
+
+          // @Override
+          public boolean hasNext() {
+            return i < max && iterator.hasNext();
+          }
+
+          // @Override
+          public T next() {
+            i++;
+            return iterator.next();
+          }
+
+          // @Override
+          public void remove() {
+            iterator.remove();
+          }
+        };
+      }
+    };
+  }
+

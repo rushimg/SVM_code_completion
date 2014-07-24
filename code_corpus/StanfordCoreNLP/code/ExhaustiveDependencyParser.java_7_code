@@ -1,0 +1,18 @@
+  public void displayHeadScores() {
+    int numTags = tagIndex.size();
+    System.out.println("---- headScore matrix (head x dep, best tags) ----");
+    System.out.print(StringUtils.padOrTrim("", 6));
+    for (int i = 0; i < words.length; i++) {
+      System.out.print(" " + StringUtils.padOrTrim(wordIndex.get(words[i]), 2));
+    }
+    System.out.println();
+    for (int hWord = 0; hWord < words.length; hWord++) {
+      System.out.print(StringUtils.padOrTrim(wordIndex.get(words[hWord]), 6));
+      int bigBD = -1, bigHTag = -1, bigATag = -1;
+      for (int aWord = 0; aWord < words.length; aWord++) {
+        // we basically just max of all the variables, but for distance > 0, we
+        // include a factor for generating something at distance 0, or else
+        // the result is too whacked out to be useful
+        float biggest = Float.NEGATIVE_INFINITY;
+        for (int bd = 0; bd < dg.numDistBins(); bd++) {
+          for (int hTag = 0; hTag < numTags; hTag++) {

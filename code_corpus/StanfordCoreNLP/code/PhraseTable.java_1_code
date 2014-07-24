@@ -1,0 +1,45 @@
+public class PhraseTable implements Serializable
+{
+  private static final String PHRASE_END = "";
+  private static final long serialVersionUID = 1L;
+  Map<String,Object> rootTree;
+
+  public boolean normalize = true;
+  public boolean caseInsensitive = false;
+  public boolean ignorePunctuation = false;
+  public boolean ignorePunctuationTokens = true;
+  public Annotator tokenizer;  // tokenizing annotator
+
+  int nPhrases = 0;
+  int nStrings = 0;
+
+  transient CacheMap<String,String> normalizedCache = new CacheMap<String,String>(5000);
+
+  public PhraseTable() {}
+
+  public PhraseTable(int initSize) { rootTree = new HashMap<String,Object>(initSize); }
+
+  public PhraseTable(boolean normalize, boolean caseInsensitive, boolean ignorePunctuation) {
+    this.normalize = normalize;
+    this.caseInsensitive = caseInsensitive;
+    this.ignorePunctuation = ignorePunctuation;
+  }
+
+  public boolean isEmpty() {
+    return (nPhrases == 0);
+  }
+
+  public boolean containsKey(Object key) {
+    return get(key) != null;
+  }
+
+  public Phrase get(Object key) {
+    if (key instanceof String) {
+      return lookup((String) key);
+    } else if (key instanceof WordList) {
+      return lookup((WordList) key);
+    } else {
+      return null;
+    }
+  }
+

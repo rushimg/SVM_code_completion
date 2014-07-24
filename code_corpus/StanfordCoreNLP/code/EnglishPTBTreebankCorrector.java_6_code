@@ -1,0 +1,500 @@
+          } else if (baseCat.equals("NNP")) {
+            if (word.equals("GRAB")) {
+              cat = changeBaseCat(cat, "VBP");
+            } else if (word.equals("mature")) {
+              cat = changeBaseCat(cat, "VB");
+            } else if (word.equals("Face")) {
+              cat = changeBaseCat(cat, "VBP");
+            } else if (word.equals("are")) {
+              cat = changeBaseCat(cat, "VBP");
+            } else if (word.equals("say")) {
+              cat = changeBaseCat(cat, "VBP");
+            } else if (word.equals("Added")) {
+              cat = changeBaseCat(cat, "VBD");
+            } else if (word.equals("Adds")) {
+              cat = changeBaseCat(cat, "VBZ");
+            } else if (word.equals("BRACED")) {
+              cat = changeBaseCat(cat, "VBD");
+            } else if (word.equals("REQUIRED")) {
+              cat = changeBaseCat(cat, "VBN");
+            } else if (word.equals("REVIEW")) {
+              cat = changeBaseCat(cat, "VB");
+            } else if (word.equals("code-named")) {
+              cat = changeBaseCat(cat, "VBN");
+            } else if (word.equals("Printed")) {
+              cat = changeBaseCat(cat, "VBN");
+            } else if (word.equals("Rated")) {
+              cat = changeBaseCat(cat, "VBN");
+            } else if (word.equals("FALTERS")) {
+              cat = changeBaseCat(cat, "VBZ");
+            } else if (word.equals("Got")) {
+              cat = changeBaseCat(cat, "VBN");
+            } else if (word.equals("Adds")) {
+              cat = changeBaseCat(cat, "VBZ");
+            }
+
+    // Modal fixes: of 'd tagged as VBD and others tagged VBP
+
+    // first fix one where the complement verb tag is wrong
+    ("@VP < (VBD < /^(?i:'d)$/) < (@VP < (VB=badder < seen))\n" +
+    "relabel badder VBN\n" +
+            '\n') +
+
+    ("@VP < (VBP=bad < " + MODAL_WORD + ") < (@VP < VB)\n" +
+    "relabel bad MD\n" +
+            '\n') +
+
+    ("@VP < (VBP=bad < /^(?i:'d)$/) < (@VP < VB)\n" +
+    "relabel bad MD\n" +
+            '\n') +
+
+
+    // this must be ordered before the have/be auxiliary complement fix!
+    ("@VP < POS=bad\n" +
+    "relabel bad VBZ\n" +
+            '\n') +
+
+    ("@VP < (VBD=bad < heaves)\n" +
+    "relabel bad VBZ\n" +
+            '\n') +
+
+    ("@VP < (VB=bad < /.{2}[^e]ed$/) > @S\n" +
+    "relabel bad VBD\n" +
+            '\n') +
+
+    ("@VP < (VB=bad < /^(?i:.{2,}[^e]ed|reset|run|become|hit|remade|gone|rid|put|hurt|become)$/) [ > (@VP < (/^VB/ < " + BE_HAVE_GET + ")) | > (@NP < @NP) ]\n" +
+    "relabel bad VBN\n" +
+            '\n') +
+
+    ("@VP < (VBN=bad < has)\n" +
+    "relabel bad VBZ\n" +
+            '\n') +
+
+    ("@VP < (VBN=bad < grew|fell|had) [ > @S | > (@VP < CONJP|CC > @S)]\n" +
+    "relabel bad VBD\n" +
+            '\n') +
+
+    // Doing the VBN to VBD is too general because of auxiliary deletion in
+    // contracted constructions, headlines, etc.
+    // Nevertheless, there are quite a few cases....
+    // Try ones with objects??
+    // "@VP < VBN=bad [ > @S | > (@VP < CONJP|CC > @S) ]\n" +
+    // "relabel bad VBN\n" +
+    // "\n" +
+    // Below are three patterns that doesn't overgeneralize and still gets a
+    // lot of the cases: note that they don't use @ so as to not match NP-TMP
+    // or S-HLN, and checks for non-NULL constituents
+
+    // must be finite in clause with overt NPsubj and NPobj
+    ("@VP < VBN=bad < (NP !< /^-NONE-$/) [ > (S < (@NP !< /^-NONE-$/)) | > (@VP < CONJP|CC > (S < (@NP !< /^-NONE-$/))) ]\n" +
+    "relabel bad VBD\n" +
+            '\n') +
+
+    // root main clauses with overt subj must be finite
+    ("@VP < VBN=bad [ > (S < (@NP !< /^-NONE-$/) > (__ !> __)) | > (@VP < CONJP|CC > (S < (@NP !< /^-NONE-$/) > (__ !> __))) ]\n" +
+    "relabel bad VBD\n" +
+            '\n') +
+
+    // that clauses (or that-less that clauses) with overt subjects are finite
+    ("@SBAR [ < (/^-NONE-$/ < /^0$/) | < (IN < that) ] < (@S < (NP-SBJ !< /^-NONE-$/) < (@VP < VBN=bad))\n" +
+    "relabel bad VBD\n" +
+            '\n') +
+
+    // similar but more limited corrections of VB to VBP
+    // have to beware getting VB in imperatives, subjunctives, etc.
+    // root main clauses with overt subj must be finite
+    ("@VP < VB=bad [ > (S < (NP-SBJ !< /^-NONE-$/) > (__ !> __)) | > (@VP < CONJP|CC > (S < (NP-SBJ !< /^-NONE-$/) > (__ !> __))) ]\n" +
+    "relabel bad VBP\n" +
+            '\n') +
+
+    // Should have a finite VBP not a VB in a finite relative clause
+    ("@NP < @NP < (@SBAR < @WHNP < (@S < (VP < VB=bad)))\n" +
+    "relabel bad VBP\n" +
+            '\n') +
+
+    ("@VP < CONJP|CC <1 (VBP $.. VB=bad)\n" +
+    "relabel bad VBP\n" +
+            '\n') +
+
+    ("@VP < (VBP=bad < has)\n" +
+    "relabel bad VBZ\n" +
+            '\n') +
+
+    // JJ under VP rewrites (see also above for BARE_VP_VERB generalizations)
+
+    ("@VP < (JJ=bad < own|elaborate) [ > @S | > (@VP < CONJP|CC > @S)]\n" +
+    "relabel bad VBP\n" +
+            '\n') +
+
+    ("@VP < (JJ=bad < /..ing$/) < (@S < (@NP !< /^-NONE-$/) < (VP < TO))\n" +
+    "relabel bad VBG\n" +
+            '\n') +
+
+    ("@VP < (JJ=bad < /...ed$/) [ > @S | > (@VP < CONJP|CC > @S)]\n" +
+    "relabel bad VBD\n" +
+            '\n') +
+
+    ("@VP < (JJ=bad < pressured|known) [ > (@VP < (__ < " + BE + ")) | > (@VP < CONJP|CC > (@VP < (__ < " + BE + "))) ]\n" +
+    "relabel bad VBN\n" +
+            '\n') +
+
+    ("@VP < (JJ=bad < /(?i:..e[dn])$/) > (@VP < (__ < HAVE_AUX_WORD))\n" +
+    "relabel bad VBN\n" +
+            '\n') +
+
+    ("@VP < (JJ=bad < /.{2}ing$/) [ > @S | > (@VP < CONJP|CC > @S)]\n" +
+    "relabel bad VBG\n" +
+            '\n') +
+
+    ("@VP < (JJ=bad < to)\n" +
+    "relabel bad TO\n" +
+            '\n') +
+
+    ("@VP|S < (JJ=bad < all|ALL|All)\n" +
+    "relabel bad RB\n" +
+            '\n') +
+
+    // VBN after have/be auxiliaries
+    ("@VP < VBD=bad [ > (@VP < (/^VB/ < " + BE_HAVE_GET + ")) | > (@VP < CONJP|CC > (@VP < (/^VB/ < " + BE_HAVE_GET + "))) | > (@NP < @NP) ]\n" +
+    "relabel bad VBN\n" +
+            '\n') +
+
+    // Asked, Warned, etc. at start of sentence
+    ("@VP < (VBD=bad < /[A-Z]/) > S-ADV\n" +
+    "relabel bad VBN\n" +
+            '\n') +
+
+    ("@VP < (/^VB/ $. (IN=bad < up|off))\n" +
+    "adjoin (PRT (RP@)) bad\n" +
+            '\n') +
+
+    // remove the two (!) unsure phrasal categories: ADVP|PRT, PRT|ADVP
+    ("@VP < /^VB/ < (/^(?:ADVP|PRT)\\|(?:ADVP|PRT)$/=bad < (RB|NN=badder < back))\n" +
+    "relabel bad PRT\n" +
+    "relabel badder RP\n" +
+            '\n') +
+
+    // make other instances of 'win back' particle verbs
+    ("@VP < (/^VB/ < win|wins|winning|won) < (@ADVP=bad < (RB=badder < back))\n" +
+    "relabel bad PRT\n" +
+    "relabel badder RP\n" +
+            '\n') +
+
+    // TODO: do other instances of put back.  Worth looking at Treebank II -PUT
+
+    ("@VP < (PDT=bad < all)\n" +
+    "relabel bad RB\n" +
+            '\n') +
+
+    ("@VP < (PRT < (VBP=bad < down))\n" +
+    "relabel bad RP\n" +
+            '\n') +
+
+    ("@VP < (PRT=bad < (RBS < best))\n" +
+    "relabel bad ADVP\n" +
+            '\n') +
+
+    ("@VP <1 (VB=bad < plea) <2 (NN=badder < bargain) > (@VP" + MODAL_DO_TO + ")\n" +
+    "relabel bad NN\n" +
+    "relabel badder VB\n" +
+            '\n') +
+
+    // ADJP rules
+
+    (
+    ("@ADJP < UH=bad\n" +
+    "relabel bad JJ\n" +
+            '\n') +
+
+    // "alive and well"
+    ("@ADJP < (JJ < alive) < CC < (RB=bad < well)\n" +
+    "relabel bad JJ\n" +
+            '\n') +
+
+    ("@ADJP < (JJ=bad < more)\n" +
+    "relabel bad JJR\n" +
+            '\n') +
+
+    ("Korean > (NNP=x $- (NNP=y < South))\n" +
+     "relabel x JJ\n" +
+     "relabel y JJ\n" +
+            '\n') +
+
+    ("@ADJP <1 (NNP=x < /^(?:New|San|Los|Des|St\\.|Washington|Hong)$/) <2 (__ < /^(?:York|Francisco|Angeles|London|Orleans|Zealand|Diego|Moines|Louis|D\\.C\\.|Kong)-based$/) !<3 __\n" +
+     "relabel x JJ\n" +
+            '\n') +
+
+    ("@ADJP <1 (__ < New|San|Los) <2 (NNP=y < /^(?:York|Francisco|Angeles)-based$/) !<3 __\n" +
+     "relabel y JJ\n" +
+            '\n') +
+
+    ("@ADJP < (NN=bad < firm|due|permissible)\n" +
+    "relabel bad JJ\n" +
+            '\n') +
+
+    ("@ADJP < (NNS=bad < due)\n" +
+    "relabel bad JJ\n" +
+            '\n') +
+
+    ("@ADJP < (NNP=bad < READY)\n" +
+    "relabel bad JJ\n" +
+            '\n') +
+
+    ("@ADJP < (RB=bad < free|clear|tight|sure|particular|due)\n" +
+    "relabel bad JJ\n" +
+            '\n') +
+    // consider also "hard" -- many but not all cases should be JJ
+
+    ("@ADJP < (RB=bad < likely) > @VP\n" +
+    "relabel bad JJ\n" +
+            '\n') +
+    // reconsider also cases not under VP, but some looked more complex....
+
+    ("@ADJP < (VB=bad < /^(?i:stock|No\\.)$/)\n" +
+    "relabel bad NN\n" +
+            '\n') +
+
+    ("@ADJP < (VBP=bad < fit|close)\n" +
+    "relabel bad JJ\n" +
+            '\n') +
+
+    ("@ADJP < (VB=bad < secure|keen|quiet)\n" +
+    "relabel bad JJ\n" +
+            '\n') +
+
+    ("@ADJP < JJ < (IN=bad < that)\n" +
+     "relabel bad RB\n" +
+            '\n') +
+
+    "") +
+
+
+    ("@QP < (IN|JJ|RBR|RP=bad < about)\n" +
+    "relabel bad RB\n" +
+            '\n') +
+
+    ("@QP < (JJ=bad < as)\n" +
+    "relabel bad RB\n" +
+            '\n') +
+    // look at 'as' examples, but don't want to maul 'as much as X' idiom
+
+    ("@QP < (JJ|JJS=bad < more|less)\n" +
+    "relabel bad JJR\n" +
+            '\n') +
+    // need to work out whether to relabel all the RBR ones similarly....
+
+    ("@QP < (RP=bad < up $. (TO <to))\n" +
+    "relabel bad IN\n" +
+            '\n') +
+    // there's some IN/RB variability for this up ... what's correct/why?
+
+    ("@ADVP < EX=bad\n" +
+    "relabel bad RB\n" +
+            '\n') +
+
+    ("@ADVP < (NN=bad < that)\n" +
+    "relabel bad DT\n" +
+            '\n') +
+
+    ("@ADVP < (NNP=bad [ < /.{2}ly$/ | < Overall | < Systemwide ])\n" +
+    "relabel bad RB\n" +
+            '\n') +
+
+    ("@ADVP < (RP=bad < around|before)\n" +
+    "relabel bad RB\n" +
+            '\n') +
+
+    ("@ADVP=bad <1 PRT !<2 __\n" +
+    "excise bad bad\n" +
+            '\n') +
+
+    // special for let
+    ("@ADVP < (VBD=bad < let) < (RB=badder < alone)\n" +
+    "relabel bad VB\n" +
+    "relabel badder JJ\n" +
+            '\n') +
+
+    // in general must be non finite
+    ("@ADVP < VBD=bad\n" +
+    "relabel bad VBN\n" +
+            '\n') +
+
+
+    ("@SBAR < (DT|WDT|NN|NNP|RB=bad < that|because|while|Though|Whether)\n" +
+    "relabel bad IN\n" +
+            '\n') +
+
+    ("@SQ < VB=bad\n" +
+    "relabel bad VBP\n" +
+            '\n') +
+
+    ("@SQ < (NNS=bad $. NP-SBJ)\n" +
+    "relabel bad VBZ\n" +
+            '\n') +
+
+    ("@SQ < (NNP=bad < Does)\n" +
+    "relabel bad VBZ\n" +
+            '\n') +
+
+    ("@SQ < (NNP=bad < Should)\n" +
+    "relabel bad MD\n" +
+            '\n') +
+
+    ("@X < (JJS=bad < more|less)\n" +
+    "relabel bad JJR\n" +
+            '\n') +
+
+    // Under INTJ
+
+
+    ("@INTJ < (RB=bad < well|WELL|Well)\n" +
+    "relabel bad UH\n" +
+            '\n') +
+
+    ("@INTJ < (NNP=bad < UH|HUH)\n" +
+    "relabel bad UH\n" +
+            '\n') +
+
+
+    // non-phrasally rooted POS tag corrections
+
+    ("JJ=bad < /^%$/\n" +
+    "relabel bad NN\n" +
+            '\n') +
+
+    ("NN|NNP|JJ|IN=bad < and\n" +
+    "relabel bad CC\n" +
+            '\n') +
+
+    ("VB=bad < even\n" +
+    "relabel bad RB\n" +
+            '\n') +
+
+    // bad comma tags section
+
+    ("/^,$/=bad < /^2$/\n" +
+    "relabel bad CD\n" +
+            '\n') +
+
+    ("/^,$/=bad < an\n" +
+    "relabel bad DT\n" +
+            '\n') +
+
+    ("/^,$/=bad < Wa\n" +
+    "relabel bad NNP\n" +
+            '\n') +
+
+    ("/^,$/=bad < section\n" +
+    "relabel bad NN\n" +
+            '\n') +
+
+    ("/^,$/=bad < underwriters\n" +
+    "relabel bad NNS\n" +
+            '\n') +
+
+
+    ("CD=bad < high-risk\n" +
+    "relabel bad JJ\n" +
+            '\n') +
+
+    ("RB|RP|NN=bad < for|at\n" +
+    "relabel bad IN\n" +
+            '\n') +
+
+    ("NN=bad [ < /^.\\.$/ | < Lorillard ]\n" +
+    "relabel bad NNP\n" +
+            '\n') +
+
+    ("JJS=bad < StatesWest\n" +
+    "relabel bad NNP\n" +
+            '\n') +
+
+    ("JJR=bad < Richter|Gartner\n" +
+    "relabel bad NNP\n" +
+            '\n') +
+
+    ("IN|JJ|NN|NNP=bad < /^[Aa][Nn][Dd]$/\n" +
+    "relabel bad CC\n" +
+            '\n') +
+
+    // This is for 'ago' as adverb
+    // TODO: reconsider this -- I think Pullum argues for IN
+    // "IN=bad < ago\n" +
+    // "relabel bad RB\n" +
+    // "\n" +
+
+    // The next several are for 'ago' as postposition IN
+    // NP is marked -ADV at least once... (strip it?)
+    "relabel bad IN\n" +
+    "relabel badder PP-TMP\n" +
+            '\n') +
+
+    ("ADV-TMP=bad < (ADVP|NP=badder < (IN < ago) < @NP)\n" +
+    "relabel bad PP-TMP\n" +
+    "relabel badder PP\n" +
+            '\n') +
+
+    // TODO: for cases embedded in ADV-TMP: "a year ago, when X was snamed pres":
+    // higher one PP-TMP.
+    ("/^(?:ADVP|NP)/=badder < (IN < ago) < @NP\n" +
+    "relabel badder PP-TMP\n" +
+            '\n') +
+
+    ("@NP=badder < (RB=bad < ago) < @NP\n" +
+    "relabel bad IN\n" +
+    "relabel badder PP-TMP\n" +
+            '\n') +
+
+    ("/^ADVP-TMP/=badder < (RB < not|Not|so|So) < (RB=jj < long) < (RB=bad < ago)\n" +
+    "adjoin (PP-TMP NP@ (IN ago)) badder\n" +
+    "delete bad\n" +
+    "relabel jj JJ\n" +
+            '\n') +
+
+    ("/^ADVP-TMP/=badder <1 (RB|JJ=jj < long) <2 (RB=bad < ago)\n" +
+    "adjoin (PP-TMP NP@ (IN ago)) badder\n" +
+    "delete bad\n" +
+    "relabel jj JJ\n" +
+            '\n') +
+
+    ("ADJP=badder <1 (NN=baddest < Year) <2 (RB=bad < ago)\n" +
+    "adjoin (NP NN@) baddest\n" +
+    "relabel badder PP-TMP\n" +
+    "relabel bad IN\n" +
+            '\n') +
+
+    ("@NP=bad <1 NP <2 (ADVP-TMP=badder < (RB=baddest < ago))\n" +
+    "relabel bad PP-TMP\n" +
+    "excise badder badder\n" +
+    "relabel baddest IN\n" +
+            '\n') +
+
+    ("/^NP/=badder < DT|CD < NN|NNS < (RB|IN=bad < ago)\n" +
+    "adjoin (PP-TMP NP@ (IN ago)) badder\n" +
+    "delete bad\n" +
+            '\n') +
+
+    // TODO: Provisional rule for this tree; should be revised!
+    //    (ADVP-TMP
+    //     (ADVP
+    //      (ADVP (RB As) (RB long))
+    //      (PP (IN as)
+    //       (NP (DT a) (NN decade))))
+    //     (IN ago))
+    ("ADVP-TMP=badder < (IN < ago) < @ADVP\n" +
+    "relabel badder PP-TMP\n" +
+            '\n') +
+
+    // TODO: this suggests a posposing in the above sentence! Do as movement?
+    //    (ADVP-TMP
+    //     (ADVP (RB as) (JJ long) (RB ago))
+    //     (PP (IN as)
+    //      (NP (JJ early) (CD 1988))))
+
+
+    // "RB=bad < ago\n" +
+    // "relabel bad IN\n" +
+    // "\n" +
+
+
+

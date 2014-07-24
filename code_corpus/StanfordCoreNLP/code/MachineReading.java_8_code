@@ -1,0 +1,19 @@
+  private static void removeSkippableRelations(Annotation dataset, Set<String> relationsToSkip) {
+    if (relationsToSkip == null || relationsToSkip.size() == 0) {
+      return;
+    }
+    for (CoreMap sent : dataset.get(CoreAnnotations.SentencesAnnotation.class)) {
+      List<RelationMention> relationMentions = sent.get(MachineReadingAnnotations.RelationMentionsAnnotation.class);
+      if (relationMentions == null) {
+        continue;
+      }
+      List<RelationMention> newRelationMentions = new ArrayList<RelationMention>();
+      for (RelationMention rm: relationMentions) {
+        if (!relationsToSkip.contains(rm.getType())) {
+          newRelationMentions.add(rm);
+        }
+      }
+      sent.set(MachineReadingAnnotations.RelationMentionsAnnotation.class, newRelationMentions);
+    }
+  }
+

@@ -1,0 +1,185 @@
+    public void drawItem(Graphics2D g2,
+                         XYItemRendererState state,
+                         Rectangle2D dataArea,
+                         PlotRenderingInfo info,
+                         XYPlot plot,
+                         ValueAxis domainAxis,
+                         ValueAxis rangeAxis,
+                         XYDataset dataset,
+                         int series,
+                         int item,
+                         CrosshairState crosshairState,
+                         int pass) {
+
+        PlotOrientation orientation = plot.getOrientation();
+
+        // Get the item count for the series, so that we can know which is the
+        // end of the series.
+        int itemCount = dataset.getItemCount(series);
+
+        Paint paint = getItemPaint(series, item);
+        Stroke seriesStroke = getItemStroke(series, item);
+        g2.setPaint(paint);
+        g2.setStroke(seriesStroke);
+
+        // get the data point...
+        double x1 = dataset.getXValue(series, item);
+        double y1 = dataset.getYValue(series, item);
+        double x = x1;
+        double y = Double.isNaN(y1) ? getRangeBase() : y1;
+        double transX1 = domainAxis.valueToJava2D(x, dataArea,
+                plot.getDomainAxisEdge());
+        double transY1 = rangeAxis.valueToJava2D(y, dataArea,
+                plot.getRangeAxisEdge());
+
+        // avoid possible sun.dc.pr.PRException: endPath: bad path
+        transY1 = restrictValueToDataArea(transY1, plot, dataArea);
+
+        if (this.pArea == null && !Double.isNaN(y1)) {
+
+            // Create a new Area for the series
+            this.pArea = new Polygon();
+
+            // start from Y = rangeBase
+            double transY2 = rangeAxis.valueToJava2D(getRangeBase(), dataArea,
+                    plot.getRangeAxisEdge());
+
+            // avoid possible sun.dc.pr.PRException: endPath: bad path
+            transY2 = restrictValueToDataArea(transY2, plot, dataArea);
+
+            // The first point is (x, this.baseYValue)
+            if (orientation == PlotOrientation.VERTICAL) {
+                this.pArea.addPoint((int) transX1, (int) transY2);
+            }
+            else if (orientation == PlotOrientation.HORIZONTAL) {
+                this.pArea.addPoint((int) transY2, (int) transX1);
+            }
+        }
+
+        double transX0 = 0;
+        double transY0 = restrictValueToDataArea(getRangeBase(), plot,
+                dataArea);
+
+        double x0;
+        double y0;
+        if (item > 0) {
+            // get the previous data point...
+            x0 = dataset.getXValue(series, item - 1);
+            y0 = Double.isNaN(y1) ? y1 : dataset.getYValue(series, item - 1);
+
+            x = x0;
+            y = Double.isNaN(y0) ? getRangeBase() : y0;
+            transX0 = domainAxis.valueToJava2D(x, dataArea,
+                    plot.getDomainAxisEdge());
+            transY0 = rangeAxis.valueToJava2D(y, dataArea,
+                    plot.getRangeAxisEdge());
+
+            // avoid possible sun.dc.pr.PRException: endPath: bad path
+            transY0 = restrictValueToDataArea(transY0, plot, dataArea);
+
+            if (Double.isNaN(y1)) {
+                // NULL value -> insert point on base line
+                // instead of 'step point'
+                transX1 = transX0;
+                transY0 = transY1;
+            }
+            if (transY0 != transY1) {
+                // not just a horizontal bar but need to perform a 'step'.
+                if (orientation == PlotOrientation.VERTICAL) {
+                    this.pArea.addPoint((int) transX1, (int) transY0);
+                }
+                else if (orientation == PlotOrientation.HORIZONTAL) {
+                    this.pArea.addPoint((int) transY0, (int) transX1);
+                }
+            }
+        }
+
+        Shape shape = null;
+        if (!Double.isNaN(y1)) {
+            // Add each point to Area (x, y)
+            if (orientation == PlotOrientation.VERTICAL) {
+                this.pArea.addPoint((int) transX1, (int) transY1);
+            }
+            else if (orientation == PlotOrientation.HORIZONTAL) {
+                this.pArea.addPoint((int) transY1, (int) transX1);
+            }
+
+            if (getShapesVisible()) {
+                shape = getItemShape(series, item);
+                if (orientation == PlotOrientation.VERTICAL) {
+                    shape = ShapeUtilities.createTranslatedShape(shape,
+                            transX1, transY1);
+                }
+                else if (orientation == PlotOrientation.HORIZONTAL) {
+                    shape = ShapeUtilities.createTranslatedShape(shape,
+                            transY1, transX1);
+                }
+                if (isShapesFilled()) {
+                    g2.fill(shape);
+                }
+                else {
+                    g2.draw(shape);
+                }
+            }
+            else {
+                if (orientation == PlotOrientation.VERTICAL) {
+                    shape = new Rectangle2D.Double(transX1 - 2, transY1 - 2,
+                            4.0, 4.0);
+                }
+                else if (orientation == PlotOrientation.HORIZONTAL) {
+                    shape = new Rectangle2D.Double(transY1 - 2, transX1 - 2,
+                            4.0, 4.0);
+                }
+            }
+        }
+
+        // Check if the item is the last item for the series or if it
+        // is a NULL value and number of items > 0.  We can't draw an area for
+        // a single point.
+        if (getPlotArea() && item > 0 && this.pArea != null
+                          && (item == (itemCount - 1) || Double.isNaN(y1))) {
+
+            double transY2 = rangeAxis.valueToJava2D(getRangeBase(), dataArea,
+                    plot.getRangeAxisEdge());
+
+            // avoid possible sun.dc.pr.PRException: endPath: bad path
+            transY2 = restrictValueToDataArea(transY2, plot, dataArea);
+
+            if (orientation == PlotOrientation.VERTICAL) {
+                // Add the last point (x,0)
+                this.pArea.addPoint((int) transX1, (int) transY2);
+            }
+            else if (orientation == PlotOrientation.HORIZONTAL) {
+                // Add the last point (x,0)
+                this.pArea.addPoint((int) transY2, (int) transX1);
+            }
+
+            // fill the polygon
+            g2.fill(this.pArea);
+
+            // draw an outline around the Area.
+            if (isOutline()) {
+                g2.setStroke(plot.getOutlineStroke());
+                g2.setPaint(plot.getOutlinePaint());
+                g2.draw(this.pArea);
+            }
+
+            // start new area when needed (see above)
+            this.pArea = null;
+        }
+
+        // do we need to update the crosshair values?
+        if (!Double.isNaN(y1)) {
+            int domainAxisIndex = plot.getDomainAxisIndex(domainAxis);
+            int rangeAxisIndex = plot.getRangeAxisIndex(rangeAxis);
+            updateCrosshairValues(crosshairState, x1, y1, domainAxisIndex,
+                    rangeAxisIndex, transX1, transY1, orientation);
+        }
+
+        // collect entity and tool tip information...
+        EntityCollection entities = state.getEntityCollection();
+        if (entities != null) {
+            addEntity(entities, shape, dataset, series, item, transX1, transY1);
+        }
+    }
+

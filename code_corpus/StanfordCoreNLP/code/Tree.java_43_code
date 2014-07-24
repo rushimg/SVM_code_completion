@@ -1,0 +1,55 @@
+  private void indentedXMLPrint(String indent, String pad,
+                                PrintWriter pw, boolean printScores) {
+    StringBuilder sb = new StringBuilder(indent);
+    Tree[] children = children();
+    Label label = label();
+    if (label != null) {
+      sb.append("<");
+      if (children.length > 0) {
+        sb.append("node value=\"");
+      } else {
+        sb.append("leaf value=\"");
+      }
+      sb.append(XMLUtils.escapeXML(Sentence.wordToString(label, true)));
+      sb.append("\"");
+      if (printScores) {
+        sb.append(" score=");
+        sb.append(score());
+      }
+      if (children.length > 0) {
+        sb.append(">");
+      } else {
+        sb.append("/>");
+      }
+    } else {
+      if (children.length > 0) {
+        sb.append("<node>");
+      } else {
+        sb.append("<leaf/>");
+      }
+    }
+    pw.println(sb.toString());
+    if (children.length > 0) {
+      String newIndent = indent + pad;
+      for (Tree child : children) {
+        child.indentedXMLPrint(newIndent, pad, pw, printScores);
+      }
+      pw.println(indent + "</node>");
+    }
+  }
+
+
+  private static void displayChildren(Tree[] trChildren, int indent, boolean parentLabelNull, boolean onlyLabelValue, PrintWriter pw) {
+    boolean firstSibling = true;
+    boolean leftSibIsPreTerm = true;  // counts as true at beginning
+    for (Tree currentTree : trChildren) {
+      currentTree.display(indent, parentLabelNull, firstSibling, leftSibIsPreTerm, false, onlyLabelValue, pw);
+      leftSibIsPreTerm = currentTree.isPreTerminal();
+      // CC is a special case for English, but leave it in so we can exactly match PTB3 tree formatting
+      if (currentTree.value() != null && currentTree.value().startsWith("CC")) {
+        leftSibIsPreTerm = false;
+      }
+      firstSibling = false;
+    }
+  }
+

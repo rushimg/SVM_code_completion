@@ -1,0 +1,29 @@
+  public static GrammaticalRelation getConj(String conjunctionString) {
+    GrammaticalRelation result = conjs.get(conjunctionString);
+    if (result == null) {
+      synchronized(conjs) {
+        result = conjs.get(conjunctionString);
+        if (result == null) {
+          result = new GrammaticalRelation(Language.English, "conj", "conj_collapsed", null, CONJUNCT, conjunctionString);
+          conjs.put(conjunctionString, result);
+          threadSafeAddRelation(result);
+        }
+      }
+    }
+    return result;
+  }
+
+  // the exhaustive list of preposition relations
+  private static final Map<String, GrammaticalRelation> preps = Generics.newConcurrentHashMap();
+  private static final Map<String, GrammaticalRelation> prepsC = Generics.newConcurrentHashMap();
+
+
+  public static Collection<GrammaticalRelation> getPreps() {
+    return preps.values();
+  }
+
+  public static Collection<GrammaticalRelation> getPrepsC() {
+    return prepsC.values();
+  }
+
+

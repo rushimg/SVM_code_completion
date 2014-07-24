@@ -1,0 +1,92 @@
+    private void updateBounds() {
+        this.maximumRangeValue = Double.NaN;
+        this.maximumRangeValueRow = -1;
+        this.maximumRangeValueColumn = -1;
+        this.minimumRangeValue = Double.NaN;
+        this.minimumRangeValueRow = -1;
+        this.minimumRangeValueColumn = -1;
+        this.maximumRangeValueIncStdDev = Double.NaN;
+        this.maximumRangeValueIncStdDevRow = -1;
+        this.maximumRangeValueIncStdDevColumn = -1;
+        this.minimumRangeValueIncStdDev = Double.NaN;
+        this.minimumRangeValueIncStdDevRow = -1;
+        this.minimumRangeValueIncStdDevColumn = -1;
+
+        int rowCount = this.data.getRowCount();
+        int columnCount = this.data.getColumnCount();
+        for (int r = 0; r < rowCount; r++) {
+            for (int c = 0; c < columnCount; c++) {
+                double m = Double.NaN;
+                double sd = Double.NaN;
+                MeanAndStandardDeviation masd = (MeanAndStandardDeviation)
+                        this.data.getObject(r, c);
+                if (masd == null) {
+                    continue;
+                }
+                m = masd.getMeanValue();
+                sd = masd.getStandardDeviationValue();
+
+                if (!Double.isNaN(m)) {
+
+                    // update the max value
+                    if (Double.isNaN(this.maximumRangeValue)) {
+                        this.maximumRangeValue = m;
+                        this.maximumRangeValueRow = r;
+                        this.maximumRangeValueColumn = c;
+                    }
+                    else {
+                        if (m > this.maximumRangeValue) {
+                            this.maximumRangeValue = m;
+                            this.maximumRangeValueRow = r;
+                            this.maximumRangeValueColumn = c;
+                        }
+                    }
+
+                    // update the min value
+                    if (Double.isNaN(this.minimumRangeValue)) {
+                        this.minimumRangeValue = m;
+                        this.minimumRangeValueRow = r;
+                        this.minimumRangeValueColumn = c;
+                    }
+                    else {
+                        if (m < this.minimumRangeValue) {
+                            this.minimumRangeValue = m;
+                            this.minimumRangeValueRow = r;
+                            this.minimumRangeValueColumn = c;
+                        }
+                    }
+
+                    if (!Double.isNaN(sd)) {
+                        // update the max value
+                        if (Double.isNaN(this.maximumRangeValueIncStdDev)) {
+                            this.maximumRangeValueIncStdDev = m + sd;
+                            this.maximumRangeValueIncStdDevRow = r;
+                            this.maximumRangeValueIncStdDevColumn = c;
+                        }
+                        else {
+                            if (m + sd > this.maximumRangeValueIncStdDev) {
+                                this.maximumRangeValueIncStdDev = m + sd;
+                                this.maximumRangeValueIncStdDevRow = r;
+                                this.maximumRangeValueIncStdDevColumn = c;
+                            }
+                        }
+
+                        // update the min value
+                        if (Double.isNaN(this.minimumRangeValueIncStdDev)) {
+                            this.minimumRangeValueIncStdDev = m - sd;
+                            this.minimumRangeValueIncStdDevRow = r;
+                            this.minimumRangeValueIncStdDevColumn = c;
+                        }
+                        else {
+                            if (m - sd < this.minimumRangeValueIncStdDev) {
+                                this.minimumRangeValueIncStdDev = m - sd;
+                                this.minimumRangeValueIncStdDevRow = r;
+                                this.minimumRangeValueIncStdDevColumn = c;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+

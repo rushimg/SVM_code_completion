@@ -1,0 +1,34 @@
+  public MulticoreWrapper(int numThreads, ThreadsafeProcessor<I,O> processor, boolean orderResults) {
+    nThreads = numThreads <= 0 ? Runtime.getRuntime().availableProcessors() : numThreads;
+    this.orderResults = orderResults;
+    threadPool = buildThreadPool(nThreads);
+    //    queue = new ExecutorCompletionService<Integer>(threadPool);
+    idleProcessors = new ArrayBlockingQueue<Integer>(nThreads, false);
+    callback = new JobCallback<O>() {
+      @Override
+      public void call(QueueItem<O> result, int processorId) {
+        outputQueue.put(result.id, result.item);
+        idleProcessors.add(processorId);
+      }
+    };
+
+    // Sanity check: Fixed thread pool so prevent timeouts.
+    // Default should be false
+    threadPool.allowCoreThreadTimeOut(false);
+    threadPool.prestartAllCoreThreads();
+
+    // Setup the processors, one per thread
+    List<ThreadsafeProcessor<I,O>> procList = new ArrayList<ThreadsafeProcessor<I,O>>(nThreads);
+    procList.add(processor);
+    idleProcessors.add(0);
+    for (int i = 1; i < nThreads; ++i) {
+      procList.add(processor.newInstance());
+      idleProcessors.add(i);
+    }
+    processorList = Collections.unmodifiableList(procList);
+  }
+
+  protected ThreadPoolExecutor buildThreadPool(int nThreads) {
+    return (ThreadPoolExecutor) Executors.newFixedThreadPool(nThreads);
+  }
+

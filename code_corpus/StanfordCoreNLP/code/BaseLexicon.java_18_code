@@ -1,0 +1,16 @@
+  @Override
+  public void writeData(Writer w) throws IOException {
+    PrintWriter out = new PrintWriter(w);
+
+    for (IntTaggedWord itw : seenCounter.keySet()) {
+      out.println(itw.toLexicalEntry(wordIndex, tagIndex) + " SEEN " + seenCounter.getCount(itw));
+    }
+    for (IntTaggedWord itw : getUnknownWordModel().unSeenCounter().keySet()) {
+      out.println(itw.toLexicalEntry(wordIndex, tagIndex) + " UNSEEN " + getUnknownWordModel().unSeenCounter().getCount(itw));
+    }
+    for (int i = 0; i < smooth.length; i++) {
+      out.println("smooth[" + i + "] = " + smooth[i]);
+    }
+    out.flush();
+  }
+

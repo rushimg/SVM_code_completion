@@ -1,0 +1,32 @@
+    protected Paint lookupSectionOutlinePaint(Comparable key,
+            boolean autoPopulate) {
+
+        // is there an override?
+        Paint result = getSectionOutlinePaint();
+        if (result != null) {
+            return result;
+        }
+
+        // if not, check if there is a paint defined for the specified key
+        result = this.sectionOutlinePaintMap.getPaint(key);
+        if (result != null) {
+            return result;
+        }
+
+        // nothing defined - do we autoPopulate?
+        if (autoPopulate) {
+            DrawingSupplier ds = getDrawingSupplier();
+            if (ds != null) {
+                result = ds.getNextOutlinePaint();
+                this.sectionOutlinePaintMap.put(key, result);
+            }
+            else {
+                result = this.baseSectionOutlinePaint;
+            }
+        }
+        else {
+            result = this.baseSectionOutlinePaint;
+        }
+        return result;
+    }
+

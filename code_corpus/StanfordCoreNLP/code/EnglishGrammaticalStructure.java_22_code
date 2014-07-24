@@ -1,0 +1,202 @@
+  private static void collapse3WP(Collection<TypedDependency> list) {
+    Collection<TypedDependency> newTypedDeps = new ArrayList<TypedDependency>();
+
+    // first, loop over the prepositions for NP annotation
+    for (String[] mwp : THREEWORD_PREPS) {
+      newTypedDeps.clear();
+
+      TreeGraphNode mwp0 = null;
+      TreeGraphNode mwp1 = null;
+      TreeGraphNode mwp2 = null;
+
+      TypedDependency dep1 = null;
+      TypedDependency dep2 = null;
+
+      // first find the first part of the 3word preposition: dep(mpw[0], mwp[1])
+      // the two words should be next to another in the sentence (difference of
+      // indexes = 1)
+
+      for (TypedDependency td : list) {
+        if (td.gov().value().equalsIgnoreCase(mwp[0]) && td.dep().value().equalsIgnoreCase(mwp[1]) && Math.abs(td.gov().index() - td.dep().index()) == 1) {
+          mwp0 = td.gov();
+          mwp1 = td.dep();
+          dep1 = td;
+        }
+      }
+
+      // find the second part of the 3word preposition: dep(mpw[1], mwp[2])
+      // the two words should be next to another in the sentence (difference of
+      // indexes = 1)
+
+      for (TypedDependency td : list) {
+        if (td.gov() == mwp1 && td.dep().value().equalsIgnoreCase(mwp[2]) && Math.abs(td.gov().index() - td.dep().index()) == 1) {
+          mwp2 = td.dep();
+          dep2 = td;
+        }
+      }
+
+      if (dep1 != null && dep2 != null) {
+
+        // now search for prep(gov, mwp0)
+        TreeGraphNode governor = null;
+        TypedDependency prep = null;
+        for (TypedDependency td1 : list) {
+          if (td1.dep() == mwp0 && td1.reln() == PREPOSITIONAL_MODIFIER) {// we
+            // found
+            // prep(gov,
+            // mwp0)
+            prep = td1;
+            governor = prep.gov();
+          }
+        }
+
+        // search for the complement: pobj|pcomp(mwp2,X)
+
+        TypedDependency pobj = null;
+        TypedDependency newtd = null;
+        for (TypedDependency td2 : list) {
+          if (td2.gov() == mwp2 && td2.reln() == PREPOSITIONAL_OBJECT) {
+            pobj = td2;
+            // create the new gr relation
+            GrammaticalRelation gr = EnglishGrammaticalRelations.getPrep(mwp[0] + '_' + mwp[1] + '_' + mwp[2]);
+            if (governor != null) {
+              newtd = new TypedDependency(gr, governor, pobj.dep());
+            }
+          }
+          if (td2.gov() == mwp2 && td2.reln() == PREPOSITIONAL_COMPLEMENT) {
+            pobj = td2;
+            // create the new gr relation
+            GrammaticalRelation gr = EnglishGrammaticalRelations.getPrepC(mwp[0] + '_' + mwp[1] + '_' + mwp[2]);
+            if (governor != null) {
+              newtd = new TypedDependency(gr, governor, pobj.dep());
+            }
+          }
+        }
+
+        // only if we found the governor and complement parts, set to KILL and
+        // remove
+        // and add the new one
+        if (prep != null && pobj != null && newtd != null) {
+          prep.setReln(KILL);
+          dep1.setReln(KILL);
+          dep2.setReln(KILL);
+          pobj.setReln(KILL);
+          newTypedDeps.add(newtd);
+
+          // now remove typed dependencies with reln "kill"
+          // and promote possible orphans
+          for (TypedDependency td1 : list) {
+            if (td1.reln() != KILL) {
+              if (td1.gov() == mwp0 || td1.gov() == mwp1 || td1.gov() == mwp2) {
+                td1.setGov(governor);
+              }
+              if (!newTypedDeps.contains(td1)) {
+                newTypedDeps.add(td1);
+              }
+            }
+          }
+          list.clear();
+          list.addAll(newTypedDeps);
+        }
+      }
+    }
+
+    // second, loop again looking at flat annotation
+    for (String[] mwp : THREEWORD_PREPS) {
+      newTypedDeps.clear();
+
+      TreeGraphNode mwp0 = null;
+      TreeGraphNode mwp1 = null;
+      TreeGraphNode mwp2 = null;
+
+      TypedDependency dep1 = null;
+      TypedDependency dep2 = null;
+
+      // first find the first part of the 3word preposition: dep(mpw[0], mwp[1])
+      // the two words should be next to another in the sentence (difference of
+      // indexes = 1)
+      for (TypedDependency td : list) {
+        if (td.gov().value().equalsIgnoreCase(mwp[0]) && td.dep().value().equalsIgnoreCase(mwp[1]) && Math.abs(td.gov().index() - td.dep().index()) == 1) {
+          mwp0 = td.gov();
+          mwp1 = td.dep();
+          dep1 = td;
+        }
+      }
+
+      // find the second part of the 3word preposition: dep(mpw[0], mwp[2])
+      // the two words should be one word apart in the sentence (difference of
+      // indexes = 2)
+      for (TypedDependency td : list) {
+        if (td.gov() == mwp0 && td.dep().value().equalsIgnoreCase(mwp[2]) && Math.abs(td.gov().index() - td.dep().index()) == 2) {
+          mwp2 = td.dep();
+          dep2 = td;
+        }
+      }
+
+      if (dep1 != null && dep2 != null) {
+
+        // now search for prep(gov, mwp0)
+        TreeGraphNode governor = null;
+        TypedDependency prep = null;
+        for (TypedDependency td1 : list) {
+          if (td1.dep() == mwp0 && td1.reln() == PREPOSITIONAL_MODIFIER) {// we
+            // found
+            // prep(gov,
+            // mwp0)
+            prep = td1;
+            governor = prep.gov();
+          }
+        }
+
+        // search for the complement: pobj|pcomp(mwp0,X)
+
+        TypedDependency pobj = null;
+        TypedDependency newtd = null;
+        for (TypedDependency td2 : list) {
+          if (td2.gov() == mwp0 && td2.reln() == PREPOSITIONAL_OBJECT) {
+            pobj = td2;
+            // create the new gr relation
+            GrammaticalRelation gr = EnglishGrammaticalRelations.getPrep(mwp[0] + '_' + mwp[1] + '_' + mwp[2]);
+            if (governor != null) {
+              newtd = new TypedDependency(gr, governor, pobj.dep());
+            }
+          }
+          if (td2.gov() == mwp0 && td2.reln() == PREPOSITIONAL_COMPLEMENT) {
+            pobj = td2;
+            // create the new gr relation
+            GrammaticalRelation gr = EnglishGrammaticalRelations.getPrepC(mwp[0] + '_' + mwp[1] + '_' + mwp[2]);
+            if (governor != null) {
+              newtd = new TypedDependency(gr, governor, pobj.dep());
+            }
+          }
+        }
+
+        // only if we found the governor and complement parts, set to KILL and
+        // remove
+        // and add the new one
+        if (prep != null && pobj != null && newtd != null) {
+          prep.setReln(KILL);
+          dep1.setReln(KILL);
+          dep2.setReln(KILL);
+          pobj.setReln(KILL);
+          newTypedDeps.add(newtd);
+
+          // now remove typed dependencies with reln "kill"
+          // and promote possible orphans
+          for (TypedDependency td1 : list) {
+            if (td1.reln() != KILL) {
+              if (td1.gov() == mwp0 || td1.gov() == mwp1 || td1.gov() == mwp2) {
+                td1.setGov(governor);
+              }
+              if (!newTypedDeps.contains(td1)) {
+                newTypedDeps.add(td1);
+              }
+            }
+          }
+          list.clear();
+          list.addAll(newTypedDeps);
+        }
+      }
+    }
+  }
+

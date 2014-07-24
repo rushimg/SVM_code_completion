@@ -1,0 +1,49 @@
+            Range r = end.getRange();
+            if (r != null && !end.equals(r.end)) {
+              //return r.endTime();
+              return r.end;
+            }
+      return end;
+    }
+
+    public Time mid() {
+      if (duration != null && begin != null) {
+        Time b = begin.getRange(RANGE_FLAGS_PAD_SPECIFIED,duration.getGranularity()).begin();
+        return b.add(duration.divideBy(2));
+      } else if (duration != null && end != null) {
+        return end.subtract(duration.divideBy(2));
+      } else if (begin != null && end != null) {
+        // TODO: ....
+      } else if (begin != null) {
+        return begin;
+      } else if (end != null) {
+        return end;
+      }
+      return null;
+    }
+
+    // TODO: correct implementation
+    @Override
+    public Temporal intersect(Temporal t) {
+      if (t instanceof Time) {
+        return new RelativeTime((Time) t, TemporalOp.INTERSECT, this);
+      } else if (t instanceof Range) {
+        Range rt = (Range) t;
+        // Assume begin/end defined (TODO: handle if duration defined)
+        Time b = Time.max(begin, rt.begin);
+        Time e = Time.min(end, rt.end);
+        return new Range(b, e);
+      } else if (t instanceof Duration) {
+        return new InexactTime(null, (Duration) t, this);
+      }
+      return null;
+    }
+
+    public boolean contains(Range r) {
+      return false;
+    }
+
+    private static final long serialVersionUID = 1;
+  }
+
+

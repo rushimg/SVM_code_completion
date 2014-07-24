@@ -1,0 +1,210 @@
+  private void findSpeakers(Dictionaries dict) {
+    Boolean useMarkedDiscourseBoolean = annotation.get(CoreAnnotations.UseMarkedDiscourseAnnotation.class);
+    boolean useMarkedDiscourse = (useMarkedDiscourseBoolean != null)? useMarkedDiscourseBoolean: false;
+    if (Constants.USE_GOLD_SPEAKER_TAGS || useMarkedDiscourse) {
+      for(CoreMap sent : annotation.get(CoreAnnotations.SentencesAnnotation.class)) {
+        for(CoreLabel w : sent.get(CoreAnnotations.TokensAnnotation.class)) {
+          int utterIndex = w.get(CoreAnnotations.UtteranceAnnotation.class);
+          speakers.put(utterIndex, w.get(CoreAnnotations.SpeakerAnnotation.class));
+        }
+      }
+    } else {
+      if(docType==DocType.CONVERSATION) findSpeakersInConversation(dict);
+      else if (docType==DocType.ARTICLE) findSpeakersInArticle(dict);
+
+      // set speaker info to annotation
+      for(CoreMap sent : annotation.get(CoreAnnotations.SentencesAnnotation.class)) {
+        for(CoreLabel w : sent.get(CoreAnnotations.TokensAnnotation.class)) {
+          int utterIndex = w.get(CoreAnnotations.UtteranceAnnotation.class);
+          if(speakers.containsKey(utterIndex)) {
+            w.set(CoreAnnotations.SpeakerAnnotation.class, speakers.get(utterIndex));
+          }
+        }
+      }
+    }
+  }
+  private void findSpeakersInArticle(Dictionaries dict) {
+    List<CoreMap> sentences = annotation.get(CoreAnnotations.SentencesAnnotation.class);
+    Pair<Integer, Integer> beginQuotation = new Pair<Integer, Integer>();
+    Pair<Integer, Integer> endQuotation = new Pair<Integer, Integer>();
+    boolean insideQuotation = false;
+    int utterNum = -1;
+
+    for (int i = 0 ; i < sentences.size(); i++) {
+      List<CoreLabel> sent = sentences.get(i).get(CoreAnnotations.TokensAnnotation.class);
+      for(int j = 0 ; j < sent.size() ; j++) {
+        int utterIndex = sent.get(j).get(CoreAnnotations.UtteranceAnnotation.class);
+
+        if(utterIndex != 0 && !insideQuotation) {
+          utterNum = utterIndex;
+          insideQuotation = true;
+          beginQuotation.setFirst(i);
+          beginQuotation.setSecond(j);
+        } else if (utterIndex == 0 && insideQuotation) {
+          insideQuotation = false;
+          endQuotation.setFirst(i);
+          endQuotation.setSecond(j);
+          findQuotationSpeaker(utterNum, sentences, beginQuotation, endQuotation, dict);
+        }
+      }
+    }
+  }
+
+  private void findQuotationSpeaker(int utterNum, List<CoreMap> sentences,
+      Pair<Integer, Integer> beginQuotation, Pair<Integer, Integer> endQuotation, Dictionaries dict) {
+
+    if(findSpeaker(utterNum, beginQuotation.first(), sentences, 0, beginQuotation.second(), dict))
+      return ;
+
+    if(findSpeaker(utterNum, endQuotation.first(), sentences, endQuotation.second(),
+        sentences.get(endQuotation.first()).get(CoreAnnotations.TokensAnnotation.class).size(), dict))
+      return;
+
+    if(beginQuotation.second() <= 1 && beginQuotation.first() > 0) {
+      if(findSpeaker(utterNum, beginQuotation.first()-1, sentences, 0,
+          sentences.get(beginQuotation.first()-1).get(CoreAnnotations.TokensAnnotation.class).size(), dict))
+        return;
+    }
+
+    if(endQuotation.second() == sentences.get(endQuotation.first()).size()-1
+        && sentences.size() > endQuotation.first()+1) {
+      if(findSpeaker(utterNum, endQuotation.first()+1, sentences, 0,
+          sentences.get(endQuotation.first()+1).get(CoreAnnotations.TokensAnnotation.class).size(), dict))
+        return;
+    }
+  }
+
+  private boolean findSpeaker(int utterNum, int sentNum, List<CoreMap> sentences,
+      int startIndex, int endIndex, Dictionaries dict) {
+    List<CoreLabel> sent = sentences.get(sentNum).get(CoreAnnotations.TokensAnnotation.class);
+    for(int i = startIndex ; i < endIndex ; i++) {
+      if(sent.get(i).get(CoreAnnotations.UtteranceAnnotation.class)!=0) continue;
+      String lemma = sent.get(i).get(CoreAnnotations.LemmaAnnotation.class);
+      String word = sent.get(i).get(CoreAnnotations.TextAnnotation.class);
+      if(dict.reportVerb.contains(lemma)) {
+        // find subject
+        SemanticGraph dependency = sentences.get(sentNum).get(SemanticGraphCoreAnnotations.CollapsedDependenciesAnnotation.class);
+        IndexedWord w = dependency.getNodeByWordPattern(word);
+
+        if (w != null) {
+          for(Pair<GrammaticalRelation,IndexedWord> child : dependency.childPairs(w)){
+            if(child.first().getShortName().equals("nsubj")) {
+              String subjectString = child.second().word();
+              int subjectIndex = child.second().index();  // start from 1
+              IntTuple headPosition = new IntTuple(2);
+              headPosition.set(0, sentNum);
+              headPosition.set(1, subjectIndex-1);
+              String speaker;
+              if(mentionheadPositions.containsKey(headPosition)) {
+                speaker = Integer.toString(mentionheadPositions.get(headPosition).mentionID);
+              } else {
+                speaker = subjectString;
+              }
+              speakers.put(utterNum, speaker);
+              return true;
+            }
+          }
+        } else {
+          SieveCoreferenceSystem.logger.warning("Cannot find node in dependency for word " + word);
+        }
+      }
+    }
+    return false;
+  }
+
+  private void findSpeakersInConversation(Dictionaries dict) {
+    for(List<Mention> l : predictedOrderedMentionsBySentence) {
+      for(Mention m : l){
+        if(m.predicateNominatives == null) continue;
+        for (Mention a : m.predicateNominatives){
+          if(a.spanToString().toLowerCase().equals("i")) {
+            speakers.put(m.headWord.get(CoreAnnotations.UtteranceAnnotation.class), Integer.toString(m.mentionID));
+          }
+        }
+      }
+    }
+    List<CoreMap> paragraph = new ArrayList<CoreMap>();
+    int paragraphUtterIndex = 0;
+    String nextParagraphSpeaker = "";
+    int paragraphOffset = 0;
+    for(CoreMap sent : annotation.get(CoreAnnotations.SentencesAnnotation.class)) {
+      int currentUtter = sent.get(CoreAnnotations.TokensAnnotation.class).get(0).get(CoreAnnotations.UtteranceAnnotation.class);
+      if(paragraphUtterIndex!=currentUtter) {
+        nextParagraphSpeaker = findParagraphSpeaker(paragraph, paragraphUtterIndex, nextParagraphSpeaker, paragraphOffset, dict);
+        paragraphUtterIndex = currentUtter;
+        paragraphOffset += paragraph.size();
+        paragraph = new ArrayList<CoreMap>();
+      }
+      paragraph.add(sent);
+    }
+    findParagraphSpeaker(paragraph, paragraphUtterIndex, nextParagraphSpeaker, paragraphOffset, dict);
+  }
+
+  private String findParagraphSpeaker(List<CoreMap> paragraph,
+      int paragraphUtterIndex, String nextParagraphSpeaker, int paragraphOffset, Dictionaries dict) {
+    if(!speakers.containsKey(paragraphUtterIndex)) {
+      if(!nextParagraphSpeaker.equals("")) {
+        speakers.put(paragraphUtterIndex, nextParagraphSpeaker);
+      } else {  // find the speaker of this paragraph (John, nbc news)
+        CoreMap lastSent = paragraph.get(paragraph.size()-1);
+        String speaker = "";
+        boolean hasVerb = false;
+        for(int i = 0 ; i < lastSent.get(CoreAnnotations.TokensAnnotation.class).size() ; i++){
+          CoreLabel w = lastSent.get(CoreAnnotations.TokensAnnotation.class).get(i);
+          String pos = w.get(CoreAnnotations.PartOfSpeechAnnotation.class);
+          String ner = w.get(CoreAnnotations.NamedEntityTagAnnotation.class);
+          if(pos.startsWith("V")) {
+            hasVerb = true;
+            break;
+          }
+          if(ner.startsWith("PER")) {
+            IntTuple headPosition = new IntTuple(2);
+            headPosition.set(0, paragraph.size()-1 + paragraphOffset);
+            headPosition.set(1, i);
+            if(mentionheadPositions.containsKey(headPosition)) {
+              speaker = Integer.toString(mentionheadPositions.get(headPosition).mentionID);
+            }
+          }
+        }
+        if(!hasVerb && !speaker.equals("")) {
+          speakers.put(paragraphUtterIndex, speaker);
+        }
+      }
+    }
+    return findNextParagraphSpeaker(paragraph, paragraphOffset, dict);
+  }
+
+  private String findNextParagraphSpeaker(List<CoreMap> paragraph, int paragraphOffset, Dictionaries dict) {
+    CoreMap lastSent = paragraph.get(paragraph.size()-1);
+    String speaker = "";
+    for(CoreLabel w : lastSent.get(CoreAnnotations.TokensAnnotation.class)) {
+      if(w.get(CoreAnnotations.LemmaAnnotation.class).equals("report") || w.get(CoreAnnotations.LemmaAnnotation.class).equals("say")) {
+        String word = w.get(CoreAnnotations.TextAnnotation.class);
+        SemanticGraph dependency = lastSent.get(SemanticGraphCoreAnnotations.CollapsedDependenciesAnnotation.class);
+        IndexedWord t = dependency.getNodeByWordPattern(word);
+
+        for(Pair<GrammaticalRelation,IndexedWord> child : dependency.childPairs(t)){
+          if(child.first().getShortName().equals("nsubj")) {
+            int subjectIndex = child.second().index();  // start from 1
+            IntTuple headPosition = new IntTuple(2);
+            headPosition.set(0, paragraph.size()-1 + paragraphOffset);
+            headPosition.set(1, subjectIndex-1);
+            if(mentionheadPositions.containsKey(headPosition)
+                && mentionheadPositions.get(headPosition).nerString.startsWith("PER")) {
+              speaker = Integer.toString(mentionheadPositions.get(headPosition).mentionID);
+            }
+          }
+        }
+      }
+    }
+    return speaker;
+  }
+
+  public SpeakerInfo getSpeakerInfo(String speaker) {
+    return speakerInfoMap.get(speaker);
+  }
+
+  public int numberOfSpeakers() {
+    return speakerInfoMap.size();
+  }
+

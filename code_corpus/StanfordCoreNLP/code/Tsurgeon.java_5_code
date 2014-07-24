@@ -1,0 +1,30 @@
+  public static TsurgeonPattern getTsurgeonOperationsFromReader(BufferedReader reader) throws IOException {
+    List<TsurgeonPattern> operations = new ArrayList<TsurgeonPattern>();
+    for (String thisLine; (thisLine = reader.readLine()) != null; ) {
+      if (emptyLinePattern.matcher(thisLine).matches()) {
+        break;
+      }
+      thisLine = removeComments(thisLine);
+      if (emptyLinePattern.matcher(thisLine).matches()) {
+        continue;
+      }
+      // System.err.println("Read tsurgeon op: " + thisLine);
+      operations.add(parseOperation(thisLine));
+    }
+
+    if (operations.size() == 0)
+      throw new TsurgeonParseException("No Tsurgeon operation provided.");
+
+    return collectOperations(operations);
+  }
+
+
+  private static String removeComments(String line) {
+    Matcher m = commentPattern.matcher(line);
+    line = m.replaceFirst("");
+    Matcher m1 = escapedCommentCharacterPattern.matcher(line);
+    line = m1.replaceAll(commentIntroducingCharacter);
+    return line;
+  }
+
+

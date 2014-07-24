@@ -1,0 +1,34 @@
+    private FieldInfo currentFieldInfo;
+
+    public boolean hasNext() {
+      if (!isComputed) {
+        isComputed = true;
+        nextFieldValue = null;
+        while (nextFieldValue == null && ++nextKeyIndex < classInfo.names.size()) {
+          nextFieldInfo = classInfo.getFieldInfo(classInfo.names.get(nextKeyIndex));
+          nextFieldValue = nextFieldInfo.getValue(object);
+        }
+      }
+      return nextFieldValue != null;
+    }
+
+    public Map.Entry<String, Object> next() {
+      if (!hasNext()) {
+        throw new NoSuchElementException();
+      }
+      currentFieldInfo = nextFieldInfo;
+      Object currentFieldValue = nextFieldValue;
+      isComputed = false;
+      isRemoved = false;
+      nextFieldInfo = null;
+      nextFieldValue = null;
+      return new Entry(currentFieldInfo, currentFieldValue);
+    }
+
+    public void remove() {
+      Preconditions.checkState(currentFieldInfo != null && !isRemoved);
+      isRemoved = true;
+      currentFieldInfo.setValue(object, null);
+    }
+  }
+

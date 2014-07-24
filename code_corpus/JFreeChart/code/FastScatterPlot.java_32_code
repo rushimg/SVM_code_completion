@@ -1,0 +1,20 @@
+    protected void drawRangeGridlines(Graphics2D g2, Rectangle2D dataArea,
+                                      List ticks) {
+
+        // draw the range grid lines, if the flag says they're visible...
+        if (isRangeGridlinesVisible()) {
+            Iterator iterator = ticks.iterator();
+            while (iterator.hasNext()) {
+                ValueTick tick = (ValueTick) iterator.next();
+                double v = this.rangeAxis.valueToJava2D(tick.getValue(),
+                        dataArea, RectangleEdge.LEFT);
+                Line2D line = new Line2D.Double(dataArea.getMinX(), v,
+                        dataArea.getMaxX(), v);
+                g2.setPaint(getRangeGridlinePaint());
+                g2.setStroke(getRangeGridlineStroke());
+                g2.draw(line);
+            }
+        }
+
+    }
+

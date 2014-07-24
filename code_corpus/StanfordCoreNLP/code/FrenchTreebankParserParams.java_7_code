@@ -1,0 +1,104 @@
+  @Override
+  public Lexicon lex(Options op, Index<String> wordIndex, Index<String> tagIndex) {
+    if(op.lexOptions.uwModelTrainer == null)
+      op.lexOptions.uwModelTrainer = "edu.stanford.nlp.parser.lexparser.FrenchUnknownWordModelTrainer";
+    if(morphoSpec != null) {
+      return new FactoredLexicon(op, morphoSpec, wordIndex, tagIndex);
+    }
+
+    return new BaseLexicon(op, wordIndex, tagIndex);
+  }
+
+  @Override
+  public String[] sisterSplitters() {
+    return new String[0];
+  }
+
+  @Override
+  public TreeTransformer collinizer() {
+    return new TreeCollinizer(treebankLanguagePack());
+  }
+
+  @Override
+  public TreeTransformer collinizerEvalb() {
+    return new TreeCollinizer(treebankLanguagePack(),collinizerRetainsPunctuation,false);
+  }
+
+  @Override
+  public DiskTreebank diskTreebank() {
+    return new DiskTreebank(treeReaderFactory(), inputEncoding);
+  }
+
+  @Override
+  public MemoryTreebank memoryTreebank() {
+    return new MemoryTreebank(treeReaderFactory(), inputEncoding);
+  }
+
+  public TreeReaderFactory treeReaderFactory() {
+    return (readPennFormat) ? new FrenchTreeReaderFactory() : new FrenchXMLTreeReaderFactory(false);
+  }
+
+  public List<HasWord> defaultTestSentence() {
+    String[] sent = {"Ceci", "est", "seulement", "un", "test", "."};
+    return Sentence.toWordList(sent);
+  }
+
+  @Override
+  public Tree transformTree(Tree t, Tree root) {
+
+    String baseCat = t.value();
+    StringBuilder newCategory = new StringBuilder();
+
+    //Add manual state splits
+    for (Pair<TregexPattern,Function<TregexMatcher,String>> e : activeAnnotations) {
+      TregexMatcher m = e.first().matcher(root);
+      if (m.matchesAt(t))
+        newCategory.append(e.second().apply(m));
+    }
+
+    //Add morphosyntactic features if this is a POS tag
+    if(t.isPreTerminal() && tagSpec != null) {
+      if( !(t.firstChild().label() instanceof CoreLabel) || ((CoreLabel) t.firstChild().label()).originalText() == null )
+        throw new RuntimeException(String.format("%s: Term lacks morpho analysis: %s",this.getClass().getName(),t.toString()));
+
+      String morphoStr = ((CoreLabel) t.firstChild().label()).originalText();
+      Pair<String,String> lemmaMorph = MorphoFeatureSpecification.splitMorphString("", morphoStr);
+      MorphoFeatures feats = tagSpec.strToFeatures(lemmaMorph.second());
+      baseCat = feats.getTag(baseCat);
+    }
+
+    //Update the label(s)
+    String newCat = baseCat + newCategory.toString();
+    t.setValue(newCat);
+    if (t.isPreTerminal() && t.label() instanceof HasTag)
+      ((HasTag) t.label()).setTag(newCat);
+
+    return t;
+  }
+
+
+  private void loadMWMap(String filename) {
+    mwCounter = new TwoDimensionalCounter<String,String>();
+
+    try {
+      BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(new File(filename)), "UTF-8"));
+
+      int nLines = 0;
+      for(String line; (line = br.readLine()) != null; nLines++) {
+        String[] toks = line.split("\t");
+        assert toks.length == 3;
+        mwCounter.setCount(toks[0].trim(), toks[1].trim(), Double.parseDouble(toks[2].trim()));
+      }
+      br.close();
+
+      System.err.printf("%s: Loaded %d lines from %s into MWE counter%n", this.getClass().getName(),nLines,filename);
+
+    } catch (UnsupportedEncodingException e) {
+      e.printStackTrace();
+    } catch (FileNotFoundException e) {
+      e.printStackTrace();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+

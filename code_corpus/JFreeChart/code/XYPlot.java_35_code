@@ -1,0 +1,18 @@
+    public void setDomainAxis(int index, ValueAxis axis, boolean notify) {
+        ValueAxis existing = getDomainAxis(index);
+        if (existing != null) {
+            existing.removeChangeListener(this);
+        }
+        if (axis != null) {
+            axis.setPlot(this);
+        }
+        this.domainAxes.set(index, axis);
+        if (axis != null) {
+            axis.configure();
+            axis.addChangeListener(this);
+        }
+        if (notify) {
+            fireChangeEvent();
+        }
+    }
+

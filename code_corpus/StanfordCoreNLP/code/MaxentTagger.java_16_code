@@ -1,0 +1,28 @@
+  private void removeDeadRules() {
+    for (Map<String, int[]> fAssociation : fAssociations) {
+      List<String> deadRules = Generics.newArrayList();
+      for (Map.Entry<String, int[]> entry : fAssociation.entrySet()) {
+        String value = entry.getKey();
+        int[] fAssociations = entry.getValue();
+
+        boolean found = false;
+        for (int index = 0; index < ySize; ++index) {
+          int fNum = fAssociations[index];
+          if (fNum > -1) {
+            if (getLambdaSolve().lambda[fNum] != 0.0) {
+              found = true;
+              break;
+            }
+          }
+        }
+        if (!found) {
+          deadRules.add(value);
+        }
+      }
+
+      for (String rule : deadRules) {
+        fAssociation.remove(rule);
+      }
+    }
+  }
+

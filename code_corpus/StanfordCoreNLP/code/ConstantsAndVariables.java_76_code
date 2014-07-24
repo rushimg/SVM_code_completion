@@ -1,0 +1,115 @@
+  @Option(name="batchProcessSents")
+  public boolean batchProcessSents = false;
+
+  @Option(name="writeMatchedTokensFiles")
+  public boolean writeMatchedTokensFiles = false;
+
+  public Pair<String, Double> getEditDistanceFromThisClass(String label,
+      String ph, int minLen) {
+    if (ph.length() < minLen)
+      return new Pair<String, Double>(ph, editDistMax);
+    if (editDistanceFromThisClass.containsKey(ph))
+      return new Pair<String, Double>(editDistanceFromThisClassMatches.get(ph),
+          editDistanceFromThisClass.get(ph));
+
+    Pair<String, Double> minD = getEditDist(labelDictionary.get(label), ph);
+
+    // double minDtotal = editDistMax;
+    // String minPh = "";
+    // if (minD.second() == editDistMax && ph.contains(" ")) {
+    // for (String s : ph.split("\\s+")) {
+    // Pair<String, Double> minDSingle = getEditDist(labelDictionary.get(label),
+    // s);
+    // if (minDSingle.second() < minDtotal) {
+    // minDtotal = minDSingle.second;
+    // }
+    // minPh += " " + minDSingle.first();
+    // }
+    // minPh = minPh.trim();
+    // } else {
+    double minDtotal = minD.second();
+    String minPh = minD.first();
+    // }
+    assert (!minPh.isEmpty());
+    editDistanceFromThisClass.putIfAbsent(ph, minDtotal);
+    editDistanceFromThisClassMatches.putIfAbsent(ph, minPh);
+    return new Pair<String, Double>(minPh, minDtotal);
+  }
+
+  public Pair<String, Double> getEditDistanceFromOtherSemanticClasses(
+      String ph, int minLen) {
+    if (ph.length() < minLen)
+      return new Pair<String, Double>(ph, editDistMax);
+    if (editDistanceFromOtherSemanticClasses.containsKey(ph))
+      return new Pair<String, Double>(
+          editDistanceFromOtherSemanticClassesMatches.get(ph),
+          editDistanceFromOtherSemanticClasses.get(ph));
+
+    Pair<String, Double> minD = getEditDist(otherSemanticClasses, ph);
+
+    // double minDtotal = editDistMax;
+    // String minPh = "";
+    // if (minD.second() == editDistMax && ph.contains(" ")) {
+    // for (String s : ph.split("\\s+")) {
+    // Pair<String, Double> minDSingle = getEditDist(otherSemanticClasses, s);
+    // if (minDSingle.second() < minDtotal) {
+    // minDtotal = minDSingle.second;
+    // }
+    // minPh += " " + minDSingle.first();
+    // }
+    // minPh = minPh.trim();
+    // } else {
+    double minDtotal = minD.second();
+    String minPh = minD.first();
+    // }
+    assert (!minPh.isEmpty());
+    editDistanceFromOtherSemanticClasses.putIfAbsent(ph, minDtotal);
+    editDistanceFromOtherSemanticClassesMatches.putIfAbsent(ph, minPh);
+    return new Pair<String, Double>(minPh, minDtotal);
+  }
+
+  public double getEditDistanceFromEng(String ph, int minLen) {
+    if (ph.length() < minLen)
+      return editDistMax;
+    if (editDistanceFromEnglishWords.containsKey(ph))
+      return editDistanceFromEnglishWords.get(ph);
+    Pair<String, Double> d = getEditDist(commonEngWords, ph);
+    double minD = d.second();
+    String minPh = d.first();
+    if (d.second() > 2) {
+      Pair<String, Double> minD2 = getEditDist(otherSemanticClasses, ph);
+      if (minD2.second < minD) {
+        minD = minD2.second();
+        minPh = minD2.first();
+      }
+    }
+
+    editDistanceFromEnglishWords.putIfAbsent(ph, minD);
+    editDistanceFromEnglishWordsMatches.putIfAbsent(ph, minPh);
+    return minD;
+  }
+
+  public ConcurrentHashMap<String, Double> getEditDistanceFromEnglishWords() {
+    return this.editDistanceFromEnglishWords;
+  }
+
+  public ConcurrentHashMap<String, String> getEditDistanceFromEnglishWordsMatches() {
+    return this.editDistanceFromEnglishWordsMatches;
+  }
+
+  public double getEditDistanceScoresOtherClass(String g) {
+    double editDist;
+    String editDistPh;
+    if (editDistanceFromOtherSemanticClasses.containsKey(g)) {
+      editDist = editDistanceFromOtherSemanticClasses.get(g);
+      editDistPh = editDistanceFromOtherSemanticClassesMatches.get(g);
+    } else {
+      Pair<String, Double> editMatch = getEditDistanceFromOtherSemanticClasses(
+          g, 4);
+      editDist = editMatch.second();
+      editDistPh = editMatch.first();
+    }
+    assert (!editDistPh.isEmpty());
+    return editDist / (double) editDistPh.length();
+  }
+

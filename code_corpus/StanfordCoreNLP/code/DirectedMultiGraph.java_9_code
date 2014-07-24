@@ -1,0 +1,32 @@
+  @Override
+  public boolean isEdge(V source, V dest) {
+    Map<V, List<E>> childrenMap = outgoingEdges.get(source);
+    if (childrenMap == null || childrenMap.isEmpty())
+      return false;
+    List<E> edges = childrenMap.get(dest);
+    if (edges == null || edges.isEmpty())
+      return false;
+    return edges.size() > 0;
+  }
+
+  @Override
+  public boolean isNeighbor(V source, V dest) {
+    return isEdge(source, dest) || isEdge(dest, source);
+  }
+
+  @Override
+  public Set<V> getAllVertices() {
+    return Collections.unmodifiableSet(outgoingEdges.keySet());
+  }
+
+  @Override
+  public List<E> getAllEdges() {
+    List<E> edges = new ArrayList<E>();
+    for (Map<V, List<E>> e : outgoingEdges.values()) {
+      for (List<E> ee : e.values()) {
+        edges.addAll(ee);
+      }
+    }
+    return edges;
+  }
+

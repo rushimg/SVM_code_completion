@@ -1,0 +1,122 @@
+      if (kids.length == 2 &&
+          "PU".equals(kids[kids.length - 1].value()) &&
+          kids[0].isPhrasal()) {
+        printlnErr("Correcting error: non-unary initial rewrite fixed by tucking punctuation inside constituent: " + newTree.localTree());
+        List kidkids = kids[0].getChildrenAsList();
+        kidkids.add(kids[1]);
+        Tree bigger = tf.newTreeNode(kids[0].label(), kidkids);
+        newTree = tf.newTreeNode(newTree.label(), Collections.singletonList(bigger));
+      } else {
+      EncodingPrintWriter.err.println("Possible error: non-unary initial rewrite: " +
+                             newTree.localTree(), ChineseTreebankLanguagePack.ENCODING);
+      // }
+    } else {
+      if (kids.length > 0) {
+        Tree child = kids[0];
+        if ( ! child.isPhrasal()) {
+          EncodingPrintWriter.err.println("Correcting error: treebank tree is not phrasal; wrapping in FRAG: " + child, ChineseTreebankLanguagePack.ENCODING);
+          Tree added = tf.newTreeNode("FRAG", Arrays.asList(kids));
+          newTree.setChild(0, added);
+        }
+      } else {
+        EncodingPrintWriter.err.println("Error: tree with no children: " + tree, ChineseTreebankLanguagePack.ENCODING);
+      }
+    }
+    // note that there's also at least 1 tree that is an IP with no surrounding ROOT node
+
+    // there are also several places where "NP" is used as a preterminal tag
+    // and presumably should be "NN"
+    // a couple of other random errors are corrected here
+    for (Tree subtree : newTree) {
+      if (subtree.value().equals("CP") && subtree.numChildren() == 1) {
+        Tree subsubtree = subtree.firstChild();
+        if (subsubtree.value().equals("ROOT")) {
+          if (subsubtree.firstChild().isLeaf() && "CP".equals(subsubtree.firstChild().value())) {
+            EncodingPrintWriter.err.println("Correcting error: seriously messed up tree in CTB6: " + newTree, ChineseTreebankLanguagePack.ENCODING);
+            List<Tree> children = subsubtree.getChildrenAsList();
+            children = children.subList(1,children.size());
+            subtree.setChildren(children);
+            EncodingPrintWriter.err.println("  Corrected as:                                     " + newTree, ChineseTreebankLanguagePack.ENCODING); // spaced to align with above
+          }
+        }
+      }
+      if (subtree.isPreTerminal()) {
+        if (subtree.value().matches("NP")) {
+          if (ChineseTreebankLanguagePack.chineseDouHaoAcceptFilter().accept(subtree.firstChild().value())) {
+            if (DEBUG) {
+              EncodingPrintWriter.err.println("Correcting error: NP preterminal over douhao; preterminal changed to PU: " + subtree, ChineseTreebankLanguagePack.ENCODING);
+            }
+            subtree.setValue("PU");
+          } else if (subtree.parent(newTree).value().matches("NP")) {
+            if (DEBUG) {
+              EncodingPrintWriter.err.println("Correcting error: NP preterminal w/ NP parent; preterminal changed to NN: " + subtree.parent(newTree), ChineseTreebankLanguagePack.ENCODING);
+            }
+            subtree.setValue("NN");
+          } else {
+            if (DEBUG) {
+              EncodingPrintWriter.err.println("Correcting error: NP preterminal w/o NP parent, changing preterminal to NN: " + subtree.parent(newTree), ChineseTreebankLanguagePack.ENCODING);
+            }
+            // Tree newChild = tf.newTreeNode("NN", Collections.singletonList(subtree.firstChild()));
+            // subtree.setChildren(Collections.singletonList(newChild));
+            subtree.setValue("NN");
+          }
+        } else if (subtree.value().matches("PU")) {
+          if (subtree.firstChild().value().matches("\u4ed6")) {
+            if (DEBUG) {
+              EncodingPrintWriter.err.println("Correcting error: \"\u4ed6\" under PU tag; tag changed to PN: " + subtree, ChineseTreebankLanguagePack.ENCODING);
+            }
+            subtree.setValue("PN");
+          } else if (subtree.firstChild().value().equals("里")) {
+            if (DEBUG) {
+              EncodingPrintWriter.err.println("Correcting error: \"" + subtree.firstChild().value() + "\" under PU tag; tag changed to LC: " + subtree, ChineseTreebankLanguagePack.ENCODING);
+            }
+            subtree.setValue("LC");
+          } else if (subtree.firstChild().value().equals("是")) {
+            if (DEBUG) {
+              EncodingPrintWriter.err.println("Correcting error: \"" + subtree.firstChild().value() + "\" under PU tag; tag changed to VC: " + subtree, ChineseTreebankLanguagePack.ENCODING);
+            }
+            subtree.setValue("VC");
+          } else if (subtree.firstChild().value().matches("tw|\u534A\u7A74\u5F0F")) {
+            if (DEBUG) {
+              EncodingPrintWriter.err.println("Correcting error: \"" + subtree.firstChild().value() + "\" under PU tag; tag changed to NN: " + subtree, ChineseTreebankLanguagePack.ENCODING);
+            }
+            subtree.setValue("NN");
+          } else if (subtree.firstChild().value().matches("33")) {
+            if (DEBUG) {
+              EncodingPrintWriter.err.println("Correcting error: \"33\" under PU tag; tag changed to CD: " + subtree, ChineseTreebankLanguagePack.ENCODING);
+            }
+            subtree.setValue("CD");
+          }
+        }
+      } else if (subtree.value().matches("NN")) {
+        if (DEBUG) {
+          EncodingPrintWriter.err.println("Correcting error: NN phrasal tag changed to NP: " + subtree, ChineseTreebankLanguagePack.ENCODING);
+        }
+        subtree.setValue("NP");
+      } else if (subtree.value().matches("MSP")) {
+        if (DEBUG) {
+          EncodingPrintWriter.err.println("Correcting error: MSP phrasal tag changed to VP: " + subtree, ChineseTreebankLanguagePack.ENCODING);
+        }
+        subtree.setValue("VP");
+      }
+    }
+
+    for (int i = 0; i < splitPuncTregex.length; ++i) {
+      if (DEBUG) {
+        Tree preProcessed = newTree.deepCopy();
+        newTree = Tsurgeon.processPattern(splitPuncTregex[i], splitPuncTsurgeon[i], newTree);
+        if (!preProcessed.equals(newTree)) {
+          EncodingPrintWriter.err.println("Correcting error: Updated tree using tregex " + splitPuncTregex[i] + " and tsurgeon " + splitPuncTsurgeon[i], ChineseTreebankLanguagePack.ENCODING);
+        }
+      } else {
+        newTree = Tsurgeon.processPattern(splitPuncTregex[i], splitPuncTsurgeon[i], newTree);
+      }
+    }
+
+
+    if (tagExtender != null) {
+      newTree = tagExtender.transformTree(newTree);
+    }
+    return newTree;
+  }
+

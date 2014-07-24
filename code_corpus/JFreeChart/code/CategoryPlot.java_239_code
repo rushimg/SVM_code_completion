@@ -1,0 +1,64 @@
+    public Object clone() throws CloneNotSupportedException {
+
+        CategoryPlot clone = (CategoryPlot) super.clone();
+
+        clone.domainAxes = new ObjectList();
+        for (int i = 0; i < this.domainAxes.size(); i++) {
+            CategoryAxis xAxis = (CategoryAxis) this.domainAxes.get(i);
+            if (xAxis != null) {
+                CategoryAxis clonedAxis = (CategoryAxis) xAxis.clone();
+                clone.setDomainAxis(i, clonedAxis);
+            }
+        }
+        clone.domainAxisLocations
+                = (ObjectList) this.domainAxisLocations.clone();
+
+        clone.rangeAxes = new ObjectList();
+        for (int i = 0; i < this.rangeAxes.size(); i++) {
+            ValueAxis yAxis = (ValueAxis) this.rangeAxes.get(i);
+            if (yAxis != null) {
+                ValueAxis clonedAxis = (ValueAxis) yAxis.clone();
+                clone.setRangeAxis(i, clonedAxis);
+            }
+        }
+        clone.rangeAxisLocations = (ObjectList) this.rangeAxisLocations.clone();
+
+        clone.datasets = (ObjectList) this.datasets.clone();
+        for (int i = 0; i < clone.datasets.size(); i++) {
+            CategoryDataset dataset = clone.getDataset(i);
+            if (dataset != null) {
+                dataset.addChangeListener(clone);
+            }
+        }
+        clone.datasetToDomainAxesMap = new TreeMap();
+        clone.datasetToDomainAxesMap.putAll(this.datasetToDomainAxesMap);
+        clone.datasetToRangeAxesMap = new TreeMap();
+        clone.datasetToRangeAxesMap.putAll(this.datasetToRangeAxesMap);
+
+        clone.renderers = (ObjectList) this.renderers.clone();
+        if (this.fixedDomainAxisSpace != null) {
+            clone.fixedDomainAxisSpace = (AxisSpace) ObjectUtilities.clone(
+                    this.fixedDomainAxisSpace);
+        }
+        if (this.fixedRangeAxisSpace != null) {
+            clone.fixedRangeAxisSpace = (AxisSpace) ObjectUtilities.clone(
+                    this.fixedRangeAxisSpace);
+        }
+
+        clone.annotations = (List) ObjectUtilities.deepClone(this.annotations);
+        clone.foregroundDomainMarkers = cloneMarkerMap(
+                this.foregroundDomainMarkers);
+        clone.backgroundDomainMarkers = cloneMarkerMap(
+                this.backgroundDomainMarkers);
+        clone.foregroundRangeMarkers = cloneMarkerMap(
+                this.foregroundRangeMarkers);
+        clone.backgroundRangeMarkers = cloneMarkerMap(
+                this.backgroundRangeMarkers);
+        if (this.fixedLegendItems != null) {
+            clone.fixedLegendItems
+                    = (LegendItemCollection) this.fixedLegendItems.clone();
+        }
+        return clone;
+
+    }
+

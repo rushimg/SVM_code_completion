@@ -1,0 +1,67 @@
+  private Pair<Double, Double> writeResultsSummary(int num, Counter<String> contingency, Collection<String> labels) {
+    System.err.println();
+    System.err.print(num + " examples");
+    if (globalFlags.groupingColumn >= 0 && globalFlags.rankingAccuracyClass != null) {
+      System.err.print(" and " + numGroups + " ranking groups");
+    }
+    System.err.println(" in test set");
+    int numClasses = 0;
+    double microAccuracy = 0.0;
+    double macroF1 = 0.0;
+    for (String key : labels) {
+      numClasses++;
+      int tp = (int) contingency.getCount(key + "|TP");
+      int fn = (int) contingency.getCount(key + "|FN");
+      int fp = (int) contingency.getCount(key + "|FP");
+      int tn = (int) contingency.getCount(key + "|TN");
+      double p = (tp + fp == 0) ? 1.0 : ((double) tp) / (tp + fp); // If nothing selected, then vacuous 1.0
+      double r = (tp + fn == 0) ? 1.0 : ((double) tp) / (tp + fn); // If nothing to find, then vacuous 1.0
+      double acc = ((double) tp + tn)/num;
+      macroF1 += f;
+      microAccuracy += tp;
+      System.err.println("Cls " + key + ": TP=" + tp + " FN=" + fn + " FP=" + fp + " TN=" + tn + "; Acc " + nf.format(acc) + " P " + nf.format(p) + " R " + nf.format(r) + " F1 " + nf.format(f));
+    }
+
+    if (globalFlags.groupingColumn >= 0 && globalFlags.rankingAccuracyClass != null) {
+      double cor = (int) contingency.getCount("Ranking|Correct");
+      double err = (int) contingency.getCount("Ranking|Error");
+      double rankacc = (cor + err == 0) ? 0 : cor / (cor + err);
+      System.err.print("Ranking accuracy: " + nf.format(rankacc));
+      double cov = (int) contingency.getCount("Ranking|Covered");
+      double coverr = (int) contingency.getCount("Ranking|Uncovered");
+      double covacc = (cov + coverr == 0) ? 0 : cov / (cov + coverr);
+      if (coverr > 0.5) {
+        double ce = (int) (contingency.getCount("Ranking|Error") - contingency.getCount("Ranking|Uncovered"));
+        double crankacc = (cor + ce == 0) ? 0 : cor / (cor + ce);
+        System.err.println(" (on " + nf.format(covacc) + " of groups with correct answer: " + nf.format(crankacc) + ')');
+      } else {
+        System.err.println();
+      }
+
+      if (globalFlags.rankingScoreColumn >= 0) {
+        double totalSim = contingency.getCount("Ranking|Score");
+        double ranksim = (cor + err == 0) ? 0 : totalSim / (cor + err);
+        System.err.println("Ranking average score: " + nf.format(ranksim));
+      }
+    }
+    microAccuracy = microAccuracy / num;
+    macroF1 = macroF1 / numClasses;
+    NumberFormat nf2 = new DecimalFormat("0.00000");
+    System.err.println("Accuracy/micro-averaged F1: " + nf2.format(microAccuracy));
+    System.err.println("Macro-averaged F1: " + nf2.format(macroF1));
+    return new Pair<Double, Double>(microAccuracy, macroF1);
+  }
+
+  // These variables are only used by the private methods used by main() for displaying
+  // performance statistics when running the command-line version. So their being
+  // static does no harm.
+  private static int numGroups = 0;
+  private static String lastGroup = "";
+  private static int numInGroup = 0;
+  private static double bestProb = 0.0;
+  private static double bestSim = 0.0;
+  private static boolean currentHighestProbCorrect = false;
+  private static boolean foundAnswerInGroup = false;
+
+  private static final NumberFormat nf = new DecimalFormat("0.000");
+

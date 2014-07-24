@@ -1,0 +1,39 @@
+    private void dfsVisit(
+        DirectedGraph<V, E> visitedGraph,
+        VertexData<V> vertexData,
+        Set<V> vertices)
+    {
+        Deque<VertexData<V>> stack = new ArrayDeque<VertexData<V>>();
+        stack.add(vertexData);
+
+        while (!stack.isEmpty()) {
+            VertexData<V> data = stack.removeLast();
+
+            if (!data.isDiscovered()) {
+                data.setDiscovered(true);
+
+                if (vertices != null) {
+                    vertices.add(data.getVertex());
+                }
+
+                stack.add(new VertexData1<V>(data, true, true));
+
+                // follow all edges
+                for (E edge : visitedGraph.outgoingEdgesOf(data.getVertex())) {
+                    VertexData<V> targetData =
+                        vertexToVertexData.get(
+                            visitedGraph.getEdgeTarget(edge));
+
+                    if (!targetData.isDiscovered()) {
+                        // the "recursion"
+                        stack.add(targetData);
+                    }
+                }
+            } else if (data.isFinished()) {
+                if (vertices == null) {
+                    orderedVertices.addFirst(data.getFinishedData());
+                }
+            }
+        }
+    }
+

@@ -1,0 +1,26 @@
+  public Tree parse(List<? extends HasWord> lst) {
+    try {
+      ParserQuery pq = parserQuery();
+      if (pq.parse(lst)) {
+        Tree bestparse = pq.getBestParse();
+        // -10000 denotes unknown words
+        bestparse.setScore(pq.getPCFGScore() % -10000.0);
+        return bestparse;
+      }
+    } catch (Exception e) {
+      System.err.println("Following exception caught during parsing:");
+      e.printStackTrace();
+      System.err.println("Recovering using fall through strategy: will construct an (X ...) tree.");
+    }
+    // if can't parse or exception, fall through
+    return ParserUtils.xTree(lst);
+  }
+
+  public List<Tree> parseMultiple(final List<? extends List<? extends HasWord>> sentences) {
+    List<Tree> trees = new ArrayList<Tree>();
+    for (List<? extends HasWord> sentence : sentences) {
+      trees.add(parse(sentence));
+    }
+    return trees;
+  }
+

@@ -1,0 +1,17 @@
+public class WordToSentenceProcessor<IN> implements ListProcessor<IN, List<IN>> {
+
+  // todo [cdm Aug 2012]: This should be unified with the PlainTextIterator
+  // in DocumentPreprocessor, perhaps by making this one implement Iterator.
+  // (DocumentProcessor once used to use this class, but now doesn't....)
+
+  public enum NewlineIsSentenceBreak { NEVER, ALWAYS, TWO_CONSECUTIVE }
+
+  public static final String DEFAULT_BOUNDARY_REGEX = "\\.|[!?]+";
+  public static final Set<String> DEFAULT_BOUNDARY_FOLLOWERS = Collections.unmodifiableSet(Generics.newHashSet(
+          Arrays.asList(")", "]", "}", "\"", "'", "''", "\u2019", "\u201D", "-RRB-", "-RSB-", "-RCB-", ")", "]", "}")));
+  public static final Set<String> DEFAULT_SENTENCE_BOUNDARIES_TO_DISCARD = Collections.unmodifiableSet(Generics.newHashSet(
+          Arrays.asList(WhitespaceLexer.NEWLINE, PTBLexer.NEWLINE_TOKEN)));
+
+  private static final boolean DEBUG = false;
+
+

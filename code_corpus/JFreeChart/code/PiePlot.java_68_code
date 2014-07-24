@@ -1,0 +1,32 @@
+    protected Stroke lookupSectionOutlineStroke(Comparable key,
+            boolean autoPopulate) {
+
+        // is there an override?
+        Stroke result = getSectionOutlineStroke();
+        if (result != null) {
+            return result;
+        }
+
+        // if not, check if there is a stroke defined for the specified key
+        result = this.sectionOutlineStrokeMap.getStroke(key);
+        if (result != null) {
+            return result;
+        }
+
+        // nothing defined - do we autoPopulate?
+        if (autoPopulate) {
+            DrawingSupplier ds = getDrawingSupplier();
+            if (ds != null) {
+                result = ds.getNextOutlineStroke();
+                this.sectionOutlineStrokeMap.put(key, result);
+            }
+            else {
+                result = this.baseSectionOutlineStroke;
+            }
+        }
+        else {
+            result = this.baseSectionOutlineStroke;
+        }
+        return result;
+    }
+

@@ -1,0 +1,39 @@
+  public PlainTextDocumentReaderAndWriter() {
+  }
+
+  @Override
+  public void init(SeqClassifierFlags flags) {
+    String options = "tokenizeNLs=false,invertible=true";
+    if (flags.tokenizerOptions != null) {
+      options = options + ',' + flags.tokenizerOptions;
+    }
+    TokenizerFactory<IN> factory;
+    if (flags.tokenizerFactory != null) {
+      try {
+        Class<TokenizerFactory<? extends HasWord>> clazz = ErasureUtils.uncheckedCast(Class.forName(flags.tokenizerFactory));
+        Method factoryMethod = clazz.getMethod("newCoreLabelTokenizerFactory", String.class);
+        factory = ErasureUtils.uncheckedCast(factoryMethod.invoke(null, options));
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    } else {
+      factory = ErasureUtils.uncheckedCast(PTBTokenizer.PTBTokenizerFactory.newCoreLabelTokenizerFactory(options));
+    }
+    init(flags, factory);
+  }
+
+  public void init(SeqClassifierFlags flags, TokenizerFactory<IN> tokenizerFactory) {
+    this.flags = flags;
+    this.tokenizerFactory = tokenizerFactory;
+  }
+
+  // todo: give options for document splitting. A line or the whole file or
+  // sentence splitting as now
+  @Override
+  public Iterator<List<IN>> getIterator(Reader r) {
+    Tokenizer<IN> tokenizer = tokenizerFactory.getTokenizer(r);
+    // PTBTokenizer.newPTBTokenizer(r, false, true);
+    List<IN> words = new ArrayList<IN>();
+    IN previous = null;
+    StringBuilder prepend = new StringBuilder();
+

@@ -1,0 +1,115 @@
+  public static class PhraseMatch implements HasInterval<Integer>
+  {
+    Phrase phrase;
+    int tokenBegin;
+    int tokenEnd;
+    transient Interval<Integer> span;
+
+    public PhraseMatch(Phrase phrase, int tokenBegin, int tokenEnd) {
+      this.phrase = phrase;
+      this.tokenBegin = tokenBegin;
+      this.tokenEnd = tokenEnd;
+    }
+
+    public Phrase getPhrase() {
+      return phrase;
+    }
+
+    public int getTokenBegin() {
+      return tokenBegin;
+    }
+
+    public int getTokenEnd() {
+      return tokenEnd;
+    }
+
+    public String toString() {
+      StringBuilder sb = new StringBuilder();
+      sb.append(phrase);
+      sb.append(" at (").append(tokenBegin);
+      sb.append(",").append(tokenEnd).append(")");
+      return sb.toString();
+    }
+
+    public Interval<Integer> getInterval() {
+      if (span == null) span = Interval.toInterval(tokenBegin, tokenEnd, Interval.INTERVAL_OPEN_END);
+      return span;
+    }
+  }
+
+  public static String toString(WordList wordList)
+  {
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < wordList.size(); i++) {
+      if (sb.length() > 0) {
+        sb.append(" ");
+      }
+      sb.append(wordList.getWord(i));
+    }
+    return sb.toString();
+  }
+
+  public static interface WordList
+  {
+    String getWord(int i);
+    int size();
+  }
+
+  public static class TokenList implements WordList
+  {
+    private List<? extends CoreMap> tokens;
+    private Class textKey = CoreAnnotations.TextAnnotation.class;
+
+    public TokenList(List<CoreLabel> tokens) {
+      this.tokens = tokens;
+    }
+
+    public TokenList(List<? extends CoreMap> tokens, Class key)
+    {
+      this.tokens = tokens;
+      this.textKey = key;
+    }
+
+    public String getWord(int i)
+    {
+      return (String) tokens.get(i).get(textKey);
+    }
+
+    public int size()
+    {
+      return tokens.size();
+    }
+
+    public String toString()
+    {
+      return PhraseTable.toString(this);
+    }
+  }
+
+  public static class StringList implements WordList
+  {
+    private List<String> words;
+
+    public StringList(List<String> words) {
+      this.words = words;
+    }
+
+    public StringList(String[] wordsArray) {
+      this.words = Arrays.asList(wordsArray);
+    }
+
+    public String getWord(int i) {
+      return words.get(i);
+    }
+
+    public int size()
+    {
+      return words.size();
+    }
+
+    public String toString()
+    {
+      return PhraseTable.toString(this);
+    }
+  }
+

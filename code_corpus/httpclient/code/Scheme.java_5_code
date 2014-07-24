@@ -1,0 +1,21 @@
+    @Deprecated
+    public Scheme(final String name,
+                  final SocketFactory factory,
+                  final int port) {
+
+        Args.notNull(name, "Scheme name");
+        Args.notNull(factory, "Socket factory");
+        Args.check(port > 0 && port <= 0xffff, "Port is invalid");
+
+        this.name = name.toLowerCase(Locale.ENGLISH);
+        if (factory instanceof LayeredSocketFactory) {
+            this.socketFactory = new SchemeLayeredSocketFactoryAdaptor(
+                    (LayeredSocketFactory) factory);
+            this.layered = true;
+        } else {
+            this.socketFactory = new SchemeSocketFactoryAdaptor(factory);
+            this.layered = false;
+        }
+        this.defaultPort = port;
+    }
+

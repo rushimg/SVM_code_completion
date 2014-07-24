@@ -1,0 +1,32 @@
+  public Tree getNode(String name) {
+    return namesToNodes.get(name);
+  }
+
+  public Set<String> getNodeNames() {
+    return namesToNodes.keySet();
+  }
+
+  Tree getParent(Tree node) {
+    if (node instanceof HasParent) {
+      return node.parent();
+    }
+    if (nodesToParents == null) {
+      nodesToParents = new IdentityHashMap<Tree, Tree>();
+    }
+    if (nodesToParents.size() == 0) {
+      fillNodesToParents(root, null);
+    }
+    return nodesToParents.get(node);
+  }
+
+  private void fillNodesToParents(Tree node, Tree parent) {
+    nodesToParents.put(node, parent);
+    for (Tree child : node.children()) {
+      fillNodesToParents(child, node);
+    }
+  }
+
+  Tree getRoot() {
+    return root;
+  }
+

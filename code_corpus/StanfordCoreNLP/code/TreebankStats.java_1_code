@@ -1,0 +1,58 @@
+public class TreebankStats {
+
+  private final Language languageName;
+  private final TreebankLangParserParams tlpp;
+  private final List<String> pathNames;
+
+  private enum Split {Train,Dev,Test};
+  private Map<Split,Set<String>> splitFileLists;
+  private boolean useSplit = false;
+  private boolean makeVocab = false;
+
+  private static Set<String> trainVocab = null;
+
+  public TreebankStats(Language langName, List<String> paths, TreebankLangParserParams tlpp) {
+    languageName = langName;
+    pathNames = paths;
+    this.tlpp = tlpp;
+  }
+
+  public boolean useSplit(String prefix) {
+    Map<Split,File> splitMap = Generics.newHashMap();
+    splitMap.put(Split.Train,new File(prefix + ".train"));
+    splitMap.put(Split.Test,new File(prefix + ".test"));
+    splitMap.put(Split.Dev,new File(prefix + ".dev"));
+
+    splitFileLists = Generics.newHashMap();
+    for(Map.Entry<Split, File> entry : splitMap.entrySet()) {
+      File f = entry.getValue();
+      if(!f.exists()) return false;
+      Set<String> files = Generics.newHashSet();
+      for(String fileName : IOUtils.readLines(f))
+        files.add(fileName);
+      splitFileLists.put(entry.getKey(), files);
+    }
+
+    useSplit = true;
+
+    return true;
+  }
+
+  private ObservedCorpusStats gatherStats(DiskTreebank tb, String name) {
+    ObservedCorpusStats ocs = new ObservedCorpusStats(name);
+
+    if(makeVocab) trainVocab = Generics.newHashSet();
+
+    System.out.println("Reading treebank:");
+    for(Tree t : tb) {
+      Pair<Integer,Integer> treeFacts = dissectTree(t, ocs, makeVocab);
+      ocs.addStatsForTree(t.yield().size(), treeFacts.first(), treeFacts.second());
+      if(ocs.numTrees % 100 == 0) System.out.print(".");
+      else if(ocs.numTrees % 8001 == 0) System.out.println();
+    }
+
+    ocs.computeFinalValues();
+    System.out.println("done!");
+    return ocs;
+  }
+

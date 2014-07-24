@@ -1,0 +1,17 @@
+  @Override
+  protected final Parse processSample(final Parse reference) {
+
+    String sentenceText = reference.getText();
+
+    Parse[] predictions = ParserTool.parseLine(sentenceText, parser, 1);
+
+    Parse prediction = null;
+    if (predictions.length > 0) {
+      prediction = predictions[0];
+    }
+
+    fmeasure.updateScores(getConstituencySpans(reference), getConstituencySpans(prediction));
+
+    return prediction;
+  }
+

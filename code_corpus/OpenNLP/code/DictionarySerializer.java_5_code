@@ -1,0 +1,26 @@
+     public void endElement(String uri, String localName, String qName)
+         throws SAXException {
+
+       if (TOKEN_ELEMENT.equals(localName)) {
+         mTokenList.add(token.toString().trim());
+         token.setLength(0);
+         mIsInsideTokenElement = false;
+       }
+       else if (ENTRY_ELEMENT.equals(localName)) {
+
+         String[] tokens = mTokenList.toArray(
+             new String[mTokenList.size()]);
+
+         Entry entry = new Entry(new StringList(tokens), mAttributes);
+
+         try {
+           mInserter.insert(entry);
+         } catch (InvalidFormatException e) {
+           throw new SAXException("Invalid dictionary format!", e);
+         }
+
+         mTokenList.clear();
+         mAttributes = null;
+       }
+     }
+

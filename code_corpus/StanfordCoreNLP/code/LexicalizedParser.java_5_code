@@ -1,0 +1,61 @@
+  public static LexicalizedParser loadModel(ObjectInputStream ois) {
+    try {
+      Object o = ois.readObject();
+      if (o instanceof LexicalizedParser) {
+        return (LexicalizedParser) o;
+      }
+      throw new ClassCastException("Wanted LexicalizedParser, got " +
+                                   o.getClass());
+    } catch (IOException e) {
+      throw new RuntimeIOException(e);
+    } catch (ClassNotFoundException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public static LexicalizedParser loadModelFromZip(String zipFilename,
+                                                   String modelName) {
+    LexicalizedParser parser = null;
+    try {
+      File file = new File(zipFilename);
+      if (file.exists()) {
+        ZipFile zin = new ZipFile(file);
+        ZipEntry zentry = zin.getEntry(modelName);
+        if (zentry != null) {
+          InputStream in = zin.getInputStream(zentry);
+          // gunzip it if necessary
+          if (modelName.endsWith(".gz")) {
+            in = new GZIPInputStream(in);
+          }
+          ObjectInputStream ois = new ObjectInputStream(in);
+          parser = loadModel(ois);
+          ois.close();
+          in.close();
+        }
+        zin.close();
+      } else {
+        throw new FileNotFoundException("Could not find " + modelName +
+                                        " inside " + zipFilename);
+      }
+    } catch (IOException e) {
+      throw new RuntimeIOException(e);
+    }
+    return parser;
+  }
+
+  public static LexicalizedParser copyLexicalizedParser(LexicalizedParser parser) {
+    return new LexicalizedParser(parser.lex, parser.bg, parser.ug, parser.dg, parser.stateIndex, parser.wordIndex, parser.tagIndex, parser.op);
+  }
+
+  public LexicalizedParser(Lexicon lex, BinaryGrammar bg, UnaryGrammar ug, DependencyGrammar dg, Index<String> stateIndex, Index<String> wordIndex, Index<String> tagIndex, Options op) {
+    this.lex = lex;
+    this.bg = bg;
+    this.ug = ug;
+    this.dg = dg;
+    this.stateIndex = stateIndex;
+    this.wordIndex = wordIndex;
+    this.tagIndex = tagIndex;
+    this.op = op;
+  }
+
+

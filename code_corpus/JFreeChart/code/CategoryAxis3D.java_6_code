@@ -1,0 +1,43 @@
+    public double getCategoryJava2DCoordinate(CategoryAnchor anchor,
+                                              int category,
+                                              int categoryCount,
+                                              Rectangle2D area,
+                                              RectangleEdge edge) {
+
+        double result = 0.0;
+        Rectangle2D adjustedArea = area;
+        CategoryPlot plot = (CategoryPlot) getPlot();
+        CategoryItemRenderer renderer = plot.getRenderer();
+        if (renderer instanceof Effect3D) {
+            Effect3D e3D = (Effect3D) renderer;
+            double adjustedX = area.getMinX();
+            double adjustedY = area.getMinY();
+            double adjustedW = area.getWidth() - e3D.getXOffset();
+            double adjustedH = area.getHeight() - e3D.getYOffset();
+
+            if (edge == RectangleEdge.LEFT || edge == RectangleEdge.BOTTOM) {
+                adjustedY += e3D.getYOffset();
+            }
+            else if (edge == RectangleEdge.RIGHT || edge == RectangleEdge.TOP) {
+                adjustedX += e3D.getXOffset();
+            }
+            adjustedArea = new Rectangle2D.Double(adjustedX, adjustedY,
+                    adjustedW, adjustedH);
+        }
+
+        if (anchor == CategoryAnchor.START) {
+            result = getCategoryStart(category, categoryCount, adjustedArea,
+                    edge);
+        }
+        else if (anchor == CategoryAnchor.MIDDLE) {
+            result = getCategoryMiddle(category, categoryCount, adjustedArea,
+                    edge);
+        }
+        else if (anchor == CategoryAnchor.END) {
+            result = getCategoryEnd(category, categoryCount, adjustedArea,
+                    edge);
+        }
+        return result;
+
+    }
+

@@ -1,0 +1,61 @@
+  static protected List<Collection<TypedDependency>> readDeps(String filename) throws IOException {
+    LineNumberReader breader = new LineNumberReader(new FileReader(filename));
+    List<Collection<TypedDependency>> readDeps = new ArrayList<Collection<TypedDependency>>();
+    Collection<TypedDependency> deps = new ArrayList<TypedDependency>();
+    for (String line = breader.readLine(); line != null; line = breader.readLine()) {
+      if (line.equals("null(-0,-0)") || line.equals("null(-1,-1)")) {
+         readDeps.add(deps);
+         deps = new ArrayList<TypedDependency>();
+         continue; // relex parse error
+      }
+      try {
+      if (line.equals("")) {
+         if (deps.size() != 0) {
+          //System.out.println(deps);
+          readDeps.add(deps);
+          deps = new ArrayList<TypedDependency>();
+        }
+        continue;
+      }
+      int firstParen = line.indexOf("(");
+      int commaSpace = line.indexOf(", ");
+      String depName = line.substring(0, firstParen);
+      String govName = line.substring(firstParen + 1, commaSpace);
+      String childName = line.substring(commaSpace+2, line.length() - 1);
+      GrammaticalRelation grel = GrammaticalRelation.valueOf(depName);
+      if (depName.startsWith("prep_")) {
+        String prep = depName.substring(5);
+        grel = EnglishGrammaticalRelations.getPrep(prep);
+      }
+      if (depName.startsWith("prepc_")) {
+        String prepc = depName.substring(6);
+        grel = EnglishGrammaticalRelations.getPrepC(prepc);
+      }
+      if (depName.startsWith("conj_")) {
+        String conj = depName.substring(5);
+        grel = EnglishGrammaticalRelations.getConj(conj);
+      }
+      if (grel == null) {
+        throw new RuntimeException("Unknown grammatical relation '" + depName+"'");
+      }
+
+      //Word govWord = new Word(govName.substring(0, govDash));
+      Word govWord = new Word(normalizeNumbers(govName));
+      //Word childWord = new Word(childName.substring(0, childDash));
+      Word childWord = new Word(normalizeNumbers(childName));
+      TypedDependency dep = new TypedDependencyStringEquality(grel, new TreeGraphNode(govWord), new TreeGraphNode(childWord));
+      deps.add(dep);
+      } catch (Exception e) {
+        breader.close();
+        throw new RuntimeException("Error on line "+breader.getLineNumber()+":\n\n"+e);
+      }
+    }
+    if (deps.size() != 0) {
+       readDeps.add(deps);
+    }
+
+    //System.err.println("last: "+readDeps.get(readDeps.size()-1));
+    breader.close();
+    return readDeps;
+  }
+

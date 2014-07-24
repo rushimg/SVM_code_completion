@@ -1,0 +1,26 @@
+  public static class DisjFilter<T> implements Filter<T> {
+    List<Filter<T>> filters;
+
+    public DisjFilter(List<Filter<T>> filters) {
+      this.filters = filters;
+    }
+
+    public DisjFilter(Filter<T>... filters) {
+      this.filters = new ArrayList<Filter<T>>();
+      this.filters.addAll(Arrays.asList(filters));
+    }
+
+    public void addFilter(Filter<T> filter) {
+      filters.add(filter);
+    }
+
+    public boolean accept(T obj) {
+      for (Filter<T> f:filters) {
+        if (f.accept(obj)) return true;
+      }
+      return false;
+    }
+
+    private static final long serialVersionUID = 1L;
+  }
+

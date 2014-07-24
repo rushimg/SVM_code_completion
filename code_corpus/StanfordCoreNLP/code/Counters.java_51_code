@@ -1,0 +1,21 @@
+  public static <E> Comparator<E> toComparator(final Counter<E> counter, final boolean ascending, final boolean useMagnitude) {
+    return new Comparator<E>() {
+      public int compare(E o1, E o2) {
+        if (ascending) {
+          if (useMagnitude) {
+            return Double.compare(Math.abs(counter.getCount(o1)), Math.abs(counter.getCount(o2)));
+          } else {
+            return Double.compare(counter.getCount(o1), counter.getCount(o2));
+          }
+        } else {
+          // Descending
+          if (useMagnitude) {
+            return Double.compare(Math.abs(counter.getCount(o2)), Math.abs(counter.getCount(o1)));
+          } else {
+            return Double.compare(counter.getCount(o2), counter.getCount(o1));
+          }
+        }
+      }
+    };
+  }
+

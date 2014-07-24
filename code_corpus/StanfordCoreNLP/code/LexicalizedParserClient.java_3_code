@@ -1,0 +1,25 @@
+  public Tree getTree(String query) 
+    throws IOException
+  {
+    Socket socket = new Socket(host, port);
+
+    Writer out = new OutputStreamWriter(socket.getOutputStream(), "utf-8");
+    out.write("tree " + query + "\n");
+    out.flush();
+
+    ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());
+    Object o;
+    try {
+      o = ois.readObject();
+    } catch (ClassNotFoundException e) {
+      throw new RuntimeException(e);
+    }
+    if (!(o instanceof Tree)) {
+      throw new IllegalArgumentException("Expected a tree");
+    }
+    Tree tree = (Tree) o;
+
+    socket.close();
+    return tree;
+  }
+

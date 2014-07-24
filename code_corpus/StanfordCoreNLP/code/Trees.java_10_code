@@ -1,0 +1,27 @@
+  public static Tree getTerminal(Tree tree, int n) {
+    return getTerminal(tree, new MutableInteger(0), n);
+  }
+
+  static Tree getTerminal(Tree tree, MutableInteger i, int n) {
+    if (i.intValue() == n) {
+      if (tree.isLeaf()) {
+        return tree;
+      } else {
+        return getTerminal(tree.children()[0], i, n);
+      }
+    } else {
+      if (tree.isLeaf()) {
+        i.set(i.intValue() + tree.yield().size());
+        return null;
+      } else {
+        for (Tree kid : tree.children()) {
+          Tree result = getTerminal(kid, i, n);
+          if (result != null) {
+            return result;
+          }
+        }
+        return null;
+      }
+    }
+  }
+

@@ -1,0 +1,76 @@
+    public Object clone() throws CloneNotSupportedException {
+
+        XYPlot clone = (XYPlot) super.clone();
+        clone.domainAxes = (ObjectList) ObjectUtilities.clone(this.domainAxes);
+        for (int i = 0; i < this.domainAxes.size(); i++) {
+            ValueAxis axis = (ValueAxis) this.domainAxes.get(i);
+            if (axis != null) {
+                ValueAxis clonedAxis = (ValueAxis) axis.clone();
+                clone.domainAxes.set(i, clonedAxis);
+                clonedAxis.setPlot(clone);
+                clonedAxis.addChangeListener(clone);
+            }
+        }
+        clone.domainAxisLocations = (ObjectList)
+                this.domainAxisLocations.clone();
+
+        clone.rangeAxes = (ObjectList) ObjectUtilities.clone(this.rangeAxes);
+        for (int i = 0; i < this.rangeAxes.size(); i++) {
+            ValueAxis axis = (ValueAxis) this.rangeAxes.get(i);
+            if (axis != null) {
+                ValueAxis clonedAxis = (ValueAxis) axis.clone();
+                clone.rangeAxes.set(i, clonedAxis);
+                clonedAxis.setPlot(clone);
+                clonedAxis.addChangeListener(clone);
+            }
+        }
+        clone.rangeAxisLocations = (ObjectList) ObjectUtilities.clone(
+                this.rangeAxisLocations);
+
+        // the datasets are not cloned, but listeners need to be added...
+        clone.datasets = (ObjectList) ObjectUtilities.clone(this.datasets);
+        for (int i = 0; i < clone.datasets.size(); ++i) {
+            XYDataset d = getDataset(i);
+            if (d != null) {
+                d.addChangeListener(clone);
+            }
+        }
+
+        clone.datasetToDomainAxesMap = new TreeMap();
+        clone.datasetToDomainAxesMap.putAll(this.datasetToDomainAxesMap);
+        clone.datasetToRangeAxesMap = new TreeMap();
+        clone.datasetToRangeAxesMap.putAll(this.datasetToRangeAxesMap);
+
+        clone.renderers = (ObjectList) ObjectUtilities.clone(this.renderers);
+        for (int i = 0; i < this.renderers.size(); i++) {
+            XYItemRenderer renderer2 = (XYItemRenderer) this.renderers.get(i);
+            if (renderer2 instanceof PublicCloneable) {
+                PublicCloneable pc = (PublicCloneable) renderer2;
+                clone.renderers.set(i, pc.clone());
+            }
+        }
+        clone.foregroundDomainMarkers = (Map) ObjectUtilities.clone(
+                this.foregroundDomainMarkers);
+        clone.backgroundDomainMarkers = (Map) ObjectUtilities.clone(
+                this.backgroundDomainMarkers);
+        clone.foregroundRangeMarkers = (Map) ObjectUtilities.clone(
+                this.foregroundRangeMarkers);
+        clone.backgroundRangeMarkers = (Map) ObjectUtilities.clone(
+                this.backgroundRangeMarkers);
+        clone.annotations = (List) ObjectUtilities.deepClone(this.annotations);
+        if (this.fixedDomainAxisSpace != null) {
+            clone.fixedDomainAxisSpace = (AxisSpace) ObjectUtilities.clone(
+                    this.fixedDomainAxisSpace);
+        }
+        if (this.fixedRangeAxisSpace != null) {
+            clone.fixedRangeAxisSpace = (AxisSpace) ObjectUtilities.clone(
+                    this.fixedRangeAxisSpace);
+        }
+
+        clone.quadrantOrigin = (Point2D) ObjectUtilities.clone(
+                this.quadrantOrigin);
+        clone.quadrantPaint = (Paint[]) this.quadrantPaint.clone();
+        return clone;
+
+    }
+

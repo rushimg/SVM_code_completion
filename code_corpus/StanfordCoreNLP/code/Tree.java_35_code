@@ -1,0 +1,34 @@
+  public StringBuilder toStringBuilder(StringBuilder sb, boolean printOnlyLabelValue) {
+    if (isLeaf()) {
+      if (label() != null) {
+        if(printOnlyLabelValue) {
+          sb.append(label().value());
+        } else {
+          sb.append(label());
+        }
+      }
+      return sb;
+    } else {
+      sb.append('(');
+      if (label() != null) {
+        if (printOnlyLabelValue) {
+          if (value() != null) {
+            sb.append(label().value());
+          }
+          // don't print a null, just nothing!
+        } else {
+          sb.append(label());
+        }
+      }
+      Tree[] kids = children();
+      if (kids != null) {
+        for (Tree kid : kids) {
+          sb.append(' ');
+          kid.toStringBuilder(sb, printOnlyLabelValue);
+        }
+      }
+      return sb.append(')');
+    }
+  }
+
+

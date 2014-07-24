@@ -1,0 +1,28 @@
+public class LDCPosMapper implements Mapper {
+
+	protected Pattern startOfTagMap = Pattern.compile("\\(tag-map");
+	protected int numExpectedTokens = 2;
+
+	private boolean addDT = false;
+	private final Pattern determiner = Pattern.compile("DET");
+	private final Pattern nounBaseTag = Pattern.compile("NN");
+	private final Pattern adjBaseTag = Pattern.compile("JJ");
+	private final Pattern LDCdeterminer = Pattern.compile("DT\\+");
+
+	protected final Map<String,String> tagMap;
+	protected final Set<String> tagsToEscape;
+
+	public LDCPosMapper() {
+		this(false);
+	}
+
+	public LDCPosMapper(boolean addDeterminer) {
+		addDT = addDeterminer;
+		tagMap = Generics.newHashMap();
+
+		//Pre-terminal tags that do not appear in LDC tag maps
+		tagsToEscape = Generics.newHashSet();
+		tagsToEscape.add("-NONE-");             //Traces
+		tagsToEscape.add("PUNC");               //Punctuation
+	}
+

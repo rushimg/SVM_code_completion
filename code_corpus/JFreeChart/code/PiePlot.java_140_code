@@ -1,0 +1,83 @@
+    protected void drawSimpleLabels(Graphics2D g2, List keys,
+            double totalValue, Rectangle2D plotArea, Rectangle2D pieArea,
+            PiePlotState state) {
+
+        Composite originalComposite = g2.getComposite();
+        g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER,
+                1.0f));
+
+        RectangleInsets labelInsets = new RectangleInsets(UnitType.RELATIVE,
+                0.18, 0.18, 0.18, 0.18);
+        Rectangle2D labelsArea = labelInsets.createInsetRectangle(pieArea);
+        double runningTotal = 0.0;
+        Iterator iterator = keys.iterator();
+        while (iterator.hasNext()) {
+            Comparable key = (Comparable) iterator.next();
+            boolean include = true;
+            double v = 0.0;
+            Number n = getDataset().getValue(key);
+            if (n == null) {
+                include = !getIgnoreNullValues();
+            }
+            else {
+                v = n.doubleValue();
+                include = getIgnoreZeroValues() ? v > 0.0 : v >= 0.0;
+            }
+
+            if (include) {
+                runningTotal = runningTotal + v;
+                // work out the mid angle (0 - 90 and 270 - 360) = right,
+                // otherwise left
+                double mid = getStartAngle() + (getDirection().getFactor()
+
+                Arc2D arc = new Arc2D.Double(labelsArea, getStartAngle(),
+                        mid - getStartAngle(), Arc2D.OPEN);
+                int x = (int) arc.getEndPoint().getX();
+                int y = (int) arc.getEndPoint().getY();
+
+                PieSectionLabelGenerator labelGenerator = getLabelGenerator();
+                if (labelGenerator == null) {
+                    continue;
+                }
+                String label = labelGenerator.generateSectionLabel(
+                        this.dataset, key);
+                if (label == null) {
+                    continue;
+                }
+                g2.setFont(this.labelFont);
+                FontMetrics fm = g2.getFontMetrics();
+                Rectangle2D bounds = TextUtilities.getTextBounds(label, g2, fm);
+                Rectangle2D out = this.labelPadding.createOutsetRectangle(
+                        bounds);
+                Shape bg = ShapeUtilities.createTranslatedShape(out,
+                        x - bounds.getCenterX(), y - bounds.getCenterY());
+                if (this.labelShadowPaint != null) {
+                    Shape shadow = ShapeUtilities.createTranslatedShape(bg,
+                            this.shadowXOffset, this.shadowYOffset);
+                    g2.setPaint(this.labelShadowPaint);
+                    g2.fill(shadow);
+                }
+                if (this.labelBackgroundPaint != null) {
+                    g2.setPaint(this.labelBackgroundPaint);
+                    g2.fill(bg);
+                }
+                if (this.labelOutlinePaint != null
+                        && this.labelOutlineStroke != null) {
+                    g2.setPaint(this.labelOutlinePaint);
+                    g2.setStroke(this.labelOutlineStroke);
+                    g2.draw(bg);
+                }
+
+                g2.setPaint(this.labelPaint);
+                g2.setFont(this.labelFont);
+                TextUtilities.drawAlignedString(getLabelGenerator()
+                        .generateSectionLabel(getDataset(), key), g2, x, y,
+                        TextAnchor.CENTER);
+
+            }
+        }
+
+        g2.setComposite(originalComposite);
+
+    }
+

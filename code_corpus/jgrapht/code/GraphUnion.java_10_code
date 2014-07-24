@@ -1,0 +1,49 @@
+    public boolean removeVertex(V v)
+    {
+        throw new UnsupportedOperationException(READ_ONLY);
+    }
+
+    public Set<V> vertexSet()
+    {
+        Set<V> res = new HashSet<V>();
+        res.addAll(g1.vertexSet());
+        res.addAll(g2.vertexSet());
+        return Collections.unmodifiableSet(res);
+    }
+
+    public V getEdgeSource(E e)
+    {
+        if (g1.containsEdge(e)) {
+            return g1.getEdgeSource(e);
+        }
+        if (g2.containsEdge(e)) {
+            return g2.getEdgeSource(e);
+        }
+        return null;
+    }
+
+    public V getEdgeTarget(E e)
+    {
+        if (g1.containsEdge(e)) {
+            return g1.getEdgeTarget(e);
+        }
+        if (g2.containsEdge(e)) {
+            return g2.getEdgeTarget(e);
+        }
+        return null;
+    }
+
+    public double getEdgeWeight(E e)
+    {
+        if (g1.containsEdge(e) && g2.containsEdge(e)) {
+            return operator.combine(g1.getEdgeWeight(e), g2.getEdgeWeight(e));
+        }
+        if (g1.containsEdge(e)) {
+            return g1.getEdgeWeight(e);
+        }
+        if (g2.containsEdge(e)) {
+            return g2.getEdgeWeight(e);
+        }
+        throw new IllegalArgumentException("no such edge in the union");
+    }
+

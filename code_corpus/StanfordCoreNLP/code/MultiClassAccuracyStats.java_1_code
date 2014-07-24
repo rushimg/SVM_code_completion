@@ -1,0 +1,111 @@
+public class MultiClassAccuracyStats<L> implements Scorer<L> {
+  double[] scores; //sorted scores
+  boolean[] isCorrect; // is the i-th example correct
+  double logLikelihood;
+  double accuracy;
+  static String saveFile = null;
+  static int saveIndex = 1;
+
+  public static final int USE_ACCURACY = 1;
+  public static final int USE_LOGLIKELIHOOD = 2;
+
+  private int scoreType = USE_ACCURACY;
+
+
+  public MultiClassAccuracyStats(){
+  }
+
+  public MultiClassAccuracyStats(int scoreType){
+    this.scoreType = scoreType;
+  }
+
+  public MultiClassAccuracyStats(String file){
+    this(file, USE_ACCURACY);
+  }
+
+  public MultiClassAccuracyStats(String file, int scoreType){
+    saveFile=file;
+    this.scoreType = scoreType;
+  }
+
+  public <F> MultiClassAccuracyStats(ProbabilisticClassifier<L,F> classifier, GeneralDataset<L,F> data,String file) {
+    this(classifier, data, file, USE_ACCURACY);
+  }
+
+  public <F>  MultiClassAccuracyStats(ProbabilisticClassifier<L,F> classifier, GeneralDataset<L,F> data,String file, int scoreType) {
+    saveFile=file;
+    this.scoreType = scoreType;
+    initMC(classifier, data);
+  }
+
+  int correct = 0;
+  int total = 0;
+
+  public <F> double score(ProbabilisticClassifier<L,F> classifier, GeneralDataset<L,F> data) {
+      initMC(classifier,data);
+      return score();
+  }
+
+  public double score() {
+    if (scoreType == USE_ACCURACY) {
+      return accuracy;
+    } else if (scoreType == USE_LOGLIKELIHOOD) {
+      return logLikelihood;
+    } else {
+      throw new RuntimeException("Unknown score type: "+scoreType);
+    }
+  }
+
+  public int numSamples() {
+    return scores.length;
+  }
+
+  public double confidenceWeightedAccuracy() {
+    double acc = 0;
+    for (int recall = 1; recall <= numSamples(); recall++) {
+      acc += numCorrect(recall) / (double) recall;
+    }
+    return acc / numSamples();
+  }
+
+  public <F> void initMC(ProbabilisticClassifier<L,F> classifier, GeneralDataset<L,F> data) {
+    //if (!(gData instanceof Dataset)) {
+    //  throw new UnsupportedOperationException("Can only handle Datasets, not "+gData.getClass().getName());
+    //}
+    //
+    //Dataset data = (Dataset)gData;
+
+    PriorityQueue<Pair<Integer, Pair<Double, Boolean>>> q = new BinaryHeapPriorityQueue<Pair<Integer, Pair<Double, Boolean>>>();
+    total = 0;
+    correct = 0;
+    logLikelihood = 0.0;
+    for (int i = 0; i < data.size(); i++) {
+      Datum<L,F> d = data.getRVFDatum(i);
+      Counter<L> scores = classifier.logProbabilityOf(d);
+      L guess = Counters.argmax(scores);
+      L correctLab = d.label();
+      double guessScore = scores.getCount(guess);
+      double correctScore = scores.getCount(correctLab);
+      int guessInd = data.labelIndex().indexOf(guess);
+      int correctInd = data.labelIndex().indexOf(correctLab);
+
+      total++;
+      if (guessInd == correctInd) {
+        correct++;
+      }
+      logLikelihood += correctScore;
+      q.add(new Pair<Integer, Pair<Double, Boolean>>(Integer.valueOf(i), new Pair<Double, Boolean>(new Double(guessScore), Boolean.valueOf(guessInd == correctInd))), -guessScore);
+    }
+    accuracy = (double) correct / (double) total;
+    List<Pair<Integer, Pair<Double, Boolean>>> sorted = q.toSortedList();
+    scores = new double[sorted.size()];
+    isCorrect = new boolean[sorted.size()];
+
+    for (int i = 0; i < sorted.size(); i++) {
+      Pair<Double, Boolean> next = sorted.get(i).second();
+      scores[i] = next.first().doubleValue();
+      isCorrect[i] = next.second().booleanValue();
+    }
+
+  }
+

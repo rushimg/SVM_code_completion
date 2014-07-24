@@ -1,0 +1,50 @@
+  public static <T> Iterable<T> filter(
+      final Iterable<T> iterable, final Function<T,Boolean> accept) {
+
+    return new Iterable<T>() {
+      public Iterator<T> iterator() {
+        return new Iterator<T>() {
+          Iterator<T> inner = iterable.iterator();
+
+          boolean queued = false;
+          T next = null;
+
+          public boolean hasNext() {
+            prepare();
+            return queued;
+          }
+
+          public T next() {
+            prepare();
+            if (!queued) {
+              throw new RuntimeException("Filter .next() called with no next");
+            }
+            T rv = next;
+            next = null;
+            queued = false;
+            return rv;
+          }
+
+          public void prepare() {
+            if (queued) {
+              return;
+            }
+
+            while (inner.hasNext()) {
+              T next = inner.next();
+              if (accept.apply(next)) {
+                this.next = next;
+                this.queued = true;
+                return;
+              }
+            }
+          }
+
+          public void remove() {
+            throw new UnsupportedOperationException();
+          }
+        };
+      }
+    };
+  }
+

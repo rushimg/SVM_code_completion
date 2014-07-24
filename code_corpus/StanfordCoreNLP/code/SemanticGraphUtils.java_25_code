@@ -1,0 +1,33 @@
+  public static List<SemanticGraphEdge> makeReplacedEdges(Iterable<SemanticGraphEdge> edges, Map<IndexedWord, IndexedWord> vertReplacementMap,
+      boolean useGenericReplacement) {
+    List<SemanticGraphEdge> retList = new ArrayList<SemanticGraphEdge>();
+    for (SemanticGraphEdge edge : edges) {
+      IndexedWord gov = edge.getGovernor();
+      IndexedWord dep = edge.getDependent();
+      IndexedWord newGov = vertReplacementMap.get(gov);
+      IndexedWord newDep = vertReplacementMap.get(dep);
+      if (useGenericReplacement) {
+        if (newGov == null) {
+          newGov = new IndexedWord(gov);
+          newGov.set(CoreAnnotations.TextAnnotation.class, WILDCARD_VERTICE_TOKEN);
+          newGov.set(CoreAnnotations.OriginalTextAnnotation.class, WILDCARD_VERTICE_TOKEN);
+          newGov.set(CoreAnnotations.LemmaAnnotation.class, WILDCARD_VERTICE_TOKEN);
+        }
+        if (newDep == null) {
+          newDep = new IndexedWord(dep);
+          newDep.set(CoreAnnotations.TextAnnotation.class, WILDCARD_VERTICE_TOKEN);
+          newDep.set(CoreAnnotations.OriginalTextAnnotation.class, WILDCARD_VERTICE_TOKEN);
+          newDep.set(CoreAnnotations.LemmaAnnotation.class,WILDCARD_VERTICE_TOKEN);
+        }
+      } else {
+        if (newGov == null)
+          newGov = edge.getGovernor();
+        if (newDep == null)
+          newDep = edge.getDependent();
+      }
+      SemanticGraphEdge newEdge = new SemanticGraphEdge(newGov, newDep, edge.getRelation(), edge.getWeight(), edge.isExtra());
+      retList.add(newEdge);
+    }
+    return retList;
+  }
+

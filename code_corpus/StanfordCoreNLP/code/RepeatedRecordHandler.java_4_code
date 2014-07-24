@@ -1,0 +1,31 @@
+  public static class ApproximateRepeatSemantics implements RepeatSemantics {
+    private static boolean sameMessage(String last, String current){
+      String lastNoNumbers = last.replaceAll("[0-9\\.\\-]+","#");
+      String currentNoNumbers = current.replaceAll("[0-9\\.\\-]+","#");
+      return lastNoNumbers.startsWith(currentNoNumbers.substring(0, Math.min(7, currentNoNumbers.length())));
+    }
+    @Override
+    public boolean equals(Record lastRecord, Record record) {
+      return Arrays.equals(record.channels(), lastRecord.channels()) &&
+          sameMessage(
+            lastRecord.content == null ? "null" : lastRecord.content.toString(),
+            record.content == null ? "null" : record.content.toString()
+          );
+    }
+    @Override
+    public long maxWaitTimeInMillis() {
+      return 1000;
+    }
+    @Override
+    public int numToForcePrint(){
+      return 3;
+    }
+    @Override
+    public String message(int linesOmitted){
+      return "... "+linesOmitted+" similar messages";
+    }
+  }
+
+  public static final ApproximateRepeatSemantics APPROXIMATE = new ApproximateRepeatSemantics();
+
+

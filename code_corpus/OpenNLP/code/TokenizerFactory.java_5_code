@@ -1,0 +1,24 @@
+  public static TokenizerFactory create(String subclassName,
+      String languageCode, Dictionary abbreviationDictionary,
+      boolean useAlphaNumericOptimization, Pattern alphaNumericPattern)
+      throws InvalidFormatException {
+    if (subclassName == null) {
+      // will create the default factory
+      return new TokenizerFactory(languageCode, abbreviationDictionary,
+          useAlphaNumericOptimization, alphaNumericPattern);
+    }
+    try {
+      TokenizerFactory theFactory = ExtensionLoader.instantiateExtension(
+          TokenizerFactory.class, subclassName);
+      theFactory.init(languageCode, abbreviationDictionary,
+          useAlphaNumericOptimization, alphaNumericPattern);
+      return theFactory;
+    } catch (Exception e) {
+      String msg = "Could not instantiate the " + subclassName
+          + ". The initialization throw an exception.";
+      System.err.println(msg);
+      e.printStackTrace();
+      throw new InvalidFormatException(msg, e);
+    }
+  }
+

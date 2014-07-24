@@ -1,0 +1,17 @@
+  public static <T> Comparator<T> chain(final List<Comparator<? super T>> c) {
+    return new Comparator<T>() {
+      public int compare(T o1, T o2) {
+        int x = 0;
+        Iterator<Comparator<? super T>> it = c.iterator();
+        while (x == 0 && it.hasNext()) {
+          x = it.next().compare(o1, o2);
+        }
+        return x;
+      }
+    };
+  }
+
+  public static <T> Comparator<T> chain(Comparator<? super T>... c) {
+    return chain(Arrays.asList(c));
+  }
+

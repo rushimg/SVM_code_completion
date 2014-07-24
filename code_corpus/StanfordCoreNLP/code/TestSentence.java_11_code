@@ -1,0 +1,27 @@
+  private void getTop3(double[][][] probabilities, int current, double[] probs, String[] tags) {
+    int[] topIds = new int[3];
+    double[] probTags = probabilities[current][0];
+    Arrays.fill(probs, Double.NEGATIVE_INFINITY);
+    for (int i = 0; i < probTags.length; i++) {
+      if (probTags[i] > probs[0]) {
+        probs[2] = probs[1];
+        probs[1] = probs[0];
+        probs[0] = probTags[i];
+        topIds[2] = topIds[1];
+        topIds[1] = topIds[0];
+        topIds[0] = i;
+      } else if (probTags[i] > probs[1]) {
+        probs[2] = probs[1];
+        probs[1] = probTags[i];
+        topIds[2] = topIds[1];
+        topIds[1] = i;
+      } else if (probTags[i] > probs[2]) {
+        probs[2] = probTags[i];
+        topIds[2] = i;
+      }
+    }
+    for (int j = 0; j < 3; j++) {
+      tags[j] = toNice(maxentTagger.tags.getTag(topIds[j]));
+    }
+  }
+

@@ -1,0 +1,432 @@
+  @Override
+  public void train(Collection<List<IN>> objectBankWrapper, DocumentReaderAndWriter<IN> readerAndWriter) {
+    Timing timer = new Timing();
+    timer.start();
+
+    Collection<List<IN>> docs = new ArrayList<List<IN>>();
+    for (List<IN> doc : objectBankWrapper) {
+      docs.add(doc);
+    }
+
+    if (flags.numOfSlices > 0) {
+      System.err.println("Taking " + flags.numOfSlices + " out of " + flags.totalDataSlice + " slices of data for training");
+      List<List<IN>> docsToShuffle = new ArrayList<List<IN>>();
+      for (List<IN> doc : docs) {
+        docsToShuffle.add(doc);
+      }
+      Collections.shuffle(docsToShuffle, random);
+      docs = docsToShuffle.subList(0, cutOff);
+    }
+
+    Collection<List<IN>> totalDocs = loadAuxiliaryData(docs, readerAndWriter);
+
+    makeAnswerArraysAndTagIndex(totalDocs);
+
+    long elapsedMs = timer.stop();
+    System.err.println("Time to convert docs to feature indices: " + Timing.toSecondsString(elapsedMs) + " seconds");
+
+    if (flags.serializeClassIndexTo != null) {
+      timer.start();
+      serializeClassIndex(flags.serializeClassIndexTo);
+      elapsedMs = timer.stop();
+      System.err.println("Time to export class index : " + Timing.toSecondsString(elapsedMs) + " seconds");
+    }
+
+    if (flags.exportFeatures != null) {
+      timer.start();
+      CRFFeatureExporter<IN> featureExporter = new CRFFeatureExporter<IN>(this);
+      featureExporter.printFeatures(flags.exportFeatures, docs);
+      elapsedMs = timer.stop();
+      System.err.println("Time to export features: " + Timing.toSecondsString(elapsedMs) + " seconds");
+    }
+
+    for (int i = 0; i <= flags.numTimesPruneFeatures; i++) {
+      timer.start();
+      Triple<int[][][][], int[][], double[][][][]> dataAndLabelsAndFeatureVals = documentsToDataAndLabels(docs);
+      elapsedMs = timer.stop();
+      System.err.println("Time to convert docs to data/labels: " + Timing.toSecondsString(elapsedMs) + " seconds");
+
+      Evaluator[] evaluators = null;
+      if (flags.evaluateIters > 0 || flags.terminateOnEvalImprovement) {
+        List<Evaluator> evaluatorList = new ArrayList<Evaluator>();
+        if (flags.useMemoryEvaluator)
+          evaluatorList.add(new MemoryEvaluator());
+        if (flags.evaluateTrain) {
+          CRFClassifierEvaluator<IN> crfEvaluator = new CRFClassifierEvaluator<IN>("Train set", this);
+          List<Triple<int[][][], int[], double[][][]>> trainDataAndLabels = new ArrayList<Triple<int[][][], int[], double[][][]>>();
+          int[][][][] data = dataAndLabelsAndFeatureVals.first();
+          int[][] labels = dataAndLabelsAndFeatureVals.second();
+          double[][][][] featureVal = dataAndLabelsAndFeatureVals.third();
+          for (int j = 0; j < data.length; j++) {
+            Triple<int[][][], int[], double[][][]> p = new Triple<int[][][], int[], double[][][]>(data[j], labels[j], featureVal[j]);
+            trainDataAndLabels.add(p);
+          }
+          crfEvaluator.setTestData(docs, trainDataAndLabels);
+          if (flags.evalCmd.length() > 0)
+            crfEvaluator.setEvalCmd(flags.evalCmd);
+          evaluatorList.add(crfEvaluator);
+        }
+        if (flags.testFile != null) {
+          CRFClassifierEvaluator<IN> crfEvaluator = new CRFClassifierEvaluator<IN>("Test set (" + flags.testFile + ")",
+              this);
+          ObjectBank<List<IN>> testObjBank = makeObjectBankFromFile(flags.testFile, readerAndWriter);
+          List<List<IN>> testDocs = new ArrayList<List<IN>>();
+          for (List<IN> doc : testObjBank) {
+            testDocs.add(doc);
+          }
+          List<Triple<int[][][], int[], double[][][]>> testDataAndLabels = documentsToDataAndLabelsList(testDocs);
+          crfEvaluator.setTestData(testDocs, testDataAndLabels);
+          if (flags.evalCmd.length() > 0)
+            crfEvaluator.setEvalCmd(flags.evalCmd);
+          evaluatorList.add(crfEvaluator);
+        }
+        if (flags.testFiles != null) {
+          String[] testFiles = flags.testFiles.split(",");
+          for (String testFile : testFiles) {
+            CRFClassifierEvaluator<IN> crfEvaluator = new CRFClassifierEvaluator<IN>("Test set ("
+                + testFile + ")", this);
+            ObjectBank<List<IN>> testObjBank = makeObjectBankFromFile(testFile, readerAndWriter);
+            List<Triple<int[][][], int[], double[][][]>> testDataAndLabels = documentsToDataAndLabelsList(testObjBank);
+            crfEvaluator.setTestData(testObjBank, testDataAndLabels);
+            if (flags.evalCmd.length() > 0)
+              crfEvaluator.setEvalCmd(flags.evalCmd);
+            evaluatorList.add(crfEvaluator);
+          }
+        }
+        evaluators = new Evaluator[evaluatorList.size()];
+        evaluatorList.toArray(evaluators);
+      }
+
+      if (flags.numTimesPruneFeatures == i) {
+        docs = null; // hopefully saves memory
+      }
+      // save feature index to disk and read in later
+      File featIndexFile = null;
+
+      // CRFLogConditionalObjectiveFunction.featureIndex = featureIndex;
+      int numFeatures = featureIndex.size();
+      if (flags.saveFeatureIndexToDisk) {
+        try {
+          System.err.println("Writing feature index to temporary file.");
+          featIndexFile = IOUtils.writeObjectToTempFile(featureIndex, "featIndex" + i + ".tmp");
+          // featureIndex = null;
+        } catch (IOException e) {
+          throw new RuntimeException("Could not open temporary feature index file for writing.");
+        }
+      }
+
+      // first index is the number of the document
+      // second index is position in the document also the index of the
+      // clique/factor table
+      // third index is the number of elements in the clique/window thase
+      // features are for (starting with last element)
+      // fourth index is position of the feature in the array that holds them
+      // element in data[i][j][k][m] is the index of the mth feature occurring
+      // in position k of the jth clique of the ith document
+      int[][][][] data = dataAndLabelsAndFeatureVals.first();
+      // first index is the number of the document
+      // second index is the position in the document
+      // element in labels[i][j] is the index of the correct label (if it
+      // exists) at position j in document i
+      int[][] labels = dataAndLabelsAndFeatureVals.second();
+      double[][][][] featureVals = dataAndLabelsAndFeatureVals.third();
+
+      if (flags.loadProcessedData != null) {
+        List<List<CRFDatum<Collection<String>, String>>> processedData = loadProcessedData(flags.loadProcessedData);
+        if (processedData != null) {
+          // enlarge the data and labels array
+          int[][][][] allData = new int[data.length + processedData.size()][][][];
+          double[][][][] allFeatureVals = new double[featureVals.length + processedData.size()][][][];
+          int[][] allLabels = new int[labels.length + processedData.size()][];
+          System.arraycopy(data, 0, allData, 0, data.length);
+          System.arraycopy(labels, 0, allLabels, 0, labels.length);
+          System.arraycopy(featureVals, 0, allFeatureVals, 0, featureVals.length);
+          // add to the data and labels array
+          addProcessedData(processedData, allData, allLabels, allFeatureVals, data.length);
+          data = allData;
+          labels = allLabels;
+          featureVals = allFeatureVals;
+        }
+      }
+
+      double[] oneDimWeights = trainWeights(data, labels, evaluators, i, featureVals);
+      if (oneDimWeights != null) {
+        this.weights = to2D(oneDimWeights, labelIndices, map);
+      }
+
+      // if (flags.useFloat) {
+      //   oneDimWeights = trainWeightsUsingFloatCRF(data, labels, evaluators, i, featureVals);
+      // } else if (flags.numLopExpert > 1) {
+      //   oneDimWeights = trainWeightsUsingLopCRF(data, labels, evaluators, i, featureVals);
+      // } else {
+      //   oneDimWeights = trainWeightsUsingDoubleCRF(data, labels, evaluators, i, featureVals);
+      // }
+
+      // save feature index to disk and read in later
+      if (flags.saveFeatureIndexToDisk) {
+        try {
+          System.err.println("Reading temporary feature index file.");
+          featureIndex = (Index<String>) IOUtils.readObjectFromFile(featIndexFile);
+        } catch (Exception e) {
+          throw new RuntimeException("Could not open temporary feature index file for reading.");
+        }
+      }
+
+      if (i != flags.numTimesPruneFeatures) {
+        dropFeaturesBelowThreshold(flags.featureDiffThresh);
+        System.err.println("Removing features with weight below " + flags.featureDiffThresh + " and retraining...");
+      }
+    }
+  }
+
+  public double[][] to2D(double[] weights, List<Index<CRFLabel>> labelIndices, int[] map) {
+    double[][] newWeights = new double[map.length][];
+    int index = 0;
+    for (int i = 0; i < map.length; i++) {
+      newWeights[i] = new double[labelIndices.get(map[i]).size()];
+      System.arraycopy(weights, index, newWeights[i], 0, labelIndices.get(map[i]).size());
+      index += labelIndices.get(map[i]).size();
+    }
+    return newWeights;
+  }
+
+
+  protected void pruneNodeFeatureIndices(int totalNumOfFeatureSlices, int numOfFeatureSlices) {
+    int numOfNodeFeatures = nodeFeatureIndicesMap.size();
+    int beginIndex = 0;
+    List<Integer> nodeFeatureOriginalIndices = nodeFeatureIndicesMap.objectsList();
+    List<Integer> edgeFeatureOriginalIndices = edgeFeatureIndicesMap.objectsList();
+
+    Index<Integer> newNodeFeatureIndex = new HashIndex<Integer>();
+    Index<Integer> newEdgeFeatureIndex = new HashIndex<Integer>();
+    Index<String> newFeatureIndex = new HashIndex<String>();
+
+    for (int i = beginIndex; i < endIndex; i++) {
+      int oldIndex = nodeFeatureOriginalIndices.get(i);
+      String f = featureIndex.get(oldIndex);
+      int index = newFeatureIndex.indexOf(f, true);
+      newNodeFeatureIndex.add(index);
+    }
+    for (Integer edgeFIndex: edgeFeatureOriginalIndices) {
+      String f = featureIndex.get(edgeFIndex);
+      int index = newFeatureIndex.indexOf(f, true);
+      newEdgeFeatureIndex.add(index);
+    }
+
+    nodeFeatureIndicesMap = newNodeFeatureIndex;
+    edgeFeatureIndicesMap = newEdgeFeatureIndex;
+
+    int[] newMap = new int[newFeatureIndex.size()];
+    for (int i = 0; i < newMap.length; i++) {
+      int index = featureIndex.indexOf(newFeatureIndex.get(i));
+      newMap[i] = map[index];
+    }
+    map = newMap;
+
+    featureIndex = newFeatureIndex;
+  }
+
+  protected CRFLogConditionalObjectiveFunction getObjectiveFunction(int[][][][] data, int[][] labels) {
+    return new CRFLogConditionalObjectiveFunction(data, labels, windowSize, classIndex,
+      labelIndices, map, flags.priorType, flags.backgroundSymbol, flags.sigma, null, flags.multiThreadGrad);
+  }
+
+  protected double[] trainWeights(int[][][][] data, int[][] labels, Evaluator[] evaluators, int pruneFeatureItr, double[][][][] featureVals) {
+
+    CRFLogConditionalObjectiveFunction func = getObjectiveFunction(data, labels);
+    cliquePotentialFunctionHelper = func;
+
+    // create feature grouping
+    Map<String, Set<Integer>> featureSets = null;
+    if (flags.groupByOutputClass) {
+      featureSets = new HashMap<String, Set<Integer>>();
+      if (flags.groupByFeatureTemplate) {
+        int pIndex = 0;
+        for (int fIndex = 0; fIndex < map.length; fIndex++) {
+          int cliqueType = map[fIndex];
+          int numCliqueTypeOutputClass = labelIndices.get(map[fIndex]).size();
+          for (int cliqueOutClass = 0; cliqueOutClass < numCliqueTypeOutputClass; cliqueOutClass++) {
+            String name = "c:"+cliqueType+"-o:"+cliqueOutClass+"-g:"+featureIndexToTemplateIndex.get(fIndex);
+            if (featureSets.containsKey(name)) {
+              featureSets.get(name).add(pIndex);
+            } else {
+              Set<Integer> newSet = new HashSet<Integer>();
+              newSet.add(pIndex);
+              featureSets.put(name, newSet);
+            }
+            pIndex++;
+          }
+        }
+      } else {
+        int pIndex = 0;
+        for (int cliqueType : map) {
+          int numCliqueTypeOutputClass = labelIndices.get(cliqueType).size();
+          for (int cliqueOutClass = 0; cliqueOutClass < numCliqueTypeOutputClass; cliqueOutClass++) {
+            String name = "c:" + cliqueType + "-o:" + cliqueOutClass;
+            if (featureSets.containsKey(name)) {
+              featureSets.get(name).add(pIndex);
+            } else {
+              Set<Integer> newSet = new HashSet<Integer>();
+              newSet.add(pIndex);
+              featureSets.put(name, newSet);
+            }
+            pIndex++;
+          }
+        }
+      }
+    } else if (flags.groupByFeatureTemplate) {
+      featureSets = new HashMap<String, Set<Integer>>();
+      int pIndex = 0;
+      for (int fIndex = 0; fIndex < map.length; fIndex++) {
+        int cliqueType = map[fIndex];
+        int numCliqueTypeOutputClass = labelIndices.get(map[fIndex]).size();
+        for (int cliqueOutClass = 0; cliqueOutClass < numCliqueTypeOutputClass; cliqueOutClass++) {
+          String name = "c:"+cliqueType+"-g:"+featureIndexToTemplateIndex.get(fIndex);
+          if (featureSets.containsKey(name)) {
+            featureSets.get(name).add(pIndex);
+          } else {
+            Set<Integer> newSet = new HashSet<Integer>();
+            newSet.add(pIndex);
+            featureSets.put(name, newSet);
+          }
+          pIndex++;
+        }
+      }
+    }
+    if (featureSets != null) {
+      int[][] fg = new int[featureSets.size()][];
+      System.err.println("After feature grouping, total of "+fg.length+" groups");
+      int count = 0;
+      for (Set<Integer> aSet: featureSets.values()) {
+        fg[count] = new int[aSet.size()];
+        int i = 0;
+        for (Integer val : aSet)
+          fg[count][i++] = val;
+        count++;
+      }
+      func.setFeatureGrouping(fg);
+    }
+
+    Minimizer<DiffFunction> minimizer = getMinimizer(pruneFeatureItr, evaluators);
+
+    double[] initialWeights;
+    if (flags.initialWeights == null) {
+      initialWeights = func.initial();
+    } else {
+      try {
+        System.err.println("Reading initial weights from file " + flags.initialWeights);
+        DataInputStream dis = new DataInputStream(new BufferedInputStream(new GZIPInputStream(new FileInputStream(
+            flags.initialWeights))));
+        initialWeights = ConvertByteArray.readDoubleArr(dis);
+      } catch (IOException e) {
+        throw new RuntimeException("Could not read from double initial weight file " + flags.initialWeights);
+      }
+    }
+    System.err.println("numWeights: " + initialWeights.length);
+
+    if (flags.testObjFunction) {
+      StochasticDiffFunctionTester tester = new StochasticDiffFunctionTester(func);
+      if (tester.testSumOfBatches(initialWeights, 1e-4)) {
+        System.err.println("Successfully tested stochastic objective function.");
+      } else {
+        throw new IllegalStateException("Testing of stochastic objective function failed.");
+      }
+
+    }
+    //check gradient
+    if (flags.checkGradient) {
+      if (func.gradientCheck()) {
+        System.err.println("gradient check passed");
+      } else {
+        throw new RuntimeException("gradient check failed");
+      }
+    }
+    return minimizer.minimize(func, flags.tolerance, initialWeights);
+  }
+
+  public Minimizer<DiffFunction> getMinimizer() {
+    return getMinimizer(0, null);
+  }
+
+  public Minimizer<DiffFunction> getMinimizer(int featurePruneIteration, Evaluator[] evaluators) {
+    Minimizer<DiffFunction> minimizer = null;
+    if (flags.useQN) {
+      int QNmem;
+      if (featurePruneIteration == 0) {
+        QNmem = flags.QNsize;
+      } else {
+        QNmem = flags.QNsize2;
+      }
+
+      if (flags.interimOutputFreq != 0) {
+        Function monitor = new ResultStoringMonitor(flags.interimOutputFreq, flags.serializeTo);
+        minimizer = new QNMinimizer(monitor, QNmem, flags.useRobustQN);
+      } else {
+        minimizer = new QNMinimizer(QNmem, flags.useRobustQN);
+      }
+
+      ((QNMinimizer) minimizer).terminateOnMaxItr(flags.maxQNItr);
+      ((QNMinimizer) minimizer).terminateOnEvalImprovement(flags.terminateOnEvalImprovement);
+      ((QNMinimizer) minimizer).setTerminateOnEvalImprovementNumOfEpoch(flags.terminateOnEvalImprovementNumOfEpoch);
+      ((QNMinimizer) minimizer).suppressTestPrompt(flags.suppressTestDebug);
+      if (flags.useOWLQN) {
+        ((QNMinimizer) minimizer).useOWLQN(flags.useOWLQN, flags.priorLambda);
+      }
+    } else if (flags.useInPlaceSGD) {
+      SGDMinimizer<DiffFunction> sgdMinimizer =
+              new SGDMinimizer<DiffFunction>(flags.sigma, flags.SGDPasses, flags.tuneSampleSize, flags.stochasticBatchSize);
+      if (flags.useSGDtoQN) {
+        QNMinimizer qnMinimizer;
+        int QNmem;
+        if (featurePruneIteration == 0) {
+          QNmem = flags.QNsize;
+        } else {
+          QNmem = flags.QNsize2;
+        }
+        if (flags.interimOutputFreq != 0) {
+          Function monitor = new ResultStoringMonitor(flags.interimOutputFreq, flags.serializeTo);
+          qnMinimizer = new QNMinimizer(monitor, QNmem, flags.useRobustQN);
+        } else {
+          qnMinimizer = new QNMinimizer(QNmem, flags.useRobustQN);
+        }
+        minimizer = new HybridMinimizer(sgdMinimizer, qnMinimizer, flags.SGDPasses);
+      } else {
+        minimizer = sgdMinimizer;
+      }
+    } else if (flags.useAdaGradFOBOS) {
+      minimizer = new SGDWithAdaGradAndFOBOS<DiffFunction>(
+        flags.initRate, lambda, flags.SGDPasses, flags.stochasticBatchSize,
+        flags.priorType, flags.priorAlpha, flags.useAdaDelta, flags.useAdaDiff, flags.adaGradEps, flags.adaDeltaRho);
+      ((SGDWithAdaGradAndFOBOS) minimizer).terminateOnEvalImprovement(flags.terminateOnEvalImprovement);
+      ((SGDWithAdaGradAndFOBOS) minimizer).terminateOnAvgImprovement(flags.terminateOnAvgImprovement, flags.tolerance);
+      ((SGDWithAdaGradAndFOBOS) minimizer).setTerminateOnEvalImprovementNumOfEpoch(flags.terminateOnEvalImprovementNumOfEpoch);
+      ((SGDWithAdaGradAndFOBOS) minimizer).suppressTestPrompt(flags.suppressTestDebug);
+    } else if (flags.useSGDtoQN) {
+      minimizer = new SGDToQNMinimizer(flags.initialGain, flags.stochasticBatchSize,
+                                       flags.SGDPasses, flags.QNPasses, flags.SGD2QNhessSamples,
+                                       flags.QNsize, flags.outputIterationsToFile);
+    } else if (flags.useSMD) {
+      minimizer = new SMDMinimizer<DiffFunction>(flags.initialGain, flags.stochasticBatchSize, flags.stochasticMethod,
+          flags.SGDPasses);
+    } else if (flags.useSGD) {
+      minimizer = new InefficientSGDMinimizer<DiffFunction>(flags.initialGain, flags.stochasticBatchSize);
+    } else if (flags.useScaledSGD) {
+      minimizer = new ScaledSGDMinimizer(flags.initialGain, flags.stochasticBatchSize, flags.SGDPasses,
+          flags.scaledSGDMethod);
+    } else if (flags.l1reg > 0.0) {
+      minimizer = ReflectionLoading.loadByReflection("edu.stanford.nlp.optimization.OWLQNMinimizer", flags.l1reg);
+    }
+
+    if (minimizer instanceof HasEvaluators) {
+      if (minimizer instanceof QNMinimizer) {
+        ((QNMinimizer) minimizer).setEvaluators(flags.evaluateIters, flags.startEvaluateIters, evaluators);
+      } else
+        ((HasEvaluators) minimizer).setEvaluators(flags.evaluateIters, evaluators);
+    }
+    if (minimizer == null) {
+      throw new RuntimeException("No minimizer assigned!");
+    }
+
+    return minimizer;
+  }
+

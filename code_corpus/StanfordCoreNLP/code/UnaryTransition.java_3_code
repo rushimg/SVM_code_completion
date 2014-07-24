@@ -1,0 +1,25 @@
+  public State apply(State state) {
+    return apply(state, 0.0);
+  }
+
+  static Tree addUnaryNode(Tree top, String label) {
+    if (!(top.label() instanceof CoreLabel)) {
+      throw new IllegalArgumentException("Stack should have CoreLabel nodes");
+    }
+    Tree newTop = createNode(top, label, top);
+    return newTop;
+  }
+
+  static Tree createNode(Tree top, String label, Tree ... children) {
+    CoreLabel headLabel = (CoreLabel) top.label();
+    CoreLabel production = new CoreLabel();
+    production.setValue(label);
+    production.set(TreeCoreAnnotations.HeadWordAnnotation.class, headLabel.get(TreeCoreAnnotations.HeadWordAnnotation.class));
+    production.set(TreeCoreAnnotations.HeadTagAnnotation.class, headLabel.get(TreeCoreAnnotations.HeadTagAnnotation.class));
+    Tree newTop = new LabeledScoredTreeNode(production);
+    for (Tree child : children) {
+      newTop.addChild(child);
+    }
+    return newTop;
+  }
+

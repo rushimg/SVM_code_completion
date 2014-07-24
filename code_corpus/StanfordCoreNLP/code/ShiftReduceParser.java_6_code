@@ -1,0 +1,52 @@
+  public Transition findEmergencyTransition(State state, List<ParserConstraint> constraints) {
+    if (state.stack.size() == 0) {
+      return null;
+    }
+
+    // See if there is a constraint whose boundaries match the end
+    // points of the top node on the stack.  If so, we can apply a
+    // UnaryTransition / CompoundUnaryTransition if that would solve
+    // the constraint
+    if (constraints != null) {
+      final Tree top = state.stack.peek();
+      for (ParserConstraint constraint : constraints) {
+        if (ShiftReduceUtils.leftIndex(top) != constraint.start || ShiftReduceUtils.rightIndex(top) != constraint.end - 1) {
+          continue;
+        }
+        if (ShiftReduceUtils.constraintMatchesTreeTop(top, constraint)) { 
+          continue;
+        }
+        // found an unmatched constraint that can be fixed with a unary transition
+        // now we need to find a matching state for the transition
+        for (String label : knownStates) {
+          if (constraint.state.matcher(label).matches()) {
+            return ((op.compoundUnaries) ? 
+                    new CompoundUnaryTransition(Collections.singletonList(label), false) : 
+                    new UnaryTransition(label, false));
+          }
+        }
+      }
+    }
+
+    if (ShiftReduceUtils.isTemporary(state.stack.peek()) && 
+        (state.stack.size() == 1 || ShiftReduceUtils.isTemporary(state.stack.pop().peek()))) {
+      return ((op.compoundUnaries) ? 
+              new CompoundUnaryTransition(Collections.singletonList(state.stack.peek().value().substring(1)), false) : 
+              new UnaryTransition(state.stack.peek().value().substring(1), false));
+    }
+
+    if (state.stack.size() == 1) {
+      return null;
+    }
+
+    if (ShiftReduceUtils.isTemporary(state.stack.peek())) {
+      return new BinaryTransition(state.stack.peek().value().substring(1), BinaryTransition.Side.RIGHT);
+    }
+
+    if (ShiftReduceUtils.isTemporary(state.stack.pop().peek())) {
+      return new BinaryTransition(state.stack.pop().peek().value().substring(1), BinaryTransition.Side.LEFT);
+    }
+    
+    return null;
+  }
+

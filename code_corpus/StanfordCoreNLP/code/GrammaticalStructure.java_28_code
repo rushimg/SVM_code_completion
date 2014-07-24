@@ -1,0 +1,37 @@
+  public static Collection<TypedDependency> getRoots(Collection<TypedDependency> list) {
+
+    Collection<TypedDependency> roots = new ArrayList<TypedDependency>();
+
+    // need to see if more than one governor is not listed somewhere as a dependent
+    // first take all the deps
+    Collection<TreeGraphNode> deps = Generics.newHashSet();
+    for (TypedDependency typedDep : list) {
+      deps.add(typedDep.dep());
+    }
+
+    // go through the list and add typedDependency for which the gov is not a dep
+    Collection<TreeGraphNode> govs = Generics.newHashSet();
+    for (TypedDependency typedDep : list) {
+      TreeGraphNode gov = typedDep.gov();
+      if (!deps.contains(gov) && !govs.contains(gov)) {
+        roots.add(typedDep);
+      }
+      govs.add(gov);
+    }
+    return roots;
+  }
+
+  private static final long serialVersionUID = 2286294455343892678L;
+
+  private static class NameComparator<X> implements Comparator<X> {
+    @Override
+    public int compare(X o1, X o2) {
+      String n1 = o1.toString();
+      String n2 = o2.toString();
+      return n1.compareTo(n2);
+    }
+  }
+
+
+  public static final String DEFAULT_PARSER_FILE = "/u/nlp/data/lexparser/englishPCFG.ser.gz";
+

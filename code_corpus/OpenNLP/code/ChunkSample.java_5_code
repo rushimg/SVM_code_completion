@@ -1,0 +1,45 @@
+  public static Span[] phrasesAsSpanList(String[] aSentence, String[] aTags,
+      String[] aPreds) {
+
+    validateArguments(aSentence.length, aTags.length, aPreds.length);
+
+    // initialize with the list maximum size
+    List<Span> phrases = new ArrayList<Span>(aSentence.length);
+    String startTag = "";
+    int startIndex = 0;
+    boolean foundPhrase = false;
+
+    for (int ci = 0, cn = aPreds.length; ci < cn; ci++) {
+      String pred = aPreds[ci];
+      if (pred.startsWith("B-")
+          || (!pred.equals("I-" + startTag) && !pred.equals("O"))) { // start
+        if (foundPhrase) { // handle the last
+          phrases.add(new Span(startIndex, ci, startTag));
+        }
+        startIndex = ci;
+        startTag = pred.substring(2);
+        foundPhrase = true;
+      } else if (pred.equals("I-" + startTag)) { // middle
+        // do nothing
+      } else if (foundPhrase) {// end
+        phrases.add(new Span(startIndex, ci, startTag));
+        foundPhrase = false;
+        startTag = "";
+      }
+    }
+    if (foundPhrase) { // leftover
+      phrases.add(new Span(startIndex, aPreds.length, startTag));
+    }
+
+    return phrases.toArray(new Span[phrases.size()]);
+  }
+
+  private static void validateArguments(int sentenceSize, int tagsSize, int predsSize) throws IllegalArgumentException {
+    if (sentenceSize != tagsSize || tagsSize != predsSize)
+      throw new IllegalArgumentException(
+          "All arrays must have the same length: " +
+              "sentenceSize: " + sentenceSize +
+              ", tagsSize: " + tagsSize +
+              ", predsSize: " + predsSize + "!");
+  }
+

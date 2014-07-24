@@ -1,0 +1,24 @@
+    public void apply(JFreeChart chart) {
+        if (chart == null) {
+            throw new IllegalArgumentException("Null 'chart' argument.");
+        }
+        TextTitle title = chart.getTitle();
+        if (title != null) {
+            title.setFont(this.extraLargeFont);
+            title.setPaint(this.titlePaint);
+        }
+
+        int subtitleCount = chart.getSubtitleCount();
+        for (int i = 0; i < subtitleCount; i++) {
+            applyToTitle(chart.getSubtitle(i));
+        }
+
+        chart.setBackgroundPaint(this.chartBackgroundPaint);
+
+        // now process the plot if there is one
+        Plot plot = chart.getPlot();
+        if (plot != null) {
+            applyToPlot(plot);
+        }
+    }
+

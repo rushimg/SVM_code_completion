@@ -1,0 +1,16 @@
+    public static List <NameValuePair> parse(
+            final HttpEntity entity) throws IOException {
+        final ContentType contentType = ContentType.get(entity);
+        if (contentType != null && contentType.getMimeType().equalsIgnoreCase(CONTENT_TYPE)) {
+            final String content = EntityUtils.toString(entity, Consts.ASCII);
+            if (content != null && !content.isEmpty()) {
+                Charset charset = contentType.getCharset();
+                if (charset == null) {
+                    charset = HTTP.DEF_CONTENT_CHARSET;
+                }
+                return parse(content, charset, QP_SEPS);
+            }
+        }
+        return Collections.emptyList();
+    }
+

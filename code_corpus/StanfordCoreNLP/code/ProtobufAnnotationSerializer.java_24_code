@@ -1,0 +1,26 @@
+  public Tree fromProto(CoreNLPProtos.ParseTree proto) {
+    LabeledScoredTreeNode node = new LabeledScoredTreeNode();
+    // Set label
+    if (proto.hasValue()) {
+      CoreLabel value = new CoreLabel();
+      value.setCategory(proto.getValue());
+      value.setValue(proto.getValue());
+      node.setLabel(value);
+      // Set span
+      if (proto.hasYieldBeginIndex() && proto.hasYieldEndIndex()) {
+        IntPair span = new IntPair(proto.getYieldBeginIndex(), proto.getYieldEndIndex());
+        value.set(SpanAnnotation.class, span);
+      }
+    }
+    // Set score
+    if (proto.hasScore()) { node.setScore(proto.getScore()); }
+    // Set children
+    Tree[] children = new LabeledScoredTreeNode[proto.getChildCount()];
+    for (int i = 0; i < children.length; ++i) {
+      children[i] = fromProto(proto.getChild(i));
+    }
+    node.setChildren(children);
+    // Return
+    return node;
+  }
+

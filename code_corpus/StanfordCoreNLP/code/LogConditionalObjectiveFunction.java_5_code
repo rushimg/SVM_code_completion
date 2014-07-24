@@ -1,0 +1,18 @@
+  @Override
+  public void calculateStochastic(double[] x, double[] v, int[] batch) {
+
+    if(method.calculatesHessianVectorProduct() && v != null){
+      //  This is used for Stochastic Methods that involve second order information (SMD for example)
+      if(method.equals(StochasticCalculateMethods.AlgorithmicDifferentiation)){
+        calculateStochasticAlgorithmicDifferentiation(x,v,batch);
+      }else if(method.equals(StochasticCalculateMethods.IncorporatedFiniteDifference)){
+        calculateStochasticFiniteDifference(x,v,finiteDifferenceStepSize,batch);
+      }
+    } else{
+      //This is used for Stochastic Methods that don't need anything but the gradient (SGD)
+      calculateStochasticGradientLocal(x,batch);
+    }
+
+  }
+
+

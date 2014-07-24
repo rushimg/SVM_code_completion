@@ -1,0 +1,44 @@
+  private static Tree findFootNode(Tree t) {
+    Tree footNode = findFootNodeHelper(t);
+    Tree result = footNode;
+    if (footNode != null) {
+      Tree newFootNode = footNode.treeFactory().newTreeNode(footNode.label(), new ArrayList<Tree>());
+
+      Tree parent = footNode.parent(t);
+      if (parent != null) {
+        int i = parent.objectIndexOf(footNode);
+        parent.setChild(i, newFootNode);
+      }
+
+      result = newFootNode;
+    }
+    return result;
+  }
+
+  private static Tree findFootNodeHelper(Tree t) {
+    Tree foundDtr = null;
+    if (t.isLeaf()) {
+      Matcher m = footNodeLabelPattern.matcher(t.label().value());
+      if (m.matches()) {
+        t.label().setValue(m.group(1));
+        return t;
+      } else {
+        return null;
+      }
+    }
+    for (Tree child : t.children()) {
+      Tree thisFoundDtr = findFootNodeHelper(child);
+      if (thisFoundDtr != null) {
+        if (foundDtr != null) {
+          throw new TsurgeonParseException("Error -- two foot nodes in subtree" + t.toString());
+        } else {
+          foundDtr = thisFoundDtr;
+        }
+      }
+    }
+    Matcher m = escapedFootNodeCharacter.matcher(t.label().value());
+    t.label().setValue(m.replaceAll(footNodeCharacter));
+    return foundDtr;
+  }
+
+

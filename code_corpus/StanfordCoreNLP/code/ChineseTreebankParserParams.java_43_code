@@ -1,0 +1,33 @@
+  @Override
+  public ArrayList<Word> defaultTestSentence() {
+    return Sentence.toUntaggedList("\u951f\u65a4\u62f7", "\u951f\u65a4\u62f7", "\u5b66\u6821", "\u951f\u65a4\u62f7", "\u5b66\u4e60", "\u951f\u65a4\u62f7");
+  }
+
+
+  private static final long serialVersionUID = 2;
+
+
+  @Override
+  public List<GrammaticalStructure>
+    readGrammaticalStructureFromFile(String filename)
+  {
+    try {
+      return ChineseGrammaticalStructure.
+              readCoNLLXGrammaticalStructureCollection(filename);
+    } catch (IOException e) {
+      throw new RuntimeIOException(e);
+    }
+  }
+
+  @Override
+  public GrammaticalStructure getGrammaticalStructure(Tree t,
+                                                      Filter<String> filter,
+                                                      HeadFinder hf) {
+    return new ChineseGrammaticalStructure(t, filter, hf);
+  }
+
+  @Override
+  public boolean supportsBasicDependencies() {
+    return true;
+  }
+

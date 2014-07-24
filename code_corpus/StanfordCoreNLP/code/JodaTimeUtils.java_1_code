@@ -1,0 +1,182 @@
+          }
+        }
+      }
+    }
+    return p1;
+  }
+  // Resolve dow for p1
+  public static Partial resolveDowToDay(Partial p)
+  {
+    if (p.isSupported(DateTimeFieldType.dayOfWeek())) {
+      if (!p.isSupported(DateTimeFieldType.dayOfMonth())) {
+        if (p.isSupported(DateTimeFieldType.weekOfWeekyear()) && p.isSupported(DateTimeFieldType.year())) {
+          Instant t2 = getInstant(p);
+          DateTime t1 = p.toDateTime(t2);
+          Partial res = getPartial(t1.toInstant(), EMPTY_ISO_PARTIAL);
+          DateTimeFieldType mostSpecific = getMostSpecific(p);
+          res = discardMoreSpecificFields(res, mostSpecific.getDurationType());
+          return res;
+        }
+      }
+    }
+    return p;
+  }
+  // Uses p2 to resolve week for p1
+  public static Partial resolveWeek(Partial p1, Partial p2)
+  {
+    if (isCompatible(p1,p2)) {
+        if (!p1.isSupported(DateTimeFieldType.dayOfMonth())) {
+          if (p2.isSupported(DateTimeFieldType.dayOfMonth()) && p2.isSupported(DateTimeFieldType.monthOfYear()) && p2.isSupported(DateTimeFieldType.year())) {
+            Instant t2 = getInstant(p2);
+            DateTime t1 = p1.toDateTime(t2);
+            return getPartial(t1.toInstant(), p1.without(DateTimeFieldType.dayOfMonth()).without(DateTimeFieldType.monthOfYear()).with(DateTimeFieldType.weekOfWeekyear(), 1));
+          }
+      }
+    }
+    return p1;
+  }
+  public static Partial resolveWeek(Partial p)
+  {
+    // Figure out week
+    if (p.isSupported(DateTimeFieldType.dayOfMonth()) && p.isSupported(DateTimeFieldType.monthOfYear()) && p.isSupported(DateTimeFieldType.year())) {
+      Instant t = getInstant(p);
+//      return getPartial(t.toInstant(), p.without(DateTimeFieldType.dayOfMonth()).without(DateTimeFieldType.monthOfYear()).with(DateTimeFieldType.weekOfWeekyear(), 1));
+      return getPartial(t.toInstant(), p.with(DateTimeFieldType.weekOfWeekyear(), 1));
+    } else return p;
+  }
+
+  public static Instant getInstant(Partial p)
+  {
+    if (p == null) return null;
+    int year = p.isSupported(DateTimeFieldType.year())? p.get(DateTimeFieldType.year()):0;
+    if (!p.isSupported(DateTimeFieldType.year())) {
+      if (p.isSupported(DateTimeFieldType.centuryOfEra())) {
+      }
+      if (p.isSupported(DateTimeFieldType.yearOfCentury())) {
+        year += p.get(DateTimeFieldType.yearOfCentury());
+      } else if (p.isSupported(DecadeOfCentury)) {
+      }
+    }
+    int moy = p.isSupported(DateTimeFieldType.monthOfYear())? p.get(DateTimeFieldType.monthOfYear()):1;
+    if (!p.isSupported(DateTimeFieldType.monthOfYear())) {
+      if (p.isSupported(QuarterOfYear)) {
+      }
+    }
+    int dom = p.isSupported(DateTimeFieldType.dayOfMonth())? p.get(DateTimeFieldType.dayOfMonth()):1;
+    int hod = p.isSupported(DateTimeFieldType.hourOfDay())? p.get(DateTimeFieldType.hourOfDay()):0;
+    int moh = p.isSupported(DateTimeFieldType.minuteOfHour())? p.get(DateTimeFieldType.minuteOfHour()):0;
+    int som = p.isSupported(DateTimeFieldType.secondOfMinute())? p.get(DateTimeFieldType.secondOfMinute()):0;
+    int msos = p.isSupported(DateTimeFieldType.millisOfSecond())? p.get(DateTimeFieldType.millisOfSecond()):0;
+    return new DateTime(year, moy, dom, hod, moh, som, msos, isoUTCChronology).toInstant();
+  }
+
+  public static Partial getPartial(Instant t, Partial p)
+  {
+    Partial res = new Partial(p);
+    for (int i = 0; i < p.size(); i++) {
+      res = res.withField(p.getFieldType(i), t.get(p.getFieldType(i)));
+    }
+    return res;
+  }
+
+  // Add duration to partial
+  public static Partial addForce(Partial p, Period d, int scalar)
+  {
+    Instant t = getInstant(p);
+    t = t.withDurationAdded(d.toDurationFrom(INSTANT_ZERO), scalar);
+    return getPartial(t, p);
+  }
+
+  // Returns if df1 is more general than df2
+  public static boolean isMoreGeneral(DateTimeFieldType df1, DateTimeFieldType df2, Chronology chronology)
+  {
+    DurationFieldType df1DurationFieldType = df1.getDurationType();
+    DurationFieldType df2DurationFieldType = df2.getDurationType();
+    if (!df2DurationFieldType.equals(df1DurationFieldType)) {
+      DurationField df1Unit = df1DurationFieldType.getField(chronology);
+      DurationFieldType p = df2.getRangeDurationType();
+      if (p != null) {
+        DurationField df2Unit = df2DurationFieldType.getField(chronology);
+        int cmp = df1Unit.compareTo(df2Unit);
+        if (cmp > 0) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  // Returns if df1 is more specific than df2
+  public static boolean isMoreSpecific(DateTimeFieldType df1, DateTimeFieldType df2, Chronology chronology)
+  {
+    DurationFieldType df1DurationFieldType = df1.getDurationType();
+    DurationFieldType df2DurationFieldType = df2.getDurationType();
+    if (!df2DurationFieldType.equals(df1DurationFieldType)) {
+      DurationField df2Unit = df2DurationFieldType.getField(chronology);
+      DurationFieldType p = df1.getRangeDurationType();
+      if (p != null) {
+        DurationField df1Unit = df1DurationFieldType.getField(chronology);
+        int cmp = df1Unit.compareTo(df2Unit);
+        if (cmp < 0) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  private static String zeroPad(int value, int padding){
+    StringBuilder b = new StringBuilder();
+    b.append(value);
+    while(b.length() < padding){
+      b.insert(0,"0");
+    }
+    return b.toString();
+  }
+
+  private static boolean noFurtherFields(DateTimeFieldType smallestFieldSet, ReadableDateTime begin, ReadableDateTime end){
+    //--Get Indices
+    //(standard fields)
+    int indexInStandard = -1;
+    for(int i=0; i<standardISOFields.length; i++){
+      if(standardISOFields[i] == smallestFieldSet){
+        indexInStandard = i+1;
+      }
+    }
+    //(week-based fields)
+    int indexInWeek = -1;
+    for(int i=0; i<standardISOWeekFields.length; i++){
+      if(standardISOWeekFields[i] == smallestFieldSet){
+        indexInWeek = i+1;
+      }
+    }
+    //(special fields)
+    if(smallestFieldSet == QuarterOfYear){
+      for(int i=0; i<standardISOFields.length; i++){
+        if(standardISOFields[i] == monthOfYear()){
+          indexInStandard = i;
+        }
+      }
+    }
+    //(get data)
+    int index = -1;
+    DateTimeFieldType[] toCheck = null;
+    if(indexInStandard >= 0){
+      index = indexInStandard;
+      toCheck = standardISOFields;
+    } else if(indexInWeek >= 0){
+        index = indexInWeek;
+        toCheck = standardISOWeekFields;
+    } else {
+      throw new IllegalArgumentException("Field is not in my list of fields: " + smallestFieldSet);
+    }
+    //--Perform Check
+    for(int i=index; i<toCheck.length; i++){
+      int minValue = minimumValue(toCheck[i], begin) ;
+      if(begin.get(toCheck[i]) != minValue || end.get(toCheck[i]) != minValue){
+        return false;
+      }
+    }
+    return true;
+  }
+

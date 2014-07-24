@@ -1,0 +1,25 @@
+  public static SentenceModel train(String languageCode,
+      ObjectStream<SentenceSample> samples, boolean useTokenEnd,
+      Dictionary abbreviations, TrainingParameters mlParams) throws IOException {
+    SentenceDetectorFactory sdFactory = new SentenceDetectorFactory(
+        languageCode, useTokenEnd, abbreviations, null);
+    return train(languageCode, samples, sdFactory, mlParams);
+  }
+
+  public static SentenceModel train(String languageCode,
+      ObjectStream<SentenceSample> samples, SentenceDetectorFactory sdFactory,
+      TrainingParameters mlParams) throws IOException {
+
+    Map<String, String> manifestInfoEntries = new HashMap<String, String>();
+
+    // TODO: Fix the EventStream to throw exceptions when training goes wrong
+    ObjectStream<Event> eventStream = new SDEventStream(samples,
+        sdFactory.getSDContextGenerator(), sdFactory.getEndOfSentenceScanner());
+
+    MaxentModel sentModel = TrainUtil.train(eventStream,
+        mlParams.getSettings(), manifestInfoEntries);
+
+    return new SentenceModel(languageCode, sentModel, manifestInfoEntries,
+        sdFactory);
+  }
+

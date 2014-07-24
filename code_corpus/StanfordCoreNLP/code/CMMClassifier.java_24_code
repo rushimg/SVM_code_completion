@@ -1,0 +1,195 @@
+  private static Collection<String> addOtherClasses(Collection<String> feats, List<? extends CoreLabel> info,
+                                     int loc, Clique c) {
+    String addend = null;
+    String pAnswer = info.get(loc - 1).get(CoreAnnotations.AnswerAnnotation.class);
+    String p2Answer = info.get(loc - 2).get(CoreAnnotations.AnswerAnnotation.class);
+    String p3Answer = info.get(loc - 3).get(CoreAnnotations.AnswerAnnotation.class);
+    String p4Answer = info.get(loc - 4).get(CoreAnnotations.AnswerAnnotation.class);
+    String p5Answer = info.get(loc - 5).get(CoreAnnotations.AnswerAnnotation.class);
+    String nAnswer = info.get(loc + 1).get(CoreAnnotations.AnswerAnnotation.class);
+    // cdm 2009: Is this really right? Do we not need to differentiate names that would collide???
+    if (c == FeatureFactory.cliqueCpC) {
+      addend = '|' + pAnswer;
+    } else if (c == FeatureFactory.cliqueCp2C) {
+      addend = '|' + p2Answer;
+    } else if (c == FeatureFactory.cliqueCp3C) {
+      addend = '|' + p3Answer;
+    } else if (c == FeatureFactory.cliqueCp4C) {
+      addend = '|' + p4Answer;
+    } else if (c == FeatureFactory.cliqueCp5C) {
+      addend = '|' + p5Answer;
+    } else if (c == FeatureFactory.cliqueCpCp2C) {
+      addend = '|' + pAnswer + '-' + p2Answer;
+    } else if (c == FeatureFactory.cliqueCpCp2Cp3C) {
+      addend = '|' + pAnswer + '-' + p2Answer + '-' + p3Answer;
+    } else if (c == FeatureFactory.cliqueCpCp2Cp3Cp4C) {
+      addend = '|' + pAnswer + '-' + p2Answer + '-' + p3Answer + '-' + p4Answer;
+    } else if (c == FeatureFactory.cliqueCpCp2Cp3Cp4Cp5C) {
+      addend = '|' + pAnswer + '-' + p2Answer + '-' + p3Answer + '-' + p4Answer + '-' + p5Answer;
+    } else if (c == FeatureFactory.cliqueCnC) {
+      addend = '|' + nAnswer;
+    } else if (c == FeatureFactory.cliqueCpCnC) {
+      addend = '|' + pAnswer + '-' + nAnswer;
+    }
+    if (addend == null) {
+      return feats;
+    }
+    Collection<String> newFeats = Generics.newHashSet();
+    for (String feat : feats) {
+      String newFeat = feat + addend;
+      newFeats.add(newFeat);
+    }
+    return newFeats;
+  }
+
+
+  private static List<Pair<Pattern, Integer>> getThresholds(String filename) {
+    try {
+      BufferedReader in = new BufferedReader(new FileReader(filename));
+      List<Pair<Pattern, Integer>> thresholds = new ArrayList<Pair<Pattern, Integer>>();
+      String line;
+      while ((line = in.readLine()) != null) {
+        int i = line.lastIndexOf(' ');
+        Pattern p = Pattern.compile(line.substring(0, i));
+        //System.err.println(":"+line.substring(0,i)+":");
+        Integer t = Integer.valueOf(line.substring(i + 1));
+        Pair<Pattern, Integer> pair = new Pair<Pattern, Integer>(p, t);
+        thresholds.add(pair);
+      }
+      in.close();
+      return thresholds;
+    } catch (Exception e) {
+      throw new RuntimeException("Error reading threshold file", e);
+    }
+  }
+
+  public void trainSemiSup() {
+    DocumentReaderAndWriter<IN> readerAndWriter = makeReaderAndWriter();
+
+    String filename = flags.trainFile;
+    String biasedFilename = flags.biasedTrainFile;
+
+    ObjectBank<List<IN>> data =
+      makeObjectBankFromFile(filename, readerAndWriter);
+    ObjectBank<List<IN>> biasedData =
+      makeObjectBankFromFile(biasedFilename, readerAndWriter);
+
+    Index<String> featureIndex = new HashIndex<String>();
+    Index<String> classIndex = new HashIndex<String>();
+
+    Dataset<String, String> dataset = getDataset(data, featureIndex, classIndex);
+    Dataset<String, String> biasedDataset = getBiasedDataset(biasedData, featureIndex, classIndex);
+
+    double[][] confusionMatrix = new double[classIndex.size()][classIndex.size()];
+
+    for (int i = 0; i < confusionMatrix.length; i++) {
+      Arrays.fill(confusionMatrix[i], 0.0);
+      confusionMatrix[i][i] = 1.0;
+    }
+
+    String cm = flags.confusionMatrix;
+    String[] bits = cm.split(":");
+    for (String bit : bits) {
+      String[] bits1 = bit.split("\\|");
+      int i1 = classIndex.indexOf(bits1[0]);
+      int i2 = classIndex.indexOf(bits1[1]);
+      double d = Double.parseDouble(bits1[2]);
+      confusionMatrix[i2][i1] = d;
+    }
+
+    for (double[] row : confusionMatrix) {
+      ArrayMath.normalize(row);
+    }
+
+    for (int i = 0; i < confusionMatrix.length; i++) {
+      for (int j = 0; j < i; j++) {
+        double d = confusionMatrix[i][j];
+        confusionMatrix[i][j] = confusionMatrix[j][i];
+        confusionMatrix[j][i] = d;
+      }
+    }
+
+    for (int i = 0; i < confusionMatrix.length; i++) {
+      for (int j = 0; j < confusionMatrix.length; j++) {
+        System.err.println("P("+classIndex.get(j)+ '|' +classIndex.get(i)+") = "+confusionMatrix[j][i]);
+      }
+    }
+
+    trainSemiSup(dataset, biasedDataset, confusionMatrix);
+  }
+
+  static class Scorer<INN extends CoreLabel> implements SequenceModel {
+    private CMMClassifier<INN> classifier = null;
+
+    private int[] tagArray = null;
+    private int[] backgroundTags = null;
+    private Index<String> tagIndex = null;
+    private List<INN> lineInfos = null;
+    private int pre = 0;
+    private int post = 0;
+    private Set<List<String>> legalTags = null;
+
+    private static final boolean VERBOSE = false;
+
+    void buildTagArray() {
+      int sz = tagIndex.size();
+      tagArray = new int[sz];
+      for (int i = 0; i < sz; i++) {
+        tagArray[i] = i;
+      }
+    }
+
+    @Override
+    public int length() {
+      return lineInfos.size() - pre - post;
+    }
+
+    @Override
+    public int leftWindow() {
+      return pre;
+    }
+
+    @Override
+    public int rightWindow() {
+      return post;
+    }
+
+    @Override
+    public int[] getPossibleValues(int position) {
+      //             if (position == 0 || position == lineInfos.size() - 1) {
+      //                 int[] a = new int[1];
+      //                 a[0] = tagIndex.indexOf(BACKGROUND);
+      //                 return a;
+      //             }
+      if (tagArray == null) {
+        buildTagArray();
+      }
+      if (position < pre) {
+        return backgroundTags;
+      }
+      return tagArray;
+    }
+
+    @Override
+    public double scoreOf(int[] sequence) {
+      throw new UnsupportedOperationException();
+    }
+
+    private double[] scoreCache = null;
+    private int[] lastWindow = null;
+    //private int lastPos = -1;
+
+    @Override
+    public double scoreOf(int[] tags, int pos) {
+      if (false) {
+        return scoresOf(tags, pos)[tags[pos]];
+      }
+      if (lastWindow == null) {
+        lastWindow = new int[leftWindow() + rightWindow() + 1];
+        Arrays.fill(lastWindow, -1);
+      }
+      boolean match = (pos == lastPos);
+      for (int i = pos - leftWindow(); i <= pos + rightWindow(); i++) {
+        if (i == pos || i < 0) {
+          continue;
+        }

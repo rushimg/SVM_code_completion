@@ -1,0 +1,20 @@
+  String getSeparatorBetween(int right, int left) {
+    if (right >= left) {
+      throw new AssertionError("Expected right < left");
+    }
+    return getSeparatorBetween(getStackNode(right), getStackNode(left));
+  }
+
+  String getSeparatorBetween(Tree right, Tree left) {
+    if (right == null || left == null) {
+      return null;
+    }
+    int leftHead = ShiftReduceUtils.headIndex(left);
+    int rightHead = ShiftReduceUtils.headIndex(right);
+    Map.Entry<Integer, String> nextSeparator = separators.ceilingEntry(leftHead);
+    if (nextSeparator == null || nextSeparator.getKey() > rightHead) {
+      return null;
+    }
+    return nextSeparator.getValue().substring(0, 1);
+  }
+

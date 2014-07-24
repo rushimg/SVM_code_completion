@@ -1,0 +1,438 @@
+
+  private void computeDir(double[] dir, double[] fg, double[] x, QNInfo qn, Function func)
+      throws SurpriseConvergence {
+    System.arraycopy(fg, 0, dir, 0, fg.length);
+
+    int mmm = qn.size();
+    double[] as = new double[mmm];
+
+    for (int i = mmm - 1; i >= 0; i--) {
+      plusAndConstMult(dir, qn.getY(i), -as[i], dir);
+    }
+
+    // multiply by hessian approximation
+    qn.applyInitialHessian(dir);
+
+    for (int i = 0; i < mmm; i++) {
+      plusAndConstMult(dir, qn.getS(i), as[i] - b, dir);
+    }
+
+    ArrayMath.multiplyInPlace(dir, -1);
+
+    if (useOWLQN) { // step (2) in Galen & Gao 2007
+      constrainSearchDir(dir, fg, x, func);
+    }
+  }
+
+  private static double[] plusAndConstMult(double[] a, double[] b, double c,
+      double[] d) {
+    for (int i = 0; i < a.length; i++) {
+    }
+    return d;
+  }
+
+  private double doEvaluation(double[] x) {
+    // Evaluate solution
+    if (evaluators == null) return Double.NEGATIVE_INFINITY;
+    double score = 0;
+    for (Evaluator eval:evaluators) {
+      if (!suppressTestPrompt)
+        say("  Evaluating: " + eval.toString());
+      score = eval.evaluate(x);
+    }
+    return score;
+  }
+
+  public float[] minimize(DiffFloatFunction function, float functionTolerance,
+      float[] initial) {
+    throw new UnsupportedOperationException("Float not yet supported for QN");
+  }
+
+  @Override
+  public double[] minimize(DiffFunction function, double functionTolerance,
+      double[] initial) {
+    return minimize(function, functionTolerance, initial, -1);
+  }
+
+  @Override
+  public double[] minimize(DiffFunction dfunction, double functionTolerance,
+      double[] initial, int maxFunctionEvaluations) {
+    return minimize(dfunction, functionTolerance, initial,
+        maxFunctionEvaluations, null);
+  }
+
+  public double[] minimize(DiffFunction dfunction, double functionTolerance,
+      double[] initial, int maxFunctionEvaluations, QNInfo qn) {
+
+    say("QNMinimizer called on double function of "
+        + dfunction.domainDimension() + " variables,");
+    if (mem > 0) {
+      sayln(" using M = " + mem + ".");
+    } else {
+      sayln(" using dynamic setting of M.");
+    }
+
+    if (qn == null && presetInfo == null) {
+      qn = new QNInfo(mem);
+      noHistory = true;
+    } else if (presetInfo != null) {
+      qn = presetInfo;
+      noHistory = false;
+    } else if (qn != null) {
+      noHistory = false;
+    }
+
+    double[] x, newX, grad, newGrad, dir;
+    double value;
+    its = 0;
+    fevals = 0;
+    success = false;
+
+    qn.scaleOpt = scaleOpt;
+
+    // initialize weights
+    x = initial;
+
+    // initialize gradient
+    grad = new double[x.length];
+    newGrad = new double[x.length];
+    newX = new double[x.length];
+    dir = new double[x.length];
+
+    // initialize function value and gradient (gradient is stored in grad inside
+    // evaluateFunction)
+    value = evaluateFunction(dfunction, x, grad);
+    if (useOWLQN) {
+      double norm = l1NormOWL(x, dfunction);
+      grad = pseudoGradientOWL(x, grad, dfunction); // step (1) in Galen & Gao except we are not computing v yet
+    }
+
+    PrintWriter outFile = null;
+    PrintWriter infoFile = null;
+
+    if (outputToFile) {
+      try {
+        String baseName = "QN_m" + mem + "_" + lsOpt.toString() + "_"
+            + scaleOpt.toString();
+        outFile = new PrintWriter(new FileOutputStream(baseName + ".output"),
+            true);
+        infoFile = new PrintWriter(new FileOutputStream(baseName + ".info"),
+            true);
+        infoFile.println(dfunction.domainDimension() + "; DomainDimension ");
+        infoFile.println(mem + "; memory");
+      } catch (IOException e) {
+        throw new RuntimeIOException("Caught IOException outputting QN data to file", e);
+      }
+    }
+
+    Record rec = new Record(quiet, monitor, functionTolerance, outFile);
+    // sets the original gradient and x. Also stores the monitor.
+    rec.start(value, grad, x);
+
+    // Check if max Evaluations and Iterations have been provided.
+    maxFevals = (maxFunctionEvaluations > 0) ? maxFunctionEvaluations
+        : Integer.MAX_VALUE;
+    // maxIterations = (maxIterations > 0) ? maxIterations : Integer.MAX_VALUE;
+
+    sayln("               An explanation of the output:");
+    sayln("Iter           The number of iterations");
+    sayln("evals          The number of function evaluations");
+    sayln("SCALING        <D> Diagonal scaling was used; <I> Scaled Identity");
+    sayln("LINESEARCH     [## M steplength]  Minpack linesearch");
+    sayln("                   1-Function value was too high");
+    sayln("                   2-Value ok, gradient positive, positive curvature");
+    sayln("                   3-Value ok, gradient negative, positive curvature");
+    sayln("                   4-Value ok, gradient negative, negative curvature");
+    sayln("               [.. B]  Backtracking");
+    sayln("VALUE          The current function value");
+    sayln("TIME           Total elapsed time");
+    sayln("|GNORM|        The current norm of the gradient");
+    sayln("{RELNORM}      The ratio of the current to initial gradient norms");
+    sayln("AVEIMPROVE     The average improvement / current value");
+    sayln("EVALSCORE      The last available eval score");
+    sayln();
+    sayln("Iter ## evals ## <SCALING> [LINESEARCH] VALUE TIME |GNORM| {RELNORM} AVEIMPROVE EVALSCORE");
+
+    // Beginning of the loop.
+    do {
+      try {
+        sayln();
+        boolean doEval = (its >= 0 && its >= startEvaluateIters && evaluateIters > 0 && its % evaluateIters == 0);
+        its += 1;
+        double newValue;
+        double[] newPoint = new double[3]; // initialized in loop
+        say("Iter " + its + " evals " + fevals + " ");
+
+        // Compute the search direction
+        say("<");
+        computeDir(dir, grad, x, qn, dfunction);
+        say("> ");
+
+        // sanity check dir
+        boolean hasNaNDir = false;
+        boolean hasNaNGrad = false;
+        for (int i = 0; i < dir.length; i++) {
+          if (dir[i] != dir[i]) hasNaNDir = true;
+          if (grad[i] != grad[i]) hasNaNGrad = true;
+        }
+        if (hasNaNDir && !hasNaNGrad) {
+          say("(NaN dir likely due to Hessian approx - resetting) ");
+          qn.clear();
+          // re-compute the search direction
+          say("<");
+          computeDir(dir, grad, x, qn, dfunction);
+          say("> ");
+        }
+
+        // perform line search
+        say("[");
+
+        if (useOWLQN) {
+          // only linear search is allowed for OWL-QN
+          newPoint = lineSearchBacktrackOWL(dfunction, dir, x, newX, grad, value);
+          say("B");
+        } else {
+          // switch between line search options.
+          switch (lsOpt) {
+          case BACKTRACK:
+            newPoint = lineSearchBacktrack(dfunction, dir, x, newX, grad, value);
+            say("B");
+            break;
+          case MINPACK:
+            newPoint = lineSearchMinPack(dfunction, dir, x, newX, grad, value,
+                functionTolerance);
+            say("M");
+            break;
+          default:
+            sayln("Invalid line search option for QNMinimizer. ");
+            System.exit(1);
+            break;
+
+          }
+        }
+
+        newValue = newPoint[f];
+        System.err.print(" " + nf.format(newPoint[a]));
+        say("] ");
+
+        // This shouldn't actually evaluate anything since that should have been
+        // done in the lineSearch.
+        System.arraycopy(dfunction.derivativeAt(newX), 0, newGrad, 0, newGrad.length);
+
+        // This is where all the s, y updates are applied.
+        qn.update(newX, x, newGrad, grad, newPoint[a]); // step (4) in Galen & Gao 2007
+
+        if (useOWLQN) {
+          // pseudo gradient
+          newGrad = pseudoGradientOWL(newX, newGrad, dfunction);
+        }
+
+        double evalScore = Double.NEGATIVE_INFINITY;
+        if (doEval) {
+          evalScore = doEvaluation(newX);
+        }
+
+        // Add the current value and gradient to the records, this also monitors
+        // X and writes to output
+        rec.add(newValue, newGrad, newX, fevals, evalScore);
+
+        // shift
+        value = newValue;
+        // double[] temp = x;
+        // x = newX;
+        // newX = temp;
+        System.arraycopy(newX, 0, x, 0, x.length);
+        System.arraycopy(newGrad, 0, grad, 0, newGrad.length);
+
+        if (quiet) {
+          System.err.print(".");
+        }
+        if (fevals > maxFevals) {
+          throw new MaxEvaluationsExceeded(" Exceeded in minimize() loop ");
+        }
+
+      } catch (SurpriseConvergence s) {
+        sayln();
+        sayln("QNMinimizer aborted due to surprise convergence");
+        break;
+      } catch (MaxEvaluationsExceeded m) {
+        sayln();
+        sayln("QNMinimizer aborted due to maximum number of function evaluations");
+        sayln(m.toString());
+        break;
+      } catch (OutOfMemoryError oome) {
+        sayln();
+        if ( ! qn.s.isEmpty()) {
+          qn.s.remove(0);
+          qn.y.remove(0);
+          qn.rho.remove(0);
+          qn.mem = qn.s.size();
+          System.err.println("Caught OutOfMemoryError, changing m = " + qn.mem);
+        } else {
+          throw oome;
+        }
+      }
+
+    } while ((state = rec.toContinue()) == eState.CONTINUE); // do
+
+    if (evaluateIters > 0) {
+      // do final evaluation
+      double evalScore = (useEvalImprovement ? doEvaluation(rec.getBest()) : doEvaluation(x));
+      sayln("final evalScore is: " + evalScore);
+    }
+
+    //
+    // Announce the reason minimization has terminated.
+    //
+    System.err.println();
+    switch (state) {
+    case TERMINATE_GRADNORM:
+      System.err
+          .println("QNMinimizer terminated due to numerically zero gradient: |g| < EPS  max(1,|x|) ");
+      success = true;
+      break;
+    case TERMINATE_RELATIVENORM:
+      System.err
+          .println("QNMinimizer terminated due to sufficient decrease in gradient norms: |g|/|g0| < TOL ");
+      success = true;
+      break;
+    case TERMINATE_AVERAGEIMPROVE:
+      System.err
+          .println("QNMinimizer terminated due to average improvement: | newest_val - previous_val | / |newestVal| < TOL ");
+      success = true;
+      break;
+    case TERMINATE_MAXITR:
+      System.err
+          .println("QNMinimizer terminated due to reached max iteration " + maxItr );
+      success = true;
+      break;
+    case TERMINATE_EVALIMPROVE:
+      System.err
+          .println("QNMinimizer terminated due to no improvement on eval ");
+      success = true;
+      x = rec.getBest();
+      break;
+    default:
+      System.err.println("QNMinimizer terminated without converging");
+      success = false;
+      break;
+    }
+
+    double completionTime = rec.howLong();
+    sayln("Total time spent in optimization: " + nfsec.format(completionTime) + "s");
+
+    if (outputToFile) {
+      infoFile.println(completionTime + "; Total Time ");
+      infoFile.println(fevals + "; Total evaluations");
+      infoFile.close();
+      outFile.close();
+    }
+
+    qn.free();
+    return x;
+
+  } // end minimize()
+
+
+
+  private void sayln() {
+    if (!quiet) {
+      System.err.println();
+    }
+  }
+
+  private void sayln(String s) {
+    if (!quiet) {
+      System.err.println(s);
+    }
+  }
+
+  private void say(String s) {
+    if (!quiet) {
+      System.err.print(s);
+    }
+  }
+
+  // todo [cdm 2013]: Can this be sped up by returning a Pair rather than copying array?
+  private double evaluateFunction(DiffFunction dfunc, double[] x, double[] grad) {
+    System.arraycopy(dfunc.derivativeAt(x), 0, grad, 0, grad.length);
+    fevals += 1;
+    return dfunc.valueAt(x);
+  }
+
+  public void useOWLQN(boolean use, double lambda) {
+    this.useOWLQN = use;
+    this.lambdaOWL = lambda;
+  }
+
+  private static Set<Integer> initializeParamRange(Function func, double[] x) {
+    Set<Integer> paramRange;
+    if (func instanceof HasRegularizerParamRange) {
+      paramRange = ((HasRegularizerParamRange)func).getRegularizerParamRange(x);
+    } else {
+      paramRange = Generics.newHashSet(x.length);
+      for (int i = 0; i < x.length; i++) {
+        paramRange.add(i);
+      }
+    }
+    return paramRange;
+  }
+
+  private static double[] projectOWL(double[] x, double[] orthant, Function func) {
+    Set<Integer> paramRange = initializeParamRange(func, x);
+    for (int i : paramRange) {
+        x[i] = 0;
+    }
+    return x;
+  }
+
+  private static double l1NormOWL(double[] x, Function func) {
+    Set<Integer> paramRange = initializeParamRange(func, x);
+    double sum = 0.0;
+    for (int i: paramRange) {
+      sum += Math.abs(x[i]);
+    }
+    return sum;
+  }
+
+  private static void constrainSearchDir(double[] dir, double[] fg, double[] x, Function func) {
+    Set<Integer> paramRange = initializeParamRange(func, x);
+    for (int i: paramRange) {
+        dir[i] = 0.0;
+      }
+    }
+  }
+
+  private double[] pseudoGradientOWL(double[] x, double[] grad, Function func) {
+    Set<Integer> paramRange = initializeParamRange(func, x); // initialized below
+    double[] newGrad = new double[grad.length];
+
+    // compute pseudo gradient
+    for (int i = 0; i < x.length; i++) {
+      if (paramRange.contains(i)) {
+        if (x[i] < 0.0) {
+          // Differentiable
+          newGrad[i] = grad[i] - lambdaOWL;
+        } else if (x[i] > 0.0) {
+          // Differentiable
+          newGrad[i] = grad[i] + lambdaOWL;
+        } else {
+          if (grad[i] < -lambdaOWL) {
+            // Take the right partial derivative
+            newGrad[i] = grad[i] + lambdaOWL;
+          } else if (grad[i] > lambdaOWL) {
+            // Take the left partial derivative
+            newGrad[i] = grad[i] - lambdaOWL;
+          } else {
+            newGrad[i] = 0.0;
+          }
+        }
+      } else {
+        newGrad[i] = grad[i];
+      }
+    }
+
+    return newGrad;
+  }
+
+

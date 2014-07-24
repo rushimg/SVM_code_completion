@@ -1,0 +1,221 @@
+  public void saveParserToTextFile(String filename) {
+    if (reranker != null) {
+      throw new UnsupportedOperationException("Sorry, but parsers with rerankers cannot be saved to text file");
+    }
+    try {
+      System.err.print("Writing parser in text grammar format to file " + filename);
+      OutputStream os;
+      if (filename.endsWith(".gz")) {
+        // it's faster to do the buffering _outside_ the gzipping as here
+        os = new BufferedOutputStream(new GZIPOutputStream(new FileOutputStream(filename)));
+      } else {
+        os = new BufferedOutputStream(new FileOutputStream(filename));
+      }
+      PrintWriter out = new PrintWriter(os);
+      String prefix = "BEGIN ";
+
+      out.println(prefix + "OPTIONS");
+      op.writeData(out);
+      out.println();
+      System.err.print(".");
+
+      out.println(prefix + "STATE_INDEX");
+      stateIndex.saveToWriter(out);
+      out.println();
+      System.err.print(".");
+
+      out.println(prefix + "WORD_INDEX");
+      wordIndex.saveToWriter(out);
+      out.println();
+      System.err.print(".");
+
+      out.println(prefix + "TAG_INDEX");
+      tagIndex.saveToWriter(out);
+      out.println();
+      System.err.print(".");
+
+      String uwmClazz = ((lex.getUnknownWordModel() == null) ? "null" :
+                   lex.getUnknownWordModel().getClass().getCanonicalName());
+      out.println(prefix + "LEXICON " + uwmClazz);
+      lex.writeData(out);
+      out.println();
+      System.err.print(".");
+
+      out.println(prefix + "UNARY_GRAMMAR");
+      ug.writeData(out);
+      out.println();
+      System.err.print(".");
+
+      out.println(prefix + "BINARY_GRAMMAR");
+      bg.writeData(out);
+      out.println();
+      System.err.print(".");
+
+      out.println(prefix + "DEPENDENCY_GRAMMAR");
+      if (dg != null) {
+        dg.writeData(out);
+      }
+      out.println();
+      System.err.print(".");
+
+      out.flush();
+      out.close();
+      System.err.println("done.");
+    } catch (IOException e) {
+      System.err.println("Trouble saving parser data to ASCII format.");
+      throw new RuntimeIOException(e);
+    }
+  }
+
+  private static void confirmBeginBlock(String file, String line) {
+    if (line == null) {
+      throw new RuntimeException(file + ": expecting BEGIN block; got end of file.");
+    } else if (! line.startsWith("BEGIN")) {
+      throw new RuntimeException(file + ": expecting BEGIN block; got " + line);
+    }
+  }
+
+  protected static LexicalizedParser getParserFromTextFile(String textFileOrUrl, Options op) {
+    try {
+      Timing tim = new Timing();
+      System.err.print("Loading parser from text file " + textFileOrUrl + ' ');
+      BufferedReader in = IOUtils.readerFromString(textFileOrUrl);
+      Timing.startTime();
+
+      String line = in.readLine();
+      confirmBeginBlock(textFileOrUrl, line);
+      op.readData(in);
+      System.err.print(".");
+
+      line = in.readLine();
+      confirmBeginBlock(textFileOrUrl, line);
+      Index<String> stateIndex = HashIndex.loadFromReader(in);
+      System.err.print(".");
+
+      line = in.readLine();
+      confirmBeginBlock(textFileOrUrl, line);
+      Index<String> wordIndex = HashIndex.loadFromReader(in);
+      System.err.print(".");
+
+      line = in.readLine();
+      confirmBeginBlock(textFileOrUrl, line);
+      Index<String> tagIndex = HashIndex.loadFromReader(in);
+      System.err.print(".");
+
+      line = in.readLine();
+      confirmBeginBlock(textFileOrUrl, line);
+      Lexicon lex = op.tlpParams.lex(op, wordIndex, tagIndex);
+      String uwmClazz = line.split(" +")[2];
+      if (!uwmClazz.equals("null")) {
+        UnknownWordModel model = ReflectionLoading.loadByReflection(uwmClazz, op, lex, wordIndex, tagIndex);
+        lex.setUnknownWordModel(model);
+      }
+      lex.readData(in);
+      System.err.print(".");
+
+      line = in.readLine();
+      confirmBeginBlock(textFileOrUrl, line);
+      UnaryGrammar ug = new UnaryGrammar(stateIndex);
+      ug.readData(in);
+      System.err.print(".");
+
+      line = in.readLine();
+      confirmBeginBlock(textFileOrUrl, line);
+      BinaryGrammar bg = new BinaryGrammar(stateIndex);
+      bg.readData(in);
+      System.err.print(".");
+
+      line = in.readLine();
+      confirmBeginBlock(textFileOrUrl, line);
+      DependencyGrammar dg = new MLEDependencyGrammar(op.tlpParams, op.directional, op.distance, op.coarseDistance, op.trainOptions.basicCategoryTagsInDependencyGrammar, op, wordIndex, tagIndex);
+      dg.readData(in);
+      System.err.print(".");
+
+      in.close();
+      System.err.println(" done [" + tim.toSecondsString() + " sec].");
+      return new LexicalizedParser(lex, bg, ug, dg, stateIndex, wordIndex, tagIndex, op);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    return null;
+  }
+
+
+  public static LexicalizedParser getParserFromSerializedFile(String serializedFileOrUrl) {
+    try {
+      Timing tim = new Timing();
+      System.err.print("Loading parser from serialized file " + serializedFileOrUrl + " ...");
+      ObjectInputStream in = IOUtils.readStreamFromString(serializedFileOrUrl);
+      LexicalizedParser pd = loadModel(in);
+
+      in.close();
+      System.err.println(" done [" + tim.toSecondsString() + " sec].");
+      return pd;
+    } catch (InvalidClassException ice) {
+      // For this, it's not a good idea to continue and try it as a text file!
+      System.err.println();   // as in middle of line from above message
+      throw new RuntimeException("Invalid class in file: " + serializedFileOrUrl, ice);
+    } catch (FileNotFoundException fnfe) {
+      // For this, it's not a good idea to continue and try it as a text file!
+      System.err.println();   // as in middle of line from above message
+      throw new RuntimeException("File not found: " + serializedFileOrUrl, fnfe);
+    } catch (StreamCorruptedException sce) {
+      // suppress error message, on the assumption that we've really got
+      // a text grammar, and that'll be tried next
+      System.err.println();
+    } catch (Exception e) {
+      System.err.println();   // as in middle of line from above message
+      e.printStackTrace();
+    }
+    return null;
+  }
+
+
+  private static void printOptions(boolean train, Options op) {
+    op.display();
+    if (train) {
+      op.trainOptions.display();
+    } else {
+      op.testOptions.display();
+    }
+    op.tlpParams.display();
+  }
+
+  public static TreeAnnotatorAndBinarizer buildTrainBinarizer(Options op) {
+    TreebankLangParserParams tlpParams = op.tlpParams;
+    if (!op.trainOptions.leftToRight) {
+      return new TreeAnnotatorAndBinarizer(tlpParams, op.forceCNF, !op.trainOptions.outsideFactor(), !op.trainOptions.predictSplits, op);
+    } else {
+      return new TreeAnnotatorAndBinarizer(tlpParams.headFinder(), new LeftHeadFinder(), tlpParams, op.forceCNF, !op.trainOptions.outsideFactor(), !op.trainOptions.predictSplits, op);
+    }
+  }
+
+  public static CompositeTreeTransformer buildTrainTransformer(Options op) {
+    TreeAnnotatorAndBinarizer binarizer = buildTrainBinarizer(op);
+    return buildTrainTransformer(op, binarizer);
+  }
+
+  public static CompositeTreeTransformer buildTrainTransformer(Options op, TreeAnnotatorAndBinarizer binarizer) {
+    TreebankLangParserParams tlpParams = op.tlpParams;
+    TreebankLanguagePack tlp = tlpParams.treebankLanguagePack();
+    CompositeTreeTransformer trainTransformer =
+      new CompositeTreeTransformer();
+    if (op.trainOptions.preTransformer != null) {
+      trainTransformer.addTransformer(op.trainOptions.preTransformer);
+    }
+    if (op.trainOptions.collinsPunc) {
+      CollinsPuncTransformer collinsPuncTransformer =
+        new CollinsPuncTransformer(tlp);
+      trainTransformer.addTransformer(collinsPuncTransformer);
+    }
+
+    trainTransformer.addTransformer(binarizer);
+
+    if (op.wordFunction != null) {
+      TreeTransformer wordFunctionTransformer =
+        new TreeLeafLabelTransformer(op.wordFunction);
+      trainTransformer.addTransformer(wordFunctionTransformer);
+    }
+    return trainTransformer;
+  }
+

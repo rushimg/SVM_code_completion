@@ -1,0 +1,35 @@
+  static class DictionaryFeatureGeneratorFactory implements XmlFeatureGeneratorFactory {
+
+    public AdaptiveFeatureGenerator create(Element generatorElement,
+        FeatureGeneratorResourceProvider resourceManager) throws InvalidFormatException {
+
+      String dictResourceKey = generatorElement.getAttribute("dict");
+
+      Object dictResource = resourceManager.getResource(dictResourceKey);
+
+      if (!(dictResource instanceof Dictionary)) {
+        throw new InvalidFormatException("No dictionary resource for key: " + dictResourceKey);
+      }
+
+      String prefix = generatorElement.getAttribute("prefix");
+
+      return new DictionaryFeatureGenerator(prefix, (Dictionary) dictResource);
+    }
+
+    static void register(Map<String, XmlFeatureGeneratorFactory> factoryMap) {
+      factoryMap.put("dictionary", new DictionaryFeatureGeneratorFactory());
+    }
+  }
+
+  static class DocumentBeginFeatureGenerator implements XmlFeatureGeneratorFactory {
+
+    public AdaptiveFeatureGenerator create(Element generatorElement,
+        FeatureGeneratorResourceProvider resourceManager) {
+      return new PreviousMapFeatureGenerator();
+    }
+
+    static void register(Map<String, XmlFeatureGeneratorFactory> factoryMap) {
+      factoryMap.put("docbegin", new DocumentBeginFeatureGenerator());
+    }
+  }
+

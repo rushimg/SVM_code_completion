@@ -1,0 +1,80 @@
+   public AcronymModel() throws IOException {
+     priors = new Prior(new BufferedReader(new StringReader(acronymStatistics)));
+     features = new Feature[]{new AcronymModel.LettersAligned(), new AcronymModel.BegWord(), new AcronymModel.EndWord(), new AcronymModel.AfterAligned(), new AcronymModel.AlignedPerWord(), new AcronymModel.WordsSkipped(), new AcronymModel.SyllableBoundary()};
+     weights = new double[]{// here's weights from a bunch of training examples
+       //-4.1004, 18.4127, 0.1789, 16.3189, 0.8818, -0.0725, -0.6550
+       //-12.4082, 18.3893, 2.1826, 18.8487, 0.5042, -0.1231, 1.8876
+       -11.8880, 14.4534, -2.6316, 24.1838, -2.2320, -0.2508, 4.3501
+
+     };
+     //intercept = -14.1449;
+     //intercept = -7.4882;
+     intercept = -2.2062;
+   }
+
+  private double computeProb(String wsname, String wsacronym, String confname,
+                            String confacronym, String wsurl, String confurl){
+
+    Set<String> presentFields = Generics.newHashSet();
+    if( wsname != null && !wsname.equals("null") && !wsname.equals("") )
+      presentFields.add("workshopname");
+    if( wsacronym != null && !wsacronym.equals("null") && !wsacronym.equals(""))
+      presentFields.add("workshopacronym");
+    if( confname != null && !confname.equals("null")
+        && !confname.equals(""))
+      presentFields.add("conferencename");
+    if( confacronym != null && !confacronym.equals("null")
+        && !confacronym.equals(""))
+      presentFields.add("conferenceacronym");
+    if( wsurl != null && !wsurl.equals("null") && !wsurl.equals(""))
+      presentFields.add("workshophomepage");
+    if( confurl != null && !confurl.equals("null") && !confurl.equals(""))
+      presentFields.add("conferencehomepage");
+
+    //if the workshop and conference have the same acronym we return 0.
+    if(presentFields.contains("conferenceacronym") &&
+       presentFields.contains("workshopacronym") &&
+       confacronym.equals(wsacronym)){
+
+      return 0.0;
+    }
+
+    double prob = priors.get(presentFields);
+    //System.out.println("Setting prior to " + prob + " based on the following "+
+    // "fields being present: " + presentFields.toString());
+    if( wsname != null && wsacronym != null ) {
+      if(DEBUG)System.err.println("computing similarity for workshop");
+    } else {
+      if(DEBUG)System.err.println("NOT computing similarity for workshop");
+    }
+
+    if( confname != null && confacronym != null ) {
+      if(DEBUG)System.err.println("computing similarity for conference");
+    } else {
+      if(DEBUG)System.err.println("NOT computing similarity for conference");
+    }
+
+    if( confacronym != null && confurl != null ) {
+      if( acronymMatchesURL(confacronym, confurl) ) {
+      } else {
+      }
+    }
+
+    if( wsacronym != null && wsurl != null ) {
+      if( acronymMatchesURL(wsacronym, wsurl) ) {
+      } else {
+      }
+    }
+    return prob;
+  }
+
+  private static boolean acronymMatchesURL(String ac, String url) {
+    String lowerURL = url.toLowerCase();
+    String strippedAc = (new String(AcronymModel.stripAcronym(ac))).toLowerCase();
+
+    return lowerURL.indexOf(strippedAc) != -1;
+  }
+
+   private static final double probMatchFromAcronymAndURLMatch = .23934426;
+   private static final double probMatchFromAcronymAndURLNoMatch = .052516411378;
+

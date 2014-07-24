@@ -1,0 +1,40 @@
+  public int getTagIndex(String tag) {
+    return tags.getIndex(tag);
+  }
+
+  public int numTags() {
+    return tags.getSize();
+  }
+
+  public String getTag(int index) {
+    return tags.getTag(index);
+  }
+
+  private LambdaSolveTagger prob;
+  // For each extractor index, we have a map from possible extracted
+  // features to an array which maps from tag number to feature weight index in the lambdas array.
+  List<Map<String, int[]>> fAssociations = Generics.newArrayList();
+  //PairsHolder pairs = new PairsHolder();
+  Extractors extractors;
+  Extractors extractorsRare;
+  AmbiguityClasses ambClasses;
+  final boolean alltags = false;
+  final Map<String, Set<String>> tagTokens = Generics.newHashMap();
+
+  static final int RARE_WORD_THRESH = Integer.parseInt(TaggerConfig.RARE_WORD_THRESH);
+  static final int MIN_FEATURE_THRESH = Integer.parseInt(TaggerConfig.MIN_FEATURE_THRESH);
+  static final int CUR_WORD_MIN_FEATURE_THRESH = Integer.parseInt(TaggerConfig.CUR_WORD_MIN_FEATURE_THRESH);
+  static final int RARE_WORD_MIN_FEATURE_THRESH = Integer.parseInt(TaggerConfig.RARE_WORD_MIN_FEATURE_THRESH);
+  static final int VERY_COMMON_WORD_THRESH = Integer.parseInt(TaggerConfig.VERY_COMMON_WORD_THRESH);
+
+  static final boolean OCCURRING_TAGS_ONLY = Boolean.parseBoolean(TaggerConfig.OCCURRING_TAGS_ONLY);
+  static final boolean POSSIBLE_TAGS_ONLY = Boolean.parseBoolean(TaggerConfig.POSSIBLE_TAGS_ONLY);
+
+  private double defaultScore;
+  private double[] defaultScores = null;
+
+  int leftContext;
+  int rightContext;
+
+  TaggerConfig config;
+

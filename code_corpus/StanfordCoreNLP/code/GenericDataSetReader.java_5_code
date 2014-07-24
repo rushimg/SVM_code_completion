@@ -1,0 +1,77 @@
+  public final Annotation parse(String path) throws IOException {
+    Annotation retVal; // set below or exceptions
+
+    try {
+      //
+      // this must return a dataset Annotation. each sentence in this dataset must contain:
+      // - TokensAnnotation
+      // - EntityMentionAnnotation
+      // - RelationMentionAnnotation
+      // - EventMentionAnnotation
+      // the other annotations (parse, NER) are generated in preProcessSentences
+      //
+      retVal = this.read(path);
+    } catch (Exception ex) {
+      IOException iox = new IOException();
+      iox.initCause(ex);
+      throw iox;
+    }
+
+    if (preProcessSentences) {
+      preProcessSentences(retVal);
+      if(MachineReadingProperties.trainUsePipelineNER){
+        logger.severe("Changing NER tags using the CoreNLP pipeline.");
+        modifyUsingCoreNLPNER(retVal);
+        }
+    }
+    return retVal;
+  }
+  
+  private void modifyUsingCoreNLPNER(Annotation doc) {
+    Properties ann = new Properties();
+    ann.setProperty("annotators", "pos, lemma, ner");
+    StanfordCoreNLP pipeline = new StanfordCoreNLP(ann, false);
+    pipeline.annotate(doc);
+    for (CoreMap sentence : doc.get(CoreAnnotations.SentencesAnnotation.class)) {
+      List<EntityMention> entities = sentence.get(MachineReadingAnnotations.EntityMentionsAnnotation.class);
+      if (entities != null) {
+        List<CoreLabel> tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
+        for (EntityMention en : entities) {
+          //System.out.println("old ner tag for " + en.getExtentString() + " was " + en.getType());
+          Span s = en.getExtent();
+          Counter<String> allNertagforSpan = new ClassicCounter<String>();
+          for (int i = s.start(); i < s.end(); i++) {
+            allNertagforSpan.incrementCount(tokens.get(i).ner());
+          }
+          String entityNertag = Counters.argmax(allNertagforSpan);
+          en.setType(entityNertag);
+          //System.out.println("new ner tag is " + entityNertag);
+        }
+      }
+      
+    }
+  }
+
+  public Annotation read(String path) throws Exception {
+    return null;
+  }
+
+  private static String sentenceToString(List<CoreLabel> tokens) {
+    StringBuilder os = new StringBuilder();
+
+    //
+    // Print text and tokens
+    //
+    if(tokens != null){
+      boolean first = true;
+      for(CoreLabel token: tokens) {
+        if(! first) os.append(" ");
+        os.append(token.word());
+        first = false;
+      }
+    }
+
+    return os.toString();
+  }
+
+

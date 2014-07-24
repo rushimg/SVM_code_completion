@@ -1,0 +1,156 @@
+    static class MD4 {
+        protected int A = 0x67452301;
+        protected int B = 0xefcdab89;
+        protected int C = 0x98badcfe;
+        protected int D = 0x10325476;
+        protected long count = 0L;
+        protected byte[] dataBuffer = new byte[64];
+
+        MD4() {
+        }
+
+        void update(final byte[] input) {
+            // We always deal with 512 bits at a time. Correspondingly, there is
+            // a buffer 64 bytes long that we write data into until it gets
+            // full.
+            int curBufferPos = (int) (count & 63L);
+            int inputIndex = 0;
+            while (input.length - inputIndex + curBufferPos >= dataBuffer.length) {
+                // We have enough data to do the next step. Do a partial copy
+                // and a transform, updating inputIndex and curBufferPos
+                // accordingly
+                final int transferAmt = dataBuffer.length - curBufferPos;
+                System.arraycopy(input, inputIndex, dataBuffer, curBufferPos, transferAmt);
+                count += transferAmt;
+                curBufferPos = 0;
+                inputIndex += transferAmt;
+                processBuffer();
+            }
+
+            // If there's anything left, copy it into the buffer and leave it.
+            // We know there's not enough left to process.
+            if (inputIndex < input.length) {
+                final int transferAmt = input.length - inputIndex;
+                System.arraycopy(input, inputIndex, dataBuffer, curBufferPos, transferAmt);
+                count += transferAmt;
+                curBufferPos += transferAmt;
+            }
+        }
+
+        byte[] getOutput() {
+            // Feed pad/length data into engine. This must round out the input
+            // to a multiple of 512 bits.
+            final int bufferIndex = (int) (count & 63L);
+            final int padLen = (bufferIndex < 56) ? (56 - bufferIndex) : (120 - bufferIndex);
+            final byte[] postBytes = new byte[padLen + 8];
+            // Leading 0x80, specified amount of zero padding, then length in
+            // bits.
+            postBytes[0] = (byte) 0x80;
+            // Fill out the last 8 bytes with the length
+            for (int i = 0; i < 8; i++) {
+            }
+
+            // Update the engine
+            update(postBytes);
+
+            // Calculate final result
+            final byte[] result = new byte[16];
+            writeULong(result, A, 0);
+            writeULong(result, B, 4);
+            writeULong(result, C, 8);
+            writeULong(result, D, 12);
+            return result;
+        }
+
+        protected void processBuffer() {
+            // Convert current buffer to 16 ulongs
+            final int[] d = new int[16];
+
+            for (int i = 0; i < 16; i++) {
+            }
+
+            // Do a round of processing
+            final int AA = A;
+            final int BB = B;
+            final int CC = C;
+            final int DD = D;
+            round1(d);
+            round2(d);
+            round3(d);
+            A += AA;
+            B += BB;
+            C += CC;
+            D += DD;
+
+        }
+
+        protected void round1(final int[] d) {
+            A = rotintlft((A + F(B, C, D) + d[0]), 3);
+            D = rotintlft((D + F(A, B, C) + d[1]), 7);
+            C = rotintlft((C + F(D, A, B) + d[2]), 11);
+            B = rotintlft((B + F(C, D, A) + d[3]), 19);
+
+            A = rotintlft((A + F(B, C, D) + d[4]), 3);
+            D = rotintlft((D + F(A, B, C) + d[5]), 7);
+            C = rotintlft((C + F(D, A, B) + d[6]), 11);
+            B = rotintlft((B + F(C, D, A) + d[7]), 19);
+
+            A = rotintlft((A + F(B, C, D) + d[8]), 3);
+            D = rotintlft((D + F(A, B, C) + d[9]), 7);
+            C = rotintlft((C + F(D, A, B) + d[10]), 11);
+            B = rotintlft((B + F(C, D, A) + d[11]), 19);
+
+            A = rotintlft((A + F(B, C, D) + d[12]), 3);
+            D = rotintlft((D + F(A, B, C) + d[13]), 7);
+            C = rotintlft((C + F(D, A, B) + d[14]), 11);
+            B = rotintlft((B + F(C, D, A) + d[15]), 19);
+        }
+
+        protected void round2(final int[] d) {
+            A = rotintlft((A + G(B, C, D) + d[0] + 0x5a827999), 3);
+            D = rotintlft((D + G(A, B, C) + d[4] + 0x5a827999), 5);
+            C = rotintlft((C + G(D, A, B) + d[8] + 0x5a827999), 9);
+            B = rotintlft((B + G(C, D, A) + d[12] + 0x5a827999), 13);
+
+            A = rotintlft((A + G(B, C, D) + d[1] + 0x5a827999), 3);
+            D = rotintlft((D + G(A, B, C) + d[5] + 0x5a827999), 5);
+            C = rotintlft((C + G(D, A, B) + d[9] + 0x5a827999), 9);
+            B = rotintlft((B + G(C, D, A) + d[13] + 0x5a827999), 13);
+
+            A = rotintlft((A + G(B, C, D) + d[2] + 0x5a827999), 3);
+            D = rotintlft((D + G(A, B, C) + d[6] + 0x5a827999), 5);
+            C = rotintlft((C + G(D, A, B) + d[10] + 0x5a827999), 9);
+            B = rotintlft((B + G(C, D, A) + d[14] + 0x5a827999), 13);
+
+            A = rotintlft((A + G(B, C, D) + d[3] + 0x5a827999), 3);
+            D = rotintlft((D + G(A, B, C) + d[7] + 0x5a827999), 5);
+            C = rotintlft((C + G(D, A, B) + d[11] + 0x5a827999), 9);
+            B = rotintlft((B + G(C, D, A) + d[15] + 0x5a827999), 13);
+
+        }
+
+        protected void round3(final int[] d) {
+            A = rotintlft((A + H(B, C, D) + d[0] + 0x6ed9eba1), 3);
+            D = rotintlft((D + H(A, B, C) + d[8] + 0x6ed9eba1), 9);
+            C = rotintlft((C + H(D, A, B) + d[4] + 0x6ed9eba1), 11);
+            B = rotintlft((B + H(C, D, A) + d[12] + 0x6ed9eba1), 15);
+
+            A = rotintlft((A + H(B, C, D) + d[2] + 0x6ed9eba1), 3);
+            D = rotintlft((D + H(A, B, C) + d[10] + 0x6ed9eba1), 9);
+            C = rotintlft((C + H(D, A, B) + d[6] + 0x6ed9eba1), 11);
+            B = rotintlft((B + H(C, D, A) + d[14] + 0x6ed9eba1), 15);
+
+            A = rotintlft((A + H(B, C, D) + d[1] + 0x6ed9eba1), 3);
+            D = rotintlft((D + H(A, B, C) + d[9] + 0x6ed9eba1), 9);
+            C = rotintlft((C + H(D, A, B) + d[5] + 0x6ed9eba1), 11);
+            B = rotintlft((B + H(C, D, A) + d[13] + 0x6ed9eba1), 15);
+
+            A = rotintlft((A + H(B, C, D) + d[3] + 0x6ed9eba1), 3);
+            D = rotintlft((D + H(A, B, C) + d[11] + 0x6ed9eba1), 9);
+            C = rotintlft((C + H(D, A, B) + d[7] + 0x6ed9eba1), 11);
+            B = rotintlft((B + H(C, D, A) + d[15] + 0x6ed9eba1), 15);
+
+        }
+
+    }
+

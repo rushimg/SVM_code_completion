@@ -1,0 +1,45 @@
+  public String timingInformation() {
+    StringBuilder sb = new StringBuilder();
+    if (TIME) {
+      sb.append("Annotation pipeline timing information:\n");
+      Iterator<MutableLong> it = accumulatedTime.iterator();
+      long total = 0;
+      for (Annotator annotator : annotators) {
+        MutableLong m = it.next();
+        sb.append(StringUtils.getShortClassName(annotator)).append(": ");
+        sb.append(Timing.toSecondsString(m.longValue())).append(" sec.\n");
+        total += m.longValue();
+      }
+      sb.append("TOTAL: ").append(Timing.toSecondsString(total)).append(" sec.");
+    }
+    return sb.toString();
+  }
+
+  @Override
+  public Set<Requirement> requirementsSatisfied() {
+    Set<Requirement> satisfied = Generics.newHashSet();
+    for (Annotator annotator : annotators) {
+      satisfied.addAll(annotator.requirementsSatisfied());
+    }
+    return satisfied;
+  }
+
+  @Override
+  public Set<Requirement> requires() {
+    if (annotators.isEmpty()) {
+      return Collections.emptySet();
+    }
+    return annotators.get(0).requires();
+  }
+
+
+  public static void main(String[] args) throws IOException, ClassNotFoundException {
+    Timing tim = new Timing();
+    AnnotationPipeline ap = new AnnotationPipeline();
+    boolean verbose = false;
+    ap.addAnnotator(new PTBTokenizerAnnotator(verbose));
+    ap.addAnnotator(new WordsToSentencesAnnotator(verbose));
+    // ap.addAnnotator(new NERCombinerAnnotator(verbose));
+    // ap.addAnnotator(new OldNERAnnotator(verbose));
+    // ap.addAnnotator(new NERMergingAnnotator(verbose));
+    ap.addAnnotator(new ParserAnnotator(verbose, -1));

@@ -1,0 +1,36 @@
+  private void processInflectionalFeatures(MorphoFeatures feats, String spec) {
+    // Extract the feature tuple
+    Matcher m = pFeatureTuple.matcher(spec);
+    if (m.find()) {
+      spec = m.group(1);
+      processInflectionalFeaturesHelper(feats, spec);
+    }
+  }
+
+  private void processInflectionalFeaturesHelper(MorphoFeatures feats, String spec) {
+    if(isActive(MorphoFeatureType.GEN)) {
+      if(spec.contains("M"))
+        feats.addFeature(MorphoFeatureType.GEN, genVals[0]);
+      else if(spec.contains("F"))
+        feats.addFeature(MorphoFeatureType.GEN, genVals[1]);
+    }
+
+    if(isActive(MorphoFeatureType.NUM)) {
+      if(spec.endsWith("S"))
+        feats.addFeature(MorphoFeatureType.NUM, numVals[0]);
+      else if(spec.endsWith("D"))
+        feats.addFeature(MorphoFeatureType.NUM, numVals[1]);
+      else if(spec.endsWith("P"))
+        feats.addFeature(MorphoFeatureType.NUM, numVals[2]);
+    }
+
+    if(isActive(MorphoFeatureType.PER)) {
+      if(spec.contains("1"))
+        feats.addFeature(MorphoFeatureType.PER, perVals[0]);
+      else if(spec.contains("2"))
+        feats.addFeature(MorphoFeatureType.PER, perVals[1]);
+      else if(spec.contains("3"))
+        feats.addFeature(MorphoFeatureType.PER, perVals[2]);
+    }
+  }
+

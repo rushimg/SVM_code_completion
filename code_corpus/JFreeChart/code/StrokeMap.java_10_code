@@ -1,0 +1,13 @@
+    private void writeObject(ObjectOutputStream stream) throws IOException {
+        stream.defaultWriteObject();
+        stream.writeInt(this.store.size());
+        Set keys = this.store.keySet();
+        Iterator iterator = keys.iterator();
+        while (iterator.hasNext()) {
+            Comparable key = (Comparable) iterator.next();
+            stream.writeObject(key);
+            Stroke stroke = getStroke(key);
+            SerialUtilities.writeStroke(stroke, stream);
+        }
+    }
+

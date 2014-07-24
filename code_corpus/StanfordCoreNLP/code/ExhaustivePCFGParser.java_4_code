@@ -1,0 +1,46 @@
+          for (int s = 0; s < numStates; s++) {
+          float oS = oScore[start][end][s];
+          //if (iScore[start][end][s] == Float.NEGATIVE_INFINITY ||
+          //             oS == Float.NEGATIVE_INFINITY)
+          if (oS == Float.NEGATIVE_INFINITY)
+          continue;
+          BinaryRule[] rules = bg.splitRulesWithParent(s);
+          for (int r=0; r<rules.length; r++) {
+            BinaryRule br = rules[r];
+            int min1 = narrowRExtent[start][br.leftChild];
+            if (end < min1)
+              continue;
+            int max1 = narrowLExtent[end][br.rightChild];
+            if (max1 < min1)
+              continue;
+            int min2 = wideLExtent[end][br.rightChild];
+            int min = (min1 > min2 ? min1 : min2);
+            if (max1 < min)
+              continue;
+            int max2 = wideRExtent[start][br.leftChild];
+            int max = (max1 < max2 ? max1 : max2);
+            if (max < min)
+              continue;
+float pS = (float) br.score;
+for (int split = min; split <= max; split++) {
+float lS = iScore[start][split][br.leftChild];
+if (lS == Float.NEGATIVE_INFINITY)
+          continue;
+float rS = iScore[split][end][br.rightChild];
+              if (rS == Float.NEGATIVE_INFINITY)
+continue;
+float totL = pS+rS+oS;
+if (totL > oScore[start][split][br.leftChild]) {
+oScore[start][split][br.leftChild] = totL;
+}
+float totR = pS+lS+oS;
+if (totR > oScore[split][end][br.rightChild]) {
+oScore[split][end][br.rightChild] = totR;
+}
+}
+}
+}
+      }
+    }
+  }
+

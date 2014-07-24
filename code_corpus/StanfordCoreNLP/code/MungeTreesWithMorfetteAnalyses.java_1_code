@@ -1,0 +1,80 @@
+public final class MungeTreesWithMorfetteAnalyses {
+
+  private static class MorfetteFileIterator implements Iterator<List<CoreLabel>> {
+
+    private BufferedReader reader;
+    private List<CoreLabel> nextList;
+    private int lineId = 0;
+    
+    public MorfetteFileIterator(String filename) {
+      try {
+        reader = new BufferedReader(new InputStreamReader(new FileInputStream(filename), "UTF-8"));
+        primeNext();
+      } catch (UnsupportedEncodingException e) {
+        e.printStackTrace();
+      } catch (FileNotFoundException e) {
+        e.printStackTrace();
+      }
+    }
+    
+    private void primeNext() {
+      try {
+        nextList = new ArrayList<CoreLabel>(40);
+        for (String line; (line = reader.readLine()) != null; ++lineId) {
+          line = line.trim();
+          if (line.equals("")) {
+            ++lineId;
+            break;
+          }
+          String[] toks = line.split("\\s+");
+          if (toks.length != 3) {
+            System.err.println(toks.length);
+            System.err.println(line);
+            System.err.println(lineId);
+            throw new RuntimeException(String.format("line %d: Morfette format is |word lemma tag|: |%s|", lineId, line));
+          }
+          CoreLabel cl = new CoreLabel();
+          String word = toks[0];
+          String lemma = toks[1];
+          String tag = toks[2];
+          cl.setWord(word);
+          cl.setValue(word);
+          cl.setLemma(lemma);
+          cl.setTag(tag);
+          nextList.add(cl);
+        }
+        
+        // File is exhausted
+        if (nextList.size() == 0) {
+          reader.close();
+          nextList = null;
+        }
+        
+      } catch (IOException e) {
+        System.err.printf("Problem reading file at line %d%n", lineId);
+        e.printStackTrace();
+        nextList = null;
+      }
+    }
+
+    @Override
+    public boolean hasNext() {
+      return nextList != null;
+    }
+
+    @Override
+    public List<CoreLabel> next() {
+      if (hasNext()) {
+        List<CoreLabel> next = nextList;
+        primeNext();
+        return next;
+      }
+      return null;
+    }
+
+    @Override
+    public void remove() {
+      throw new UnsupportedOperationException();
+    }
+  }
+

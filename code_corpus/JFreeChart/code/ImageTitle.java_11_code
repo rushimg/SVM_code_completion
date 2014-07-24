@@ -1,0 +1,48 @@
+    protected Size2D drawVertical(Graphics2D g2, Rectangle2D chartArea) {
+
+        double startX = 0.0;
+        double topSpace = 0.0;
+        double bottomSpace = 0.0;
+        double leftSpace = 0.0;
+        double rightSpace = 0.0;
+
+        double w = getWidth();
+        double h = getHeight();
+
+        RectangleInsets padding = getPadding();
+        if (padding != null) {
+            topSpace = padding.calculateTopOutset(h);
+            bottomSpace = padding.calculateBottomOutset(h);
+            leftSpace = padding.calculateLeftOutset(w);
+            rightSpace = padding.calculateRightOutset(w);
+        }
+
+        if (getPosition() == RectangleEdge.LEFT) {
+            startX = chartArea.getX() + leftSpace;
+        }
+        else {
+            startX = chartArea.getMaxX() - rightSpace - w;
+        }
+
+        // what is our alignment?
+        VerticalAlignment alignment = getVerticalAlignment();
+        double startY = 0.0;
+        if (alignment == VerticalAlignment.CENTER) {
+            startY = chartArea.getMinY() + topSpace
+                     + chartArea.getHeight() / 2.0 - h / 2.0;
+        }
+        else if (alignment == VerticalAlignment.TOP) {
+            startY = chartArea.getMinY() + topSpace;
+        }
+        else if (alignment == VerticalAlignment.BOTTOM) {
+            startY = chartArea.getMaxY() - bottomSpace - h;
+        }
+
+        g2.drawImage(this.image, (int) startX, (int) startY, (int) w, (int) h,
+                null);
+
+        return new Size2D(chartArea.getWidth() + leftSpace + rightSpace,
+            h + topSpace + bottomSpace);
+
+    }
+

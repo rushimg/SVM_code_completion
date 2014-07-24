@@ -1,0 +1,116 @@
+      if (tl != null) {
+        return tl.getPeriod();
+      StandardTemporalType tlt = getStandardTemporalType();
+      if (tlt != null) {
+        return tlt.getPeriod();
+      }
+      return this;
+    }
+
+    // Rough approximate ordering of durations
+    @Override
+    public int compareTo(Duration d) {
+      org.joda.time.Duration d1 = getJodaTimeDuration();
+      org.joda.time.Duration d2 = d.getJodaTimeDuration();
+      if (d1 == null && d2 == null) {
+        return 0;
+      } else if (d1 == null) {
+        return 1;
+      } else if (d2 == null) {
+        return -1;
+      }
+
+      int cmp = d1.compareTo(d2);
+      if (cmp == 0) {
+        if (d.isApprox() && !this.isApprox()) {
+          // Put exact in front of approx
+          return -1;
+        } else if (!d.isApprox() && this.isApprox()) {
+          return 1;
+        } else {
+          return 0;
+        }
+      } else {
+        return cmp;
+      }
+    }
+
+    @Override
+    public boolean isComparable(Duration d) {
+      // TODO: When is two durations comparable?
+      return true;
+    }
+
+    // Operations with durations
+    public abstract Duration add(Duration d);
+
+    public abstract Duration multiplyBy(int m);
+
+    public abstract Duration divideBy(int m);
+
+    public Duration subtract(Duration d) {
+      return add(d.multiplyBy(-1));
+    }
+
+    @Override
+    public Duration resolve(Time refTime, int flags) {
+      return this;
+    }
+
+    @Override
+    public Temporal intersect(Temporal t) {
+      if (t == null)
+        return this;
+      if (t == TIME_UNKNOWN || t == DURATION_UNKNOWN)
+        return this;
+      if (t instanceof Time) {
+        RelativeTime rt = new RelativeTime((Time) t, TemporalOp.INTERSECT, this);
+        rt = (RelativeTime) rt.addMod(this.getMod());
+        return rt;
+      } else if (t instanceof Range) {
+        // return new TemporalSet(t, TemporalOp.INTERSECT, this);
+      } else if (t instanceof Duration) {
+        Duration d = (Duration) t;
+        return intersect(d);
+      }
+      return null;
+    }
+
+    public Duration intersect(Duration d) {
+      if (d == null || d == DURATION_UNKNOWN)
+        return this;
+      int cmp = compareTo(d);
+      if (cmp < 0) {
+        return this;
+      } else {
+        return d;
+      }
+    }
+
+    public static Duration min(Duration d1, Duration d2) {
+      if (d2 == null)
+        return d1;
+      if (d1 == null)
+        return d2;
+      if (d1.isComparable(d2)) {
+        int c = d1.compareTo(d2);
+        return (c < 0) ? d1 : d2;
+      }
+      return d1;
+    }
+
+    public static Duration max(Duration d1, Duration d2) {
+      if (d1 == null)
+        return d2;
+      if (d2 == null)
+        return d1;
+      if (d1.isComparable(d2)) {
+        int c = d1.compareTo(d2);
+        return (c >= 0) ? d1 : d2;
+      }
+      return d2;
+    }
+
+    private static final long serialVersionUID = 1;
+  }
+

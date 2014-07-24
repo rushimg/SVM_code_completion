@@ -1,0 +1,32 @@
+    public CategoryItemRendererState initialise(Graphics2D g2,
+                                                Rectangle2D dataArea,
+                                                CategoryPlot plot,
+                                                int rendererIndex,
+                                                PlotRenderingInfo info) {
+
+        setPlot(plot);
+        CategoryDataset data = plot.getDataset(rendererIndex);
+        if (data != null) {
+            this.rowCount = data.getRowCount();
+            this.columnCount = data.getColumnCount();
+        }
+        else {
+            this.rowCount = 0;
+            this.columnCount = 0;
+        }
+        CategoryItemRendererState state = createState(info);
+        int[] visibleSeriesTemp = new int[this.rowCount];
+        int visibleSeriesCount = 0;
+        for (int row = 0; row < this.rowCount; row++){
+        	if (isSeriesVisible(row)) {
+        		visibleSeriesTemp[visibleSeriesCount] = row;
+        		visibleSeriesCount++;
+        	}
+        }
+        int[] visibleSeries = new int[visibleSeriesCount];
+        System.arraycopy(visibleSeriesTemp, 0, visibleSeries, 0,
+                visibleSeriesCount);
+        state.setVisibleSeriesArray(visibleSeries);
+        return state;
+    }
+

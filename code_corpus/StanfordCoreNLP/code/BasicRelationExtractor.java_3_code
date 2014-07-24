@@ -1,0 +1,43 @@
+  private LabelValidator validator;
+
+  private RelationMentionFactory relationMentionFactory;
+
+  public void setValidator(LabelValidator lv) { validator = lv; }
+  public void setRelationExtractorClassifierType(String s) { relationExtractorClassifierType = s; }
+  public void setFeatureCountThreshold(int i) {featureCountThreshold = i; }
+  public void setSigma(double d) { sigma = d; }
+
+  public BasicRelationExtractor(RelationFeatureFactory featureFac, boolean createUnrelatedRelations, RelationMentionFactory factory) {
+    featureFactory = featureFac;
+    this.createUnrelatedRelations = createUnrelatedRelations;
+    this.relationMentionFactory = factory;
+
+    logger.setLevel(Level.INFO);
+  }
+
+  public void setCreateUnrelatedRelations(boolean b) {
+    createUnrelatedRelations = b;
+  }
+
+  public static BasicRelationExtractor load(String modelPath) throws IOException, ClassNotFoundException {
+    return IOUtils.readObjectFromURLOrClasspathOrFileSystem(modelPath);
+  }
+
+  @Override
+  public void save(String modelpath) throws IOException {
+    // make sure modelpath directory exists
+    int lastSlash = modelpath.lastIndexOf(File.separator);
+    if(lastSlash > 0){
+      String path = modelpath.substring(0, lastSlash);
+      File f = new File(path);
+      if (! f.exists()) {
+        f.mkdirs();
+      }
+    }
+
+    FileOutputStream fos = new FileOutputStream(modelpath);
+    ObjectOutputStream out = new ObjectOutputStream(fos);
+    out.writeObject(this);
+    out.close();
+  }
+

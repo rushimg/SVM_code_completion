@@ -1,0 +1,57 @@
+    public EdmondsKarpMaximumFlow(DirectedGraph<V, E> network,
+        double epsilon)
+    {
+        if (network == null) {
+            throw new NullPointerException("network is null");
+        }
+        if (epsilon <= 0) {
+            throw new IllegalArgumentException(
+                "invalid epsilon (must be positive)");
+        }
+        for (E e : network.edgeSet()) {
+            if (network.getEdgeWeight(e) < -epsilon) {
+                throw new IllegalArgumentException(
+                    "invalid capacity (must be non-negative)");
+            }
+        }
+
+        this.network = network;
+        this.epsilon = epsilon;
+
+        currentSource = -1;
+        currentSink = -1;
+        maximumFlow = null;
+        maximumFlowValue = null;
+
+        buildInternalNetwork();
+    }
+
+    //~ Methods ----------------------------------------------------------------
+
+    // converting the original network into internal more convenient format
+    private void buildInternalNetwork()
+    {
+        numNodes = network.vertexSet().size();
+        nodes = new ArrayList<Node>();
+        Iterator<V> it = network.vertexSet().iterator();
+        indexer = new HashMap<V, Integer>();
+        for (int i = 0; i < numNodes; i++) {
+            V currentNode = it.next();
+            nodes.add(new Node(currentNode));
+            indexer.put(currentNode, i);
+        }
+        for (int i = 0; i < numNodes; i++) {
+            V we = nodes.get(i).prototype;
+            for (E e : network.outgoingEdgesOf(we)) {
+                V he = network.getEdgeTarget(e);
+                int j = indexer.get(he);
+                Arc e1 = new Arc(i, j, network.getEdgeWeight(e), e);
+                Arc e2 = new Arc(j, i, 0.0, null);
+                e1.reversed = e2;
+                e2.reversed = e1;
+                nodes.get(i).outgoingArcs.add(e1);
+                nodes.get(j).outgoingArcs.add(e2);
+            }
+        }
+    }
+

@@ -1,0 +1,70 @@
+
+  public boolean testDerivatives(double[] x, double functionTolerance){
+    boolean ret = false;
+    boolean compareHess = true;
+    System.err.println("Making sure that the stochastic derivatives are ok.");
+
+
+    AbstractStochasticCachingDiffFunction.SamplingMethod tmpSampleMethod = thisFunc.sampleMethod;
+    StochasticCalculateMethods tmpMethod = thisFunc.method;
+
+    //Make sure that our function is using ordered sampling.  Otherwise we have no gaurentees.
+    thisFunc.sampleMethod = AbstractStochasticCachingDiffFunction.SamplingMethod.Ordered;
+
+    if(thisFunc.method==StochasticCalculateMethods.NoneSpecified){
+      System.err.println("No calculate method has been specified");
+    } else if( !thisFunc.method.calculatesHessianVectorProduct() ){
+      compareHess = false;
+    }
+
+    approxValue = 0;
+    approxGrad = new double[x.length];
+    curGrad = new double[x.length];
+    Hv = new double[x.length];
+
+
+    double percent = 0.0;
+
+    //This loop runs through all the batches and sums of the calculations to compare against the full gradient
+    for (int i = 0; i < numBatches ; i ++){
+
+
+      //Can't figure out how to get a carriage return???  ohh well
+      System.err.printf("%5.1f percent complete\n",percent);
+
+
+      //  update the "hopefully" correct Hessian
+      thisFunc.method = tmpMethod;
+      System.arraycopy(thisFunc.HdotVAt(x,v,testBatchSize),0,Hv,0,Hv.length);
+
+      //  Now get the hessian through finite difference
+      thisFunc.method = StochasticCalculateMethods.ExternalFiniteDifference;
+      System.arraycopy(thisFunc.derivativeAt(x,v,testBatchSize ), 0,gradFD, 0, gradFD.length);
+      thisFunc.recalculatePrevBatch = true;
+      System.arraycopy(thisFunc.HdotVAt(x,v,gradFD,testBatchSize),0,HvFD,0,HvFD.length);
+
+      //Compare the difference
+      double DiffHv = ArrayMath.norm_inf(ArrayMath.pairwiseSubtract(Hv,HvFD));
+
+      //Keep track of the biggest H.v error
+      if (DiffHv > maxHvDiff){maxHvDiff = DiffHv;}
+
+    }
+
+    if( maxHvDiff < functionTolerance){
+      sayln("");
+      sayln("Success: Hessian approximations lined up");
+      ret = true;
+    }else{
+      sayln("");
+      sayln("Failure: Hessian approximation at somepoint was off by " + maxHvDiff);
+      ret = false;
+    }
+
+    thisFunc.sampleMethod = tmpSampleMethod;
+    thisFunc.method = tmpMethod;
+
+    return ret;
+  }
+
+

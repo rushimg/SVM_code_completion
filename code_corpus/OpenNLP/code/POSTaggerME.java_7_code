@@ -1,0 +1,21 @@
+  public POSTaggerME(POSModel model, int beamSize, int cacheSize) {
+    POSTaggerFactory factory = model.getFactory();
+
+    modelPackage = model;
+
+    // TODO: Why is this the beam size?! not cache size?
+    contextGen = factory.getPOSContextGenerator(beamSize);
+    tagDictionary = factory.getTagDictionary();
+    size = beamSize;
+
+    sequenceValidator = factory.getSequenceValidator();
+
+    if (model.getPosSequenceModel() != null) {
+      this.model = model.getPosSequenceModel();
+    }
+    else {
+      this.model = new opennlp.tools.ml.BeamSearch<String>(beamSize,
+          model.getPosModel(), cacheSize);
+    }
+  }
+

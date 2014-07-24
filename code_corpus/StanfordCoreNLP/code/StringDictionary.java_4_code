@@ -1,0 +1,28 @@
+  public void save(String path, String prefix, int threshold) throws java.io.IOException {
+
+    String fileName = path + java.io.File.separator + prefix + "." + mName;
+    java.io.PrintStream os = new java.io.PrintStream(new java.io.FileOutputStream(fileName));
+
+    Set<String> keys = mDict.keySet();
+    int index = 0;
+    for (String key : keys) {
+      IndexAndCount ic = mDict.get(key);
+      if (ic.mCount > threshold) {
+        os.println(key + " " + index + " " + ic.mCount);
+        index++;
+      }
+    }
+
+    os.close();
+    System.err.println("Saved " + index + "/" + mDict.size() + " entries for dictionary \"" + mName + "\".");
+  }
+
+  public void clear() {
+    mDict.clear();
+    mInverse.clear();
+  }
+
+  public Set<String> keySet() {
+    return mDict.keySet();
+  }
+

@@ -1,0 +1,26 @@
+  static final String tagSeparator = "_";
+
+  // intended to be a standalone program, not a class
+  private CountClosedTags(Properties props) {
+    String tagList = props.getProperty(CLOSED_TAGS_PROPERTY);
+    if (tagList != null) {
+      closedTags = new TreeSet<String>();
+      String[] pieces = tagList.split("\\s+");
+      for (String tag : pieces) {
+        closedTags.add(tag);
+      }
+    } else {
+      closedTags = null;
+    }
+
+    if (props.containsKey(TRAINING_RATIO_PROPERTY)) {
+      trainingRatio = 
+        Double.valueOf(props.getProperty(TRAINING_RATIO_PROPERTY));
+    } else {
+      trainingRatio = DEFAULT_TRAINING_RATIO;
+    }
+
+    printWords = Boolean.valueOf(props.getProperty(PRINT_WORDS_PROPERTY, 
+                                                   "false"));
+  } 
+

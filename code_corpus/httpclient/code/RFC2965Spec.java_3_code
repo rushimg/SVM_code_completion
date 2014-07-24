@@ -1,0 +1,91 @@
+    public RFC2965Spec() {
+        this(null, false);
+    }
+
+    public RFC2965Spec(final String[] datepatterns, final boolean oneHeader) {
+        super(datepatterns, oneHeader);
+        registerAttribHandler(ClientCookie.DOMAIN_ATTR, new RFC2965DomainAttributeHandler());
+        registerAttribHandler(ClientCookie.PORT_ATTR, new RFC2965PortAttributeHandler());
+        registerAttribHandler(ClientCookie.COMMENTURL_ATTR, new RFC2965CommentUrlAttributeHandler());
+        registerAttribHandler(ClientCookie.DISCARD_ATTR, new RFC2965DiscardAttributeHandler());
+        registerAttribHandler(ClientCookie.VERSION_ATTR, new RFC2965VersionAttributeHandler());
+    }
+
+    @Override
+    public List<Cookie> parse(
+            final Header header,
+            final CookieOrigin origin) throws MalformedCookieException {
+        Args.notNull(header, "Header");
+        Args.notNull(origin, "Cookie origin");
+        if (!header.getName().equalsIgnoreCase(SM.SET_COOKIE2)) {
+            throw new MalformedCookieException("Unrecognized cookie header '"
+                    + header.toString() + "'");
+        }
+        final HeaderElement[] elems = header.getElements();
+        return createCookies(elems, adjustEffectiveHost(origin));
+    }
+
+    @Override
+    protected List<Cookie> parse(
+            final HeaderElement[] elems,
+            final CookieOrigin origin) throws MalformedCookieException {
+        return createCookies(elems, adjustEffectiveHost(origin));
+    }
+
+    private List<Cookie> createCookies(
+            final HeaderElement[] elems,
+            final CookieOrigin origin) throws MalformedCookieException {
+        final List<Cookie> cookies = new ArrayList<Cookie>(elems.length);
+        for (final HeaderElement headerelement : elems) {
+            final String name = headerelement.getName();
+            final String value = headerelement.getValue();
+            if (name == null || name.isEmpty()) {
+                throw new MalformedCookieException("Cookie name may not be empty");
+            }
+
+            final BasicClientCookie2 cookie = new BasicClientCookie2(name, value);
+            cookie.setPath(getDefaultPath(origin));
+            cookie.setDomain(getDefaultDomain(origin));
+            cookie.setPorts(new int [] { origin.getPort() });
+            // cycle through the parameters
+            final NameValuePair[] attribs = headerelement.getParameters();
+
+            // Eliminate duplicate attributes. The first occurrence takes precedence
+            // See RFC2965: 3.2  Origin Server Role
+            final Map<String, NameValuePair> attribmap =
+                    new HashMap<String, NameValuePair>(attribs.length);
+            for (int j = attribs.length - 1; j >= 0; j--) {
+                final NameValuePair param = attribs[j];
+                attribmap.put(param.getName().toLowerCase(Locale.ROOT), param);
+            }
+            for (final Map.Entry<String, NameValuePair> entry : attribmap.entrySet()) {
+                final NameValuePair attrib = entry.getValue();
+                final String s = attrib.getName().toLowerCase(Locale.ROOT);
+
+                cookie.setAttribute(s, attrib.getValue());
+
+                final CookieAttributeHandler handler = findAttribHandler(s);
+                if (handler != null) {
+                    handler.parse(cookie, attrib.getValue());
+                }
+            }
+            cookies.add(cookie);
+        }
+        return cookies;
+    }
+
+    @Override
+    public void validate(
+            final Cookie cookie, final CookieOrigin origin) throws MalformedCookieException {
+        Args.notNull(cookie, "Cookie");
+        Args.notNull(origin, "Cookie origin");
+        super.validate(cookie, adjustEffectiveHost(origin));
+    }
+
+    @Override
+    public boolean match(final Cookie cookie, final CookieOrigin origin) {
+        Args.notNull(cookie, "Cookie");
+        Args.notNull(origin, "Cookie origin");
+        return super.match(cookie, adjustEffectiveHost(origin));
+    }
+

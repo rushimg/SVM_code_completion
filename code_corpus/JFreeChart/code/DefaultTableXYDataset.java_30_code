@@ -1,0 +1,19 @@
+    public Object clone() throws CloneNotSupportedException {
+        DefaultTableXYDataset clone = (DefaultTableXYDataset) super.clone();
+        int seriesCount = this.data.size();
+        clone.data = new java.util.ArrayList(seriesCount);
+        for (int i = 0; i < seriesCount; i++) {
+            XYSeries series = (XYSeries) this.data.get(i);
+            clone.data.add(series.clone());
+        }
+
+        clone.intervalDelegate = new IntervalXYDelegate(clone);
+        // need to configure the intervalDelegate to match the original
+        clone.intervalDelegate.setFixedIntervalWidth(getIntervalWidth());
+        clone.intervalDelegate.setAutoWidth(isAutoWidth());
+        clone.intervalDelegate.setIntervalPositionFactor(
+                getIntervalPositionFactor());
+        clone.updateXPoints();
+        return clone;
+    }
+

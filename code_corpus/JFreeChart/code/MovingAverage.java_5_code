@@ -1,0 +1,34 @@
+    public static TimeSeries createPointMovingAverage(TimeSeries source,
+            String name, int pointCount) {
+
+        if (source == null) {
+            throw new IllegalArgumentException("Null 'source'.");
+        }
+        if (pointCount < 2) {
+            throw new IllegalArgumentException("periodCount must be greater " +
+                    "than or equal to 2.");
+        }
+
+        TimeSeries result = new TimeSeries(name);
+        double rollingSumForPeriod = 0.0;
+        for (int i = 0; i < source.getItemCount(); i++) {
+            // get the current data item...
+            TimeSeriesDataItem current = source.getDataItem(i);
+            RegularTimePeriod period = current.getPeriod();
+            rollingSumForPeriod += current.getValue().doubleValue();
+
+            if (i > pointCount - 1) {
+                // remove the point i-periodCount out of the rolling sum.
+                TimeSeriesDataItem startOfMovingAvg = source.getDataItem(
+                        i - pointCount);
+                rollingSumForPeriod -= startOfMovingAvg.getValue()
+                        .doubleValue();
+                result.add(period, rollingSumForPeriod / pointCount);
+            }
+            else if (i == pointCount - 1) {
+                result.add(period, rollingSumForPeriod / pointCount);
+            }
+        }
+        return result;
+    }
+

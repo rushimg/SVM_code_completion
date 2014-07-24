@@ -1,0 +1,473 @@
+  private static void correctSubjPassAndPoss(Collection<TypedDependency> list) {
+    // put in a list verbs having an auxpass
+    List<TreeGraphNode> list_auxpass = new ArrayList<TreeGraphNode>();
+    for (TypedDependency td : list) {
+      if (td.reln() == AUX_PASSIVE_MODIFIER) {
+        list_auxpass.add(td.gov());
+      }
+    }
+    for (TypedDependency td : list) {
+      // correct nsubj
+      if (td.reln() == NOMINAL_SUBJECT && list_auxpass.contains(td.gov())) {
+        // System.err.println("%%% Changing subj to passive: " + td);
+        td.setReln(NOMINAL_PASSIVE_SUBJECT);
+      }
+      if (td.reln() == CLAUSAL_SUBJECT && list_auxpass.contains(td.gov())) {
+        // System.err.println("%%% Changing subj to passive: " + td);
+        td.setReln(CLAUSAL_PASSIVE_SUBJECT);
+      }
+
+      // correct unretrieved poss: dep relation in which the dependent is a
+      // PRP$ or WP$
+      // cdm: Now done in basic rules.  The only cases that this still matches
+      // are (1) tagging mistakes where PRP in dobj position is mistagged PRP$
+      // or a couple of parsing errors where the dependency is wrong anyway, so
+      // it's probably okay to keep it a dep.  So I'm disabling this.
+      // String tag = td.dep().parent().value();
+      // if (td.reln() == DEPENDENT && (tag.equals("PRP$") || tag.equals("WP$"))) {
+      //  System.err.println("%%% Unrecognized basic possessive pronoun: " + td);
+      //  td.setReln(POSSESSION_MODIFIER);
+      // }
+    }
+  }
+
+  private static boolean inConjDeps(TypedDependency td, List<Triple<TypedDependency, TypedDependency, Boolean>> conjs) {
+    for (Triple<TypedDependency, TypedDependency, Boolean> trip : conjs) {
+      if (td.equals(trip.first())) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private static void collapsePrepAndPoss(Collection<TypedDependency> list) {
+
+    // Man oh man, how gnarly is the logic of this method....
+
+    Collection<TypedDependency> newTypedDeps = new ArrayList<TypedDependency>();
+
+    // Construct a map from tree nodes to the set of typed
+    // dependencies in which the node appears as governor.
+    // cdm: could use CollectionValuedMap here!
+    Map<TreeGraphNode, SortedSet<TypedDependency>> map = Generics.newHashMap();
+    List<TreeGraphNode> vmod = new ArrayList<TreeGraphNode>();
+
+    for (TypedDependency typedDep : list) {
+      if (!map.containsKey(typedDep.gov())) {
+        map.put(typedDep.gov(), new TreeSet<TypedDependency>());
+      }
+      map.get(typedDep.gov()).add(typedDep);
+
+      if (typedDep.reln() == VERBAL_MODIFIER) {
+        // look for aux deps which indicate this was a to-be verb
+        boolean foundAux = false;
+        for (TypedDependency auxDep : list) {
+          if (auxDep.reln() != AUX_MODIFIER) {
+            continue;
+          }
+          if (auxDep.gov() != typedDep.dep() || !auxDep.dep().value().equalsIgnoreCase("to")) {
+            continue;
+          }
+          foundAux = true;
+          break;
+        }
+        if (!foundAux) {
+          vmod.add(typedDep.dep());
+        }
+      }
+    }
+    // System.err.println("here's the vmod list: " + vmod);
+
+    // Do preposition conjunction interaction for
+    // governor p NP and p NP case ... a lot of special code cdm jan 2006
+
+    for (TypedDependency td1 : list) {
+      if (td1.reln() != PREPOSITIONAL_MODIFIER) {
+        continue;
+      }
+      if (td1.reln() == KILL) {
+        continue;
+      }
+
+      TreeGraphNode td1Dep = td1.dep();
+      SortedSet<TypedDependency> possibles = map.get(td1Dep);
+      if (possibles == null) {
+        continue;
+      }
+
+      // look for the "second half"
+
+      // unique: the head prep and whether it should be pobj
+      Pair<TypedDependency, Boolean> prepDep = null;
+      TypedDependency ccDep = null; // treat as unique
+      // list of dep and prepOtherDep and pobj (or  pcomp)
+      List<Triple<TypedDependency, TypedDependency, Boolean>> conjs = new ArrayList<Triple<TypedDependency, TypedDependency, Boolean>>();
+      Set<TypedDependency> otherDtrs = new TreeSet<TypedDependency>();
+
+      // first look for a conj(prep, prep) (there might be several conj relations!!!)
+      boolean samePrepositionInEachConjunct = true;
+      int conjIndex = -1;
+      for (TypedDependency td2 : possibles) {
+        if (td2.reln() == CONJUNCT) {
+          TreeGraphNode td2Dep = td2.dep();
+          String td2DepPOS = td2Dep.parent().value();
+          if (td2DepPOS.equals("IN") || td2DepPOS.equals("TO")) {
+            samePrepositionInEachConjunct = samePrepositionInEachConjunct && td2Dep.value().equals(td1Dep.value());
+            Set<TypedDependency> possibles2 = map.get(td2Dep);
+            boolean pobj = true;// default of collapsing preposition is prep_
+            TypedDependency prepOtherDep = null;
+            if (possibles2 != null) {
+              for (TypedDependency td3 : possibles2) {
+                TreeGraphNode td3Dep = td3.dep();
+                String td3DepPOS = td3Dep.parent().value();
+                // CDM Mar 2006: I put in disjunction here when I added in
+                // PREPOSITIONAL_OBJECT. If it catches all cases, we should
+                // be able to delete the DEPENDENT disjunct
+                // maybe better to delete the DEPENDENT disjunct - it creates
+                // problem with multiple prep (mcdm)
+                if ((td3.reln() == PREPOSITIONAL_OBJECT || td3.reln() == PREPOSITIONAL_COMPLEMENT) && (!(td3DepPOS.equals("IN") || td3DepPOS.equals("TO"))) && prepOtherDep == null) {
+                  prepOtherDep = td3;
+                  if (td3.reln() == PREPOSITIONAL_COMPLEMENT) {
+                    pobj = false;
+                  }
+                } else {
+                  otherDtrs.add(td3);
+                }
+              }
+            }
+            if (conjIndex < td2Dep.index()) {
+              conjIndex = td2Dep.index();
+            }
+            conjs.add(new Triple<TypedDependency, TypedDependency, Boolean>(td2, prepOtherDep, pobj));
+          }
+        }
+      } // end td2:possibles
+
+      if (conjs.isEmpty()) {
+        continue;
+      }
+
+      // if we have a conj under a preposition dependency, we look for the other
+      // parts
+
+      String td1DepPOS = td1Dep.parent().value();
+      for (TypedDependency td2 : possibles) {
+        // we look for the cc linked to this conjDep
+        // the cc dep must have an index smaller than the dep of conjDep
+        if (td2.reln() == COORDINATION && td2.dep().index() < conjIndex) {
+          ccDep = td2;
+        } else {
+          TreeGraphNode td2Dep = td2.dep();
+          String td2DepPOS = td2Dep.parent().value();
+          // System.err.println("prepDep find: td1.reln: " + td1.reln() +
+          // "; td2.reln: " + td2.reln() + "; td1DepPos: " + td1DepPOS +
+          // "; td2DepPos: " + td2DepPOS + "; index " + index +
+          // "; td2.dep().index(): " + td2.dep().index());
+          if ((td2.reln() == DEPENDENT || td2.reln() == PREPOSITIONAL_OBJECT || td2.reln() == PREPOSITIONAL_COMPLEMENT) && (td1DepPOS.equals("IN") || td1DepPOS.equals("TO") || td1DepPOS.equals("VBG")) && prepDep == null && (!(td2DepPOS.equals("RB") || td2DepPOS.equals("IN") || td2DepPOS.equals("TO")))) {
+            // same index trick, in case we have multiple deps
+            // I deleted this to see if it helped [cdm Jan 2010] &&
+            // td2.dep().index() < index)
+            prepDep = new Pair<TypedDependency, Boolean>(td2, td2.reln() != PREPOSITIONAL_COMPLEMENT);
+          } else if (!inConjDeps(td2, conjs)) {// don't want to add the conjDep
+            // again!
+            otherDtrs.add(td2);
+          }
+        }
+      }
+
+      if (prepDep == null || ccDep == null) {
+        continue; // we can't deal with it in the hairy prep/conj interaction
+        // case!
+      }
+
+      if (DEBUG) {
+        if (ccDep != null) {
+          System.err.println("!! Conj and prep case:");
+          System.err.println("  td1 (prep): " + td1);
+          System.err.println("  Kids of td1 are: " + possibles);
+          System.err.println("  prepDep: " + prepDep);
+          System.err.println("  ccDep: " + ccDep);
+          System.err.println("  conjs: " + conjs);
+          System.err.println("  samePrepositionInEachConjunct: " + samePrepositionInEachConjunct);
+          System.err.println("  otherDtrs: " + otherDtrs);
+        }
+      }
+
+      // check if we have the same prepositions in the conjunction
+      if (samePrepositionInEachConjunct) { // conjDep != null && prepOtherDep !=
+        // null &&
+        // OK, we have a conjunction over parallel PPs: Fred flew to Greece and
+        // to Serbia.
+        GrammaticalRelation reln = determinePrepRelation(map, vmod, td1, td1, prepDep.second());
+
+        TypedDependency tdNew = new TypedDependency(reln, td1.gov(), prepDep.first().dep());
+        newTypedDeps.add(tdNew);
+        if (DEBUG) {
+          System.err.println("PrepPoss Conj branch (two parallel PPs) adding: " + tdNew);
+          System.err.println("  removing: " + td1 + "  " + prepDep + "  " + ccDep);
+        }
+        td1.setReln(KILL);// remember these are "used up"
+        prepDep.first().setReln(KILL);
+        ccDep.setReln(KILL);
+
+        for (Triple<TypedDependency, TypedDependency, Boolean> trip : conjs) {
+          TypedDependency conjDep = trip.first();
+          TypedDependency prepOtherDep = trip.second();
+          if (prepOtherDep == null) {
+            // CDM July 2010: I think this should only ever happen if there is a
+            // misparse, but it has happened in such circumstances. You have
+            // something like (PP in or in (NP Serbia)), with the two
+            // prepositions the same. We just clean up the mess.
+            if (DEBUG) {
+              System.err.println("  apparent misparse: same P twice with only one NP object (prepOtherDep is null)");
+              System.err.println("  removing: " + conjDep);
+            }
+            ccDep.setReln(KILL);
+          } else {
+            TypedDependency tdNew2 = new TypedDependency(conjValue(ccDep.dep().value()), prepDep.first().dep(), prepOtherDep.dep());
+            newTypedDeps.add(tdNew2);
+            if (DEBUG) {
+              System.err.println("  adding: " + tdNew2);
+              System.err.println("  removing: " + conjDep + "  " + prepOtherDep);
+            }
+            prepOtherDep.setReln(KILL);
+          }
+          conjDep.setReln(KILL);
+        }
+
+        // promote dtrs that would be orphaned
+        for (TypedDependency otd : otherDtrs) {
+          if (DEBUG) {
+            System.err.print("Changed " + otd);
+          }
+          otd.setGov(td1.gov());
+          if (DEBUG) {
+            System.err.println(" to " + otd);
+          }
+        }
+
+        // Now we need to see if there are any TDs that will be "orphaned"
+        // by this collapse. Example: if we have:
+        // dep(drew, on)
+        // dep(on, book)
+        // dep(on, right)
+        // the first two will be collapsed to on(drew, book), but then
+        // the third one will be orphaned, since its governor no
+        // longer appears. So, change its governor to 'drew'.
+        // CDM Feb 2010: This used to not move COORDINATION OR CONJUNCT, but now
+        // it does, since they're not automatically deleted
+        // Some things in possibles may have already been changed, so check gov
+        if (DEBUG) {
+          System.err.println("td1: " + td1 + "; possibles: " + possibles);
+        }
+        for (TypedDependency td2 : possibles) {
+          // if (DEBUG) {
+          // System.err.println("[a] td2.reln " + td2.reln() + " td2.gov " +
+          // td2.gov() + " td1.dep " + td1.dep());
+          // }
+          if (td2.reln() != KILL && td2.gov() == td1.dep()) { // && td2.reln()
+            // != COORDINATION
+            // && td2.reln()
+            // != CONJUNCT
+            if (DEBUG) {
+              System.err.println("Changing " + td2 + " to have governor of " + td1 + " [a]");
+            }
+            td2.setGov(td1.gov());
+          }
+        }
+        continue; // This one has been dealt with successfully
+      } // end same prepositions
+
+      // case of "Lufthansa flies to and from Serbia". Make it look like next
+      // case :-)
+      // that is, the prepOtherDep should be the same as prepDep !
+      for (Triple<TypedDependency, TypedDependency, Boolean> trip : conjs) {
+        if (trip.first() != null && trip.second() == null) {
+          trip.setSecond(new TypedDependency(prepDep.first().reln(), trip.first().dep(), prepDep.first().dep()));
+          trip.setThird(prepDep.second());
+        }
+      }
+
+      // we have two different prepositions in the conjunction
+      // in this case we need to add a node
+      // "Bill jumped over the fence and through the hoop"
+      // prep_over(jumped, fence)
+      // conj_and(jumped, jumped)
+      // prep_through(jumped, hoop)
+
+      GrammaticalRelation reln = determinePrepRelation(map, vmod, td1, td1, prepDep.second());
+      TypedDependency tdNew = new TypedDependency(reln, td1.gov(), prepDep.first().dep());
+      newTypedDeps.add(tdNew);
+      if (DEBUG) {
+        System.err.println("ConjPP (different preps) adding: " + tdNew);
+        System.err.println("  deleting: " + td1 + "  " + prepDep.first() + "  " + ccDep);
+      }
+      td1.setReln(KILL);// remember these are "used up"
+      prepDep.first().setReln(KILL);
+      ccDep.setReln(KILL);
+      // so far we added the first prep grammatical relation
+
+      int copyNumber = 1;
+      for (Triple<TypedDependency, TypedDependency, Boolean> trip : conjs) {
+        TypedDependency conjDep = trip.first();
+        TypedDependency prepOtherDep = trip.second();
+        boolean pobj = trip.third();
+        // OK, we have a conjunction over different PPs
+        // we create a new node;
+        // in order to make a distinction between the original node and its copy
+        // we add a "copy" entry in the CoreLabel
+        // existence of copy key is checked at printing (toString method of
+        // TypedDependency)
+        TreeGraphNode copy = new TreeGraphNode(td1.gov());
+        CoreLabel label = new CoreLabel(td1.gov().label());
+        label.set(CoreAnnotations.CopyAnnotation.class, copyNumber);
+        copyNumber++;
+        copy.setLabel(label);
+
+        // now we add the conjunction relation between td1.gov and the copy
+        // the copy has the same label as td1.gov() but is another TreeGraphNode
+        TypedDependency tdNew2 = new TypedDependency(conjValue(ccDep.dep().value()), td1.gov(), copy);
+        newTypedDeps.add(tdNew2);
+
+        // now we still need to add the second prep grammatical relation
+        // between the copy and the dependent of the prepOtherDep node
+        TypedDependency tdNew3;
+
+        GrammaticalRelation reln2 = determinePrepRelation(map, vmod, conjDep, td1, pobj);
+        tdNew3 = new TypedDependency(reln2, copy, prepOtherDep.dep());
+        newTypedDeps.add(tdNew3);
+
+        if (DEBUG) {
+          System.err.println("  adding: " + tdNew2 + "  " + tdNew3);
+          System.err.println("  deleting: " + conjDep + "  " + prepOtherDep);
+        }
+        conjDep.setReln(KILL);
+        prepOtherDep.setReln(KILL);
+
+        // promote dtrs that would be orphaned
+        for (TypedDependency otd : otherDtrs) {
+          // special treatment for prepositions: the original relation is
+          // likely to be a "dep" and we want this to be a "prep"
+          if (otd.dep().parent().value().equals("IN")) {
+            otd.setReln(PREPOSITIONAL_MODIFIER);
+          }
+          otd.setGov(td1.gov());
+        }
+      }
+
+      // Now we need to see if there are any TDs that will be "orphaned" off
+      // the first preposition
+      // by this collapse. Example: if we have:
+      // dep(drew, on)
+      // dep(on, book)
+      // dep(on, right)
+      // the first two will be collapsed to on(drew, book), but then
+      // the third one will be orphaned, since its governor no
+      // longer appears. So, change its governor to 'drew'.
+      // CDM Feb 2010: This used to not move COORDINATION OR CONJUNCT, but now
+      // it does, since they're not automatically deleted
+      for (TypedDependency td2 : possibles) {
+        if (td2.reln() != KILL) { // && td2.reln() != COORDINATION &&
+          // td2.reln() != CONJUNCT) {
+          if (DEBUG) {
+            System.err.println("Changing " + td2 + " to have governor of " + td1 + " [b]");
+          }
+          td2.setGov(td1.gov());
+        }
+      }
+      // end for different prepositions
+    } // for TypedDependency td1 : list
+
+    // below here is the single preposition/possessor basic case!!
+    for (TypedDependency td1 : list) {
+      if (td1.reln() == KILL) {
+        continue;
+      }
+
+      TreeGraphNode td1Dep = td1.dep();
+      String td1DepPOS = td1Dep.parent().value();
+      // find all other typedDeps having our dep as gov
+      Set<TypedDependency> possibles = map.get(td1Dep);
+
+      if (possibles != null && (td1.reln() == PREPOSITIONAL_MODIFIER || td1.reln() == POSSESSION_MODIFIER || td1.reln() == CONJUNCT)) {
+
+        // look for the "second half"
+        boolean pobj = true;// default for prep relation is prep_
+        for (TypedDependency td2 : possibles) {
+          if (td2.reln() != COORDINATION && td2.reln() != CONJUNCT) {
+
+            TreeGraphNode td2Dep = td2.dep();
+            String td2DepPOS = td2Dep.parent().value();
+            if ((td1.reln() == POSSESSION_MODIFIER || td1.reln() == CONJUNCT)) {
+              if (td2.reln() == POSSESSIVE_MODIFIER) {
+                if ( ! map.containsKey(td2Dep)) {  // if 's has no kids of its own (it shouldn't!)
+                  td2.setReln(KILL);
+                }
+              }
+            } else if ((td2.reln() == PREPOSITIONAL_OBJECT || td2.reln() == PREPOSITIONAL_COMPLEMENT) && (td1DepPOS.equals("IN") || td1DepPOS.equals("TO") || td1DepPOS.equals("VBG")) && (!(td2DepPOS.equals("RB") || td2DepPOS.equals("IN") || td2DepPOS.equals("TO"))) && !isConjWithNoPrep(td2.gov(), possibles)) {
+              // we don't collapse preposition conjoined with a non-preposition
+              // to avoid disconnected constituents
+              // OK, we have a pair td1, td2 to collapse to td3
+              if (DEBUG) {
+                System.err.println("(Single prep/poss base case collapsing " + td1 + " and " + td2);
+              }
+
+              // check whether we are in a pcomp case:
+              if (td2.reln() == PREPOSITIONAL_COMPLEMENT) {
+                pobj = false;
+              }
+
+              GrammaticalRelation reln = determinePrepRelation(map, vmod, td1, td1, pobj);
+              TypedDependency td3 = new TypedDependency(reln, td1.gov(), td2.dep());
+              if (DEBUG) {
+                System.err.println("PP adding: " + td3 + " deleting: " + td1 + ' ' + td2);
+              }
+              // add it to map to deal with recursive cases like "achieved this (PP (PP in part) with talent)"
+              map.get(td3.gov()).add(td3);
+
+              newTypedDeps.add(td3);
+              td1.setReln(KILL);// remember these are "used up"
+              td2.setReln(KILL);// remember these are "used up"
+            }
+          }
+        } // for TypedDependency td2
+      }
+
+      // Now we need to see if there are any TDs that will be "orphaned"
+      // by this collapse. Example: if we have:
+      // dep(drew, on)
+      // dep(on, book)
+      // dep(on, right)
+      // the first two will be collapsed to on(drew, book), but then
+      // the third one will be orphaned, since its governor no
+      // longer appears. So, change its governor to 'drew'.
+      // CDM Feb 2010: This used to not move COORDINATION OR CONJUNCT, but now
+      // it does, since they're not automatically deleted
+      if (possibles != null && td1.reln() == KILL) {
+        for (TypedDependency td2 : possibles) {
+          if (td2.reln() != KILL) { // && td2.reln() != COORDINATION &&
+            // td2.reln() != CONJUNCT) {
+            if (DEBUG) {
+              System.err.println("Changing " + td2 + " to have governor of " + td1 + " [c]");
+            }
+            td2.setGov(td1.gov());
+          }
+        }
+      }
+
+    } // for TypedDependency td1
+
+    // now remove typed dependencies with reln "kill" and add new ones.
+    for (Iterator<TypedDependency> iter = list.iterator(); iter.hasNext();) {
+      TypedDependency td = iter.next();
+      if (td.reln() == KILL) {
+        if (DEBUG) {
+          System.err.println("Removing dep killed in poss/prep (conj) collapse: " + td);
+        }
+        iter.remove();
+      }
+    }
+    list.addAll(newTypedDeps);
+  } // end collapsePrepAndPoss()
+
+

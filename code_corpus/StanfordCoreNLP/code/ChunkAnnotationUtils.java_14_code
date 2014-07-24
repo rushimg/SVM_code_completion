@@ -1,0 +1,44 @@
+  public static boolean annotateChunkText(CoreMap chunk, CoreMap origAnnotation)
+  {
+    String annoText = origAnnotation.get(CoreAnnotations.TextAnnotation.class);
+    if (annoText == null) return false;
+    if (!hasCharacterOffsets(chunk)) return false;
+    Integer annoBeginCharOffset = origAnnotation.get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);
+    if (annoBeginCharOffset == null) { annoBeginCharOffset = 0; }
+    int chunkBeginCharOffset = chunk.get(CoreAnnotations.CharacterOffsetBeginAnnotation.class) - annoBeginCharOffset;
+    int chunkEndCharOffset = chunk.get(CoreAnnotations.CharacterOffsetEndAnnotation.class) - annoBeginCharOffset;
+    if (chunkBeginCharOffset < 0) {
+      logger.fine("Adjusting begin char offset from " + chunkBeginCharOffset + " to 0");
+      logger.fine("Chunk begin offset: " + chunk.get(CoreAnnotations.CharacterOffsetBeginAnnotation.class) +
+        ", Source text begin offset " + annoBeginCharOffset);
+      chunkBeginCharOffset = 0;
+    }
+    if (chunkBeginCharOffset > annoText.length()) {
+      logger.fine("Adjusting begin char offset from " + chunkBeginCharOffset + " to " + annoText.length());
+      logger.fine("Chunk begin offset: " + chunk.get(CoreAnnotations.CharacterOffsetBeginAnnotation.class) +
+        ", Source text begin offset " + annoBeginCharOffset);
+      chunkBeginCharOffset = annoText.length();
+    }
+    if (chunkEndCharOffset < 0) {
+      logger.fine("Adjusting end char offset from " + chunkEndCharOffset + " to 0");
+      logger.fine("Chunk end offset: " + chunk.get(CoreAnnotations.CharacterOffsetEndAnnotation.class) +
+        ", Source text begin offset " + annoBeginCharOffset);
+      chunkEndCharOffset = 0;
+    }
+    if (chunkEndCharOffset > annoText.length()) {
+      logger.fine("Adjusting end char offset from " + chunkEndCharOffset + " to " + annoText.length());
+      logger.fine("Chunk end offset: " + chunk.get(CoreAnnotations.CharacterOffsetEndAnnotation.class) +
+        ", Source text begin offset " + annoBeginCharOffset);
+      chunkEndCharOffset = annoText.length();
+    }
+    if (chunkEndCharOffset < chunkBeginCharOffset) {
+      logger.fine("Adjusting end char offset from " + chunkEndCharOffset + " to " + chunkBeginCharOffset);
+      logger.fine("Chunk end offset: " + chunk.get(CoreAnnotations.CharacterOffsetEndAnnotation.class) +
+        ", Source text begin offset " + annoBeginCharOffset);
+      chunkEndCharOffset = chunkBeginCharOffset;
+    }
+    String chunkText = annoText.substring(chunkBeginCharOffset, chunkEndCharOffset);
+    chunk.set(CoreAnnotations.TextAnnotation.class, chunkText);
+    return true;
+  }
+

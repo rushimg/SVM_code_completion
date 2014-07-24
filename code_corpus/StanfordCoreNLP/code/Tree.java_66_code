@@ -1,0 +1,52 @@
+  public <X extends List<TaggedWord>> X taggedYield(X ty) {
+    Tree[] kids = children();
+    // this inlines the content of isPreTerminal()
+    if (kids.length == 1 && kids[0].isLeaf()) {
+      ty.add(new TaggedWord(kids[0].label(), label()));
+    } else {
+      for (Tree kid : kids) {
+        kid.taggedYield(ty);
+      }
+    }
+    return ty;
+  }
+
+  public List<LabeledWord> labeledYield(List<LabeledWord> ty) {
+    Tree[] kids = children();
+    // this inlines the content of isPreTerminal()
+    if (kids.length == 1 && kids[0].isLeaf()) {
+      ty.add(new LabeledWord(kids[0].label(), label()));
+    } else {
+      for (Tree kid : kids) {
+        kid.labeledYield(ty);
+      }
+    }
+    return ty;
+  }
+
+  public List<CoreLabel> taggedLabeledYield() {
+  	List<CoreLabel> ty = new ArrayList<CoreLabel>();
+  	taggedLabeledYield(ty,0);
+  	return ty;
+  }
+
+  private int taggedLabeledYield(List<CoreLabel> ty, int termIdx) {
+  	if(isPreTerminal()) {
+  		CoreLabel taggedWord = new CoreLabel();
+  		final String tag = (value() == null) ? "" : value();
+  		taggedWord.setValue(tag);
+  		taggedWord.setTag(tag);
+  		taggedWord.setIndex(termIdx);
+  		taggedWord.setWord(firstChild().value());
+  		ty.add(taggedWord);
+
+  		return termIdx + 1;
+
+  	} else {
+  		for(Tree kid : getChildrenAsList())
+  			termIdx = kid.taggedLabeledYield(ty, termIdx);
+  	}
+
+		return termIdx;
+  }
+

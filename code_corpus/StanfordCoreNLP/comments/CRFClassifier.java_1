@@ -1,0 +1,76 @@
+/**
+ * Class for Sequence Classification using a Conditional Random Field model.
+ * The code has functionality for different document formats, but when
+ * using the standard {@link edu.stanford.nlp.sequences.ColumnDocumentReaderAndWriter} for training
+ * or testing models, input files are expected to
+ * be one token per line with the columns indicating things like the word,
+ * POS, chunk, and answer class.  The default for
+ * <code>ColumnDocumentReaderAndWriter</code> training data is 3 column input,
+ * with the columns containing a word, its POS, and its gold class, but
+ * this can be specified via the <code>map</code> property.
+ * </p><p>
+ * When run on a file with <code>-textFile</code>,
+ * the file is assumed to be plain English text (or perhaps simple HTML/XML),
+ * and a reasonable attempt is made at English tokenization by
+ * {@link PlainTextDocumentReaderAndWriter}.  The class used to read
+ * the text can be changed with -plainTextDocumentReaderAndWriter.
+ * Extra options can be supplied to the tokenizer using the
+ * -tokenizeOptions flag.
+ * </p><p>
+ * To read from stdin, use the flag -readStdin.  The same
+ * reader/writer will be used as for -textFile.
+ * </p>
+ * <b>Typical command-line usage</b>
+ * <p>For running a trained model with a provided serialized classifier on a
+ * text file: <p>
+ * <code>
+ * java -mx500m edu.stanford.nlp.ie.crf.CRFClassifier -loadClassifier
+ * conll.ner.gz -textFile samplesentences.txt
+ * </code>
+ * <p>
+ * When specifying all parameters in a properties file (train, test, or
+ * runtime):
+ * <p>
+ * <code>
+ * java -mx1g edu.stanford.nlp.ie.crf.CRFClassifier -prop propFile
+ * </code>
+ * <p>
+ * To train and test a simple NER model from the command line:<br>
+ * <code>java -mx1000m edu.stanford.nlp.ie.crf.CRFClassifier
+ * -trainFile trainFile -testFile testFile -macro &gt; output </code>
+ * </p>
+ * <p>
+ * To train with multiple files: <br>
+ * <code>java -mx1000m edu.stanford.nlp.ie.crf.CRFClassifier
+ * -trainFileList file1,file2,... -testFile testFile -macro &gt; output</code>
+ * </p>
+ * <p>
+ * To test on multiple files, use the -testFiles option and a comma
+ * separated list.
+ * </p>
+ * Features are defined by a {@link edu.stanford.nlp.sequences.FeatureFactory}.
+ * {@link NERFeatureFactory} is used by default, and you should look
+ * there for feature templates and properties or flags that will cause
+ * certain features to be used when training an NER classifier. There
+ * are also various feature factories for Chinese word segmentation
+ * such as {@link edu.stanford.nlp.wordseg.ChineseSegmenterFeatureFactory}.
+ * Features are specified either
+ * by a Properties file (which is the recommended method) or by flags on the
+ * command line. The flags are read into a {@link SeqClassifierFlags} object,
+ * which the user need not be concerned with, unless wishing to add new
+ * features. </p> CRFClassifier may also be used programmatically. When creating
+ * a new instance, you <i>must</i> specify a Properties object. You may then
+ * call train methods to train a classifier, or load a classifier. The other way
+ * to get a CRFClassifier is to deserialize one via the static
+ * {@link CRFClassifier#getClassifier(String)} methods, which return a
+ * deserialized classifier. You may then tag (classify the items of) documents
+ * using either the assorted <code>classify()</code> or the assorted
+ * <code>classify</code> methods in {@link AbstractSequenceClassifier}.
+ * Probabilities assigned by the CRF can be interrogated using either the
+ * <code>printProbsDocument()</code> or <code>getCliqueTrees()</code> methods.
+ *
+ * @author Jenny Finkel
+ * @author Sonal Gupta (made the class generic)
+ * @author Mengqiu Wang (LOP implementation and non-linear CRF implementation)
+ * TODO(mengqiu) need to move the embedding lookup and capitalization features into a FeatureFactory
+ */

@@ -1,0 +1,109 @@
+  public boolean appearEarlierThan(Mention m){
+    if (this.sentNum < m.sentNum) {
+      return true;
+    } else if (this.sentNum > m.sentNum) {
+      return false;
+    } else {
+      if (this.startIndex < m.startIndex) {
+        return true;
+      } else if (this.startIndex > m.startIndex) {
+        return false;
+      } else {
+        if (this.endIndex > m.endIndex) {
+          return true;
+        } else if (this.endIndex < m.endIndex) {
+          return false;
+        } else if (this.headIndex != m.headIndex) {
+          // Meaningless, but an arbitrary tiebreaker
+          return this.headIndex < m.headIndex;
+        } else if (this.mentionType != m.mentionType) {
+          // Meaningless, but an arbitrary tiebreaker
+          return this.mentionType.representativeness > m.mentionType.representativeness;
+        } else {
+          // Meaningless, but an arbitrary tiebreaker
+          return this.hashCode() < m.hashCode();
+        }
+      }
+    }
+  }
+
+  public String longestNNPEndsWithHead (){
+    String ret = "";
+    for (int i = headIndex; i >=startIndex ; i--){
+      String pos = sentenceWords.get(i).get(CoreAnnotations.PartOfSpeechAnnotation.class);
+      if(!pos.startsWith("NNP")) break;
+      if(!ret.equals("")) ret = " "+ret;
+      ret = sentenceWords.get(i).get(CoreAnnotations.TextAnnotation.class)+ret;
+    }
+    return ret;
+  }
+
+  public String lowestNPIncludesHead (){
+    String ret = "";
+    Tree head = this.contextParseTree.getLeaves().get(this.headIndex);
+    Tree lowestNP = head;
+    String s;
+    while(true) {
+      if(lowestNP==null) return ret;
+      s = ((CoreLabel) lowestNP.label()).get(CoreAnnotations.ValueAnnotation.class);
+      if(s.equals("NP") || s.equals("ROOT")) break;
+      lowestNP = lowestNP.ancestor(1, this.contextParseTree);
+    }
+    if (s.equals("ROOT")) lowestNP = head;
+    for (Tree t : lowestNP.getLeaves()){
+      if (!ret.equals("")) ret = ret + " ";
+      ret = ret + ((CoreLabel) t.label()).get(CoreAnnotations.TextAnnotation.class);
+    }
+    if(!this.spanToString().contains(ret)) return this.sentenceWords.get(this.headIndex).get(CoreAnnotations.TextAnnotation.class);
+    return ret;
+  }
+
+  public String stringWithoutArticle(String str) {
+    String ret = (str==null)? this.spanToString() : str;
+    if (ret.startsWith("a ") || ret.startsWith("A ")) {
+      return ret.substring(2);
+    } else if (ret.startsWith("an ") || ret.startsWith("An ")) {
+      return ret.substring(3);
+    } else if (ret.startsWith("the ") || ret.startsWith("The "))
+      return ret.substring(4);
+    return ret;
+  }
+
+  public List<String> preprocessSearchTerm (){
+    List<String> searchTerms = new ArrayList<String>();
+    String[] terms = new String[4];
+
+    terms[0] = this.stringWithoutArticle(this.removePhraseAfterHead());
+    terms[1] = this.stringWithoutArticle(this.lowestNPIncludesHead());
+    terms[2] = this.stringWithoutArticle(this.longestNNPEndsWithHead());
+    terms[3] = this.headString;
+
+    for (String term : terms){
+
+      if(term.contains("\"")) term = term.replace("\"", "\\\"");
+      if(term.contains("(")) term = term.replace("(","\\(");
+      if(term.contains(")")) term = term.replace(")", "\\)");
+      if(term.contains("!")) term = term.replace("!", "\\!");
+      if(term.contains(":")) term = term.replace(":", "\\:");
+      if(term.contains("+")) term = term.replace("+", "\\+");
+      if(term.contains("-")) term = term.replace("-", "\\-");
+      if(term.contains("~")) term = term.replace("~", "\\~");
+      if(term.contains("[")) term = term.replace("[", "\\[");
+      if(term.contains("]")) term = term.replace("]", "\\]");
+      if(term.contains("^")) term = term.replace("^", "\\^");
+      if(term.equals("")) continue;
+
+      if(term.equals("") || searchTerms.contains(term)) continue;
+      if(term.equals(terms[3]) && !terms[2].equals("")) continue;
+      searchTerms.add(term);
+    }
+    return searchTerms;
+  }
+  public static String buildQueryText(List<String> terms) {
+    String query = "";
+    for (String t : terms){
+      query += t + " ";
+    }
+    return query.trim();
+  }
+

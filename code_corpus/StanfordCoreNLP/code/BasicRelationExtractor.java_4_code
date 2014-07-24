@@ -1,0 +1,71 @@
+  @Override
+  public void train(Annotation sentences) {
+    // Train a single multi-class classifier
+    GeneralDataset<String, String> trainSet = createDataset(sentences);
+    trainMulticlass(trainSet);
+  }
+
+  public void trainMulticlass(GeneralDataset<String, String> trainSet) {
+    if (relationExtractorClassifierType.equalsIgnoreCase("linear")) {
+      LinearClassifierFactory<String, String> lcFactory = new LinearClassifierFactory<String, String>(1e-4,false, sigma);
+      lcFactory.setVerbose(false);
+      // use in-place SGD instead of QN. this is faster but much worse!
+      // lcFactory.useInPlaceStochasticGradientDescent(-1, -1, 1.0);
+      // use a hybrid minimizer: start with in-place SGD, continue with QN
+      // lcFactory.useHybridMinimizerWithInPlaceSGD(50, -1, sigma);
+      classifier = lcFactory.trainClassifier(trainSet);
+    } else if (relationExtractorClassifierType.equalsIgnoreCase("svm")) {
+      SVMLightClassifierFactory<String, String> svmFactory = new SVMLightClassifierFactory<String, String>();
+      svmFactory.setC(sigma);
+      classifier = svmFactory.trainClassifier(trainSet);
+    } else {
+      throw new RuntimeException("Invalid classifier type: " + relationExtractorClassifierType);
+    }
+    if (logger.isLoggable(Level.FINE)) {
+      reportWeights(classifier, null);
+    }
+  }
+
+  private static void reportWeights(LinearClassifier<String, String> classifier, String classLabel) {
+    if (classLabel != null) logger.fine("CLASSIFIER WEIGHTS FOR LABEL " + classLabel);
+    Map<String, Counter<String>> labelsToFeatureWeights = classifier.weightsAsMapOfCounters();
+    List<String> labels = new ArrayList<String>(labelsToFeatureWeights.keySet());
+    Collections.sort(labels);
+    for (String label: labels) {
+      Counter<String> featWeights = labelsToFeatureWeights.get(label);
+      List<Pair<String, Double>> sorted = Counters.toSortedListWithCounts(featWeights);
+      StringBuilder bos = new StringBuilder();
+      bos.append("WEIGHTS FOR LABEL ").append(label).append(':');
+      for (Pair<String, Double> feat: sorted) {
+        bos.append(' ').append(feat.first()).append(':').append(feat.second()+"\n");
+      }
+      logger.fine(bos.toString());
+    }
+  }
+
+  private String classOf(Datum<String, String> datum, ExtractionObject rel) {
+    Counter<String> probs = classifier.probabilityOf(datum);
+    List<Pair<String, Double>> sortedProbs = Counters.toDescendingMagnitudeSortedListWithCounts(probs);
+    double nrProb = probs.getCount(RelationMention.UNRELATED);
+    for(Pair<String, Double> choice: sortedProbs){
+      if(choice.first.equals(RelationMention.UNRELATED)) return choice.first;
+      if(nrProb >= choice.second) return RelationMention.UNRELATED; // no prediction, all probs have the same value
+      if(compatibleLabel(choice.first, rel)) return choice.first;
+    }
+    return RelationMention.UNRELATED;
+  }
+
+  private boolean compatibleLabel(String label, ExtractionObject rel) {
+    if(rel == null) return true;
+    if(validator != null) return validator.validLabel(label, rel);
+    return true;
+  }
+
+  private Counter<String> probabilityOf(Datum<String, String> testDatum) {
+    return classifier.probabilityOf(testDatum);
+  }
+
+  private void justificationOf(Datum<String, String> testDatum, PrintWriter pw, String label) {
+    classifier.justificationOf(testDatum, pw);
+  }
+

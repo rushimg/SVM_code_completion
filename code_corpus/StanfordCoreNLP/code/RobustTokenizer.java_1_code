@@ -1,0 +1,77 @@
+  public static String rangeNot(String s){
+    return range(block("^" + s));
+  }
+
+  private static int hasApostropheBlock(String s) {
+    for(int i = s.length() - 1; i > 0; i --){
+      if(s.charAt(i) == '\'' && i < s.length() - 1){
+        return i;
+      }
+
+      if(! Character.isLetter(s.charAt(i))){
+        return -1;
+      }
+    }
+
+    return -1;
+  }
+
+  private static <T extends WordToken> String concatenate(List<T> tokens,
+      int start,
+      int end) {
+    StringBuffer buffer = new StringBuffer();
+
+    for(; start < end; start ++){
+      buffer.append(((WordToken) tokens.get(start)).getWord());
+    }
+    return buffer.toString();
+  }
+
+  private static <T extends WordToken> int countNewLines(List<T> tokens,
+      int start,
+      int end) {
+    int count = 0;
+    for(int i = start + 1; i < end; i ++){
+      count += tokens.get(i).getNewLineCount();
+    }
+    return count;
+  }
+
+  public static boolean isUrl(String s) {
+    Matcher match = urlPattern.matcher(s);
+    return match.find(0);
+  }
+
+  public static boolean isEmail(String s) {
+    Matcher match = emailPattern.matcher(s);
+    return match.find(0);
+  }
+
+  public static boolean isSgml(String s) {
+    Matcher match = sgmlPattern.matcher(s);
+    return match.find(0);
+  }
+
+  public static boolean isSlashDate(String s) {
+    Matcher match = slashDatePattern.matcher(s);
+    return match.find(0);
+  }
+
+  public static boolean isAcronym(String s) {
+    Matcher match = acronymPattern.matcher(s);
+    return match.find(0);
+  }
+
+  public static boolean isDigitSeq(String s) {
+    Matcher match = digitSeqPattern.matcher(s);
+    return match.find(0);
+  }
+
+  public int countNewLines(String s, int start, int end) {
+    int count = 0;
+    for(int i = start; i < end; i ++) {
+      if(s.charAt(i) == '\n') count ++;
+    }
+    return count;
+  }
+  

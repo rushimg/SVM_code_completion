@@ -1,0 +1,54 @@
+  private static void saveDependencyGraph(SemanticGraph graph, PrintWriter pw) {
+    if(graph == null){
+      pw.println();
+      pw.println();
+      return;
+    }
+    boolean outputHeader = false;
+    for (IndexedWord node: graph.vertexSet()){
+      // first line: sentence index for all nodes; we recover the words
+      // from the original tokens the first two tokens in this line
+      // indicate: docid, sentence index
+      if (!outputHeader) {
+        String docId = node.get(CoreAnnotations.DocIDAnnotation.class);
+        if(docId != null && docId.length() > 0) pw.print(docId);
+        else pw.print("-");
+        pw.print("\t");
+        pw.print(node.get(CoreAnnotations.SentenceIndexAnnotation.class));
+        outputHeader = true;
+      }
+
+      pw.print("\t");
+      pw.print(node.index());
+      // CopyAnnotations indicate copied (or virtual nodes) generated due to CCs (see EnglishGrammaticalStructure)
+      // These annotations are usually not set, so print them only if necessary
+      if(node.containsKey(CoreAnnotations.CopyAnnotation.class)){
+        pw.print("-");
+        pw.print(node.get(CoreAnnotations.CopyAnnotation.class));
+        // System.out.println("FOUND COPY ANNOTATION: " + node.get(CoreAnnotations.CopyAnnotation.class));
+      }
+    }
+    pw.println();
+
+    // second line: all edges
+    boolean first = true;
+    for (SemanticGraphEdge edge : graph.edgeIterable()) {
+      if(! first) pw.print("\t");
+      String rel = edge.getRelation().toString();
+      // no spaces allowed in the relation name
+      // note that they might occur due to the tokenization of HTML/XML/RDF tags
+      rel = rel.replaceAll("\\s+", "");
+      pw.print(rel);
+      pw.print(" ");
+      pw.print(edge.getSource().index());
+      pw.print(" ");
+      pw.print(edge.getTarget().index());
+      if (edge.isExtra()) {
+        pw.print(" ");
+        pw.print(edge.isExtra());
+      }
+      first = false;
+    }
+    pw.println();
+  }
+

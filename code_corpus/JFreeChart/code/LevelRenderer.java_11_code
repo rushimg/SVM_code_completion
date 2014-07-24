@@ -1,0 +1,69 @@
+    public void drawItem(Graphics2D g2, CategoryItemRendererState state,
+            Rectangle2D dataArea, CategoryPlot plot, CategoryAxis domainAxis,
+            ValueAxis rangeAxis, CategoryDataset dataset, int row, int column,
+            int pass) {
+
+        // nothing is drawn if the row index is not included in the list with
+        // the indices of the visible rows...
+        int visibleRow = state.getVisibleSeriesIndex(row);
+        if (visibleRow < 0) {
+            return;
+        }
+
+        // nothing is drawn for null values...
+        Number dataValue = dataset.getValue(row, column);
+        if (dataValue == null) {
+            return;
+        }
+
+        double value = dataValue.doubleValue();
+
+        PlotOrientation orientation = plot.getOrientation();
+        double barW0 = calculateBarW0(plot, orientation, dataArea, domainAxis,
+                state, visibleRow, column);
+        RectangleEdge edge = plot.getRangeAxisEdge();
+        double barL = rangeAxis.valueToJava2D(value, dataArea, edge);
+
+        // draw the bar...
+        Line2D line = null;
+        double x = 0.0;
+        double y = 0.0;
+        if (orientation == PlotOrientation.HORIZONTAL) {
+            x = barL;
+            y = barW0 + state.getBarWidth() / 2.0;
+            line = new Line2D.Double(barL, barW0, barL,
+                    barW0 + state.getBarWidth());
+        }
+        else {
+            x = barW0 + state.getBarWidth() / 2.0;
+            y = barL;
+            line = new Line2D.Double(barW0, barL, barW0 + state.getBarWidth(),
+                    barL);
+        }
+        Stroke itemStroke = getItemStroke(row, column);
+        Paint itemPaint = getItemPaint(row, column);
+        g2.setStroke(itemStroke);
+        g2.setPaint(itemPaint);
+        g2.draw(line);
+
+        CategoryItemLabelGenerator generator = getItemLabelGenerator(row,
+                column);
+        if (generator != null && isItemLabelVisible(row, column)) {
+            drawItemLabel(g2, orientation, dataset, row, column, x, y,
+                    (value < 0.0));
+        }
+
+        // submit the current data point as a crosshair candidate
+        int datasetIndex = plot.indexOf(dataset);
+        updateCrosshairValues(state.getCrosshairState(),
+                dataset.getRowKey(row), dataset.getColumnKey(column), value,
+                datasetIndex, barW0, barL, orientation);
+
+        // collect entity and tool tip information...
+        EntityCollection entities = state.getEntityCollection();
+        if (entities != null) {
+            addItemEntity(entities, dataset, row, column, line.getBounds());
+        }
+
+    }
+

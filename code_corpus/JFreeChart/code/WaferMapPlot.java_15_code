@@ -1,0 +1,37 @@
+    protected void drawWaferEdge(Graphics2D g2, Rectangle2D plotArea) {
+        // draw the wafer
+        Ellipse2D waferEdge = getWaferEdge(plotArea);
+        g2.setColor(Color.black);
+        g2.draw(waferEdge);
+        // calculate and draw the notch
+        // horizontal orientation is considered notch right
+        // vertical orientation is considered notch down
+        Arc2D notch = null;
+        Rectangle2D waferFrame = waferEdge.getFrame();
+        if (this.orientation == PlotOrientation.HORIZONTAL) {
+            Rectangle2D notchFrame =
+                new Rectangle2D.Double(
+                    waferFrame.getX() + waferFrame.getWidth()
+                    - (notchDiameter / 2), waferFrame.getY()
+                    + (waferFrame.getHeight() / 2) - (notchDiameter / 2),
+                    notchDiameter, notchDiameter
+                );
+            notch = new Arc2D.Double(notchFrame, 90d, 180d, Arc2D.OPEN);
+        }
+        else {
+            Rectangle2D notchFrame =
+                new Rectangle2D.Double(
+                    waferFrame.getX() + (waferFrame.getWidth() / 2)
+                    - (notchDiameter / 2), waferFrame.getY()
+                    + waferFrame.getHeight() - (notchDiameter / 2),
+                    notchDiameter, notchDiameter
+                );
+            notch = new Arc2D.Double(notchFrame, 0d, 180d, Arc2D.OPEN);
+        }
+        g2.setColor(Color.white);
+        g2.fill(notch);
+        g2.setColor(Color.black);
+        g2.draw(notch);
+
+    }
+

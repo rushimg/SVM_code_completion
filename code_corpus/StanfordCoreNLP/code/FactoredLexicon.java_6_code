@@ -1,0 +1,50 @@
+  @Override
+  protected void initRulesWithWord() {
+    // Add synthetic symbols to the indices
+    int unkWord = wordIndex.indexOf(UNKNOWN_WORD, true);
+    int boundaryWordId = wordIndex.indexOf(BOUNDARY, true);
+    int boundaryTagId = tagIndex.indexOf(BOUNDARY_TAG, true);
+    
+    // Initialize rules table
+    final int numWords = wordIndex.size();
+    rulesWithWord = new List[numWords];
+    for (int w = 0; w < numWords; w++) {
+      rulesWithWord[w] = new ArrayList<IntTaggedWord>(1);
+    }
+    
+    // Collect rules, indexed by word
+    Set<IntTaggedWord> lexRules = Generics.newHashSet(40000);
+    for (int wordId : wordTag.firstKeySet()) {
+      for (int tagId : wordTag.getCounter(wordId).keySet()) {
+        lexRules.add(new IntTaggedWord(wordId, tagId));
+        lexRules.add(new IntTaggedWord(nullWord, tagId));
+      }
+    }
+    
+    // Known words and signatures
+    for (IntTaggedWord iTW : lexRules) {
+      if (iTW.word() == nullWord) {
+        // Mix in UW signature rules for open class types
+        double types = uwModel.unSeenCounter().getCount(iTW);
+        if (types > trainOptions.openClassTypesThreshold) {
+          IntTaggedWord iTU = new IntTaggedWord(unkWord, iTW.tag);
+          if (!rulesWithWord[unkWord].contains(iTU)) {
+            rulesWithWord[unkWord].add(iTU);
+          }
+        }
+      } else {
+        // Known word
+        rulesWithWord[iTW.word].add(iTW);
+      }
+    }
+
+    System.err.print("The " + rulesWithWord[unkWord].size() + " open class tags are: [");
+    for (IntTaggedWord item : rulesWithWord[unkWord]) {
+      System.err.print(" " + tagIndex.get(item.tag()));
+    }
+    System.err.println(" ] ");
+
+    // Boundary symbol has one tagging
+    rulesWithWord[boundaryWordId].add(new IntTaggedWord(boundaryWordId, boundaryTagId));
+  }
+  

@@ -1,0 +1,1268 @@
+  @Override
+  public Tree transformTree(Tree t, Tree root) {
+    if (t == null || t.isLeaf()) {
+      return t;
+    }
+
+    Tree parent;
+    String parentStr;
+    String grandParentStr;
+    if (root == null || t.equals(root)) {
+      parent = null;
+      parentStr = "";
+    } else {
+      parent = t.parent(root);
+      parentStr = parent.label().value();
+    }
+    if (parent == null || parent.equals(root)) {
+      grandParentStr = "";
+    } else {
+      Tree grandParent = parent.parent(root);
+      grandParentStr = grandParent.label().value();
+    }
+    String baseParentStr = tlp.basicCategory(parentStr);
+    String baseGrandParentStr = tlp.basicCategory(grandParentStr);
+
+    CoreLabel lab = (CoreLabel) t.label();
+    String word = lab.word();
+    String tag = lab.tag();
+    String baseTag = tlp.basicCategory(tag);
+    String cat = lab.value();
+    String baseCat = tlp.basicCategory(cat);
+
+    if (t.isPreTerminal()) {
+      if (englishTrain.correctTags) {
+        if (baseParentStr.equals("NP")) {
+          if (baseCat.equals("IN")) {
+            if (word.equalsIgnoreCase("a") || word.equalsIgnoreCase("that")) {
+              cat = changeBaseCat(cat, "DT");
+            } else if (word.equalsIgnoreCase("so") ||
+                       word.equalsIgnoreCase("about")) {
+              cat = changeBaseCat(cat, "RB");
+            } else if (word.equals("fiscal") || word.equalsIgnoreCase("next")) {
+              cat = changeBaseCat(cat, "JJ");
+            }
+          } else if (baseCat.equals("RB")) {
+            if (word.equals("McNally")) {
+              cat = changeBaseCat(cat, "NNP");
+            } else if (word.equals("multifamily")) {
+              cat = changeBaseCat(cat, "NN");
+            } else if (word.equals("MORE")) {
+              cat = changeBaseCat(cat, "JJR");
+            } else if (word.equals("hand")) {
+              cat = changeBaseCat(cat, "NN");
+            } else if (word.equals("fist")) {
+              cat = changeBaseCat(cat, "NN");
+            }
+          } else if (baseCat.equals("RP")) {
+            if (word.equals("Howard")) {
+              cat = changeBaseCat(cat, "NNP");
+            } else if (word.equals("whole")) {
+              cat = changeBaseCat(cat, "JJ");
+            }
+          } else if (baseCat.equals("JJ")) {
+            if (word.equals("U.S.")) {
+              cat = changeBaseCat(cat, "NNP");
+            } else if (word.equals("ours")) {
+              cat = changeBaseCat(cat, "PRP");
+            } else if (word.equals("mine")) {
+              cat = changeBaseCat(cat, "NN");
+            } else if (word.equals("Sept.")) {
+              cat = changeBaseCat(cat, "NNP");
+            }
+          } else if (baseCat.equals("NN")) {
+            if (word.equals("Chapman") || word.equals("Jan.") || word.equals("Sept.") || word.equals("Oct.") || word.equals("Nov.") || word.equals("Dec.")) {
+              cat = changeBaseCat(cat, "NNP");
+            } else if (word.equals("members") || word.equals("bureaus") || word.equals("days") || word.equals("outfits") || word.equals("institutes") || word.equals("innings") || word.equals("write-offs") || word.equals("wines") || word.equals("trade-offs") || word.equals("tie-ins") || word.equals("thrips") || word.equals("1980s") || word.equals("1920s")) {
+              cat = changeBaseCat(cat, "NNS");
+            } else if (word.equals("this")) {
+              cat = changeBaseCat(cat, "DT");
+            }
+          } else if (baseCat.equals(":")) {
+            if (word.equals("'")) {
+              cat = changeBaseCat(cat, "''");
+            }
+          } else if (baseCat.equals("NNS")) {
+            if (word.equals("start-up") || word.equals("ground-handling") ||
+                word.equals("word-processing") || word.equals("T-shirt") ||
+                word.equals("co-pilot")) {
+              cat = changeBaseCat(cat, "NN");
+            } else if (word.equals("Sens.") || word.equals("Aichi")) {
+              cat = changeBaseCat(cat, "NNP");  //not clear why Sens not NNPS
+            }
+          } else if (baseCat.equals("VBZ")) {
+            if (word.equals("'s")) {
+              cat = changeBaseCat(cat, "POS");
+            } else if (!word.equals("kills")) { // a worse PTB error
+              cat = changeBaseCat(cat, "NNS");
+            }
+          } else if (baseCat.equals("VBG")) {
+            if (word.equals("preferred")) {
+              cat = changeBaseCat(cat, "VBN");
+            }
+          } else if (baseCat.equals("VB")) {
+            if (word.equals("The")) {
+              cat = changeBaseCat(cat, "DT");
+            } else if (word.equals("allowed")) {
+              cat = changeBaseCat(cat, "VBD");
+            } else if (word.equals("short") || word.equals("key") || word.equals("many") || word.equals("last") || word.equals("further")) {
+              cat = changeBaseCat(cat, "JJ");
+            } else if (word.equals("lower")) {
+              cat = changeBaseCat(cat, "JJR");
+            } else if (word.equals("Nov.") || word.equals("Jan.") || word.equals("Dec.") || word.equals("Tandy") || word.equals("Release") || word.equals("Orkem")) {
+              cat = changeBaseCat(cat, "NNP");
+            } else if (word.equals("watch") || word.equals("review") || word.equals("risk") || word.equals("realestate") || word.equals("love") || word.equals("experience") || word.equals("control") || word.equals("Transport") || word.equals("mind") || word.equals("term") || word.equals("program") || word.equals("gender") || word.equals("audit") || word.equals("blame") || word.equals("stock") || word.equals("run") || word.equals("group") || word.equals("affect") || word.equals("rent") || word.equals("show") || word.equals("accord") || word.equals("change") || word.equals("finish") || word.equals("work") || word.equals("schedule") || word.equals("influence") || word.equals("school") || word.equals("freight") || word.equals("growth") || word.equals("travel") || word.equals("call") || word.equals("autograph") || word.equals("demand") || word.equals("abuse") || word.equals("return") || word.equals("defeat") || word.equals("pressure") || word.equals("bank") || word.equals("notice") || word.equals("tax") || word.equals("ooze") || word.equals("network") || word.equals("concern") || word.equals("pit") || word.equals("contract") || word.equals("cash")) {
+              cat = changeBaseCat(cat, "NN");
+            }
+          } else if (baseCat.equals("NNP")) {
+            if (word.equals("Officials")) {
+              cat = changeBaseCat(cat, "NNS");
+            } else if (word.equals("Currently")) {
+              cat = changeBaseCat(cat, "RB");
+              // should change NP-TMP to ADVP-TMP here too!
+            }
+          } else if (baseCat.equals("PRP")) {
+            if (word.equals("her") && parent.numChildren() > 1) {
+              cat = changeBaseCat(cat, "PRP$");
+            } else if (word.equals("US")) {
+              cat = changeBaseCat(cat, "NNP");
+            }
+          }
+        } else if (baseParentStr.equals("WHNP")) {
+          if (baseCat.equals("VBP") && (word.equalsIgnoreCase("that"))) {
+            cat = changeBaseCat(cat, "WDT");
+          }
+        } else if (baseParentStr.equals("UCP")) {
+           if (word.equals("multifamily")) {
+             cat = changeBaseCat(cat, "NN");
+           }
+        } else if (baseParentStr.equals("PRT")) {
+          if (baseCat.equals("RBR") && word.equals("in")) {
+            cat = changeBaseCat(cat, "RP");
+          } else if (baseCat.equals("NNP") && word.equals("up")) {
+            cat = changeBaseCat(cat, "RP");
+          }
+        } else if (baseParentStr.equals("PP")) {
+          if (parentStr.equals("PP-TMP")) {
+            if (baseCat.equals("RP")) {
+              cat = changeBaseCat(cat, "IN");
+            }
+          }
+          if (word.equals("in") && (baseCat.equals("RP") || baseCat.equals("NN"))) {
+            cat = changeBaseCat(cat, "IN");
+          } else if (baseCat.equals("RB")) {
+            if (word.equals("for") || word.equals("After")) {
+              cat = changeBaseCat(cat, "IN");
+            }
+          } else if (word.equals("if") && baseCat.equals("JJ")) {
+            cat = changeBaseCat(cat, "IN");
+          }
+        } else if (baseParentStr.equals("VP")) {
+          if (baseCat.equals("NNS")) {
+            cat = changeBaseCat(cat, "VBZ");
+          } else if (baseCat.equals("IN")) {
+            if (word.equals("complicated")) {
+              cat = changeBaseCat(cat, "VBD");
+            } else if (word.equals("post")) {
+              cat = changeBaseCat(cat, "VB");
+            } else if (word.equals("like")) {
+              cat = changeBaseCat(cat, "VB");  // most are VB; odd VBP
+            } else if (word.equals("off")) {
+              cat = changeBaseCat(cat, "RP");
+            }
+          } else if (baseCat.equals("NN")) {
+            if (word.endsWith("ing")) {
+              cat = changeBaseCat(cat, "VBG");
+            } else if (word.equals("bid")) {
+              cat = changeBaseCat(cat, "VBN");
+            } else if (word.equals("are")) {
+              cat = changeBaseCat(cat, "VBP");
+            } else if (word.equals("lure")) {
+              cat = changeBaseCat(cat, "VB");
+            } else if (word.equals("cost")) {
+              cat = changeBaseCat(cat, "VBP");
+            } else if (word.equals("agreed")) {
+              cat = changeBaseCat(cat, "VBN");
+            } else if (word.equals("restructure")) {
+              cat = changeBaseCat(cat, "VB");
+            } else if (word.equals("rule")) {
+              cat = changeBaseCat(cat, "VB");
+            } else if (word.equals("fret")) {
+              cat = changeBaseCat(cat, "VBP");
+            } else if (word.equals("retort")) {
+              cat = changeBaseCat(cat, "VBP");
+            } else if (word.equals("draft")) {
+              cat = changeBaseCat(cat, "VB");
+            } else if (word.equals("will")) {
+              cat = changeBaseCat(cat, "MD");
+            } else if (word.equals("yield")) {
+              cat = changeBaseCat(cat, "VBP");
+            } else if (word.equals("lure")) {
+              cat = changeBaseCat(cat, "VBP");
+            } else if (word.equals("feel")) {
+              cat = changeBaseCat(cat, "VB");
+            } else if (word.equals("institutes")) {
+              cat = changeBaseCat(cat, "VBZ");
+            } else if (word.equals("share")) {
+              cat = changeBaseCat(cat, "VBP");
+            } else if (word.equals("trade")) {
+              cat = changeBaseCat(cat, "VB");
+            } else if (word.equals("beat")) {
+              cat = changeBaseCat(cat, "VBN");
+            } else if (word.equals("effect")) {
+              cat = changeBaseCat(cat, "VB");
+            } else if (word.equals("speed")) {
+              cat = changeBaseCat(cat, "VB");
+            } else if (word.equals("work")) {
+              cat = changeBaseCat(cat, "VB");   // though also one VBP
+            } else if (word.equals("act")) {
+              cat = changeBaseCat(cat, "VBP");
+            } else if (word.equals("drop")) {
+              cat = changeBaseCat(cat, "VB");
+            } else if (word.equals("stand")) {
+              cat = changeBaseCat(cat, "VBP");
+            } else if (word.equals("push")) {
+              cat = changeBaseCat(cat, "VB");
+            } else if (word.equals("service")) {
+              cat = changeBaseCat(cat, "VB");
+            } else if (word.equals("set")) {
+              cat = changeBaseCat(cat, "VBN");   // or VBD sometimes, sigh
+            } else if (word.equals("appeal")) {
+              cat = changeBaseCat(cat, "VBP");  // 2 VBP, 1 VB in train
+            } else if (word.equals("mold")) {
+              cat = changeBaseCat(cat, "VB");
+            } else if (word.equals("mean")) {
+              cat = changeBaseCat(cat, "VB");
+            } else if (word.equals("reconfirm")) {
+              cat = changeBaseCat(cat, "VB");
+            } else if (word.equals("land")) {
+              cat = changeBaseCat(cat, "VB");
+            } else if (word.equals("point")) {
+              cat = changeBaseCat(cat, "VBP");
+            } else if (word.equals("rise")) {
+              cat = changeBaseCat(cat, "VB");
+            } else if (word.equals("pressured")) {
+              cat = changeBaseCat(cat, "VBN");
+            } else if (word.equals("smell")) {
+              cat = changeBaseCat(cat, "VBP");
+            } else if (word.equals("pay")) {
+              cat = changeBaseCat(cat, "VBP");
+            } else if (word.equals("hum")) {
+              cat = changeBaseCat(cat, "VB");
+            } else if (word.equals("shape")) {
+              cat = changeBaseCat(cat, "VBP");
+            } else if (word.equals("benefit")) {
+              cat = changeBaseCat(cat, "VB");
+            } else if (word.equals("abducted")) {
+              cat = changeBaseCat(cat, "VBN");
+            } else if (word.equals("look")) {
+              cat = changeBaseCat(cat, "VB");
+            } else if (word.equals("fare")) {
+              cat = changeBaseCat(cat, "VB");
+            } else if (word.equals("change")) {
+              cat = changeBaseCat(cat, "VB");
+            } else if (word.equals("farm")) {
+              cat = changeBaseCat(cat, "VB");
+            } else if (word.equals("increase")) {
+              cat = changeBaseCat(cat, "VB");
+            } else if (word.equals("stem")) {
+              cat = changeBaseCat(cat, "VB");
+            // only done 200-700
+            } else if (word.equals("rebounded")) {
+              cat = changeBaseCat(cat, "VBD");
+            } else if (word.equals("face")) {
+              cat = changeBaseCat(cat, "VB");
+            }
+          } else if (baseCat.equals("NNP")) {
+            if (word.equals("GRAB")) {
+              cat = changeBaseCat(cat, "VBP");
+            } else if (word.equals("mature")) {
+              cat = changeBaseCat(cat, "VB");
+            } else if (word.equals("Face")) {
+              cat = changeBaseCat(cat, "VBP");
+            } else if (word.equals("are")) {
+              cat = changeBaseCat(cat, "VBP");
+            } else if (word.equals("Urging")) {
+              cat = changeBaseCat(cat, "VBG");
+            } else if (word.equals("Finding")) {
+              cat = changeBaseCat(cat, "VBG");
+            } else if (word.equals("say")) {
+              cat = changeBaseCat(cat, "VBP");
+            } else if (word.equals("Added")) {
+              cat = changeBaseCat(cat, "VBD");
+            } else if (word.equals("Adds")) {
+              cat = changeBaseCat(cat, "VBZ");
+            } else if (word.equals("BRACED")) {
+              cat = changeBaseCat(cat, "VBD");
+            } else if (word.equals("REQUIRED")) {
+              cat = changeBaseCat(cat, "VBN");
+            } else if (word.equals("SIZING")) {
+              cat = changeBaseCat(cat, "VBG");
+            } else if (word.equals("REVIEW")) {
+              cat = changeBaseCat(cat, "VB");
+            } else if (word.equals("code-named")) {
+              cat = changeBaseCat(cat, "VBN");
+            } else if (word.equals("Printed")) {
+              cat = changeBaseCat(cat, "VBN");
+            } else if (word.equals("Rated")) {
+              cat = changeBaseCat(cat, "VBN");
+            } else if (word.equals("FALTERS")) {
+              cat = changeBaseCat(cat, "VBZ");
+            } else if (word.equals("Got")) {
+              cat = changeBaseCat(cat, "VBN");
+            } else if (word.equals("JUMPING")) {
+              cat = changeBaseCat(cat, "VBG");
+            } else if (word.equals("Branching")) {
+              cat = changeBaseCat(cat, "VBG");
+            } else if (word.equals("Excluding")) {
+              cat = changeBaseCat(cat, "VBG");
+            } else if (word.equals("Adds")) {
+              cat = changeBaseCat(cat, "VBZ");
+            } else if (word.equals("OKing")) {
+              cat = changeBaseCat(cat, "VBG");
+            }
+          } else if (baseCat.equals("POS")) {
+            cat = changeBaseCat(cat, "VBZ");
+          } else if (baseCat.equals("VBD")) {
+            if (word.equals("heaves")) {
+              cat = changeBaseCat(cat, "VBZ");
+            }
+          } else if (baseCat.equals("VB")) {
+            if (word.equals("allowed") || word.equals("increased")) {
+              cat = changeBaseCat(cat, "VBD");
+            }
+          } else if (baseCat.equals("VBN")) {
+            if (word.equals("has")) {
+              cat = changeBaseCat(cat, "VBZ");
+            } else if (word.equals("grew") || word.equals("fell")) {
+              cat = changeBaseCat(cat, "VBD");
+            }
+          } else if (baseCat.equals("JJ")) {
+            if (word.equals("own")) {
+              cat = changeBaseCat(cat, "VB");
+              // a couple should actually be VBP, but at least verb is closer
+            }
+          } else if (word.equalsIgnoreCase("being")) {
+            if (!cat.equals("VBG")) {
+              cat = changeBaseCat(cat, "VBG");
+            }
+          } else if (word.equalsIgnoreCase("all")) {
+            cat = changeBaseCat(cat, "RB");
+          // The below two lines seem in principle good but don't actually
+          // improve parser performance; they degrade it on 2200-2219
+          // } else if (baseGrandParentStr.equals("NP") && baseCat.equals("VBD")) {
+          //   cat = changeBaseCat(cat, "VBN");
+          }
+        } else if (baseParentStr.equals("S")) {
+          if (word.equalsIgnoreCase("all")) {
+            cat = changeBaseCat(cat, "RB");
+          }
+        } else if (baseParentStr.equals("ADJP")) {
+          if (baseCat.equals("UH")) {
+            cat = changeBaseCat(cat, "JJ");
+          } else if (baseCat.equals("JJ")) {
+            if (word.equalsIgnoreCase("more")) {
+              cat = changeBaseCat(cat, "JJR");
+            }
+          } else if (baseCat.equals("RB")) {
+            if (word.equalsIgnoreCase("free")) {
+              cat = changeBaseCat(cat, "JJ");
+            } else if (word.equalsIgnoreCase("clear")) {
+              cat = changeBaseCat(cat, "JJ");
+            } else if (word.equalsIgnoreCase("tight")) {
+              cat = changeBaseCat(cat, "JJ");
+            } else if (word.equalsIgnoreCase("sure")) {
+              cat = changeBaseCat(cat, "JJ");
+            } else if (word.equalsIgnoreCase("particular")) {
+              cat = changeBaseCat(cat, "JJ");
+            }
+            // most uses of hard/RB should be JJ but not hard put/pressed exx.
+          } else if (baseCat.equals("VB")) {
+            if (word.equalsIgnoreCase("stock")) {
+              cat = changeBaseCat(cat, "NN");
+            } else if (word.equalsIgnoreCase("secure")) {
+              cat = changeBaseCat(cat, "JJ");
+            }
+          }
+        } else if (baseParentStr.equals("QP")) {
+          if (word.equalsIgnoreCase("about")) {
+            cat = changeBaseCat(cat, "RB");
+          } else if (baseCat.equals("JJ")) {
+            if (word.equalsIgnoreCase("more")) {
+              cat = changeBaseCat(cat, "JJR");
+            // this isn't right for "as much as X" constructions!
+            // } else if (word.equalsIgnoreCase("as")) {
+            //   cat = changeBaseCat(cat, "RB");
+            }
+          }
+        } else if (baseParentStr.equals("ADVP")) {
+          if (baseCat.equals("EX")) {
+            cat = changeBaseCat(cat, "RB");
+          } else if (baseCat.equals("NN") && word.equalsIgnoreCase("that")) {
+            cat = changeBaseCat(cat, "DT");
+          } else if (baseCat.equals("NNP") && (word.endsWith("ly") ||
+                                               word.equals("Overall"))) {
+            cat = changeBaseCat(cat, "RB");
+
+          // This should be a sensible thing to do, but hurts on 2200-2219
+          // } else if (baseCat.equals("RP") && word.equalsIgnoreCase("around")) {
+          //   cat = changeBaseCat(cat, "RB");
+          }
+        } else if (baseParentStr.equals("SBAR")) {
+          if ((word.equalsIgnoreCase("that") || word.equalsIgnoreCase("because") || word.equalsIgnoreCase("while")) && !baseCat.equals("IN")) {
+            cat = changeBaseCat(cat, "IN");
+          } else if ((word.equals("Though") || word.equals("Whether")) && baseCat.equals("NNP")) {
+            cat = changeBaseCat(cat, "IN");
+          }
+        } else if (baseParentStr.equals("SBARQ")) {
+          if (baseCat.equals("S")) {
+            if (word.equalsIgnoreCase("had")) {
+              cat = changeBaseCat(cat, "SQ");
+            }
+          }
+        } else if (baseCat.equals("JJS")) {
+          if (word.equalsIgnoreCase("less")) {
+            cat = changeBaseCat(cat, "JJR");
+          }
+        } else if (baseCat.equals("JJ")) {
+          if (word.equalsIgnoreCase("%")) {
+            // nearly all % are NN, a handful are JJ which we 'correct'
+            cat = changeBaseCat(cat, "NN");
+          } else if (word.equalsIgnoreCase("to")) {
+            cat = changeBaseCat(cat, "TO");
+          }
+        } else if (baseCat.equals("VB")) {
+          if (word.equalsIgnoreCase("even")) {
+            cat = changeBaseCat(cat, "RB");
+          }
+        } else if (baseCat.equals(",")) {
+          if (word.equals("2")) {
+            cat = changeBaseCat(cat, "CD");
+          } else if (word.equals("an")) {
+            cat = changeBaseCat(cat, "DT");
+          } else if (word.equals("Wa")) {
+            cat = changeBaseCat(cat, "NNP");
+          } else if (word.equals("section")) {
+            cat = changeBaseCat(cat, "NN");
+          } else if (word.equals("underwriters")) {
+            cat = changeBaseCat(cat, "NNS");
+          }
+        } else if (baseCat.equals("CD")) {
+          if (word.equals("high-risk")) {
+            cat = changeBaseCat(cat, "JJ");
+          }
+        } else if (baseCat.equals("RB")) {
+          if (word.equals("for")) {
+            cat = changeBaseCat(cat, "IN");
+          }
+        } else if (baseCat.equals("RP")) {
+          if (word.equals("for")) {
+            cat = changeBaseCat(cat, "IN");
+          }
+        } else if (baseCat.equals("NN")) {
+          if (word.length() == 2 && word.charAt(1) == '.' && Character.isUpperCase(word.charAt(0))) {
+            cat = changeBaseCat(cat, "NNP");
+          } else if (word.equals("Lorillard")) {
+            cat = changeBaseCat(cat, "NNP");
+          }
+        } else if (word.equals("for") || word.equals("at")) {
+          if ( ! baseCat.equals("IN")) {
+            // only non-prepositional taggings are mistaken
+            cat = changeBaseCat(cat, "IN");
+          }
+        } else if (word.equalsIgnoreCase("and") && ! baseCat.equals("CC")) {
+          cat = changeBaseCat(cat, "CC");
+        } else if (word.equals("ago")) {
+          if ( ! baseCat.equals("RB")) {
+            cat = changeBaseCat(cat, "RB");
+          }
+        }
+        // put correct value into baseCat for later processing!
+        baseCat = tlp.basicCategory(cat);
+      }
+      if (englishTrain.makePPTOintoIN > 0 && baseCat.equals("TO")) {
+        // CONJP is for "not to mention"
+        if ( ! (baseParentStr.equals("VP") || baseParentStr.equals("CONJP") ||
+                baseParentStr.startsWith("S"))) {
+          if (englishTrain.makePPTOintoIN == 1) {
+            cat = changeBaseCat(cat, "IN");
+          } else {
+            cat = cat + "-IN";
+          }
+        }
+      }
+      if (englishTrain.splitIN == 5 && baseCat.equals("TO")) {
+        if (grandParentStr.charAt(0) == 'N' && (parentStr.charAt(0) == 'P' || parentStr.charAt(0) == 'A')) {
+          // noun postmodifier PP (or so-called ADVP like "outside India")
+          cat = changeBaseCat(cat, "IN") + "-N";
+        }
+      }
+      if (englishTrain.splitIN == 1 && baseCat.equals("IN") && parentStr.charAt(0) == 'S') {
+        cat = cat + "^S";
+      } else if (englishTrain.splitIN == 2 && baseCat.equals("IN")) {
+        if (parentStr.charAt(0) == 'S') {
+          cat = cat + "^S";
+        } else if (grandParentStr.charAt(0) == 'N') {
+          cat = cat + "^N";
+        }
+      } else if (englishTrain.splitIN == 3 && baseCat.equals("IN")) {
+        // 6 classes seems good!
+        // but have played with joining first two, splitting out ADJP/ADVP,
+        // and joining two SC cases
+        if (grandParentStr.charAt(0) == 'N' && (parentStr.charAt(0) == 'P' || parentStr.charAt(0) == 'A')) {
+          // noun postmodifier PP (or so-called ADVP like "outside India")
+          cat = cat + "-N";
+        } else if (parentStr.charAt(0) == 'Q' && (grandParentStr.charAt(0) == 'N' || grandParentStr.startsWith("ADJP"))) {
+          // about, than, between, etc. in a QP preceding head of NP
+          cat = cat + "-Q";
+        } else if (grandParentStr.equals("S")) {
+          // the distinction here shouldn't matter given parent annotation!
+          if (baseParentStr.equals("SBAR")) {
+            // sentential subordinating conj: although, if, until, as, while
+            cat = cat + "-SCC";
+          } else {
+            // PP adverbial clause: among, in, for, after
+            cat = cat + "-SC";
+          }
+        } else if (baseParentStr.equals("SBAR") || baseParentStr.equals("WHNP")) {
+          // that-clause complement of VP or NP (or whether, if complement)
+          // but also VP adverbial because, until, as, etc.
+          cat = cat + "-T";
+        }
+        // all the rest under VP, PP, ADJP, ADVP, etc. are basic case
+      } else if (englishTrain.splitIN >= 4 && englishTrain.splitIN <= 5 && baseCat.equals("IN")) {
+        if (grandParentStr.charAt(0) == 'N' && (parentStr.charAt(0) == 'P' || parentStr.charAt(0) == 'A')) {
+          // noun postmodifier PP (or so-called ADVP like "outside India")
+          cat = cat + "-N";
+        } else if (parentStr.charAt(0) == 'Q' && (grandParentStr.charAt(0) == 'N' || grandParentStr.startsWith("ADJP"))) {
+          // about, than, between, etc. in a QP preceding head of NP
+          cat = cat + "-Q";
+        } else if (baseGrandParentStr.charAt(0) == 'S' &&
+                   ! baseGrandParentStr.equals("SBAR")) {
+          // the distinction here shouldn't matter given parent annotation!
+          if (baseParentStr.equals("SBAR")) {
+            // sentential subordinating conj: although, if, until, as, while
+            cat = cat + "-SCC";
+          } else if (!baseParentStr.equals("NP") && !baseParentStr.equals("ADJP")) {
+            // PP adverbial clause: among, in, for, after
+            cat = cat + "-SC";
+          }
+        } else if (baseParentStr.equals("SBAR") || baseParentStr.equals("WHNP") || baseParentStr.equals("WHADVP")) {
+          // that-clause complement of VP or NP (or whether, if complement)
+          // but also VP adverbial because, until, as, etc.
+          cat = cat + "-T";
+        }
+        // all the rest under VP, PP, ADJP, ADVP, etc. are basic case
+      } else if (englishTrain.splitIN == 6 && baseCat.equals("IN")) {
+        if (grandParentStr.charAt(0) == 'V' || grandParentStr.charAt(0) == 'A') {
+          cat = cat + "-V";
+        } else if (grandParentStr.charAt(0) == 'N' && (parentStr.charAt(0) == 'P' || parentStr.charAt(0) == 'A')) {
+          // noun postmodifier PP (or so-called ADVP like "outside India")
+          // XXX experiment cat = cat + "-N";
+        } else if (parentStr.charAt(0) == 'Q' && (grandParentStr.charAt(0) == 'N' || grandParentStr.startsWith("ADJP"))) {
+          // about, than, between, etc. in a QP preceding head of NP
+          cat = cat + "-Q";
+        } else if (baseGrandParentStr.charAt(0) == 'S' &&
+                   ! baseGrandParentStr.equals("SBAR")) {
+          // the distinction here shouldn't matter given parent annotation!
+          if (baseParentStr.equals("SBAR")) {
+            // sentential subordinating conj: although, if, until, as, while
+            cat = cat + "-SCC";
+          } else if (!baseParentStr.equals("NP") && !baseParentStr.equals("ADJP")) {
+            // PP adverbial clause: among, in, for, after
+            cat = cat + "-SC";
+          }
+        } else if (baseParentStr.equals("SBAR") || baseParentStr.equals("WHNP") || baseParentStr.equals("WHADVP")) {
+          // that-clause complement of VP or NP (or whether, if complement)
+          // but also VP adverbial because, until, as, etc.
+          cat = cat + "-T";
+        }
+        // all the rest under VP, PP, ADJP, ADVP, etc. are basic case
+      }
+      if (englishTrain.splitPercent && word.equals("%")) {
+        cat += "-%";
+      }
+      if (englishTrain.splitNNP > 0 && baseCat.startsWith("NNP")) {
+        if (englishTrain.splitNNP == 1) {
+          if (baseCat.equals("NNP")) {
+            if (parent.numChildren() == 1) {
+              cat += "-S";
+            } else if (parent.firstChild().equals(t)) {
+              cat += "-L";
+            } else if (parent.lastChild().equals(t)) {
+              cat += "-R";
+            } else {
+              cat += "-I";
+            }
+          }
+        } else if (englishTrain.splitNNP == 2) {
+          if (word.matches("[A-Z]\\.?")) {
+            cat = cat + "-I";
+          } else if (firstOfSeveralNNP(parent, t)) {
+            cat = cat + "-B";
+          } else if (lastOfSeveralNNP(parent, t)) {
+            cat = cat + "-E";
+          }
+        }
+      }
+      if (englishTrain.splitQuotes &&
+          (word.equals("'") || word.equals("`"))) {
+        cat += "-SG";
+      }
+      if (englishTrain.splitSFP && baseTag.equals(".")) {
+        if (word.equals("?")) {
+          cat += "-QUES";
+        } else if (word.equals("!")) {
+          cat += "-EXCL";
+        }
+      }
+      if (englishTrain.tagRBGPA) {
+          if (baseCat.equals("RB")) {
+              cat = cat + "^" + baseGrandParentStr;
+          }
+      }
+      if (englishTrain.joinPound && baseCat.equals("#")) {
+        cat = changeBaseCat(cat, "$");
+      }
+      if (englishTrain.joinNounTags) {
+        if (baseCat.equals("NNP")) {
+          cat = changeBaseCat(cat, "NN");
+        } else if (baseCat.equals("NNPS")) {
+          cat = changeBaseCat(cat, "NNS");
+        }
+      }
+      if (englishTrain.joinJJ && cat.startsWith("JJ")) {
+        cat = changeBaseCat(cat, "JJ");
+      }
+      if (englishTrain.splitPPJJ && cat.startsWith("JJ") && parentStr.startsWith("PP")) {
+        cat = cat + "^S";
+      }
+      if (englishTrain.splitTRJJ && cat.startsWith("JJ") && (parentStr.startsWith("PP") || parentStr.startsWith("ADJP")) && headFinder().determineHead(parent) == t) {
+        // look for NP right sister of head JJ -- if so transitive adjective
+        Tree[] kids = parent.children();
+        boolean foundJJ = false;
+        int i = 0;
+        for (; i < kids.length && !foundJJ; i++) {
+          if (kids[i].label().value().startsWith("JJ")) {
+            foundJJ = true;
+          }
+        }
+        if (foundJJ) {
+          for (int j = i; j < kids.length; j++) {
+            if (kids[j].label().value().startsWith("NP")) {
+              cat = cat + "^T";
+              break;
+            }
+          }
+        }
+      }
+      if (englishTrain.splitJJCOMP && cat.startsWith("JJ") && (parentStr.startsWith("PP") || parentStr.startsWith("ADJP")) && headFinder().determineHead(parent) == t) {
+        Tree[] kids = parent.children();
+        int i = 0;
+        for (boolean foundJJ = false; i < kids.length && !foundJJ; i++) {
+          if (kids[i].label().value().startsWith("JJ")) {
+            foundJJ = true;
+          }
+        }
+        for (int j = i; j < kids.length; j++) {
+          String kid = tlp.basicCategory(kids[j].label().value());
+          if ("S".equals(kid) || "SBAR".equals(kid) || "PP".equals(kid) || "NP".equals(kid)) {
+            // there's a complement.
+            cat = cat + "^CMPL";
+            break;
+          }
+        }
+      }
+      if (englishTrain.splitMoreLess) {
+        char ch = cat.charAt(0);
+        if (ch == 'R' || ch == 'J' || ch == 'C') {
+          // adverbs, adjectives and coordination -- what you'd expect
+          if (word.equalsIgnoreCase("more") || word.equalsIgnoreCase("most") || word.equalsIgnoreCase("less") || word.equalsIgnoreCase("least")) {
+            cat = cat + "-ML";
+          }
+        }
+      }
+      if (englishTrain.unaryDT && cat.startsWith("DT")) {
+        if (parent.children().length == 1) {
+          cat = cat + "^U";
+        }
+      }
+      if (englishTrain.unaryRB && cat.startsWith("RB")) {
+        if (parent.children().length == 1) {
+          cat = cat + "^U";
+        }
+      }
+      if (englishTrain.markReflexivePRP && cat.startsWith("PRP")) {
+        if (word.equalsIgnoreCase("itself") || word.equalsIgnoreCase("themselves") || word.equalsIgnoreCase("himself") || word.equalsIgnoreCase("herself") || word.equalsIgnoreCase("ourselves") || word.equalsIgnoreCase("yourself") || word.equalsIgnoreCase("yourselves") || word.equalsIgnoreCase("myself") || word.equalsIgnoreCase("thyself")) {
+          cat += "-SE";
+        }
+      }
+      if (englishTrain.unaryPRP && cat.startsWith("PRP")) {
+        if (parent.children().length == 1) {
+          cat = cat + "^U";
+        }
+      }
+      if (englishTrain.unaryIN && cat.startsWith("IN")) {
+        if (parent.children().length == 1) {
+          cat = cat + "^U";
+        }
+      }
+      if (englishTrain.splitCC > 0 && baseCat.equals("CC")) {
+        if (englishTrain.splitCC == 1 && (word.equals("and") || word.equals("or"))) {
+          cat = cat + "-C";
+        } else if (englishTrain.splitCC == 2) {
+          if (word.equalsIgnoreCase("but")) {
+            cat = cat + "-B";
+          } else if (word.equals("&")) {
+            cat = cat + "-A";
+          }
+        } else if (englishTrain.splitCC == 3 && word.equalsIgnoreCase("and")) {
+          cat = cat + "-A";
+        }
+      }
+      if (englishTrain.splitNOT && baseCat.equals("RB") && (word.equalsIgnoreCase("n't") || word.equalsIgnoreCase("not") || word.equalsIgnoreCase("nt"))) {
+        cat = cat + "-N";
+      } else if (englishTrain.splitRB && baseCat.equals("RB") && (baseParentStr.equals("NP") || baseParentStr.equals("QP") || baseParentStr.equals("ADJP"))) {
+        cat = cat + "^M";
+      }
+      if (englishTrain.splitAux > 1 && (baseCat.equals("VBZ") || baseCat.equals("VBP") || baseCat.equals("VBD") || baseCat.equals("VBN") || baseCat.equals("VBG") || baseCat.equals("VB"))) {
+        if (word.equalsIgnoreCase("'s") || word.equalsIgnoreCase("s")) {  // a few times the apostrophe is missing!
+          Tree[] sisters = parent.children();
+          int i = 0;
+          for (boolean foundMe = false; i < sisters.length && !foundMe; i++) {
+            if (sisters[i].label().value().startsWith("VBZ")) {
+              foundMe = true;
+            }
+          }
+          boolean annotateHave = false;  // VBD counts as an erroneous VBN!
+          for (int j = i; j < sisters.length; j++) {
+            if (sisters[j].label().value().startsWith("VP")) {
+              for (Tree kid : sisters[j].children()) {
+                if (kid.label().value().startsWith("VBN") || kid.label().value().startsWith("VBD")) {
+                  annotateHave = true;
+                }
+              }
+            }
+          }
+          if (annotateHave) {
+            cat = cat + "-HV";
+            // System.out.println("Went with HAVE for " + parent);
+          } else {
+            cat = cat + "-BE";
+          }
+        } else {
+          if (word.equalsIgnoreCase("am") || word.equalsIgnoreCase("is") || word.equalsIgnoreCase("are") || word.equalsIgnoreCase("was") || word.equalsIgnoreCase("were") || word.equalsIgnoreCase("'m") || word.equalsIgnoreCase("'re") || word.equalsIgnoreCase("be") || word.equalsIgnoreCase("being") || word.equalsIgnoreCase("been") || word.equalsIgnoreCase("ai")) { // allow "ai n't"
+            cat = cat + "-BE";
+          } else if (word.equalsIgnoreCase("have") || word.equalsIgnoreCase("'ve") || word.equalsIgnoreCase("having") || word.equalsIgnoreCase("has") || word.equalsIgnoreCase("had") || word.equalsIgnoreCase("'d")) {
+            cat = cat + "-HV";
+          } else if (englishTrain.splitAux >= 3 &&
+                     (word.equalsIgnoreCase("do") || word.equalsIgnoreCase("did") || word.equalsIgnoreCase("does") || word.equalsIgnoreCase("done") || word.equalsIgnoreCase("doing"))) {
+            // both DO and HELP take VB form complement VP
+            cat = cat + "-DO";
+          } else if (englishTrain.splitAux >= 4 &&
+                     (word.equalsIgnoreCase("help") || word.equalsIgnoreCase("helps") || word.equalsIgnoreCase("helped") || word.equalsIgnoreCase("helping"))) {
+            // both DO and HELP take VB form complement VP
+            cat = cat + "-DO";
+          } else if (englishTrain.splitAux >= 5 &&
+                     (word.equalsIgnoreCase("let") || word.equalsIgnoreCase("lets") || word.equalsIgnoreCase("letting"))) {
+            // LET also takes VB form complement VP
+            cat = cat + "-DO";
+          } else if (englishTrain.splitAux >= 6 &&
+                     (word.equalsIgnoreCase("make") || word.equalsIgnoreCase("makes") || word.equalsIgnoreCase("making") || word.equalsIgnoreCase("made"))) {
+            // MAKE can also take VB form complement VP
+            cat = cat + "-DO";
+          } else if (englishTrain.splitAux >= 7 &&
+                     (word.equalsIgnoreCase("watch") || word.equalsIgnoreCase("watches") || word.equalsIgnoreCase("watching") || word.equalsIgnoreCase("watched") || word.equalsIgnoreCase("see") || word.equalsIgnoreCase("sees") || word.equalsIgnoreCase("seeing") || word.equalsIgnoreCase("saw") || word.equalsIgnoreCase("seen"))) {
+            // WATCH, SEE can also take VB form complement VP
+            cat = cat + "-DO";
+          } else if (englishTrain.splitAux >= 8 &&
+                     (word.equalsIgnoreCase("go") || word.equalsIgnoreCase("come"))) {
+            // go, come, but not inflections can also take VB form complement VP
+            cat = cat + "-DO";
+          } else if (englishTrain.splitAux >= 9 &&
+                     (word.equalsIgnoreCase("get") || word.equalsIgnoreCase("gets") || word.equalsIgnoreCase("getting") || word.equalsIgnoreCase("got") || word.equalsIgnoreCase("gotten"))) {
+            // GET also takes a VBN form complement VP
+            cat = cat + "-BE";
+          }
+        }
+      } else if (englishTrain.splitAux > 0 && (baseCat.equals("VBZ") || baseCat.equals("VBP") || baseCat.equals("VBD") || baseCat.equals("VBN") || baseCat.equals("VBG") || baseCat.equals("VB"))) {
+        if (word.equalsIgnoreCase("is") || word.equalsIgnoreCase("am") || word.equalsIgnoreCase("are") || word.equalsIgnoreCase("was") || word.equalsIgnoreCase("were") || word.equalsIgnoreCase("'m") || word.equalsIgnoreCase("'re") || word.equalsIgnoreCase("'s") || // imperfect -- could be (ha)s
+                word.equalsIgnoreCase("being") || word.equalsIgnoreCase("be") || word.equalsIgnoreCase("been")) {
+          cat = cat + "-BE";
+        }
+        if (word.equalsIgnoreCase("have") || word.equalsIgnoreCase("'ve") || word.equalsIgnoreCase("having") || word.equalsIgnoreCase("has") || word.equalsIgnoreCase("had") || word.equalsIgnoreCase("'d")) {
+          cat = cat + "-HV";
+        }
+      }
+      if (englishTrain.collapseWhCategories != 0) {
+        if ((englishTrain.collapseWhCategories & 1) !=0) {
+          cat = cat.replaceAll("WH(NP|PP|ADVP|ADJP)", "$1");
+        }
+        if ((englishTrain.collapseWhCategories & 2) != 0) {
+          cat = cat.replaceAll("WP", "PRP"); // does both WP and WP$ !!
+          cat = cat.replaceAll("WDT", "DT");
+          cat = cat.replaceAll("WRB", "RB");
+        }
+        if ((englishTrain.collapseWhCategories & 4) !=0) {
+          cat = cat.replaceAll("WH(PP|ADVP|ADJP)", "$1"); // don't do NP, so it is preserved! Crucial.
+        }
+      }
+      if (englishTrain.markDitransV > 0 && cat.startsWith("VB")) {
+        cat += ditrans(parent);
+      } else if (englishTrain.vpSubCat && cat.startsWith("VB")) {
+        cat = cat + subCatify(parent);
+      }
+      // VITAL: update tag to be same as cat for when new node is created below
+      tag = cat;
+    } else {                       // that is, if (t.isPhrasal())
+      Tree[] kids = t.children();
+
+      if (baseCat.equals("VP")) {
+        if (englishTrain.gpaRootVP) {
+          if (tlp.isStartSymbol(baseGrandParentStr)) {
+            cat = cat + "~ROOT";
+          }
+        }
+        if (englishTrain.splitVPNPAgr) {
+          // don't split on weirdo categories!
+          // but do preserve agreement distinctions
+          // note MD is like VBD -- any subject person/number okay
+          if (baseTag.equals("VBD") || baseTag.equals("MD")) {
+            cat = cat + "-VBF";
+          } else if (baseTag.equals("VBZ") || baseTag.equals("TO") || baseTag.equals("VBG") || baseTag.equals("VBP") || baseTag.equals("VBN") || baseTag.equals("VB")) {
+            cat = cat + "-" + baseTag;
+          } else {
+            System.err.println("XXXX Head of " + t + " is " + word + "/" + baseTag);
+          }
+        } else if (englishTrain.splitVP == 3 || englishTrain.splitVP == 4) {
+          // don't split on weirdo categories but deduce
+          if (baseTag.equals("VBZ") || baseTag.equals("VBD") || baseTag.equals("VBP") || baseTag.equals("MD")) {
+            cat = cat + "-VBF";
+          } else if (baseTag.equals("TO") || baseTag.equals("VBG") || baseTag.equals("VBN") || baseTag.equals("VB")) {
+            cat = cat + "-" + baseTag;
+          } else if (englishTrain.splitVP == 4) {
+            String dTag = deduceTag(word);
+            cat = cat + "-" + dTag;
+          }
+        } else if (englishTrain.splitVP == 2) {
+          if (baseTag.equals("VBZ") || baseTag.equals("VBD") || baseTag.equals("VBP") || baseTag.equals("MD")) {
+            cat = cat + "-VBF";
+          } else {
+            cat = cat + "-" + baseTag;
+          }
+        } else if (englishTrain.splitVP == 1) {
+          cat = cat + "-" + baseTag;
+        }
+      }
+      if (englishTrain.dominatesV > 0) {
+        if (englishTrain.dominatesV == 2) {
+          if (hasClausalV(t)) {
+            cat = cat + "-v";
+          }
+        } else if (englishTrain.dominatesV == 3) {
+          if (hasV(t.preTerminalYield()) &&
+                ! baseCat.equals("WHPP") && ! baseCat.equals("RRC") &&
+                ! baseCat.equals("QP") && ! baseCat.equals("PRT")) {
+            cat = cat + "-v";
+          }
+        } else {
+          if (hasV(t.preTerminalYield())) {
+            cat = cat + "-v";
+          }
+        }
+      }
+      if (englishTrain.dominatesI && hasI(t.preTerminalYield())) {
+        cat = cat + "-i";
+      }
+      if (englishTrain.dominatesC && hasC(t.preTerminalYield())) {
+        cat = cat + "-c";
+      }
+      if (englishTrain.splitNPpercent > 0 && word.equals("%")) {
+        if (baseCat.equals("NP") ||
+            englishTrain.splitNPpercent > 1 && baseCat.equals("ADJP") ||
+            englishTrain.splitNPpercent > 2 && baseCat.equals("QP") ||
+            englishTrain.splitNPpercent > 3) {
+          cat += "-%";
+        }
+      }
+      if (englishTrain.splitNPPRP && baseTag.equals("PRP")) {
+        cat += "-PRON";
+      }
+      if (englishTrain.splitSbar > 0 && baseCat.equals("SBAR")) {
+        boolean foundIn = false;
+        boolean foundOrder = false;
+        boolean infinitive = baseTag.equals("TO");
+        for (Tree kid : kids) {
+          if (kid.isPreTerminal() && kid.children()[0].value().equalsIgnoreCase("in")) {
+            foundIn = true;
+          }
+          if (kid.isPreTerminal() && kid.children()[0].value().equalsIgnoreCase("order")) {
+            foundOrder = true;
+          }
+        }
+        if (englishTrain.splitSbar > 1 && infinitive) {
+          cat = cat + "-INF";
+        }
+        if ((englishTrain.splitSbar == 1 || englishTrain.splitSbar == 3) &&
+            foundIn && foundOrder) {
+          cat = cat + "-PURP";
+        }
+      }
+      if (englishTrain.splitNPNNP > 0) {
+        if (englishTrain.splitNPNNP == 1 && baseCat.equals("NP") && baseTag.equals("NNP")) {
+          cat = cat + "-NNP";
+        } else if (englishTrain.splitNPNNP == 2 && baseCat.equals("NP") && baseTag.startsWith("NNP")) {
+          cat = cat + "-NNP";
+        } else if (englishTrain.splitNPNNP == 3 && baseCat.equals("NP")) {
+          boolean split = false;
+          for (Tree kid : kids) {
+            if (kid.value().startsWith("NNP")) {
+              split = true;
+              break;
+            }
+          }
+          if (split) {
+            cat = cat + "-NNP";
+          }
+        }
+      }
+      if (englishTrain.collapseWhCategories != 0) {
+        if ((englishTrain.collapseWhCategories & 1) !=0) {
+          cat = cat.replaceAll("WH(NP|PP|ADVP|ADJP)", "$1");
+        }
+        if ((englishTrain.collapseWhCategories & 2) != 0) {
+          cat = cat.replaceAll("WP", "PRP"); // does both WP and WP$ !!
+          cat = cat.replaceAll("WDT", "DT");
+          cat = cat.replaceAll("WRB", "RB");
+        }
+        if ((englishTrain.collapseWhCategories & 4) !=0) {
+          cat = cat.replaceAll("WH(PP|ADVP|ADJP)", "$1"); // don't do NP, so it is preserved! Crucial.
+        }
+      }
+      if (englishTrain.splitVPNPAgr && baseCat.equals("NP") &&
+          baseParentStr.startsWith("S")) {
+        if (baseTag.equals("NNPS") || baseTag.equals("NNS")) {
+          cat = cat + "-PL";
+        } else if (word.equalsIgnoreCase("many") || word.equalsIgnoreCase("more") || word.equalsIgnoreCase("most") || word.equalsIgnoreCase("plenty")) {
+          cat = cat + "-PL";
+        } else if (baseTag.equals("NN") || baseTag.equals("NNP") || baseTag.equals("POS") || baseTag.equals("CD") || baseTag.equals("PRP$") || baseTag.equals("JJ") || baseTag.equals("EX") || baseTag.equals("$") || baseTag.equals("RB") || baseTag.equals("FW") || baseTag.equals("VBG") || baseTag.equals("JJS") || baseTag.equals("JJR")) {
+        } else if (baseTag.equals("PRP")) {
+          if (word.equalsIgnoreCase("they") || word.equalsIgnoreCase("them") || word.equalsIgnoreCase("we") || word.equalsIgnoreCase("us")) {
+            cat = cat + "-PL";
+          }
+        } else if (baseTag.equals("DT") || baseTag.equals("WDT")) {
+          if (word.equalsIgnoreCase("these") || word.equalsIgnoreCase("those") || word.equalsIgnoreCase("several")) {
+            cat += "-PL";
+          }
+        } else {
+          System.err.println("XXXX Head of " + t + " is " + word + "/" + baseTag);
+        }
+      }
+      if (englishTrain.splitSTag > 0 &&
+          (baseCat.equals("S") || (englishTrain.splitSTag <= 3 && (baseCat.equals("SINV") || baseCat.equals("SQ"))))) {
+        if (englishTrain.splitSTag == 1) {
+          cat = cat + "-" + baseTag;
+        } else if (baseTag.equals("VBZ") || baseTag.equals("VBD") || baseTag.equals("VBP") || baseTag.equals("MD")) {
+          cat = cat + "-VBF";
+        } else if ((englishTrain.splitSTag == 3 || englishTrain.splitSTag == 5) &&
+                   ((baseTag.equals("TO") || baseTag.equals("VBG") || baseTag.equals("VBN") || baseTag.equals("VB")))) {
+          cat = cat + "-VBNF";
+        }
+      }
+      if (englishTrain.markContainedVP && containsVP(t)) {
+        cat = cat + "-vp";
+      }
+      if (englishTrain.markCC > 0) {
+        // was: for (int i = 0; i < kids.length; i++) {
+        // This second version takes an idea from Collins: don't count
+        // marginal conjunctions which don't conjoin 2 things.
+        for (int i = 1; i < kids.length - 1; i++) {
+          String cat2 = kids[i].label().value();
+          if (cat2.startsWith("CC")) {
+            String word2 = kids[i].children()[0].value(); // get word
+            // added this if since -acl03pcfg
+            if (!(word2.equals("either") || word2.equals("both") || word2.equals("neither"))) {
+              cat = cat + "-CC";
+              break;
+            } else {
+              // System.err.println("XXX Found non-marginal either/both/neither");
+            }
+          } else if (englishTrain.markCC > 1 && cat2.startsWith("CONJP")) {
+            cat = cat + "-CC";
+            break;
+          }
+        }
+      }
+      if (englishTrain.splitSGapped == 1 && baseCat.equals("S") && !kids[0].label().value().startsWith("NP")) {
+        // this doesn't handle predicative NPs right yet
+        // to do that, need to intervene before tree normalization
+        cat = cat + "-G";
+      } else if (englishTrain.splitSGapped == 2 && baseCat.equals("S")) {
+        // better version: you're gapped if there is no NP, or there is just
+        // one (putatively predicative) NP with no VP, ADJP, NP, PP, or UCP
+        boolean seenPredCat = false;
+        int seenNP = 0;
+        for (Tree kid : kids) {
+          String cat2 = kid.label().value();
+          if (cat2.startsWith("NP")) {
+            seenNP++;
+          } else if (cat2.startsWith("VP") || cat2.startsWith("ADJP") || cat2.startsWith("PP") || cat2.startsWith("UCP")) {
+            seenPredCat = true;
+          }
+        }
+        if (seenNP == 0 || (seenNP == 1 && !seenPredCat)) {
+          cat = cat + "-G";
+        }
+      } else if (englishTrain.splitSGapped == 3 && baseCat.equals("S")) {
+        // better version: you're gapped if there is no NP, or there is just
+        // one (putatively predicative) NP with no VP, ADJP, NP, PP, or UCP
+        // NEW: but you're not gapped if you have an S and CC daughter (coord)
+        boolean seenPredCat = false;
+        boolean seenCC = false;
+        boolean seenS = false;
+        int seenNP = 0;
+        for (Tree kid : kids) {
+          String cat2 = kid.label().value();
+          if (cat2.startsWith("NP")) {
+            seenNP++;
+          } else if (cat2.startsWith("VP") || cat2.startsWith("ADJP") || cat2.startsWith("PP") || cat2.startsWith("UCP")) {
+            seenPredCat = true;
+          } else if (cat2.startsWith("CC")) {
+            seenCC = true;
+          } else if (cat2.startsWith("S")) {
+            seenS = true;
+          }
+        }
+        if ((!(seenCC && seenS)) && (seenNP == 0 || (seenNP == 1 && !seenPredCat))) {
+          cat = cat + "-G";
+        }
+      } else if (englishTrain.splitSGapped == 4 && baseCat.equals("S")) {
+        // better version: you're gapped if there is no NP, or there is just
+        // one (putatively predicative) NP with no VP, ADJP, NP, PP, or UCP
+        // But: not gapped if S(BAR)-NOM-SBJ constituent
+        // But: you're not gapped if you have two /^S/ daughters
+        boolean seenPredCat = false;
+        boolean sawSBeforePredCat = false;
+        int seenS = 0;
+        int seenNP = 0;
+        for (Tree kid : kids) {
+          String cat2 = kid.label().value();
+          if (cat2.startsWith("NP")) {
+            seenNP++;
+          } else if (cat2.startsWith("VP") || cat2.startsWith("ADJP") || cat2.startsWith("PP") || cat2.startsWith("UCP")) {
+            seenPredCat = true;
+          } else if (cat2.startsWith("S")) {
+            seenS++;
+            if (!seenPredCat) {
+              sawSBeforePredCat = true;
+            }
+          }
+        }
+        if ((seenS < 2) && (!(sawSBeforePredCat && seenPredCat)) && (seenNP == 0 || (seenNP == 1 && !seenPredCat))) {
+          cat = cat + "-G";
+        }
+      }
+      if (englishTrain.splitNumNP && baseCat.equals("NP")) {
+        boolean seenNum = false;
+        for (Tree kid : kids) {
+          String cat2 = kid.label().value();
+          if (cat2.startsWith("QP") || cat2.startsWith("CD") || cat2.startsWith("$") || cat2.startsWith("#") || (cat2.startsWith("NN") && cat2.contains("-%"))) {
+            seenNum = true;
+            break;
+          }
+        }
+        if (seenNum) {
+          cat += "-NUM";
+        }
+      }
+      if (englishTrain.splitPoss > 0 && baseCat.equals("NP") &&
+          kids[kids.length - 1].label().value().startsWith("POS")) {
+        if (englishTrain.splitPoss == 2) {
+          // special case splice in a new node!  Do it all here
+          Label labelBot;
+          if (t.isPrePreTerminal()) {
+            labelBot = new CategoryWordTag("NP^POSSP-B", word, tag);
+          } else {
+            labelBot = new CategoryWordTag("NP^POSSP", word, tag);
+          }
+          t.setLabel(labelBot);
+          List<Tree> oldKids = t.getChildrenAsList();
+          // could I use subList() here or is a true copy better?
+          // lose the last child
+          List<Tree> newKids = new ArrayList<Tree>();
+          for (int i = 0; i < oldKids.size() - 1; i++) {
+            newKids.add(oldKids.get(i));
+          }
+          t.setChildren(newKids);
+          cat = changeBaseCat(cat, "POSSP");
+          Label labelTop = new CategoryWordTag(cat, word, tag);
+          List<Tree> newerChildren = new ArrayList<Tree>(2);
+          newerChildren.add(t);
+          // add POS dtr
+          Tree last = oldKids.get(oldKids.size() - 1);
+          if ( ! last.value().equals("POS^NP")) {
+            System.err.println("Unexpected POS value (!): " + last);
+          }
+          last.setValue("POS^POSSP");
+          newerChildren.add(last);
+          return categoryWordTagTreeFactory.newTreeNode(labelTop, newerChildren);
+        } else {
+          cat = cat + "-P";
+        }
+      }
+      if (englishTrain.splitBaseNP > 0 && baseCat.equals("NP") &&
+          t.isPrePreTerminal()) {
+        if (englishTrain.splitBaseNP == 2) {
+          if (parentStr.startsWith("NP")) { // already got one above us
+            cat = cat + "-B";
+          } else {
+            // special case splice in a new node!  Do it all here
+            Label labelBot = new CategoryWordTag("NP^NP-B", word, tag);
+            t.setLabel(labelBot);
+            Label labelTop = new CategoryWordTag(cat, word, tag);
+            List<Tree> newerChildren = new ArrayList<Tree>(1);
+            newerChildren.add(t);
+            return categoryWordTagTreeFactory.newTreeNode(labelTop, newerChildren);
+          }
+        } else {
+          cat = cat + "-B";
+        }
+      }
+      if (englishTrain.rightPhrasal && rightPhrasal(t)) {
+        cat = cat + "-RX";
+      }
+    }
+
+    t.setLabel(new CategoryWordTag(cat, word, tag));
+    return t;
+  }
+
+
+  private boolean containsVP(Tree t) {
+    String cat = tlp.basicCategory(t.label().value());
+    if (cat.equals("VP")) {
+      return true;
+    } else {
+      for (Tree kid : t.children()) {
+        if (containsVP(kid)) {
+          return true;
+        }
+      }
+      return false;
+    }
+  }
+
+  private static boolean firstOfSeveralNNP(Tree parent, Tree t) {
+    boolean firstIsT = false;
+    int numNNP = 0;
+    for (Tree kid : parent.children()) {
+      if (kid.value().startsWith("NNP")) {
+        if (t.equals(kid) && numNNP == 0) {
+          firstIsT = true;
+        }
+        numNNP++;
+      }
+    }
+    return numNNP > 1 && firstIsT;
+  }
+
+  private static boolean lastOfSeveralNNP(Tree parent, Tree t) {
+    Tree last = null;
+    int numNNP = 0;
+    for (Tree kid : parent.children()) {
+      if (kid.value().startsWith("NNP")) {
+        numNNP++;
+        last = kid;
+      }
+    }
+    return numNNP > 1 && t.equals(last);
+  }
+
+
+  // quite heuristic, but not useless given tagging errors?
+  private static String deduceTag(String w) {
+    String word = w.toLowerCase();
+    if (word.endsWith("ing")) {
+      return "VBG";
+    } else if (word.endsWith("d") || word.endsWith("t")) {
+      return "VBN";
+    } else if (word.endsWith("s")) {
+      return "VBZ";
+    } else if (word.equals("to")) {
+      return "TO";
+    } else {
+      return "VB";
+    }
+  }
+
+  private static boolean rightPhrasal(Tree t) {
+    while (!t.isLeaf()) {
+      t = t.lastChild();
+      String str = t.label().value();
+      if (str.startsWith("NP") || str.startsWith("PP") || str.startsWith("VP") || str.startsWith("S") || str.startsWith("Q") || str.startsWith("A")) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+
+  private static String subCatify(Tree t) {
+    StringBuilder sb = new StringBuilder("^a");
+    boolean n = false;
+    boolean s = false;
+    boolean p = false;
+    for (int i = 0; i < t.children().length; i++) {
+      String childStr = t.children()[i].label().value();
+      n = (n || childStr.startsWith("NP"));
+      s = (s || childStr.startsWith("S"));
+      p = (p || childStr.startsWith("PP"));
+    }
+    n = false;
+    if (n) {
+      sb.append('N');
+    }
+    if (p) {
+      sb.append('P');
+    }
+    if (s) {
+      sb.append('S');
+    }
+    return sb.toString();
+  }
+
+
+  private String ditrans(Tree t) {
+    int n = 0;
+    for (Tree kid : t.children()) {
+      String childStr = kid.label().value();
+      if (childStr.startsWith("NP") && !childStr.contains("-TMP")) {
+        n++;
+      } else if (englishTrain.markDitransV == 1 && childStr.startsWith("S")) {
+        n++;
+      }
+    }
+    if (n >= 2) {
+      return "^2Arg";
+    } else {
+      return "";
+    }
+  }
+
+
+  private String changeBaseCat(String cat, String newBaseCat) {
+    int i = 1;  // not 0 in case tag is annotation introducing char
+    int length = cat.length();
+    for (; (i < length); i++) {
+      if (tlp.isLabelAnnotationIntroducingCharacter(cat.charAt(i))) {
+        break;
+      }
+    }
+    if (i < length) {
+      return newBaseCat + cat.substring(i);
+    } else {
+      return newBaseCat;
+    }
+  }
+
+

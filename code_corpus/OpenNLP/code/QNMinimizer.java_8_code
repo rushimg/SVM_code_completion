@@ -1,0 +1,55 @@
+  private class UpdateInfo {
+    private double[][] S;
+    private double[][] Y;
+    private double[] rho;
+    private double[] alpha;
+    private int m;
+
+    private int kCounter;
+
+    // Constructor
+    UpdateInfo(int numCorrection, int dimension) {
+      this.m = numCorrection;
+      this.kCounter = 0;
+      S     = new double[this.m][dimension];
+      Y     = new double[this.m][dimension];
+      rho   = new double[this.m];
+      alpha = new double[this.m];
+    }
+    
+    public void update(LineSearchResult lsr) {
+      double[] currPoint  = lsr.getCurrPoint();
+      double[] gradAtCurr = lsr.getGradAtCurr(); 
+      double[] nextPoint  = lsr.getNextPoint();
+      double[] gradAtNext = lsr.getGradAtNext(); 
+      
+      // Inner product of S_k and Y_k
+      double SYk = 0.0; 
+      
+      // Add new ones.
+      if (kCounter < m) {
+        for (int j = 0; j < dimension; j++) {
+          S[kCounter][j] = nextPoint[j] - currPoint[j];
+          Y[kCounter][j] = gradAtNext[j] - gradAtCurr[j];
+        }
+        rho[kCounter] = 1.0 / SYk;
+      } 
+      else {
+        // Discard oldest vectors and add new ones.
+        for (int i = 0; i < m - 1; i++) {
+          S[i] = S[i + 1];
+          Y[i] = Y[i + 1];
+          rho[i] = rho[i + 1];
+        }
+        for (int j = 0; j < dimension; j++) {
+          S[m - 1][j] = nextPoint[j] - currPoint[j];
+          Y[m - 1][j] = gradAtNext[j] - gradAtCurr[j];
+        }
+        rho[m - 1] = 1.0 / SYk;
+      }
+      
+      if (kCounter < m) 
+        kCounter++;
+    }
+  }
+

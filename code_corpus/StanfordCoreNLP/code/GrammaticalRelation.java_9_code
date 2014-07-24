@@ -1,0 +1,69 @@
+  private final Language language;
+  private final String shortName;
+  private final String longName;
+  private final GrammaticalRelation parent;
+  private final List<GrammaticalRelation> children = new ArrayList<GrammaticalRelation>();
+  // a regexp for node values at which this relation can hold
+  private final Pattern sourcePattern;
+  private final List<TregexPattern> targetPatterns = new ArrayList<TregexPattern>();
+  private final String specific; // to hold the specific prep or conjunction associated with the grammatical relation
+
+  // TODO document constructor
+  // TODO change to put specificString after longName, and then use String... for targetPatterns
+  private GrammaticalRelation(Language language,
+                             String shortName,
+                             String longName,
+                             Class<? extends GrammaticalRelationAnnotation> annotation,
+                             GrammaticalRelation parent,
+                             String sourcePattern,
+                             TregexPatternCompiler tregexCompiler,
+                             String[] targetPatterns,
+                             String specificString) {
+    this.language = language;
+    this.shortName = shortName;
+    this.longName = longName;
+    this.parent = parent;
+    this.specific = specificString; // this can be null!
+
+    if (parent != null) {
+      parent.addChild(this);
+    }
+
+    if (annotation != null) {
+      if (GrammaticalRelation.annotationsToRelations.put(annotation, this) != null) {
+        throw new IllegalArgumentException("Adding '" + shortName + "' failed: Annotation cannot be associated with more than one relation!");
+      }
+      if (GrammaticalRelation.relationsToAnnotations.put(this, annotation) != null) {
+        throw new IllegalArgumentException("Adding '" + shortName + "' failed: There should only ever be one instance of each relation!");
+      }
+    }
+
+    if (sourcePattern != null) {
+      try {
+        this.sourcePattern = Pattern.compile(sourcePattern);
+      } catch (java.util.regex.PatternSyntaxException e) {
+        throw new RuntimeException("Bad pattern: " + sourcePattern);
+      }
+    } else {
+      this.sourcePattern = null;
+    }
+
+    for (String pattern : targetPatterns) {
+      try {
+        TregexPattern p = tregexCompiler.compile(pattern);
+        this.targetPatterns.add(p);
+      } catch (edu.stanford.nlp.trees.tregex.TregexParseException pe) {
+        throw new RuntimeException("Bad pattern: " + pattern, pe);
+      }
+    }
+
+    Map<String, GrammaticalRelation> sToR = stringsToRelations.get(language);
+    if (sToR == null) {
+      sToR = Generics.newHashMap();
+      stringsToRelations.put(language, sToR);
+    }
+    GrammaticalRelation previous = sToR.put(toString(), this);
+    if (previous != null) {
+      if (!previous.isFromString() && !isFromString()) {
+        throw new IllegalArgumentException("There is already a relation named " + toString() + '!');
+      } else {

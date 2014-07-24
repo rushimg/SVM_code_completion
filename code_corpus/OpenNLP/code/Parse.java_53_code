@@ -1,0 +1,23 @@
+  public void updateHeads(HeadRules rules) {
+    if (parts != null && parts.size() != 0) {
+      for (int pi=0,pn=parts.size();pi<pn;pi++) {
+        Parse c = parts.get(pi);
+        c.updateHeads(rules);
+      }
+      this.head = rules.getHead(parts.toArray(new Parse[parts.size()]), type);
+      if (head == null) {
+        head = this;
+      }
+      else {
+        this.headIndex = head.headIndex;
+      }
+    }
+    else {
+      this.head = this;
+    }
+  }
+
+  public void updateSpan() {
+    span = new Span((parts.get(0)).span.getStart(),(parts.get(parts.size()-1)).span.getEnd());
+  }
+

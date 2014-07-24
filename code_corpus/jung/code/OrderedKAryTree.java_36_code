@@ -1,0 +1,22 @@
+    @Override
+    @SuppressWarnings("unchecked")
+	public boolean addEdge(E edge, Collection<? extends V> vertices, EdgeType edge_type) 
+    {
+        if (edge == null || vertices == null)
+            throw new IllegalArgumentException("inputs may not be null");
+        if (vertices.size() != 2)
+            throw new IllegalArgumentException("'vertices' must contain " +
+            		"exactly 2 distinct vertices");
+    	this.validateEdgeType(edge_type);
+		Pair<V> endpoints;
+		if (vertices instanceof Pair)
+			endpoints = (Pair<V>)vertices;
+		else
+			endpoints = new Pair<V>(vertices);
+		V v1 = endpoints.getFirst();
+		V v2 = endpoints.getSecond();
+		if (v1.equals(v2))
+			throw new IllegalArgumentException("Input vertices must be distinct");
+		return addEdge(edge, v1, v2);
+    }
+  

@@ -1,0 +1,94 @@
+  public static <V, CM extends CoreMap, COLL extends Collection<CM>> Map<CM,V>
+    asMap(final COLL coremaps, final Class<? extends TypesafeMap.Key<V>> valueKey) {
+
+    final IdentityHashMap<CM,Boolean> references = new IdentityHashMap<CM,Boolean>();
+    for(CM map : coremaps){
+      references.put(map, true);
+    }
+
+    // an EntrySet view of the elements of coremaps
+    final Set<Map.Entry<CM, V>> entrySet = new AbstractSet<Map.Entry<CM,V>>() {
+      @Override
+      public Iterator<Map.Entry<CM, V>> iterator() {
+        return new Iterator<Map.Entry<CM,V>>() {
+          Iterator<CM> it = coremaps.iterator();
+          CM last = null;
+
+          public boolean hasNext() {
+            return it.hasNext();
+          }
+
+          public Map.Entry<CM, V> next() {
+            final CM next = it.next();
+            last = next;
+            return new Map.Entry<CM,V>() {
+              public CM getKey() {
+                return next;
+              }
+
+              public V getValue() {
+                return next.get(valueKey);
+              }
+
+              public V setValue(V value) {
+                return next.set(valueKey, value);
+              }
+            };
+          }
+
+          public void remove() {
+            references.remove(last);
+            it.remove();
+          }
+        };
+      }
+
+      @Override
+      public int size() {
+        return coremaps.size();
+      }
+    };
+
+    return new AbstractMap<CM,V>() {
+      @Override
+      public int size() {
+        return coremaps.size();
+      }
+
+      @Override
+      public boolean containsKey(Object key) {
+        return coremaps.contains(key);
+      }
+
+      @Override
+      public V get(Object key) {
+        if (!references.containsKey(key)) {
+          return null;
+        }
+        return ((CoreMap)key).get(valueKey);
+      }
+
+      @Override
+      public V put(CM key, V value) {
+        if (!references.containsKey(key)) {
+          coremaps.add(key);
+          references.put(key,true);
+        }
+        return key.set(valueKey, value);
+      }
+
+      @Override
+      public V remove(Object key) {
+        if (!references.containsKey(key)) {
+          return null;
+        }
+        return coremaps.remove(key) ? ((CoreMap)key).get(valueKey) : null;
+      }
+
+      @Override
+      public Set<Map.Entry<CM, V>> entrySet() {
+        return entrySet;
+      }
+    };
+  }
+

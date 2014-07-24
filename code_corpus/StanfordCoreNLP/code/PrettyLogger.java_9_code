@@ -1,0 +1,52 @@
+
+  private static <K, V> void log(RedwoodChannels channels, String description, Map<K, V> mapping) {
+    Redwood.startTrack(description);
+    if (mapping == null) {
+      channels.log("(mapping is null)");
+    } else if (mapping.size() == 0) {
+      channels.log("(empty)");
+    } else {
+      // convert keys to sorted list, if possible
+      List<K> keys = new LinkedList<K>();
+      for (K key : mapping.keySet()) {
+        keys.add(key);
+      }
+      Collections.sort(keys, new Comparator<K>() {
+        @SuppressWarnings("unchecked")
+        public int compare(K a, K b) {
+          if (a != null && Comparable.class.isAssignableFrom(a.getClass())) {
+            return ((Comparable) a).compareTo(b);
+          } else {
+            return 0;
+          }
+        }
+      });
+      // log key/value pairs
+      int entryCounter = 0;
+      for (K key : keys) {
+        V value = mapping.get(key);
+        if (!dispatchable(key) && dispatchable(value)) {
+          log(channels, key.toString(), value);
+        } else if (dispatchable(key) || dispatchable(value)) {
+          Redwood.startTrack("Entry " + entryCounter);
+          if (dispatchable(key)) {
+            log(channels, "Key", key);
+          } else {
+            channels.logf("Key %s", key);
+          }
+
+          if (dispatchable(value)) {
+            log(channels, "Value", value);
+          } else {
+            channels.logf("Value %s", value);
+          }
+          Redwood.endTrack("Entry " + entryCounter);
+        } else {
+          channels.logf("%s = %s", key, value);
+        }
+        entryCounter++;
+      }
+    }
+    Redwood.endTrack(description);
+  }
+

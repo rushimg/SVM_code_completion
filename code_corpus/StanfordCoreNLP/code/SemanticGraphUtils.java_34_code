@@ -1,0 +1,22 @@
+  public static SemanticGraph setSentIndex(SemanticGraph sg, int newSentIndex) {
+    SemanticGraph newGraph = new SemanticGraph(sg);
+    List<IndexedWord> prevRoots = new ArrayList<IndexedWord>(newGraph.getRoots());
+    List<IndexedWord> newRoots = new ArrayList<IndexedWord>();
+    // TODO: we are using vertexListSorted here because we're changing
+    // vertices while iterating.  Perhaps there is a better way to do it.
+    for (IndexedWord node : newGraph.vertexListSorted()) {
+      IndexedWord newWord = new IndexedWord(node);
+      newWord.setSentIndex(newSentIndex);
+      SemanticGraphUtils.replaceNode(newWord, node, newGraph);
+      if (prevRoots.contains(node))
+        newRoots.add(newWord);
+    }
+    newGraph.setRoots(newRoots);
+    return newGraph;
+  }
+
+  //-----------------------------------------------------------------------------------------------
+  //   Graph redundancy checks
+  //-----------------------------------------------------------------------------------------------
+
+

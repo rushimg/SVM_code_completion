@@ -1,0 +1,119 @@
+  public static interface GenericAnnotation<T> extends CoreAnnotation<T> {  }
+  //Unchecked is below because eclipse can't handle the level of type inference if we correctly parameterize GenericAnnotation with String
+  @SuppressWarnings("unchecked")
+  public static final Map<String, Class<? extends GenericAnnotation>> genericKeys = Generics.newHashMap();
+  @SuppressWarnings("unchecked")
+  public static final Map<Class<? extends GenericAnnotation>, String> genericValues = Generics.newHashMap();
+
+
+  @SuppressWarnings("unchecked")
+  private void initFromStrings(String[] keys, String[] values) {
+    for (int i = 0; i < Math.min(keys.length, values.length); i++) {
+      String key = keys[i];
+      String value = values[i];
+      KeyLookup lookup = AnnotationLookup.getCoreKey(key);
+
+      //now work with the key we got above
+      if (lookup == null) {
+        if (key != null) {
+          throw new UnsupportedOperationException("Unknown key " + key);
+        }
+
+        // It used to be that the following code let you put unknown keys
+        // in the CoreLabel.  However, you can't create classes dynamically
+        // at run time, which meant only one of these classes could ever
+        // exist, which meant multiple unknown keys would clobber each
+        // other and be very annoying.  It's easier just to not allow
+        // it at all.
+        // If it becomes possible to create classes dynamically,
+        // we could add this code back.
+        //if(genericKeys.containsKey(key)) {
+        //  this.set(genericKeys.get(key), value);
+        //} else {
+        //  GenericAnnotation<String> newKey = new GenericAnnotation<String>() {
+        //    public Class<String> getType() { return String.class;} };
+        //  this.set(newKey.getClass(), values[i]);
+        //  genericKeys.put(keys[i], newKey.getClass());
+        //  genericValues.put(newKey.getClass(), keys[i]);
+        //}
+        // unknown key; ignore
+        //if (VERBOSE) {
+        //  System.err.println("CORE: CoreLabel.fromAbstractMapLabel: " +
+        //      "Unknown key "+key);
+        //}
+      } else {
+        try {
+          Class<?> valueClass = AnnotationLookup.getValueType(lookup.coreKey);
+          if(valueClass.equals(String.class)) {
+            this.set(lookup.coreKey, values[i]);
+          } else if(valueClass == Integer.class) {
+            this.set(lookup.coreKey, Integer.parseInt(values[i]));
+          } else if(valueClass == Double.class) {
+            this.set(lookup.coreKey, Double.parseDouble(values[i]));
+          } else if(valueClass == Long.class) {
+            this.set(lookup.coreKey, Long.parseLong(values[i]));
+          }
+        } catch (Exception e) {
+          e.printStackTrace();
+          // unexpected value type
+          System.err.println("CORE: CoreLabel.initFromStrings: "
+              + "Bad type for " + key
+              + ". Value was: " + value
+              + "; expected "+AnnotationLookup.getValueType(lookup.coreKey));
+        }
+      }
+    }
+  }
+
+
+  private static class CoreLabelFactory implements LabelFactory {
+
+    @Override
+    public Label newLabel(String labelStr) {
+      CoreLabel label = new CoreLabel();
+      label.setValue(labelStr);
+      return label;
+    }
+
+    @Override
+    public Label newLabel(String labelStr, int options) {
+      return newLabel(labelStr);
+    }
+
+    @Override
+    public Label newLabel(Label oldLabel) {
+      if (oldLabel instanceof CoreLabel) {
+        return new CoreLabel((CoreLabel)oldLabel);
+
+      } else {
+        //Map the old interfaces to the correct key/value pairs
+        //Don't need to worry about HasIndex, which doesn't appear in any legacy code
+        CoreLabel label = new CoreLabel();
+        if (oldLabel instanceof HasWord)
+          label.setWord(((HasWord) oldLabel).word());
+        if (oldLabel instanceof HasTag)
+          label.setTag(((HasTag) oldLabel).tag());
+        if (oldLabel instanceof HasOffset) {
+          label.setBeginPosition(((HasOffset) oldLabel).beginPosition());
+          label.setEndPosition(((HasOffset) oldLabel).endPosition());
+        }
+        if (oldLabel instanceof HasCategory)
+          label.setCategory(((HasCategory) oldLabel).category());
+        if (oldLabel instanceof HasIndex)
+          label.setIndex(((HasIndex) oldLabel).index());
+
+        label.setValue(oldLabel.value());
+
+        return label;
+      }
+    }
+
+    @Override
+    public Label newLabelFromString(String encodedLabelStr) {
+      throw new UnsupportedOperationException("This code branch left blank" +
+      " because we do not understand what this method should do.");
+    }
+
+  }
+
+

@@ -1,0 +1,48 @@
+    List<CoreMap> sentences = dataset.get(CoreAnnotations.SentencesAnnotation.class);
+    for(int i = 0; i < sentences.size(); i ++){
+      CoreMap sent = sentences.get(i);
+      List<CoreLabel> tokens = sent.get(CoreAnnotations.TokensAnnotation.class);
+      logger.info("Tokens for sentence #" + i + ": " + tokens);
+      logger.info("Parse tree for sentence #" + i + ": " + sent.get(TreeCoreAnnotations.TreeAnnotation.class).pennString());
+    }
+
+    List<CoreMap> sentences = dataset.get(CoreAnnotations.SentencesAnnotation.class);
+    logger.fine("Extracted " + sentences.size() + " sentences.");
+    for (CoreMap sentence : sentences) {
+      List<CoreLabel> tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
+      logger.fine("Processing sentence " + tokens);
+      Tree tree = sentence.get(TreeCoreAnnotations.TreeAnnotation.class);
+      if(tree == null) throw new RuntimeException("ERROR: MR requires full syntactic analysis!");
+
+      // convert tree labels to CoreLabel if necessary
+      // we need this because we store additional info in the CoreLabel, such as the spans of each tree
+      convertToCoreLabels(tree);
+
+      // store the tree spans, if not present already
+      CoreLabel l = (CoreLabel) tree.label();
+      if(forceGenerationOfIndexSpans || (! l.containsKey(CoreAnnotations.BeginIndexAnnotation.class) && ! l.containsKey(CoreAnnotations.EndIndexAnnotation.class))){
+        tree.indexSpans(0);
+        logger.fine("Index spans were generated.");
+      } else {
+        logger.fine("Index spans were NOT generated.");
+      }
+      logger.fine("Parse tree using CoreLabel:\n" + tree.pennString());
+
+      //
+      // now match all entity mentions against the syntactic tree
+      //
+      if (sentence.get(MachineReadingAnnotations.EntityMentionsAnnotation.class) != null) {
+        for (EntityMention ent : sentence.get(MachineReadingAnnotations.EntityMentionsAnnotation.class)) {
+          logger.fine("Finding head for entity: " + ent);
+          int headPos = assignSyntacticHead(ent, tree, tokens, calculateHeadSpan);
+          logger.fine("Syntactic head of mention \"" + ent + "\" is: " + tokens.get(headPos).word());
+
+          assert(ent.getExtent() != null);
+          assert(ent.getHead() != null);
+          assert(ent.getSyntacticHeadTokenPosition() >= 0);
+        }
+      }
+    }
+    logger.severe("GenericDataSetReader: Pre-processing complete.");
+  }
+

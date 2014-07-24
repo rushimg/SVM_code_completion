@@ -1,0 +1,94 @@
+  void printUnknown(int numSent, PrintFile pfu) {
+    NumberFormat nf = new DecimalFormat("0.0000");
+    int numTags = maxentTagger.numTags();
+    double[][][] probabilities = new double[size][kBestSize][numTags];
+    calculateProbs(probabilities);
+    for (int current = 0; current < size; current++) {
+      if (maxentTagger.dict.isUnknown(sent.get(current))) {
+        pfu.print(sent.get(current));
+        pfu.print(':');
+        pfu.print(numSent);
+        double[] probs = new double[3];
+        String[] tag3 = new String[3];
+        getTop3(probabilities, current, probs, tag3);
+        for (int i = 0; i < 3; i++) {
+          if (probs[i] > Double.NEGATIVE_INFINITY) {
+            pfu.print('\t');
+            pfu.print(tag3[i]);
+            pfu.print(' ');
+            pfu.print(nf.format(Math.exp(probs[i])));
+          }
+        }
+        int rank;
+        String correctTag = toNice(this.correctTags[current]);
+        for (rank = 0; rank < 3; rank++) {
+          if (correctTag.equals(tag3[rank])) {
+            break;
+          } //if
+        }
+        pfu.print('\t');
+        switch (rank) {
+          case 0:
+            pfu.print("Correct");
+            break;
+          case 1:
+            pfu.print("2nd");
+            break;
+          case 2:
+            pfu.print("3rd");
+            break;
+          default:
+            pfu.print("Not top 3");
+        }
+        pfu.println();
+      }// if
+    }// for
+  }
+
+  // This method should be called after a sentence has been tagged.
+  // For every word token, this method prints the 3 most probable tags
+  // to the file pfu except for
+  void printTop(PrintFile pfu) {
+    NumberFormat nf = new DecimalFormat("0.0000");
+    int numTags = maxentTagger.numTags();
+    double[][][] probabilities = new double[size][kBestSize][numTags];
+    calculateProbs(probabilities);
+
+    for (int current = 0; current < correctTags.length; current++) {
+      pfu.print(sent.get(current));
+      double[] probs = new double[3];
+      String[] tag3 = new String[3];
+      getTop3(probabilities, current, probs, tag3);
+      for (int i = 0; i < 3; i++) {
+        if (probs[i] > Double.NEGATIVE_INFINITY) {
+          pfu.print('\t');
+          pfu.print(tag3[i]);
+          pfu.print(' ');
+          pfu.print(nf.format(Math.exp(probs[i])));
+        }
+      }
+      int rank;
+      String correctTag = toNice(this.correctTags[current]);
+      for (rank = 0; rank < 3; rank++) {
+        if (correctTag.equals(tag3[rank])) {
+          break;
+        } //if
+      }
+      pfu.print('\t');
+      switch (rank) {
+      case 0:
+        pfu.print("Correct");
+        break;
+      case 1:
+        pfu.print("2nd");
+        break;
+      case 2:
+        pfu.print("3rd");
+        break;
+      default:
+        pfu.print("Not top 3");
+      }
+      pfu.println();
+    } // for
+  }
+

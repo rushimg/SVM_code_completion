@@ -1,0 +1,46 @@
+    public boolean addEdge(V sourceVertex, V targetVertex, E e)
+    {
+        if (e == null) {
+            throw new NullPointerException();
+        } else if (containsEdge(e)) {
+            return false;
+        }
+
+        assertVertexExist(sourceVertex);
+        assertVertexExist(targetVertex);
+
+        if (!allowingMultipleEdges
+            && containsEdge(sourceVertex, targetVertex))
+        {
+            return false;
+        }
+
+        if (!allowingLoops && sourceVertex.equals(targetVertex)) {
+            throw new IllegalArgumentException(LOOPS_NOT_ALLOWED);
+        }
+
+        IntrusiveEdge intrusiveEdge =
+            createIntrusiveEdge(e, sourceVertex, targetVertex);
+
+        edgeMap.put(e, intrusiveEdge);
+        specifics.addEdgeToTouchingVertices(e);
+
+        return true;
+    }
+
+    private IntrusiveEdge createIntrusiveEdge(
+        E e,
+        V sourceVertex,
+        V targetVertex)
+    {
+        IntrusiveEdge intrusiveEdge;
+        if (e instanceof IntrusiveEdge) {
+            intrusiveEdge = (IntrusiveEdge) e;
+        } else {
+            intrusiveEdge = new IntrusiveEdge();
+        }
+        intrusiveEdge.source = sourceVertex;
+        intrusiveEdge.target = targetVertex;
+        return intrusiveEdge;
+    }
+

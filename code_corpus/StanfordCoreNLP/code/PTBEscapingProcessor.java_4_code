@@ -1,0 +1,126 @@
+  public List<HasWord> process(List<? extends IN> input) {
+    List<HasWord> output = new ArrayList<HasWord>();
+    for (IN h : input) {
+      String s = h.word();
+      h.setWord(escapeString(s));
+      output.add(h);
+    }
+    if (fixQuotes) {
+      return fixQuotes(output);
+    }
+    return output;
+  }
+
+
+  private static List<HasWord> fixQuotes(List<HasWord> input) {
+    int inputSize = input.size();
+    LinkedList<HasWord> result = new LinkedList<HasWord>();
+    if (inputSize == 0) {
+      return result;
+    }
+    boolean begin;
+    // see if there is a quote at the end
+    if (input.get(inputSize - 1).word().equals("\"")) {
+      // alternate from the end
+      begin = false;
+      for (int i = inputSize - 1; i >= 0; i--) {
+        HasWord hw = input.get(i);
+        String tok = hw.word();
+        if (tok.equals("\"")) {
+          if (begin) {
+            hw.setWord("``");
+            begin = false;
+          } else {
+            hw.setWord("\'\'");
+            begin = true;
+          }
+        } // otherwise leave it alone
+        result.addFirst(hw);
+      } // end loop
+    } else {
+      // alternate from the beginning
+      begin = true;
+      for (int i = 0; i < inputSize; i++) {
+        HasWord hw = input.get(i);
+        String tok = hw.word();
+        if (tok.equals("\"")) {
+          if (begin) {
+            hw.setWord("``");
+            begin = false;
+          } else {
+            hw.setWord("\'\'");
+            begin = true;
+          }
+        } // otherwise leave it alone
+        result.addLast(hw);
+      } // end loop
+    }
+    return result;
+  }
+
+
+  public String escapeString(String s) {
+    StringBuilder buff = new StringBuilder();
+    for (int i = 0; i < s.length(); i++) {
+      char curChar = s.charAt(i);
+      // run through all the chars we need to replace
+      boolean found = false;
+      for (int k = 0; k < substChars.length; k++) {
+        if (curChar == substChars[k]) {
+          buff.append(replaceSubsts[k]);
+          found = true;
+          break;
+        }
+      }
+      if (found) {
+        continue;
+      }
+      // don't do it if escape is already there usually
+      if (curChar == '\\') {
+        // add this and the next one unless bracket
+        buff.append(curChar);
+        if (maybeAppendOneMore(i + 1, s, buff)) {
+          i++;
+        }
+        found = true;
+      }
+      if (found) {
+        continue;
+      }
+      // run through all the chars we need to escape
+      for (int k = 0; k < escapeChars.length; k++) {
+        if (curChar == escapeChars[k]) {
+          buff.append(replaceEscapes[k]);
+          found = true;
+          break;
+        }
+      }
+      if (found) {
+        continue;
+      }
+
+      // append the old char no matter what
+      buff.append(curChar);
+    }
+    return buff.toString();
+  }
+
+  private boolean maybeAppendOneMore(int pos, String s, StringBuilder buff) {
+    if (pos >= s.length()) {
+      return false;
+    }
+    char candidate = s.charAt(pos);
+    boolean found = false;
+    for (char ch : substChars) {
+      if (candidate == ch) {
+        found = true;
+        break;
+      }
+    }
+    if (found) {
+      return false;
+    }
+    buff.append(candidate);
+    return true;
+  }
+

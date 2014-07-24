@@ -1,0 +1,51 @@
+  private CoreLabel makeCoreLabel(String line) {
+    CoreLabel wi = new CoreLabel();
+    // wi.line = line;
+    String[] bits = line.split("\\s+");
+    switch (bits.length) {
+    case 0:
+    case 1:
+      wi.setWord(BOUNDARY);
+      wi.set(CoreAnnotations.AnswerAnnotation.class, OTHER);
+      break;
+    case 2:
+      wi.setWord(bits[0]);
+      wi.set(CoreAnnotations.AnswerAnnotation.class, bits[1]);
+      break;
+    case 3:
+      wi.setWord(bits[0]);
+      wi.setTag(bits[1]);
+      wi.set(CoreAnnotations.AnswerAnnotation.class, bits[2]);
+      break;
+    case 4:
+      wi.setWord(bits[0]);
+      wi.setTag(bits[1]);
+      wi.set(CoreAnnotations.ChunkAnnotation.class, bits[2]);
+      wi.set(CoreAnnotations.AnswerAnnotation.class, bits[3]);
+      break;
+    case 5:
+      if (flags.useLemmaAsWord) {
+        wi.setWord(bits[1]);
+      } else {
+        wi.setWord(bits[0]);
+        }
+      wi.set(CoreAnnotations.LemmaAnnotation.class, bits[1]);
+      wi.setTag(bits[2]);
+      wi.set(CoreAnnotations.ChunkAnnotation.class, bits[3]);
+      wi.set(CoreAnnotations.AnswerAnnotation.class, bits[4]);
+      break;
+    default:
+      throw new RuntimeIOException("Unexpected input (many fields): " + line);
+    }
+    wi.set(CoreAnnotations.OriginalAnswerAnnotation.class, wi.get(CoreAnnotations.AnswerAnnotation.class));
+    return wi;
+  }
+
+  private String intern(String s) {
+    if (flags.intern) {
+      return s.intern();
+    } else {
+      return s;
+    }
+  }
+

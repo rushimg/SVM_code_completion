@@ -1,0 +1,42 @@
+    private int[] getAllChildMatchedBids(int index, int bid, int pos)
+    {
+      int[] matchedBids = new int[reachableChildBids.length];
+      for (int i = 0; i < reachableChildBids.length; i++) {
+        Set<Pair<Integer,Integer>> v = reachableChildBids[i];
+        if (v == null || v.isEmpty()) return null;
+        if (i != index) {
+          boolean ok = false;
+          for (Pair<Integer,Integer> p:v) {
+            if (p.second() == pos) {
+              ok = true;
+              matchedBids[i] = p.first();
+              break;
+            }
+          }
+          if (!ok) { return null; }
+        } else {
+          matchedBids[i] = bid;
+        }
+      }
+      return matchedBids;
+    }
+
+    protected void updateKeepBids(Set<Integer> bids) {
+      // TODO: Is there a point when we don't need to keep these bids anymore?
+      for (Set<Pair<Integer, Integer>> v : reachableChildBids) {
+        if (v != null) {
+          for (Pair<Integer, Integer> p : v) {
+            bids.add(p.first());
+          }
+        }
+      }
+    }
+  }
+
+  // States for matching conjunctions
+  // - Basic, not well tested implementation that may not work for all cases ...
+  // - Can be optimized to terminate earlier if one branch of the conjunction is known not to succeed
+  // - May cause lots of states to be kept (not efficient)
+  // - priority should be specified for conjunction branches (there can be conflicting greedy/nongreedy patterns)
+  //   (should we prioritize by order?) - currently behavior is not well defined
+

@@ -1,0 +1,77 @@
+  public static void outputSplits(List<String> ids,
+                                  Map<String, Tree> treeMap)
+    throws IOException
+  {
+    Queue<Integer> fSizeQueue = new LinkedList<Integer>(Arrays.asList(fSizes));
+    Queue<String> fNameQueue = new LinkedList<String>(Arrays.asList(fNames));
+
+    TregexPattern pBadTree = TregexPattern.compile("@SENT <: @PUNC");
+    TregexPattern pBadTree2 = TregexPattern.compile("@SENT <1 @PUNC <2 @PUNC !<3 __");
+    
+    final TreeTransformer tt = new FTBCorrector();
+
+    int size = fSizeQueue.remove();
+    String filename = fNameQueue.remove();
+
+    System.err.println("Outputing " + filename);
+
+    PrintWriter writer =
+      new PrintWriter(new BufferedWriter
+                      (new OutputStreamWriter
+                       (new FileOutputStream(filename), "UTF-8")));
+
+    int outputCount = 0;
+    for (String id : ids) {
+      if (!treeMap.containsKey(id)) {
+        System.err.println("Missing id: " + id);
+        continue;
+      }
+
+      Tree tree = treeMap.get(id);
+      TregexMatcher m = pBadTree.matcher(tree);
+      TregexMatcher m2 = pBadTree2.matcher(tree);
+      if(m.find() || m2.find()) {
+        System.err.println("Discarding tree: " + tree.toString());
+        continue;
+      }
+      
+      // Punctuation normalization, etc.
+      Tree backupCopy = tree.deepCopy();
+      tree = tt.transformTree(tree);
+      if (tree.firstChild().children().length == 0) {
+        // Some trees have only punctuation. Tregex will mangle these. Don't throw those away.
+        System.err.println("Saving tree: " + tree.toString());
+        System.err.println("Backup: " + backupCopy.toString());
+        tree = backupCopy;
+      }
+      
+      if(LEMMAS_AS_LEAVES || ADD_MORPHO_TO_LEAVES) {
+        mungeLeaves(tree,LEMMAS_AS_LEAVES,ADD_MORPHO_TO_LEAVES);
+      }
+
+      if(CC_TAGSET) {
+        replacePOSTags(tree);
+      }
+
+      if (MORFETTE_OUTPUT) {
+        writer.println(treeToMorfette(tree));
+      } else {
+        writer.println(tree.toString());
+      }
+
+      ++outputCount;
+      if (outputCount == size) {
+        outputCount = 0;
+        size = fSizeQueue.remove();
+        filename = fNameQueue.remove();
+        System.err.println("Outputing " + filename);
+        writer.close();
+        writer =
+          new PrintWriter(new BufferedWriter
+                          (new OutputStreamWriter
+                           (new FileOutputStream(filename), "UTF-8")));
+      }
+    }
+    writer.close();
+  }
+

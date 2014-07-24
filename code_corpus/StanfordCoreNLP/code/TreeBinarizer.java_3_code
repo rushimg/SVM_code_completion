@@ -1,0 +1,80 @@
+  private Tree markovInsideBinarizeLocalTreeNew(Tree t, int headLoc, int left, int right, boolean starting) {
+    Tree result;
+    Tree[] children = t.children();
+    if (starting) {
+      // this local tree is a unary and doesn't need binarizing so just return it
+      if (left == headLoc && right == headLoc) {
+        return t;
+      }
+      // this local tree started off as a binary and the option to not
+      // rebinarized such trees is set
+      if (noRebinarization && children.length == 2) {
+        return t;
+      }
+      if (unaryAtTop) {
+        // if we're doing grammar compaction, we add the unary at the top
+        result = tf.newTreeNode(t.label(), Collections.singletonList(markovInsideBinarizeLocalTreeNew(t, headLoc, left, right, false)));
+        return result;
+      }
+    }
+    // otherwise, we're going to make a new tree node
+    List<Tree> newChildren = null;
+    // left then right top down, this means we generate right then left on the way up
+    if (left == headLoc && right == headLoc) {
+      // base case, we're done, just make a unary
+      newChildren = Collections.singletonList(children[headLoc]);
+    } else if (left < headLoc) {
+      // generate a left if we can
+      newChildren = new ArrayList<Tree>(2);
+      newChildren.add(children[left]);
+      newChildren.add(markovInsideBinarizeLocalTreeNew(t, headLoc, left + 1, right, false));
+    } else if (right > headLoc) {
+      // generate a right if we can
+      newChildren = new ArrayList<Tree>(2);
+      newChildren.add(markovInsideBinarizeLocalTreeNew(t, headLoc, left, right - 1, false));
+      newChildren.add(children[right]);
+    } else {
+      // this shouldn't happen, should have been caught above
+      System.err.println("UHOH, bad parameters passed to markovInsideBinarizeLocalTree");
+    }
+    // newChildren should be set up now with two children
+    // make our new label
+    Label label;
+    if (starting) {
+      label = t.label();
+    } else {
+      label = makeSyntheticLabel(t, left, right, headLoc, markovOrder);
+    }
+    if (doSelectiveSplit) {
+      double stateCount = stateCounter.getCount(label.value());
+      if (stateCount < selectiveSplitThreshold) { // too sparse, so
+        if (starting && !unaryAtTop) {
+          // if we're not compacting grammar, this is how we make sure the top state has the passive symbol
+          label = t.label();
+        } else {
+          label = makeSyntheticLabel(t, left, right, headLoc, markovOrder - 1); // lower order
+        }
+      }
+    } else {
+      // otherwise, count up the states
+      stateCounter.incrementCount(label.value(), 1.0); // we only care about the category
+    }
+    // finished making new label
+    result = tf.newTreeNode(label, newChildren);
+    return result;
+  }
+
+
+  private Label makeSyntheticLabel(Tree t, int left, int right, int headLoc, int markovOrder) {
+    Label result;
+    if (simpleLabels) {
+      result = makeSimpleSyntheticLabel(t);
+    } else if (useWrappingLabels) {
+      result = makeSyntheticLabel2(t, left, right, headLoc, markovOrder);
+    } else {
+      result = makeSyntheticLabel1(t, left, right, headLoc, markovOrder);
+    }
+    //      System.out.println("order " + markovOrder + " yielded " + result);
+    return result;
+  }
+

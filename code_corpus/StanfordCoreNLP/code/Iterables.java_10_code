@@ -1,0 +1,32 @@
+  public static <T> Iterable<T> chain(final Iterable<? extends Iterable<T>> iterables) {
+    return new Iterable<T>() {
+      public Iterator<T> iterator() {
+        final Iterator<? extends Iterable<T>> iterators = iterables.iterator();
+
+        return new Iterator<T>() {
+          private Iterator<T> current = null;
+
+          public boolean hasNext() {
+            // advance current iterator if necessary, return false at end
+            while (current == null || !current.hasNext()) {
+              if (iterators.hasNext()) {
+                current = iterators.next().iterator();
+              } else {
+                return false;
+              }
+            }
+            return true;
+          }
+
+          public T next() {
+            return current.next();
+          }
+
+          public void remove() {
+            current.remove();
+          }
+        };
+      }
+    };
+  }
+

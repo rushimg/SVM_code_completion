@@ -1,0 +1,28 @@
+  public void classifyAndWriteAnswersKBest(ObjectBank<List<IN>> documents, int k, PrintWriter printWriter,
+                                           DocumentReaderAndWriter<IN> readerAndWriter) throws IOException {
+    Timing timer = new Timing();
+    int numWords = 0;
+    int numSentences = 0;
+
+    for (List<IN> doc : documents) {
+      Counter<List<IN>> kBest = classifyKBest(doc, CoreAnnotations.AnswerAnnotation.class, k);
+      numWords += doc.size();
+      List<List<IN>> sorted = Counters.toSortedList(kBest);
+      int n = 1;
+      for (List<IN> l : sorted) {
+        System.out.println("<sentence id=" + numSentences + " k=" + n + " logProb=" + kBest.getCount(l) + " prob="
+            + Math.exp(kBest.getCount(l)) + '>');
+        writeAnswers(l, printWriter, readerAndWriter);
+        System.out.println("</sentence>");
+        n++;
+      }
+      numSentences++;
+    }
+
+    long millis = timer.stop();
+    double wordspersec = numWords / (((double) millis) / 1000);
+    NumberFormat nf = new DecimalFormat("0.00"); // easier way!
+    System.err.println(this.getClass().getName() + " tagged " + numWords + " words in " + numSentences
+        + " documents at " + nf.format(wordspersec) + " words per second.");
+  }
+

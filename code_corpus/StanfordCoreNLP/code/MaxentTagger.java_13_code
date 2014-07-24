@@ -1,0 +1,95 @@
+  LambdaSolve getLambdaSolve() {
+    return prob;
+  }
+
+  // TODO: make these constructors instead of init methods?
+  void init(TaggerConfig config) {
+    if (initted) return;  // TODO: why not reinit?
+
+    this.config = config;
+
+    String lang, arch;
+    String[] openClassTags, closedClassTags;
+
+    if (config == null) {
+      lang = "english";
+      arch = "left3words";
+      openClassTags = StringUtils.EMPTY_STRING_ARRAY;
+      closedClassTags = StringUtils.EMPTY_STRING_ARRAY;
+      wordFunction = null;
+    } else {
+      this.VERBOSE = config.getVerbose();
+
+      lang = config.getLang();
+      arch = config.getArch();
+      openClassTags = config.getOpenClassTags();
+      closedClassTags = config.getClosedClassTags();
+      if (!config.getWordFunction().equals("")) {
+        wordFunction =
+          ReflectionLoading.loadByReflection(config.getWordFunction());
+      }
+
+      if (((openClassTags.length > 0) && !lang.equals("")) || ((closedClassTags.length > 0) && !lang.equals("")) || ((closedClassTags.length > 0) && (openClassTags.length > 0))) {
+        throw new RuntimeException("At least two of lang (\"" + lang + "\"), openClassTags (length " + openClassTags.length + ": " + Arrays.toString(openClassTags) + ")," +
+            "and closedClassTags (length " + closedClassTags.length + ": " + Arrays.toString(closedClassTags) + ") specified---you must choose one!");
+      } else if ((openClassTags.length == 0) && lang.equals("") && (closedClassTags.length == 0) && ! config.getLearnClosedClassTags()) {
+        System.err.println("warning: no language set, no open-class tags specified, and no closed-class tags specified; assuming ALL tags are open class tags");
+      }
+    }
+
+    if (openClassTags.length > 0) {
+      tags = new TTags();
+      tags.setOpenClassTags(openClassTags);
+    } else if (closedClassTags.length > 0) {
+      tags = new TTags();
+      tags.setClosedClassTags(closedClassTags);
+    } else {
+      tags = new TTags(lang);
+    }
+
+    defaultScore = lang.equals("english") ? 1.0 : 0.0;
+
+    if (config != null) {
+      rareWordThresh = config.getRareWordThresh();
+      minFeatureThresh = config.getMinFeatureThresh();
+      curWordMinFeatureThresh = config.getCurWordMinFeatureThresh();
+      rareWordMinFeatureThresh = config.getRareWordMinFeatureThresh();
+      veryCommonWordThresh = config.getVeryCommonWordThresh();
+      occurringTagsOnly = config.occurringTagsOnly();
+      possibleTagsOnly = config.possibleTagsOnly();
+      // System.err.println("occurringTagsOnly: "+occurringTagsOnly);
+      // System.err.println("possibleTagsOnly: "+possibleTagsOnly);
+
+      if(config.getDefaultScore() >= 0)
+        defaultScore = config.getDefaultScore();
+    }
+
+    // just in case, reset the defaultScores array so it will be
+    // recached later when needed.  can't initialize it now in case we
+    // don't know ysize yet
+    defaultScores = null;
+
+    if (config == null || config.getMode() == TaggerConfig.Mode.TRAIN) {
+      // initialize the extractors based on the arch variable
+      // you only need to do this when training; otherwise they will be
+      // restored from the serialized file
+      extractors = new Extractors(ExtractorFrames.getExtractorFrames(arch));
+      extractorsRare = new Extractors(ExtractorFramesRare.getExtractorFramesRare(arch, tags));
+
+      setExtractorsGlobal();
+    }
+
+    ambClasses = new AmbiguityClasses(tags);
+
+    initted = true;
+  }
+
+
+  private synchronized void initDefaultScores() {
+    if (defaultScores == null) {
+      defaultScores = new double[ySize + 1];
+      for (int i = 0; i < ySize + 1; ++i) {
+      }
+    }
+  }
+

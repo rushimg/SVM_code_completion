@@ -1,0 +1,33 @@
+  private TRegexGUITreeVisitor getMatchTreeVisitor(String patternString, Thread t) {
+    TRegexGUITreeVisitor vis = null;
+    try {
+      TregexPattern pattern = compiler.compile(patternString);
+      vis = new TRegexGUITreeVisitor(pattern); //handles);
+      List<FileTreeNode> treebanks = FilePanel.getInstance().getActiveTreebanks();
+      double multiplier = 100.0/treebanks.size();
+      int treebankNum = 1;
+      for (FileTreeNode treebank : treebanks) {
+        if (t.isInterrupted()) { //get out as quickly as possible if interrupted
+          t.interrupt();
+          // cdm 2008: I added here resetting the buttons or else it didn't seem to happen; not quite sure this is the right place to do it but.
+          SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+              setTregexState(false);
+              InputPanel.this.searchThread = null;
+            }
+          });
+          return vis;
+        }
+        vis.setFilename(treebank.getFilename().intern());
+        treebank.getTreebank().apply(vis);
+      }
+    } catch (OutOfMemoryError oome) {
+      vis = null;
+      doError("Sorry, search aborted as out of memory.\nTry either running Tregex with more memory or sticking to searches that don't produce thousands of matches.", oome);
+    } catch (Exception e) {
+      doError("Sorry, there was an error compiling or running the Tregex pattern.  Please press Help if you need assistance.", e);
+    }
+    return vis;
+  }
+
+

@@ -1,0 +1,67 @@
+  public double interp = 0.6;
+  //  public double distanceDecay = 0.0;
+
+  // extra smoothing hyperparameters for tag projection backoff.  Only used if useSmoothTagProjection is true.
+  public double smooth_aTW_aT = 96.0;  // back off Bayesian m-estimate of aTW given aT to aPTW given aPT
+  public double smooth_aTW_hTd = 32.0; // back off Bayesian m-estimate of aTW_hTd to aPTW_hPTd (?? guessed, not tuned)
+  public double smooth_aT_hTd = 32.0;  // back off Bayesian m-estimate of aT_hTd to aPT_hPTd (?? guessed, not tuned)
+  public double smooth_aPTW_aPT = 16.0;  // back off word prediction from tag to projected tag (only used if useUnigramWordSmoothing is true)
+
+
+
+  public MLEDependencyGrammar(TreebankLangParserParams tlpParams, boolean directional, boolean distance, boolean coarseDistance, boolean basicCategoryTagsInDependencyGrammar, Options op, Index<String> wordIndex, Index<String> tagIndex) {
+    this(basicCategoryTagsInDependencyGrammar ? new BasicCategoryTagProjection(tlpParams.treebankLanguagePack()) : new TestTagProjection(), tlpParams, directional, distance, coarseDistance, op, wordIndex, tagIndex);
+  }
+
+  public MLEDependencyGrammar(TagProjection tagProjection, TreebankLangParserParams tlpParams, boolean directional, boolean useDistance, boolean useCoarseDistance, Options op, Index<String> wordIndex, Index<String> tagIndex) {
+    super(tlpParams.treebankLanguagePack(), tagProjection, directional, useDistance, useCoarseDistance, op, wordIndex, tagIndex);
+    useSmoothTagProjection = op.useSmoothTagProjection;
+    useUnigramWordSmoothing = op.useUnigramWordSmoothing;
+    argCounter = new ClassicCounter<IntDependency>();
+    stopCounter = new ClassicCounter<IntDependency>();
+    double[] smoothParams = tlpParams.MLEDependencyGrammarSmoothingParams();
+    smooth_aT_hTWd = smoothParams[0];
+    smooth_aTW_hTWd = smoothParams[1];
+    smooth_stop = smoothParams[2];
+    interp = smoothParams[3];
+
+    // cdm added Jan 2007 to play with dep grammar smoothing.  Integrate this better if we keep it!
+    smoothTP = new BasicCategoryTagProjection(tlpParams.treebankLanguagePack());
+  }
+
+  @Override
+  public String toString() {
+    NumberFormat nf = NumberFormat.getNumberInstance();
+    nf.setMaximumFractionDigits(2);
+    StringBuilder sb = new StringBuilder(2000);
+    String cl = getClass().getName();
+    sb.append(cl.substring(cl.lastIndexOf('.') + 1)).append("[tagbins=");
+    sb.append(numTagBins).append(",wordTokens=").append(numWordTokens).append("; head -> arg\n");
+//    for (Iterator dI = coreDependencies.keySet().iterator(); dI.hasNext();) {
+//      IntDependency d = (IntDependency) dI.next();
+//      double count = coreDependencies.getCount(d);
+//      sb.append(d + " count " + nf.format(count));
+//      if (dI.hasNext()) {
+//        sb.append(",");
+//      }
+//      sb.append("\n");
+//    }
+    sb.append("]");
+    return sb.toString();
+  }
+
+  public boolean pruneTW(IntTaggedWord argTW) {
+    String[] punctTags = tlp.punctuationTags();
+    for (String punctTag : punctTags) {
+      if (argTW.tag == tagIndex.indexOf(punctTag)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  static class EndHead {
+    public int end;
+    public int head;
+  }
+

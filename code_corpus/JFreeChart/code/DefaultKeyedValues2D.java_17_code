@@ -1,0 +1,48 @@
+    public void removeValue(Comparable rowKey, Comparable columnKey) {
+        setValue(null, rowKey, columnKey);
+
+        // 1. check whether the row is now empty.
+        boolean allNull = true;
+        int rowIndex = getRowIndex(rowKey);
+        DefaultKeyedValues row = (DefaultKeyedValues) this.rows.get(rowIndex);
+
+        for (int item = 0, itemCount = row.getItemCount(); item < itemCount;
+             item++) {
+            if (row.getValue(item) != null) {
+                allNull = false;
+                break;
+            }
+        }
+
+        if (allNull) {
+            this.rowKeys.remove(rowIndex);
+            this.rows.remove(rowIndex);
+        }
+
+        // 2. check whether the column is now empty.
+        allNull = true;
+        //int columnIndex = getColumnIndex(columnKey);
+
+        for (int item = 0, itemCount = this.rows.size(); item < itemCount;
+             item++) {
+            row = (DefaultKeyedValues) this.rows.get(item);
+            int columnIndex = row.getIndex(columnKey);
+            if (columnIndex >= 0 && row.getValue(columnIndex) != null) {
+                allNull = false;
+                break;
+            }
+        }
+
+        if (allNull) {
+            for (int item = 0, itemCount = this.rows.size(); item < itemCount;
+                 item++) {
+                row = (DefaultKeyedValues) this.rows.get(item);
+                int columnIndex = row.getIndex(columnKey);
+                if (columnIndex >= 0) {
+                    row.removeValue(columnIndex);
+                }
+            }
+            this.columnKeys.remove(columnKey);
+        }
+    }
+

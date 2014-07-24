@@ -1,0 +1,20 @@
+    private static int[] parsePortAttribute(final String portValue)
+            throws MalformedCookieException {
+        final StringTokenizer st = new StringTokenizer(portValue, ",");
+        final int[] ports = new int[st.countTokens()];
+        try {
+            int i = 0;
+            while(st.hasMoreTokens()) {
+                ports[i] = Integer.parseInt(st.nextToken().trim());
+                if (ports[i] < 0) {
+                  throw new MalformedCookieException ("Invalid Port attribute.");
+                }
+                ++i;
+            }
+        } catch (final NumberFormatException e) {
+            throw new MalformedCookieException ("Invalid Port "
+                                                + "attribute: " + e.getMessage());
+        }
+        return ports;
+    }
+

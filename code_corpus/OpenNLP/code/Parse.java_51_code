@@ -1,0 +1,90 @@
+  public void setLabel(String label) {
+    this.label = label;
+  }
+
+  private static String getType(String rest) {
+    if (rest.startsWith("-LCB-")) {
+      return "-LCB-";
+    }
+    else if (rest.startsWith("-RCB-")) {
+      return "-RCB-";
+    }
+    else if (rest.startsWith("-LRB-")) {
+      return "-LRB-";
+    }
+    else if (rest.startsWith("-RRB-")) {
+      return "-RRB-";
+    }
+    else if (rest.startsWith("-RSB-")) {
+      return "-RSB-";
+    }
+    else if (rest.startsWith("-LSB-")) {
+      return "-LSB-";
+    }
+
+    else if (rest.startsWith("-NONE-")) {
+      return "-NONE-";
+    }
+    else {
+      Matcher typeMatcher = typePattern.matcher(rest);
+      if (typeMatcher.find()) {
+        String type = typeMatcher.group(1);
+        if (useFunctionTags) {
+          Matcher funMatcher = funTypePattern.matcher(rest);
+          if (funMatcher.find()) {
+            String ftag = funMatcher.group(1);
+            type = type+"-"+ftag;
+          }
+        }
+        return type;
+      }
+    }
+    return null;
+  }
+
+  private static String encodeToken(String token) {
+    if (BRACKET_LRB.equals(token)) {
+      return "-LRB-";
+    }
+    else if (BRACKET_RRB.equals(token)) {
+      return "-RRB-";
+    }
+    else if (BRACKET_LCB.equals(token)) {
+      return "-LCB-";
+    }
+    else if (BRACKET_RCB.equals(token)) {
+      return "-RCB-";
+    }
+    else if (BRACKET_LSB.equals(token)) {
+      return "-LSB-";
+    }
+    else if (BRACKET_RSB.equals(token)) {
+      return "-RSB-";
+    }
+
+    return token;
+  }
+
+  private static String decodeToken(String token) {
+    if ("-LRB-".equals(token)) {
+      return BRACKET_LRB;
+    }
+    else if ("-RRB-".equals(token)) {
+      return BRACKET_RRB;
+    }
+    else if ("-LCB-".equals(token)) {
+      return BRACKET_LCB;
+    }
+    else if ("-RCB-".equals(token)) {
+      return BRACKET_RCB;
+    }
+    else if ("-LSB-".equals(token)) {
+      return BRACKET_LSB;
+    }
+    else if ("-RSB-".equals(token)) {
+      return BRACKET_RSB;
+    }
+
+    return token;
+  }
+

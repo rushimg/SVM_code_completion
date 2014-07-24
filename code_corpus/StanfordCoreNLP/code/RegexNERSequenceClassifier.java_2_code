@@ -1,0 +1,28 @@
+  public RegexNERSequenceClassifier(String mapping, boolean ignoreCase, boolean overwriteMyLabels, String validPosRegex) {
+    super(new Properties());
+    if (validPosRegex != null && !validPosRegex.equals("")) {
+      validPosPattern = Pattern.compile(validPosRegex);
+    } else {
+      validPosPattern = null;
+    }
+    BufferedReader rd = null;
+    try {
+      rd = IOUtils.readerFromString(mapping);
+      entries = readEntries(rd, ignoreCase);
+    } catch (IOException e) {
+      throw new RuntimeIOException("Couldn't read RegexNER from " + mapping, e);
+    } finally {
+      IOUtils.closeIgnoringExceptions(rd);
+    }
+
+    this.ignoreCase = ignoreCase;
+    myLabels = Generics.newHashSet();
+    // Can always override background or none.
+    myLabels.add(flags.backgroundSymbol);
+    myLabels.add(null);
+    if (overwriteMyLabels) {
+      for (Entry entry: entries) myLabels.add(entry.type);
+    }
+    // System.err.println("RegexNER using labels: " +  myLabels);
+  }
+

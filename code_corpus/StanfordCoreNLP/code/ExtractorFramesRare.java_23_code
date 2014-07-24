@@ -1,0 +1,46 @@
+    ArrayList<Extractor> v = new ArrayList<Extractor>();
+    GlobalHolder.ySize = GlobalHolder.tags.getSize();
+    for (int i = 1; i < 5; i++) {
+      for (int y = 0; y < GlobalHolder.tags.getSize(); y++) {
+        if (!GlobalHolder.tags.isClosed(GlobalHolder.tags.getTag(y))) {
+          ExtractorMorpho extr = new ExtractorMorpho(i, y);
+          v.add(extr);
+        }// if open
+      }
+    }// for i
+
+    for (int y = 0; y < GlobalHolder.ySize; y++) {
+      for (int y1 = 0; y1 < GlobalHolder.ySize; y1++) {
+        if (!GlobalHolder.tags.isClosed(GlobalHolder.tags.getTag(y)) && (!GlobalHolder.tags.isClosed(GlobalHolder.tags.getTag(y)))) {
+          ExtractorMorpho extr = new ExtractorMorpho(5, y, y1);
+          v.add(extr);
+        }// if open
+      }
+    }
+    int vSize = v.size();
+    Extractor[] eFramestemp = new Extractor[eFrames.length + vSize];
+    System.arraycopy(eFrames, 0, eFramestemp, 0, eFrames.length);
+    for (int i = 0; i < vSize; i++) {
+      eFramestemp[i + eFrames.length] = v.get(i);
+    }
+    eFrames = eFramestemp;
+
+  private static Extractor[] ctbPreFeatures(int n) {
+    String[] tagsets = {"AD", "AS", "BA", "CC", "CD", "CS", "DEC", "DEG", "DER", "DEV", "DT", "ETC", "FW", "IJ", "JJ", "LB", "LC", "M", "MSP", "NN", "NP", "NR", "NT", "OD", "P", "PN", "PU", "SB", "SP", "VA", "VC", "VE", "VV" };
+    Extractor[] newW = new Extractor[tagsets.length];
+    for (int k = 0; k < tagsets.length; k++) {
+      newW[k] = new CtbPreDetector(tagsets[k], n);
+    }
+    return newW;
+  } // end ctbPreFeatures
+
+
+  private static Extractor[] ctbSufFeatures(int n) {
+    String[] tagsets = {"AD", "AS", "BA", "CC", "CD", "CS", "DEC", "DEG", "DER", "DEV", "DT", "ETC", "FW", "IJ", "JJ", "LB", "LC", "M", "MSP", "NN", "NP", "NR", "NT", "OD", "P", "PN", "PU", "SB", "SP", "VA", "VC", "VE", "VV" };
+    Extractor[] newW=new Extractor[tagsets.length];
+    for(int k=0;k<tagsets.length;k++){
+      newW[k] = new CtbSufDetector(tagsets[k], n);
+    }
+    return newW;
+  } // end ctbSuffFeatures
+

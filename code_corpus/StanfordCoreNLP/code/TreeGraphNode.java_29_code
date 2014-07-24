@@ -1,0 +1,16 @@
+  public Set<Class<? extends GrammaticalRelationAnnotation>> arcLabelsToNode(TreeGraphNode destNode) {
+    Set<Class<? extends GrammaticalRelationAnnotation>> arcLabels = Generics.newHashSet();
+    CoreLabel cl = label();
+    for (Class key : cl.keySet()) {
+      if (key == null || !GrammaticalRelationAnnotation.class.isAssignableFrom(key)) {
+        continue;
+      }
+      Class<? extends GrammaticalRelationAnnotation> typedKey = ErasureUtils.uncheckedCast(key);
+      Set<TreeGraphNode> val = cl.get(typedKey);
+      if (val != null && val.contains(destNode)) {
+        arcLabels.add(typedKey);
+      }
+    }
+    return arcLabels;
+  }
+

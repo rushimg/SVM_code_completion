@@ -1,0 +1,21 @@
+    protected Shape getOuterWindow(Rectangle2D frame) {
+        double radiusMargin = 0.02;
+        double angleMargin = 1.5;
+        Rectangle2D innerFrame = DialPlot.rectangleByRadius(frame,
+                this.innerRadius - radiusMargin, this.innerRadius
+                - radiusMargin);
+        Rectangle2D outerFrame = DialPlot.rectangleByRadius(frame,
+                this.outerRadius + radiusMargin, this.outerRadius
+                + radiusMargin);
+        Arc2D inner = new Arc2D.Double(innerFrame, this.startAngle
+        Arc2D outer = new Arc2D.Double(outerFrame, this.startAngle
+                Arc2D.OPEN);
+        GeneralPath p = new GeneralPath();
+        Point2D point1 = inner.getStartPoint();
+        p.moveTo((float) point1.getX(), (float) point1.getY());
+        p.append(inner, true);
+        p.append(outer, true);
+        p.closePath();
+        return p;
+    }
+

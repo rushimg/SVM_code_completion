@@ -1,0 +1,16 @@
+  public int adjustPhrasePositions(int offsetToSubtract, String word) {
+    if (isSgml(word)) {
+      // offsetToSubtract += word.length();
+      // the token length may be different than (end - start)!
+      // i.e. QUOTE_PREVIOUSPOST is cleaned in Tokey!
+      offsetToSubtract += mByteOffset.end() - mByteOffset.start();
+      mByteOffset.setStart(-1);
+      mByteOffset.setEnd(-1);
+    } else {
+      mByteOffset.setStart(mByteOffset.start() - offsetToSubtract);
+      mByteOffset.setEnd(mByteOffset.end() - offsetToSubtract);
+    }
+
+    return offsetToSubtract;
+  }
+

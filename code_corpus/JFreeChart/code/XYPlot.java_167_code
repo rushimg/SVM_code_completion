@@ -1,0 +1,26 @@
+    public void drawDomainTickBands(Graphics2D g2, Rectangle2D dataArea,
+                                    List ticks) {
+        Paint bandPaint = getDomainTickBandPaint();
+        if (bandPaint != null) {
+            boolean fillBand = false;
+            ValueAxis xAxis = getDomainAxis();
+            double previous = xAxis.getLowerBound();
+            Iterator iterator = ticks.iterator();
+            while (iterator.hasNext()) {
+                ValueTick tick = (ValueTick) iterator.next();
+                double current = tick.getValue();
+                if (fillBand) {
+                    getRenderer().fillDomainGridBand(g2, this, xAxis, dataArea,
+                            previous, current);
+                }
+                previous = current;
+                fillBand = !fillBand;
+            }
+            double end = xAxis.getUpperBound();
+            if (fillBand) {
+                getRenderer().fillDomainGridBand(g2, this, xAxis, dataArea,
+                        previous, end);
+            }
+        }
+    }
+

@@ -1,0 +1,14 @@
+  public CoreNLPProtos.Relation toProto(RelationMention rel) {
+    CoreNLPProtos.Relation.Builder builder = CoreNLPProtos.Relation.newBuilder();
+    // From ExtractionObject
+    if (rel.getObjectId() != null) { builder.setObjectID(rel.getObjectId()); }
+    if (rel.getExtent() != null) { builder.setExtentStart(rel.getExtent().start()).setExtentEnd(rel.getExtent().end()); }
+    if (rel.getType() != null) { builder.setType(rel.getType()); }
+    if (rel.getSubType() != null) { builder.setSubtype(rel.getSubType()); }
+    // From Relation
+    if (rel.getArgNames() != null) { for (String name : rel.getArgNames()) { builder.addArgName(name); } }
+    if (rel.getArgs() != null) { for (ExtractionObject arg : rel.getArgs()) { builder.addArg(toProto((EntityMention) arg)); } }
+    // Return
+    return builder.build();
+  }
+

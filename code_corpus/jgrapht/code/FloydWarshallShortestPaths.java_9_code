@@ -1,0 +1,25 @@
+    public GraphPath<V, E> getShortestPath(V a, V b)
+    {
+        lazyCalculatePaths();
+        return getShortestPathImpl(a, b);
+    }
+
+    private GraphPath<V, E> getShortestPathImpl(V a, V b)
+    {
+        int v_a = vertices.indexOf(a);
+        int v_b = vertices.indexOf(b);
+
+        List<E> edges = new ArrayList<E>();
+        shortestPathRecur(edges, v_a, v_b);
+
+        // no path, return null
+        if (edges.size() < 1) {
+            return null;
+        }
+
+        GraphPathImpl<V, E> path =
+            new GraphPathImpl<V, E>(graph, a, b, edges, edges.size());
+
+        return path;
+    }
+

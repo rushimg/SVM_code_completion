@@ -1,0 +1,26 @@
+    private String getPolyCoords(Shape shape) {
+        if (shape == null) {
+            throw new IllegalArgumentException("Null 'shape' argument.");
+        }
+        StringBuffer result = new StringBuffer();
+        boolean first = true;
+        float[] coords = new float[6];
+        PathIterator pi = shape.getPathIterator(null, 1.0);
+        while (!pi.isDone()) {
+            pi.currentSegment(coords);
+            if (first) {
+                first = false;
+                result.append((int) coords[0]);
+                result.append(",").append((int) coords[1]);
+            }
+            else {
+                result.append(",");
+                result.append((int) coords[0]);
+                result.append(",");
+                result.append((int) coords[1]);
+            }
+            pi.next();
+        }
+        return result.toString();
+    }
+

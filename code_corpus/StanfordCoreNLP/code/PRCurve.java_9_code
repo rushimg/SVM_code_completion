@@ -1,0 +1,36 @@
+  public double fmeasure(int recall) {
+    int totaltaken = 0;
+    int rightIndex = numSamples() - 1; //next right candidate
+    int leftIndex = 0; //next left candidate
+    int tp = 0, fp = 0, fn = 0;
+    while (totaltaken < recall) {
+      double confr = Math.abs(scores[rightIndex] - .5);
+      double confl = Math.abs(scores[leftIndex] - .5);
+      int chosen = leftIndex;
+      if (confr > confl) {
+        chosen = rightIndex;
+        rightIndex--;
+      } else {
+        leftIndex++;
+      }
+      //System.err.println("chose "+chosen+" score "+scores[chosen]+" class "+classes[chosen]+" correct "+correct(scores[chosen],classes[chosen]));
+      if ((scores[chosen] >= .5)) {
+        if (classes[chosen] == 1) {
+          tp++;
+        } else {
+          fp++;
+        }
+      }
+      if ((scores[chosen] < .5)) {
+        if (classes[chosen] == 1) {
+          fn++;
+        }
+      }
+      totaltaken++;
+    }
+
+    return f1(tp, fp, fn);
+
+  }
+
+

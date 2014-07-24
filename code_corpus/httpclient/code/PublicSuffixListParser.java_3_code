@@ -1,0 +1,37 @@
+    public void parse(final Reader list) throws IOException {
+        final Collection<String> rules = new ArrayList<String>();
+        final Collection<String> exceptions = new ArrayList<String>();
+        final BufferedReader r = new BufferedReader(list);
+        final StringBuilder sb = new StringBuilder(256);
+        boolean more = true;
+        while (more) {
+            more = readLine(r, sb);
+            String line = sb.toString();
+            if (line.isEmpty()) {
+                continue;
+            }
+            if (line.startsWith("//"))
+             {
+                continue; //entire lines can also be commented using //
+            }
+            if (line.startsWith("."))
+             {
+                line = line.substring(1); // A leading dot is optional
+            }
+            // An exclamation mark (!) at the start of a rule marks an exception to a previous wildcard rule
+            final boolean isException = line.startsWith("!");
+            if (isException) {
+                line = line.substring(1);
+            }
+
+            if (isException) {
+                exceptions.add(line);
+            } else {
+                rules.add(line);
+            }
+        }
+
+        filter.setPublicSuffixes(rules);
+        filter.setExceptions(exceptions);
+    }
+

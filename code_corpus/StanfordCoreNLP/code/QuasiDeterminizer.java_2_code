@@ -1,0 +1,56 @@
+  public static ClassicCounter computeLambda(TransducerGraph graph) {
+    LinkedList queue = new LinkedList();
+    ClassicCounter lambda = new ClassicCounter();
+    ClassicCounter length = new ClassicCounter();
+    Map first = new HashMap();
+    Set nodes = graph.getNodes();
+    for (Object node : nodes) {
+      lambda.setCount(node, 0);
+      length.setCount(node, Double.POSITIVE_INFINITY);
+    }
+    Set endNodes = graph.getEndNodes();
+    for (Object o : endNodes) {
+      lambda.setCount(o, 0);
+      length.setCount(o, 0);
+      queue.addLast(o);
+    }
+    // Breadth first search
+    // get the first node from the queue
+    Object node = null;
+    try {
+      node = queue.removeFirst();
+    } catch (NoSuchElementException e) {
+    }
+    while (node != null) {
+      double oldLen = length.getCount(node);
+      Set arcs = graph.getArcsByTarget(node);
+      if (arcs != null) {
+        for (Object arc1 : arcs) {
+          TransducerGraph.Arc arc = (TransducerGraph.Arc) arc1;
+          Object newNode = arc.getSourceNode();
+          Comparable a = (Comparable) arc.getInput();
+          double k = ((Double) arc.getOutput()).doubleValue();
+          double newLen = length.getCount(newNode);
+          if (newLen == Double.POSITIVE_INFINITY) {
+            // we are discovering this
+            queue.addLast(newNode);
+          }
+          Comparable f = (Comparable) first.get(newNode);
+          if (newLen == Double.POSITIVE_INFINITY || (newLen == oldLen + 1 && a.compareTo(f) < 0)) { // f can't be null, since we have a newLen
+            // we do this to this to newNode when we have new info, possibly many times
+            first.put(newNode, a); // ejecting old one if necessary
+            length.setCount(newNode, oldLen + 1); // this may already be the case
+            lambda.setCount(newNode, k + lambda.getCount(node));
+          }
+        }
+      }
+      // get a new node from the queue
+      node = null;
+      try {
+        node = queue.removeFirst();
+      } catch (NoSuchElementException e) {
+      }
+    }
+    return lambda;
+  }
+

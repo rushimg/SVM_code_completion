@@ -1,0 +1,113 @@
+  public void useQuasiNewton() {
+    this.minimizerCreator = new Factory<Minimizer<DiffFunction>>() {
+      private static final long serialVersionUID = 9028306475652690036L;
+      @Override
+      public Minimizer<DiffFunction> create() {
+        return new QNMinimizer(LinearClassifierFactory.this.mem);
+      }
+    };
+  }
+
+  public void useQuasiNewton(final boolean useRobust) {
+    this.minimizerCreator = new Factory<Minimizer<DiffFunction>>() {
+      private static final long serialVersionUID = -9108222058357693242L;
+      @Override
+      public Minimizer<DiffFunction> create() {
+        return new QNMinimizer(LinearClassifierFactory.this.mem, useRobust);
+      }
+    };
+  }
+
+  public void useStochasticQN(final double initialSMDGain, final int stochasticBatchSize){
+    this.minimizerCreator = new Factory<Minimizer<DiffFunction>>() {
+      private static final long serialVersionUID = -7760753348350678588L;
+      @Override
+      public Minimizer<DiffFunction> create() {
+        return new SQNMinimizer<DiffFunction>(LinearClassifierFactory.this.mem, initialSMDGain, stochasticBatchSize, false);
+      }
+    };
+  }
+
+  public void useStochasticMetaDescent(){
+    useStochasticMetaDescent(0.1, 15, StochasticCalculateMethods.ExternalFiniteDifference, 20);
+  }
+
+  public void useStochasticMetaDescent(final double initialSMDGain, final int stochasticBatchSize,
+                                       final StochasticCalculateMethods stochasticMethod,final int passes) {
+    this.minimizerCreator = new Factory<Minimizer<DiffFunction>>() {
+      private static final long serialVersionUID = 6860437108371914482L;
+      @Override
+      public Minimizer<DiffFunction> create() {
+        return new SMDMinimizer<DiffFunction>(initialSMDGain,stochasticBatchSize,stochasticMethod,passes);
+      }
+    };
+  }
+
+  public void useStochasticGradientDescent(){
+    useStochasticGradientDescent(0.1,15);
+  }
+
+  public void useStochasticGradientDescent(final double gainSGD, final int stochasticBatchSize){
+    this.minimizerCreator = new Factory<Minimizer<DiffFunction>>() {
+      private static final long serialVersionUID = 2564615420955196299L;
+      @Override
+      public Minimizer<DiffFunction> create() {
+        return new InefficientSGDMinimizer<DiffFunction>(gainSGD,stochasticBatchSize);
+      }
+    };
+  }
+
+  public void useInPlaceStochasticGradientDescent() {
+    useInPlaceStochasticGradientDescent(-1, -1, 1.0);
+  }
+
+  public void useInPlaceStochasticGradientDescent(final int SGDPasses, final int tuneSampleSize, final double sigma) {
+    this.minimizerCreator = new Factory<Minimizer<DiffFunction>>() {
+      private static final long serialVersionUID = -5319225231759162616L;
+      @Override
+      public Minimizer<DiffFunction> create() {
+        return new SGDMinimizer<DiffFunction>(sigma, SGDPasses, tuneSampleSize);
+      }
+    };
+  }
+
+  public void useHybridMinimizerWithInPlaceSGD(final int SGDPasses, final int tuneSampleSize, final double sigma) {
+    this.minimizerCreator = new Factory<Minimizer<DiffFunction>>() {
+      private static final long serialVersionUID = -3042400543337763144L;
+      @Override
+      public Minimizer<DiffFunction> create() {
+        Minimizer<DiffFunction> firstMinimizer = new SGDMinimizer<DiffFunction>(sigma, SGDPasses, tuneSampleSize);
+        Minimizer<DiffFunction> secondMinimizer = new QNMinimizer(mem);
+        return new HybridMinimizer(firstMinimizer, secondMinimizer, SGDPasses);
+      }
+    };
+  }
+
+  public void useStochasticGradientDescentToQuasiNewton(final double SGDGain, final int batchSize, final int sgdPasses,
+                                                        final int qnPasses, final int hessSamples, final int QNMem,
+                                                        final boolean outputToFile) {
+    this.minimizerCreator = new Factory<Minimizer<DiffFunction>>() {
+      private static final long serialVersionUID = 5823852936137599566L;
+      @Override
+      public Minimizer<DiffFunction> create() {
+        return new SGDToQNMinimizer(SGDGain, batchSize, sgdPasses,
+                                    qnPasses, hessSamples, QNMem, outputToFile);
+      }
+    };
+  }
+
+  public void useHybridMinimizer() {
+    useHybridMinimizer(0.1, 15, StochasticCalculateMethods.ExternalFiniteDifference, 0);
+  }
+
+  public void useHybridMinimizer(final double initialSMDGain, final int stochasticBatchSize,
+                                 final StochasticCalculateMethods stochasticMethod, final int cutoffIteration){
+    this.minimizerCreator = new Factory<Minimizer<DiffFunction>>() {
+      public Minimizer<DiffFunction> create() {
+        Minimizer<DiffFunction> firstMinimizer = new SMDMinimizer<DiffFunction>(initialSMDGain, stochasticBatchSize,stochasticMethod,cutoffIteration);
+        Minimizer<DiffFunction> secondMinimizer = new QNMinimizer(mem);
+        return new HybridMinimizer(firstMinimizer,secondMinimizer,cutoffIteration);
+      }
+    };
+  }
+

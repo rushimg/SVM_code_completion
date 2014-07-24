@@ -1,0 +1,16 @@
+  @SuppressWarnings({"unchecked"})
+  public static <K1,K2> TwoDimensionalIntCounter<K2,K1> reverseIndexOrder(TwoDimensionalIntCounter<K1,K2> cc) {
+    // the typing on the outerMF is violated a bit, but it'll work....
+    TwoDimensionalIntCounter<K2,K1> result = new TwoDimensionalIntCounter<K2,K1>(
+        (MapFactory)cc.outerMF, (MapFactory)cc.innerMF);
+
+    for (K1 key1 : cc.firstKeySet()) {
+      IntCounter<K2> c = cc.getCounter(key1);
+      for (K2 key2 : c.keySet()) {
+        int count = c.getIntCount(key2);
+        result.setCount(key2, key1, count);
+      }
+    }
+    return result;
+  }
+

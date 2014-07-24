@@ -1,0 +1,58 @@
+  public static GrammaticalRelation getGrammaticalRelation(TreeGraphNode gov, TreeGraphNode dep) {
+    TreeGraphNode govH = gov.highestNodeWithSameHead();
+    TreeGraphNode depH = dep.highestNodeWithSameHead();
+    // System.err.println("  gov node " + gov);
+    // System.err.println("  govH " + govH);
+    // System.err.println("  dep node " + dep);
+    // System.err.println("  depH " + depH);
+
+    List<GrammaticalRelation> labels = Generics.newArrayList();
+    for (Class<? extends GrammaticalRelationAnnotation> arcLabel : govH.arcLabelsToNode(depH)) {
+      if (arcLabel == null) {
+        continue;
+      }
+      try {
+        GrammaticalRelation reln = GrammaticalRelation.getRelation(arcLabel);
+        labels.add(reln);
+      } catch (Exception e) {
+        continue;
+      }
+    }
+
+    return getGrammaticalRelation(govH, depH, labels);
+  }
+
+  public static GrammaticalRelation getGrammaticalRelation(TreeGraphNode govH, TreeGraphNode depH, List<GrammaticalRelation> labels) {
+    GrammaticalRelation reln = GrammaticalRelation.DEPENDENT;
+
+    List<GrammaticalRelation> sortedLabels;
+    if (labels.size() <= 1) {
+      sortedLabels = labels;
+    } else {
+      sortedLabels = new ArrayList(labels);
+      Collections.sort(sortedLabels, new NameComparator<GrammaticalRelation>());
+    }
+    // System.err.println(" gov " + govH + " dep " + depH + " arc labels: " + sortedLabels);
+
+    for (GrammaticalRelation reln2 : sortedLabels) {
+      if (reln.isAncestor(reln2)) {
+        reln = reln2;
+      } else if (PRINT_DEBUGGING && ! reln2.isAncestor(reln)) {
+        System.err.println("@@@\t" + reln + "\t" + reln2 + "\t" +
+                           govH.label().get(CoreAnnotations.ValueAnnotation.class) + "\t" + depH.label().get(CoreAnnotations.ValueAnnotation.class));
+      }
+    }
+    if (PRINT_DEBUGGING && reln.equals(GrammaticalRelation.DEPENDENT)) {
+      String topCat = govH.label().get(CoreAnnotations.ValueAnnotation.class);
+      String topTag = govH.label().get(TreeCoreAnnotations.HeadTagAnnotation.class).value();
+      String topWord = govH.label().get(TreeCoreAnnotations.HeadWordAnnotation.class).value();
+      String botCat = depH.label().get(CoreAnnotations.ValueAnnotation.class);
+      String botTag = depH.label().get(TreeCoreAnnotations.HeadTagAnnotation.class).value();
+      String botWord = depH.label().get(TreeCoreAnnotations.HeadWordAnnotation.class).value();
+      System.err.println("### dep\t" + topCat + "\t" + topTag + "\t" + topWord +
+                         "\t" + botCat + "\t" + botTag + "\t" + botWord + "\t");
+    }
+    return reln;
+  }
+
+

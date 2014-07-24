@@ -1,0 +1,30 @@
+  protected void printFeatures(IN wi, Collection<String> features) {
+    if (flags.printFeatures == null || writtenNum >= flags.printFeaturesUpto) {
+      return;
+    }
+    if (cliqueWriter == null) {
+      cliqueWriter = IOUtils.getPrintWriterOrDie("features-" + flags.printFeatures + ".txt");
+      writtenNum = 0;
+    }
+    if (wi instanceof CoreLabel) {
+      cliqueWriter.print(wi.get(CoreAnnotations.TextAnnotation.class) + ' ' + wi.get(CoreAnnotations.PartOfSpeechAnnotation.class) + ' '
+          + wi.get(CoreAnnotations.GoldAnswerAnnotation.class) + '\t');
+    } else {
+      cliqueWriter.print(wi.get(CoreAnnotations.TextAnnotation.class)
+          + wi.get(CoreAnnotations.GoldAnswerAnnotation.class) + '\t');
+    }
+    boolean first = true;
+    List<String> featsList = new ArrayList<String>(features);
+    Collections.sort(featsList);
+    for (String feat : featsList) {
+      if (first) {
+        first = false;
+      } else {
+        cliqueWriter.print(" ");
+      }
+      cliqueWriter.print(feat);
+    }
+    cliqueWriter.println();
+    writtenNum++;
+  }
+

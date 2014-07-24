@@ -1,0 +1,55 @@
+  public static void main(String[] args) {
+    Options op = new Options();
+    String treebankPath = null;
+    FileFilter trainFilter = null;
+
+    int i = 0;
+    while (i < args.length && args[i].startsWith("-")) {
+      if (args[i].equalsIgnoreCase("-train")) {
+        int numSubArgs = numSubArgs(args, i);
+        i++;
+        if (numSubArgs >= 1) {
+          treebankPath = args[i];
+          i++;
+        } else {
+          throw new RuntimeException("Error: -train option must have treebankPath as first argument.");
+        }
+        if (numSubArgs == 2) {
+          trainFilter = new NumberRangesFileFilter(args[i++], true);
+        } else if (numSubArgs >= 3) {
+          int low = Integer.parseInt(args[i]);
+          int high = Integer.parseInt(args[i + 1]);
+          trainFilter = new NumberRangeFileFilter(low, high, true);
+          i += 2;
+        }
+      } else {
+        i = op.setOption(args, i);
+      }
+    }
+    if (i < args.length) {
+      System.err.println("  Options are like for lexicalized parser including -train treebankPath fileRange]");
+      return;
+    }
+
+    System.err.println("Annotating from treebank dir: " + treebankPath);
+    Treebank trainTreebank = op.tlpParams.diskTreebank();
+    if (trainFilter == null) {
+      trainTreebank.loadPath(treebankPath);
+    } else {
+      trainTreebank.loadPath(treebankPath, trainFilter);
+    }
+
+    Treebank binaryTrainTreebank = getAnnotatedBinaryTreebankFromTreebank(trainTreebank, null, null, op).first();
+
+    Iterator<Tree> it = trainTreebank.iterator();
+    for (Tree t : binaryTrainTreebank) {
+      System.out.println("Original tree:");
+      it.next().pennPrint();
+      System.out.println("Binarized tree:");
+      t.pennPrint();
+      System.out.println();
+    }
+  } // end main
+
+
+

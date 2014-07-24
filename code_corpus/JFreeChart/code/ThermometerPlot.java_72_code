@@ -1,0 +1,23 @@
+    public void datasetChanged(DatasetChangeEvent event) {
+        if (this.dataset != null) {
+            Number vn = this.dataset.getValue();
+            if (vn != null) {
+                double value = vn.doubleValue();
+                if (inSubrange(NORMAL, value)) {
+                    this.subrange = NORMAL;
+                }
+                else if (inSubrange(WARNING, value)) {
+                   this.subrange = WARNING;
+                }
+                else if (inSubrange(CRITICAL, value)) {
+                    this.subrange = CRITICAL;
+                }
+                else {
+                    this.subrange = -1;
+                }
+                setAxisRange();
+            }
+        }
+        super.datasetChanged(event);
+    }
+

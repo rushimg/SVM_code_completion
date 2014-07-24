@@ -1,0 +1,371 @@
+      if (tl != null) {
+        return tl.getPeriod();
+      StandardTemporalType tlt = getStandardTemporalType();
+      if (tlt != null) {
+        return tlt.getPeriod();
+      }
+
+      Duration bd = null;
+      if (base != null) {
+        DateTimeFieldType mostGeneral = JodaTimeUtils.getMostGeneral(base);
+        DurationFieldType df = mostGeneral.getRangeDurationType();
+        if (df == null) {
+          df = mostGeneral.getDurationType();
+        }
+        if (df != null) {
+          bd = new DurationWithFields(new Period().withField(df, 1));
+        }
+      }
+
+      if (poy != null) {
+        Duration d = poy.getPeriod();
+        return (bd.compareTo(d) > 0) ? bd : d;
+      }
+      if (dow != null) {
+        Duration d = dow.getPeriod();
+        return (bd.compareTo(d) > 0) ? bd : d;
+      }
+      if (tod != null) {
+        Duration d = tod.getPeriod();
+        return (bd.compareTo(d) > 0) ? bd : d;
+      }
+      return bd;
+    }
+
+    @Override
+    public Range getRange(int flags, Duration granularity) {
+      Duration d = getDuration();
+      if (tod != null) {
+        Range r = tod.getRange(flags, granularity);
+        if (r != null) {
+          CompositePartialTime cpt = new CompositePartialTime(this, poy, dow, null);
+          Time t1 = cpt.intersect(r.beginTime());
+          Time t2 = cpt.intersect(r.endTime());
+          return new Range(t1, t2, d);
+        } else {
+          return super.getRange(flags, granularity);
+        }
+      }
+      if (dow != null) {
+        Range r = dow.getRange(flags, granularity);
+        if (r != null) {
+          CompositePartialTime cpt = new CompositePartialTime(this, poy, dow, null);
+          Time t1 = cpt.intersect(r.beginTime());
+          if (t1 instanceof PartialTime) {
+            ((PartialTime) t1).withStandardFields();
+          }
+          Time t2 = cpt.intersect(r.endTime());
+          if (t2 instanceof PartialTime) {
+            ((PartialTime) t2).withStandardFields();
+          }
+          return new Range(t1, t2, d);
+        } else {
+          return super.getRange(flags, granularity);
+        }
+      }
+      if (poy != null) {
+        Range r = poy.getRange(flags, granularity);
+        if (r != null) {
+          CompositePartialTime cpt = new CompositePartialTime(this, poy, null, null);
+          Time t1 = cpt.intersect(r.beginTime());
+          Time t2 = cpt.intersect(r.endTime());
+          return new Range(t1, t2, d);
+        } else {
+          return super.getRange(flags, granularity);
+        }
+      }
+      return super.getRange(flags, granularity);
+    }
+
+    @Override
+    public Time intersect(Time t) {
+      if (t == null || t == TIME_UNKNOWN)
+        return this;
+      if (base == null)
+        return t;
+      if (t instanceof PartialTime) {
+        Pair<PartialTime,PartialTime> compatible = getCompatible(this, (PartialTime) t);
+        if (compatible == null) {
+          return null;
+        }
+        Partial p = JodaTimeUtils.combine(compatible.first.base, compatible.second.base);
+        if (t instanceof CompositePartialTime) {
+          CompositePartialTime cpt = (CompositePartialTime) t;
+          Time ntod = Time.intersect(tod, cpt.tod);
+          Time ndow = Time.intersect(dow, cpt.dow);
+          Time npoy = Time.intersect(poy, cpt.poy);
+          if (ntod == null && (tod != null || cpt.tod != null))
+            return null;
+          if (ndow == null && (dow != null || cpt.dow != null))
+            return null;
+          if (npoy == null && (poy != null || cpt.poy != null))
+            return null;
+          return new CompositePartialTime(this, p, npoy, ndow, ntod);
+        } else {
+          return new CompositePartialTime(this, p, poy, dow, tod);
+        }
+      } else {
+        return super.intersect(t);
+      }
+    }
+
+    @Override
+    protected PartialTime addSupported(Period p, int scalar) {
+      return new CompositePartialTime(this, base.withPeriodAdded(p, 1), poy, dow, tod);
+    }
+
+    @Override
+    protected PartialTime addUnsupported(Period p, int scalar) {
+      return new CompositePartialTime(this, JodaTimeUtils.addForce(base, p, scalar), poy, dow, tod);
+    }
+
+    @Override
+    public PartialTime reduceGranularityTo(Duration granularity) {
+      Partial p = JodaTimeUtils.discardMoreSpecificFields( base,
+        JodaTimeUtils.getMostSpecific(granularity.getJodaTimePeriod()) );
+      return new CompositePartialTime(this, p,
+        poy.reduceGranularityTo(granularity),
+        dow.reduceGranularityTo(granularity),
+        tod.reduceGranularityTo(granularity));
+    }
+
+    @Override
+    public Time resolve(Time ref, int flags) {
+      if (ref == null || ref == TIME_UNKNOWN || ref == TIME_REF) {
+        return this;
+      }
+      if (this == TIME_REF) {
+        return ref;
+      }
+      if (this == TIME_UNKNOWN) {
+        return this;
+      }
+      Partial partialRef = ref.getJodaTimePartial();
+      if (partialRef == null) {
+        throw new UnsupportedOperationException("Cannot resolve if reftime is of class: " + ref.getClass());
+      }
+      DateTimeFieldType mgf = null;
+      if (poy != null)
+        mgf = JodaTimeUtils.QuarterOfYear;
+      else if (dow != null)
+        mgf = DateTimeFieldType.dayOfWeek();
+      else if (tod != null)
+        mgf = DateTimeFieldType.halfdayOfDay();
+      Partial p = (base != null) ? JodaTimeUtils.combineMoreGeneralFields(base, partialRef, mgf) : partialRef;
+      if (p.isSupported(DateTimeFieldType.dayOfWeek())) {
+        p = JodaTimeUtils.resolveDowToDay(p, partialRef);
+      } else if (dow != null) {
+        p = JodaTimeUtils.resolveWeek(p, partialRef);
+      }
+      if (p == base) {
+        return this;
+      } else {
+        return new CompositePartialTime(this, p, poy, dow, tod);
+      }
+    }
+
+    @Override
+    public DateTimeFormatter getFormatter(int flags) {
+      DateTimeFormatterBuilder builder = new DateTimeFormatterBuilder();
+      boolean hasDate = appendDateFormats(builder, flags);
+      if (poy != null) {
+        if (!JodaTimeUtils.hasField(base, DateTimeFieldType.monthOfYear())) {
+          // Assume poy is compatible with whatever was built and
+          // poy.toISOString() does the correct thing
+          builder.appendLiteral("-");
+          builder.appendLiteral(poy.toISOString());
+          hasDate = true;
+        }
+      }
+      if (dow != null) {
+        if (!JodaTimeUtils.hasField(base, DateTimeFieldType.monthOfYear()) && !JodaTimeUtils.hasField(base, DateTimeFieldType.dayOfWeek())) {
+          builder.appendLiteral("-");
+          builder.appendLiteral(dow.toISOString());
+          hasDate = true;
+        }
+      }
+      if (hasTime()) {
+        if (!hasDate) {
+          builder.clear();
+        }
+        appendTimeFormats(builder, flags);
+      } else if (tod != null) {
+        if (!hasDate) {
+          builder.clear();
+        }
+        // Assume tod is compatible with whatever was built and
+        // tod.toISOString() does the correct thing
+        builder.appendLiteral("T");
+        builder.appendLiteral(tod.toISOString());
+      }
+      return builder.toFormatter();
+    }
+
+    @Override
+    public TimexType getTimexType() {
+      if (tod != null) return TimexType.TIME;
+      return super.getTimexType();
+    }
+
+    private static final long serialVersionUID = 1;
+  }
+
+  // The nth temporal
+  // Example: The tenth week (of something, don't know yet)
+  // The second friday
+  public static class OrdinalTime extends Time {
+    Temporal base;
+    int n;
+
+    public OrdinalTime(Temporal base, int n) {
+      this.base = base;
+      this.n = n;
+    }
+
+    public OrdinalTime(Temporal base, long n) {
+      this.base = base;
+      this.n = (int) n;
+    }
+
+    @Override
+    public Time add(Duration offset) {
+      return new RelativeTime(this, TemporalOp.OFFSET_EXACT, offset);
+    }
+
+    @Override
+    public String toFormattedString(int flags) {
+      if (getTimeLabel() != null) {
+        return getTimeLabel();
+      }
+      if ((flags & FORMAT_ISO) != 0) {
+        return null;
+      } // TODO: is there iso standard?
+      if ((flags & FORMAT_TIMEX3_VALUE) != 0) {
+        return null;
+      } // TODO: is there timex3 standard?
+      if (base != null) {
+        String str = base.toFormattedString(flags);
+        if (str != null) {
+          return str + "-#" + n;
+        }
+      }
+      return null;
+    }
+
+    @Override
+    public Time intersect(Time t) {
+      if (base instanceof PartialTime && t instanceof PartialTime) {
+        return new OrdinalTime(base.intersect(t), n);
+      } else {
+        return new RelativeTime(t, TemporalOp.INTERSECT, this);
+      }
+    }
+    @Override
+    public Temporal resolve(Time t, int flags) {
+      if (t == null) return this; // No resolving to be done?
+      if (base instanceof PartialTime) {
+        PartialTime pt = (PartialTime) base.resolve(t,flags);
+        List<Temporal> list = pt.toList();
+        if (list != null && list.size() >= n) {
+          return list.get(n-1);
+        }
+      } else if (base instanceof Duration) {
+        Duration d = ((Duration) base).multiplyBy(n-1);
+        Time temp = t.getRange().begin();
+        return temp.offset(d,0).reduceGranularityTo(d.getDuration());
+      }
+      return this;
+    }
+
+    private static final long serialVersionUID = 1;
+  }
+
+  // Time with a range (most times have a range...)
+  public static class TimeWithRange extends Time {
+    Range range; // guess at range
+
+    public TimeWithRange(TimeWithRange t, Range range) {
+      super(t);
+      this.range = range;
+    }
+
+    public TimeWithRange(Range range) {
+      this.range = range;
+    }
+
+    @Override
+    public TimeWithRange setTimeZone(DateTimeZone tz) {
+      return new TimeWithRange(this, (Range) Temporal.setTimeZone(range, tz));
+    }
+
+    @Override
+    public Duration getDuration() {
+      if (range != null)
+        return range.getDuration();
+      else
+        return null;
+    }
+
+    @Override
+    public Range getRange(int flags, Duration granularity) {
+      if (range != null) {
+        return range.getRange(flags, granularity);
+      } else {
+        return null;
+      }
+    }
+
+    @Override
+    public Time add(Duration offset) {
+      // TODO: Check logic
+//      if (getTimeLabel() != null) {
+        if (getStandardTemporalType() != null) {
+        // Time has some meaning, keep as is
+        return new RelativeTime(this, TemporalOp.OFFSET_EXACT, offset);
+      } else
+        return new TimeWithRange(this, range.offset(offset,0));
+    }
+
+    @Override
+    public Time intersect(Time t) {
+      if (t == null || t == TIME_UNKNOWN)
+        return this;
+      if (t instanceof CompositePartialTime) {
+        return t.intersect(this);
+      } else if (t instanceof PartialTime) {
+        return t.intersect(this);
+      } else if (t instanceof GroundedTime) {
+        return t.intersect(this);
+      } else {
+        return new TimeWithRange((Range) range.intersect(t));
+      }
+    }
+
+    @Override
+    public Time resolve(Time refTime, int flags) {
+      CompositePartialTime cpt = makeComposite(new PartialTime(new Partial()), this);
+      if (cpt != null) {
+        return cpt.resolve(refTime, flags);
+      }
+      Range groundedRange = null;
+      if (range != null) {
+        groundedRange = range.resolve(refTime, flags).getRange();
+      }
+      return createTemporal(standardTemporalType, timeLabel, new TimeWithRange(this, groundedRange));
+      //return new TimeWithRange(this, groundedRange);
+    }
+
+    @Override
+    public String toFormattedString(int flags) {
+      if (getTimeLabel() != null) {
+        return getTimeLabel();
+      }
+      if ((flags & FORMAT_TIMEX3_VALUE) != 0) {
+        flags |= FORMAT_ISO;
+      }
+      return range.toFormattedString(flags);
+    }
+
+    private static final long serialVersionUID = 1;
+  }
+

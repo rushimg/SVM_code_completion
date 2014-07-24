@@ -1,0 +1,31 @@
+    public void drawAngularGridLines(Graphics2D g2,
+                                     PolarPlot plot,
+                                     List ticks,
+                                     Rectangle2D dataArea) {
+
+        g2.setFont(plot.getAngleLabelFont());
+        g2.setStroke(plot.getAngleGridlineStroke());
+        g2.setPaint(plot.getAngleGridlinePaint());
+
+        double axisMin = plot.getAxis().getLowerBound();
+        double maxRadius = plot.getMaxRadius();
+
+        Point center = plot.translateValueThetaRadiusToJava2D(axisMin, axisMin,
+                dataArea);
+        Iterator iterator = ticks.iterator();
+        while (iterator.hasNext()) {
+            NumberTick tick = (NumberTick) iterator.next();
+            Point p = plot.translateValueThetaRadiusToJava2D(
+                    tick.getNumber().doubleValue(), maxRadius, dataArea);
+            g2.setPaint(plot.getAngleGridlinePaint());
+            g2.drawLine(center.x, center.y, p.x, p.y);
+            if (plot.isAngleLabelsVisible()) {
+                int x = p.x;
+                int y = p.y;
+                g2.setPaint(plot.getAngleLabelPaint());
+                TextUtilities.drawAlignedString(tick.getText(), g2, x, y,
+                        TextAnchor.CENTER);
+            }
+        }
+     }
+

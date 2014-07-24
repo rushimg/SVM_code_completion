@@ -1,0 +1,22 @@
+  private static String getOneSubstitutionMatch(String word, Set<String> set) {
+    // TODO (?) pass the EditDistance around more places to make this
+    // more efficient.  May not really matter.
+    EditDistance ed = new EditDistance();
+    for(String cur : set) {
+      if(isOneSubstitutionMatch(word, cur, ed))
+        return cur;
+    }
+    return null;
+  }
+
+  private static boolean isOneSubstitutionMatch(String word, String match,
+                                                EditDistance ed) {
+    if(word.equalsIgnoreCase(match))
+      return true;
+    if(match.length() > 3) {
+      if(ed.score(word, match) <= 1)
+        return true;
+    }
+    return false;
+  }
+

@@ -1,0 +1,206 @@
+    public void drawItem(Graphics2D g2,
+                         CategoryItemRendererState state,
+                         Rectangle2D dataArea,
+                         CategoryPlot plot,
+                         CategoryAxis domainAxis,
+                         ValueAxis rangeAxis,
+                         CategoryDataset dataset,
+                         int row,
+                         int column,
+                         int pass) {
+
+        if (!isSeriesVisible(row)) {
+            return;
+        }
+        
+        // setup for collecting optional entity info...
+        Shape entityArea = null;
+        EntityCollection entities = state.getEntityCollection();
+
+        double y1 = 0.0;
+        Number n = dataset.getValue(row, column);
+        if (n != null) {
+            y1 = n.doubleValue();
+            if (this.renderAsPercentages) {
+                double total = DataUtilities.calculateColumnTotal(dataset,
+                        column, state.getVisibleSeriesArray());
+                y1 = y1 / total;
+            }
+        }
+        double[] stack1 = getStackValues(dataset, row, column,
+                state.getVisibleSeriesArray());
+
+
+        // leave the y values (y1, y0) untranslated as it is going to be be
+        // stacked up later by previous series values, after this it will be
+        // translated.
+        double xx1 = domainAxis.getCategoryMiddle(column, getColumnCount(),
+                dataArea, plot.getDomainAxisEdge());
+
+
+        // get the previous point and the next point so we can calculate a
+        // "hot spot" for the area (used by the chart entity)...
+        double y0 = 0.0;
+        n = dataset.getValue(row, Math.max(column - 1, 0));
+        if (n != null) {
+            y0 = n.doubleValue();
+            if (this.renderAsPercentages) {
+                double total = DataUtilities.calculateColumnTotal(dataset,
+                        Math.max(column - 1, 0), state.getVisibleSeriesArray());
+                y0 = y0 / total;
+            }
+        }
+        double[] stack0 = getStackValues(dataset, row, Math.max(column - 1, 0),
+                state.getVisibleSeriesArray());
+
+        // FIXME: calculate xx0
+        double xx0 = domainAxis.getCategoryStart(column, getColumnCount(),
+                dataArea, plot.getDomainAxisEdge());
+
+        int itemCount = dataset.getColumnCount();
+        double y2 = 0.0;
+        n = dataset.getValue(row, Math.min(column + 1, itemCount - 1));
+        if (n != null) {
+            y2 = n.doubleValue();
+            if (this.renderAsPercentages) {
+                double total = DataUtilities.calculateColumnTotal(dataset,
+                        Math.min(column + 1, itemCount - 1),
+                        state.getVisibleSeriesArray());
+                y2 = y2 / total;
+            }
+        }
+        double[] stack2 = getStackValues(dataset, row, Math.min(column + 1,
+                itemCount - 1), state.getVisibleSeriesArray());
+
+        double xx2 = domainAxis.getCategoryEnd(column, getColumnCount(),
+                dataArea, plot.getDomainAxisEdge());
+
+        // FIXME: calculate xxLeft and xxRight
+        double xxLeft = xx0;
+        double xxRight = xx2;
+
+        double[] stackLeft = averageStackValues(stack0, stack1);
+        double[] stackRight = averageStackValues(stack1, stack2);
+        double[] adjStackLeft = adjustedStackValues(stack0, stack1);
+        double[] adjStackRight = adjustedStackValues(stack1, stack2);
+
+        float transY1;
+
+        RectangleEdge edge1 = plot.getRangeAxisEdge();
+
+        GeneralPath left = new GeneralPath();
+        GeneralPath right = new GeneralPath();
+        if (y1 >= 0.0) {  // handle positive value
+            transY1 = (float) rangeAxis.valueToJava2D(y1 + stack1[1], dataArea,
+                    edge1);
+            float transStack1 = (float) rangeAxis.valueToJava2D(stack1[1],
+                    dataArea, edge1);
+            float transStackLeft = (float) rangeAxis.valueToJava2D(
+                    adjStackLeft[1], dataArea, edge1);
+
+            // LEFT POLYGON
+            if (y0 >= 0.0) {
+                double yleft = (y0 + y1) / 2.0 + stackLeft[1];
+                float transYLeft
+                    = (float) rangeAxis.valueToJava2D(yleft, dataArea, edge1);
+                left.moveTo((float) xx1, transY1);
+                left.lineTo((float) xx1, transStack1);
+                left.lineTo((float) xxLeft, transStackLeft);
+                left.lineTo((float) xxLeft, transYLeft);
+                left.closePath();
+            }
+            else {
+                left.moveTo((float) xx1, transStack1);
+                left.lineTo((float) xx1, transY1);
+                left.lineTo((float) xxLeft, transStackLeft);
+                left.closePath();
+            }
+
+            float transStackRight = (float) rangeAxis.valueToJava2D(
+                    adjStackRight[1], dataArea, edge1);
+            // RIGHT POLYGON
+            if (y2 >= 0.0) {
+                double yright = (y1 + y2) / 2.0 + stackRight[1];
+                float transYRight
+                    = (float) rangeAxis.valueToJava2D(yright, dataArea, edge1);
+                right.moveTo((float) xx1, transStack1);
+                right.lineTo((float) xx1, transY1);
+                right.lineTo((float) xxRight, transYRight);
+                right.lineTo((float) xxRight, transStackRight);
+                right.closePath();
+            }
+            else {
+                right.moveTo((float) xx1, transStack1);
+                right.lineTo((float) xx1, transY1);
+                right.lineTo((float) xxRight, transStackRight);
+                right.closePath();
+            }
+        }
+        else {  // handle negative value
+            transY1 = (float) rangeAxis.valueToJava2D(y1 + stack1[0], dataArea,
+                    edge1);
+            float transStack1 = (float) rangeAxis.valueToJava2D(stack1[0],
+                    dataArea, edge1);
+            float transStackLeft = (float) rangeAxis.valueToJava2D(
+                    adjStackLeft[0], dataArea, edge1);
+
+            // LEFT POLYGON
+            if (y0 >= 0.0) {
+                left.moveTo((float) xx1, transStack1);
+                left.lineTo((float) xx1, transY1);
+                left.lineTo((float) xxLeft, transStackLeft);
+                left.clone();
+            }
+            else {
+                double yleft = (y0 + y1) / 2.0 + stackLeft[0];
+                float transYLeft = (float) rangeAxis.valueToJava2D(yleft,
+                        dataArea, edge1);
+                left.moveTo((float) xx1, transY1);
+                left.lineTo((float) xx1, transStack1);
+                left.lineTo((float) xxLeft, transStackLeft);
+                left.lineTo((float) xxLeft, transYLeft);
+                left.closePath();
+            }
+            float transStackRight = (float) rangeAxis.valueToJava2D(
+                    adjStackRight[0], dataArea, edge1);
+
+            // RIGHT POLYGON
+            if (y2 >= 0.0) {
+                right.moveTo((float) xx1, transStack1);
+                right.lineTo((float) xx1, transY1);
+                right.lineTo((float) xxRight, transStackRight);
+                right.closePath();
+            }
+            else {
+                double yright = (y1 + y2) / 2.0 + stackRight[0];
+                float transYRight = (float) rangeAxis.valueToJava2D(yright,
+                        dataArea, edge1);
+                right.moveTo((float) xx1, transStack1);
+                right.lineTo((float) xx1, transY1);
+                right.lineTo((float) xxRight, transYRight);
+                right.lineTo((float) xxRight, transStackRight);
+                right.closePath();
+            }
+        }
+
+        if (pass == 0) {
+            Paint itemPaint = getItemPaint(row, column);
+            g2.setPaint(itemPaint);
+            g2.fill(left);
+            g2.fill(right);
+
+            // add an entity for the item...
+            if (entities != null) {
+                GeneralPath gp = new GeneralPath(left);
+                gp.append(right, false);
+                entityArea = gp;
+                addItemEntity(entities, dataset, row, column, entityArea);
+            }
+        }
+        else if (pass == 1) {
+            drawItemLabel(g2, plot.getOrientation(), dataset, row, column,
+                    xx1, transY1, y1 < 0.0);
+        }
+
+    }
+

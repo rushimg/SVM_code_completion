@@ -1,0 +1,29 @@
+  protected Parse[] advanceTags(final Parse p) {
+    Parse[] children = p.getChildren();
+    String[] words = new String[children.length];
+    double[] probs = new double[words.length];
+    for (int i = 0,il = children.length; i < il; i++) {
+      words[i] = children[i].getCoveredText();
+    }
+    Sequence[] ts = tagger.topKSequences(words);
+    if (ts.length == 0) {
+      System.err.println("no tag sequence");
+    }
+    Parse[] newParses = new Parse[ts.length];
+    for (int i = 0; i < ts.length; i++) {
+      String[] tags = ts[i].getOutcomes().toArray(new String[words.length]);
+      ts[i].getProbs(probs);
+      newParses[i] = (Parse) p.clone(); //copies top level
+      if (createDerivationString) newParses[i].getDerivation().append(i).append(".");
+      for (int j = 0; j < words.length; j++) {
+        Parse word = children[j];
+        //System.err.println("inserting tag "+tags[j]);
+        double prob = probs[j];
+        newParses[i].insert(new Parse(word.getText(), word.getSpan(), tags[j], prob,j));
+        newParses[i].addProb(Math.log(prob));
+        //newParses[i].show();
+      }
+    }
+    return newParses;
+  }
+

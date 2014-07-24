@@ -1,0 +1,17 @@
+    protected void encounterVertexAgain(V vertex, E edge)
+    {
+        FibonacciHeapNode<QueueEntry<V, E>> node = getSeenData(vertex);
+
+        if (node.getData().frozen) {
+            // no improvement for this vertex possible
+            return;
+        }
+
+        double candidatePathLength = calculatePathLength(vertex, edge);
+
+        if (candidatePathLength < node.getKey()) {
+            node.getData().spanningTreeEdge = edge;
+            heap.decreaseKey(node, candidatePathLength);
+        }
+    }
+

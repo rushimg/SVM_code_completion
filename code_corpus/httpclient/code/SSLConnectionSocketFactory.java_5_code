@@ -1,0 +1,75 @@
+    protected void prepareSocket(final SSLSocket socket) throws IOException {
+    }
+
+    @Override
+    public Socket createSocket(final HttpContext context) throws IOException {
+        return SocketFactory.getDefault().createSocket();
+    }
+
+    @Override
+    public Socket connectSocket(
+            final int connectTimeout,
+            final Socket socket,
+            final HttpHost host,
+            final InetSocketAddress remoteAddress,
+            final InetSocketAddress localAddress,
+            final HttpContext context) throws IOException {
+        Args.notNull(host, "HTTP host");
+        Args.notNull(remoteAddress, "Remote address");
+        final Socket sock = socket != null ? socket : createSocket(context);
+        if (localAddress != null) {
+            sock.bind(localAddress);
+        }
+        try {
+            sock.connect(remoteAddress, connectTimeout);
+        } catch (final IOException ex) {
+            try {
+                sock.close();
+            } catch (final IOException ignore) {
+            }
+            throw ex;
+        }
+        // Setup SSL layering if necessary
+        if (sock instanceof SSLSocket) {
+            final SSLSocket sslsock = (SSLSocket) sock;
+            sslsock.startHandshake();
+            verifyHostname(sslsock, host.getHostName());
+            return sock;
+        } else {
+            return createLayeredSocket(sock, host.getHostName(), remoteAddress.getPort(), context);
+        }
+    }
+
+    @Override
+    public Socket createLayeredSocket(
+            final Socket socket,
+            final String target,
+            final int port,
+            final HttpContext context) throws IOException {
+        final SSLSocket sslsock = (SSLSocket) this.socketfactory.createSocket(
+                socket,
+                target,
+                port,
+                true);
+        if (supportedProtocols != null) {
+            sslsock.setEnabledProtocols(supportedProtocols);
+        }
+        if (supportedCipherSuites != null) {
+            sslsock.setEnabledCipherSuites(supportedCipherSuites);
+        }
+        prepareSocket(sslsock);
+        sslsock.startHandshake();
+        verifyHostname(sslsock, target);
+        return sslsock;
+    }
+
+    X509HostnameVerifier getHostnameVerifier() {
+        return this.hostnameVerifier;
+    }
+
+    private void verifyHostname(final SSLSocket sslsock, final String hostname) throws IOException {
+        try {
+            this.hostnameVerifier.verify(hostname, sslsock);
+            // verifyHostName() didn't blowup - good!
+        } catch (final IOException iox) {
+            // close the socket before re-throwing the exception

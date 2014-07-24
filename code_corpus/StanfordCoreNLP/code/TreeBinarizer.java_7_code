@@ -1,0 +1,22 @@
+  public Tree transformTree(Tree t) {
+    // handle null
+    if (t == null) {
+      return null;
+    }
+
+    String cat = t.label().value();
+    // handle words
+    if (t.isLeaf()) {
+      Label label = new Word(cat);//new CategoryWordTag(cat,cat,"");
+      return tf.newLeaf(label);
+    }
+    // handle tags
+    if (t.isPreTerminal()) {
+      Tree childResult = transformTree(t.getChild(0));
+      String word = childResult.value();  // would be nicer if Word/CWT ??
+      List<Tree> newChildren = new ArrayList<Tree>(1);
+      newChildren.add(childResult);
+      return tf.newTreeNode(new CategoryWordTag(cat, word, cat), newChildren);
+    }
+    // handle categories
+    Tree headChild = hf.determineHead(t);

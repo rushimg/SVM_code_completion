@@ -1,0 +1,30 @@
+  public static List<IntPair> findOffsets(Pattern pattern, String text, int start, int end)
+  {
+    Matcher matcher = pattern.matcher(text);
+    List<IntPair> offsets = null;
+    matcher.region(start,end);
+    int i = (matcher.find())? matcher.start():-1;
+    if (i >= 0 && i < end) { offsets = new ArrayList<IntPair>(); }
+    while (i >= 0 && i < end) {
+      boolean matched = true;
+      int matchEnd = matcher.end();
+      if (i > 0) {
+        char charBefore = text.charAt(i-1);
+        if (Character.isLetterOrDigit(charBefore)) {
+          matched = false;
+        }
+      }
+      if (matchEnd < text.length()) {
+        char charAfter = text.charAt(matchEnd);
+        if (Character.isLetterOrDigit(charAfter)) {
+          matched = false;
+        }
+      }
+      if (matched) {
+        offsets.add(new IntPair(i, matchEnd));
+      }
+      i = (matcher.find())? matcher.start():-1;
+    }
+    return offsets;
+  }
+

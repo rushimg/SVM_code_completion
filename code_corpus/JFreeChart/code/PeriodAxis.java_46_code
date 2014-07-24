@@ -1,0 +1,135 @@
+    protected AxisState drawTickLabels(int band, Graphics2D g2, AxisState state,
+                                       Rectangle2D dataArea,
+                                       RectangleEdge edge) {
+
+        // work out the initial gap
+        double delta1 = 0.0;
+        FontMetrics fm = g2.getFontMetrics(this.labelInfo[band].getLabelFont());
+        if (edge == RectangleEdge.BOTTOM) {
+            delta1 = this.labelInfo[band].getPadding().calculateTopOutset(
+                    fm.getHeight());
+        }
+        else if (edge == RectangleEdge.TOP) {
+            delta1 = this.labelInfo[band].getPadding().calculateBottomOutset(
+                    fm.getHeight());
+        }
+        state.moveCursor(delta1, edge);
+        long axisMin = this.first.getFirstMillisecond();
+        long axisMax = this.last.getLastMillisecond();
+        g2.setFont(this.labelInfo[band].getLabelFont());
+        g2.setPaint(this.labelInfo[band].getLabelPaint());
+
+        // work out the number of periods to skip for labelling
+        RegularTimePeriod p1 = this.labelInfo[band].createInstance(
+                new Date(axisMin), this.timeZone, this.locale);
+        RegularTimePeriod p2 = this.labelInfo[band].createInstance(
+                new Date(axisMax), this.timeZone, this.locale);
+        String label1 = this.labelInfo[band].getDateFormat().format(
+                new Date(p1.getMiddleMillisecond()));
+        String label2 = this.labelInfo[band].getDateFormat().format(
+                new Date(p2.getMiddleMillisecond()));
+        Rectangle2D b1 = TextUtilities.getTextBounds(label1, g2,
+                g2.getFontMetrics());
+        Rectangle2D b2 = TextUtilities.getTextBounds(label2, g2,
+                g2.getFontMetrics());
+        double w = Math.max(b1.getWidth(), b2.getWidth());
+        long ww = Math.round(java2DToValue(dataArea.getX() + w + 5.0,
+                dataArea, edge));
+        if (isInverted()) {
+            ww = axisMax - ww;
+        }
+        else {
+            ww = ww - axisMin;
+        }
+        long length = p1.getLastMillisecond()
+                      - p1.getFirstMillisecond();
+        int periods = (int) (ww / length) + 1;
+
+        RegularTimePeriod p = this.labelInfo[band].createInstance(
+                new Date(axisMin), this.timeZone, this.locale);
+        Rectangle2D b = null;
+        long lastXX = 0L;
+        float y = (float) (state.getCursor());
+        TextAnchor anchor = TextAnchor.TOP_CENTER;
+        float yDelta = (float) b1.getHeight();
+        if (edge == RectangleEdge.TOP) {
+            anchor = TextAnchor.BOTTOM_CENTER;
+            yDelta = -yDelta;
+        }
+        while (p.getFirstMillisecond() <= axisMax) {
+            float x = (float) valueToJava2D(p.getMiddleMillisecond(), dataArea,
+                    edge);
+            DateFormat df = this.labelInfo[band].getDateFormat();
+            String label = df.format(new Date(p.getMiddleMillisecond()));
+            long first = p.getFirstMillisecond();
+            long last = p.getLastMillisecond();
+            if (last > axisMax) {
+                // this is the last period, but it is only partially visible
+                // so check that the label will fit before displaying it...
+                Rectangle2D bb = TextUtilities.getTextBounds(label, g2,
+                        g2.getFontMetrics());
+                if ((x + bb.getWidth() / 2) > dataArea.getMaxX()) {
+                    float xstart = (float) valueToJava2D(Math.max(first,
+                            axisMin), dataArea, edge);
+                    if (bb.getWidth() < (dataArea.getMaxX() - xstart)) {
+                        x = ((float) dataArea.getMaxX() + xstart) / 2.0f;
+                    }
+                    else {
+                        label = null;
+                    }
+                }
+            }
+            if (first < axisMin) {
+                // this is the first period, but it is only partially visible
+                // so check that the label will fit before displaying it...
+                Rectangle2D bb = TextUtilities.getTextBounds(label, g2,
+                        g2.getFontMetrics());
+                if ((x - bb.getWidth() / 2) < dataArea.getX()) {
+                    float xlast = (float) valueToJava2D(Math.min(last,
+                            axisMax), dataArea, edge);
+                    if (bb.getWidth() < (xlast - dataArea.getX())) {
+                        x = (xlast + (float) dataArea.getX()) / 2.0f;
+                    }
+                    else {
+                        label = null;
+                    }
+                }
+
+            }
+            if (label != null) {
+                g2.setPaint(this.labelInfo[band].getLabelPaint());
+                b = TextUtilities.drawAlignedString(label, g2, x, y, anchor);
+            }
+            if (lastXX > 0L) {
+                if (this.labelInfo[band].getDrawDividers()) {
+                    long nextXX = p.getFirstMillisecond();
+                    long mid = (lastXX + nextXX) / 2;
+                    float mid2d = (float) valueToJava2D(mid, dataArea, edge);
+                    g2.setStroke(this.labelInfo[band].getDividerStroke());
+                    g2.setPaint(this.labelInfo[band].getDividerPaint());
+                    g2.draw(new Line2D.Float(mid2d, y, mid2d, y + yDelta));
+                }
+            }
+            lastXX = last;
+            for (int i = 0; i < periods; i++) {
+                p = p.next();
+            }
+            p.peg(this.calendar);
+        }
+        double used = 0.0;
+        if (b != null) {
+            used = b.getHeight();
+            // work out the trailing gap
+            if (edge == RectangleEdge.BOTTOM) {
+                used += this.labelInfo[band].getPadding().calculateBottomOutset(
+                        fm.getHeight());
+            }
+            else if (edge == RectangleEdge.TOP) {
+                used += this.labelInfo[band].getPadding().calculateTopOutset(
+                        fm.getHeight());
+            }
+        }
+        state.moveCursor(used, edge);
+        return state;
+    }
+

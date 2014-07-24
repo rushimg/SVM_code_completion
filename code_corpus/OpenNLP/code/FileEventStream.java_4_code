@@ -1,0 +1,27 @@
+  public FileEventStream(File file) throws IOException {
+    reader = new BufferedReader(new InputStreamReader(new FileInputStream(file),"UTF8"));
+  }
+
+  @Override
+  public Event read() throws IOException {
+    String line;
+    if ((line =reader.readLine()) != null) {
+      StringTokenizer st = new StringTokenizer(line);
+      String outcome = st.nextToken();
+      int count = st.countTokens();
+      String[] context = new String[count];
+      for (int ci = 0; ci < count; ci++) {
+        context[ci] = st.nextToken();
+      }
+
+      return new Event(outcome, context);
+    }
+    else {
+      return null;
+    }
+  }
+
+  public void close() throws IOException {
+    reader.close();
+  }
+

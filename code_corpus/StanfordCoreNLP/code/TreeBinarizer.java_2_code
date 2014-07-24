@@ -1,0 +1,142 @@
+  public void setDoSelectiveSplit(boolean doSelectiveSplit) {
+    this.doSelectiveSplit = doSelectiveSplit;
+    if (!doSelectiveSplit) {
+      stateCounter = new ClassicCounter<String>();
+    }
+  }
+
+  private static String join(List<Tree> treeList) {
+    StringBuilder sb = new StringBuilder();
+    for (Iterator<Tree> i = treeList.iterator(); i.hasNext();) {
+      Tree t = i.next();
+      sb.append(t.label().value());
+      if (i.hasNext()) {
+        sb.append(" ");
+      }
+    }
+    return sb.toString();
+  }
+
+  private static void localTreeString(Tree t, StringBuilder sb, int level) {
+    sb.append("\n");
+    for (int i = 0; i < level; i++) {
+      sb.append("  ");
+    }
+    sb.append("(").append(t.label());
+    if (level == 0 || isSynthetic(t.label().value())) {
+      // if it is synthetic, recurse
+      for (int c = 0; c < t.numChildren(); c++) {
+        localTreeString(t.getChild(c), sb, level + 1);
+      }
+    }
+    sb.append(")");
+  }
+
+  protected static boolean isSynthetic(String label) {
+    return label.indexOf('@') > -1;
+  }
+
+
+  Tree binarizeLocalTree(Tree t, int headNum, TaggedWord head) {
+    //System.out.println("Working on: "+headNum+" -- "+t.label());
+    if (markovFactor) {
+      String topCat = t.label().value();
+      Label newLabel = new CategoryWordTag(topCat, head.word(), head.tag());
+      t.setLabel(newLabel);
+      Tree t2;
+      if (insideFactor) {
+        t2 = markovInsideBinarizeLocalTreeNew(t, headNum, 0, t.numChildren() - 1, true);
+        //          t2 = markovInsideBinarizeLocalTree(t, head, headNum, topCat, false);
+      } else {
+        t2 = markovOutsideBinarizeLocalTree(t, head, headNum, topCat, new LinkedList<Tree>(), false);
+      }
+
+      if (DEBUG) {
+        CategoryWordTag.printWordTag = false;
+        StringBuilder sb1 = new StringBuilder();
+        localTreeString(t, sb1, 0);
+        StringBuilder sb2 = new StringBuilder();
+        localTreeString(t2, sb2, 0);
+        System.out.println("Old Local Tree: " + sb1);
+        System.out.println("New Local Tree: " + sb2);
+        CategoryWordTag.printWordTag = true;
+      }
+      return t2;
+    }
+    if (insideFactor) {
+      return insideBinarizeLocalTree(t, headNum, head, 0, 0);
+    }
+    return outsideBinarizeLocalTree(t, t.label().value(), t.label().value(), headNum, head, 0, "", 0, "");
+  }
+
+  private Tree markovOutsideBinarizeLocalTree(Tree t, TaggedWord head, int headLoc, String topCat, LinkedList<Tree> ll, boolean doneLeft) {
+    String word = head.word();
+    String tag = head.tag();
+    List<Tree> newChildren = new ArrayList<Tree>(2);
+    // call with t, headNum, head, topCat, false
+    if (headLoc == 0) {
+      if (!doneLeft) {
+        // insert a unary to separate the sides
+        if (tlp.isStartSymbol(topCat)) {
+          return markovOutsideBinarizeLocalTree(t, head, headLoc, topCat, new LinkedList<Tree>(), true);
+        }
+        String subLabelStr;
+        if (simpleLabels) {
+          subLabelStr = "@" + topCat;
+        } else {
+          String headStr = t.getChild(headLoc).label().value();
+          subLabelStr = "@" + topCat + ": " + headStr + " ]";
+        }
+        Label subLabel = new CategoryWordTag(subLabelStr, word, tag);
+        Tree subTree = tf.newTreeNode(subLabel, t.getChildrenAsList());
+        newChildren.add(markovOutsideBinarizeLocalTree(subTree, head, headLoc, topCat, new LinkedList<Tree>(), true));
+        return tf.newTreeNode(t.label(), newChildren);
+
+      }
+      int len = t.numChildren();
+      // len = 1
+      if (len == 1) {
+        return tf.newTreeNode(t.label(), Collections.singletonList(t.getChild(0)));
+      }
+      ll.addFirst(t.getChild(len - 1));
+      if (ll.size() > markovOrder) {
+        ll.removeLast();
+      }
+      // generate a right
+      String subLabelStr;
+      if (simpleLabels) {
+        subLabelStr = "@" + topCat;
+      } else {
+        String headStr = t.getChild(headLoc).label().value();
+        String rightStr = (len > markovOrder - 1 ? "... " : "") + join(ll);
+        subLabelStr = "@" + topCat + ": " + headStr + " " + rightStr;
+      }
+      Label subLabel = new CategoryWordTag(subLabelStr, word, tag);
+      Tree subTree = tf.newTreeNode(subLabel, t.getChildrenAsList().subList(0, len - 1));
+      newChildren.add(markovOutsideBinarizeLocalTree(subTree, head, headLoc, topCat, ll, true));
+      newChildren.add(t.getChild(len - 1));
+      return tf.newTreeNode(t.label(), newChildren);
+    }
+    if (headLoc > 0) {
+      ll.addLast(t.getChild(0));
+      if (ll.size() > markovOrder) {
+        ll.removeFirst();
+      }
+      // generate a left
+      String subLabelStr;
+      if (simpleLabels) {
+        subLabelStr = "@" + topCat;
+      } else {
+        String headStr = t.getChild(headLoc).label().value();
+        String leftStr = join(ll) + (headLoc > markovOrder - 1 ? " ..." : "");
+        subLabelStr = "@" + topCat + ": " + leftStr + " " + headStr + " ]";
+      }
+      Label subLabel = new CategoryWordTag(subLabelStr, word, tag);
+      Tree subTree = tf.newTreeNode(subLabel, t.getChildrenAsList().subList(1, t.numChildren()));
+      newChildren.add(t.getChild(0));
+      newChildren.add(markovOutsideBinarizeLocalTree(subTree, head, headLoc - 1, topCat, ll, false));
+      return tf.newTreeNode(t.label(), newChildren);
+    }
+    return t;
+  }
+

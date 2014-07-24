@@ -1,0 +1,59 @@
+  public static Set<String> readColumnSet(String infile, int field) throws IOException
+  {
+    BufferedReader br = IOUtils.getBufferedFileReader(infile);
+    String line;
+    Set<String> set = Generics.newHashSet();
+    while ((line = br.readLine()) != null) {
+      line = line.trim();
+      if (line.length() > 0) {
+        if (field < 0) {
+          set.add(line);
+        } else {
+          String[] fields = tab.split(line);
+          if (field < fields.length) {
+            set.add(fields[field]);
+          }
+        }
+      }
+    }
+    br.close();
+    return set;
+  }
+
+  public static <C> List<C> readObjectFromColumns(Class objClass, String filename, String[] fieldNames, String delimiter)
+          throws IOException, InstantiationException, IllegalAccessException,
+          NoSuchFieldException, NoSuchMethodException, InvocationTargetException
+  {
+    Pattern delimiterPattern = Pattern.compile(delimiter);
+    List<C> list = new ArrayList<C>();
+    BufferedReader br = IOUtils.getBufferedFileReader(filename);
+    String line;
+    while ((line = br.readLine()) != null) {
+      line = line.trim();
+      if (line.length() > 0) {
+        C item = StringUtils.columnStringToObject(objClass, line, delimiterPattern, fieldNames);
+        list.add(item);
+      }
+    }
+    br.close();
+    return list;
+  }
+
+  public static Map<String,String> readMap(String filename) throws IOException
+  {
+    Map<String,String> map = Generics.newHashMap();
+    try {
+      BufferedReader br = IOUtils.getBufferedFileReader(filename);
+      String line;
+      while ((line = br.readLine()) != null) {
+        String[] fields = tab.split(line,2);
+        map.put(fields[0], fields[1]);
+      }
+      br.close();
+    } catch (IOException ex) {
+      throw new RuntimeException(ex);
+    }
+    return map;
+  }
+
+

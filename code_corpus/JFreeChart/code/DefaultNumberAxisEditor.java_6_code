@@ -1,0 +1,58 @@
+    public DefaultNumberAxisEditor(NumberAxis axis) {
+
+        super(axis);
+
+        this.autoRange = axis.isAutoRange();
+        this.minimumValue = axis.getLowerBound();
+        this.maximumValue = axis.getUpperBound();
+
+        this.gridPaintSample = new PaintSample(Color.blue);
+        this.gridStrokeSample = new StrokeSample(new BasicStroke(1.0f));
+
+        this.availableStrokeSamples = new StrokeSample[3];
+        this.availableStrokeSamples[0] = new StrokeSample(
+                new BasicStroke(1.0f));
+        this.availableStrokeSamples[1] = new StrokeSample(
+                new BasicStroke(2.0f));
+        this.availableStrokeSamples[2] = new StrokeSample(
+                new BasicStroke(3.0f));
+
+        JTabbedPane other = getOtherTabs();
+
+        JPanel range = new JPanel(new LCBLayout(3));
+        range.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
+
+        range.add(new JPanel());
+        this.autoRangeCheckBox = new JCheckBox(localizationResources.getString(
+                "Auto-adjust_range"), this.autoRange);
+        this.autoRangeCheckBox.setActionCommand("AutoRangeOnOff");
+        this.autoRangeCheckBox.addActionListener(this);
+        range.add(this.autoRangeCheckBox);
+        range.add(new JPanel());
+
+        range.add(new JLabel(localizationResources.getString(
+                "Minimum_range_value")));
+        this.minimumRangeValue = new JTextField(Double.toString(
+                this.minimumValue));
+        this.minimumRangeValue.setEnabled(!this.autoRange);
+        this.minimumRangeValue.setActionCommand("MinimumRange");
+        this.minimumRangeValue.addActionListener(this);
+        this.minimumRangeValue.addFocusListener(this);
+        range.add(this.minimumRangeValue);
+        range.add(new JPanel());
+
+        range.add(new JLabel(localizationResources.getString(
+                "Maximum_range_value")));
+        this.maximumRangeValue = new JTextField(Double.toString(
+                this.maximumValue));
+        this.maximumRangeValue.setEnabled(!this.autoRange);
+        this.maximumRangeValue.setActionCommand("MaximumRange");
+        this.maximumRangeValue.addActionListener(this);
+        this.maximumRangeValue.addFocusListener(this);
+        range.add(this.maximumRangeValue);
+        range.add(new JPanel());
+
+        other.add(localizationResources.getString("Range"), range);
+
+    }
+

@@ -1,0 +1,19 @@
+    protected double calculatePathCost(V vertex, E edge)
+    {
+        V oppositeVertex = Graphs.getOppositeVertex(graph, edge, vertex);
+
+        // we get the data of the previous pass.
+        BellmanFordPathElement<V, E> oppositePrevData =
+            getPrevSeenData(oppositeVertex);
+
+        double pathCost = graph.getEdgeWeight(edge);
+
+        if (!oppositePrevData.getVertex().equals(this.startVertex)) {
+            // if it's not the start vertex, we add the cost of the previous
+            // pass.
+            pathCost += oppositePrevData.getCost();
+        }
+
+        return pathCost;
+    }
+

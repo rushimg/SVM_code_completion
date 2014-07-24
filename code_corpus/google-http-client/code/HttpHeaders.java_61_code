@@ -1,0 +1,45 @@
+  public static void serializeHeadersForMultipartRequests(
+      HttpHeaders headers, StringBuilder logbuf, Logger logger, Writer writer) throws IOException {
+    serializeHeaders(headers, logbuf, null, logger, null, writer);
+  }
+
+  static void serializeHeaders(HttpHeaders headers,
+      StringBuilder logbuf,
+      StringBuilder curlbuf,
+      Logger logger,
+      LowLevelHttpRequest lowLevelHttpRequest,
+      Writer writer) throws IOException {
+    HashSet<String> headerNames = new HashSet<String>();
+    for (Map.Entry<String, Object> headerEntry : headers.entrySet()) {
+      String name = headerEntry.getKey();
+      Preconditions.checkArgument(headerNames.add(name),
+          "multiple headers of the same name (headers are case insensitive): %s", name);
+      Object value = headerEntry.getValue();
+      if (value != null) {
+        // compute the display name from the declared field name to fix capitalization
+        String displayName = name;
+        FieldInfo fieldInfo = headers.getClassInfo().getFieldInfo(name);
+        if (fieldInfo != null) {
+          displayName = fieldInfo.getName();
+        }
+        Class<? extends Object> valueClass = value.getClass();
+        if (value instanceof Iterable<?> || valueClass.isArray()) {
+          for (Object repeatedValue : Types.iterableOf(value)) {
+            addHeader(logger,
+                logbuf,
+                curlbuf,
+                lowLevelHttpRequest,
+                displayName,
+                repeatedValue,
+                writer);
+          }
+        } else {
+          addHeader(logger, logbuf, curlbuf, lowLevelHttpRequest, displayName, value, writer);
+        }
+      }
+    }
+    if (writer != null) {
+      writer.flush();
+    }
+  }
+

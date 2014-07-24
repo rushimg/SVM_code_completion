@@ -1,0 +1,28 @@
+  public void show(StringBuffer sb) {
+    int start;
+    start = span.getStart();
+    if (!type.equals(AbstractBottomUpParser.TOK_NODE)) {
+      sb.append("(");
+      sb.append(type).append(" ");
+      //System.out.print(label+" ");
+      //System.out.print(head+" ");
+      //System.out.print(df.format(prob)+" ");
+    }
+    for (Iterator<Parse> i = parts.iterator(); i.hasNext();) {
+      Parse c = i.next();
+      Span s = c.span;
+      if (start < s.getStart()) {
+        //System.out.println("pre "+start+" "+s.getStart());
+        sb.append(encodeToken(text.substring(start, s.getStart())));
+      }
+      c.show(sb);
+      start = s.getEnd();
+    }
+    if (start < span.getEnd()) {
+      sb.append(encodeToken(text.substring(start, span.getEnd())));
+    }
+    if (!type.equals(AbstractBottomUpParser.TOK_NODE)) {
+      sb.append(")");
+    }
+  }
+

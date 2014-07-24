@@ -1,0 +1,23 @@
+  public String getContentAsString() throws IOException {
+    if (getStreamingContent() == null) {
+      return "";
+    }
+    // write content to a byte[]
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    getStreamingContent().writeTo(out);
+    // determine gzip encoding
+    String contentEncoding = getContentEncoding();
+    if (contentEncoding != null && contentEncoding.contains("gzip")) {
+      InputStream contentInputStream =
+          new GZIPInputStream(new ByteArrayInputStream(out.toByteArray()));
+      out = new ByteArrayOutputStream();
+      IOUtils.copy(contentInputStream, out);
+    }
+    // determine charset parameter from content type
+    String contentType = getContentType();
+    HttpMediaType mediaType = contentType != null ? new HttpMediaType(contentType) : null;
+    Charset charset = mediaType == null || mediaType.getCharsetParameter() == null
+        ? Charsets.ISO_8859_1 : mediaType.getCharsetParameter();
+    return out.toString(charset.name());
+  }
+

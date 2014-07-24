@@ -1,0 +1,53 @@
+  protected List<Triple<F,L,Double>> getTopFeaturesLabelIndices(Set<Integer> iLabels,
+                                                 double threshold, boolean useMagnitude, int numFeatures,
+                                                 boolean descending)
+  {
+    edu.stanford.nlp.util.PriorityQueue<Pair<Integer,Integer>> biggestKeys =
+      new FixedPrioritiesPriorityQueue<Pair<Integer,Integer>>();
+
+    // locate biggest keys
+    for (int feat = 0; feat < weights.length; feat++) {
+      for (int lab = 0; lab < weights[feat].length; lab++) {
+        if (iLabels != null && !iLabels.contains(lab)) {
+          continue;
+        }
+        double thisWeight;
+        if (useMagnitude) {
+          thisWeight = Math.abs(weights[feat][lab]);
+        } else {
+          thisWeight = weights[feat][lab];
+        }
+
+        if (thisWeight > threshold) {
+          // reverse the weight, so get smallest first
+          thisWeight = -thisWeight;
+          if (biggestKeys.size() == numFeatures) {
+            // have enough features, add only if bigger
+            double lowest = biggestKeys.getPriority();
+            if (thisWeight < lowest) {
+              // remove smallest
+              biggestKeys.removeFirst();
+              biggestKeys.add(new Pair<Integer, Integer>(feat, lab), thisWeight);
+            }
+          } else {
+            // always add it if don't have enough features yet
+            biggestKeys.add(new Pair<Integer, Integer>(feat, lab), thisWeight);
+          }
+        }
+      }
+    }
+
+    List<Triple<F,L,Double>> topFeatures = new ArrayList<Triple<F,L,Double>>(biggestKeys.size());
+    while (!biggestKeys.isEmpty()) {
+      Pair<Integer,Integer> p = biggestKeys.removeFirst();
+      double weight = weights[p.first()][p.second()];
+      F feat = featureIndex.get(p.first());
+      L label = labelIndex.get(p.second());
+      topFeatures.add(new Triple<F,L,Double>(feat, label, weight));
+    }
+    if (descending) {
+      Collections.reverse(topFeatures);
+    }
+    return topFeatures;
+  }
+

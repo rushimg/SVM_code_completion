@@ -1,0 +1,36 @@
+    public void setHistory(List<double[]> sList, List<double[]> yList) {
+      int size = sList.size();
+
+      for (int i = 0; i < size; i++) {
+        update(sList.get(i), yList.get(i), ArrayMath.innerProduct(yList.get(i),
+            yList.get(i)), ArrayMath.innerProduct(sList.get(i), yList.get(i)),
+            0, 1.0);
+      }
+    }
+
+    public double[] applyInitialHessian(double[] x) {
+
+      switch (scaleOpt) {
+      case SCALAR:
+        say("I");
+        ArrayMath.multiplyInPlace(x, gamma);
+        break;
+      case DIAGONAL:
+        say("D");
+        if (d != null) {
+          // Check sizes
+          if (x.length != d.length) {
+            throw new IllegalArgumentException("Vector of incorrect size passed to applyInitialHessian in QNInfo class");
+          }
+          // Scale element-wise
+          for (int i = 0; i < x.length; i++) {
+            x[i] = x[i] / (d[i]);
+          }
+        }
+        break;
+      }
+
+      return x;
+
+    }
+

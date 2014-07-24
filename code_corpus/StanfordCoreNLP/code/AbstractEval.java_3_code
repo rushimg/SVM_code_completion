@@ -1,0 +1,41 @@
+  public double getEvalbF1Percent() {
+  }
+
+  public double getExact() {
+    return exact / num;
+  }
+
+  public double getExactPercent() {
+  }
+
+  public int getNum() {
+    return (int) num;
+  }
+
+  // should be able to pass in a comparator!
+  protected static double precision(Set<?> s1, Set<?> s2) {
+    double n = 0.0;
+    double p = 0.0;
+    for (Object o1 : s1) {
+      if (s2.contains(o1)) {
+        p += 1.0;
+      }
+      if (DEBUG) {
+        if (s2.contains(o1)) {
+          System.err.println("Eval Found: "+o1);
+        } else {
+          System.err.println("Eval Failed to find: "+o1);
+        }
+      }
+      n += 1.0;
+    }
+    if (DEBUG) System.err.println("Matched " + p + " of " + n);
+    return (n > 0.0 ? p / n : 0.0);
+  }
+
+  protected abstract Set<?> makeObjects(Tree tree);
+
+  public void evaluate(Tree guess, Tree gold) {
+    evaluate(guess, gold, new PrintWriter(System.out, true));
+  }
+

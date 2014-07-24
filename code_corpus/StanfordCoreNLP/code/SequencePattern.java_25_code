@@ -1,0 +1,26 @@
+    private final Set<Pair<Integer,Integer>>[] reachableChildBids;
+
+    private ConjMatchStateInfo(int startBid, int childCount, int startPos)
+    {
+      this.startBid = startBid;
+      this.startPos = startPos;
+      this.childCount = childCount;
+      this.reachableChildBids = new Set[childCount];
+    }
+
+    private void addChildBid(int i, int bid, int pos)
+    {
+      if (reachableChildBids[i] == null) {
+        reachableChildBids[i] = new ArraySet<Pair<Integer,Integer>>();
+      }
+      reachableChildBids[i].add(new Pair<Integer,Integer>(bid,pos) );
+    }
+
+    private boolean isAllChildMatched()
+    {
+      for (Set<Pair<Integer,Integer>> v:reachableChildBids) {
+        if (v == null || v.isEmpty()) return false;
+      }
+      return true;
+    }
+

@@ -1,0 +1,110 @@
+  @Override
+  public int setOptionFlag(String[] args, int i) {
+    //System.err.println("Setting option flag: "  + args[i]);
+
+    //lang. specific options
+    boolean didSomething = false;
+    if (annotationPatterns.keySet().contains(args[i])) {
+      if(!baselineFeatures.contains(args[i])) additionalFeatures.add(args[i]);
+      Pair<TregexPattern,Function<TregexMatcher,String>> p = annotationPatterns.get(args[i]);
+      activeAnnotations.add(p);
+      optionsString.append("Option " + args[i] + " added annotation pattern " + p.first() + " with annotation " + p.second() + '\n');
+      didSomething = true;
+
+    } else if (args[i].equals("-retainNPTmp")) {
+      optionsString.append("Retaining NP-TMP marking.\n");
+      retainNPTmp = true;
+      didSomething = true;
+
+    } else if (args[i].equals("-retainNPSbj")) {
+      optionsString.append("Retaining NP-SBJ dash tag.\n");
+      retainNPSbj = true;
+      didSomething = true;
+
+    } else if (args[i].equals("-retainPPClr")) {
+      optionsString.append("Retaining PP-CLR dash tag.\n");
+      retainPPClr = true;
+      didSomething = true;
+
+    } else if (args[i].equals("-discardX")) {
+      optionsString.append("Discarding X trees.\n");
+      discardX = true;
+      didSomething = true;
+
+    } else if (args[i].equals("-changeNoLabels")) {
+      optionsString.append("Change no labels.\n");
+      changeNoLabels = true;
+      didSomething = true;
+
+    } else if (args[i].equals("-markPRDverbs")) {
+      optionsString.append("Mark PRD.\n");
+      retainPRD = true;
+      didSomething = true;
+
+    } else if (args[i].equals("-collinizerRetainsPunctuation")) {
+      optionsString.append("Collinizer retains punctuation.\n");
+      collinizerRetainsPunctuation = true;
+      didSomething = true;
+
+    } else if (args[i].equals("-arabicFactored")) {
+      for(String annotation : baselineFeatures) {
+        String[] a = {annotation};
+        setOptionFlag(a,0);
+      }
+      didSomething = true;
+
+    } else if (args[i].equalsIgnoreCase("-headFinder") && (i + 1 < args.length)) {
+      try {
+        HeadFinder hf = (HeadFinder) Class.forName(args[i + 1]).newInstance();
+        setHeadFinder(hf);
+        optionsString.append("HeadFinder: " + args[i + 1] + "\n");
+
+      } catch (Exception e) {
+        System.err.println(e);
+        System.err.println(this.getClass().getName() +
+                           ": Could not load head finder " + args[i + 1]);
+      }
+      i++;
+      didSomething = true;
+
+    } else if(args[i].equals("-factlex") && (i + 1 < args.length)) {
+      String activeFeats = setupMorphoFeatures(args[++i]);
+      optionsString.append("Factored Lexicon: active features: ").append(activeFeats);
+//
+//      removeBaselineFeature("-markFem");
+//      optionsString.append(" (removed -markFem)\n");
+
+      didSomething = true;
+
+    } else if(args[i].equals("-noFeatures")) {
+      activeAnnotations.clear();
+      optionsString.append("Removed all manual features.\n");
+
+      didSomething = true;
+    }
+    //wsg2010: The segmenter does not work, but keep this to remember how it was instantiated.
+    //    else if (args[i].equals("-arabicTokenizerModel")) {
+    //      String modelFile = args[i+1];
+    //      try {
+    //        WordSegmenter aSeg = (WordSegmenter) Class.forName("edu.stanford.nlp.wordseg.ArabicSegmenter").newInstance();
+    //        aSeg.loadSegmenter(modelFile);
+    //        System.out.println("aSeg=" + aSeg);
+    //        TokenizerFactory<Word> aTF = WordSegmentingTokenizer.factory(aSeg);
+    //        ((ArabicTreebankLanguagePack) treebankLanguagePack()).setTokenizerFactory(aTF);
+    //      } catch (RuntimeIOException ex) {
+    //        System.err.println("Couldn't load ArabicSegmenter " + modelFile);
+    //        ex.printStackTrace();
+    //      } catch (Exception e) {
+    //        System.err.println("Couldn't instantiate segmenter: edu.stanford.nlp.wordseg.ArabicSegmenter");
+    //        e.printStackTrace();
+    //      }
+    //      i++; // 2 args
+    //      didSomething = true;
+    //    }
+
+    if (didSomething) i++;
+
+    return i;
+  }
+
+

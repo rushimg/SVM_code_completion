@@ -1,0 +1,32 @@
+    protected void fillBackground(Graphics2D g2, Rectangle2D area,
+            PlotOrientation orientation) {
+        if (orientation == null) {
+            throw new IllegalArgumentException("Null 'orientation' argument.");
+        }
+        if (this.backgroundPaint == null) {
+            return;
+        }
+        Paint p = this.backgroundPaint;
+        if (p instanceof GradientPaint) {
+            GradientPaint gp = (GradientPaint) p;
+            if (orientation == PlotOrientation.VERTICAL) {
+                p = new GradientPaint((float) area.getCenterX(),
+                        (float) area.getMaxY(), gp.getColor1(),
+                        (float) area.getCenterX(), (float) area.getMinY(),
+                        gp.getColor2());
+            }
+            else if (orientation == PlotOrientation.HORIZONTAL) {
+                p = new GradientPaint((float) area.getMinX(),
+                        (float) area.getCenterY(), gp.getColor1(),
+                        (float) area.getMaxX(), (float) area.getCenterY(),
+                        gp.getColor2());
+            }
+        }
+        Composite originalComposite = g2.getComposite();
+        g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER,
+                this.backgroundAlpha));
+        g2.setPaint(p);
+        g2.fill(area);
+        g2.setComposite(originalComposite);
+    }
+

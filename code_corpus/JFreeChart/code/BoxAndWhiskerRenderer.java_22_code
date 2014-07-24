@@ -1,0 +1,35 @@
+    public void drawItem(Graphics2D g2,
+                         CategoryItemRendererState state,
+                         Rectangle2D dataArea,
+                         CategoryPlot plot,
+                         CategoryAxis domainAxis,
+                         ValueAxis rangeAxis,
+                         CategoryDataset dataset,
+                         int row,
+                         int column,
+                         int pass) {
+
+        // do nothing if item is not visible
+        if (!getItemVisible(row, column)) {
+            return;
+        }
+
+        if (!(dataset instanceof BoxAndWhiskerCategoryDataset)) {
+            throw new IllegalArgumentException(
+                    "BoxAndWhiskerRenderer.drawItem() : the data should be "
+                    + "of type BoxAndWhiskerCategoryDataset only.");
+        }
+
+        PlotOrientation orientation = plot.getOrientation();
+
+        if (orientation == PlotOrientation.HORIZONTAL) {
+            drawHorizontalItem(g2, state, dataArea, plot, domainAxis,
+                    rangeAxis, dataset, row, column);
+        }
+        else if (orientation == PlotOrientation.VERTICAL) {
+            drawVerticalItem(g2, state, dataArea, plot, domainAxis,
+                    rangeAxis, dataset, row, column);
+        }
+
+    }
+

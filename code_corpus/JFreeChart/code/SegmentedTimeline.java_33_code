@@ -1,0 +1,21 @@
+    public long getTimeFromLong(long date) {
+        long result = date;
+        if (this.adjustForDaylightSaving) {
+            this.workingCalendarNoDST.setTime(new Date(date));
+            this.workingCalendar.set(
+                this.workingCalendarNoDST.get(Calendar.YEAR),
+                this.workingCalendarNoDST.get(Calendar.MONTH),
+                this.workingCalendarNoDST.get(Calendar.DATE),
+                this.workingCalendarNoDST.get(Calendar.HOUR_OF_DAY),
+                this.workingCalendarNoDST.get(Calendar.MINUTE),
+                this.workingCalendarNoDST.get(Calendar.SECOND)
+            );
+            this.workingCalendar.set(Calendar.MILLISECOND,
+                    this.workingCalendarNoDST.get(Calendar.MILLISECOND));
+            // result = this.workingCalendar.getTimeInMillis();
+            // preceding code won't work with JDK 1.3
+            result = this.workingCalendar.getTime().getTime();
+        }
+        return result;
+    }
+

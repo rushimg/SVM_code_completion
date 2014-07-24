@@ -1,0 +1,53 @@
+  @Override
+  public double scoreOf(int[] sequence) {
+
+    int[] given = new int[window() - 1];
+    Arrays.fill(given, classIndex.indexOf(backgroundSymbol));
+    double logProb = 0.0;
+    for (int i = 0, length = length(); i < length; i++) {
+      int label = sequence[i];
+      logProb += condLogProbGivenPrevious(i, label, given);
+      System.arraycopy(given, 1, given, 0, given.length - 1);
+      given[given.length - 1] = label;
+    }
+    return logProb;
+  }
+
+  // OTHER
+
+  public int window() {
+    return windowSize;
+  }
+
+  public int getNumClasses() {
+    return numClasses;
+  }
+
+  public double totalMass() {
+    return z;
+  }
+
+  public int backgroundIndex() {
+    return backgroundIndex;
+  }
+
+  public E backgroundSymbol() {
+    return backgroundSymbol;
+  }
+
+  //
+  // MARGINAL PROB OF TAG AT SINGLE POSITION
+  //
+
+  public double[][] logProbTable() {
+    double[][] result = new double[length()][classIndex.size()];
+    for (int i = 0; i < length(); i++) {
+      result[i] = new double[classIndex.size()];
+      for (int j = 0; j < classIndex.size(); j++) {
+        result[i][j] = logProb(i, j);
+      }
+    }
+
+    return result;
+  }
+

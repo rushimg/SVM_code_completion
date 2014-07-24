@@ -1,0 +1,25 @@
+  public static Interval<Integer> getChunkOffsetsUsingCharOffsets(List<? extends CoreMap> chunkList,
+                                       int charStart, int charEnd)
+  {
+    int chunkStart = 0;
+    int chunkEnd = chunkList.size();
+    // Find first chunk with start > charStart
+    for (int i = 0; i < chunkList.size(); i++) {
+      int start = chunkList.get(i).get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);
+      if (start > charStart) {
+        break;
+      }
+      chunkStart = i;
+    }
+    // Find first chunk with start >= charEnd
+    for (int i = chunkStart; i < chunkList.size(); i++) {
+      int start = chunkList.get(i).get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);
+      if (start >= charEnd) {
+        chunkEnd = i;
+        break;
+      }
+    }
+    return Interval.toInterval(chunkStart, chunkEnd, Interval.INTERVAL_OPEN_END);
+  }
+
+

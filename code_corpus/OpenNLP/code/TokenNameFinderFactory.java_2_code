@@ -1,0 +1,72 @@
+  public TokenNameFinderFactory() {
+    this.seqCodec = new BioCodec();
+  }
+
+  public TokenNameFinderFactory(byte[] featureGeneratorBytes, final Map<String, Object> resources,
+      SequenceCodec<String> seqCodec) {
+    init(featureGeneratorBytes, resources, seqCodec);
+  }
+
+  void init(byte[] featureGeneratorBytes, final Map<String, Object> resources, SequenceCodec<String> seqCodec) {
+    this.featureGeneratorBytes = featureGeneratorBytes;
+    this.resources = resources;
+    this.seqCodec = seqCodec;
+  }
+
+  protected SequenceCodec<String> getSequenceCodec() {
+    return seqCodec;
+  }
+
+  protected Map<String, Object> getResources() {
+    return resources;
+  }
+
+  public static TokenNameFinderFactory create(String subclassName, byte[] featureGeneratorBytes, final Map<String, Object> resources,
+      SequenceCodec<String> seqCodec)
+      throws InvalidFormatException {
+    if (subclassName == null) {
+      // will create the default factory
+      return new TokenNameFinderFactory();
+    }
+    try {
+      TokenNameFinderFactory theFactory = ExtensionLoader.instantiateExtension(
+          TokenNameFinderFactory.class, subclassName);
+      theFactory.init(featureGeneratorBytes, resources, seqCodec);
+      return theFactory;
+    } catch (Exception e) {
+      String msg = "Could not instantiate the " + subclassName
+          + ". The initialization throw an exception.";
+      System.err.println(msg);
+      e.printStackTrace();
+      throw new InvalidFormatException(msg, e);
+    }
+  }
+
+  @Override
+  public void validateArtifactMap() throws InvalidFormatException {
+    // no additional artifacts
+  }
+
+  public SequenceCodec<String> createSequenceCodec() {
+
+    if (artifactProvider != null) {
+      String sequeceCodecImplName = artifactProvider.getManifestProperty(
+          TokenNameFinderModel.SEQUENCE_CODEC_CLASS_NAME_PARAMETER);
+      return instantiateSequenceCodec(sequeceCodecImplName);
+    }
+    else {
+      return seqCodec;
+    }
+  }
+
+  public NameContextGenerator createContextGenerator() {
+
+    AdaptiveFeatureGenerator featureGenerator = createFeatureGenerators();
+
+    if (featureGenerator == null) {
+      featureGenerator = NameFinderME.createFeatureGenerator();
+    }
+
+    return new DefaultNameContextGenerator(featureGenerator);
+  }
+

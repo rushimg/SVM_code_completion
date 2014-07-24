@@ -1,0 +1,14 @@
+  private ClassicCounter<Pair<F, L>> convertSVMStructWeights(ClassicCounter<Integer> weights, Index<F> featureIndex, Index<L> labelIndex) {
+    // int numLabels = labelIndex.size();
+    int numFeatures = featureIndex.size();
+    ClassicCounter<Pair<F, L>> newWeights = new ClassicCounter<Pair<F, L>>();
+    for (int i : weights.keySet()) {
+      L l = labelIndex.get((i-1) / numFeatures); // integer division on purpose
+      F f = featureIndex.get((i-1) % numFeatures);
+      double w = weights.getCount(i);
+      newWeights.incrementCount(new Pair<F, L>(f, l),w);
+    }
+
+    return newWeights;
+  }
+

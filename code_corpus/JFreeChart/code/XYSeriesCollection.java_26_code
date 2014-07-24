@@ -1,0 +1,23 @@
+    public double getDomainLowerBound(boolean includeInterval) {
+        if (includeInterval) {
+            return this.intervalDelegate.getDomainLowerBound(includeInterval);
+        }
+        else {
+            double result = Double.NaN;
+            int seriesCount = getSeriesCount();
+            for (int s = 0; s < seriesCount; s++) {
+                XYSeries series = getSeries(s);
+                double lowX = series.getMinX();
+                if (Double.isNaN(result)) {
+                    result = lowX;
+                }
+                else {
+                    if (!Double.isNaN(lowX)) {
+                        result = Math.min(result, lowX);
+                    }
+                }
+            }
+            return result;
+        }
+    }
+

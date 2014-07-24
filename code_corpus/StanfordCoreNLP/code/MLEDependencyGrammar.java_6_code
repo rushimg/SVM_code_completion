@@ -1,0 +1,25 @@
+  public static List<IntDependency> treeToDependencyList(Tree tree, Index<String> wordIndex, Index<String> tagIndex) {
+    List<IntDependency> depList = new ArrayList<IntDependency>();
+    treeToDependencyHelper(tree, depList, 0, wordIndex, tagIndex);
+    if (DEBUG) {
+      System.out.println("----------------------------");
+      tree.pennPrint();
+      System.out.println(depList);
+    }
+    return depList;
+  }
+
+  public double scoreAll(Collection<IntDependency> deps) {
+    double totalScore = 0.0;
+    for (IntDependency d : deps) {
+      //if (d.head.word == wordIndex.indexOf("via") ||
+      //          d.arg.word == wordIndex.indexOf("via"))
+      //System.out.println(d+" at "+score(d));
+      double score = score(d);
+      if (score > Double.NEGATIVE_INFINITY) {
+        totalScore += score;
+      }
+    }
+    return totalScore;
+  }
+

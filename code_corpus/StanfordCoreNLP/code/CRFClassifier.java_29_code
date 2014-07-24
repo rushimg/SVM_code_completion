@@ -1,0 +1,121 @@
+  public void serializeTextClassifier(String serializePath) {
+    System.err.print("Serializing Text classifier to " + serializePath + "...");
+    try {
+      PrintWriter pw = new PrintWriter(new GZIPOutputStream(new FileOutputStream(serializePath)));
+      serializeTextClassifier(pw);
+
+      pw.close();
+      System.err.println("done.");
+
+    } catch (Exception e) {
+      System.err.println("Failed");
+      e.printStackTrace();
+    }
+  }
+
+  public void serializeClassIndex(String serializePath) {
+    System.err.print("Serializing class index to " + serializePath + "...");
+
+    ObjectOutputStream oos = null;
+    try {
+      oos = IOUtils.writeStreamFromString(serializePath);
+      oos.writeObject(classIndex);
+      System.err.println("done.");
+    } catch (Exception e) {
+      System.err.println("Failed");
+      e.printStackTrace();
+    } finally {
+      IOUtils.closeIgnoringExceptions(oos);
+    }
+  }
+
+  public static Index<String> loadClassIndexFromFile(String serializePath) {
+    System.err.print("Reading class index from " + serializePath + "...");
+
+    ObjectInputStream ois = null;
+    Index<String> c = null;
+    try {
+      ois = IOUtils.readStreamFromString(serializePath);
+      c = (Index<String>) ois.readObject();
+      System.err.println("done.");
+    } catch (Exception e) {
+      System.err.println("Failed");
+      e.printStackTrace();
+    } finally {
+      IOUtils.closeIgnoringExceptions(ois);
+    }
+
+    return c;
+  }
+
+  public void serializeWeights(String serializePath) {
+    System.err.print("Serializing weights to " + serializePath + "...");
+
+    ObjectOutputStream oos = null;
+    try {
+      oos = IOUtils.writeStreamFromString(serializePath);
+      oos.writeObject(weights);
+      System.err.println("done.");
+    } catch (Exception e) {
+      System.err.println("Failed");
+      e.printStackTrace();
+    } finally {
+      IOUtils.closeIgnoringExceptions(oos);
+    }
+  }
+
+  public static double[][] loadWeightsFromFile(String serializePath) {
+    System.err.print("Reading weights from " + serializePath + "...");
+
+    ObjectInputStream ois = null;
+    double[][] w = null;
+    try {
+      ois = IOUtils.readStreamFromString(serializePath);
+      w = (double[][]) ois.readObject();
+      System.err.println("done.");
+    } catch (Exception e) {
+      System.err.println("Failed");
+      e.printStackTrace();
+    } finally {
+      IOUtils.closeIgnoringExceptions(ois);
+    }
+
+    return w;
+  }
+
+  public void serializeFeatureIndex(String serializePath) {
+    System.err.print("Serializing FeatureIndex to " + serializePath + "...");
+
+    ObjectOutputStream oos = null;
+    try {
+      oos = IOUtils.writeStreamFromString(serializePath);
+      oos.writeObject(featureIndex);
+      System.err.println("done.");
+    } catch (Exception e) {
+      System.err.println("Failed");
+      e.printStackTrace();
+    } finally {
+      IOUtils.closeIgnoringExceptions(oos);
+    }
+  }
+
+  public static Index<String> loadFeatureIndexFromFile(String serializePath) {
+    System.err.print("Reading FeatureIndex from " + serializePath + "...");
+
+    ObjectInputStream ois = null;
+    Index<String> f = null;
+    try {
+      ois = IOUtils.readStreamFromString(serializePath);
+      f = (Index<String>) ois.readObject();
+      System.err.println("done.");
+    } catch (Exception e) {
+      System.err.println("Failed");
+      e.printStackTrace();
+    } finally {
+      IOUtils.closeIgnoringExceptions(ois);
+    }
+
+    return f;
+  }
+
+

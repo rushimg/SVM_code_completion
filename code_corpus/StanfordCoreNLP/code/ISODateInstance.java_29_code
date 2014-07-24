@@ -1,0 +1,25 @@
+  public boolean isAfter(String dateString) {
+    if (this.isUnparseable()) {
+      return false;
+    }
+    if (!isDateFormat(dateString)) {
+      return false;
+    }
+    return isAfter(this.getEndDate(), dateString);
+  }
+
+  public boolean isCompatibleDate(ISODateInstance other) {
+    if (this.isUnparseable() || other.isUnparseable()) {
+      return this.isoDate.equals(other.isoDate);
+    }
+
+    //first see if either is a range
+    if (this.isRange()) {
+      return this.contains(other);
+    } else if (other.isRange()) {
+      return false;//not compatible if other is range and this isn't
+    } else {
+      return isCompatible(isoDate, other.getDateString());
+    }
+  }
+

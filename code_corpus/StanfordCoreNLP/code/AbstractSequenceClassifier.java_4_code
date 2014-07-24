@@ -1,0 +1,23 @@
+  protected final void reinit() {
+    pad.set(CoreAnnotations.AnswerAnnotation.class, flags.backgroundSymbol);
+    pad.set(CoreAnnotations.GoldAnswerAnnotation.class, flags.backgroundSymbol);
+
+    for (FeatureFactory featureFactory : featureFactories) {
+      featureFactory.init(flags);
+    }
+
+    defaultReaderAndWriter = makeReaderAndWriter();
+    if (flags.readerAndWriter != null &&
+        flags.readerAndWriter.equals(flags.plainTextDocumentReaderAndWriter)) {
+      plainTextReaderAndWriter = defaultReaderAndWriter;
+    } else {
+      plainTextReaderAndWriter = makePlainTextReaderAndWriter();
+    }
+
+    if (!flags.useKnownLCWords) {
+      knownLCWords = Collections.emptySet();
+    } else if (knownLCWords == null || knownLCWords.size() == 0) {
+      knownLCWords = Collections.newSetFromMap(new ConcurrentHashMap<String,Boolean>());
+    }
+  }
+

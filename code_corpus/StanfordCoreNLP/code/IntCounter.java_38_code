@@ -1,0 +1,69 @@
+  private static class NaturalComparator<T> implements Comparator<T> {
+    public int compare(T o1, T o2) {
+      if (o1 instanceof Comparable) {
+        return ErasureUtils.<Comparable<T>>uncheckedCast(o1).compareTo(o2);
+      }
+      return 0; // soft-fail
+    }
+  }
+
+  //
+  // For compatibilty with the Counter interface
+  //
+
+  public Factory<Counter<E>> getFactory() {
+    return new Factory<Counter<E>>() {
+      private static final long serialVersionUID = 7470763055803428477L;
+
+      public Counter<E> create() {
+        return new IntCounter<E>(getMapFactory());
+      }
+    };
+  }
+
+  public void setCount(E key, double value) {
+    setCount(key, (int)value);
+  }
+
+  @Override
+  public double incrementCount(E key, double value) {
+    incrementCount(key, (int)value);
+    return getCount(key);
+  }
+
+  public double totalCount() {
+    return totalDoubleCount();
+  }
+
+  public Collection<Double> values() {
+    return new AbstractCollection<Double>() {
+      @Override
+      public Iterator<Double> iterator() {
+        return new Iterator<Double>() {
+          Iterator<MutableInteger> inner = map.values().iterator();
+
+          public boolean hasNext() {
+            return inner.hasNext();
+          }
+
+          public Double next() {
+            return inner.next().doubleValue();
+          }
+
+          public void remove() {
+            throw new UnsupportedOperationException();
+          }
+        };
+      }
+
+      @Override
+      public int size() {
+        return map.size();
+      }
+    };
+  }
+
+  public Iterator<E> iterator() {
+    return keySet().iterator();
+  }
+

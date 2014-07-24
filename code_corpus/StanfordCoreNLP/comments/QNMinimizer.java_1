@@ -1,0 +1,72 @@
+/**
+ *
+ * An implementation of L-BFGS for Quasi Newton unconstrained minimization.
+ *
+ * The general outline of the algorithm is taken from:
+ * <blockquote>
+ * <i>Numerical Optimization</i> (second edition) 2006
+ * Jorge Nocedal and Stephen J. Wright
+ * </blockquote>
+ * A variety of different options are available.
+ *
+ * <h3>LINESEARCHES</h3>
+ *
+ * BACKTRACKING: This routine
+ * simply starts with a guess for step size of 1. If the step size doesn't
+ * supply a sufficient decrease in the function value the step is updated
+ * through step = 0.1*step. This method is certainly simpler, but doesn't allow
+ * for an increase in step size, and isn't well suited for Quasi Newton methods.
+ *
+ * MINPACK: This routine is based off of the implementation used in MINPACK.
+ * This routine finds a point satisfying the Wolfe conditions, which state that
+ * a point must have a sufficiently smaller function value, and a gradient of
+ * smaller magnitude. This provides enough to prove theoretically quadratic
+ * convergence. In order to find such a point the linesearch first finds an
+ * interval which must contain a satisfying point, and then progressively
+ * reduces that interval all using cubic or quadratic interpolation.
+ *
+ * SCALING: L-BFGS allows the initial guess at the hessian to be updated at each
+ * step. Standard BFGS does this by approximating the hessian as a scaled
+ * identity matrix. To use this method set the scaleOpt to SCALAR. A better way
+ * of approximate the hessian is by using a scaling diagonal matrix. The
+ * diagonal can then be updated as more information comes in. This method can be
+ * used by setting scaleOpt to DIAGONAL.
+ *
+ *
+ * CONVERGENCE: Previously convergence was gauged by looking at the average
+ * decrease per step dividing that by the current value and terminating when
+ * that value because smaller than TOL. This method fails when the function
+ * value approaches zero, so two other convergence criteria are used. The first
+ * stores the initial gradient norm |g0|, then terminates when the new gradient
+ * norm, |g| is sufficiently smaller: i.e., |g| &lt; eps*|g0| the second checks if
+ * |g| &lt; eps*max( 1 , |x| ) which is essentially checking to see if the gradient
+ * is numerically zero.
+ * Another convergence criteria is added where termination is triggered if no
+ * improvements are observed after X (set by terminateOnEvalImprovementNumOfEpoch)
+ * iterations over some validation test set as evaluated by Evaluator
+ *
+ * Each of these convergence criteria can be turned on or off by setting the
+ * flags:
+ * <blockquote><code>
+ * private boolean useAveImprovement = true;
+ * private boolean useRelativeNorm = true;
+ * private boolean useNumericalZero = true;
+ * private boolean useEvalImprovement = false;
+ * </code></blockquote>
+ *
+ * To use the QNMinimizer first construct it using
+ * <blockquote><code>
+ * QNMinimizer qn = new QNMinimizer(mem, true)
+ * </code></blockquote>
+ * mem - the number of previous estimate vector pairs to
+ * store, generally 15 is plenty. true - this tells the QN to use the MINPACK
+ * linesearch with DIAGONAL scaling. false would lead to the use of the criteria
+ * used in the old QNMinimizer class.
+ *
+ * Then call:
+ * <blockquote><code>
+ * qn.minimize(dfunction,convergenceTolerance,initialGuess,maxFunctionEvaluations);
+ * </code></blockquote>
+ *
+ * @author akleeman
+ */

@@ -1,0 +1,216 @@
+  @Override
+  public Iterator<List<HasWord>> iterator() {
+    // Add new document types here
+    if (docType == DocType.Plain) {
+      return new PlainTextIterator();
+    } else if (docType == DocType.XML) {
+      return new XMLIterator();
+    } else {
+      throw new IllegalStateException("Someone didn't add a handler for a new docType.");
+    }
+  }
+
+
+  private class PlainTextIterator implements Iterator<List<HasWord>> {
+
+    private final Tokenizer<? extends HasWord> tokenizer;
+    private final Set<String> sentDelims;
+    private final Set<String> delimFollowers;
+    private Function<String, String[]> splitTag;
+    private List<HasWord> nextSent = null;
+    private final List<HasWord> nextSentCarryover = new ArrayList<HasWord>();
+
+    public PlainTextIterator() {
+      // Establish how to find sentence boundaries
+      boolean eolIsSignificant = false;
+      sentDelims = Generics.newHashSet();
+      if (sentenceDelimiter == null) {
+        if (sentenceFinalPuncWords != null) {
+          sentDelims.addAll(Arrays.asList(sentenceFinalPuncWords));
+        }
+        delimFollowers = Generics.newHashSet(Arrays.asList(sentenceFinalFollowers));
+      } else {
+        sentDelims.add(sentenceDelimiter);
+        delimFollowers = Generics.newHashSet();
+        eolIsSignificant = wsPattern.matcher(sentenceDelimiter).matches();
+        if(eolIsSignificant) { // For Stanford English Tokenizer
+          sentDelims.add(PTBLexer.NEWLINE_TOKEN);
+        }
+      }
+
+      // Setup the tokenizer
+      if (tokenizerFactory == null) {
+        eolIsSignificant = sentDelims.contains(WhitespaceLexer.NEWLINE);
+        tokenizer = WhitespaceTokenizer.
+          newWordWhitespaceTokenizer(inputReader, eolIsSignificant);
+      } else {
+        if (eolIsSignificant) {
+          tokenizer = tokenizerFactory.getTokenizer(inputReader, "tokenizeNLs");
+        } else {
+          tokenizer = tokenizerFactory.getTokenizer(inputReader);
+        }
+      }
+
+      // If tokens are tagged, then we must split them
+      // Note that if the token contains two or more instances of the delimiter, then the last
+      // instance is regarded as the split point.
+      if (tagDelimiter != null) {
+        splitTag = new Function<String,String[]>() {
+          public String[] apply(String in) {
+            final String[] splits = in.trim().split(splitRegex);
+            if(splits.length == 2)
+              return splits;
+            else {
+              String[] oldStr = {in};
+              return oldStr;
+            }
+          }
+        };
+      }
+    }
+
+    private void primeNext() {
+      nextSent = new ArrayList<HasWord>(nextSentCarryover);
+      nextSentCarryover.clear();
+      boolean seenBoundary = false;
+
+      if (!tokenizer.hasNext()) {
+        IOUtils.closeIgnoringExceptions(inputReader);
+        inputReader = null;
+        nextSent = null;
+        return;
+      }
+
+      do {
+        HasWord token = tokenizer.next();
+        if (splitTag != null) {
+          String[] toks = splitTag.apply(token.word());
+          token.setWord(toks[0]);
+          if (token instanceof Label) {
+            ((Label) token).setValue(toks[0]);
+          }
+          if(toks.length == 2 && token instanceof HasTag) {
+            //wsg2011: Some of the underlying tokenizers return old
+            //JavaNLP labels.  We could convert to CoreLabel here, but
+            //we choose a conservative implementation....
+            ((HasTag) token).setTag(toks[1]);
+          }
+        }
+
+        if (sentDelims.contains(token.word())) {
+          seenBoundary = true;
+        } else if (seenBoundary && !delimFollowers.contains(token.word())) {
+          nextSentCarryover.add(token);
+          break;
+        }
+
+        if ( ! (wsPattern.matcher(token.word()).matches() ||
+                token.word().equals(PTBLexer.NEWLINE_TOKEN))) {
+          nextSent.add(token);
+        }
+
+        // If there are no words that can follow a sentence delimiter,
+        // then there are two cases.  In one case is we already have a
+        // sentence, in which case there is no reason to look at the
+        // next token, since that just causes buffering without any
+        // chance of the current sentence being extended, since
+        // delimFollowers = {}.  In the other case, we have an empty
+        // sentence, which at this point means the sentence delimiter
+        // was a whitespace token such as \n.  We might as well keep
+        // going as if we had never seen anything.
+        if (seenBoundary && delimFollowers.size() == 0) {
+          if (nextSent.size() > 0 || keepEmptySentences) {
+            break;
+          } else {
+            seenBoundary = false;
+          }
+        }
+      } while (tokenizer.hasNext());
+
+      if (nextSent.size() == 0 && nextSentCarryover.size() == 0 && !keepEmptySentences) {
+        IOUtils.closeIgnoringExceptions(inputReader);
+        inputReader = null;
+        nextSent = null;
+      } else if (escaper != null) {
+        nextSent = escaper.apply(nextSent);
+      }
+    }
+
+    public boolean hasNext() {
+      if (nextSent == null) {
+        primeNext();
+      }
+      return nextSent != null;
+    }
+
+    public List<HasWord> next() {
+      if (nextSent == null) {
+        primeNext();
+      }
+      if (nextSent == null) {
+        throw new NoSuchElementException();
+      }
+      List<HasWord> thisIteration = nextSent;
+      nextSent = null;
+      return thisIteration;
+    }
+
+    public void remove() { throw new UnsupportedOperationException(); }
+  }
+
+
+  private class XMLIterator implements Iterator<List<HasWord>> {
+
+    private final XMLBeginEndIterator<String> xmlItr;
+    private final Reader originalDocReader;
+    private PlainTextIterator plainItr; // = null;
+    private List<HasWord> nextSent; // = null;
+
+    public XMLIterator() {
+      xmlItr = new XMLBeginEndIterator<String>(inputReader, elementDelimiter);
+      originalDocReader = inputReader;
+      primeNext();
+    }
+
+    private void primeNext() {
+      // It is necessary to loop because if a document has a pattern
+      // that goes: <tag></tag> the xmlItr will return an empty
+      // string, which the plainItr will process to null.  If we
+      // didn't loop to find the next tag, the iterator would stop.
+      do {
+        if (plainItr != null && plainItr.hasNext()) {
+          nextSent = plainItr.next();
+        } else if (xmlItr.hasNext()) {
+          String block = xmlItr.next();
+          inputReader = new BufferedReader(new StringReader(block));
+          plainItr = new PlainTextIterator();
+          if (plainItr.hasNext()) {
+            nextSent = plainItr.next();
+          } else {
+            nextSent = null;
+          }
+        } else {
+          IOUtils.closeIgnoringExceptions(originalDocReader);
+          nextSent = null;
+          break;
+        }
+      } while (nextSent == null);
+    }
+
+    public boolean hasNext() {
+      return nextSent != null;
+    }
+
+    public List<HasWord> next() {
+      if (nextSent == null) {
+        throw new NoSuchElementException();
+      }
+      List<HasWord> thisSentence = nextSent;
+      primeNext();
+      return thisSentence;
+    }
+
+    public void remove() { throw new UnsupportedOperationException(); }
+  } // end class XMLIterator
+
+

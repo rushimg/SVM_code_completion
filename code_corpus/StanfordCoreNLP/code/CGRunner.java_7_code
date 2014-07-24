@@ -1,0 +1,26 @@
+  public CGRunner(LambdaSolve prob, String filename, double tol, double[] sigmaSquareds) {
+    this.prob = prob;
+    this.filename = filename;
+    this.tol = tol;
+    this.useGaussianPrior = sigmaSquareds !=null;
+    this.sigmaSquareds = sigmaSquareds;
+    this.priorSigmaS = -1.0; // not used
+  }
+
+  private void printOptimizationResults(LikelihoodFunction df, MonitorFunction monitor) {
+    double negLogLike = df.valueAt(prob.lambda);
+    System.err.printf("After optimization neg (penalized) log cond likelihood: %1.2f%n", negLogLike);
+    if (monitor != null) {
+      monitor.reportMonitoring(negLogLike);
+    }
+    int numNonZero = 0;
+    for (int i = 0; i < prob.lambda.length; i++) {
+      if (prob.lambda[i] != 0.0) {
+        // 0.0 == -0.0 in IEEE math!
+        numNonZero++;
+      }
+    }
+    System.err.printf("Non-zero parameters: %d/%d (%1.2f%%)%n", numNonZero, prob.lambda.length,
+  }
+
+

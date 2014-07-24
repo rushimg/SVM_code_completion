@@ -1,0 +1,40 @@
+  public Tree getBestParse() {
+    if ( ! hasParse()) {
+      return null;
+    }
+    return flatten(extractBestParse(0, words.length, words.length - 1, tagIndex.indexOf(Lexicon.BOUNDARY_TAG)));
+  }
+
+  public ExhaustiveDependencyParser(DependencyGrammar dg, Lexicon lex, Options op, Index<String> wordIndex, Index<String> tagIndex) {
+    this.dg = dg;
+    this.lex = lex;
+    this.op = op;
+    this.tlp = op.langpack();
+    this.wordIndex = wordIndex;
+    this.tagIndex = tagIndex;
+    tf = new LabeledScoredTreeFactory();
+  }
+
+  private void createArrays(int length) {
+    iScoreH = oScoreH = headStop = iScoreHSum = null;
+    iPossibleByL = iPossibleByR = oPossibleByL = oPossibleByR = null;
+    headScore = null;
+    rawDistance = binDistance = null;
+
+    int tagNum = dg.numTagBins(); //tagIndex.size();
+
+    iScoreH = new float[length + 1][tagNum][length + 1];
+    oScoreH = new float[length + 1][tagNum][length + 1];
+    if (doiScoreHSum) {
+      iScoreHSum = new float[length + 1][tagNum][length + 1];
+    }
+    iPossibleByL = new boolean[length + 1][length + 1][tagNum];
+    iPossibleByR = new boolean[length + 1][length + 1][tagNum];
+    oPossibleByL = new boolean[length + 1][length + 1][tagNum];
+    oPossibleByR = new boolean[length + 1][length + 1][tagNum];
+    headScore = new float[dg.numDistBins()][length][tagNum][length][tagNum];
+    headStop = new float[length + 1][tagNum][length + 1];
+    rawDistance = new int[length + 1][length + 1];
+    binDistance = new int[length + 1][length + 1];
+  }
+

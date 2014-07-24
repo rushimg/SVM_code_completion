@@ -1,0 +1,71 @@
+    protected void minimumCutPhase(Set<V> a)
+    {
+        //construct sorted queue with vertices connected to vertex a
+        PriorityQueue<VertexAndWeight> queue =
+            new PriorityQueue<VertexAndWeight>();
+        Map<Set<V>, VertexAndWeight> dmap =
+            new HashMap<Set<V>, VertexAndWeight>();
+        for (Set<V> v : workingGraph.vertexSet()) {
+            if (v != a) {
+                Double w =
+                    -workingGraph.getEdgeWeight(workingGraph.getEdge(v, a));
+                VertexAndWeight vandw = new VertexAndWeight(v, w);
+                queue.add(vandw);
+                dmap.put(v, vandw);
+            }
+        }
+
+        //now iteratatively update the queue to get the required vertex ordering
+        List<Set<V>> list =
+            new ArrayList<Set<V>>(workingGraph.vertexSet().size());
+        list.add(a);
+        while (!queue.isEmpty()) {
+            Set<V> v = queue.poll().vertex;
+            dmap.remove(v);
+            list.add(v);
+            for (DefaultWeightedEdge e : workingGraph.edgesOf(v)) {
+                Set<V> vc;
+                if (v != workingGraph.getEdgeSource(e)) {
+                    vc = workingGraph.getEdgeSource(e);
+                } else {
+                    vc = workingGraph.getEdgeTarget(e);
+                }
+                if (dmap.get(vc) != null) {
+                    Double neww =
+                        -workingGraph.getEdgeWeight(workingGraph.getEdge(v, vc))
+                        + dmap.get(vc).weight;
+                    queue.remove(dmap.get(vc)); //this is O(logn) but could be
+                                                //O(1)?
+                    dmap.get(vc).weight = neww;
+                    queue.add(dmap.get(vc)); //this is O(logn) but could be
+                                             //O(1)?
+                }
+            }
+        }
+
+        //if this is the first run we compute the weight of last vertex in the
+        //list
+        if (firstRun) {
+            Set<V> v = list.get(list.size() - 1);
+            double w = vertexWeight(v);
+            if (w < bestcutweight) {
+                bestcutweight = w;
+                bestCut = v;
+            }
+            firstRun = false;
+        }
+
+        //the last two elements in list are the vertices we want to merge.
+        Set<V> s = list.get(list.size() - 2);
+        Set<V> t = list.get(list.size() - 1);
+
+        //merge these vertices and get the weight.
+        VertexAndWeight vw = mergeVertices(s, t);
+
+        //If this is the best cut so far store it.
+        if (vw.weight < bestcutweight) {
+            bestcutweight = vw.weight;
+            bestCut = vw.vertex;
+        }
+    }
+

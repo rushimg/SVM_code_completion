@@ -1,0 +1,56 @@
+  private static void trainAndSaveModel(TaggerConfig config) throws IOException {
+
+    String modelName = config.getModel();
+    MaxentTagger maxentTagger = new MaxentTagger();
+    maxentTagger.init(config);
+
+    // Allow clobbering.  You want it all the time when running experiments.
+
+    TaggerExperiments samples = new TaggerExperiments(config, maxentTagger);
+    TaggerFeatures feats = samples.getTaggerFeatures();
+    byte[][] fnumArr = samples.getFnumArr();
+    System.err.println("Samples from " + config.getFile());
+    System.err.println("Number of features: " + feats.size());
+    System.err.println("Tag set: " + maxentTagger.tags.tagSet());
+    Problem p = new Problem(samples, feats);
+    LambdaSolveTagger prob = new LambdaSolveTagger(p, 0.0001, fnumArr);
+    maxentTagger.prob = prob;
+
+    if (config.getSearch().equals("owlqn")) {
+      CGRunner runner = new CGRunner(prob, config.getModel(), config.getSigmaSquared());
+      runner.solveL1(config.getRegL1());
+    } else if (config.getSearch().equals("owlqn2")) {
+      CGRunner runner = new CGRunner(prob, config.getModel(), config.getSigmaSquared());
+      runner.solveOWLQN2(config.getRegL1());
+    } else if (config.getSearch().equals("cg")) {
+      CGRunner runner = new CGRunner(prob, config.getModel(), config.getSigmaSquared());
+      runner.solveCG();
+    } else if (config.getSearch().equals("qn")) {
+      CGRunner runner = new CGRunner(prob, config.getModel(), config.getSigmaSquared());
+      runner.solveQN();
+    } else {
+      prob.improvedIterative(config.getIterations());
+    }
+
+    if (prob.checkCorrectness()) {
+      System.err.println("Model is correct [empirical expec = model expec]");
+    } else {
+      System.err.println("Model is not correct");
+    }
+
+    // Some of the rules may have been optimized so they don't have
+    // any effect on the final scores.  Eliminating those rules
+    // entirely saves space and runtime
+    maxentTagger.removeDeadRules();
+
+    // If any of the features have been optimized to 0, we can remove
+    // them from the LambdaSolve.  This will save quite a bit of space
+    // depending on the optimization used
+    maxentTagger.simplifyLambda();
+
+    maxentTagger.saveModel(modelName);
+    System.err.println("Extractors list:");
+    System.err.println(maxentTagger.extractors.toString() + "\nrare" + maxentTagger.extractorsRare.toString());
+  }
+
+

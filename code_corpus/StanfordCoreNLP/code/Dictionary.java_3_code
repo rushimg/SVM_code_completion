@@ -1,0 +1,122 @@
+  public void release() {
+    dict.clear();
+  }
+
+  public void addVPTaking(String verb, String tag, String partWord) {
+    int h = verb.hashCode();
+    Integer i = Integer.valueOf(h);
+    if (tag.startsWith("RP")) {
+      if (this.partTakingVerbs.containsKey(i)) {
+        this.partTakingVerbs.get(i).incPart(partWord);
+      } else {
+        this.partTakingVerbs.put(i, new CountWrapper(verb, 0, 0, 0, 0));
+        this.partTakingVerbs.get(i).incPart(partWord);
+      }
+    } else if (tag.startsWith("RB")) {
+      if (this.partTakingVerbs.containsKey(i)) {
+        this.partTakingVerbs.get(i).incRB(partWord);
+      } else {
+        this.partTakingVerbs.put(i, new CountWrapper(verb, 0, 0, 0, 0));
+        this.partTakingVerbs.get(i).incRB(partWord);
+      }
+    } else if (tag.startsWith("IN")) {
+      if (this.partTakingVerbs.containsKey(i)) {
+        this.partTakingVerbs.get(i).incIn(partWord);
+      } else {
+        this.partTakingVerbs.put(i, new CountWrapper(verb, 0, 0, 0, 0));
+        this.partTakingVerbs.get(i).incIn(partWord);
+      }
+    }
+  }
+
+  protected void addVThatTaking(String verb) {
+    int i = verb.hashCode();
+    if (this.partTakingVerbs.containsKey(i)) {
+      this.partTakingVerbs.get(i).incThat();
+    } else {
+      this.partTakingVerbs.put(i, new CountWrapper(verb, 0, 1, 0, 0));
+    }
+  }
+
+  protected int getCountPart(String verb) {
+    int i = verb.hashCode();
+    if (this.partTakingVerbs.containsKey(i)) {
+      return this.partTakingVerbs.get(i).getCountPart();
+    }
+    return 0;
+  }
+
+
+  protected int getCountThat(String verb) {
+    int i = verb.hashCode();
+    if (this.partTakingVerbs.containsKey(i)) {
+      return this.partTakingVerbs.get(i).getCountThat();
+    }
+    return 0;
+  }
+
+
+  protected int getCountIn(String verb) {
+    int i = verb.hashCode();
+    if (this.partTakingVerbs.containsKey(i)) {
+      return this.partTakingVerbs.get(i).getCountIn();
+    }
+    return 0;
+  }
+
+
+  protected int getCountRB(String verb) {
+    int i = verb.hashCode();
+    if (this.partTakingVerbs.containsKey(i)) {
+      return this.partTakingVerbs.get(i).getCountRB();
+    }
+    return 0;
+  }
+
+
+  protected int getCount(String word, String tag) {
+    TagCount count = dict.get(word);
+    if (count == null) {
+      return 0;
+    } else {
+      return count.get(tag);
+    }
+  }
+
+
+  protected String[] getTags(String word) {
+    TagCount count = get(word);
+    if (count == null) {
+      return null;
+    }
+    return count.getTags();
+  }
+
+
+  protected TagCount get(String word) {
+    return dict.get(word);
+  }
+
+
+  String getFirstTag(String word) {
+    TagCount count = dict.get(word);
+    if (count != null) {
+      return count.getFirstTag();
+    }
+    return null;
+  }
+
+
+  protected int sum(String word) {
+    TagCount count = dict.get(word);
+    if (count != null) {
+      return count.sum();
+    }
+    return 0;
+  }
+
+  boolean isUnknown(String word) {
+    return ! dict.containsKey(word);
+  }
+
+

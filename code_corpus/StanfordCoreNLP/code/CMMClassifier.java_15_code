@@ -1,0 +1,103 @@
+  public Dataset<String, String> getDataset(Collection<List<IN>> data, Index<String> featureIndex, Index<String> classIndex) {
+    makeAnswerArraysAndTagIndex(data);
+
+    int size = 0;
+    for (List<IN> doc : data) {
+      size += doc.size();
+    }
+
+    System.err.println("Making Dataset...");
+    Dataset<String, String> train;
+    if (featureIndex != null && classIndex != null) {
+      System.err.println("Using feature/class Index from existing Dataset...");
+      System.err.println("(This is used when getting Dataset from adaptation set. We want to make the index consistent.)"); //pichuan
+      train = new Dataset<String, String>(size, featureIndex, classIndex);
+    } else {
+      train = new Dataset<String, String>(size);
+    }
+
+    for (List<IN> doc : data) {
+      if (flags.useReverse) {
+        Collections.reverse(doc);
+      }
+
+      for (int i = 0, dsize = doc.size(); i < dsize; i++) {
+        Datum<String, String> d = makeDatum(doc, i, featureFactories);
+
+        //CoreLabel fl = doc.get(i);
+
+        train.add(d);
+      }
+
+      if (flags.useReverse) {
+        Collections.reverse(doc);
+      }
+    }
+
+    System.err.println("done.");
+
+    if (flags.featThreshFile != null) {
+      System.err.println("applying thresholds...");
+      List<Pair<Pattern, Integer>> thresh = getThresholds(flags.featThreshFile);
+      train.applyFeatureCountThreshold(thresh);
+    } else if (flags.featureThreshold > 1) {
+      System.err.println("Removing Features with counts < " + flags.featureThreshold);
+      train.applyFeatureCountThreshold(flags.featureThreshold);
+    }
+    train.summaryStatistics();
+    return train;
+  }
+
+  public Dataset<String, String> getBiasedDataset(ObjectBank<List<IN>> data, Index<String> featureIndex, Index<String> classIndex) {
+    makeAnswerArraysAndTagIndex(data);
+
+    Index<String> origFeatIndex = new HashIndex<String>(featureIndex.objectsList()); // mg2009: TODO: check
+
+    int size = 0;
+    for (List<IN> doc : data) {
+      size += doc.size();
+    }
+
+    System.err.println("Making Dataset...");
+    Dataset<String, String> train = new Dataset<String, String>(size, featureIndex, classIndex);
+
+    for (List<IN> doc : data) {
+      if (flags.useReverse) {
+        Collections.reverse(doc);
+      }
+
+      for (int i = 0, dsize = doc.size(); i < dsize; i++) {
+        Datum<String, String> d = makeDatum(doc, i, featureFactories);
+        Collection<String> newFeats = new ArrayList<String>();
+        for (String f : d.asFeatures()) {
+          if ( ! origFeatIndex.contains(f)) {
+            newFeats.add(f);
+          }
+        }
+//        System.err.println(d.label()+"\t"+d.asFeatures()+"\n\t"+newFeats);
+//        d = new BasicDatum(newFeats, d.label());
+        train.add(d);
+      }
+
+      if (flags.useReverse) {
+        Collections.reverse(doc);
+      }
+    }
+
+    System.err.println("done.");
+
+    if (flags.featThreshFile != null) {
+      System.err.println("applying thresholds...");
+      List<Pair<Pattern, Integer>> thresh = getThresholds(flags.featThreshFile);
+      train.applyFeatureCountThreshold(thresh);
+    } else if (flags.featureThreshold > 1) {
+      System.err.println("Removing Features with counts < " + flags.featureThreshold);
+      train.applyFeatureCountThreshold(flags.featureThreshold);
+    }
+    train.summaryStatistics();
+    return train;
+  }
+
+
+
+

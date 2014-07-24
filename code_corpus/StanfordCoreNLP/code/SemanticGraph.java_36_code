@@ -1,0 +1,31 @@
+  public boolean isDag() {
+    Set<IndexedWord> unused = Generics.newHashSet(vertexSet());
+    while (!unused.isEmpty()) {
+      IndexedWord arbitrary = unused.iterator().next();
+      boolean result = isDagHelper(arbitrary, unused, Generics.<IndexedWord>newHashSet());
+      if (result) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private boolean isDagHelper(IndexedWord current, Set<IndexedWord> unused, Set<IndexedWord> trail) {
+    if (trail.contains(current)) {
+      return true;
+    } else if (!unused.contains(current)) {
+      return false;
+    }
+    unused.remove(current);
+    trail.add(current);
+    for (IndexedWord child : getChildList(current)) {
+      boolean result = isDagHelper(child, unused, trail);
+      if (result) {
+        return true;
+      }
+    }
+
+    trail.remove(current);
+    return false;
+  }
+

@@ -1,0 +1,108 @@
+  public boolean addFeatures(Counter<String> features, RelationMention rel, List<String> types, Logger logger) {
+    // sanity checks: must have two arguments, and each must be an entity mention
+    if(rel.getArgs().size() != 2) return false;
+    if(! (rel.getArg(0) instanceof EntityMention)) return false;
+    if(! (rel.getArg(1) instanceof EntityMention)) return false;
+
+    EntityMention arg0 = (EntityMention) rel.getArg(0);
+    EntityMention arg1 = (EntityMention) rel.getArg(1);
+
+    Tree tree = rel.getSentence().get(TreeAnnotation.class);
+    if(tree == null){
+      throw new RuntimeException("ERROR: Relation extraction requires full syntactic analysis!");
+    }
+    List<Tree> leaves = tree.getLeaves();
+    List<CoreLabel> tokens = rel.getSentence().get(TokensAnnotation.class);
+
+    // this assumes that both args are in the same sentence as the relation object
+    // let's check for this to be safe
+    CoreMap relSentence = rel.getSentence();
+    CoreMap arg0Sentence = arg0.getSentence();
+    CoreMap arg1Sentence = arg1.getSentence();
+    if(arg0Sentence != relSentence){
+      System.err.println("WARNING: Found relation with arg0 in a different sentence: " + rel);
+      System.err.println("Relation sentence: " + relSentence.get(TextAnnotation.class));
+      System.err.println("Arg0 sentence: " + arg0Sentence.get(TextAnnotation.class));
+      return false;
+    }
+    if(arg1Sentence != relSentence){
+      System.err.println("WARNING: Found relation with arg1 in a different sentence: " + rel);
+      System.err.println("Relation sentence: " + relSentence.get(TextAnnotation.class));
+      System.err.println("Arg1 sentence: " + arg1Sentence.get(TextAnnotation.class));
+      return false;
+    }
+
+    // Checklist keeps track of which features have been handled by an if clause
+    // Should be empty after all the clauses have been gone through.
+    List<String> checklist = new ArrayList<String>(types);
+
+    // arg_type: concatenation of the entity types of the args, e.g.
+    // "arg1type=Loc_and_arg2type=Org"
+    // arg_subtype: similar, for entity subtypes
+    if (usingFeature(types, checklist, "arg_type")) {
+      features.setCount("arg1type=" + arg0.getType() + "_and_arg2type=" + arg1.getType(), 1.0);
+    }
+    if (usingFeature(types,checklist,"arg_subtype")) {
+      features.setCount("arg1subtype="+arg0.getSubType()+"_and_arg2subtype="+arg1.getSubType(),1.0);
+    }
+
+    // arg_order: which arg comes first in the sentence
+    if (usingFeature(types, checklist, "arg_order")) {
+      if (arg0.getSyntacticHeadTokenPosition() < arg1.getSyntacticHeadTokenPosition())
+        features.setCount("arg1BeforeArg2", 1.0);
+    }
+    // same_head: whether the two args share the same syntactic head token
+    if (usingFeature(types, checklist, "same_head")) {
+      if (arg0.getSyntacticHeadTokenPosition() == arg1.getSyntacticHeadTokenPosition())
+        features.setCount("arguments_have_same_head",1.0);
+    }
+
+    // full_tree_path: Path from one arg to the other in the phrase structure tree,
+    // e.g., NNP -> PP -> NN <- NNP
+    if (usingFeature(types, checklist, "full_tree_path")) {
+      //System.err.println("ARG0: " + arg0);
+      //System.err.println("ARG0 HEAD: " + arg0.getSyntacticHeadTokenPosition());
+      //System.err.println("TREE: " + tree);
+      //System.err.println("SENTENCE: " + sentToString(arg0.getSentence()));
+      if(arg0.getSyntacticHeadTokenPosition() < leaves.size() && arg1.getSyntacticHeadTokenPosition() < leaves.size()){
+        Tree arg0preterm = leaves.get(arg0.getSyntacticHeadTokenPosition()).parent(tree);
+        Tree arg1preterm = leaves.get(arg1.getSyntacticHeadTokenPosition()).parent(tree);
+        Tree join = tree.joinNode(arg0preterm, arg1preterm);
+        StringBuilder pathStringBuilder = new StringBuilder();
+        List<Tree> pathUp = join.dominationPath(arg0preterm);
+        Collections.reverse(pathUp);
+        for (Tree node : pathUp) {
+          if (node != join) {
+            pathStringBuilder.append(node.label().value() + " <- ");
+          }
+        }
+
+        for (Tree node : join.dominationPath(arg1preterm)) {
+          pathStringBuilder.append(((node == join) ? "" : " -> ") + node.label().value());
+        }
+        String pathString = pathStringBuilder.toString();
+        if(logger != null && ! rel.getType().equals(RelationMention.UNRELATED)) logger.info("full_tree_path: " + pathString);
+        features.setCount(pathString, 1.0);
+      } else {
+        System.err.println("WARNING: found weird argument offsets. Most likely because arguments appear in different sentences than the relation:");
+        System.err.println("ARG0: " + arg0);
+        System.err.println("ARG0 HEAD: " + arg0.getSyntacticHeadTokenPosition());
+        System.err.println("ARG0 SENTENCE: " + sentToString(arg0.getSentence()));
+        System.err.println("ARG1: " + arg1);
+        System.err.println("ARG1 HEAD: " + arg1.getSyntacticHeadTokenPosition());
+        System.err.println("ARG1 SENTENCE: " + sentToString(arg1.getSentence()));
+        System.err.println("RELATION TREE: " + tree);
+      }
+    }
+
+    int pathLength = tree.pathNodeToNode(tree.getLeaves().get(arg0.getSyntacticHeadTokenPosition()),
+            tree.getLeaves().get(arg1.getSyntacticHeadTokenPosition())).size();
+    // path_length: Length of the path in the phrase structure parse tree, integer-valued feature
+    if (usingFeature(types, checklist, "path_length")) {
+      features.setCount("path_length", pathLength);
+    }
+    // path_length_binary: Length of the path in the phrase structure parse tree, binary features
+    if (usingFeature(types, checklist, "path_length_binary")) {
+      features.setCount("path_length_" + pathLength, 1.0);
+    }
+

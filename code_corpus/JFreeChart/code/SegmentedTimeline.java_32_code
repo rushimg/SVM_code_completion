@@ -1,0 +1,40 @@
+    public long toMillisecond(long timelineValue) {
+
+        // calculate the result as if no exceptions
+        Segment result = new Segment(this.startTime + timelineValue
+                + (timelineValue / this.segmentsIncludedSize)
+
+        long lastIndex = this.startTime;
+
+        // adjust result for any exceptions in the result calculated
+        while (lastIndex <= result.segmentStart) {
+
+            // skip all whole exception segments in the range
+            long exceptionSegmentCount;
+            while ((exceptionSegmentCount = getExceptionSegmentCount(
+                 lastIndex, (result.millisecond / this.segmentSize)
+            ) {
+                lastIndex = result.segmentStart;
+                // move forward exceptionSegmentCount segments skipping
+                // excluded segments
+                for (int i = 0; i < exceptionSegmentCount; i++) {
+                    do {
+                        result.inc();
+                    }
+                    while (result.inExcludeSegments());
+                }
+            }
+            lastIndex = result.segmentStart;
+
+            // skip exception or excluded segments we may fall on
+            while (result.inExceptionSegments() || result.inExcludeSegments()) {
+                result.inc();
+                lastIndex += this.segmentSize;
+            }
+
+            lastIndex++;
+        }
+
+        return getTimeFromLong(result.millisecond);
+    }
+

@@ -1,0 +1,77 @@
+/**
+ * Generic Sequence Pattern for regular expressions.
+ *
+ * <p>
+ * Similar to Java's {@link java.util.regex.Pattern} except it is for sequences over arbitrary types T instead
+ *  of just characters.
+ * </p>
+ *
+ * <p> A regular expression must first be compiled into
+ * an instance of this class.  The resulting pattern can then be used to create
+ * a {@link SequenceMatcher} object that can match arbitrary sequences of type T
+ * against the regular expression.  All of the state involved in performing a match
+ * resides in the matcher, so many matchers can share the same pattern.
+ * </p>
+ *
+ * <p>
+ * To support sequence matching on a new type T, the following is needed:
+ * <ul>
+ *   <li>Implement a {@link NodePattern for matching type T}</li>
+ *   <li>Optionally define a language for node matches and implement {@link SequencePattern.Parser} to compile a
+ *       regular expression into a SequencePattern.
+ *   </li>
+ *   <li>Optionally implement a {@link MultiPatternMatcher.NodePatternTrigger}
+ *        for optimizing matches across multiple patterns</li>
+ *   <li>Optionally implement a {@link NodesMatchChecker} to support backreferences</li>
+ * </ul>
+ * See {@link TokenSequencePattern} for an example of how this class can be extended
+ * to support a specific type {@code T}.
+ * <p>
+ * To use
+ * <pre><code>
+ *   SequencePattern p = SequencePattern.compile("....");
+ *   SequenceMatcher m = p.getMatcher(tokens);
+ *   while (m.find()) ....
+ * </code></pre>
+ * </p>
+ *
+ *
+ * <p>
+ * To support a new type {@code T}:
+ * <ol>
+ * <li> For a type {@code T} to be matchable, it has to have a corresponding <code>NodePattern<T></code> that indicates
+ *    whether a node is matched or not  (see <code>CoreMapNodePattern</code> for example)</li>
+ * <li> To compile a string into corresponding pattern, will need to create a parser
+ *    (see inner class <code>Parser</code>, <code>TokenSequencePattern</code> and <code>TokenSequenceParser.jj</code>)</li>
+ * </ol>
+ * </p>
+ *
+ * <p>
+ * SequencePattern supports the following standard regex features:
+ * <ul>
+ *  <li>Concatenation </li>
+ *  <li>Or </li>
+ *  <li>Groups  (capturing  / noncapturing )  </li>
+ *  <li>Quantifiers (greedy / nongreedy) </li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * SequencePattern also supports the following less standard features:
+ * <ol>
+ * <li> Environment (see {@link Env}) with respect to which the patterns are compiled</li>
+ * <li> Binding of variables
+ * <br>Use {@link Env} to bind variables for use when compiling patterns
+ * <br>Can also bind names to groups (see {@link SequenceMatchResult} for accessor methods to retrieve matched groups)
+ * </li>
+ * <li> Backreference matches - need to specify how back references are to be matched using {@link NodesMatchChecker} </li>
+ * <li> Multinode matches - for matching of multiple nodes using non-regex (at least not regex over nodes) patterns
+ *                        (need to have corresponding {@link MultiNodePattern},
+ *                         see {@link MultiCoreMapNodePattern} for example) </li>
+ * <li> Conjunctions - conjunctions of sequence patterns (works for some cases)</li>
+ * </ol>
+ * </p>
+ *
+ * @author Angel Chang
+ * @see SequenceMatcher
+ */

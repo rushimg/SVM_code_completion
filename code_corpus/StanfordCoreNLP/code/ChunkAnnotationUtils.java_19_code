@@ -1,0 +1,26 @@
+  public static Annotation getAnnotatedChunk(CoreMap annotation, int tokenStartIndex, int tokenEndIndex,
+                                             Class tokenChunkKey, Class tokenLabelKey)
+  {
+    Annotation chunk = getAnnotatedChunk(annotation, tokenStartIndex, tokenEndIndex);
+    annotateChunkTokens(chunk, tokenChunkKey, tokenLabelKey);
+    return chunk;
+  }
+
+  public static CoreMap getAnnotatedChunkUsingCharOffsets(CoreMap annotation, int charOffsetStart, int charOffsetEnd)
+  {
+    // TODO: make more efficient search
+    List<CoreMap> cm = getAnnotatedChunksUsingSortedCharOffsets(annotation,
+            CollectionUtils.makeList(new IntPair(charOffsetStart, charOffsetEnd)));
+    if (cm != null && cm.size() > 0) {
+      return cm.get(0);
+    } else {
+      return null;
+    }
+  }
+
+  public static List<CoreMap> getAnnotatedChunksUsingSortedCharOffsets(
+          CoreMap annotation, List<IntPair> charOffsets)
+  {
+    return getAnnotatedChunksUsingSortedCharOffsets(annotation, charOffsets, true, null, null, true);
+  }
+  

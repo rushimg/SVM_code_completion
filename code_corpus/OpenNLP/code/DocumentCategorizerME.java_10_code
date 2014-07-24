@@ -1,0 +1,38 @@
+  public SortedMap<Double, Set<String>> sortedScoreMap(String text) {
+    SortedMap<Double, Set<String>> descendingMap = new TreeMap<Double, Set<String>>();
+    double[] categorize = categorize(text);
+    int catSize = getNumberOfCategories();
+    for (int i = 0; i < catSize; i++) {
+      String category = getCategory(i);
+      double score = categorize[getIndex(category)];
+      if (descendingMap.containsKey(score)) {
+        descendingMap.get(score).add(category);
+      } else {
+        Set<String> newset = new HashSet<>();
+        newset.add(category);
+        descendingMap.put(score, newset);
+      }
+    }
+    return descendingMap;
+  }
+
+  public String getBestCategory(double[] outcome) {
+    return model.getMaxentModel().getBestOutcome(outcome);
+  }
+
+  public int getIndex(String category) {
+    return model.getMaxentModel().getIndex(category);
+  }
+
+  public String getCategory(int index) {
+    return model.getMaxentModel().getOutcome(index);
+  }
+
+  public int getNumberOfCategories() {
+    return model.getMaxentModel().getNumOutcomes();
+  }
+
+  public String getAllResults(double results[]) {
+    return model.getMaxentModel().getAllOutcomes(results);
+  }
+

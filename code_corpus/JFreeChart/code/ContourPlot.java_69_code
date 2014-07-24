@@ -1,0 +1,27 @@
+    public void drawDomainMarker(Graphics2D g2,
+                                 ContourPlot plot,
+                                 ValueAxis domainAxis,
+                                 Marker marker,
+                                 Rectangle2D dataArea) {
+
+        if (marker instanceof ValueMarker) {
+            ValueMarker vm = (ValueMarker) marker;
+            double value = vm.getValue();
+            Range range = domainAxis.getRange();
+            if (!range.contains(value)) {
+                return;
+            }
+
+            double x = domainAxis.valueToJava2D(value, dataArea,
+                    RectangleEdge.BOTTOM);
+            Line2D line = new Line2D.Double(x, dataArea.getMinY(), x,
+                    dataArea.getMaxY());
+            Paint paint = marker.getOutlinePaint();
+            Stroke stroke = marker.getOutlineStroke();
+            g2.setPaint(paint != null ? paint : Plot.DEFAULT_OUTLINE_PAINT);
+            g2.setStroke(stroke != null ? stroke : Plot.DEFAULT_OUTLINE_STROKE);
+            g2.draw(line);
+        }
+
+    }
+

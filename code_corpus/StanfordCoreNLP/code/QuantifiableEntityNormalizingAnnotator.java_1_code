@@ -1,0 +1,32 @@
+
+public class QuantifiableEntityNormalizingAnnotator implements Annotator {
+
+  private Timing timer = new Timing();
+  private final boolean VERBOSE;
+  private static final String DEFAULT_BACKGROUND_SYMBOL = "O";
+  private final boolean collapse;  // TODO: collpase = true won't work properly (see annotateTokens)
+
+  public static final String BACKGROUND_SYMBOL_PROPERTY = "background";
+  public static final String COLLAPSE_PROPERTY = "collapse";
+
+  public QuantifiableEntityNormalizingAnnotator() {
+    this(DEFAULT_BACKGROUND_SYMBOL, true);
+  }
+
+  public QuantifiableEntityNormalizingAnnotator(boolean verbose) {
+    this(DEFAULT_BACKGROUND_SYMBOL, verbose);
+  }
+
+  public QuantifiableEntityNormalizingAnnotator(String name, Properties props) {
+    String property = name + "." + BACKGROUND_SYMBOL_PROPERTY;
+    String backgroundSymbol = props.getProperty(property, DEFAULT_BACKGROUND_SYMBOL);
+    // this next line is yuck as QuantifiableEntityNormalizer is still static
+    QuantifiableEntityNormalizer.BACKGROUND_SYMBOL = backgroundSymbol;
+    property = name + "." + COLLAPSE_PROPERTY;
+    collapse = PropertiesUtils.getBool(props, property, false);
+    if (this.collapse) {
+      System.err.println("WARNING: QuantifiableEntityNormalizingAnnotator does not work well with collapse=true");
+    }
+    VERBOSE = false;
+  }
+

@@ -1,0 +1,37 @@
+  public int addMap(Map<String, Set<String>> addM) {
+    int newTrans = 0;
+
+    for (Map.Entry<String,Set<String>> me : addM.entrySet()) {
+      String k = me.getKey();
+      Set<String> addList = me.getValue();
+      Set<String> origList = map.get(k);
+      if (origList == null) {
+        map.put(k, new LinkedHashSet<String>(addList));
+        Set<String> newList = map.get(k);
+        if (newList != null && newList.size() != 0) {
+          newTrans+=addList.size();
+        }
+      } else {
+        for (String toAdd : addList) {
+          if (!(origList.contains(toAdd))) {
+            origList.add(toAdd);
+            newTrans++;
+          }
+        }
+      }
+    }
+    return newTrans;
+  }
+
+
+
+  @Override
+  public String toString() {
+    return map.toString();
+  }
+
+  public int size() {
+    return map.size();
+  }
+
+

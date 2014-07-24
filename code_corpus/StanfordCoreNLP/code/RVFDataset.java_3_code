@@ -1,0 +1,72 @@
+  public RVFDataset(Index<L> labelIndex, int[] labels, Index<F> featureIndex, int[][] data, double[][] values) {
+    this.labelIndex = labelIndex;
+    this.labels = labels;
+    this.featureIndex = featureIndex;
+    this.data = data;
+    this.values = values;
+    this.size = labels.length;
+  }
+
+  @Override
+  public Pair<GeneralDataset<L, F>, GeneralDataset<L, F>> split(double percentDev) {
+    int trainSize = size() - devSize;
+
+    int[][] devData = new int[devSize][];
+    double[][] devValues = new double[devSize][];
+    int[] devLabels = new int[devSize];
+
+    int[][] trainData = new int[trainSize][];
+    double[][] trainValues = new double[trainSize][];
+    int[] trainLabels = new int[trainSize];
+
+    System.arraycopy(data, 0, devData, 0, devSize);
+    System.arraycopy(values, 0, devValues, 0, devSize);
+    System.arraycopy(labels, 0, devLabels, 0, devSize);
+
+    System.arraycopy(data, devSize, trainData, 0, trainSize);
+    System.arraycopy(values, devSize, trainValues, 0, trainSize);
+    System.arraycopy(labels, devSize, trainLabels, 0, trainSize);
+
+    RVFDataset<L, F> dev = new RVFDataset<L, F>(labelIndex, devLabels, featureIndex, devData, devValues);
+    RVFDataset<L, F> train = new RVFDataset<L, F>(labelIndex, trainLabels, featureIndex, trainData, trainValues);
+
+    return new Pair<GeneralDataset<L, F>, GeneralDataset<L, F>>(train, dev);
+
+  }
+
+  public void scaleFeaturesGaussian() {
+    means = new double[this.numFeatures()];
+    Arrays.fill(means, 0);
+
+    for (int i = 0; i < this.size(); i++) {
+      for (int j = 0; j < data[i].length; j++)
+        means[data[i][j]] += values[i][j];
+    }
+    ArrayMath.multiplyInPlace(means, 1.0 / this.size());
+
+    stdevs = new double[this.numFeatures()];
+    Arrays.fill(stdevs, 0);
+    double[] deltaX = new double[this.numFeatures()];
+
+    for (int i = 0; i < this.size(); i++) {
+      for (int f = 0; f < this.numFeatures(); f++)
+        deltaX[f] = -means[f];
+      for (int j = 0; j < data[i].length; j++)
+        deltaX[data[i][j]] += values[i][j];
+      for (int f = 0; f < this.numFeatures(); f++) {
+      }
+    }
+    for (int f = 0; f < this.numFeatures(); f++) {
+      stdevs[f] /= (this.size() - 1);
+      stdevs[f] = Math.sqrt(stdevs[f]);
+    }
+    for (int i = 0; i < this.size(); i++) {
+      for (int j = 0; j < data[i].length; j++) {
+        int fID = data[i][j];
+        if (stdevs[fID] != 0)
+          values[i][j] = (values[i][j] - means[fID]) / stdevs[fID];
+      }
+    }
+
+  }
+

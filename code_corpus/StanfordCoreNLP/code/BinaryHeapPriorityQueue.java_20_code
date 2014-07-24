@@ -1,0 +1,34 @@
+  @SuppressWarnings("SuspiciousMethodCalls")
+  @Override
+  public boolean contains(Object key) {
+    return keyToEntry.containsKey(key);
+  }
+
+  @Override
+  public List<E> toSortedList() {
+    List<E> sortedList = new ArrayList<E>(size());
+    BinaryHeapPriorityQueue<E> queue = this.deepCopy();
+    while (!queue.isEmpty()) {
+      sortedList.add(queue.removeFirst());
+    }
+    return sortedList;
+  }
+
+  public BinaryHeapPriorityQueue<E> deepCopy(MapFactory<E, Entry<E>> mapFactory) {
+    BinaryHeapPriorityQueue<E> queue =
+      new BinaryHeapPriorityQueue<E>(mapFactory);
+    for (Entry<E> entry : keyToEntry.values()) {
+      queue.relaxPriority(entry.key, entry.priority);
+    }
+    return queue;
+  }
+
+  public BinaryHeapPriorityQueue<E> deepCopy() {
+    return deepCopy(MapFactory.<E,Entry<E>>hashMapFactory());
+  }
+
+  @Override
+  public Iterator<E> iterator() {
+    return Collections.unmodifiableCollection(toSortedList()).iterator();
+  }
+

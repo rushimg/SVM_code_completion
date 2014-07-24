@@ -1,0 +1,23 @@
+    public Object clone() throws CloneNotSupportedException {
+
+        PolarPlot clone = (PolarPlot) super.clone();
+        if (this.axis != null) {
+            clone.axis = (ValueAxis) ObjectUtilities.clone(this.axis);
+            clone.axis.setPlot(clone);
+            clone.axis.addChangeListener(clone);
+        }
+
+        if (clone.dataset != null) {
+            clone.dataset.addChangeListener(clone);
+        }
+
+        if (this.renderer != null) {
+            clone.renderer
+                = (PolarItemRenderer) ObjectUtilities.clone(this.renderer);
+        }
+
+        clone.cornerTextItems = new ArrayList(this.cornerTextItems);
+
+        return clone;
+    }
+

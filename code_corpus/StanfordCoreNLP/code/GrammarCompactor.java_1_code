@@ -1,0 +1,34 @@
+public abstract class GrammarCompactor {
+
+  // so that the grammar remembers its graphs after compacting them
+  Set<TransducerGraph> compactedGraphs;
+
+  public static final Object RAW_COUNTS = new Object();
+  public static final Object NORMALIZED_LOG_PROBABILITIES = new Object();
+
+  public Object outputType = RAW_COUNTS; // default value
+
+  protected Index<String> stateIndex;
+  protected Index<String> newStateIndex;
+
+  // String rawBaseDir = "raw";
+  // String compactedBaseDir = "compacted";
+  // boolean writeToFile = false;
+  protected Distribution<String> inputPrior;
+  private static final String END = "END";
+  private static final String EPSILON = "EPSILON";
+  protected boolean verbose = false;
+
+  protected final Options op;
+
+  public GrammarCompactor(Options op) {
+    this.op = op;
+  }
+
+
+  protected abstract TransducerGraph doCompaction(TransducerGraph graph, List<List<String>> trainPaths, List<List<String>> testPaths);
+
+  public Triple<Index<String>, UnaryGrammar, BinaryGrammar> compactGrammar(Pair<UnaryGrammar,BinaryGrammar> grammar, Index<String> originalStateIndex) {
+    return compactGrammar(grammar, Generics.<String, List<List<String>>>newHashMap(), Generics.<String, List<List<String>>>newHashMap(), originalStateIndex);
+  }
+

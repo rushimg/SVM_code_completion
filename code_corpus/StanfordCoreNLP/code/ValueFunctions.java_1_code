@@ -1,0 +1,390 @@
+public class ValueFunctions {
+
+  private ValueFunctions() {} // static methods
+
+  protected static Object lookupFunctionObject(Env env, String name) {
+    if (env != null) {
+      Object obj = env.get(name);
+      if (obj != null) {
+        return obj;
+      }
+    }
+    return registeredFunctions.get(name);
+  }
+
+  public abstract static class NamedValueFunction implements ValueFunction {
+    protected String name;
+    protected String signature;
+
+    public NamedValueFunction(String name) {
+      this.name = name;
+    }
+
+    public String getDescription() { return ""; }
+
+    public String getParamDesc() { return "..."; }
+
+    protected static String getParamDesc(String type, int nargs) {
+      if (nargs < 0) {
+        return type + "...";
+      } else if (nargs <= 3) {
+        String[] tmp = new String[nargs];
+        Arrays.fill(tmp, type);
+        return StringUtils.join(tmp, ",");
+      } else return type + "[" + nargs + "]";
+    }
+
+    protected static String getTypeName(Class c) {
+      return c.getCanonicalName();
+    }
+
+    public String toString() {
+      if (signature == null) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(name);
+        sb.append("(");
+        sb.append(getParamDesc());
+        sb.append(")");
+        signature = sb.toString();
+      }
+      return signature;
+    }
+  }
+
+  public static class ParamInfo {
+    public final String name;
+    public final String typeName;
+    public final Class className;
+    public final boolean nullable;
+
+    public ParamInfo(String name, String typeName, Class className, boolean nullable) {
+      this.name = name;
+      this.typeName = typeName;
+      this.className = className;
+      this.nullable = nullable;
+    }
+  }
+
+  public abstract static class TypeCheckedFunction extends NamedValueFunction {
+    List<ParamInfo> paramInfos;
+    int nargs;
+
+    public TypeCheckedFunction(String name, List<ParamInfo> paramInfos) {
+      super(name);
+      this.paramInfos = paramInfos;
+      nargs = (paramInfos != null)? paramInfos.size():0;
+    }
+
+    public TypeCheckedFunction(String name, ParamInfo... paramInfos) {
+      super(name);
+      this.paramInfos = Arrays.asList(paramInfos);
+      nargs = (paramInfos != null)? paramInfos.length:0;
+    }
+
+    @Override
+    public String getParamDesc() {
+      StringBuilder sb = new StringBuilder();
+      for (ParamInfo p:paramInfos) {
+        if (sb.length() > 0) {
+          sb.append(", ");
+        }
+        if (p.typeName != null) {
+          sb.append(p.typeName);
+        } else {
+          sb.append(getTypeName(p.className));
+        }
+      }
+      return sb.toString();
+    }
+
+    @Override
+    public boolean checkArgs(List<Value> in) {
+      if (in.size() != nargs) {
+        return false;
+      }
+      for (int i = 0; i < in.size(); i++) {
+        Value v = in.get(i);
+        ParamInfo p = paramInfos.get(i);
+        if (v == null) {
+          if (!p.nullable) {
+            return false;
+          }
+        } else {
+          if (p.typeName != null && !p.typeName.equals(v.getType())) {
+            return false;
+          }
+          if (v.get() != null) {
+            if (p.className != null && !(p.className.isAssignableFrom(v.get().getClass()))) {
+              return false;
+            }
+          }
+        }
+      }
+      return true;
+    }
+  }
+
+  public abstract static class NumericFunction extends NamedValueFunction {
+    protected String resultTypeName = Expressions.TYPE_NUMBER;
+    protected int nargs = 2;
+
+    protected NumericFunction(String name, int nargs) {
+      super(name);
+      this.nargs = nargs;
+    }
+
+    protected NumericFunction(String name, int nargs, String resultTypeName) {
+      super(name);
+      this.resultTypeName = resultTypeName;
+      this.nargs = nargs;
+    }
+
+    @Override
+    public String getParamDesc() {
+      return getParamDesc(Expressions.TYPE_NUMBER, nargs);
+    }
+
+    public abstract Number compute(Number...ns);
+
+    @Override
+    public boolean checkArgs(List<Value> in) {
+      if (nargs > 0 && in.size() != nargs) {
+        return false;
+      }
+      for (Value v : in) {
+        if (v == null || !(v.get() instanceof Number)) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    @Override
+    public Value apply(Env env, List<Value> in) {
+      if (nargs > 0 && in.size() != nargs) {
+        throw new IllegalArgumentException(nargs + " arguments expected, got " + in.size());
+      }
+      Number[] numbers = new Number[in.size()];
+      for (int i = 0; i < in.size(); i++) {
+        numbers[i] = (Number) in.get(i).get();
+      }
+      Number res = compute(numbers);
+      return new Expressions.PrimitiveValue(resultTypeName, res);
+    }
+  }
+
+  public static final ValueFunction ADD_FUNCTION = new NumericFunction("ADD", 2) {
+    @Override
+    public Number compute(Number... in) {
+      if (isInteger(in[0]) && isInteger(in[1])) {
+        return in[0].longValue() + in[1].longValue();
+      } else {
+        return in[0].doubleValue() + in[1].doubleValue();
+      }
+    }
+  };
+
+  public static final ValueFunction SUBTRACT_FUNCTION = new NumericFunction("SUBTRACT", 2) {
+    @Override
+    public Number compute(Number... in) {
+      if (isInteger(in[0]) && isInteger(in[1])) {
+        return in[0].longValue() - in[1].longValue();
+      } else {
+        return in[0].doubleValue() - in[1].doubleValue();
+      }
+    }
+  };
+
+  public static final ValueFunction MULTIPLY_FUNCTION = new NumericFunction("MULTIPLY", 2) {
+    @Override
+    public Number compute(Number... in) {
+      if (isInteger(in[0]) && isInteger(in[1])) {
+      } else {
+      }
+    }
+  };
+
+  public static final ValueFunction DIVIDE_FUNCTION = new NumericFunction("DIVIDE", 2) {
+    @Override
+    public Number compute(Number... in) {
+      if (isInteger(in[0]) && isInteger(in[1])) {
+        if ( in[0].longValue() % in[1].longValue() == 0)
+          return in[0].longValue() / in[1].longValue();
+        else return in[0].doubleValue() / in[1].doubleValue();
+      } else {
+        return in[0].doubleValue() / in[1].doubleValue();
+      }
+    }
+  };
+
+  public static final ValueFunction MOD_FUNCTION = new NumericFunction("MOD", 2) {
+    @Override
+    public Number compute(Number... in) {
+      if (isInteger(in[0]) && isInteger(in[1])) {
+        return in[0].longValue() % in[1].longValue();
+      } else {
+        return in[0].doubleValue() % in[1].doubleValue();
+      }
+    }
+  };
+
+  public static final ValueFunction MAX_FUNCTION = new NumericFunction("MAX", 2) {
+    @Override
+    public Number compute(Number... in) {
+      if (isInteger(in[0]) && isInteger(in[1])) {
+        return Math.max(in[0].longValue(), in[1].longValue());
+      } else {
+        return Math.max(in[0].doubleValue(), in[1].doubleValue());
+      }
+    }
+  };
+
+  public static final ValueFunction MIN_FUNCTION = new NumericFunction("MIN", 2) {
+    @Override
+    public Number compute(Number... in) {
+      if (isInteger(in[0]) && isInteger(in[1])) {
+        return Math.min(in[0].longValue(), in[1].longValue());
+      } else {
+        return Math.min(in[0].doubleValue(), in[1].doubleValue());
+      }
+    }
+  };
+
+  public static final ValueFunction POW_FUNCTION = new NumericFunction("POW", 2) {
+    @Override
+    public Number compute(Number... in) {
+      return Math.pow(in[0].doubleValue(), in[1].doubleValue());
+    }
+  };
+
+  public static final ValueFunction NEGATE_FUNCTION = new NumericFunction("NEGATE", 1) {
+    @Override
+    public Number compute(Number... in) {
+      if (isInteger(in[0])) {
+        return - in[0].longValue();
+      } else {
+        return - in[0].doubleValue();
+      }
+    }
+  };
+
+  public abstract static class BooleanFunction extends NamedValueFunction {
+    protected String resultTypeName = Expressions.TYPE_BOOLEAN;
+    protected int nargs = 2;
+
+    protected BooleanFunction(String name, int nargs) {
+      super(name);
+      this.nargs = nargs;
+    }
+
+    protected BooleanFunction(String name, int nargs, String resultTypeName) {
+      super(name);
+      this.resultTypeName = resultTypeName;
+      this.nargs = nargs;
+    }
+
+    public abstract Boolean compute(Boolean...ns);
+
+    @Override
+    public String getParamDesc() {
+      return getParamDesc(Expressions.TYPE_BOOLEAN, nargs);
+    }
+
+    @Override
+    public boolean checkArgs(List<Value> in) {
+      if (nargs > 0 && in.size() != nargs) {
+        return false;
+      }
+      for (Value v : in) {
+        if (v == null || !(v.get() instanceof Boolean)) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    @Override
+    public Value apply(Env env, List<Value> in) {
+      if (nargs > 0 && in.size() != nargs) {
+        throw new IllegalArgumentException(nargs + " arguments expected, got " + in.size());
+      }
+      Boolean[] bools = new Boolean[in.size()];
+      for (int i = 0; i < in.size(); i++) {
+        bools[i] = (Boolean) in.get(i).get();
+      }
+      Boolean res = compute(bools);
+      return new Expressions.PrimitiveValue(resultTypeName, res);
+    }
+  }
+
+  public static final ValueFunction AND_FUNCTION = new BooleanFunction("AND", -1) {
+    @Override
+    public Boolean compute(Boolean... in) {
+      for (Boolean b:in) {
+        if (!b) return false;
+      }
+      return true;
+    }
+  };
+
+  public static final ValueFunction OR_FUNCTION = new BooleanFunction("OR", -1) {
+    @Override
+    public Boolean compute(Boolean... in) {
+      for (Boolean b:in) {
+        if (b) return true;
+      }
+      return false;
+    }
+  };
+
+  public static final ValueFunction NOT_FUNCTION = new BooleanFunction("NOT", 1) {
+    @Override
+    public Boolean compute(Boolean... in) {
+      Boolean res = !in[0];
+      return res;
+    }
+  };
+
+  private static String join(Object[] args, String glue) {
+    String res = null;
+    if (args.length == 1) {
+      // Only one element - check if it is a list or array and do join on that
+      if (args[0] instanceof Iterable) {
+        res = StringUtils.join((Iterable) args[0], glue);
+      } else {
+        res = StringUtils.join(args, glue);
+      }
+    } else {
+      res = StringUtils.join(args, glue);
+    }
+    return res;
+  }
+
+  public abstract static class StringFunction extends NamedValueFunction {
+    protected String resultTypeName = Expressions.TYPE_STRING;
+    protected int nargs = 2;
+
+    protected StringFunction(String name, int nargs) {
+      super(name);
+      this.nargs = nargs;
+    }
+
+    protected StringFunction(String name, int nargs, String resultTypeName) {
+      super(name);
+      this.resultTypeName = resultTypeName;
+      this.nargs = nargs;
+    }
+
+    public abstract String compute(String... strs);
+
+    @Override
+    public String getParamDesc() {
+      return getParamDesc(Expressions.TYPE_STRING, nargs);
+    }
+
+    @Override
+    public boolean checkArgs(List<Value> in) {
+      if (nargs > 0 && in.size() != nargs) {
+        return false;
+      }
+      for (Value v : in) {

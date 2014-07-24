@@ -1,0 +1,20 @@
+    public static String format(
+            final Iterable<? extends NameValuePair> parameters,
+            final char parameterSeparator,
+            final Charset charset) {
+        final StringBuilder result = new StringBuilder();
+        for (final NameValuePair parameter : parameters) {
+            final String encodedName = encodeFormFields(parameter.getName(), charset);
+            final String encodedValue = encodeFormFields(parameter.getValue(), charset);
+            if (result.length() > 0) {
+                result.append(parameterSeparator);
+            }
+            result.append(encodedName);
+            if (encodedValue != null) {
+                result.append(NAME_VALUE_SEPARATOR);
+                result.append(encodedValue);
+            }
+        }
+        return result.toString();
+    }
+

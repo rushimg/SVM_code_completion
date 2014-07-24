@@ -1,0 +1,30 @@
+  public static DoccatModel train(String languageCode, ObjectStream<DocumentSample> samples,
+          TrainingParameters mlParams, FeatureGenerator... featureGenerators)
+          throws IOException {
+
+    if (featureGenerators.length == 0) {
+      featureGenerators = new FeatureGenerator[]{defaultFeatureGenerator};
+    }
+
+    Map<String, String> manifestInfoEntries = new HashMap<String, String>();
+
+    MaxentModel model = TrainUtil.train(
+            new DocumentCategorizerEventStream(samples, featureGenerators),
+            mlParams.getSettings(), manifestInfoEntries);
+
+    return new DoccatModel(languageCode, model, manifestInfoEntries);
+  }
+
+  public static DoccatModel train(String languageCode, ObjectStream<DocumentSample> samples,
+          TrainingParameters mlParams, DoccatFactory factory)
+          throws IOException {
+
+    Map<String, String> manifestInfoEntries = new HashMap<String, String>();
+
+    MaxentModel model = TrainUtil.train(
+            new DocumentCategorizerEventStream(samples, factory.getFeatureGenerators()),
+            mlParams.getSettings(), manifestInfoEntries);
+
+    return new DoccatModel(languageCode, model, manifestInfoEntries, factory);
+  }
+

@@ -1,0 +1,50 @@
+    public DefaultColorBarEditor(ColorBar colorBar) {
+        super((NumberAxis) colorBar.getAxis());
+        this.invertPalette = colorBar.getColorPalette().isInverse();
+        this.stepPalette = colorBar.getColorPalette().isStepped();
+        this.currentPalette = new PaletteSample(colorBar.getColorPalette());
+        this.availablePaletteSamples = new PaletteSample[2];
+        this.availablePaletteSamples[0]
+            = new PaletteSample(new RainbowPalette());
+        this.availablePaletteSamples[1]
+            = new PaletteSample(new GreyPalette());
+
+        JTabbedPane other = getOtherTabs();
+
+        JPanel palettePanel = new JPanel(new LCBLayout(4));
+        palettePanel.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
+
+        palettePanel.add(new JPanel());
+        this.invertPaletteCheckBox = new JCheckBox(
+            localizationResources.getString("Invert_Palette"),
+            this.invertPalette
+        );
+        this.invertPaletteCheckBox.setActionCommand("invertPalette");
+        this.invertPaletteCheckBox.addActionListener(this);
+        palettePanel.add(this.invertPaletteCheckBox);
+        palettePanel.add(new JPanel());
+
+        palettePanel.add(new JPanel());
+        this.stepPaletteCheckBox = new JCheckBox(
+            localizationResources.getString("Step_Palette"),
+            this.stepPalette
+        );
+        this.stepPaletteCheckBox.setActionCommand("stepPalette");
+        this.stepPaletteCheckBox.addActionListener(this);
+        palettePanel.add(this.stepPaletteCheckBox);
+        palettePanel.add(new JPanel());
+
+        palettePanel.add(
+            new JLabel(localizationResources.getString("Palette"))
+        );
+        JButton button
+            = new JButton(localizationResources.getString("Set_palette..."));
+        button.setActionCommand("PaletteChoice");
+        button.addActionListener(this);
+        palettePanel.add(this.currentPalette);
+        palettePanel.add(button);
+
+        other.add(localizationResources.getString("Palette"), palettePanel);
+
+    }
+

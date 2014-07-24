@@ -1,0 +1,44 @@
+    // Displaying the CoreLabels generated for this sentence
+    System.err.print("sentence to core labels:");
+    for(CoreLabel l: labels){
+      System.err.print(" " + l.word() + "/" + l.getString(CoreAnnotations.PartOfSpeechAnnotation.class));
+      String tag = l.getString(CoreAnnotations.AnswerAnnotation.class);
+      if(tag != null && ! tag.equals(SeqClassifierFlags.DEFAULT_BACKGROUND_SYMBOL)){
+        System.err.print("/" + tag);
+      }
+    }
+    System.err.println();
+
+    return labels;
+  }
+
+  public static CoreMap getSentence(CoreMap dataset, int i) {
+    return dataset.get(CoreAnnotations.SentencesAnnotation.class).get(i);
+  }
+
+  public static int sentenceCount(CoreMap dataset) {
+    List<CoreMap> sents = dataset.get(CoreAnnotations.SentencesAnnotation.class);
+    if(sents != null) return sents.size();
+    return 0;
+  }
+
+  public static void addSentence(CoreMap dataset, CoreMap sentence) {
+    List<CoreMap> sents = dataset.get(CoreAnnotations.SentencesAnnotation.class);
+    if(sents == null){
+      sents = new ArrayList<CoreMap>();
+      dataset.set(CoreAnnotations.SentencesAnnotation.class, sents);
+    }
+    sents.add(sentence);
+  }
+
+  public static void addSentences(CoreMap dataset, List<CoreMap> sentences) {
+    List<CoreMap> sents = dataset.get(CoreAnnotations.SentencesAnnotation.class);
+    if(sents == null){
+      sents = new ArrayList<CoreMap>();
+      dataset.set(CoreAnnotations.SentencesAnnotation.class, sents);
+    }
+    for(CoreMap sentence: sentences){
+      sents.add(sentence);
+    }
+  }
+

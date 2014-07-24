@@ -1,0 +1,181 @@
+    public final IntTuple position;
+    public final String mentionSpan;
+
+    public CorefMention(MentionType mentionType,
+            Number number,
+            Gender gender,
+            Animacy animacy,
+            int startIndex,
+            int endIndex,
+            int headIndex,
+            int corefClusterID,
+            int mentionID,
+            int sentNum,
+            IntTuple position,
+            String mentionSpan) {
+      this.mentionType = mentionType;
+      this.number = number;
+      this.gender = gender;
+      this.animacy = animacy;
+      this.startIndex = startIndex;
+      this.endIndex = endIndex;
+      this.headIndex = headIndex;
+      this.corefClusterID = corefClusterID;
+      this.mentionID = mentionID;
+      this.sentNum = sentNum;
+      this.position = position;
+      this.mentionSpan = mentionSpan;
+    }
+
+    public CorefMention(Mention m, IntTuple pos){
+      mentionType = m.mentionType;
+      number = m.number;
+      gender = m.gender;
+      animacy = m.animacy;
+      startIndex = m.startIndex + 1;
+      endIndex = m.endIndex + 1;
+      headIndex = m.headIndex + 1;
+      corefClusterID = m.corefClusterID;
+      sentNum = m.sentNum + 1;
+      mentionID = m.mentionID;
+      mentionSpan = m.spanToString();
+
+      // index starts from 1
+      position = new IntTuple(2);
+      position.set(0, pos.get(0)+1);
+      position.set(1, pos.get(1)+1);
+
+      m.headWord.set(CorefCoreAnnotations.CorefClusterIdAnnotation.class, corefClusterID);
+    }
+
+    @Override
+    public boolean equals(Object aThat) {
+      if (this == aThat)
+        return true;
+      if (!(aThat instanceof CorefMention))
+        return false;
+      CorefMention that = (CorefMention) aThat;
+      if (mentionType != that.mentionType)
+        return false;
+      if (number != that.number)
+        return false;
+      if (gender != that.gender)
+        return false;
+      if (animacy != that.animacy)
+        return false;
+      if (startIndex != that.startIndex)
+        return false;
+      if (endIndex != that.endIndex)
+        return false;
+      if (headIndex != that.headIndex)
+        return false;
+      if (corefClusterID != that.corefClusterID)
+        return false;
+      if (mentionID != that.mentionID)
+        return false;
+      if (sentNum != that.sentNum)
+        return false;
+      if (!position.equals(that.position))
+        return false;
+      // we ignore MentionSpan as it is constructed from the tokens
+      // the mention is a span of, so if we know those spans are the
+      // same, we should be able to ignore the actual text
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      return position.hashCode();
+    }
+
+    @Override
+    public String toString(){
+      StringBuilder s = new StringBuilder();
+      s.append('"').append(mentionSpan).append('"').append(" in sentence ").append(sentNum);
+      return s.toString();
+      //      return "(sentence:" + sentNum + ", startIndex:" + startIndex + "-endIndex:" + endIndex + ")";
+    }
+
+    private boolean moreRepresentativeThan(CorefMention m) {
+      if (m==null) return true;
+      if (mentionType != m.mentionType) {
+        return (mentionType == MentionType.PROPER)
+            || (mentionType == MentionType.NOMINAL && m.mentionType == MentionType.PRONOMINAL);
+      } else {
+        // First, check length
+        if (headIndex - startIndex > m.headIndex - m.startIndex) return true;
+        if (headIndex - startIndex < m.headIndex - m.startIndex) return false;
+        if (endIndex - startIndex > m.endIndex - m.startIndex) return true;
+        if (endIndex - startIndex < m.endIndex - m.startIndex) return false;
+        // Now check relative position
+        if (sentNum < m.sentNum) return true;
+        if (sentNum > m.sentNum) return false;
+        if (headIndex < m.headIndex) return true;
+        if (headIndex > m.headIndex) return false;
+        if (startIndex < m.startIndex) return true;
+        if (startIndex > m.startIndex) return false;
+        // At this point they're equal...
+        return false;
+      }
+    }
+
+    private static final long serialVersionUID = 3657691243504173L;
+  }
+
+  protected static class CorefMentionComparator implements Comparator<CorefMention> {
+    @Override
+    public int compare(CorefMention m1, CorefMention m2) {
+      if(m1.sentNum < m2.sentNum) return -1;
+      else if(m1.sentNum > m2.sentNum) return 1;
+      else{
+        if(m1.startIndex < m2.startIndex) return -1;
+        else if(m1.startIndex > m2.startIndex) return 1;
+        else {
+          if(m1.endIndex > m2.endIndex) return -1;
+          else if(m1.endIndex < m2.endIndex) return 1;
+          else return 0;
+        }
+      }
+    }
+  }
+
+  protected static class MentionComparator implements Comparator<Mention> {
+    @Override
+    public int compare(Mention m1, Mention m2) {
+      if(m1.sentNum < m2.sentNum) return -1;
+      else if(m1.sentNum > m2.sentNum) return 1;
+      else{
+        if(m1.startIndex < m2.startIndex) return -1;
+        else if(m1.startIndex > m2.startIndex) return 1;
+        else {
+          if(m1.endIndex > m2.endIndex) return -1;
+          else if(m1.endIndex < m2.endIndex) return 1;
+          else return 0;
+        }
+      }
+    }
+  }
+
+  public CorefChain(CorefCluster c, Map<Mention, IntTuple> positions){
+    chainID = c.clusterID;
+    // Collect mentions
+    mentions = new ArrayList<CorefMention>();
+    mentionMap = Generics.newHashMap();
+    CorefMention represents = null;
+    for (Mention m : c.getCorefMentions()) {
+      CorefMention men = new CorefMention(m, positions.get(m));
+      mentions.add(men);
+    }
+    Collections.sort(mentions, new CorefMentionComparator());
+    // Find representative mention
+    for (CorefMention men : mentions) {
+      IntPair position = new IntPair(men.sentNum, men.headIndex);
+      if (!mentionMap.containsKey(position)) mentionMap.put(position, Generics.<CorefMention>newHashSet());
+      mentionMap.get(position).add(men);
+      if (men.moreRepresentativeThan(represents)) {
+        represents = men;
+      }
+    }
+    representative = represents;
+  }
+

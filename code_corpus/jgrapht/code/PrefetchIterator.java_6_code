@@ -1,0 +1,20 @@
+    public boolean hasMoreElements()
+    {
+        if (endOfEnumerationReached) {
+            return false;
+        }
+
+        if (isGetNextLastResultUpToDate) {
+            return true;
+        } else {
+            try {
+                this.getNextLastResult = getNextElementFromInnerFunctor();
+                this.isGetNextLastResultUpToDate = true;
+                return true;
+            } catch (NoSuchElementException noSuchE) {
+                endOfEnumerationReached = true;
+                return false;
+            }
+        } // else
+    } // method
+

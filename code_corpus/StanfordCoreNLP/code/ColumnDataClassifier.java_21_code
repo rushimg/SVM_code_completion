@@ -1,0 +1,324 @@
+  private Flags[] setProperties(Properties props) {
+    Flags[] myFlags;
+    boolean myUsesRealValues = false;
+
+    Pattern prefix;
+    try {
+    } catch (PatternSyntaxException pse) {
+      throw new RuntimeException(pse);
+    }
+
+    // if we are loading a classifier then we have to load it before we do anything
+    // else and have its Properties be the defaults that can then be overridden by
+    // other command-line arguments
+    String loadPath = props.getProperty("loadClassifier");
+    if (loadPath != null) {
+      System.err.println("Loading classifier from " + loadPath + "...");
+      ObjectInputStream ois = null;
+      try {
+        // load the classifier
+        ois = IOUtils.readStreamFromString(loadPath);
+        classifier = ErasureUtils.<LinearClassifier<String,String>>uncheckedCast(ois.readObject());
+        myFlags = (Flags[]) ois.readObject();
+        assert flags.length > 0;
+        System.err.println("Done.");
+      } catch (Exception e) {
+        throw new RuntimeIOException("Error deserializing " + loadPath, e);
+      } finally {
+        IOUtils.closeIgnoringExceptions(ois);
+      }
+    } else {
+      myFlags = new Flags[1];
+      myFlags[0] = new Flags();  // initialize zero column flags used for global flags; it can't be null
+    }
+
+    for (Enumeration<?> e = props.propertyNames(); e.hasMoreElements();) {
+      String key = (String) e.nextElement();
+      String val = props.getProperty(key);
+
+      int col = 0;  // the default (first after class)
+       System.err.println(key + " = " + val);
+      Matcher matcher = prefix.matcher(key);
+      if (matcher.matches()) {
+        col = Integer.parseInt(matcher.group(1));
+        key = matcher.group(2);
+      }
+      if (col >= myFlags.length) {
+        Flags[] newFl = new Flags[col + 1];
+        System.arraycopy(myFlags, 0, newFl, 0, myFlags.length);
+        myFlags = newFl;
+      }
+      if (myFlags[col] == null) {
+        myFlags[col] = new Flags();
+      }
+
+      if (key.equals("useString")) {
+        myFlags[col].useString = Boolean.parseBoolean(val);
+      } else if (key.equals("binnedLengths")) {
+        if (val != null) {
+          String[] binnedLengthStrs = val.split("[, ]+");
+          myFlags[col].binnedLengths = new int[binnedLengthStrs.length];
+          for (int i = 0; i < myFlags[col].binnedLengths.length; i++) {
+            myFlags[col].binnedLengths[i] = Integer.parseInt(binnedLengthStrs[i]);
+          }
+        }
+      } else if (key.equals("binnedLengthsStatistics")) {
+        if (Boolean.parseBoolean(val)) {
+          myFlags[col].binnedLengthsCounter = new TwoDimensionalCounter<String,String>();
+        }
+      } else if (key.equals("countChars")) {
+        myFlags[col].countChars = val.toCharArray();
+      } else if (key.equals("countCharsBins")) {
+        if (val != null) {
+          String[] binnedCountStrs = val.split("[, ]+");
+          myFlags[col].countCharsBins = new int[binnedCountStrs.length];
+          for (int i = 0; i < binnedCountStrs.length; i++) {
+            myFlags[col].countCharsBins[i] = Integer.parseInt(binnedCountStrs[i]);
+          }
+        }
+      } else if (key.equals("binnedValues")) {
+        if (val != null) {
+          String[] binnedValuesStrs = val.split("[, ]+");
+          myFlags[col].binnedValues = new double[binnedValuesStrs.length];
+          for (int i = 0; i < myFlags[col].binnedValues.length; i++) {
+            myFlags[col].binnedValues[i] = Double.parseDouble(binnedValuesStrs[i]);
+          }
+        }
+      } else if (key.equals("binnedValuesNaN")) {
+        myFlags[col].binnedValuesNaN = Double.parseDouble(val);
+      } else if (key.equals("binnedValuesStatistics")) {
+        if (Boolean.parseBoolean(val)) {
+          myFlags[col].binnedValuesCounter = new TwoDimensionalCounter<String,String>();
+        }
+      } else if (key.equals("useNGrams")) {
+        myFlags[col].useNGrams = Boolean.parseBoolean(val);
+      } else if (key.equals("usePrefixSuffixNGrams")) {
+        myFlags[col].usePrefixSuffixNGrams = Boolean.parseBoolean(val);
+      } else if (key.equals("useSplitNGrams")) {
+        myFlags[col].useSplitNGrams = Boolean.parseBoolean(val);
+      } else if (key.equals("wordShape")) {
+        myFlags[col].wordShape = WordShapeClassifier.lookupShaper(val);
+      } else if (key.equals("splitWordShape")) {
+        myFlags[col].splitWordShape = WordShapeClassifier.lookupShaper(val);
+      } else if (key.equals("useSplitPrefixSuffixNGrams")) {
+        myFlags[col].useSplitPrefixSuffixNGrams = Boolean.parseBoolean(val);
+      } else if (key.equals("lowercaseNGrams")) {
+        myFlags[col].lowercaseNGrams = Boolean.parseBoolean(val);
+      } else if (key.equals("lowercase")) {
+        myFlags[col].lowercase = Boolean.parseBoolean(val);
+      } else if (key.equals("useLowercaseSplitWords")) {
+        myFlags[col].useLowercaseSplitWords = Boolean.parseBoolean(val);
+      } else if (key.equals("useSum")) {
+        myFlags[col].useSum = Boolean.parseBoolean(val);
+      } else if (key.equals("tolerance")) {
+        myFlags[col].tolerance = Double.parseDouble(val);
+      } else if (key.equals("printFeatures")) {
+        myFlags[col].printFeatures = val;
+      } else if (key.equals("printClassifier")) {
+        myFlags[col].printClassifier = val;
+      } else if (key.equals("printClassifierParam")) {
+        myFlags[col].printClassifierParam = Integer.parseInt(val);
+      } else if (key.equals("exitAfterTrainingFeaturization")) {
+        myFlags[col].exitAfterTrainingFeaturization = Boolean.parseBoolean(val);
+      } else if (key.equals("intern") || key.equals("intern2")) {
+        myFlags[col].intern = Boolean.parseBoolean(val);
+      } else if (key.equals("cacheNGrams")) {
+        myFlags[col].cacheNGrams = Boolean.parseBoolean(val);
+      } else if (key.equals("useClassifierFactory")) {
+        myFlags[col].useClassifierFactory = val;
+      } else if (key.equals("classifierFactoryArgs")) {
+        myFlags[col].classifierFactoryArgs = val;
+      } else if (key.equals("useNB")) {
+        myFlags[col].useNB = Boolean.parseBoolean(val);
+      } else if (key.equals("useBinary")) {
+        myFlags[col].useBinary = Boolean.parseBoolean(val);
+      } else if (key.equals("l1reg")) {
+        myFlags[col].l1reg = Double.parseDouble(val);
+      } else if (key.equals("useAdaptL1")) {
+        myFlags[col].useAdaptL1 = Boolean.parseBoolean(val);
+      } else if (key.equals("limitFeatures")) {
+        myFlags[col].limitFeatures = Integer.parseInt(val);
+      } else if (key.equals("l1regmin")) {
+        myFlags[col].l1regmin = Double.parseDouble(val);
+      } else if (key.equals("l1regmax")) {
+        myFlags[col].l1regmax = Double.parseDouble(val);
+      } else if (key.equals("limitFeaturesLabels")) {
+        myFlags[col].limitFeaturesLabels = val;
+      } else if (key.equals("featureWeightThreshold")) {
+        myFlags[col].featureWeightThreshold = Double.parseDouble(val);
+      } else if (key.equals("useClassFeature")) {
+        myFlags[col].useClassFeature = Boolean.parseBoolean(val);
+      } else if (key.equals("featureMinimumSupport")) {
+        myFlags[col].featureMinimumSupport = Integer.parseInt(val);
+      } else if (key.equals("prior")) {
+        if (val.equalsIgnoreCase("no")) {
+          myFlags[col].prior = LogPrior.LogPriorType.NULL.ordinal();
+        } else if (val.equalsIgnoreCase("huber")) {
+          myFlags[col].prior = LogPrior.LogPriorType.HUBER.ordinal();
+        } else if (val.equalsIgnoreCase("quadratic")) {
+          myFlags[col].prior = LogPrior.LogPriorType.QUADRATIC.ordinal();
+        } else if (val.equalsIgnoreCase("quartic")) {
+          myFlags[col].prior = LogPrior.LogPriorType.QUARTIC.ordinal();
+        } else {
+          try {
+            myFlags[col].prior = Integer.parseInt(val);
+          } catch (NumberFormatException nfe) {
+            System.err.println("Unknown prior " + val + "; using none.");
+          }
+        }
+      } else if (key.equals("sigma")) {
+        myFlags[col].sigma = Double.parseDouble(val);
+      } else if (key.equals("epsilon")) {
+        myFlags[col].epsilon = Double.parseDouble(val);
+      } else if (key.equals("maxNGramLeng")) {
+        myFlags[col].maxNGramLeng = Integer.parseInt(val);
+      } else if (key.equals("minNGramLeng")) {
+        myFlags[col].minNGramLeng = Integer.parseInt(val);
+      } else if (key.equals("partialNGramRegexp")) {
+        myFlags[col].partialNGramRegexp = val;
+        try {
+          myFlags[col].partialNGramPattern = Pattern.compile(myFlags[col].partialNGramRegexp);
+        } catch (PatternSyntaxException pse) {
+          System.err.println("Ill-formed partialNGramPattern: " + myFlags[col].partialNGramPattern);
+          myFlags[col].partialNGramRegexp = null;
+        }
+      } else if (key.equals("splitWordsRegexp")) {
+        try {
+          myFlags[col].splitWordsPattern = Pattern.compile(val);
+        } catch (PatternSyntaxException pse) {
+          System.err.println("Ill-formed splitWordsRegexp: " + val);
+        }
+      } else if (key.equals("splitWordsTokenizerRegexp")) {
+        try {
+          myFlags[col].splitWordsTokenizerPattern = Pattern.compile(val);
+        } catch (PatternSyntaxException pse) {
+          System.err.println("Ill-formed splitWordsTokenizerRegexp: " + val);
+        }
+      } else if (key.equals("splitWordsIgnoreRegexp")) {
+        String trimVal = val.trim();
+        if (trimVal.isEmpty()) {
+          myFlags[col].splitWordsIgnorePattern = null;
+        } else {
+          try {
+            myFlags[col].splitWordsIgnorePattern = Pattern.compile(trimVal);
+          } catch (PatternSyntaxException pse) {
+            System.err.println("Ill-formed splitWordsIgnoreRegexp: " + trimVal);
+          }
+        }
+      } else if (key.equals("useSplitWords")) {
+        myFlags[col].useSplitWords = Boolean.parseBoolean(val);
+      } else if (key.equals("useSplitWordPairs")) {
+        myFlags[col].useSplitWordPairs = Boolean.parseBoolean(val);
+      } else if (key.equals("useAllSplitWordPairs")) {
+        myFlags[col].useAllSplitWordPairs = Boolean.parseBoolean(val);
+      } else if (key.equals("useAllSplitWordTriples")) {
+        myFlags[col].useAllSplitWordTriples = Boolean.parseBoolean(val);
+      } else if (key.equals("useSplitWordNGrams")) {
+        myFlags[col].useSplitWordNGrams = Boolean.parseBoolean(val);
+      } else if (key.equals("maxWordNGramLeng")) {
+        myFlags[col].maxWordNGramLeng = Integer.parseInt(val);
+      } else if (key.equals("minWordNGramLeng")) {
+        myFlags[col].minWordNGramLeng = Integer.parseInt(val);
+        if (myFlags[col].minWordNGramLeng < 1) {
+          System.err.println("minWordNGramLeng set to " + myFlags[col].minWordNGramLeng + ", resetting to 1");
+          myFlags[col].minWordNGramLeng = 1;
+        }
+      } else if (key.equals("wordNGramBoundaryRegexp")) {
+        myFlags[col].wordNGramBoundaryRegexp = val;
+        try {
+          myFlags[col].wordNGramBoundaryPattern = Pattern.compile(myFlags[col].wordNGramBoundaryRegexp);
+        } catch (PatternSyntaxException pse) {
+          System.err.println("Ill-formed wordNGramBoundary regexp: " + myFlags[col].wordNGramBoundaryRegexp);
+          myFlags[col].wordNGramBoundaryRegexp = null;
+        }
+      } else if (key.equals("useSplitFirstLastWords")) {
+        myFlags[col].useSplitFirstLastWords = Boolean.parseBoolean(val);
+      } else if (key.equals("loadClassifier")) {
+        myFlags[col].loadClassifier = val;
+      } else if (key.equals("serializeTo")) {
+        Flags.serializeTo = val;
+      } else if (key.equals("printTo")) {
+        Flags.printTo = val;
+      } else if (key.equals("trainFile")) {
+        Flags.trainFile = val;
+      } else if (key.equals("displayAllAnswers")) {
+        Flags.displayAllAnswers = Boolean.parseBoolean(val);
+      } else if (key.equals("testFile")) {
+        myFlags[col].testFile = val;
+      } else if (key.equals("trainFromSVMLight")) {
+        Flags.trainFromSVMLight = Boolean.parseBoolean(val);
+      } else if (key.equals("testFromSVMLight")) {
+        Flags.testFromSVMLight = Boolean.parseBoolean(val);
+      } else if (key.equals("encoding")) {
+        Flags.encoding = val;
+      } else if (key.equals("printSVMLightFormatTo")) {
+        Flags.printSVMLightFormatTo = val;
+      } else if (key.equals("displayedColumn")) {
+        myFlags[col].displayedColumn = Integer.parseInt(val);
+      } else if (key.equals("groupingColumn")) {
+        myFlags[col].groupingColumn = Integer.parseInt(val);
+        // System.err.println("Grouping column is " + (myFlags[col].groupingColumn));
+      } else if (key.equals("rankingScoreColumn")) {
+        myFlags[col].rankingScoreColumn = Integer.parseInt(val);
+        // System.err.println("Ranking score column is " + (myFlags[col].rankingScoreColumn));
+      } else if (key.equals("rankingAccuracyClass")) {
+        myFlags[col].rankingAccuracyClass = val;
+      } else if (key.equals("goldAnswerColumn")) {
+        myFlags[col].goldAnswerColumn = Integer.parseInt(val);
+        // System.err.println("Gold answer column is " + (myFlags[col].goldAnswerColumn));  // it's a nuisance to print this when used programmatically
+      } else if (key.equals("useQN")) {
+        myFlags[col].useQN = Boolean.parseBoolean(val);
+      } else if (key.equals("QNsize")) {
+        myFlags[col].QNsize = Integer.parseInt(val);
+      } else if (key.equals("featureFormat")) {
+        myFlags[col].featureFormat = Boolean.parseBoolean(val);
+      } else if (key.equals("significantColumnId")) {
+        myFlags[col].significantColumnId = Boolean.parseBoolean(val);
+      } else if (key.equals("justify")) {
+        myFlags[col].justify = Boolean.parseBoolean(val);
+      }  else if (key.equals("realValued")) {
+        myFlags[col].isRealValued = Boolean.parseBoolean(val);
+        myUsesRealValues = myUsesRealValues || myFlags[col].isRealValued;
+      } else if (key.equals("logTransform")) {
+        myFlags[col].logTransform = Boolean.parseBoolean(val);
+        myUsesRealValues = myUsesRealValues || myFlags[col].logTransform;
+      } else if (key.equals("logitTransform")) {
+        myFlags[col].logitTransform = Boolean.parseBoolean(val);
+        myUsesRealValues = myUsesRealValues || myFlags[col].logitTransform;
+      } else if (key.equals("sqrtTransform")) {
+        myFlags[col].sqrtTransform = Boolean.parseBoolean(val);
+        myUsesRealValues = myUsesRealValues || myFlags[col].sqrtTransform;
+      } else if (key.equals("filename")) {
+        myFlags[col].filename = Boolean.parseBoolean(val);
+      } else if (key.equals("biased")) {
+        myFlags[col].biased = Boolean.parseBoolean(val);
+      } else if (key.equals("biasedHyperplane")) {
+        // System.err.println("Constraints is " + constraints);
+        if (val != null && val.trim().length() > 0) {
+          String[] bits = val.split("[, ]+");
+          myFlags[col].biasedHyperplane = new ClassicCounter<String>();
+          for (int i = 0; i < bits.length; i += 2) {
+            myFlags[col].biasedHyperplane.setCount(bits[i], Double.parseDouble(bits[i + 1]));
+          }
+        }
+        // System.err.println("Biased Hyperplane is " + biasedHyperplane);
+      } else if (key.equals("crossValidationFolds")) {
+        myFlags[col].crossValidationFolds = Integer.parseInt(val);
+      } else if (key.equals("shuffleTrainingData")) {
+        myFlags[col].shuffleTrainingData = Boolean.parseBoolean(val);
+      } else if (key.equals("shuffleSeed")) {
+        myFlags[col].shuffleSeed = Long.parseLong(val);
+      } else if (key.equals("csvFormat")) {
+        myFlags[col].csvFormat= Boolean.parseBoolean(val);
+      } else if (key.equals("splitWordsWithPTBTokenizer")) {
+        System.out.println("splitting with ptb tokenizer");
+        myFlags[col].splitWordsWithPTBTokenizer=Boolean.parseBoolean(val);
+      } else if ( ! key.isEmpty() && ! key.equals("prop")) {
+        System.err.println("Unknown property: |" + key + '|');
+      }
+    }
+    myFlags[0].usesRealValues = myUsesRealValues;
+    return myFlags;
+  }
+
+

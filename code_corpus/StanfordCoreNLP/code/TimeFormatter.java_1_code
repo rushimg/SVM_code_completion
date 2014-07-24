@@ -1,0 +1,25 @@
+        CustomDateFormatExtractor formatExtractor = new CustomDateFormatExtractor(expr, localeString);
+        //SequenceMatchRules.Expression result = (SequenceMatchRules.Expression) attributes.get("result");
+        updateExtractRule(r, env, formatExtractor.getTextPattern(), new ApplyActionWrapper(env, formatExtractor, action));
+      } else if ("org.joda.time.format.DateTimeFormat".equals(formatter)) {
+        if (r.annotationField == null) { r.annotationField = r.tokensAnnotationField;  }
+        updateExtractRule(r, env, new ApplyActionWrapper(env, new JodaDateTimeFormatExtractor(expr), action));
+      } else if ("org.joda.time.format.ISODateTimeFormat".equals(formatter)) {
+        if (r.annotationField == null) { r.annotationField = r.tokensAnnotationField;  }
+        try {
+          Method m = ISODateTimeFormat.class.getMethod(expr);
+          DateTimeFormatter dtf = (DateTimeFormatter) m.invoke(null);
+          updateExtractRule(r, env, new ApplyActionWrapper(env, new JodaDateTimeFormatExtractor(expr), action));
+        } catch (Exception ex) {
+          throw new RuntimeException("Error creating DateTimeFormatter", ex);
+        }
+      } else if ("java.text.SimpleDateFormat".equals(formatter)) {
+        if (r.annotationField == null) { r.annotationField = r.tokensAnnotationField;  }
+        updateExtractRule(r, env, new ApplyActionWrapper(env, new JavaDateFormatExtractor(expr), action));
+      } else {
+        throw new IllegalArgumentException("Unsupported formatter: " + formatter);
+      }
+      return r;
+    }
+  }
+

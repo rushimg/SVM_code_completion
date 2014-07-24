@@ -1,0 +1,22 @@
+  public POSDictionary getTagDictionary() {
+    if (getFactory() != null) {
+      TagDictionary dict = getFactory().getTagDictionary();
+      if (dict != null) {
+        if (dict instanceof POSDictionary) {
+          return (POSDictionary) dict;
+        }
+        String clazz = dict.getClass().getCanonicalName();
+        throw new IllegalStateException("Can not get a dictionary of type "
+            + clazz
+            + " using the deprecated method POSModel.getTagDictionary() "
+            + "because it can only return dictionaries of type POSDictionary. "
+            + "Use POSModel.getFactory().getTagDictionary() instead.");
+      }
+    }
+    return null;
+  }
+
+  public POSTaggerFactory getFactory() {
+    return (POSTaggerFactory) this.toolFactory;
+  }
+

@@ -1,0 +1,22 @@
+  @Override
+  public List<Record> signalShutdown(){
+    List<Record> willReturn = new ArrayList<Record>();
+    flush(current,willReturn);
+    return willReturn;
+  }
+
+
+  private static enum PendingType { NONE, PRINTING, SEEN }
+
+
+  private static class RepeatedRecordInfo {
+    private Record lastRecord = null;
+    private int timesSeen = 0;
+    private int timesPrinted = 0;
+    private long timeOfLastPrintedRecord = 0L;
+    private boolean suppressRecord = false;
+    private boolean somethingPrinted = false;
+    private PendingType trackCountPending = PendingType.NONE;
+  }
+
+

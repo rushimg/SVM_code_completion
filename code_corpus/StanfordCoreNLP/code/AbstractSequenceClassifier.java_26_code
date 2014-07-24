@@ -1,0 +1,90 @@
+  public ObjectBank<List<IN>>
+    makeObjectBankFromString(String string,
+                             DocumentReaderAndWriter<IN> readerAndWriter)
+  {
+    if (flags.announceObjectBankEntries) {
+      System.err.print("Reading data using " + readerAndWriter.getClass());
+
+      if (flags.inputEncoding == null) {
+        System.err.println("Getting data from " + string + " (default encoding)");
+      } else {
+        System.err.println("Getting data from " + string + " (" + flags.inputEncoding + " encoding)");
+      }
+    }
+    // return new ObjectBank<List<IN>>(new
+    // ResettableReaderIteratorFactory(string), readerAndWriter);
+    // TODO
+    return new ObjectBankWrapper<IN>(flags, new ObjectBank<List<IN>>(new ResettableReaderIteratorFactory(string),
+        readerAndWriter), knownLCWords);
+  }
+
+  public ObjectBank<List<IN>> makeObjectBankFromFile(String filename) {
+    return makeObjectBankFromFile(filename, defaultReaderAndWriter);
+  }
+
+  public ObjectBank<List<IN>> makeObjectBankFromFile(String filename,
+                                                     DocumentReaderAndWriter<IN> readerAndWriter) {
+    String[] fileAsArray = { filename };
+    return makeObjectBankFromFiles(fileAsArray, readerAndWriter);
+  }
+
+  public ObjectBank<List<IN>> makeObjectBankFromFiles(String[] trainFileList,
+                                                      DocumentReaderAndWriter<IN> readerAndWriter) {
+    // try{
+    Collection<File> files = new ArrayList<File>();
+    for (String trainFile : trainFileList) {
+      File f = new File(trainFile);
+      files.add(f);
+    }
+    // System.err.printf("trainFileList contains %d file%s.\n", files.size(),
+    // files.size() == 1 ? "": "s");
+    // TODO get rid of objectbankwrapper
+    // return new ObjectBank<List<IN>>(new
+    // ResettableReaderIteratorFactory(files), readerAndWriter);
+    return new ObjectBankWrapper<IN>(flags, new ObjectBank<List<IN>>(new ResettableReaderIteratorFactory(files, flags.inputEncoding),
+        readerAndWriter), knownLCWords);
+    // } catch (IOException e) {
+    // throw new RuntimeException(e);
+    // }
+  }
+
+  public ObjectBank<List<IN>> makeObjectBankFromFiles(String baseDir, String filePattern,
+                                                      DocumentReaderAndWriter<IN> readerAndWriter) {
+
+    File path = new File(baseDir);
+    FileFilter filter = new RegExFileFilter(Pattern.compile(filePattern));
+    File[] origFiles = path.listFiles(filter);
+    Collection<File> files = new ArrayList<File>();
+    for (File file : origFiles) {
+      if (file.isFile()) {
+        if (flags.announceObjectBankEntries) {
+          System.err.println("Getting data from " + file + " (" + flags.inputEncoding + " encoding)");
+        }
+        files.add(file);
+      }
+    }
+
+    if (files.isEmpty()) {
+      throw new RuntimeException("No matching files: " + baseDir + '\t' + filePattern);
+    }
+    // return new ObjectBank<List<IN>>(new
+    // ResettableReaderIteratorFactory(files, flags.inputEncoding),
+    // readerAndWriter);
+    // TODO get rid of objectbankwrapper
+    return new ObjectBankWrapper<IN>(flags, new ObjectBank<List<IN>>(new ResettableReaderIteratorFactory(files,
+        flags.inputEncoding), readerAndWriter), knownLCWords);
+  }
+
+  public ObjectBank<List<IN>> makeObjectBankFromFiles(Collection<File> files,
+                                                      DocumentReaderAndWriter<IN> readerAndWriter) {
+    if (files.isEmpty()) {
+      throw new RuntimeException("Attempt to make ObjectBank with empty file list");
+    }
+    // return new ObjectBank<List<IN>>(new
+    // ResettableReaderIteratorFactory(files, flags.inputEncoding),
+    // readerAndWriter);
+    // TODO get rid of objectbankwrapper
+    return new ObjectBankWrapper<IN>(flags, new ObjectBank<List<IN>>(new ResettableReaderIteratorFactory(files,
+        flags.inputEncoding), readerAndWriter), knownLCWords);
+  }
+

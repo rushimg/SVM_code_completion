@@ -1,0 +1,15 @@
+  public static final GrammaticalRelation MULTI_WORD_EXPRESSION =
+    new GrammaticalRelation(Language.English, "mwe", "multi-word expression",
+        MultiWordExpressionGRAnnotation.class, MODIFIER, "PP|XS|ADVP|CONJP", tregexCompiler,
+        new String[] {
+          "PP|XS < (IN|TO < as|of|at|to|in) < (JJ|IN|JJR|JJS|NN=target < such|because|Because|least|instead|due|Due|addition|to)",
+          "ADVP < (RB|IN < well) < (IN|RB|JJS=target < as)",
+          // TODO: perhaps the phrase "all but" is more like "all" and should have that as the head
+          "ADVP < (DT=target < all) < (CC < but)",
+          "CONJP < (RB < rather|well|instead) < (RB|IN=target < as|than|of)",
+          "CONJP < (IN < in) < (NN|TO=target < addition|to)",
+          // todo: note inconsistent head finding for "rather than"!
+          "XS < JJR|JJS=target" // more than, fewer than, well over -- maybe change some of these?
+        });
+  public static class MultiWordExpressionGRAnnotation extends GrammaticalRelationAnnotation { }
+

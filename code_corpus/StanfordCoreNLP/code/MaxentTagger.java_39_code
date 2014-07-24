@@ -1,0 +1,84 @@
+  public void runTagger(BufferedReader reader, BufferedWriter writer,
+                        String tagInside, OutputStyle outputStyle)
+    throws IOException
+  {
+    String sentenceDelimiter = config.getSentenceDelimiter();
+    if (sentenceDelimiter != null && sentenceDelimiter.equals("newline")) {
+      sentenceDelimiter = "\n";
+    }
+    final TokenizerFactory<? extends HasWord> tokenizerFactory = chooseTokenizerFactory();
+
+    //Now we do everything through the doc preprocessor
+    final DocumentPreprocessor docProcessor;
+    if (tagInside.length() > 0) {
+      docProcessor = new DocumentPreprocessor(reader, DocumentPreprocessor.DocType.XML);
+      docProcessor.setElementDelimiter(tagInside);
+      if (config.keepEmptySentences()) {
+        docProcessor.setKeepEmptySentences(true);
+      }
+    } else {
+      docProcessor = new DocumentPreprocessor(reader);
+      docProcessor.setSentenceDelimiter(sentenceDelimiter);
+      if (config.keepEmptySentences()) {
+        docProcessor.setKeepEmptySentences(true);
+      }
+    }
+    docProcessor.setTokenizerFactory(tokenizerFactory);
+
+    runTagger(docProcessor, writer, outputStyle);
+  }
+
+  public List<? extends HasWord> tagCoreLabelsOrHasWords(List<? extends HasWord> sentence, Morphology morpha, boolean outputLemmas) {
+    if (sentence.size() > 0 && sentence.get(0) instanceof CoreLabel) {
+      List<CoreLabel> coreLabels = castCoreLabels(sentence);
+      tagCoreLabels(coreLabels);
+      if (outputLemmas) {
+        // We may want to lemmatize things without using an existing
+        // Morphology object, as Morphology objects are not
+        // thread-safe, so we would make a new one here
+        if (morpha == null) {
+          morpha = new Morphology();
+        }
+        lemmatize(coreLabels, morpha);
+      }
+      return coreLabels;
+    } else {
+      List<TaggedWord> taggedSentence = tagSentence(sentence, false);
+      return taggedSentence;
+    }
+  }
+
+  public void tagAndOutputSentence(List<? extends HasWord> sentence,
+                                   boolean outputLemmas, Morphology morpha,
+                                   OutputStyle outputStyle,
+                                   boolean outputVerbosity, int numSentences,
+                                   String separator, Writer writer) {
+    sentence = tagCoreLabelsOrHasWords(sentence, morpha, outputLemmas);
+    outputTaggedSentence(sentence, outputLemmas, outputStyle, outputVerbosity, numSentences, separator, writer);
+  }
+
+  public void outputTaggedSentence(List<? extends HasWord> sentence,
+                                   boolean outputLemmas, OutputStyle outputStyle,
+                                   boolean outputVerbosity, int numSentences,
+                                   String separator, Writer writer) {
+    try {
+      switch (outputStyle) {
+      case TSV:
+        writer.write(getTsvWords(outputVerbosity, outputLemmas, sentence));
+        break;
+      case XML:
+      case INLINE_XML:
+        writeXMLSentence(writer, sentence, numSentences, outputLemmas);
+        break;
+      case SLASH_TAGS:
+        writer.write(Sentence.listToString(sentence, false, config.getTagSeparator()));
+        writer.write(separator);
+        break;
+      default:
+        throw new IllegalArgumentException("Unsupported output style " + outputStyle);
+      }
+    } catch (IOException e) {
+      throw new RuntimeIOException(e);
+    }
+  }
+

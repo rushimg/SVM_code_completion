@@ -1,0 +1,77 @@
+    protected EntityCollection drawTitle(Title t, Graphics2D g2,
+                                         Rectangle2D area, boolean entities) {
+
+        if (t == null) {
+            throw new IllegalArgumentException("Null 't' argument.");
+        }
+        if (area == null) {
+            throw new IllegalArgumentException("Null 'area' argument.");
+        }
+        Rectangle2D titleArea = new Rectangle2D.Double();
+        RectangleEdge position = t.getPosition();
+        double ww = area.getWidth();
+        if (ww <= 0.0) {
+            return null;
+        }
+        double hh = area.getHeight();
+        if (hh <= 0.0) {
+            return null;
+        }
+        RectangleConstraint constraint = new RectangleConstraint(ww,
+                new Range(0.0, ww), LengthConstraintType.RANGE, hh,
+                new Range(0.0, hh), LengthConstraintType.RANGE);
+        Object retValue = null;
+        BlockParams p = new BlockParams();
+        p.setGenerateEntities(entities);
+        if (position == RectangleEdge.TOP) {
+            Size2D size = t.arrange(g2, constraint);
+            titleArea = createAlignedRectangle2D(size, area,
+                    t.getHorizontalAlignment(), VerticalAlignment.TOP);
+            retValue = t.draw(g2, titleArea, p);
+            if (!t.getOverlap()) {
+	            area.setRect(area.getX(), Math.min(area.getY() + size.height,
+	                    area.getMaxY()), area.getWidth(), Math.max(area.getHeight()
+	                    - size.height, 0));
+            }
+        }
+        else if (position == RectangleEdge.BOTTOM) {
+            Size2D size = t.arrange(g2, constraint);
+            titleArea = createAlignedRectangle2D(size, area,
+                    t.getHorizontalAlignment(), VerticalAlignment.BOTTOM);
+            retValue = t.draw(g2, titleArea, p);
+            if (!t.getOverlap()) {
+	            area.setRect(area.getX(), area.getY(), area.getWidth(),
+	                    area.getHeight() - size.height);
+            }
+        }
+        else if (position == RectangleEdge.RIGHT) {
+            Size2D size = t.arrange(g2, constraint);
+            titleArea = createAlignedRectangle2D(size, area,
+                    HorizontalAlignment.RIGHT, t.getVerticalAlignment());
+            retValue = t.draw(g2, titleArea, p);
+            if (!t.getOverlap()) {
+	            area.setRect(area.getX(), area.getY(), area.getWidth()
+	                    - size.width, area.getHeight());
+            }
+        }
+        else if (position == RectangleEdge.LEFT) {
+            Size2D size = t.arrange(g2, constraint);
+            titleArea = createAlignedRectangle2D(size, area,
+                    HorizontalAlignment.LEFT, t.getVerticalAlignment());
+            retValue = t.draw(g2, titleArea, p);
+            if (!t.getOverlap()) {
+	            area.setRect(area.getX() + size.width, area.getY(), area.getWidth()
+	                    - size.width, area.getHeight());
+            }
+        }
+        else {
+            throw new RuntimeException("Unrecognised title position.");
+        }
+        EntityCollection result = null;
+        if (retValue instanceof EntityBlockResult) {
+            EntityBlockResult ebr = (EntityBlockResult) retValue;
+            result = ebr.getEntityCollection();
+        }
+        return result;
+    }
+

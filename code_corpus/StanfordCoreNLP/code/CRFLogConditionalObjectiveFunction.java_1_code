@@ -1,0 +1,140 @@
+  private double documentLogProbability(int[][][] docData, int docIndex, CRFCliqueTree cliqueTree) {
+    int[] docLabels = labels[docIndex];
+    int[] given = new int[window - 1];
+    Arrays.fill(given, classIndex.indexOf(backgroundSymbol));
+    if (docLabels.length>docData.length) { // only true for self-training
+      // fill the given array with the extra docLabels
+      System.arraycopy(docLabels, 0, given, 0, given.length);
+      // shift the docLabels array left
+      int[] newDocLabels = new int[docData.length];
+      System.arraycopy(docLabels, docLabels.length-newDocLabels.length, newDocLabels, 0, newDocLabels.length);
+      docLabels = newDocLabels;
+    }
+
+    double startPosLogProb = cliqueTree.logProbStartPos();
+    if (VERBOSE) {
+      System.err.printf("P_-1(Background) = % 5.3f%n", startPosLogProb);
+    }
+    double prob = startPosLogProb;
+
+    // iterate over the positions in this document
+    for (int i = 0; i < docData.length; i++) {
+      int label = docLabels[i];
+      double p = cliqueTree.condLogProbGivenPrevious(i, label, given);
+      if (VERBOSE) {
+        System.err.println("P(" + label + "|" + ArrayMath.toString(given) + ")=" + p);
+      }
+      prob += p;
+      System.arraycopy(given, 1, given, 0, given.length - 1);
+      given[given.length - 1] = label;
+    }
+    return prob;
+  }
+
+  private ThreadsafeProcessor<Pair<Integer, List<Integer>>, Pair<Integer, Double>> expectedThreadProcessor = new ExpectationThreadsafeProcessor();
+  private ThreadsafeProcessor<Pair<Integer, List<Integer>>, Pair<Integer, Double>> expectedAndEmpiricalThreadProcessor = new ExpectationThreadsafeProcessor(true);
+
+  class ExpectationThreadsafeProcessor implements ThreadsafeProcessor<Pair<Integer, List<Integer>>, Pair<Integer, Double>> {
+    boolean calculateEmpirical = false;
+    public ExpectationThreadsafeProcessor() {
+    }
+
+    public ExpectationThreadsafeProcessor(boolean calculateEmpirical) {
+      this.calculateEmpirical = calculateEmpirical;
+    }
+
+    @Override
+    public Pair<Integer, Double> process(Pair<Integer, List<Integer>> threadIDAndDocIndices) {
+      int tID = threadIDAndDocIndices.first();
+      if (tID < 0 || tID >= multiThreadGrad) throw new IllegalArgumentException("threadID must be with in range 0 <= tID < multiThreadGrad(="+multiThreadGrad+")");
+      List<Integer> docIDs = threadIDAndDocIndices.second();
+      double[][] partE; // initialized below
+      double[][] partEhat = null; // initialized below
+      if (multiThreadGrad == 1) {
+        partE = E;
+        if (calculateEmpirical)
+          partEhat = Ehat;
+      } else {
+        partE = parallelE[tID];
+        clear2D(partE);
+        if (calculateEmpirical) {
+          partEhat = parallelEhat[tID];
+          clear2D(partEhat);
+        }
+      }
+      double probSum = 0;
+      for (int docIndex: docIDs) {
+        if (calculateEmpirical)
+          probSum += expectedAndEmpiricalCountsAndValueForADoc(partE, partEhat, docIndex);
+        else
+          probSum += expectedCountsAndValueForADoc(partE, docIndex);
+      }
+      return new Pair<Integer, Double>(tID, probSum);
+    }
+
+    @Override
+    public ThreadsafeProcessor<Pair<Integer, List<Integer>>, Pair<Integer, Double>> newInstance() {
+      return this;
+    }
+  }
+
+  public void setWeights(double[][] weights) {
+    this.weights = weights;
+    cliquePotentialFunc = new LinearCliquePotentialFunction(weights);
+  }
+
+
+  protected double regularGradientAndValue() {
+    int totalLen = data.length;
+    List<Integer> docIDs = new ArrayList<Integer>(totalLen);
+    for (int m=0; m < totalLen; m++) docIDs.add(m);
+
+    return multiThreadGradient(docIDs, false);
+  }
+
+  protected double multiThreadGradient(List<Integer> docIDs, boolean calculateEmpirical) {
+    double objective = 0.0;
+    if (multiThreadGrad > 1) {
+      if (parallelE == null) {
+        parallelE = new double[multiThreadGrad][][];
+        for (int i=0; i<multiThreadGrad; i++)
+          parallelE[i] = empty2D();
+      }
+      if (calculateEmpirical) {
+        if (parallelEhat == null) {
+          parallelEhat = new double[multiThreadGrad][][];
+          for (int i=0; i<multiThreadGrad; i++)
+            parallelEhat[i] = empty2D();
+        }
+      }
+    }
+
+    MulticoreWrapper<Pair<Integer, List<Integer>>, Pair<Integer, Double>> wrapper =
+      new MulticoreWrapper<Pair<Integer, List<Integer>>, Pair<Integer, Double>>(multiThreadGrad, (calculateEmpirical ? expectedAndEmpiricalThreadProcessor : expectedThreadProcessor) );
+
+    int totalLen = docIDs.size();
+    int partLen = totalLen / multiThreadGrad;
+    int currIndex = 0;
+    for (int part=0; part < multiThreadGrad; part++) {
+      int endIndex = currIndex + partLen;
+      if (part == multiThreadGrad-1)
+        endIndex = totalLen;
+      List<Integer> subList = docIDs.subList(currIndex, endIndex);
+      wrapper.put(new Pair<Integer, List<Integer>>(part, subList));
+      currIndex = endIndex;
+    }
+    wrapper.join();
+    while (wrapper.peek()) {
+      Pair<Integer, Double> result = wrapper.poll();
+      int tID = result.first();
+      objective += result.second();
+      if (multiThreadGrad > 1) {
+        combine2DArr(E, parallelE[tID]);
+        if (calculateEmpirical)
+          combine2DArr(Ehat, parallelEhat[tID]);
+      }
+    }
+
+    return objective;
+  }
+

@@ -1,0 +1,51 @@
+    p = Pattern.compile("("+nonNumPat+")" + WHITE + "("+commas+")" + WHITE + "("+numPat+")");
+    m = p.matcher(ans);
+    while(m.find()) {
+      ans = m.replaceAll("$1 $2 $3");
+      m = p.matcher(ans);
+    }
+
+    p = Pattern.compile("("+numPat+")" + WHITE + "("+commas+")" + WHITE + "("+nonNumPat+")");
+    m = p.matcher(ans);
+    while(m.find()) {
+      ans = m.replaceAll("$1 $2 $3");
+      m = p.matcher(ans);
+    }
+
+    p = Pattern.compile("("+nonNumPat+")" + WHITE + "("+commas+")" + WHITE + "("+nonNumPat+")");
+    m = p.matcher(ans);
+    while(m.find()) {
+      ans = m.replaceAll("$1 $2 $3");
+      m = p.matcher(ans);
+    }
+
+
+    ans = ans.trim();
+    return ans;
+  }
+
+  static String postProcessingAnswerCTB(String ans, boolean keepAllWhitespaces, boolean suppressMidDotPostprocessing) {
+    Character[] puncs = {'\u3001', '\u3002', '\u3003', '\u3008', '\u3009', '\u300a', '\u300b',
+                         '\u300c', '\u300d', '\u300e', '\u300f', '\u3010', '\u3011', '\u3014',
+                         '\u3015', '\u0028', '\u0029', '\u0022', '\u003c', '\u003e' };
+    String numPat = "[0-9\uff10-\uff19]+";
+//    if ( ! keepAllWhitespaces) {  // these should now never delete an original space
+      ans = separatePuncs(puncs, ans);
+      if (!suppressMidDotPostprocessing) {
+        ans = gluePunc('\u30fb', ans); // this is a 'connector' - the katakana midDot char
+      }
+      ans = processColons(ans, numPat);
+      ans = processPercents(ans, numPat);
+      ans = processDots(ans, numPat);
+      ans = processCommas(ans);
+//    }
+    ans = ans.trim();
+    return ans;
+  }
+
+  private static String postProcessingAnswerPK(String ans, boolean keepAllWhitespaces) {
+    Character[] puncs = {'\u3001', '\u3002', '\u3003', '\u3008', '\u3009', '\u300a', '\u300b',
+                         '\u300c', '\u300d', '\u300e', '\u300f', '\u3010', '\u3011', '\u3014',
+                         '\u3015', '\u2103'};
+
+    ans = separatePuncs(puncs, ans);

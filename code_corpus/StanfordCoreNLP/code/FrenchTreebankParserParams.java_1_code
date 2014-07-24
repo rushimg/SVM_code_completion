@@ -1,0 +1,67 @@
+public class FrenchTreebankParserParams extends AbstractTreebankParserParams {
+
+  private static final long serialVersionUID = -6976724734594763986L;
+
+  private final StringBuilder optionsString;
+
+  private HeadFinder headFinder;
+  private final Map<String,Pair<TregexPattern,Function<TregexMatcher,String>>> annotationPatterns;
+  private final List<Pair<TregexPattern,Function<TregexMatcher,String>>> activeAnnotations;
+
+  //The treebank is distributed in XML format.
+  //Use -xmlFormat below to enable reading the raw files.
+  private boolean readPennFormat = true;
+
+  private boolean collinizerRetainsPunctuation = false;
+
+  //Controls the MW annotation feature
+  private TwoDimensionalCounter<String, String> mwCounter;
+
+  private MorphoFeatureSpecification morphoSpec;
+
+  // For adding the CC tagset as annotations.
+  private MorphoFeatureSpecification tagSpec;
+
+  public FrenchTreebankParserParams() {
+    super(new FrenchTreebankLanguagePack());
+
+    setInputEncoding("UTF-8");
+
+    optionsString = new StringBuilder();
+    optionsString.append("FrenchTreebankParserParams\n");
+
+    annotationPatterns = Generics.newHashMap();
+    activeAnnotations = new ArrayList<Pair<TregexPattern,Function<TregexMatcher,String>>>();
+
+    initializeAnnotationPatterns();
+  }
+
+  private final List<String> baselineFeatures = new ArrayList<String>();
+  {
+    baselineFeatures.add("-tagPAFr");
+
+    baselineFeatures.add("-markInf");
+    baselineFeatures.add("-markPart");
+    baselineFeatures.add("-markVN");
+    baselineFeatures.add("-coord1");
+    baselineFeatures.add("-de2");
+    baselineFeatures.add("-markP1");
+
+    //MWE features...don't help overall parsing, but help MWE categories
+    baselineFeatures.add("-MWAdvS");
+    baselineFeatures.add("-MWADVSel1");
+    baselineFeatures.add("-MWADVSel2");
+    baselineFeatures.add("-MWNSel1");
+    baselineFeatures.add("-MWNSel2");
+
+    // New features for CL submission
+    baselineFeatures.add("-splitPUNC");
+  }
+  private final List<String> additionalFeatures = new ArrayList<String>();
+
+
+  private void initializeAnnotationPatterns() {
+    try {
+
+      TregexPatternCompiler tregexPatternCompiler = new TregexPatternCompiler(headFinder());
+

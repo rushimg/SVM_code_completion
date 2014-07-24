@@ -1,0 +1,61 @@
+    @Override public boolean addEdge(V sourceVertex, V targetVertex, E edge)
+    {
+        boolean result;
+        try {
+            result = addDagEdge(sourceVertex, targetVertex, edge);
+        } catch (CycleFoundException e) {
+            throw new IllegalArgumentException(e);
+        }
+        return result;
+    }
+
+    // note that this can leave holes in the topological ordering, which
+    // (depending on the TopoOrderMap implementation) can degrade performance
+    // for certain operations over time
+    @Override public boolean removeVertex(V v)
+    {
+        boolean removed = super.removeVertex(v);
+
+        if (removed) {
+            Integer topoIndex = topoOrderMap.removeVertex(v);
+
+            // contract minTopoIndex as we are able
+            if (topoIndex == minTopoIndex) {
+                while (
+                    (minTopoIndex < 0)
+                    && (null == topoOrderMap.getVertex(minTopoIndex)))
+                {
+                    ++minTopoIndex;
+                }
+            }
+
+            // contract maxTopoIndex as we are able
+            if (topoIndex == maxTopoIndex) {
+                while (
+                    (maxTopoIndex > 0)
+                    && (null == topoOrderMap.getVertex(maxTopoIndex)))
+                {
+                    --maxTopoIndex;
+                }
+            }
+
+            ++topologyUpdateCount;
+        }
+
+        return removed;
+    }
+
+    @Override public boolean removeAllVertices(Collection<? extends V> arg0)
+    {
+        boolean removed = super.removeAllVertices(arg0);
+
+        topoOrderMap.removeAllVertices();
+
+        maxTopoIndex = 0;
+        minTopoIndex = 0;
+
+        ++topologyUpdateCount;
+
+        return removed;
+    }
+

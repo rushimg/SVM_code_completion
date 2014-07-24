@@ -1,0 +1,19 @@
+    public void zoomDomainAxes(double lowerPercent, double upperPercent,
+                               PlotRenderingInfo info, Point2D source) {
+        // delegate 'info' and 'source' argument checks...
+        XYPlot subplot = findSubplot(info, source);
+        if (subplot != null) {
+            subplot.zoomDomainAxes(lowerPercent, upperPercent, info, source);
+        }
+        else {
+            // if the source point doesn't fall within a subplot, we do the
+            // zoom on all subplots...
+            Iterator iterator = getSubplots().iterator();
+            while (iterator.hasNext()) {
+                subplot = (XYPlot) iterator.next();
+                subplot.zoomDomainAxes(lowerPercent, upperPercent, info,
+                        source);
+            }
+        }
+    }
+

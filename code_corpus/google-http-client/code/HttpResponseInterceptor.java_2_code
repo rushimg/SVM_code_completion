@@ -1,0 +1,34 @@
+  public static class TimerResponseInterceptor implements HttpResponseInterceptor {
+
+    private final long startTime = System.nanoTime();
+
+    public void interceptResponse(HttpResponse response) {
+      long elapsedNanos = System.nanoTime() - startTime;
+      System.out.println("elapsed seconds: " + TimeUnit.NANOSECONDS.toSeconds(elapsedNanos) + "s");
+    }
+  }
+  public static HttpRequestFactory createRequestFactory(HttpTransport transport) {
+    return transport.createRequestFactory(new HttpRequestInitializer() {
+
+      {@literal @}Override
+      public void initialize(HttpRequest request) {
+        request.setResponseInterceptor(new TimerResponseInterceptor());
+      }
+    });
+  }
+  public static HttpRequestFactory createRequestFactory2(HttpTransport transport) {
+    final HttpResponseInterceptor responseInterceptor = new TimerResponseInterceptor();
+    return transport.createRequestFactory(new HttpRequestInitializer() {
+
+      public void initialize(HttpRequest request) {
+        request.setResponseInterceptor(new HttpResponseInterceptor() {
+
+          public void interceptResponse(HttpResponse response) throws IOException {
+            responseInterceptor.interceptResponse(response);
+          }
+        });
+      }
+    });
+  }
+public interface HttpResponseInterceptor {
+

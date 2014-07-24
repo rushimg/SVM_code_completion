@@ -1,0 +1,195 @@
+  public Dataset<String, String> getDataset(Dataset<String, String> oldData, Index<String> goodFeatures) {
+    //public Dataset getDataset(List data, Collection goodFeatures) {
+    //makeAnswerArraysAndTagIndex(data);
+
+    int[][] oldDataArray = oldData.getDataArray();
+    int[] oldLabelArray = oldData.getLabelsArray();
+    Index<String> oldFeatureIndex = oldData.featureIndex;
+
+    int[] oldToNewFeatureMap = new int[oldFeatureIndex.size()];
+
+    int[][] newDataArray = new int[oldDataArray.length][];
+
+    System.err.print("Building reduced dataset...");
+
+    int size = oldFeatureIndex.size();
+    int max = 0;
+    for (int i = 0; i < size; i++) {
+      oldToNewFeatureMap[i] = goodFeatures.indexOf(oldFeatureIndex.get(i));
+      if (oldToNewFeatureMap[i] > max) {
+        max = oldToNewFeatureMap[i];
+      }
+    }
+
+    for (int i = 0; i < oldDataArray.length; i++) {
+      int[] data = oldDataArray[i];
+      size = 0;
+      for (int oldF : data) {
+        if (oldToNewFeatureMap[oldF] > 0) {
+          size++;
+        }
+      }
+      int[] newData = new int[size];
+      int index = 0;
+      for (int oldF : data) {
+        int f = oldToNewFeatureMap[oldF];
+        if (f > 0) {
+          newData[index++] = f;
+        }
+      }
+      newDataArray[i] = newData;
+    }
+
+    Dataset<String, String> train = new Dataset<String, String>(oldData.labelIndex, oldLabelArray, goodFeatures, newDataArray, newDataArray.length);
+
+    System.err.println("done.");
+    if (flags.featThreshFile != null) {
+      System.err.println("applying thresholds...");
+      List<Pair<Pattern,Integer>> thresh = getThresholds(flags.featThreshFile);
+      train.applyFeatureCountThreshold(thresh);
+    } else if (flags.featureThreshold > 1) {
+      System.err.println("Removing Features with counts < " + flags.featureThreshold);
+      train.applyFeatureCountThreshold(flags.featureThreshold);
+    }
+    train.summaryStatistics();
+    return train;
+  }
+
+  private void adapt(Dataset<String, String> adapt) {
+    if (flags.classifierType.equalsIgnoreCase("SVM")) {
+      throw new UnsupportedOperationException();
+    }
+    adaptMaxEnt(adapt);
+  }
+
+  private void adaptMaxEnt(Dataset<String, String> adapt) {
+    if (classifier instanceof LinearClassifier) {
+      // So far the adaptation is only done on Gaussian Prior. Haven't checked how it'll work on other kinds of priors. -pichuan
+      int prior = LogPrior.LogPriorType.QUADRATIC.ordinal();
+      if (flags.useHuber) {
+        throw new UnsupportedOperationException();
+      } else if (flags.useQuartic) {
+        throw new UnsupportedOperationException();
+      }
+
+      LinearClassifierFactory<String, String> lcf = new LinearClassifierFactory<String, String>(flags.tolerance, flags.useSum, prior, flags.adaptSigma, flags.epsilon, flags.QNsize);
+      ((LinearClassifier<String, String>)classifier).adaptWeights(adapt,lcf);
+    } else {
+      throw new UnsupportedOperationException();
+    }
+  }
+
+  private void train(Dataset<String, String> train) {
+    if (flags.classifierType.equalsIgnoreCase("SVM")) {
+      trainSVM(train);
+    } else {
+      trainMaxEnt(train);
+    }
+  }
+
+  private void trainSVM(Dataset<String, String> train) {
+    SVMLightClassifierFactory<String, String> fact = new SVMLightClassifierFactory<String, String>();
+    classifier = fact.trainClassifier(train);
+
+  }
+
+  private void trainMaxEnt(Dataset<String, String> train) {
+    int prior = LogPrior.LogPriorType.QUADRATIC.ordinal();
+    if (flags.useHuber) {
+      prior = LogPrior.LogPriorType.HUBER.ordinal();
+    } else if (flags.useQuartic) {
+      prior = LogPrior.LogPriorType.QUARTIC.ordinal();
+    }
+
+    LinearClassifier<String, String> lc;
+    if (flags.useNB) {
+      lc = new NBLinearClassifierFactory<String, String>(flags.sigma).trainClassifier(train);
+    } else {
+      LinearClassifierFactory<String, String> lcf = new LinearClassifierFactory<String, String>(flags.tolerance, flags.useSum, prior, flags.sigma, flags.epsilon, flags.QNsize);
+      if (flags.useQN) {
+        lcf.useQuasiNewton(flags.useRobustQN);
+      } else if(flags.useStochasticQN) {
+        lcf.useStochasticQN(flags.initialGain,flags.stochasticBatchSize);
+      } else if(flags.useSMD) {
+        lcf.useStochasticMetaDescent(flags.initialGain, flags.stochasticBatchSize,flags.stochasticMethod,flags.SGDPasses);
+      } else if(flags.useSGD) {
+        lcf.useStochasticGradientDescent(flags.gainSGD,flags.stochasticBatchSize);
+      } else if(flags.useSGDtoQN) {
+        lcf.useStochasticGradientDescentToQuasiNewton(flags.initialGain, flags.stochasticBatchSize,
+                                       flags.SGDPasses, flags.QNPasses, flags.SGD2QNhessSamples,
+                                       flags.QNsize, flags.outputIterationsToFile);
+      } else if(flags.useHybrid) {
+        lcf.useHybridMinimizer(flags.initialGain, flags.stochasticBatchSize ,flags.stochasticMethod ,flags.hybridCutoffIteration );
+      } else {
+        lcf.useConjugateGradientAscent();
+      }
+      lc = lcf.trainClassifier(train);
+    }
+    this.classifier = lc;
+  }
+
+  private void trainSemiSup(Dataset<String, String> data, Dataset<String, String> biasedData, double[][] confusionMatrix) {
+    int prior = LogPrior.LogPriorType.QUADRATIC.ordinal();
+    if (flags.useHuber) {
+      prior = LogPrior.LogPriorType.HUBER.ordinal();
+    } else if (flags.useQuartic) {
+      prior = LogPrior.LogPriorType.QUARTIC.ordinal();
+    }
+
+    LinearClassifierFactory<String, String> lcf;
+    lcf = new LinearClassifierFactory<String, String>(flags.tolerance, flags.useSum, prior, flags.sigma, flags.epsilon, flags.QNsize);
+    if (flags.useQN) {
+      lcf.useQuasiNewton();
+    } else{
+      lcf.useConjugateGradientAscent();
+    }
+
+    this.classifier = (LinearClassifier<String, String>) lcf.trainClassifierSemiSup(data, biasedData, confusionMatrix, null);
+  }
+
+
+//   public void crossValidateTrainAndTest() throws Exception {
+//     crossValidateTrainAndTest(flags.trainFile);
+//   }
+
+//   public void crossValidateTrainAndTest(String filename) throws Exception {
+//     // wordshapes
+
+//     for (int fold = flags.startFold; fold <= flags.endFold; fold++) {
+//       System.err.println("fold " + fold + " of " + flags.endFold);
+//       // train
+
+//       List = makeObjectBank(filename);
+//       List folds = split(data, flags.numFolds);
+//       data = null;
+
+//       List train = new ArrayList();
+
+//       for (int i = 0; i < flags.numFolds; i++) {
+//         List docs = (List) folds.get(i);
+//         if (i != fold) {
+//           train.addAll(docs);
+//         }
+//       }
+//       folds = null;
+//       train(train);
+//       train = null;
+
+//       List test = new ArrayList();
+//       data = makeObjectBank(filename);
+//       folds = split(data, flags.numFolds);
+//       data = null;
+
+//       for (int i = 0; i < flags.numFolds; i++) {
+//         List docs = (List) folds.get(i);
+//         if (i == fold) {
+//           test.addAll(docs);
+//         }
+//       }
+//       folds = null;
+//       // test
+//       test(test);
+//       writeAnswers(test);
+//     }
+//   }
+

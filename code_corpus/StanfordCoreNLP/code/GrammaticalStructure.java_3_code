@@ -1,0 +1,154 @@
+  public static GrammaticalStructure fromStringReps(List<String> tokens, List<String> posTags, List<String> deps) {
+    if (tokens.size() != posTags.size()) {
+      throw new RuntimeException(String.format(
+              "tokens.size(): %d != pos.size(): %d\n", tokens.size(), posTags
+                      .size()));
+    }
+
+    List<TreeGraphNode> tgWordNodes = new ArrayList<TreeGraphNode>(tokens.size());
+    List<TreeGraphNode> tgPOSNodes = new ArrayList<TreeGraphNode>(tokens.size());
+
+    SemanticHeadFinder headFinder = new SemanticHeadFinder();
+
+    Iterator<String> posIter = posTags.iterator();
+    for (String wordString : tokens) {
+      String posString = posIter.next();
+      TreeGraphNode word = new TreeGraphNode(new Word(wordString));
+      TreeGraphNode pos = new TreeGraphNode(new Word(posString));
+      tgWordNodes.add(word);
+      tgPOSNodes.add(pos);
+      TreeGraphNode[] childArr = {word};
+      pos.setChildren(childArr);
+      word.setParent(pos);
+      pos.percolateHeads(headFinder);
+    }
+
+    TreeGraphNode root = new TreeGraphNode(new StringLabel("ROOT"));
+
+    root.setChildren(tgPOSNodes.toArray(new TreeGraphNode[tgPOSNodes.size()]));
+
+    root.setIndex(0);
+
+    // Build list of TypedDependencies
+    List<TypedDependency> tdeps = new ArrayList<TypedDependency>(deps.size());
+
+    for (String depString : deps) {
+      int firstBracket = depString.indexOf('(');
+      if (firstBracket == -1) throwDepFormatException(depString);
+
+
+      String type = depString.substring(0, firstBracket);
+
+      if (depString.charAt(depString.length() - 1) != ')') throwDepFormatException(depString);
+
+      String args = depString.substring(firstBracket + 1, depString.length() - 1);
+
+      int argSep = args.indexOf(", ");
+      if (argSep == -1) throwDepFormatException(depString);
+
+      String parentArg = args.substring(0, argSep);
+      String childArg  = args.substring(argSep + 2);
+      int parentDash = parentArg.lastIndexOf('-');
+      if (parentDash == -1) throwDepFormatException(depString);
+      int childDash = childArg.lastIndexOf('-');
+      if (childDash == -1) throwDepFormatException(depString);
+      //System.err.printf("parentArg: %s\n", parentArg);
+      int parentIdx = Integer.parseInt(parentArg.substring(parentDash+1).replace("'", ""));
+
+      int childIdx = Integer.parseInt(childArg.substring(childDash+1).replace("'", ""));
+
+      GrammaticalRelation grel = new GrammaticalRelation(GrammaticalRelation.Language.Any, type, null, null, DEPENDENT);
+
+      TypedDependency tdep = new TypedDependency(grel, (parentIdx == 0 ? root: tgWordNodes.get(parentIdx-1)), tgWordNodes.get(childIdx-1));
+      tdeps.add(tdep);
+    }
+
+    // TODO add some elegant way to construct language
+    // appropriate GrammaticalStructures (e.g., English, Chinese, etc.)
+    return new GrammaticalStructure(tdeps, root) {
+      private static final long serialVersionUID = 1L;
+    };
+  }
+
+  public GrammaticalStructure(List<TypedDependency> projectiveDependencies, TreeGraphNode root) {
+    super(root);
+    this.puncFilter = Filters.acceptFilter();
+    allTypedDependencies = typedDependencies = new ArrayList<TypedDependency>(projectiveDependencies);
+  }
+
+  public GrammaticalStructure(Tree t, Collection<GrammaticalRelation> relations,
+                              HeadFinder hf, Filter<String> puncFilter) {
+    this(t, relations, null, hf, puncFilter);
+  }
+
+  // @Override
+  // public String toString() {
+    // StringBuilder sb = new StringBuilder(super.toString());
+    //    sb.append("Dependencies:");
+    //    sb.append("\n" + dependencies);
+    //    sb.append("Typed Dependencies:");
+    //    sb.append("\n" + typedDependencies);
+    //    sb.append("More Typed Dependencies:");
+    //    sb.append("\n" + moreTypedDependencies());
+    // return sb.toString();
+  // }
+
+  private static void attachStrandedNodes(TreeGraphNode t, TreeGraphNode root, boolean attach, Filter<String> puncFilter, DirectedMultiGraph<TreeGraphNode, GrammaticalRelation> basicGraph) {
+    if (t.isLeaf()) {
+      return;
+    }
+    if (attach && puncFilter.accept(t.headWordNode().label().value())) {
+      // make faster by first looking for links from parent
+      // it is necessary to look for paths using all directions
+      // because sometimes there are edges created from lower nodes to
+      // nodes higher up
+      TreeGraphNode parent = t.parent().highestNodeWithSameHead();
+      if (!basicGraph.isEdge(parent, t) && basicGraph.getShortestPath(root, t, false) == null) {
+        basicGraph.add(parent, t, GrammaticalRelation.DEPENDENT);
+      }
+    }
+    for (TreeGraphNode kid : t.children()) {
+      attachStrandedNodes(kid, root, (kid.headWordNode() != t.headWordNode()), puncFilter, basicGraph);
+    }    
+  }
+
+  // cdm dec 2009: I changed this to automatically fail on preterminal nodes, since they shouldn't match for GR parent patterns.  Should speed it up.
+  private static void analyzeNode(TreeGraphNode t, TreeGraphNode root, Collection<GrammaticalRelation> relations, HeadFinder hf, Filter<String> puncFilter, DirectedMultiGraph<TreeGraphNode, GrammaticalRelation> basicGraph) {
+    if (t.isPhrasal()) {    // don't do leaves or preterminals!
+      TreeGraphNode tHigh = t.highestNodeWithSameHead();
+      for (GrammaticalRelation egr : relations) {
+        if (egr.isApplicable(t)) {
+          for (TreeGraphNode u : egr.getRelatedNodes(t, root, hf)) {
+            TreeGraphNode uHigh = u.highestNodeWithSameHead();
+            if (uHigh == tHigh) {
+              continue;
+            }
+            if (!puncFilter.accept(uHigh.headWordNode().label().value())) {
+              continue;
+            }
+            tHigh.addArc(GrammaticalRelation.getAnnotationClass(egr), uHigh);
+            // If there are two patterns that add dependencies, X --> Z and Y --> Z, and X dominates Y, then the dependency Y --> Z is not added to the basic graph to prevent unwanted duplication.
+            // Similarly, if there is already a path from X --> Y, and an expression would trigger Y --> X somehow, we ignore that
+            Set<TreeGraphNode> parents = basicGraph.getParents(uHigh);
+            if ((parents == null || parents.size() == 0 || parents.contains(tHigh)) && 
+                basicGraph.getShortestPath(uHigh, tHigh, true) == null) {
+              // System.err.println("Adding " + egr.getShortName() + " from " + t + " to " + u + " tHigh=" + tHigh + "(" + tHigh.headWordNode() + ") uHigh=" + uHigh + "(" + uHigh.headWordNode() + ")");
+              basicGraph.add(tHigh, uHigh, egr);
+            }
+          }
+        }
+      }
+      // now recurse into children
+      for (TreeGraphNode kid : t.children()) {
+        analyzeNode(kid, root, relations, hf, puncFilter, basicGraph);
+      }
+    }
+  }
+
+  private void getExtraDeps(List<TypedDependency> deps, Filter<TypedDependency> puncTypedDepFilter) {
+    getExtras(deps);
+    // adds stuff to basicDep based on the tregex patterns over the tree
+    getTreeDeps(root(), deps, puncTypedDepFilter, extraTreeDepFilter());
+    Collections.sort(deps);
+  }
+

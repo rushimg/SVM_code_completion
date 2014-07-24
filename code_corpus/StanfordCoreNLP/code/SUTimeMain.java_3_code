@@ -1,0 +1,124 @@
+                // SUTIME
+                if ("DATE".equals(tmx.timexType())) {
+                  if (val.matches("\\d\\d\\dX")) {
+                    val = val.substring(0,3);  // Convert 199X to 199
+                  }
+                }
+              attrFields[0] = "value";
+              attrFields[1] = val;
+
+              attrPw.println(extString + "\t" + StringUtils.join(attrFields, "\t"));
+            }
+          }
+          tokenIndex++;
+          tokenCount++;
+        }
+      }
+     }
+    }
+  }
+
+  private static CoreLabelTokenFactory tokenFactory = new CoreLabelTokenFactory();
+
+  private static CoreMap wordsToSentence(List<String> sentWords)
+  {
+    String sentText = StringUtils.join(sentWords, " ");
+    Annotation sentence = new Annotation(sentText);
+    List<CoreLabel> tokens = new ArrayList<CoreLabel>(sentWords.size());
+    for (String text:sentWords) {
+      CoreLabel token = tokenFactory.makeToken();
+      token.set(CoreAnnotations.TextAnnotation.class, text);
+      tokens.add(token);
+    }
+    sentence.set(CoreAnnotations.TokensAnnotation.class, tokens);
+    return sentence;
+  }
+
+  public static Annotation sentencesToDocument(String documentID, String docDate, List<CoreMap> sentences)
+  {
+    String docText = ChunkAnnotationUtils.getTokenText(sentences, CoreAnnotations.TextAnnotation.class);
+    Annotation document = new Annotation(docText);
+    document.set(CoreAnnotations.DocIDAnnotation.class, documentID);
+    document.set(CoreAnnotations.DocDateAnnotation.class, docDate);
+    document.set(CoreAnnotations.SentencesAnnotation.class, sentences);
+
+    // Accumulate docTokens and label sentence with overall token begin/end, and sentence index annotations
+    List<CoreLabel> docTokens = new ArrayList<CoreLabel>();
+    int sentenceIndex = 0;
+    int tokenBegin = 0;
+    for (CoreMap sentenceAnnotation:sentences) {
+      List<CoreLabel> sentenceTokens = sentenceAnnotation.get(CoreAnnotations.TokensAnnotation.class);
+      docTokens.addAll(sentenceTokens);
+
+      int tokenEnd = tokenBegin + sentenceTokens.size();
+      sentenceAnnotation.set(CoreAnnotations.TokenBeginAnnotation.class, tokenBegin);
+      sentenceAnnotation.set(CoreAnnotations.TokenEndAnnotation.class, tokenEnd);
+      sentenceAnnotation.set(CoreAnnotations.SentenceIndexAnnotation.class, sentenceIndex);
+      sentenceIndex++;
+      tokenBegin = tokenEnd;
+    }
+    document.set(CoreAnnotations.TokensAnnotation.class, docTokens);
+
+    // Put in character offsets
+    int i = 0;
+    for (CoreLabel token:docTokens) {
+      String tokenText = token.get(CoreAnnotations.TextAnnotation.class);
+      token.set(CoreAnnotations.CharacterOffsetBeginAnnotation.class, i);
+      i+=tokenText.length();
+      token.set(CoreAnnotations.CharacterOffsetEndAnnotation.class, i);
+      i++; // Skip space
+    }
+    for (CoreMap sentenceAnnotation:sentences) {
+      List<CoreLabel> sentenceTokens = sentenceAnnotation.get(CoreAnnotations.TokensAnnotation.class);
+      sentenceAnnotation.set(CoreAnnotations.CharacterOffsetBeginAnnotation.class,
+              sentenceTokens.get(0).get(CoreAnnotations.CharacterOffsetBeginAnnotation.class));
+      sentenceAnnotation.set(CoreAnnotations.CharacterOffsetEndAnnotation.class,
+              sentenceTokens.get(sentenceTokens.size()-1).get(CoreAnnotations.CharacterOffsetEndAnnotation.class));
+    }
+
+    return document;
+  }
+
+  private static class TimexAttributes {
+    public String tid;
+    public int sentIndex;
+    public int tokenStart;
+    public int tokenEnd;
+    public String text;
+    public String type;
+    public String value;
+    public String context;
+
+    public TimexAttributes(String tid, int sentIndex, int tokenIndex) {
+      this.tid = tid;
+      this.sentIndex = sentIndex;
+      this.tokenStart = tokenIndex;
+      this.tokenEnd = tokenIndex + 1;
+    }
+  }
+
+  private static TimexAttributes findTimex(Map<String,List<TimexAttributes>> timexMap, String docId, String tid)
+  {
+    // Find entry
+    List<TimexAttributes> list = timexMap.get(docId);
+    for (TimexAttributes timex:list) {
+      if (timex.tid.equals(tid)) {
+        return timex;
+      }
+    }
+    return null;
+  }
+
+  private static List<TimexAttributes> updateTimexText(Map<String,List<TimexAttributes>> timexMap, Annotation docAnnotation)
+  {
+    // Find entry
+    String docId = docAnnotation.get(CoreAnnotations.DocIDAnnotation.class);
+    List<CoreMap> sents = docAnnotation.get(CoreAnnotations.SentencesAnnotation.class);
+    List<TimexAttributes> list = timexMap.get(docId);
+    if (list != null) {
+      for (TimexAttributes timex:list) {
+        CoreMap sent = sents.get(timex.sentIndex);
+        List<CoreLabel> tokens = sent.get(CoreAnnotations.TokensAnnotation.class);
+        timex.text = StringUtils.joinWords(tokens, " ", timex.tokenStart, timex.tokenEnd);
+        timex.context = joinWordTags(tokens, " ", timex.tokenStart - 3, timex.tokenEnd + 3);
+

@@ -1,0 +1,41 @@
+  protected class SubcategoryStripper implements TreeTransformer {
+
+    protected TreeFactory tf = new LabeledScoredTreeFactory();
+
+    @Override
+    public Tree transformTree(Tree tree) {
+      Label lab = tree.label();
+      if (tree.isLeaf()) {
+        Tree leaf = tf.newLeaf(lab);
+        leaf.setScore(tree.score());
+        return leaf;
+      }
+      String s = lab.value();
+      s = treebankLanguagePack().basicCategory(s);
+      int numKids = tree.numChildren();
+      List<Tree> children = new ArrayList<Tree>(numKids);
+      for (int cNum = 0; cNum < numKids; cNum++) {
+        Tree child = tree.getChild(cNum);
+        Tree newChild = transformTree(child);
+        // cdm 2007: for just subcategory stripping, null shouldn't happen
+        // if (newChild != null) {
+        children.add(newChild);
+        // }
+      }
+      // if (children.isEmpty()) {
+      //   return null;
+      // }
+      CategoryWordTag newLabel = new CategoryWordTag(lab);
+      newLabel.setCategory(s);
+      if (lab instanceof HasTag) {
+        String tag = ((HasTag) lab).tag();
+        tag = treebankLanguagePack().basicCategory(tag);
+        newLabel.setTag(tag);
+      }
+      Tree node = tf.newTreeNode(newLabel, children);
+      node.setScore(tree.score());
+      return node;
+    }
+
+  } // end class SubcategoryStripper
+

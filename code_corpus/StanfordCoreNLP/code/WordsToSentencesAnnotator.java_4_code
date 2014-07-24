@@ -1,0 +1,75 @@
+  @Override
+  public void annotate(Annotation annotation) {
+    if (VERBOSE) {
+      System.err.print("Sentence splitting ...");
+    }
+    if ( ! annotation.has(CoreAnnotations.TokensAnnotation.class)) {
+      throw new IllegalArgumentException("WordsToSentencesAnnotator: unable to find words/tokens in: " + annotation);
+    }
+
+    // get text and tokens from the document
+    String text = annotation.get(CoreAnnotations.TextAnnotation.class);
+    List<CoreLabel> tokens = annotation.get(CoreAnnotations.TokensAnnotation.class);
+    // System.err.println("Tokens are: " + tokens);
+
+    // assemble the sentence annotations
+    int tokenOffset = 0;
+    int lineNumber = 0;
+    // section annotations to mark sentences with
+    CoreMap sectionAnnotations = null;
+    List<CoreMap> sentences = new ArrayList<CoreMap>();
+    for (List<CoreLabel> sentenceTokens: this.wts.process(tokens)) {
+      if (countLineNumbers) {
+        ++lineNumber;
+      }
+      if (sentenceTokens.isEmpty()) {
+        if (!countLineNumbers) {
+          throw new IllegalStateException("unexpected empty sentence: " + sentenceTokens);
+        } else {
+          continue;
+        }
+      }
+
+      // get the sentence text from the first and last character offsets
+      int begin = sentenceTokens.get(0).get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);
+      int last = sentenceTokens.size() - 1;
+      int end = sentenceTokens.get(last).get(CoreAnnotations.CharacterOffsetEndAnnotation.class);
+      String sentenceText = text.substring(begin, end);
+
+      // create a sentence annotation with text and token offsets
+      Annotation sentence = new Annotation(sentenceText);
+      sentence.set(CoreAnnotations.CharacterOffsetBeginAnnotation.class, begin);
+      sentence.set(CoreAnnotations.CharacterOffsetEndAnnotation.class, end);
+      sentence.set(CoreAnnotations.TokensAnnotation.class, sentenceTokens);
+      sentence.set(CoreAnnotations.TokenBeginAnnotation.class, tokenOffset);
+      tokenOffset += sentenceTokens.size();
+      sentence.set(CoreAnnotations.TokenEndAnnotation.class, tokenOffset);
+      sentence.set(CoreAnnotations.SentenceIndexAnnotation.class, sentences.size());
+
+      if (countLineNumbers) {
+        sentence.set(CoreAnnotations.LineNumberAnnotation.class, lineNumber);
+      }
+
+      // Annotation sentence with section information
+      // Assume section start and end appear as first and last tokens of sentence
+      CoreLabel sentenceStartToken = sentenceTokens.get(0);
+      CoreLabel sentenceEndToken = sentenceTokens.get(sentenceTokens.size()-1);
+
+      CoreMap sectionStart = sentenceStartToken.get(CoreAnnotations.SectionStartAnnotation.class);
+      if (sectionStart != null) {
+        // Section is started
+        sectionAnnotations = sectionStart;
+      }
+      if (sectionAnnotations != null) {
+        // transfer annotations over to sentence
+        ChunkAnnotationUtils.copyUnsetAnnotations(sectionAnnotations, sentence);
+      }
+      String sectionEnd = sentenceEndToken.get(CoreAnnotations.SectionEndAnnotation.class);
+      if (sectionEnd != null) {
+        sectionAnnotations = null;
+      }
+
+      // add the sentence to the list
+      sentences.add(sentence);
+    }
+    // the condition below is possible if sentenceBoundaryToDiscard is initialized!

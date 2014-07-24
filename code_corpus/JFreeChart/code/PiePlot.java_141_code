@@ -1,0 +1,60 @@
+    protected void drawLabels(Graphics2D g2, List keys, double totalValue,
+                              Rectangle2D plotArea, Rectangle2D linkArea,
+                              PiePlotState state) {
+
+        Composite originalComposite = g2.getComposite();
+        g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER,
+                1.0f));
+
+        // classify the keys according to which side the label will appear...
+        DefaultKeyedValues leftKeys = new DefaultKeyedValues();
+        DefaultKeyedValues rightKeys = new DefaultKeyedValues();
+
+        double runningTotal = 0.0;
+        Iterator iterator = keys.iterator();
+        while (iterator.hasNext()) {
+            Comparable key = (Comparable) iterator.next();
+            boolean include = true;
+            double v = 0.0;
+            Number n = this.dataset.getValue(key);
+            if (n == null) {
+                include = !this.ignoreNullValues;
+            }
+            else {
+                v = n.doubleValue();
+                include = this.ignoreZeroValues ? v > 0.0 : v >= 0.0;
+            }
+
+            if (include) {
+                runningTotal = runningTotal + v;
+                // work out the mid angle (0 - 90 and 270 - 360) = right,
+                // otherwise left
+                double mid = this.startAngle + (this.direction.getFactor()
+                if (Math.cos(Math.toRadians(mid)) < 0.0) {
+                    leftKeys.addValue(key, new Double(mid));
+                }
+                else {
+                    rightKeys.addValue(key, new Double(mid));
+                }
+            }
+        }
+
+        g2.setFont(getLabelFont());
+
+        // calculate the max label width from the plot dimensions, because
+        // a circular pie can leave a lot more room for labels...
+        double marginX = plotArea.getX() + this.interiorGap
+        double ww = linkArea.getX() - gap - marginX;
+        float labelWidth = (float) this.labelPadding.trimWidth(ww);
+
+        // draw the labels...
+        if (this.labelGenerator != null) {
+            drawLeftLabels(leftKeys, g2, plotArea, linkArea, labelWidth,
+                    state);
+            drawRightLabels(rightKeys, g2, plotArea, linkArea, labelWidth,
+                    state);
+        }
+        g2.setComposite(originalComposite);
+
+    }
+

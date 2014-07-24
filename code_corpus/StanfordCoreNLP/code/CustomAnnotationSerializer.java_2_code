@@ -1,0 +1,53 @@
+  private final boolean haveExplicitAntecedent;
+
+  public CustomAnnotationSerializer() {
+    this(true, false);
+  }
+
+  public CustomAnnotationSerializer(boolean compress, boolean haveAnte) {
+    this.compress = compress;
+    this.haveExplicitAntecedent = haveAnte;
+  }
+
+
+  private static final Object LOCK = new Object();
+
+  static SemanticGraph convertIntermediateGraph(IntermediateSemanticGraph ig, List<CoreLabel> sentence) {
+    SemanticGraph graph = new SemanticGraph();
+
+    // first construct the actual nodes; keep them indexed by their index
+    Map<Integer, IndexedWord> nodes = Generics.newHashMap();
+    for(IntermediateNode in: ig.nodes){
+      CoreLabel token = sentence.get(in.index - 1); // index starts at 1!
+      IndexedWord word = new IndexedWord(in.docId, in.sentIndex, in.index, token);
+      word.set(CoreAnnotations.ValueAnnotation.class, word.get(CoreAnnotations.TextAnnotation.class));
+      if(in.copyAnnotation >= 0){
+        word.set(CoreAnnotations.CopyAnnotation.class, in.copyAnnotation);
+      }
+      nodes.put(word.index(), word);
+    }
+    for(IndexedWord node: nodes.values()){
+      graph.addVertex(node);
+    }
+
+    // add all edges to the actual graph
+    for(IntermediateEdge ie: ig.edges){
+      IndexedWord source = nodes.get(ie.source);
+      assert(source != null);
+      IndexedWord target = nodes.get(ie.target);
+      assert(target != null);
+      synchronized (LOCK) {
+        // this is not thread-safe: there are static fields in GrammaticalRelation
+        GrammaticalRelation rel = GrammaticalRelation.valueOf(ie.dep);
+        graph.addEdge(source, target, rel, 1.0, ie.isExtra);
+      }
+    }
+
+    // compute root nodes if non-empty
+    if( ! graph.isEmpty()){
+      graph.resetRoots();
+    }
+
+    return graph;
+  }
+

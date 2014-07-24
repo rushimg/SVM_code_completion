@@ -1,0 +1,40 @@
+  protected List<String> createContext(String sentence, int index) {
+    List<String> preds = new ArrayList<String>();
+    String prefix = sentence.substring(0, index);
+    String suffix = sentence.substring(index);
+    preds.add("p=" + prefix);
+    preds.add("s=" + suffix);
+    if (index > 0) {
+      addCharPreds("p1", sentence.charAt(index - 1), preds);
+      if (index > 1) {
+        addCharPreds("p2", sentence.charAt(index - 2), preds);
+        preds.add("p21=" + sentence.charAt(index - 2) + sentence.charAt(index - 1));
+      }
+      else {
+        preds.add("p2=bok");
+      }
+      preds.add("p1f1=" + sentence.charAt(index - 1) + sentence.charAt(index));
+    }
+    else {
+      preds.add("p1=bok");
+    }
+    addCharPreds("f1", sentence.charAt(index), preds);
+    if (index+1 < sentence.length()) {
+      addCharPreds("f2", sentence.charAt(index + 1), preds);
+      preds.add("f12=" + sentence.charAt(index) + sentence.charAt(index + 1));
+    }
+    else {
+      preds.add("f2=bok");
+    }
+    if (sentence.charAt(0) == '&' && sentence.charAt(sentence.length() - 1) == ';') {
+      preds.add("cc");//character code
+    }
+
+    if(index == sentence.length() - 1 && inducedAbbreviations.contains(sentence)) {
+      preds.add("pabb");
+    }
+
+    return preds;
+  }
+
+

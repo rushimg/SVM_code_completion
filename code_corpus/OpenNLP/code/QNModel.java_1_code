@@ -1,0 +1,32 @@
+package opennlp.tools.ml.maxent.quasinewton;
+
+import opennlp.tools.ml.model.AbstractModel;
+import opennlp.tools.ml.model.Context;
+
+public class QNModel extends AbstractModel {
+  
+  public QNModel(Context[] params, String[] predLabels, String[] outcomeNames) {
+	  super(params, predLabels, outcomeNames);
+    this.modelType = ModelType.MaxentQn;
+  }
+
+  public int getNumOutcomes() {
+    return this.outcomeNames.length;
+  }
+
+  private int getPredIndex(String predicate) {
+    return pmap.get(predicate);
+  }
+
+  public double[] eval(String[] context) {
+    return eval(context, new double[evalParams.getNumOutcomes()]);
+  }
+
+  public double[] eval(String[] context, double[] probs) {
+    return eval(context, null, probs);
+  }
+  
+  public double[] eval(String[] context, float[] values) {
+	  return eval(context, values, new double[evalParams.getNumOutcomes()]);
+  }
+  

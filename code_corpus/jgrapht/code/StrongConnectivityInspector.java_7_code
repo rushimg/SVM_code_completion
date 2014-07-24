@@ -1,0 +1,44 @@
+    public List<Set<V>> stronglyConnectedSets()
+    {
+        if (stronglyConnectedSets == null) {
+            orderedVertices = new LinkedList<VertexData<V>>();
+            stronglyConnectedSets = new Vector<Set<V>>();
+
+            // create VertexData objects for all vertices, store them
+            createVertexData();
+
+            // perform the first round of DFS, result is an ordering
+            // of the vertices by decreasing finishing time
+            for (VertexData<V> data : vertexToVertexData.values()) {
+                if (!data.isDiscovered()) {
+                    dfsVisit(graph, data, null);
+                }
+            }
+
+            // 'create' inverse graph (i.e. every edge is reversed)
+            DirectedGraph<V, E> inverseGraph =
+                new EdgeReversedGraph<V, E>(graph);
+
+            // get ready for next dfs round
+            resetVertexData();
+
+            // second dfs round: vertices are considered in decreasing
+            // finishing time order; every tree found is a strongly
+            // connected set
+            for (VertexData<V> data : orderedVertices) {
+                if (!data.isDiscovered()) {
+                    // new strongly connected set
+                    Set<V> set = new HashSet<V>();
+                    stronglyConnectedSets.add(set);
+                    dfsVisit(inverseGraph, data, set);
+                }
+            }
+
+            // clean up for garbage collection
+            orderedVertices = null;
+            vertexToVertexData = null;
+        }
+
+        return stronglyConnectedSets;
+    }
+

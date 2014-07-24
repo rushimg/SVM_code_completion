@@ -1,0 +1,94 @@
+  private static String wordShapeChris4(String s, boolean omitIfInBoundary, Collection<String> knownLCWords) {
+    int len = s.length();
+      return wordShapeChris4Short(s, len, knownLCWords);
+    } else {
+      return wordShapeChris4Long(s, omitIfInBoundary, len, knownLCWords);
+    }
+  }
+
+  private static String wordShapeChris4Short(String s, int len, Collection<String> knownLCWords) {
+    int sbLen = (knownLCWords != null) ? len + 1: len;  // markKnownLC makes String 1 longer
+    final StringBuilder sb = new StringBuilder(sbLen);
+    boolean nonLetters = false;
+
+    for (int i = 0; i < len; i++) {
+      char c = s.charAt(i);
+      char m = chris4equivalenceClass(c);
+      for (String gr : greek) {
+        if (s.startsWith(gr, i)) {
+          m = 'g';
+          //System.out.println(s + "  ::  " + s.substring(i+1));
+          i += gr.length() - 1;
+          // System.out.println("Position skips to " + i);
+          break;
+        }
+      }
+      if (m != 'x' && m != 'X') {
+        nonLetters = true;
+      }
+
+      sb.append(m);
+    }
+
+    if (knownLCWords != null) {
+      if ( ! nonLetters && knownLCWords.contains(s.toLowerCase())) {
+        sb.append('k');
+      }
+    }
+    // System.out.println(s + " became " + sb);
+    return sb.toString();
+  }
+
+
+  private static String wordShapeChris4Long(String s, boolean omitIfInBoundary, int len, Collection<String> knownLCWords) {
+    StringBuilder sb = new StringBuilder(s.length() + 1);
+    StringBuilder endSB = new StringBuilder(BOUNDARY_SIZE);
+    Set<Character> seenSet = new TreeSet<Character>();  // TreeSet guarantees stable ordering
+    boolean nonLetters = false;
+    for (int i = 0; i < len; i++) {
+      char c = s.charAt(i);
+      char m = chris4equivalenceClass(c);
+      int iIncr = 0;
+      for (String gr : greek) {
+        if (s.startsWith(gr, i)) {
+          m = 'g';
+          iIncr = gr.length() - 1;
+          //System.out.println(s + "  ::  " + s.substring(i+1));
+          break;
+        }
+      }
+      if (m != 'x' && m != 'X') {
+        nonLetters = true;
+      }
+
+      if (i < BOUNDARY_SIZE) {
+        sb.append(m);
+        boundSet.add(Character.valueOf(m));
+      } else if (i < len - BOUNDARY_SIZE) {
+        seenSet.add(Character.valueOf(m));
+      } else {
+        boundSet.add(Character.valueOf(m));
+        endSB.append(m);
+      }
+      // System.out.println("Position " + i + " --> " + m);
+      i += iIncr;
+    }
+    // put in the stored ones sorted and add end ones
+    for (Character chr : seenSet) {
+      if (!omitIfInBoundary || !boundSet.contains(chr)) {
+        char ch = chr.charValue();
+        sb.append(ch);
+      }
+    }
+    sb.append(endSB);
+
+    if (knownLCWords != null) {
+      if (!nonLetters && knownLCWords.contains(s.toLowerCase())) {
+        sb.append('k');
+      }
+    }
+    // System.out.println(s + " became " + sb);
+    return sb.toString();
+  }
+
+

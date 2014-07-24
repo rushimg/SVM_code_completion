@@ -1,0 +1,66 @@
+  public GenericUrl(URL url) {
+    this(url.getProtocol(),
+        url.getHost(),
+        url.getPort(),
+        url.getPath(),
+        url.getRef(),
+        url.getQuery(),
+        url.getUserInfo());
+  }
+
+  private GenericUrl(String scheme,
+      String host,
+      int port,
+      String path,
+      String fragment,
+      String query,
+      String userInfo) {
+    this.scheme = scheme.toLowerCase();
+    this.host = host;
+    this.port = port;
+    this.pathParts = toPathParts(path);
+    this.fragment = fragment != null ? CharEscapers.decodeUri(fragment) : null;
+    if (query != null) {
+      UrlEncodedParser.parse(query, this);
+    }
+    this.userInfo = userInfo != null ? CharEscapers.decodeUri(userInfo) : null;
+  }
+
+  @Override
+  public int hashCode() {
+    // TODO(yanivi): optimize?
+    return build().hashCode();
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj) {
+      return true;
+    }
+    if (!super.equals(obj) || !(obj instanceof GenericUrl)) {
+      return false;
+    }
+    GenericUrl other = (GenericUrl) obj;
+    // TODO(yanivi): optimize?
+    return build().equals(other.toString());
+  }
+
+  @Override
+  public String toString() {
+    return build();
+  }
+
+  @Override
+  public GenericUrl clone() {
+    GenericUrl result = (GenericUrl) super.clone();
+    if (pathParts != null) {
+      result.pathParts = new ArrayList<String>(pathParts);
+    }
+    return result;
+  }
+
+  @Override
+  public GenericUrl set(String fieldName, Object value) {
+    return (GenericUrl) super.set(fieldName, value);
+  }
+

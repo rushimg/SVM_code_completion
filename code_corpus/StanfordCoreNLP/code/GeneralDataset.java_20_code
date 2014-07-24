@@ -1,0 +1,24 @@
+  public <L2> GeneralDataset<L2,F> mapDataset(GeneralDataset<L,F> dataset, Index<L2> newLabelIndex, Map<L,L2> labelMapping, L2 defaultLabel)
+ {
+    GeneralDataset<L2,F> newDataset;
+    if(dataset instanceof RVFDataset)
+      newDataset = new RVFDataset<L2,F>(this.featureIndex, newLabelIndex);
+    else newDataset = new Dataset<L2,F>(this.featureIndex, newLabelIndex);
+    this.featureIndex.lock();
+    this.labelIndex.lock();
+    //System.out.println("inside mapDataset: dataset size:"+dataset.size());
+    for(int i = 0; i < dataset.size(); i++)  {
+      //System.out.println("inside mapDataset: adding datum number"+i);
+      Datum<L,F> d = dataset.getDatum(i);
+      Datum<L2,F> d2 = mapDatum(d, labelMapping, defaultLabel);
+      newDataset.add(d2);
+    }
+    //System.out.println("old Dataset stats: numData:"+dataset.size()+" numfeatures:"+dataset.featureIndex().size()+" numlabels:"+dataset.labelIndex.size());
+    //System.out.println("new Dataset stats: numData:"+newDataset.size()+" numfeatures:"+newDataset.featureIndex().size()+" numlabels:"+newDataset.labelIndex.size());
+    //System.out.println("this dataset stats: numData:"+size()+" numfeatures:"+featureIndex().size()+" numlabels:"+labelIndex.size());
+
+    this.featureIndex.unlock();
+    this.labelIndex.unlock();
+    return newDataset;
+  }
+

@@ -1,0 +1,26 @@
+  public static DocumentBuilder getXmlParser() {
+    DocumentBuilder db = null;
+    try {
+      DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+      dbf.setValidating(false);
+
+      //Disable DTD loading and validation
+      //See http://stackoverflow.com/questions/155101/make-documentbuilder-parse-ignore-dtd-references
+      dbf.setFeature("http://apache.org/xml/features/nonvalidating/load-dtd-grammar", false);
+      dbf.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+
+      db = dbf.newDocumentBuilder();
+      db.setErrorHandler(new SAXErrorHandler());
+
+    } catch (ParserConfigurationException e) {
+      System.err.printf("%s: Unable to create XML parser\n", XMLUtils.class.getName());
+      e.printStackTrace();
+
+    } catch(UnsupportedOperationException e) {
+      System.err.printf("%s: API error while setting up XML parser. Check your JAXP version\n", XMLUtils.class.getName());
+      e.printStackTrace();
+    }
+
+    return db;
+  }
+

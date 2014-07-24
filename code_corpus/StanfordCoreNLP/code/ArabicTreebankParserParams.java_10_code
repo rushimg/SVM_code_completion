@@ -1,0 +1,21 @@
+  private void setHeadFinder(HeadFinder hf) {
+    if(hf == null)
+      throw new IllegalArgumentException();
+
+    headFinder = hf;
+
+    // Need to re-initialize all patterns due to the new headFinder
+    initializeAnnotationPatterns();
+
+    activeAnnotations.clear();
+
+    for(String key : baselineFeatures) {
+      Pair<TregexPattern,Function<TregexMatcher,String>> p = annotationPatterns.get(key);
+      activeAnnotations.add(p);
+    }
+    for(String key : additionalFeatures) {
+      Pair<TregexPattern,Function<TregexMatcher,String>> p = annotationPatterns.get(key);
+      activeAnnotations.add(p);
+    }
+  }
+

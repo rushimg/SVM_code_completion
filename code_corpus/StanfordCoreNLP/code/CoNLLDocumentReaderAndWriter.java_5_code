@@ -1,0 +1,26 @@
+  @Override
+  @SuppressWarnings({"StringEquality"})
+  public void printAnswers(List<CoreLabel> doc, PrintWriter out) {
+    // boolean tagsMerged = flags.mergeTags;
+    // boolean useHead = flags.splitOnHead;
+
+    if ( ! "iob1".equalsIgnoreCase(flags.entitySubclassification)) {
+      deEndify(doc);
+    }
+
+    for (CoreLabel fl : doc) {
+      String word = fl.word();
+      if (word == BOUNDARY) { // Using == is okay, because it is set to constant
+        out.println();
+      } else {
+        String gold = fl.getString(CoreAnnotations.OriginalAnswerAnnotation.class);
+        String guess = fl.get(CoreAnnotations.AnswerAnnotation.class);
+        // System.err.println(word + "\t" + gold + "\t" + guess));
+        String pos = fl.getString(CoreAnnotations.PartOfSpeechAnnotation.class);
+        String chunk = fl.getString(CoreAnnotations.ChunkAnnotation.class);
+        out.println(fl.word() + '\t' + pos + '\t' + chunk + '\t' +
+                    gold + '\t' + guess);
+      }
+    }
+  }
+

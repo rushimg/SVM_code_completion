@@ -1,0 +1,229 @@
+  }
+
+  public List<PhraseMatch> findMatches(String text,
+                                       int tokenStart, int tokenEnd,
+                                       boolean needNormalization)
+  {
+    WordList tokens = toNormalizedWordList(text);
+    return findMatches(tokens, tokenStart, tokenEnd, false);
+  }
+
+  protected int checkWordListMatch(Phrase phrase, WordList tokens,
+                                   int tokenStart, int tokenEnd,
+                                   int checkStart,
+                                   boolean matchEnd)
+  {
+    if (checkStart < tokenStart) return -1;
+    int i;
+    int phraseSize = phrase.wordList.size();
+    for (i = checkStart; i < tokenEnd && i - tokenStart < phraseSize; i++) {
+      String word = tokens.getWord(i);
+      String phraseWord = phrase.wordList.getWord(i - tokenStart);
+      if (!phraseWord.equals(word)) {
+        return -1;
+      }
+    }
+    if (i - tokenStart == phraseSize) {
+      // All tokens in phrase has been matched!
+      if (matchEnd) {
+        return (i == tokenEnd)? i:-1;
+      } else {
+        return i;
+      }
+    } else {
+      return -1;
+    }
+  }
+
+  public List<PhraseMatch> findNonOverlappingPhrases(List<PhraseMatch> phraseMatches)
+  {
+    if (phraseMatches.size() > 1) {
+      return IntervalTree.getNonOverlapping(phraseMatches, PHRASEMATCH_LENGTH_ENDPOINTS_COMPARATOR);
+    } else {
+      return phraseMatches;
+    }
+  }
+
+  protected List<PhraseMatch> findMatches(Collection<Phrase> acceptablePhrases,
+                                          WordList tokens, int tokenStart, int tokenEnd,
+                                          boolean needNormalization, boolean findAll, boolean matchEnd)
+  {
+    if (needNormalization) {
+      assert(tokenStart >= 0);
+      assert(tokenEnd > tokenStart);
+      int n = tokenEnd - tokenStart;
+      List<String> normalized = new ArrayList<String>(n);
+      int[] tokenIndexMap = new int[n+1];
+      int j = 0, last = 0;
+      for (int i = tokenStart; i < tokenEnd; i++) {
+        String word = tokens.getWord(i);
+        word = getNormalizedForm(word);
+        if (word.length() != 0) {
+          normalized.add(word);
+          tokenIndexMap[j] = i;
+          last = i;
+          j++;
+        }
+      }
+      tokenIndexMap[j] = Math.min(last+1, tokenEnd);
+      List<PhraseMatch> matched = findMatchesNormalized(acceptablePhrases, new StringList(normalized),
+              0, normalized.size(), findAll, matchEnd);
+      for (PhraseMatch pm:matched) {
+        assert(pm.tokenBegin >= 0);
+        assert(pm.tokenEnd >= pm.tokenBegin);
+        assert(pm.tokenEnd <= normalized.size());
+        if (pm.tokenEnd > 0 && pm.tokenEnd > pm.tokenBegin) {
+          pm.tokenEnd = tokenIndexMap[pm.tokenEnd-1]+1;
+        } else {
+          pm.tokenEnd = tokenIndexMap[pm.tokenEnd];
+        }
+        pm.tokenBegin = tokenIndexMap[pm.tokenBegin];
+        assert(pm.tokenBegin >= 0);
+        assert(pm.tokenEnd >= pm.tokenBegin);
+      }
+      return matched;
+    } else {
+      return findMatchesNormalized(acceptablePhrases, tokens, tokenStart, tokenEnd, findAll, matchEnd);
+    }
+  }
+
+  protected List<PhraseMatch> findMatchesNormalized(Collection<Phrase> acceptablePhrases,
+                                                    WordList tokens, int tokenStart, int tokenEnd,
+                                                    boolean findAll, boolean matchEnd)
+  {
+    List<PhraseMatch> matched = new ArrayList<PhraseMatch>();
+    Stack<StackEntry> todoStack = new Stack<StackEntry>();
+    todoStack.push(new StackEntry(rootTree, tokenStart, tokenStart, tokenEnd, findAll? tokenStart+1:-1));
+    while (!todoStack.isEmpty()) {
+      StackEntry cur = todoStack.pop();
+      Map<String, Object> tree = cur.tree;
+      for (int i = cur.tokenNext; i <= cur.tokenEnd; i++) {
+        if (tree.containsKey(PHRASE_END)) {
+          Phrase phrase = (Phrase) tree.get(PHRASE_END);
+          if (acceptablePhrases == null || acceptablePhrases.contains(phrase)) {
+            int matchedTokenEnd = checkWordListMatch(
+              phrase, tokens, cur.tokenStart, cur.tokenEnd, i, matchEnd);
+            if (matchedTokenEnd >= 0) {
+              matched.add(new PhraseMatch(phrase, cur.tokenStart, matchedTokenEnd));
+            }
+          }
+        }
+        if (i == cur.tokenEnd) break;
+        String word = tokens.getWord(i);
+        Object node = tree.get(word);
+        if (node == null) {
+          break;
+        } else if (node instanceof Phrase) {
+          // check rest of the phrase matches
+          Phrase phrase = (Phrase) node;
+          if (acceptablePhrases == null || acceptablePhrases.contains(phrase)) {
+            int matchedTokenEnd = checkWordListMatch(
+              phrase, tokens, cur.tokenStart, cur.tokenEnd, i+1, matchEnd);
+            if (matchedTokenEnd >= 0) {
+              matched.add(new PhraseMatch(phrase, cur.tokenStart, matchedTokenEnd));
+            }
+          }
+          break;
+        } else if (node instanceof Map) {
+          tree = (Map<String, Object>) node;
+        } else if (node instanceof List) {
+          // Search through list for matches to word (at this point, the table is small, so no Map)
+          List lookupList = (List) node;
+          for (Object obj:lookupList) {
+            if (obj instanceof Phrase) {
+              // check rest of the phrase matches
+              Phrase phrase = (Phrase) obj;
+              if (acceptablePhrases == null || acceptablePhrases.contains(phrase)) {
+                int matchedTokenEnd = checkWordListMatch(
+                  phrase, tokens, cur.tokenStart, cur.tokenEnd, i+1, matchEnd);
+                if (matchedTokenEnd >= 0) {
+                  matched.add(new PhraseMatch(phrase, cur.tokenStart, matchedTokenEnd));
+                }
+              }
+            } else if (obj instanceof Map) {
+              todoStack.push(new StackEntry((Map<String,Object>) obj, cur.tokenStart, i+1, cur.tokenEnd, -1));
+            } else  {
+              throw new RuntimeException("Unexpected class in list " + obj.getClass() + " while looking up " + word);
+            }
+          }
+          break;
+        } else {
+          throw new RuntimeException("Unexpected class " + node.getClass() + " while looking up " + word);
+        }
+      }
+      if (cur.continueAt >= 0) {
+        int newStart = (cur.continueAt > cur.tokenStart)? cur.continueAt: cur.tokenStart+1;
+        if (newStart < cur.tokenEnd) {
+          todoStack.push(new StackEntry(cur.tree, newStart, newStart, cur.tokenEnd, newStart+1));
+        }
+      }
+    }
+    return matched;
+  }
+
+  public Iterator<Phrase> iterator() {
+    return new PhraseTableIterator(this);
+  }
+
+  private static class PhraseTableIterator extends AbstractIterator<Phrase> {
+    private PhraseTable phraseTable;
+    private Stack<Iterator<Object>> iteratorStack = new Stack<Iterator<Object>>();
+    private Phrase next = null;
+
+    public PhraseTableIterator(PhraseTable phraseTable) {
+      this.phraseTable = phraseTable;
+      this.iteratorStack.push(this.phraseTable.rootTree.values().iterator());
+      this.next = getNext();
+    }
+
+    private Phrase getNext() {
+      while (!iteratorStack.isEmpty()) {
+        Iterator<Object> iter = iteratorStack.peek();
+        if (iter.hasNext()) {
+          Object obj = iter.next();
+          if (obj instanceof Phrase) {
+            return (Phrase) obj;
+          } else if (obj instanceof Map) {
+            iteratorStack.push(((Map) obj).values().iterator());
+          } else if (obj instanceof List) {
+            iteratorStack.push(((List) obj).iterator());
+          } else {
+            throw new RuntimeException("Unexpected class in phrase table " + obj.getClass());
+          }
+        } else {
+          iteratorStack.pop();
+        }
+      }
+      return null;
+    }
+
+    @Override
+    public boolean hasNext() {
+      return next != null;
+    }
+
+    @Override
+    public Phrase next() {
+      Phrase res = next;
+      next = getNext();
+      return res;
+    }
+  }
+
+  private static class StackEntry
+  {
+    Map<String, Object> tree;
+    int tokenStart;
+    int tokenNext;
+    int tokenEnd;
+    int continueAt;
+
+    private StackEntry(Map<String, Object> tree, int tokenStart, int tokenNext, int tokenEnd, int continueAt) {
+      this.tree = tree;
+      this.tokenStart = tokenStart;
+      this.tokenNext = tokenNext;
+      this.tokenEnd = tokenEnd;
+      this.continueAt = continueAt;
+    }
+  }
+

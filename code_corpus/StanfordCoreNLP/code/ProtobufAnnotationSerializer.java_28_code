@@ -1,0 +1,15 @@
+  private EntityMention fromProto(CoreNLPProtos.Entity proto, CoreMap sentence) {
+    EntityMention rtn = new EntityMention(
+        proto.hasObjectID() ? proto.getObjectID() : null,
+        sentence,
+        proto.hasHeadStart() ? new Span(proto.getHeadStart(), proto.getHeadEnd()) : null,
+        proto.hasHeadEnd() ? new Span(proto.getExtentStart(), proto.getExtentEnd()) : null,
+        proto.hasType() ? proto.getType() : null,
+        proto.hasSubtype() ? proto.getSubtype() : null,
+        proto.hasMentionType() ? proto.getMentionType() : null );
+    if (proto.hasNormalizedName()) { rtn.setNormalizedName(proto.getNormalizedName()); }
+    if (proto.hasHeadTokenIndex()) { rtn.setHeadTokenPosition(proto.getHeadTokenIndex()); }
+    if (proto.hasCorefID()) { rtn.setCorefID(proto.getCorefID()); }
+    return rtn;
+  }
+

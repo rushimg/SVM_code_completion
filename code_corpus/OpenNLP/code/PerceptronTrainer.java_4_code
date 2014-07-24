@@ -1,0 +1,66 @@
+  predicates as ints, and so this array is needed to save the model to
+  disk and thereby allow users to know what the outcome was in human
+  private String[] predLabels;
+
+  private boolean printMessages = true;
+
+  private double tolerance = TOLERANCE_DEFAULT;
+
+  private Double stepSizeDecrease;
+
+  private boolean useSkippedlAveraging;
+
+  public PerceptronTrainer() {
+  }
+
+  public boolean isValid() {
+    String algorithmName = getAlgorithm();
+
+    if (algorithmName != null && !(PERCEPTRON_VALUE.equals(algorithmName))) {
+      return false;
+    }
+
+    return true;
+  }
+
+  public boolean isSortAndMerge() {
+    return false;
+  }
+
+  public AbstractModel doTrain(DataIndexer indexer) throws IOException {
+    if (!isValid()) {
+      throw new IllegalArgumentException("trainParams are not valid!");
+    }
+
+    int iterations = getIterations();
+    int cutoff = getCutoff();
+
+    AbstractModel model;
+
+    boolean useAverage = getBooleanParam("UseAverage", true);
+
+    boolean useSkippedAveraging = getBooleanParam("UseSkippedAveraging", false);
+
+    // overwrite otherwise it might not work
+    if (useSkippedAveraging)
+      useAverage = true;
+
+    double stepSizeDecrease = getDoubleParam("StepSizeDecrease", 0);
+
+    double tolerance = getDoubleParam("Tolerance",
+        PerceptronTrainer.TOLERANCE_DEFAULT);
+
+    this.setSkippedAveraging(useSkippedAveraging);
+
+    if (stepSizeDecrease > 0)
+      this.setStepSizeDecrease(stepSizeDecrease);
+
+    this.setTolerance(tolerance);
+
+    model = this.trainModel(iterations, indexer, cutoff, useAverage);
+
+    return model;
+  }
+
+  // << members related to AbstractSequenceTrainer
+

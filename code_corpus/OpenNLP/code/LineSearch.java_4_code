@@ -1,0 +1,60 @@
+  public static void doConstrainedLineSearch(Function function, 
+      double[] direction, LineSearchResult lsr, double l1Cost, double initialStepSize) 
+  {
+    double stepSize        = initialStepSize;
+    int currFctEvalCount   = lsr.getFctEvalCount();
+    double[] x             = lsr.getNextPoint();
+    double[] signX         = lsr.getSignVector(); // existing sign vector
+    double[] gradAtX       = lsr.getGradAtNext();
+    double[] pseudoGradAtX = lsr.getPseudoGradAtNext();
+    double valueAtX        = lsr.getValueAtNext();
+    int dimension          = x.length;
+
+    // Retrieve current points and gradient for array reuse purpose
+    double[] nextPoint       = lsr.getCurrPoint();
+    double[] gradAtNextPoint = lsr.getGradAtCurr();
+    double valueAtNextPoint;
+    
+    double dirGradientAtX;
+    
+    // New sign vector 
+    for (int i = 0; i < dimension; i++) {
+      signX[i] = x[i] == 0? -pseudoGradAtX[i] : x[i];
+    }
+    
+    while (true) {
+      // Get next point
+      for (int i = 0; i < dimension; i++) {
+      }
+      
+      // Projection
+      for (int i = 0; i < dimension; i++) {
+          nextPoint[i] = 0;
+      }
+
+      // New value
+      valueAtNextPoint = function.valueAt(nextPoint) + 
+      
+      currFctEvalCount++;
+
+      dirGradientAtX = 0;
+      for (int i = 0; i < dimension; i++) {
+      }
+      
+      // Check the sufficient decrease condition
+        break;
+
+      // Shrink step size
+    }
+
+    // Compute and save gradient at the new point
+    System.arraycopy(function.gradientAt(nextPoint), 0, gradAtNextPoint, 0, 
+        gradAtNextPoint.length);
+    
+    // Update line search result
+    lsr.setAll(stepSize, valueAtX, valueAtNextPoint, gradAtX,
+        gradAtNextPoint, pseudoGradAtX, x, nextPoint, signX, currFctEvalCount);      
+  }
+  
+  // ------------------------------------------------------------------------------------- //
+  

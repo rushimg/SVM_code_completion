@@ -1,0 +1,36 @@
+    public static JFreeChart createStackedBarChart(String title,
+                                                   String domainAxisLabel,
+                                                   String rangeAxisLabel,
+                                                   CategoryDataset dataset,
+                                                   PlotOrientation orientation,
+                                                   boolean legend,
+                                                   boolean tooltips,
+                                                   boolean urls) {
+
+        if (orientation == null) {
+            throw new IllegalArgumentException("Null 'orientation' argument.");
+        }
+
+        CategoryAxis categoryAxis = new CategoryAxis(domainAxisLabel);
+        ValueAxis valueAxis = new NumberAxis(rangeAxisLabel);
+
+        StackedBarRenderer renderer = new StackedBarRenderer();
+        if (tooltips) {
+            renderer.setBaseToolTipGenerator(
+                    new StandardCategoryToolTipGenerator());
+        }
+        if (urls) {
+            renderer.setBaseItemURLGenerator(
+                    new StandardCategoryURLGenerator());
+        }
+
+        CategoryPlot plot = new CategoryPlot(dataset, categoryAxis, valueAxis,
+                renderer);
+        plot.setOrientation(orientation);
+        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT,
+                plot, legend);
+        currentTheme.apply(chart);
+        return chart;
+
+    }
+

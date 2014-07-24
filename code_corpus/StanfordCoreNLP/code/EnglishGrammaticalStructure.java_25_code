@@ -1,0 +1,18 @@
+  private static void eraseMultiConj(Collection<TypedDependency> list) {
+    // find typed deps of form cc(gov, x)
+    for (TypedDependency td1 : list) {
+      if (td1.reln() == COORDINATION) {
+        TreeGraphNode x = td1.dep();
+        // find typed deps of form dep(x,y) and kill them
+        for (TypedDependency td2 : list) {
+          if (td2.gov().equals(x) && (td2.reln() == DEPENDENT || td2.reln() == MULTI_WORD_EXPRESSION || td2.reln() == COORDINATION ||
+                  td2.reln() == ADVERBIAL_MODIFIER || td2.reln() == NEGATION_MODIFIER || td2.reln() == AUX_MODIFIER)) {
+            td2.setReln(KILL);
+          }
+        }
+      }
+    }
+
+    filterKill(list);
+  }
+

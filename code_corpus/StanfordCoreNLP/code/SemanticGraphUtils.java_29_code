@@ -1,0 +1,20 @@
+  public static String semgrexFromGraph(SemanticGraph sg, boolean matchTag, boolean matchWord,
+      Map<IndexedWord, String> nodeNameMap) throws Exception {
+    return semgrexFromGraph(sg, null, matchTag, matchWord, nodeNameMap);
+  }
+
+  public static String semgrexFromGraph(SemanticGraph sg, Collection<IndexedWord> wildcardNodes,
+      boolean useTag, boolean useWord, Map<IndexedWord, String> nodeNameMap) throws Exception {
+    IndexedWord patternRoot = sg.getFirstRoot();
+    StringWriter buf = new StringWriter();
+    Set<IndexedWord> tabu = Generics.newHashSet();
+    Set<SemanticGraphEdge> seenEdges = Generics.newHashSet();
+
+    buf.append(semgrexFromGraphHelper(patternRoot, sg, tabu, seenEdges, true, true, wildcardNodes,
+        useTag, useWord, nodeNameMap, false));
+
+    String patternString = buf.toString();
+    return patternString;
+  }
+
+

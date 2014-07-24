@@ -1,0 +1,119 @@
+/**
+ * Flags for sequence classifiers. Documentation for general flags and
+ * flags for NER can be found in the Javadoc of
+ * {@link edu.stanford.nlp.ie.NERFeatureFactory}. Documentation for the flags
+ * for Chinese word segmentation can be found in the Javadoc of
+ * {@link edu.stanford.nlp.wordseg.ChineseSegmenterFeatureFactory}.
+ * <br>
+ *
+ * <i>IMPORTANT NOTE IF CHANGING THIS FILE:</i> <b>MAKE SURE</b> TO
+ * ONLY ADD NEW VARIABLES AT THE END OF THE LIST OF VARIABLES (and not
+ * to change existing variables)! Otherwise you usually break all
+ * currently serialized classifiers!!! Search for "ADD VARIABLES ABOVE
+ * HERE" below.
+ * <br>
+ * Some general flags are described here
+ * <table border="1">
+ * <tr>
+ * <td><b>Property Name</b></td>
+ * <td><b>Type</b></td>
+ * <td><b>Default Value</b></td>
+ * <td><b>Description</b></td>
+ * </tr>
+ * <tr>
+ * <td>useQN</td>
+ * <td>boolean</td>
+ * <td>true</td>
+ * <td>Use Quasi-Newton (L-BFGS) optimization to find minimum. NOTE: Need to set this to
+ * false if using other minimizers such as SGD.</td>
+ * </tr>
+ * <tr>
+ * <td>QNsize</td>
+ * <td>int</td>
+ * <td>25</td>
+ * <td>Number of previous iterations of Quasi-Newton to store (this increases
+ * memory use, but speeds convergence by letting the Quasi-Newton optimization
+ * more effectively approximate the second derivative).</td>
+ * </tr>
+ * <tr>
+ * <td>QNsize2</td>
+ * <td>int</td>
+ * <td>25</td>
+ * <td>Number of previous iterations of Quasi-Newton to store (used when pruning
+ * features, after the first iteration - the first iteration is with QNSize).</td>
+ * </tr>
+ * <tr>
+ * <td>useInPlaceSGD</td>
+ * <td>boolean</td>
+ * <td>false</td>
+ * <td>Use SGD (tweaking weights in place) to find minimum (more efficient than
+ * the old SGD, faster to converge than Quasi-Newtown if there are very large of
+ * samples). Implemented for CRFClassifier. NOTE: Remember to set useQN to false
+ * </td>
+ * </tr>
+ * <tr>
+ * <td>tuneSampleSize</td>
+ * <td>int</td>
+ * <td>-1</td>
+ * <td>If this number is greater than 0, specifies the number of samples to use
+ * for tuning (default is 1000).</td>
+ * </tr>
+ * <tr>
+ * <td>SGDPasses</td>
+ * <td>int</td>
+ * <td>-1</td>
+ * <td>If this number is greater than 0, specifies the number of SGD passes over
+ * entire training set) to do before giving up (default is 50). Can be smaller
+ * if sample size is very large.</td>
+ * </tr>
+ * <tr>
+ * <td>useSGD</td>
+ * <td>boolean</td>
+ * <td>false</td>
+ * <td>Use SGD to find minimum (can be slow). NOTE: Remember to set useQN to
+ * false</td>
+ * </tr>
+ * <tr>
+ * <td>useSGDtoQN</td>
+ * <td>boolean</td>
+ * <td>false</td>
+ * <td>Use SGD (SGD version selected by useInPlaceSGD or useSGD) for a certain
+ * number of passes (SGDPasses) and then switches to QN. Gives the quick initial
+ * convergence of SGD, with the desired convergence criterion of QN (there is
+ * some rampup time for QN). NOTE: Remember to set useQN to false</td>
+ * </tr>
+ * <tr>
+ * <td>evaluateIters</td>
+ * <td>int</td>
+ * <td>0</td>
+ * <td>If this number is greater than 0, evaluates on the test set every so
+ * often while minimizing. Implemented for CRFClassifier.</td>
+ * </tr>
+ * <tr>
+ * <td>evalCmd</td>
+ * <td>String</td>
+ * <td></td>
+ * <td>If specified (and evaluateIters is set), runs the specified cmdline
+ * command during evaluation (instead of default CONLL-like NER evaluation)</td>
+ * </tr>
+ * <tr>
+ * <td>evaluateTrain</td>
+ * <td>boolean</td>
+ * <td>false</td>
+ * <td>If specified (and evaluateIters is set), also evaluate on training set
+ * (can be expensive)</td>
+ * </tr>
+ * <tr>
+ * <td>tokenizerOptions</td></td>String</td>
+ * <td>(null)</td>
+ * <td>Extra options to supply to the tokenizer when creating it.</td>
+ * </tr>
+ * <tr>
+ * <td>tokenizerFactory</td></td>String</td>
+ * <td>(null)</td>
+ * <td>A different tokenizer factory to use if the ReaderAndWriter in question uses tokenizers.</td>
+ * </tr>
+ * </table>
+ *
+ * @author Jenny Finkel
+ */

@@ -1,0 +1,119 @@
+      Set<String> open = Generics.newHashSet();
+
+      for (String tag : index) {
+        if ( ! closed.contains(tag)) {
+          open.add(tag);
+        }
+      }
+
+      openTags = open;
+    } // if
+    return openTags;
+  }
+
+  protected int add(String tag) {
+    return index.indexOf(tag, true);
+  }
+
+  public String getTag(int i) {
+    return index.get(i);
+  }
+
+  protected void save(String filename,
+                      Map<String, Set<String>> tagTokens) {
+    try {
+      DataOutputStream out = IOUtils.getDataOutputStream(filename);
+      save(out, tagTokens);
+      out.close();
+    } catch (IOException e) {
+      throw new RuntimeIOException(e);
+    }
+  }
+
+  protected void save(DataOutputStream file,
+                      Map<String, Set<String>> tagTokens) {
+    try {
+      file.writeInt(index.size());
+      for (String item : index) {
+        file.writeUTF(item);
+        if (learnClosedTags) {
+          if (tagTokens.get(item).size() < closedTagThreshold) {
+            markClosed(item);
+          }
+        }
+        file.writeBoolean(isClosed(item));
+      }
+    } catch (IOException e) {
+      throw new RuntimeIOException(e);
+    }
+  }
+
+
+  protected void read(String filename) {
+    try {
+      DataInputStream in = IOUtils.getDataInputStream(filename);
+      read(in);
+      in.close();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+
+  protected void read(DataInputStream file) {
+    try {
+      int size = file.readInt();
+      index = new HashIndex<String>();
+      for (int i = 0; i < size; i++) {
+        String tag = file.readUTF();
+        boolean inClosed = file.readBoolean();
+        index.add(tag);
+
+        if (inClosed) closed.add(tag);
+      }
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+
+
+  protected boolean isClosed(String tag) {
+    if (openFixed) {
+      return !openTags.contains(tag);
+    } else {
+      return closed.contains(tag);
+    }
+  }
+
+  void markClosed(String tag) {
+    add(tag);
+    closed.add(tag);
+  }
+
+  public void setLearnClosedTags(boolean learn) {
+    learnClosedTags = learn;
+  }
+
+  public void setOpenClassTags(String[] openClassTags) {
+    openTags = Generics.newHashSet();
+    openTags.addAll(Arrays.asList(openClassTags));
+    for (String tag : openClassTags) {
+      add(tag);
+    }
+    openFixed = true;
+  }
+
+  public void setClosedClassTags(String[] closedClassTags) {
+    for(String tag : closedClassTags) {
+      markClosed(tag);
+    }
+  }
+
+
+  int getIndex(String tag) {
+    return index.indexOf(tag);
+  }
+
+  public int getSize() {
+    return index.size();
+  }
+

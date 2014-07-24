@@ -1,0 +1,14 @@
+  private static Class <?> type2class(Type type){
+		if(type instanceof Class <?>){
+			return (Class <?>) type;	//base case
+		}else if(type instanceof ParameterizedType){
+			return type2class( ((ParameterizedType) type).getRawType() );
+		}else if(type instanceof TypeVariable<?>){
+			return type2class( ((TypeVariable<?>) type).getBounds()[0] );
+		}else if(type instanceof WildcardType){
+			return type2class( ((WildcardType) type).getUpperBounds()[0] );
+		}else{
+			throw new IllegalArgumentException("Cannot convert type to class: " + type);
+		}
+	}
+

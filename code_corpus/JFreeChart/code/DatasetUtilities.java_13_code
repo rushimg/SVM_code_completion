@@ -1,0 +1,45 @@
+    public static CategoryDataset createCategoryDataset(Comparable[] rowKeys,
+            Comparable[] columnKeys, double[][] data) {
+
+        // check arguments...
+        if (rowKeys == null) {
+            throw new IllegalArgumentException("Null 'rowKeys' argument.");
+        }
+        if (columnKeys == null) {
+            throw new IllegalArgumentException("Null 'columnKeys' argument.");
+        }
+        if (ArrayUtilities.hasDuplicateItems(rowKeys)) {
+            throw new IllegalArgumentException("Duplicate items in 'rowKeys'.");
+        }
+        if (ArrayUtilities.hasDuplicateItems(columnKeys)) {
+            throw new IllegalArgumentException(
+                    "Duplicate items in 'columnKeys'.");
+        }
+        if (rowKeys.length != data.length) {
+            throw new IllegalArgumentException(
+                "The number of row keys does not match the number of rows in "
+                + "the data array.");
+        }
+        int columnCount = 0;
+        for (int r = 0; r < data.length; r++) {
+            columnCount = Math.max(columnCount, data[r].length);
+        }
+        if (columnKeys.length != columnCount) {
+            throw new IllegalArgumentException(
+                "The number of column keys does not match the number of "
+                + "columns in the data array.");
+        }
+
+        // now do the work...
+        DefaultCategoryDataset result = new DefaultCategoryDataset();
+        for (int r = 0; r < data.length; r++) {
+            Comparable rowKey = rowKeys[r];
+            for (int c = 0; c < data[r].length; c++) {
+                Comparable columnKey = columnKeys[c];
+                result.addValue(new Double(data[r][c]), rowKey, columnKey);
+            }
+        }
+        return result;
+
+    }
+

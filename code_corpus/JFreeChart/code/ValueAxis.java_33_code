@@ -1,0 +1,32 @@
+    protected double findMaximumTickLabelHeight(List ticks,
+                                                Graphics2D g2,
+                                                Rectangle2D drawArea,
+                                                boolean vertical) {
+
+        RectangleInsets insets = getTickLabelInsets();
+        Font font = getTickLabelFont();
+        double maxHeight = 0.0;
+        if (vertical) {
+            FontMetrics fm = g2.getFontMetrics(font);
+            Iterator iterator = ticks.iterator();
+            while (iterator.hasNext()) {
+                Tick tick = (Tick) iterator.next();
+                Rectangle2D labelBounds = TextUtilities.getTextBounds(
+                        tick.getText(), g2, fm);
+                if (labelBounds.getWidth() + insets.getTop()
+                        + insets.getBottom() > maxHeight) {
+                    maxHeight = labelBounds.getWidth()
+                                + insets.getTop() + insets.getBottom();
+                }
+            }
+        }
+        else {
+            LineMetrics metrics = font.getLineMetrics("ABCxyz",
+                    g2.getFontRenderContext());
+            maxHeight = metrics.getHeight()
+                        + insets.getTop() + insets.getBottom();
+        }
+        return maxHeight;
+
+    }
+

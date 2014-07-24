@@ -1,0 +1,29 @@
+  public static void replaceNode(IndexedWord newNode, IndexedWord oldNode,
+      SemanticGraph sg) {
+    // Obtain the edges where the old node was the governor and the dependent.
+    // Remove the old node, insert the new, and re-insert the edges.
+    List<SemanticGraphEdge> govEdges = sg.outgoingEdgeList(oldNode);
+    List<SemanticGraphEdge> depEdges = sg.incomingEdgeList(oldNode);
+    boolean oldNodeRemoved = sg.removeVertex(oldNode);
+    if (oldNodeRemoved) {
+      // If the new node is not present, be sure to add it in.
+      if (!sg.containsVertex(newNode))
+        sg.addVertex(newNode);
+      for (SemanticGraphEdge govEdge : govEdges) {
+        sg.removeEdge(govEdge);
+        sg.addEdge(newNode, govEdge.getDependent(), govEdge.getRelation(), govEdge.getWeight(), govEdge.isExtra());
+      }
+      for (SemanticGraphEdge depEdge : depEdges) {
+        sg.removeEdge(depEdge);
+        sg.addEdge(depEdge.getGovernor(), newNode, depEdge.getRelation(), depEdge.getWeight(), depEdge.isExtra());
+      }
+    } else {
+      System.err.println("SemanticGraphUtils.replaceNode: previous node does not exist");
+    }
+  }
+
+  public static final String WILDCARD_VERTICE_TOKEN = "WILDCARD";
+  public static final IndexedWord WILDCARD_VERTICE = new IndexedWord();
+  static {
+  }
+

@@ -1,0 +1,123 @@
+  protected static Extractor[] getExtractorFramesRare(String identifier, TTags ttags) {
+    ArrayList<Extractor> extrs = new ArrayList<Extractor>();
+
+    for (String arg : args) {
+      if ("naacl2003unknowns".equalsIgnoreCase(arg)) {
+        extrs.addAll(Arrays.asList(eFrames_motley_naacl2003));
+        getNaaclExtractors(extrs);
+      } else if (("lnaacl2003unknowns").equalsIgnoreCase(arg)) {
+        extrs.addAll(Arrays.asList(eFrames_motley_naacl2003_left));
+        getNaaclExtractors(extrs);
+      } else if ("caselessnaacl2003unknowns".equalsIgnoreCase(arg)) {
+        extrs.addAll(Arrays.asList(eFrames_motley_caseless_naacl2003));
+        getCaselessNaaclExtractors(extrs);
+        // TODO: test this next one
+      } else if ("naacl2003conjunctions".equalsIgnoreCase(arg)) {
+        extrs.addAll(Arrays.asList(naacl2003Conjunctions()));
+      } else if ("frenchunknowns".equalsIgnoreCase(arg)) {
+        extrs.addAll(Arrays.asList(french_unknown_extractors));
+      } else if (arg.startsWith("wordshapes(")) {
+        int lWindow = Extractor.getParenthesizedNum(arg, 1);
+        int rWindow = Extractor.getParenthesizedNum(arg, 2);
+        String wsc = Extractor.getParenthesizedArg(arg, 3);
+        if (wsc == null) {
+          wsc = "chris2";
+        }
+        for (int i = lWindow; i <= rWindow; i++) {
+          extrs.add(new ExtractorWordShapeClassifier(i, wsc));
+        }
+      } else if (arg.startsWith("wordshapeconjunction(")) {
+        int lWindow = Extractor.getParenthesizedNum(arg, 1);
+        int rWindow = Extractor.getParenthesizedNum(arg, 2);
+        String wsc = Extractor.getParenthesizedArg(arg, 3);
+        if (wsc == null) {
+          wsc = "chris2";
+        }
+        for (int i = lWindow; i <= rWindow; i++) {
+          extrs.add(new ExtractorWordShapeConjunction(lWindow, rWindow, wsc));
+        }
+      } else if (arg.startsWith("unicodeshapes(")) {
+        int lWindow = Extractor.getParenthesizedNum(arg, 1);
+        int rWindow = Extractor.getParenthesizedNum(arg, 2);
+        for (int i = lWindow; i <= rWindow; i++) {
+          extrs.add(new ExtractorWordShapeClassifier(i, "chris4"));
+        }
+      } else if (arg.startsWith("unicodeshapeconjunction(")) {
+        int lWindow = Extractor.getParenthesizedNum(arg, 1);
+        int rWindow = Extractor.getParenthesizedNum(arg, 2);
+        extrs.add(new ExtractorWordShapeConjunction(lWindow, rWindow, "chris4"));
+      } else if (arg.startsWith("chinesedictionaryfeatures(")) {
+        throw new RuntimeException("These features are no longer supported." +
+                                   "  The paths and data files associated " +
+                                   "with this material are out of date, and " +
+                                   "the classes used are not thread-safe.  " +
+                                   "Those problems would need to be fixed " +
+                                   "to use this feature.");
+        //String path = Extractor.getParenthesizedArg(arg, 1);
+        //// Default nlp location for these features is: /u/nlp/data/pos-tagger/dictionary
+        //int lWindow = Extractor.getParenthesizedNum(arg, 2);
+        //int rWindow = Extractor.getParenthesizedNum(arg, 3);
+        //// First set up the dictionary prefix for the Chinese dictionaries
+        //ASBCDict.setPathPrefix(path);
+        //for (int i = lWindow; i <= rWindow; i++) {
+        //  extrs.addAll(Arrays.asList(ctbPreFeatures(i)));
+        //  extrs.addAll(Arrays.asList(ctbSufFeatures(i)));
+        //  extrs.addAll(Arrays.asList(ctbUnkDictFeatures(i)));
+        //  extrs.addAll(Arrays.asList(asbcUnkFeatures(i)));
+        //}
+      // No longer add prefix suffix features, now that you can more flexibly add them separately.
+      // } else if ("generic".equalsIgnoreCase(arg)) {
+      //   // does prefix and suffix up to 6 grams
+      //   for (int i = 1; i <= 6; i++) {
+      //     extrs.add(new ExtractorCWordSuff(i));
+      //     extrs.add(new ExtractorCWordPref(i));
+      //   }
+      } else if (arg.equalsIgnoreCase("motleyUnknown")) {  // This is naacl2003unknown minus prefix and suffix features.
+        extrs.addAll(Arrays.asList(eFrames_motley_naacl2003));
+      } else if (arg.startsWith("suffix(")) {
+        int max = Extractor.getParenthesizedNum(arg, 1);
+        // will conveniently be 0 if not specified
+        int position = Extractor.getParenthesizedNum(arg, 2);
+        for (int i = 1; i <= max; i++) {
+          extrs.add(new ExtractorWordSuff(i, position));
+        }
+      } else if (arg.startsWith("prefix(")) {
+        int max = Extractor.getParenthesizedNum(arg, 1);
+        // will conveniently be 0 if not specified
+        int position = Extractor.getParenthesizedNum(arg, 2);
+        for (int i = 1; i <= max; i++) {
+          extrs.add(new ExtractorWordPref(i, position));
+        }
+      } else if (arg.startsWith("prefixsuffix(")) {
+        int max = Extractor.getParenthesizedNum(arg, 1);
+        for (int i = 1; i <= max; i++) {
+          extrs.add(new ExtractorsConjunction(new ExtractorWordPref(i, 0),
+                                              new ExtractorWordSuff(i, 0)));
+        }
+      } else if (arg.startsWith("capitalizationsuffix(")) {
+        int max = Extractor.getParenthesizedNum(arg, 1);
+        for (int i = 1; i <= max; i++) {
+          extrs.add(new ExtractorsConjunction(cWordUppCase, new ExtractorWordSuff(i,0)));
+        }
+      } else if (arg.startsWith("distsim(")) {
+        String path = Extractor.getParenthesizedArg(arg, 1);
+        // traditional nlp filesystem location is: /u/nlp/data/pos_tags_are_useless/egw.bnc.200.pruned
+        int lWindow = Extractor.getParenthesizedNum(arg, 2);
+        int rWindow = Extractor.getParenthesizedNum(arg, 3);
+        for (int i = lWindow; i <= rWindow; i++) {
+          extrs.add(new ExtractorDistsim(path, i));
+        }
+      } else if (arg.startsWith("distsimconjunction(")) {
+        String path = Extractor.getParenthesizedArg(arg, 1);
+        int lWindow = Extractor.getParenthesizedNum(arg, 2);
+        int rWindow = Extractor.getParenthesizedNum(arg, 3);
+        extrs.add(new ExtractorDistsimConjunction(path, lWindow, rWindow));
+      } else if (arg.equalsIgnoreCase("lctagfeatures")) {
+        extrs.addAll(Arrays.asList(lcTagFeatures(ttags)));
+      }
+    }
+
+    return extrs.toArray(new Extractor[extrs.size()]);
+  }
+
+

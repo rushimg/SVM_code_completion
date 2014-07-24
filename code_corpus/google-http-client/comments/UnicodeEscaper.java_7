@@ -1,0 +1,32 @@
+  /**
+   * Returns the Unicode code point of the character at the given index.
+   *
+   * <p>
+   * Unlike {@link Character#codePointAt(CharSequence, int)} or {@link String#codePointAt(int)} this
+   * method will never fail silently when encountering an invalid surrogate pair.
+   *
+   * <p>
+   * The behaviour of this method is as follows:
+   * <ol>
+   * <li>If {@code index >= end}, {@link IndexOutOfBoundsException} is thrown.
+   * <li><b>If the character at the specified index is not a surrogate, it is returned.</b>
+   * <li>If the first character was a high surrogate value, then an attempt is made to read the next
+   * character.
+   * <ol>
+   * <li><b>If the end of the sequence was reached, the negated value of the trailing high surrogate
+   * is returned.</b>
+   * <li><b>If the next character was a valid low surrogate, the code point value of the high/low
+   * surrogate pair is returned.</b>
+   * <li>If the next character was not a low surrogate value, then {@link IllegalArgumentException}
+   * is thrown.
+   * </ol>
+   * <li>If the first character was a low surrogate value, {@link IllegalArgumentException} is
+   * thrown.
+   * </ol>
+   *
+   * @param seq the sequence of characters from which to decode the code point
+   * @param index the index of the first character to decode
+   * @param end the index beyond the last valid character to decode
+   * @return the Unicode code point for the given index or the negated value of the trailing high
+   *         surrogate character at the end of the sequence
+   */

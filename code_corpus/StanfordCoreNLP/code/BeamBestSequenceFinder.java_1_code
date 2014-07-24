@@ -1,0 +1,158 @@
+public class BeamBestSequenceFinder implements BestSequenceFinder {
+
+  // todo [CDM 2013]: AFAICS, this class doesn't actually work correctly AND gives nondeterministic answers. See the commented out test in BestSequenceFinderTest
+
+  private static int[] tmp = null;
+
+  private static class TagSeq implements Scored {
+
+    private static class TagList {
+      int tag = -1;
+      TagList last = null;
+    }
+
+    private double score = 0.0;
+
+    public double score() {
+      return score;
+    }
+
+    private int size = 0;
+
+    public int size() {
+      return size;
+    }
+
+    private TagList info = null;
+
+    public int[] tmpTags(int count, int s) {
+      if (tmp == null || tmp.length < s) {
+        tmp = new int[s];
+      }
+      TagList tl = info;
+      int i = size() - 1;
+      while (tl != null && count >= 0) {
+        tmp[i] = tl.tag;
+        i--;
+        count--;
+        tl = tl.last;
+      }
+      return tmp;
+    }
+
+    public int[] tags() {
+      int[] t = new int[size()];
+      int i = size() - 1;
+      for (TagList tl = info; tl != null; tl = tl.last) {
+        t[i] = tl.tag;
+        i--;
+      }
+      return t;
+    }
+
+    public void extendWith(int tag) {
+      TagList last = info;
+      info = new TagList();
+      info.tag = tag;
+      info.last = last;
+      size++;
+    }
+
+    public void extendWith(int tag, SequenceModel ts, int s) {
+      extendWith(tag);
+      int[] tags = tmpTags(ts.leftWindow() + 1 + ts.rightWindow(), s);
+      score += ts.scoreOf(tags, size() - ts.rightWindow() - 1);
+
+      //for (int i=0; i<tags.length; i++)
+      //System.out.print(tags[i]+" ");
+      //System.out.println("\nWith "+tag+" score was "+score);
+    }
+
+    public TagSeq tclone() {
+      TagSeq o = new TagSeq();
+      o.info = info;
+      o.size = size;
+      o.score = score;
+      return o;
+    }
+
+  } // end class TagSeq
+
+
+  private int beamSize;
+  private boolean exhaustiveStart;
+  private boolean recenter = true;
+
+  public int[] bestSequence(SequenceModel ts) {
+  }
+
+  public int[] bestSequence(SequenceModel ts, int size) {
+
+    // Set up tag options
+    int length = ts.length();
+    int leftWindow = ts.leftWindow();
+    int rightWindow = ts.rightWindow();
+    int padLength = length + leftWindow + rightWindow;
+    int[][] tags = new int[padLength][];
+    int[] tagNum = new int[padLength];
+    for (int pos = 0; pos < padLength; pos++) {
+      tags[pos] = ts.getPossibleValues(pos);
+      tagNum[pos] = tags[pos].length;
+    }
+
+    Beam newBeam = new Beam(beamSize, ScoredComparator.ASCENDING_COMPARATOR);
+    TagSeq initSeq = new TagSeq();
+    newBeam.add(initSeq);
+    for (int pos = 0; pos < padLength; pos++) {
+      //System.out.println("scoring word " + pos + " / " + (leftWindow + length) + ", tagNum = " + tagNum[pos] + "...");
+      //System.out.flush();
+
+      Beam oldBeam = newBeam;
+      if (pos < leftWindow + rightWindow && exhaustiveStart) {
+        newBeam = new Beam(100000, ScoredComparator.ASCENDING_COMPARATOR);
+      } else {
+        newBeam = new Beam(beamSize, ScoredComparator.ASCENDING_COMPARATOR);
+      }
+      // each hypothesis gets extended and beamed
+      for (Iterator beamI = oldBeam.iterator(); beamI.hasNext();) {
+        // System.out.print("#"); System.out.flush();
+        TagSeq tagSeq = (TagSeq) beamI.next();
+        for (int nextTagNum = 0; nextTagNum < tagNum[pos]; nextTagNum++) {
+          TagSeq nextSeq = tagSeq.tclone();
+
+          if (pos >= leftWindow + rightWindow) {
+            nextSeq.extendWith(tags[pos][nextTagNum], ts, size);
+          } else {
+            nextSeq.extendWith(tags[pos][nextTagNum]);
+          }
+
+          //System.out.println("Created: "+nextSeq.score()+" %% "+arrayToString(nextSeq.tags(), nextSeq.size()));
+          newBeam.add(nextSeq);
+          //		System.out.println("Beam size: "+newBeam.size()+" of "+beamSize);
+          //System.out.println("Best is: "+((Scored)newBeam.iterator().next()).score());
+        }
+      }
+      // System.out.println(" done");
+      if (recenter) {
+        double max = Double.NEGATIVE_INFINITY;
+        for (Iterator beamI = newBeam.iterator(); beamI.hasNext();) {
+          TagSeq tagSeq = (TagSeq) beamI.next();
+          if (tagSeq.score > max) {
+            max = tagSeq.score;
+          }
+        }
+        for (Iterator beamI = newBeam.iterator(); beamI.hasNext();) {
+          TagSeq tagSeq = (TagSeq) beamI.next();
+          tagSeq.score -= max;
+        }
+      }
+    }
+    try {
+      TagSeq bestSeq = (TagSeq) newBeam.iterator().next();
+      int[] seq = bestSeq.tags();
+      return seq;
+    } catch (NoSuchElementException e) {
+      System.err.println("Beam empty -- no best sequence.");
+      return null;
+    }
+

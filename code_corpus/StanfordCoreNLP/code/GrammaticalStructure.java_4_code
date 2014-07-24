@@ -1,0 +1,42 @@
+  private List<TypedDependency> getDeps(Filter<TypedDependency> puncTypedDepFilter, DirectedMultiGraph<TreeGraphNode, GrammaticalRelation> basicGraph) {
+    List<TypedDependency> basicDep = Generics.newArrayList();
+
+    for (TreeGraphNode gov : basicGraph.getAllVertices()) {
+      for (TreeGraphNode dep : basicGraph.getChildren(gov)) {
+        GrammaticalRelation reln = getGrammaticalRelation(gov, dep, basicGraph.getEdges(gov, dep));
+        // System.err.println("  Gov: " + gov + " Dep: " + dep + " Reln: " + reln);
+        basicDep.add(new TypedDependency(reln, gov.headWordNode(), dep.headWordNode()));
+      }
+    }
+
+    // add the root
+    TreeGraphNode dependencyRoot = new TreeGraphNode(new Word("ROOT"));
+    dependencyRoot.setIndex(0);
+    TreeGraphNode rootDep = root().headWordNode();
+    if (rootDep == null) {
+      List<Tree> leaves = Trees.leaves(root());
+      if (leaves.size() > 0) {
+        Tree leaf = leaves.get(0);
+        if (!(leaf instanceof TreeGraphNode)) {
+          throw new AssertionError("Leaves should be TreeGraphNodes");
+        }
+        rootDep = (TreeGraphNode) leaf;
+        if (rootDep.headWordNode() != null) {
+          rootDep = rootDep.headWordNode();
+        }
+      }
+    }
+    if (rootDep != null) {
+      TypedDependency rootTypedDep = new TypedDependency(ROOT, dependencyRoot, rootDep);
+      if (puncTypedDepFilter.accept(rootTypedDep)) {
+        basicDep.add(rootTypedDep);
+      }
+    }
+
+    postProcessDependencies(basicDep);
+
+    Collections.sort(basicDep);
+
+    return basicDep;
+  }
+

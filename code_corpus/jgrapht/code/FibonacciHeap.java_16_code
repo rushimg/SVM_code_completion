@@ -1,0 +1,45 @@
+    public String toString()
+    {
+        if (minNode == null) {
+            return "FibonacciHeap=[]";
+        }
+
+        // create a new stack and put root on it
+        Stack<FibonacciHeapNode<T>> stack = new Stack<FibonacciHeapNode<T>>();
+        stack.push(minNode);
+
+        StringBuffer buf = new StringBuffer(512);
+        buf.append("FibonacciHeap=[");
+
+        // do a simple breadth-first traversal on the tree
+        while (!stack.empty()) {
+            FibonacciHeapNode<T> curr = stack.pop();
+            buf.append(curr);
+            buf.append(", ");
+
+            if (curr.child != null) {
+                stack.push(curr.child);
+            }
+
+            FibonacciHeapNode<T> start = curr;
+            curr = curr.right;
+
+            while (curr != start) {
+                buf.append(curr);
+                buf.append(", ");
+
+                if (curr.child != null) {
+                    stack.push(curr.child);
+                }
+
+                curr = curr.right;
+            }
+        }
+
+        buf.append(']');
+
+        return buf.toString();
+    }
+
+    // toString
+

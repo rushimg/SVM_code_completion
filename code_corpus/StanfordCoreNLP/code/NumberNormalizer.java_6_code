@@ -1,0 +1,167 @@
+  public static Number wordToNumber(String str){
+    if (str.trim().equals("")) {
+      return null;
+    }
+
+    boolean neg = false;
+
+    String originalString = str;
+
+    // Trims and lowercases stuff
+    str = str.trim();
+    str = str.toLowerCase();
+
+    if (str.startsWith("-")) {
+      neg = true;
+    }
+
+    // eliminate hyphens, commas, and the word "and"
+    str = str.replaceAll("\\band\\b", " ");
+    str = str.replaceAll("-", " ");
+    str = str.replaceAll("(\\d),(\\d)", "$1$2");  // Maybe something like 4,233,000 ??
+    str = str.replaceAll(",", " ");
+//    str = str.replaceAll("(\\d)(\\w)","$1 $2");
+
+    // Trims again (do we need this?)
+    str = str.trim();
+
+    // TODO: error checking....
+    //if string starts with "a ", as in "a hundred", replace it with "one"
+    if (str.startsWith("a ")) {
+      str = str.replace("a", "one");
+    }
+
+    // cut off some trailing s
+    if (str.endsWith("sands")) {
+      // thousands
+      str = str.substring(0, str.length() - 1);
+    } else if (str.endsWith("ions")) {
+      // millions, billions, etc
+      str = str.substring(0, str.length() - 1);
+    }
+
+    // now count words
+    String[] fields = wsPattern.split(str);
+    Number[] numFields = new Number[fields.length];
+    int numWords = fields.length;
+
+    // get numeric value of each word piece
+    for (int curIndex = 0; curIndex < numWords; curIndex++) {
+      String curPart = fields[curIndex];
+      Matcher m = alphaPattern.matcher(curPart);
+      if (m.find()) {
+        // Some part of the word has alpha characters
+        Number curNum;
+        if (word2NumMap.containsKey(curPart)) {
+          curNum = word2NumMap.get(curPart);
+        } else if (ordWord2NumMap.containsKey(curPart)) {
+          if (curIndex == numWords-1){
+            curNum = ordWord2NumMap.get(curPart);
+          } else {
+            throw new NumberFormatException("Error in wordToNumber function.");
+          }
+        } else if (curIndex > 0 && (curPart.endsWith("ths") || curPart.endsWith("rds"))) {
+          // Fractions?
+          curNum = ordWord2NumMap.get(curPart.substring(0, curPart.length()-1));
+          if (curNum != null) {
+            curNum = 1/curNum.doubleValue();
+          } else {
+            throw new NumberFormatException("Bad number put into wordToNumber.  Word is: \"" + curPart + "\", originally part of \"" + originalString + "\", piece # " + curIndex);
+          }
+        } else if (Character.isDigit(curPart.charAt(0))) {
+          if (curPart.endsWith("th") || curPart.endsWith("rd") || curPart.endsWith("nd") || curPart.endsWith("st")) {
+            curPart = curPart.substring(0, curPart.length()-2);
+          }
+          if (digitsPattern.matcher(curPart).matches()) {
+            curNum = Long.parseLong(curPart);
+          } else{
+            throw new NumberFormatException("Bad number put into wordToNumber.  Word is: \"" + curPart + "\", originally part of \"" + originalString + "\", piece # " + curIndex);
+          }
+        } else {
+          throw new NumberFormatException("Bad number put into wordToNumber.  Word is: \"" + curPart + "\", originally part of \"" + originalString + "\", piece # " + curIndex);
+        }
+        numFields[curIndex] = curNum;
+      } else {
+        // Word is all numeric
+        if (digitsPattern.matcher(curPart).matches()) {
+          numFields[curIndex] = Long.parseLong(curPart);
+        } else if (numPattern.matcher(curPart).matches()) {
+          numFields[curIndex] = new BigDecimal(curPart);
+        } else {
+          // Hmm, strange number
+          throw new NumberFormatException("Bad number put into wordToNumber.  Word is: \"" + curPart + "\", originally part of \"" + originalString + "\", piece # " + curIndex);
+        }
+      }
+    }
+    Number n = wordToNumberRecurse(numFields);
+    return (neg)? -n.doubleValue():n;
+  }
+
+  private static Number wordToNumberRecurse(Number[] numFields)
+  {
+    return wordToNumberRecurse(numFields, 0, numFields.length);
+  }
+
+  private static Number wordToNumberRecurse(Number[] numFields, int start, int end)
+  {
+    // return solitary number
+    if (end <= start) return 0;
+    if (end - start == 1) {
+      return numFields[start];
+    }
+
+    // first, find highest number in string
+    Number highestNum = Double.NEGATIVE_INFINITY;
+    int highestNumIndex = start;
+    for (int i = start; i < end; i++) {
+      Number curNum = numFields[i];
+      if (curNum != null && curNum.doubleValue() >= highestNum.doubleValue()){
+        highestNum = curNum;
+        highestNumIndex = i;
+      }
+    }
+
+    Number beforeNum = 1;
+    if (highestNumIndex > start) {
+      beforeNum = wordToNumberRecurse(numFields, start, highestNumIndex);
+      if (beforeNum == null) beforeNum = 1;
+    }
+    Number afterNum = wordToNumberRecurse(numFields, highestNumIndex+1, end);
+    if (afterNum == null) afterNum = 0;
+
+    // TODO: Everything is treated as double... losing precision information here
+    //       Sufficient for now
+    //       Should we usually use BigDecimal to do our calculations?
+    //       There are also fractions to consider.
+    return evaluatedNumber;
+  }
+
+  public static Env getNewEnv()
+  {
+    Env env = TokenSequencePattern.getNewEnv();
+
+    // Do case insensitive matching
+    env.setDefaultStringPatternFlags(Pattern.CASE_INSENSITIVE);
+
+    initEnv(env);
+    return env;
+  }
+
+  public static void initEnv(Env env)
+  {
+    // Custom binding for numeric values expressions
+    env.bind("numtype", CoreAnnotations.NumericTypeAnnotation.class);
+    env.bind("numvalue", CoreAnnotations.NumericValueAnnotation.class);
+    env.bind("numcomptype", CoreAnnotations.NumericCompositeTypeAnnotation.class);
+    env.bind("numcompvalue", CoreAnnotations.NumericCompositeValueAnnotation.class);
+    env.bind("$NUMCOMPTERM", " [ { numcomptype::EXISTS } & !{ numcomptype:NUMBER_RANGE } ] ");
+    env.bind("$NUMTERM", " [ { numtype::EXISTS } & !{ numtype:NUMBER_RANGE } ] ");
+    env.bind("$NUMRANGE", " [ { numtype:NUMBER_RANGE } ] ");
+    // TODO: Improve code to only recognize integers
+    env.bind("$ORDTERM", " [ { numtype:ORDINAL } ] ");
+    env.bind("$BEFORE_AFTER_WS", " [ $BEFORE_WS & $AFTER_WS ]");
+  }
+
+  private static final Env env = getNewEnv();
+
+  private static final TokenSequencePattern numberPattern = TokenSequencePattern.compile(

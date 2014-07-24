@@ -1,0 +1,17 @@
+  private void initializeParser(JsonParser parser) throws IOException {
+    if (wrapperKeys.isEmpty()) {
+      return;
+    }
+    boolean failed = true;
+    try {
+      String match = parser.skipToKey(wrapperKeys);
+      Preconditions.checkArgument(match != null && parser.getCurrentToken() != JsonToken.END_OBJECT,
+          "wrapper key(s) not found: %s", wrapperKeys);
+      failed = false;
+    } finally {
+      if (failed) {
+        parser.close();
+      }
+    }
+  }
+

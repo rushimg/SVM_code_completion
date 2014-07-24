@@ -1,0 +1,23 @@
+  public EntityBIO extractEntity(int[] sequence, int position, String tag) {
+    EntityBIO entity = new EntityBIO();
+    entity.type = tagIndex.indexOf(tag);
+    entity.startPosition = position;
+    entity.words = new ArrayList<String>();
+    entity.words.add(wordDoc.get(position));
+    int pos = position + 1;
+    String rawTag = null;
+    String[] parts = null;
+    for ( ; pos < sequence.length; pos++) {
+      rawTag = classIndex.get(sequence[pos]);
+      parts = rawTag.split("-");
+      if (parts[0].equals("I") && parts[1].equals(tag)) {
+      	String word = wordDoc.get(pos);
+        entity.words.add(word);
+      } else {
+        break;
+      }
+    }
+    entity.otherOccurrences = otherOccurrences(entity);
+    return entity;
+  }
+

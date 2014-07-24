@@ -1,0 +1,35 @@
+            float penalty = 0.0f;
+            if (bd != 0) {
+              penalty = (float) dg.score(words[hWord], hTag, -2, -2, aWord > hWord, 0);
+              penalty = (float) Math.log(1.0 - Math.exp(penalty));
+            }
+            for (int aTag = 0; aTag < numTags; aTag++) {
+              if (headScore[bd][hWord][hTag][aWord][aTag] + penalty > biggest) {
+                biggest = headScore[bd][hWord][hTag][aWord][aTag] + penalty;
+            for (int aTag = 0; aTag < numTags; aTag++) {
+              if (headScore[bd][hWord][dg.tagBin(hTag)][aWord][dg.tagBin(aTag)] > biggest) {
+                biggest = headScore[bd][hWord][dg.tagBin(hTag)][aWord][dg.tagBin(aTag)];
+                bigBD = bd;
+                bigHTag = hTag;
+                bigATag = aTag;
+              }
+            }
+          }
+        }
+        if (Float.isInfinite(biggest)) {
+          System.out.print(" " + StringUtils.padOrTrim("in", 2));
+        } else {
+          int score = Math.round(Math.abs(headScore[bigBD][hWord][dg.tagBin(bigHTag)][aWord][dg.tagBin(bigATag)]));
+          System.out.print(" " + StringUtils.padOrTrim(Integer.toString(score), 2));
+        }
+      }
+      System.out.println();
+    }
+  }
+
+  private static final double TOL = 1e-5;
+
+  private static boolean matches(double x, double y) {
+    return (Math.abs(x - y) / (Math.abs(x) + Math.abs(y) + 1e-10) < TOL);
+  }
+

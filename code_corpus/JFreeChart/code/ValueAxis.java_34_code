@@ -1,0 +1,32 @@
+    protected double findMaximumTickLabelWidth(List ticks,
+                                               Graphics2D g2,
+                                               Rectangle2D drawArea,
+                                               boolean vertical) {
+
+        RectangleInsets insets = getTickLabelInsets();
+        Font font = getTickLabelFont();
+        double maxWidth = 0.0;
+        if (!vertical) {
+            FontMetrics fm = g2.getFontMetrics(font);
+            Iterator iterator = ticks.iterator();
+            while (iterator.hasNext()) {
+                Tick tick = (Tick) iterator.next();
+                Rectangle2D labelBounds = TextUtilities.getTextBounds(
+                        tick.getText(), g2, fm);
+                if (labelBounds.getWidth() + insets.getLeft()
+                        + insets.getRight() > maxWidth) {
+                    maxWidth = labelBounds.getWidth()
+                               + insets.getLeft() + insets.getRight();
+                }
+            }
+        }
+        else {
+            LineMetrics metrics = font.getLineMetrics("ABCxyz",
+                    g2.getFontRenderContext());
+            maxWidth = metrics.getHeight()
+                       + insets.getTop() + insets.getBottom();
+        }
+        return maxWidth;
+
+    }
+

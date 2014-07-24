@@ -1,0 +1,48 @@
+//    System.out.println(MergeableGraph.areIsomorphic(graphs[0], graphs[1], graphs[0].getStartNode(), graphs[1].getStartNode()));
+//    System.out.println(MergeableGraph.areIsomorphic(graphs[1], graphs[2], graphs[1].getStartNode(), graphs[2].getStartNode()));
+//    System.out.println(MergeableGraph.areIsomorphic(graphs[2], graphs[0], graphs[2].getStartNode(), graphs[0].getStartNode()));
+
+  // now go through the grammars themselves and see if they are equal
+  System.out.println("UR 0 and 1: " + equalsUnary(((UnaryGrammar)grammars[0].first).rules(),((UnaryGrammar)grammars[1].first).rules()));
+  System.out.println("UR 1 and 2: "  + equalsUnary(((UnaryGrammar)grammars[1].first).rules(),((UnaryGrammar)grammars[2].first).rules()));
+  System.out.println("UR 2 and 0: "  + equalsUnary(((UnaryGrammar)grammars[2].first).rules(),((UnaryGrammar)grammars[0].first).rules()));
+
+  System.out.println("BR 0 and 1: "  + equalsBinary(((BinaryGrammar)grammars[0].second).rules(),((BinaryGrammar)grammars[1].second).rules()));
+  System.out.println("BR 1 and 2: " + equalsBinary(((BinaryGrammar)grammars[1].second).rules(),((BinaryGrammar)grammars[2].second).rules()));
+  System.out.println("BR 2 and 0: " + equalsBinary(((BinaryGrammar)grammars[2].second).rules(),((BinaryGrammar)grammars[0].second).rules()));
+
+    System.exit(0);
+
+  // now go through the grammars we made and see if they are equal!
+  Set[] unaryRules = new Set[3];
+  Set[] binaryRules = new Set[3];
+  for (int i=0; i<grammars.length; i++) {
+    unaryRules[i] = new HashSet();
+    System.out.println(i + " size: " + ((UnaryGrammar)grammars[i].first()).numRules());
+    for (Iterator unRuleI = ((UnaryGrammar)grammars[i].first()).iterator(); unRuleI.hasNext();) {
+      UnaryRule ur = (UnaryRule) unRuleI.next();
+      String parent = (String) stateNumberers[i].object(ur.parent);
+      String child = (String) stateNumberers[i].object(ur.child);
+      unaryRules[i].add(new StringUnaryRule(parent, child, ur.score));
+    }
+    binaryRules[i] = new HashSet();
+    System.out.println(i + " size: " + ((BinaryGrammar)grammars[i].second()).numRules());
+    for (Iterator binRuleI = ((BinaryGrammar)grammars[i].second()).iterator(); binRuleI.hasNext();) {
+      BinaryRule br = (BinaryRule) binRuleI.next();
+      String parent = (String) stateNumberers[i].object(br.parent);
+      String leftChild = (String) stateNumberers[i].object(br.leftChild);
+      String rightChild = (String) stateNumberers[i].object(br.rightChild);
+      binaryRules[i].add(new StringBinaryRule(parent, leftChild, rightChild, br.score));
+    }
+  }
+
+  System.out.println("uR 0 and 1: " + equals(unaryRules[0],unaryRules[1]));
+  System.out.println("uR 1 and 2: " + equals(unaryRules[1],unaryRules[2]));
+  System.out.println("uR 2 and 0: " + equals(unaryRules[2],unaryRules[0]));
+
+  System.out.println("bR 0 and 1: " + equals(binaryRules[0],binaryRules[1]));
+  System.out.println("bR 1 and 2: " + equals(binaryRules[1],binaryRules[2]));
+  System.out.println("bR 2 and 0: " + equals(binaryRules[2],binaryRules[0]));
+
+}
+

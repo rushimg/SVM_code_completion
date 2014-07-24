@@ -1,0 +1,18 @@
+  public static String[] parseArgs(String argsString) {
+    List<String> retList = new ArrayList<String>();
+    Pattern pattern = Pattern.compile(patternString);
+    Matcher matcher = pattern.matcher(argsString);
+    while (matcher.find()) {
+      if (matcher.group(1) == null) {
+        String matched = matcher.group();
+        if (matched.charAt(0) == '"' &&
+            matched.charAt(matched.length()-1) == '"')
+          retList.add(matched.substring(1, matched.length()-1));
+        else
+          retList.add(matched);
+      }  else
+        throw new IllegalArgumentException("Unmatched quote in string to parse");
+    }
+    return retList.toArray(new String[0]);
+  }
+  

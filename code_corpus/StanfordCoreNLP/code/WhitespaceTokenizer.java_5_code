@@ -1,0 +1,32 @@
+  public WhitespaceTokenizer(LexedTokenFactory factory,
+                             Reader r, boolean eolIsSignificant) {
+    this.eolIsSignificant = eolIsSignificant;
+    // The conditional below is perhaps currently needed in LexicalizedParser, since
+    // it passes in a null arg while doing type-checking for sentence escaping
+    // but StreamTokenizer barfs on that.  But maybe shouldn't be here.
+    if (r != null) {
+      lexer = new WhitespaceLexer(r, factory);
+    }
+  }
+
+  public static WhitespaceTokenizer<CoreLabel> newCoreLabelWhitespaceTokenizer(Reader r) {
+    return new WhitespaceTokenizer<CoreLabel>(new CoreLabelTokenFactory(), r, false);
+  }
+
+  public static WhitespaceTokenizer<CoreLabel> newCoreLabelWhitespaceTokenizer(Reader r, boolean tokenizeNLs) {
+    return new WhitespaceTokenizer<CoreLabel>(new CoreLabelTokenFactory(), r, tokenizeNLs);
+  }
+
+  public static WhitespaceTokenizer<Word>
+    newWordWhitespaceTokenizer(Reader r)
+  {
+    return newWordWhitespaceTokenizer(r, false);
+  }
+
+  public static WhitespaceTokenizer<Word>
+    newWordWhitespaceTokenizer(Reader r, boolean eolIsSignificant)
+  {
+    return new WhitespaceTokenizer<Word>(new WordTokenFactory(), r,
+                                         eolIsSignificant);
+  }
+

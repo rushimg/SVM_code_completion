@@ -1,0 +1,115 @@
+  Methods unused: commented for now.
+  public void save(DataOutputStream rf) {
+    try {
+      rf.writeInt(v.size());
+      int[] arr = getInstances();
+      for (int i = 0; i < v.size(); i++) {
+        rf.writeInt(arr[i]);
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+
+  public void read(DataInputStream rf) {
+    try {
+      int len = rf.readInt();
+      for (int i = 0; i < len; i++) {
+        int x = rf.readInt();
+        add(x);
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+
+  }// end read
+
+}
+
+public class TemplateHash {
+
+  // the positions of the feature extractors
+  private final Map<Pair<Integer,String>,ListInstances> tempHash = Generics.newHashMap();
+
+  private final MaxentTagger maxentTagger;
+
+  public TemplateHash(MaxentTagger maxentTagger) {
+    this.maxentTagger = maxentTagger;
+  }
+
+  protected void addPositions(int start, int end, FeatureKey fK) {
+    Pair<Integer, String> key = new Pair<Integer, String>(fK.num, fK.val);
+    tempHash.get(key).addPositions(start, end);
+  }
+
+  protected int[] getPositions(FeatureKey s) {
+    Pair<Integer, String> p = new Pair<Integer, String>(s.num, s.val);
+    return tempHash.get(p).getPositions();
+  }
+
+  //public void init() {
+//    cdm 2008: stringNums isn't used anywhere, so we now don't do any init.
+//    int num = maxentTagger.extractors.getSize() + maxentTagger.extractorsRare.getSize();
+//    //System.err.println("A total of "+num+" features in TemplateHash");
+//    stringNums = new String[num];
+//    for (int i = 0; i < num; i++) {
+//      stringNums[i] = String.valueOf(i);
+//    }
+  //}
+
+  protected void release() {
+    tempHash.clear();
+  }
+
+  protected void add(int nFeatFrame, History history, int number) {
+    Pair<Integer,String> wT;
+    int general = maxentTagger.extractors.size();
+
+    if (nFeatFrame < general) {
+      wT = new Pair<Integer,String>(nFeatFrame, maxentTagger.extractors.extract(nFeatFrame, history));
+    } else {
+      wT = new Pair<Integer,String>(nFeatFrame, maxentTagger.extractorsRare.extract(nFeatFrame - general, history));
+    }
+
+    if (tempHash.containsKey(wT)) {
+      ListInstances li = tempHash.get(wT);
+      // TODO: can we clean this call up somehow?  perhaps make the
+      // TemplateHash aware of the TaggerExperiments if we need to, or
+      // vice-versa?
+      if (TaggerExperiments.isPopulated(nFeatFrame, li.getNum(), maxentTagger)) {
+        li.add(number);
+      }
+    } else {
+      ListInstances li = new ListInstances();
+      li.add(number);
+      tempHash.put(wT, li);
+    }
+  }
+
+
+  protected void addPrev(int nFeatFrame, History history) {
+    Pair<Integer,String> wT;
+    int general = maxentTagger.extractors.size();
+
+    if (nFeatFrame < general) {
+      wT = new Pair<Integer,String>(nFeatFrame, maxentTagger.extractors.extract(nFeatFrame, history));
+    } else {
+      wT = new Pair<Integer,String>(nFeatFrame, maxentTagger.extractorsRare.extract(nFeatFrame - general, history));
+    }
+    if (tempHash.containsKey(wT)) {
+      (tempHash.get(wT)).inc();
+    } else {
+      ListInstances li = new ListInstances();
+      li.inc();
+      tempHash.put(wT, li);
+    }
+  }
+
+
+  protected int[] getXValues(Pair<Integer, String> key) {
+    if (tempHash.containsKey(key)) {
+      return tempHash.get(key).getInstances();
+    }
+    return null;
+  }
+

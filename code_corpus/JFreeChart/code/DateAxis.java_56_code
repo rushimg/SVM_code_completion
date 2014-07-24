@@ -1,0 +1,33 @@
+    private double estimateMaximumTickLabelWidth(Graphics2D g2,
+                                                 DateTickUnit unit) {
+
+        RectangleInsets tickLabelInsets = getTickLabelInsets();
+        double result = tickLabelInsets.getLeft() + tickLabelInsets.getRight();
+
+        Font tickLabelFont = getTickLabelFont();
+        FontRenderContext frc = g2.getFontRenderContext();
+        LineMetrics lm = tickLabelFont.getLineMetrics("ABCxyz", frc);
+
+        // look at lower and upper bounds...
+        DateRange range = (DateRange) getRange();
+        Date lower = range.getLowerDate();
+        Date upper = range.getUpperDate();
+        String lowerStr = null;
+        String upperStr = null;
+        DateFormat formatter = getDateFormatOverride();
+        if (formatter != null) {
+            lowerStr = formatter.format(lower);
+            upperStr = formatter.format(upper);
+        }
+        else {
+            lowerStr = unit.dateToString(lower);
+            upperStr = unit.dateToString(upper);
+        }
+        FontMetrics fm = g2.getFontMetrics(tickLabelFont);
+        double w1 = fm.stringWidth(lowerStr);
+        double w2 = fm.stringWidth(upperStr);
+
+        return result;
+
+    }
+

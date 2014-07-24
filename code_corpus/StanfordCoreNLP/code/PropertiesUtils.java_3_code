@@ -1,0 +1,21 @@
+  @SuppressWarnings("unchecked")
+  public static void checkProperties(Properties properties, Properties defaults) {
+    Set<String> names = Generics.newHashSet();
+    for (Enumeration<String> e = (Enumeration<String>) properties.propertyNames();
+         e.hasMoreElements(); ) {
+      names.add(e.nextElement());
+    }
+    for (Enumeration<String> e = (Enumeration<String>) defaults.propertyNames();
+         e.hasMoreElements(); ) {
+      names.remove(e.nextElement());
+    }
+    if (!names.isEmpty()) {
+      if (names.size() == 1) {
+        throw new IllegalArgumentException("Unknown property: " + names.iterator().next());
+      } else {
+        throw new IllegalArgumentException("Unknown properties: " + names);
+      }
+    }
+  }
+
+

@@ -1,0 +1,26 @@
+  private static final long serialVersionUID = 7115357548209007944L;
+  private boolean weightedVotes = false; // whether this is a weighted vote (by sim), or not
+  private CollectionValuedMap<K, Counter<V>> instances = new CollectionValuedMap<K, Counter<V>>();
+  private Map<Counter<V>, K> classLookup = Generics.newHashMap();
+  private boolean l2Normalize = false;
+  int k = 0;
+
+  public Collection<K> labels() {
+    return classLookup.values();
+  }
+
+  protected KNNClassifier(int k, boolean weightedVotes, boolean l2Normalize) { 
+    this.k = k;
+    this.weightedVotes = weightedVotes;
+    this.l2Normalize = l2Normalize;
+  }
+
+  protected void addInstances(Collection<RVFDatum<K, V>> datums) {
+    for (RVFDatum<K, V> datum : datums) {
+      K label = datum.label();
+      Counter<V> vec = datum.asFeaturesCounter();
+      instances.add(label, vec);
+      classLookup.put(vec, label);
+    }
+  }
+

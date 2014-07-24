@@ -1,0 +1,466 @@
+  public static class AssignableFunctionCallExpression extends FunctionCallExpression implements AssignableExpression {
+    public AssignableFunctionCallExpression(String function, List<Expression> params, String... tags) {
+      super(function, params, tags);
+    }
+
+    public Expression assign(Expression expr) {
+      List<Expression> newParams = new ArrayList<Expression>(params);
+      newParams.add(expr);
+      Expression res = new FunctionCallExpression(function, newParams);
+      res.setTags(tags);
+      return res;
+    }
+  }
+
+  public static class IndexedExpression extends AssignableFunctionCallExpression {
+    public IndexedExpression(Expression expr, int index) {
+      super("ListSelect", Arrays.asList(expr, new PrimitiveValue("Integer", index)));
+    }
+  }
+
+  public static class FieldExpression extends AssignableFunctionCallExpression {
+    public FieldExpression(Expression expr, String field) {
+      super("Select", Arrays.asList(expr, new PrimitiveValue(TYPE_STRING, field)));
+    }
+    public FieldExpression(Expression expr, Expression field) {
+      super("Select", Arrays.asList(expr, field));
+    }
+  }
+
+  public static class OrExpression extends FunctionCallExpression {
+    public OrExpression(List<Expression> children) {
+      super("Or", children);
+    }
+  }
+
+  public static class AndExpression extends FunctionCallExpression {
+    public AndExpression(List<Expression> children) {
+      super("And", children);
+    }
+  }
+
+  public static class NotExpression extends FunctionCallExpression {
+    public NotExpression(Expression expr) {
+      super("Not", Arrays.asList(expr));
+    }
+  }
+
+  public static class IfExpression extends Expressions.TypedExpression {
+    Expression condExpr;
+    Expression trueExpr;
+    Expression falseExpr;
+
+    public IfExpression(Expression cond, Expression vt, Expression vf) {
+      super("If");
+      this.condExpr = cond;
+      this.trueExpr = vt;
+      this.falseExpr = vf;
+    }
+
+    public Value evaluate(Env env, Object... args) {
+      Value condValue = condExpr.evaluate(env, args);
+      Boolean cond = (Boolean) condValue.get();
+      if (cond) {
+        return trueExpr.evaluate(env, args);
+      } else {
+        return falseExpr.evaluate(env, args);
+      }
+    }
+  }
+
+  public static class CaseExpression extends Expressions.WrappedExpression {
+    public CaseExpression(List<Pair<Expression,Expression>> conds, Expression elseExpr) {
+      if (conds.size() == 0) {
+        throw new IllegalArgumentException("No conditions!");
+      } else {
+        expr = elseExpr;
+        for (int i = conds.size()-1; i>=0; i--) {
+          Pair<Expression,Expression> p = conds.get(i);
+          expr = new IfExpression(p.first(), p.second(), expr);
+        }
+      }
+    }
+  }
+
+  public static class ConditionalExpression extends Expressions.WrappedExpression {
+    public ConditionalExpression(Expression expr) {
+      this.expr = expr;
+    }
+
+    public ConditionalExpression(String op, Expression expr1, Expression expr2) {
+      if (">=".equals(op)) {
+        expr = new FunctionCallExpression("GE", Arrays.asList(expr1, expr2));
+      } else if ("<=".equals(op))  {
+        expr = new FunctionCallExpression("LE", Arrays.asList(expr1, expr2));
+      } else if (">".equals(op)) {
+        expr = new FunctionCallExpression("GT", Arrays.asList(expr1, expr2));
+      } else if ("<".equals(op)) {
+        expr = new FunctionCallExpression("LT", Arrays.asList(expr1, expr2));
+      } else if ("==".equals(op)) {
+        expr = new FunctionCallExpression("EQ", Arrays.asList(expr1, expr2));
+      } else if ("!=".equals(op)) {
+        expr = new FunctionCallExpression("NE", Arrays.asList(expr1, expr2));
+      } else if ("=~".equals(op)) {
+        expr = new FunctionCallExpression("Match", Arrays.asList(expr1, expr2));
+      } else if ("!~".equals(op)) {
+        expr = new NotExpression(new FunctionCallExpression("Match", Arrays.asList(expr1, expr2)));
+      }
+    }
+
+    public String getType() {
+      return Expressions.TYPE_BOOLEAN;
+    }
+
+    public Expression simplify(Env env) {
+      return this;
+    }
+
+    public Value evaluate(Env env, Object... args) {
+      Value v = expr.evaluate(env, args);
+      return convertValueToBooleanValue(v, false);
+    }
+
+  }
+
+  public static class ListExpression extends TypedExpression {
+
+    List<Expression> exprs;
+
+    public ListExpression(String typename, String... tags) {
+      super(typename, tags);
+      this.exprs = new ArrayList<Expression>();
+    }
+
+    public ListExpression(String typename, List<Expression> exprs, String... tags) {
+      super(typename, tags);
+      this.exprs = new ArrayList<Expression>(exprs);
+    }
+
+    public void addAll(List<Expression> exprs) {
+      if (exprs != null) {
+        this.exprs.addAll(exprs);
+      }
+    }
+
+    public void add(Expression expr) {
+      this.exprs.add(expr);
+    }
+
+    public Value evaluate(Env env, Object... args) {
+      List<Value> values = new ArrayList<Value>(exprs.size());
+      for (Expression s:exprs) {
+        values.add(s.evaluate(env, args));
+      };
+      return new PrimitiveValue<List<Value>>(typename, values);
+    }
+  }
+
+  private static final boolean isArgTypesCompatible(Class[] paramTypes, Class[] targetParamTypes)
+  {
+    boolean compatible = true;
+    if (targetParamTypes.length == paramTypes.length) {
+      for (int i = 0; i < targetParamTypes.length; i++) {
+        if (targetParamTypes[i].isPrimitive()) {
+          compatible = false;
+          if (paramTypes[i] != null) {
+            try {
+              Class<?> type = (Class<?>) paramTypes[i].getField("TYPE").get(null);
+              if (type.equals(targetParamTypes[i])) { compatible = true; }
+            } catch (NoSuchFieldException ex2) {
+            } catch (IllegalAccessException ex2) {
+            }
+          }
+          if (!compatible) break;
+        } else {
+          if (paramTypes[i] != null && !targetParamTypes[i].isAssignableFrom(paramTypes[i])) {
+            compatible = false;
+            break;
+          }
+        }
+      }
+    } else {
+      compatible = false;
+    }
+    return compatible;
+  }
+
+  protected static final String NEWLINE = System.getProperty("line.separator");
+  public static class FunctionCallExpression extends Expressions.TypedExpression {
+    String function;
+    List<? extends Expression> params;
+
+    public FunctionCallExpression(String function, List<? extends Expression> params, String... tags) {
+      super(TYPE_FUNCTION, tags);
+      this.function = function;
+      this.params = params;
+    }
+
+    public String toString() {
+      StringBuilder sb = new StringBuilder("");
+      sb.append(function);
+      sb.append("(");
+      sb.append(StringUtils.join(params, ", "));
+      sb.append(")");
+      return sb.toString();
+    }
+
+    public Expression simplify(Env env)
+    {
+      boolean paramsAllHasValue = true;
+      List<Expression> simplifiedParams = new ArrayList<Expression>(params.size());
+      for (Expression param:params) {
+        Expression simplified = param.simplify(env);
+        simplifiedParams.add(simplified);
+        if (!(simplified.hasValue())) {
+          paramsAllHasValue = false;
+        }
+      }
+      Expression res = new FunctionCallExpression(function, simplifiedParams);
+      if (paramsAllHasValue) {
+        return res.evaluate(env);
+      } else {
+        return res;
+      }
+    }
+
+    public Value evaluate(Env env, Object... args) {
+      Object funcValue = ValueFunctions.lookupFunctionObject(env, function);
+      if (funcValue == null) {
+        throw new RuntimeException("Unknown function " + function);
+      }
+      if (funcValue instanceof Value) {
+        funcValue = ((Value) funcValue).evaluate(env, args).get();
+      }
+      if (funcValue instanceof ValueFunction) {
+        ValueFunction f = (ValueFunction) funcValue;
+        List<Value> evaled = new ArrayList<Value>();
+        for (Expression param:params) {
+          evaled.add(param.evaluate(env, args));
+        }
+        return f.apply(env, evaled);
+      } else if (funcValue instanceof Collection) {
+        List<Value> evaled = new ArrayList<Value>();
+        for (Expression param:params) {
+          evaled.add(param.evaluate(env, args));
+        }
+        Collection<ValueFunction> fs = (Collection<ValueFunction>) funcValue;
+        for (ValueFunction f:fs) {
+          if (f.checkArgs(evaled)) {
+            return f.apply(env, evaled);
+          }
+        }
+        StringBuilder sb = new StringBuilder();
+        sb.append("Cannot find function matching args: " + function + NEWLINE);
+        sb.append("Args are: " + StringUtils.join(evaled, ",") + NEWLINE);
+        if (fs.size() > 0) {
+          sb.append("Options are:\n" + StringUtils.join(fs, NEWLINE));
+        } else {
+          sb.append("No options");
+        }
+        throw new RuntimeException(sb.toString());
+      } else if (funcValue instanceof Class) {
+        Class c = (Class) funcValue;
+        List<Value> evaled = new ArrayList<Value>();
+        for (Expression param:params) {
+          evaled.add(param.evaluate(env, args));
+        }
+        Class[] paramTypes = new Class[params.size()];
+        Object[] objs = new Object[params.size()];
+        boolean paramsNotNull = true;
+        for (int i = 0; i < params.size(); i++) {
+          Value v = evaled.get(i);
+          if (v != null) {
+            objs[i] = v.get();
+            if (objs[i] != null) {
+              paramTypes[i] = objs[i].getClass();
+            } else {
+              paramTypes[i] = null;
+              paramsNotNull = false;
+            }
+          } else {
+            objs[i] = null;
+            paramTypes[i] = null;
+            paramsNotNull = false;
+            //throw new RuntimeException("Missing evaluated value for " + params.get(i));
+          }
+        }
+        if (paramsNotNull) {
+          Object obj = MetaClass.create(c).createInstance(objs);
+          if (obj != null) {
+            return new PrimitiveValue<Object>(function, obj);
+          }
+        }
+        try {
+          Constructor constructor = null;
+          try {
+            constructor = c.getConstructor(paramTypes);
+          } catch (NoSuchMethodException ex) {
+            Constructor[] constructors = c.getConstructors();
+            for (Constructor cons:constructors) {
+              Class[] consParamTypes = cons.getParameterTypes();
+              boolean compatible = isArgTypesCompatible(paramTypes, consParamTypes);
+              if (compatible) {
+                constructor = cons;
+                break;
+              }
+            }
+            if (constructor == null) {
+              throw new RuntimeException("Cannot instantiate " + c, ex);
+            }
+          }
+          Object obj = constructor.newInstance(objs);
+          return new PrimitiveValue<Object>(function, obj);
+        } catch (InvocationTargetException ex) {
+          throw new RuntimeException("Cannot instantiate " + c, ex);
+        } catch (InstantiationException ex) {
+          throw new RuntimeException("Cannot instantiate " + c, ex);
+        } catch (IllegalAccessException ex) {
+          throw new RuntimeException("Cannot instantiate " + c, ex);
+        }
+      } else {
+        throw new UnsupportedOperationException("Unsupported function value " + funcValue);
+      }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (!(o instanceof FunctionCallExpression)) return false;
+
+      FunctionCallExpression that = (FunctionCallExpression) o;
+
+      if (function != null ? !function.equals(that.function) : that.function != null) return false;
+      if (params != null ? !params.equals(that.params) : that.params != null) return false;
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      int result = function != null ? function.hashCode() : 0;
+      return result;
+    }
+  }
+
+  public static class MethodCallExpression extends Expressions.TypedExpression {
+    String function;
+    Expression object;
+    List<Expression> params;
+
+    public MethodCallExpression(String function, Expression object, List<Expression> params, String... tags) {
+      super(TYPE_FUNCTION, tags);
+      this.function = function;
+      this.object = object;
+      this.params = params;
+    }
+
+    public String toString() {
+      StringBuilder sb = new StringBuilder("");
+      sb.append(object);
+      sb.append(".");
+      sb.append(function);
+      sb.append("(");
+      sb.append(StringUtils.join(params, ", "));
+      sb.append(")");
+      return sb.toString();
+    }
+
+    public Expression simplify(Env env)
+    {
+      boolean paramsAllHasValue = true;
+      List<Expression> simplifiedParams = new ArrayList<Expression>(params.size());
+      for (Expression param:params) {
+        Expression simplified = param.simplify(env);
+        simplifiedParams.add(simplified);
+        if (!(simplified.hasValue())) {
+          paramsAllHasValue = false;
+        }
+      }
+      Expression simplifiedObject = object.simplify(env);
+      Expression res = new MethodCallExpression(function, simplifiedObject, simplifiedParams);
+      if (paramsAllHasValue && object.hasValue()) {
+        return res.evaluate(env);
+      } else {
+        return res;
+      }
+    }
+
+    public Value evaluate(Env env, Object... args) {
+      Value evaledObj = object.evaluate(env, args);
+      if (evaledObj == null || evaledObj.get() == null) return null;
+      Object mainObj = evaledObj.get();
+      Class c = mainObj.getClass();
+      List<Value> evaled = new ArrayList<Value>();
+      for (Expression param:params) {
+        evaled.add(param.evaluate(env, args));
+      }
+      Class[] paramTypes = new Class[params.size()];
+      Object[] objs = new Object[params.size()];
+      for (int i = 0; i < params.size(); i++) {
+        Value v = evaled.get(i);
+        if (v != null) {
+          objs[i] = v.get();
+          if (objs[i] != null) {
+            paramTypes[i] = objs[i].getClass();
+          } else {
+            paramTypes[i] = null;
+          }
+        } else {
+          objs[i] = null;
+          paramTypes[i] = null;
+          //throw new RuntimeException("Missing evaluated value for " + params.get(i));
+        }
+      }
+      Method method = null;
+      try {
+        method = c.getMethod(function, paramTypes);
+      } catch (NoSuchMethodException ex) {
+        Method[] methods = c.getMethods();
+        for (Method m:methods) {
+          if (m.getName().equals(function)) {
+            Class[] mParamTypes = m.getParameterTypes();
+            if (mParamTypes.length == paramTypes.length) {
+              boolean compatible = isArgTypesCompatible(paramTypes, mParamTypes);
+              if (compatible) {
+                method = m;
+                break;
+              }
+            }
+          }
+        }
+        if (method == null) {
+          throw new RuntimeException("Cannot find method " + function + " on object of class " + c, ex);
+        }
+      }
+      try {
+        Object res = method.invoke(mainObj, objs);
+        return new PrimitiveValue<Object>(function, res);
+      } catch (InvocationTargetException ex) {
+        throw new RuntimeException("Cannot evaluate method " + function + " on object " + mainObj, ex);
+      } catch (IllegalAccessException ex) {
+        throw new RuntimeException("Cannot evaluate method " + function + " on object " + mainObj, ex);
+      }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (!(o instanceof MethodCallExpression)) return false;
+      if (!super.equals(o)) return false;
+
+      MethodCallExpression that = (MethodCallExpression) o;
+
+      if (function != null ? !function.equals(that.function) : that.function != null) return false;
+      if (object != null ? !object.equals(that.object) : that.object != null) return false;
+      if (params != null ? !params.equals(that.params) : that.params != null) return false;
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      int result = super.hashCode();
+      return result;
+    }
+  }
+

@@ -1,0 +1,22 @@
+  @SuppressWarnings("unchecked")
+  public static <T> T clone(T data) {
+    // don't need to clone primitive
+    if (data == null || Data.isPrimitive(data.getClass())) {
+      return data;
+    }
+    if (data instanceof GenericData) {
+      return (T) ((GenericData) data).clone();
+    }
+    T copy;
+    Class<?> dataClass = data.getClass();
+    if (dataClass.isArray()) {
+      copy = (T) Array.newInstance(dataClass.getComponentType(), Array.getLength(data));
+    } else if (data instanceof ArrayMap<?, ?>) {
+      copy = (T) ((ArrayMap<?, ?>) data).clone();
+    } else {
+      copy = (T) Types.newInstance(dataClass);
+    }
+    deepCopy(data, copy);
+    return copy;
+  }
+

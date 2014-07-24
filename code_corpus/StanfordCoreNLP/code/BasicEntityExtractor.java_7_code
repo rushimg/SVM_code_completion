@@ -1,0 +1,80 @@
+  public void makeAnnotationFromAllNERTags(CoreMap sentence) {
+    List<CoreLabel> words = sentence.get(CoreAnnotations.TokensAnnotation.class);
+    List<EntityMention> mentions = sentence.get(MachineReadingAnnotations.EntityMentionsAnnotation.class);
+    assert words != null;
+    if(mentions == null)
+    {  
+      this.logger.info("mentions are null");
+      mentions = new ArrayList<EntityMention>();
+    }
+
+    for (int start = 0; start < words.size(); start ++) {
+      
+      int end;
+      // find the first token after start that isn't of nerType
+      String lastneTag = null;
+      String ne= null;
+      for (end = start; end < words.size(); end ++) {
+        ne = words.get(end).get(NamedEntityTagAnnotation.class);
+        if(ne.equals(SeqClassifierFlags.DEFAULT_BACKGROUND_SYMBOL) || (lastneTag != null && !ne.equals(lastneTag))){
+          break;
+        }
+        lastneTag = ne;
+      }
+
+      if (end > start) {
+        
+        // found a match!
+        String entityType = this.getEntityTypeForTag(lastneTag);
+        EntityMention m = entityMentionFactory.constructEntityMention(
+            EntityMention.makeUniqueId(),
+            sentence,
+            new Span(start, end),
+            new Span(start, end),
+            entityType, null, null);
+        //TODO: changed entityType in the above sentence to nerTag - Sonal
+        logger.info("Created " + entityType + " entity mention: " + m);
+        start = end - 1;
+        mentions.add(m);
+      }
+    }
+
+    sentence.set(MachineReadingAnnotations.EntityMentionsAnnotation.class, mentions);
+  }
+
+  private static boolean notBIO(String label) {
+    return !(label.startsWith("B-") || label.startsWith("I-"));
+  }
+
+  public void makeEntityMention(CoreMap sentence, int start, int end, String label, List<EntityMention> entities, int sentCount) {
+    assert(start >= 0);
+    String identifier = makeEntityMentionIdentifier(sentence, sentCount, entities.size());
+    EntityMention entity = makeEntityMention(sentence, start, end, label, identifier);
+    entities.add(entity);
+  }
+
+  public static String makeEntityMentionIdentifier(CoreMap sentence, int sentCount, int entId) {
+    String docid = sentence.get(CoreAnnotations.DocIDAnnotation.class);
+    if(docid == null) docid = "EntityMention";
+    String identifier = docid + "-" + entId + "-" + sentCount;
+    return identifier;
+  }
+
+  public EntityMention makeEntityMention(CoreMap sentence, int start, int end, String label, String identifier) {
+    Span span = new Span(start, end);
+    String type = null, subtype = null;
+    if(! label.startsWith("B-") && ! label.startsWith("I-")){
+      type = label;
+      subtype = null; // TODO: add support for subtypes! (needed at least in ACE)
+    } else {
+      type = label.substring(2);
+      subtype = null; // TODO: add support for subtypes! (needed at least in ACE)
+    }
+    EntityMention entity = entityMentionFactory.constructEntityMention(identifier, sentence, span, span, type, subtype, null);
+    Counter<String> probs = new ClassicCounter<String>();
+    probs.setCount(entity.getType(), 1.0);
+    entity.setTypeProbabilities(probs);
+    return entity;
+  }
+
+  // TODO not called any more, but possibly useful as a reference

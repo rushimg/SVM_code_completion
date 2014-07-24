@@ -1,0 +1,95 @@
+  public static Document annotationToDoc(Annotation annotation, Options options) {
+    //
+    // create the XML document with the root node pointing to the namespace URL
+    //
+    Element root = new Element("root", NAMESPACE_URI);
+    Document xmlDoc = new Document(root);
+    ProcessingInstruction pi = new ProcessingInstruction("xml-stylesheet",
+          "href=\"" + STYLESHEET_NAME + "\" type=\"text/xsl\"");
+    xmlDoc.insertChild(pi, 0);
+    Element docElem = new Element("document", NAMESPACE_URI);
+    root.appendChild(docElem);
+
+    setSingleElement(docElem, "docId", NAMESPACE_URI, annotation.get(CoreAnnotations.DocIDAnnotation.class));
+    setSingleElement(docElem, "docDate", NAMESPACE_URI, annotation.get(CoreAnnotations.DocDateAnnotation.class));
+    setSingleElement(docElem, "docSourceType", NAMESPACE_URI, annotation.get(CoreAnnotations.DocSourceTypeAnnotation.class));
+    setSingleElement(docElem, "docType", NAMESPACE_URI, annotation.get(CoreAnnotations.DocTypeAnnotation.class));
+    setSingleElement(docElem, "author", NAMESPACE_URI, annotation.get(CoreAnnotations.AuthorAnnotation.class));
+    setSingleElement(docElem, "location", NAMESPACE_URI, annotation.get(CoreAnnotations.LocationAnnotation.class));
+
+    if (options.includeText) {
+      setSingleElement(docElem, "text", NAMESPACE_URI, annotation.get(CoreAnnotations.TextAnnotation.class));
+    }
+
+    Element sentencesElem = new Element("sentences", NAMESPACE_URI);
+    docElem.appendChild(sentencesElem);
+
+    //
+    // save the info for each sentence in this doc
+    //
+    if(annotation.get(CoreAnnotations.SentencesAnnotation.class) != null){
+      int sentCount = 1;
+      for (CoreMap sentence: annotation.get(CoreAnnotations.SentencesAnnotation.class)) {
+        Element sentElem = new Element("sentence", NAMESPACE_URI);
+        sentElem.addAttribute(new Attribute("id", Integer.toString(sentCount)));
+        Integer lineNumber = sentence.get(CoreAnnotations.LineNumberAnnotation.class);
+        if (lineNumber != null) {
+          sentElem.addAttribute(new Attribute("line", Integer.toString(lineNumber)));
+        }
+        sentCount ++;
+
+        // add the word table with all token-level annotations
+        Element wordTable = new Element("tokens", NAMESPACE_URI);
+        List<CoreLabel> tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
+        for(int j = 0; j < tokens.size(); j ++){
+          Element wordInfo = new Element("token", NAMESPACE_URI);
+          addWordInfo(wordInfo, tokens.get(j), j + 1, NAMESPACE_URI);
+          wordTable.appendChild(wordInfo);
+        }
+        sentElem.appendChild(wordTable);
+
+        // add tree info
+        Tree tree = sentence.get(TreeCoreAnnotations.TreeAnnotation.class);
+
+        if(tree != null){
+          // add the constituent tree for this sentence
+          Element parseInfo = new Element("parse", NAMESPACE_URI);
+          addConstituentTreeInfo(parseInfo, tree, options.constituentTreePrinter);
+          sentElem.appendChild(parseInfo);
+
+          // add the dependencies for this sentence
+          Element depInfo = buildDependencyTreeInfo("basic-dependencies", sentence.get(SemanticGraphCoreAnnotations.BasicDependenciesAnnotation.class), tokens, NAMESPACE_URI);
+          if (depInfo != null) {
+            sentElem.appendChild(depInfo);
+          }
+
+          depInfo = buildDependencyTreeInfo("collapsed-dependencies", sentence.get(SemanticGraphCoreAnnotations.CollapsedDependenciesAnnotation.class), tokens, NAMESPACE_URI);
+          if (depInfo != null) {
+            sentElem.appendChild(depInfo);
+          }
+
+          depInfo = buildDependencyTreeInfo("collapsed-ccprocessed-dependencies", sentence.get(SemanticGraphCoreAnnotations.CollapsedCCProcessedDependenciesAnnotation.class), tokens, NAMESPACE_URI);
+          if (depInfo != null) {
+            sentElem.appendChild(depInfo);
+          }
+        }
+
+        // add the MR entities and relations
+        List<EntityMention> entities = sentence.get(MachineReadingAnnotations.EntityMentionsAnnotation.class);
+        List<RelationMention> relations = sentence.get(MachineReadingAnnotations.RelationMentionsAnnotation.class);
+        if (entities != null && entities.size() > 0){
+          Element mrElem = new Element("MachineReading", NAMESPACE_URI);
+          Element entElem = new Element("entities", NAMESPACE_URI);
+          addEntities(entities, entElem, NAMESPACE_URI);
+          mrElem.appendChild(entElem);
+
+          if(relations != null){
+            Element relElem = new Element("relations", NAMESPACE_URI);
+            addRelations(relations, relElem, NAMESPACE_URI, options.relationsBeam);
+            mrElem.appendChild(relElem);
+          }
+
+          sentElem.appendChild(mrElem);
+        }
+
+                

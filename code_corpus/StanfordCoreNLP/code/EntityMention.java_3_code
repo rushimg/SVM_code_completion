@@ -1,0 +1,62 @@
+  private int syntacticHeadTokenPosition;
+
+  private String normalizedName;
+
+  public EntityMention(String objectId,
+      CoreMap sentence,
+      Span extentSpan,
+      Span headSpan,
+      String type,
+      String subtype,
+      String mentionType) {
+    super(objectId, sentence, extentSpan, type, subtype);
+    this.mentionType = (mentionType != null ? mentionType.intern() : null);
+    this.headTokenSpan = headSpan;
+    this.syntacticHeadTokenPosition = -1;
+    this.normalizedName = null;
+  }
+
+  public String getCorefID(){
+    return corefID;
+  }
+
+  public void setCorefID(String id) {
+    this.corefID = id;
+  }
+  public String getMentionType() { return mentionType; }
+
+  public Span getHead() { return headTokenSpan; }
+
+  public int getHeadTokenStart() {
+    return headTokenSpan.start();
+  }
+
+  public int getHeadTokenEnd() {
+    return headTokenSpan.end();
+  }
+
+  public void setHeadTokenSpan(Span s) {
+    headTokenSpan = s;
+  }
+
+  public void setHeadTokenPosition(int i) {
+    this.syntacticHeadTokenPosition = i;
+  }
+
+  public int getSyntacticHeadTokenPosition() {
+    return this.syntacticHeadTokenPosition;
+  }
+
+  public CoreLabel getSyntacticHeadToken() {
+    List<CoreLabel> tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
+    return tokens.get(syntacticHeadTokenPosition);
+  }
+
+  public Tree getSyntacticHeadTree() {
+    Tree tree = sentence.get(TreeCoreAnnotations.TreeAnnotation.class);
+    return tree.getLeaves().get(syntacticHeadTokenPosition);
+  }
+
+  public String getNormalizedName() { return normalizedName; }
+  public void setNormalizedName(String n) { normalizedName = n; }
+

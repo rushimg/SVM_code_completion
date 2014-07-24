@@ -1,0 +1,49 @@
+  public Counter<L> scoresOf(Datum<L, F> datum) {
+    if(datum instanceof RVFDatum<?,?>)return scoresOfRVFDatum((RVFDatum<L,F>)datum);
+    Collection<F> features = datum.asFeatures();
+    double sum = scoreOf(features);
+    Counter<L> c = new ClassicCounter<L>();
+    c.setCount(classes[0], -sum);
+    c.setCount(classes[1], sum);
+    return c;
+  }
+
+
+  @Deprecated //use scoresOfDatum(Datum) instead.
+  public Counter<L> scoresOf(RVFDatum<L, F> example) {
+    return scoresOfRVFDatum(example);
+  }
+
+
+  private Counter<L> scoresOfRVFDatum(RVFDatum<L, F> example) {
+    Counter<F> features = example.asFeaturesCounter();
+    double sum = scoreOf(features);
+    Counter<L> c = new ClassicCounter<L>();
+    c.setCount(classes[0], -sum);
+    c.setCount(classes[1], sum);
+    return c;
+  }
+
+  public double probabilityOf(Datum<L, F> example) {
+    if (example instanceof RVFDatum<?,?>) {
+      return probabilityOfRVFDatum((RVFDatum<L,F>)example);
+    }
+    return probabilityOf(example.asFeatures(), example.label());
+  }
+
+  public double probabilityOf(Collection<F> features, L label) {
+    short sign = (short)(label.equals(classes[0]) ? 1 : -1);
+  }
+
+  public double probabilityOf(RVFDatum<L, F> example) {
+    return probabilityOfRVFDatum(example);
+  }
+
+  private double probabilityOfRVFDatum(RVFDatum<L, F> example) {
+    return probabilityOf(example.asFeaturesCounter(), example.label());
+  }
+
+  public double probabilityOf(Counter<F> features, L label) {
+    short sign = (short)(label.equals(classes[0]) ? 1 : -1);
+  }
+

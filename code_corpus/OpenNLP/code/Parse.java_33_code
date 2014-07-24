@@ -1,0 +1,39 @@
+  public void insert(final Parse constituent) {
+    Span ic = constituent.span;
+    if (span.contains(ic)) {
+      //double oprob=c.prob;
+      int pi=0;
+      int pn = parts.size();
+      for (; pi < pn; pi++) {
+        Parse subPart = parts.get(pi);
+        //System.err.println("Parse.insert:con="+constituent+" sp["+pi+"] "+subPart+" "+subPart.getType());
+        Span sp = subPart.span;
+        if (sp.getStart() >= ic.getEnd()) {
+          break;
+        }
+        // constituent contains subPart
+        else if (ic.contains(sp)) {
+          //System.err.println("Parse.insert:con contains subPart");
+          parts.remove(pi);
+          pi--;
+          constituent.parts.add(subPart);
+          subPart.setParent(constituent);
+          //System.err.println("Parse.insert: "+subPart.hashCode()+" -> "+subPart.getParent().hashCode());
+          pn = parts.size();
+        }
+        else if (sp.contains(ic)) {
+          //System.err.println("Parse.insert:subPart contains con");
+          subPart.insert(constituent);
+          return;
+        }
+      }
+      //System.err.println("Parse.insert:adding con="+constituent+" to "+this);
+      parts.add(pi, constituent);
+      constituent.setParent(this);
+      //System.err.println("Parse.insert: "+constituent.hashCode()+" -> "+constituent.getParent().hashCode());
+    }
+    else {
+      throw new IllegalArgumentException("Inserting constituent not contained in the sentence!");
+    }
+  }
+

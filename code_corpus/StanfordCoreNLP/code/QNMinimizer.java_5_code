@@ -1,0 +1,64 @@
+    public eState toContinue() {
+
+      double relNorm = gNormLast / gNormInit;
+      int size = values.size();
+      double newestVal = values.get(size - 1);
+      double previousVal = (size >= 10 ? values.get(size - 10) : values.get(0));
+      double averageImprovement = (previousVal - newestVal) / (size >= 10 ? 10 : size);
+      int evalsSize = evals.size();
+
+      if (useMaxItr && its >= maxItr)
+        return eState.TERMINATE_MAXITR;
+
+      if (useEvalImprovement) {
+        int bestInd = -1;
+        double bestScore = Double.NEGATIVE_INFINITY;
+        for (int i = 0; i < evalsSize; i++) {
+          if (evals.get(i) >= bestScore) {
+            bestScore = evals.get(i);
+            bestInd = i;
+          }
+        }
+        if (bestInd == evalsSize-1) { // copy xBest
+          if (xBest == null)
+            xBest = Arrays.copyOf(xLast, xLast.length);
+          else
+            System.arraycopy( xLast, 0, xBest, 0, xLast.length );
+        }
+        if ((evalsSize - bestInd) >= terminateOnEvalImprovementNumOfEpoch)
+          return eState.TERMINATE_EVALIMPROVE;
+      }
+
+      // This is used to be able to reproduce results that were trained on the
+      // QNMinimizer before
+      // convergence criteria was updated.
+      if (useAveImprovement
+          && (size > 5 && Math.abs(averageImprovement / newestVal) < TOL)) {
+        return eState.TERMINATE_AVERAGEIMPROVE;
+      }
+
+      // Check to see if the gradient is sufficiently small
+      if (useRelativeNorm && relNorm <= relativeTOL) {
+        return eState.TERMINATE_RELATIVENORM;
+      }
+
+      if (useNumericalZero) {
+        // This checks if the gradient is sufficiently small compared to x that
+        // it is treated as zero.
+          // |g| < |x|_1
+          // First we do the one norm, because that's easiest, and always bigger.
+            // |g| < max(1,|x|)
+            // Now actually compare with the two norm if we have to.
+            System.err
+                .println("Gradient is numerically zero, stopped on machine epsilon.");
+            return eState.TERMINATE_GRADNORM;
+          }
+        }
+        // give user information about the norms.
+      }
+
+      say(" |" + nf.format(gNormLast) + "| {" + nf.format(relNorm) + "} "
+            + nf.format(Math.abs(averageImprovement / newestVal)) + " " + (evalsSize > 0 ? evals.get(evalsSize-1).toString() : "-") + " ");
+      return eState.CONTINUE;
+    }
+

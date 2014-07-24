@@ -1,0 +1,33 @@
+    RankingPathElementList(
+        Graph<V, E> graph,
+        int maxSize,
+        RankingPathElementList<V, E> elementList,
+        E edge,
+        V guardVertexToNotDisconnect)
+    {
+        super(graph, maxSize, elementList, edge);
+        this.guardVertexToNotDisconnect = guardVertexToNotDisconnect;
+
+        // loop over the path elements in increasing order of weight.
+        for (int i = 0; i < elementList.size(); i++) {
+            RankingPathElement<V, E> prevPathElement = elementList.get(i);
+
+            if (isNotValidPath(prevPathElement, edge)) {
+                continue;
+            }
+
+            if (size() < this.maxSize) {
+                double weight = calculatePathWeight(prevPathElement, edge);
+                RankingPathElement<V, E> newPathElement =
+                    new RankingPathElement<V, E>(
+                        this.graph,
+                        prevPathElement,
+                        edge,
+                        weight);
+
+                // the new path is inserted at the end of the list.
+                this.pathElements.add(newPathElement);
+            }
+        }
+    }
+

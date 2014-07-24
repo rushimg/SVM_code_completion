@@ -1,0 +1,27 @@
+  void initTypes() {
+
+    local = new ArrayList<Pair<Integer,Extractor>>();
+    localContext = new ArrayList<Pair<Integer,Extractor>>();
+    dynamic = new ArrayList<Pair<Integer,Extractor>>();
+
+    for(int i=0; i<v.length; ++i) {
+      Extractor e = v[i];
+      if(e.isLocal() && e.isDynamic())
+        throw new RuntimeException("Extractors can't both be local and dynamic!");
+      if(e.isLocal()) {
+        local.add(Pair.makePair(i,e));
+        //localContext.put(i,e);
+      } else if(e.isDynamic()) {
+        dynamic.add(Pair.makePair(i,e));
+      } else {
+        localContext.add(Pair.makePair(i,e));
+      }
+    }
+    if(DEBUG) {
+      System.err.println("Extractors: "+this);
+      System.err.printf("Local: %d extractors\n",local.size());
+      System.err.printf("Local context: %d extractors\n",localContext.size());
+      System.err.printf("Dynamic: %d extractors\n",dynamic.size());
+    }
+  }
+

@@ -1,0 +1,21 @@
+    public void removeSeries(int series) {
+
+        // check arguments...
+        if ((series < 0) || (series > getSeriesCount())) {
+            throw new IllegalArgumentException("Index outside valid range.");
+        }
+
+        // fetch the series, remove the change listener, then remove the series.
+        XYSeries s = (XYSeries) this.data.get(series);
+        s.removeChangeListener(this);
+        this.data.remove(series);
+        if (this.data.size() == 0) {
+            this.xPoints.clear();
+        }
+        else if (this.autoPrune) {
+            prune();
+        }
+        fireDatasetChanged();
+
+    }
+

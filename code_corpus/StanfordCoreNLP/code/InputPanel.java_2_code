@@ -1,0 +1,326 @@
+  public void updateFoundStats(final String pattern, final int treeMatches, final int totalMatches) {
+    final String txt = "<html>Match stats: " + treeMatches + " unique trees found with " + totalMatches + " total matches.</html>";
+    SwingUtilities.invokeLater(new Runnable() {
+      public void run() {
+        foundStats.setPreferredSize(foundStats.getSize());
+        foundStats.setText(txt);
+        if(pattern != null)
+          addToHistoryList(pattern, treeMatches, totalMatches);
+      }
+    });
+  }
+
+  public void useProgressBar(boolean useProgressBar) {
+    if (useProgressBar) {//make sure we're in progress bar mode
+      if (progressBar == null) {
+        progressBar = new JProgressBar(JProgressBar.HORIZONTAL);
+        Container dad = foundStats.getParent();
+        useProgressBarHelper(dad, progressBar, foundStats);
+      }
+    } else {//make sure we're in found stats mode
+      if (progressBar != null) {
+        Container dad = progressBar.getParent();
+        useProgressBarHelper(dad, foundStats, progressBar);
+        progressBar = null;
+      }
+
+    }
+  }
+
+  private static void useProgressBarHelper(Container parent, JComponent add, JComponent remove) {
+    GridBagConstraints c = new GridBagConstraints();
+    c.fill = GridBagConstraints.BOTH;
+    c.weightx = 1.7;
+    parent.remove(remove);
+    parent.add(add,c);
+    parent.validate();
+    parent.repaint();
+  }
+
+  public void actionPerformed(ActionEvent e) {
+    Object source = e.getSource();
+    if (source == findMatches) {
+      runSearch();
+    } else if (source == cancel) {
+      if (searchThread != null) {
+        searchThread.interrupt();
+      }
+      cancel.setEnabled(false);
+    } else if (source == help) {
+      displayHelp();
+    } else if (source == tsurgeonHelp) {
+      displayTsurgeonHelp();
+    } else if (source == cancelTsurgeon) {
+      if (searchThread != null) {
+        searchThread.interrupt();
+      }
+      cancelTsurgeon.setEnabled(false);
+    } else if (source == runScript) {
+      runScript();
+    } else if (source == recentTregexPatterns) {
+      doRecent();
+    } else if (source == historyButton) {
+      showHistory();
+    } else if (source == browseButton) {
+      runBrowse();
+    }
+  }
+
+  public void stateChanged(ChangeEvent e) {
+    JSlider source = (JSlider) e.getSource();
+    int fontSize = source.getValue();
+    if ( ! source.getValueIsAdjusting()) {
+      DisplayMatchesPanel.getInstance().setFontSizeRepaint(fontSize);
+    }
+  }
+
+  private static class TregexGUITableModel extends DefaultTableModel {
+
+    private static final long serialVersionUID = -8095682087502853273L;
+
+    TregexGUITableModel(Object[][] entries, String[] columnNames) {
+      super(entries, columnNames);
+    }
+
+    @Override
+    public boolean isCellEditable(int row, int column) {
+      return false;
+    }
+
+  }
+
+
+  private void showHistory() {
+    if (historyFrame == null) {
+      historyFrame = new JFrame("Statistics History");
+    } else {
+      historyFrame.setVisible(false);
+      historyFrame= new JFrame("Statistics History");
+    }
+    historyFrame.setLayout(new GridLayout(1,0));
+    Object[][] entries = new Object[historyList.size()][3];
+    for(int i = 0; i < historyList.size(); i++) {
+      entries[i] = historyList.get(i).toArray();
+    }
+    DefaultTableModel tableModel = new TregexGUITableModel(entries, HistoryEntry.columnNamesArray());
+    JTable statTable = new JTable(tableModel);
+    DefaultTableCellRenderer dtcr = (DefaultTableCellRenderer) statTable.getDefaultRenderer(String.class);
+    dtcr.setHorizontalAlignment(DefaultTableCellRenderer.CENTER);
+
+    JScrollPane scroller = new JScrollPane(statTable);
+
+    historyFrame.add(scroller);
+    historyFrame.pack();
+    historyFrame.setLocationRelativeTo(TregexGUI.getInstance());
+    historyFrame.setBackground(Color.WHITE);
+    historyFrame.setVisible(true);
+    historyFrame.repaint();
+
+  }
+
+  private void doRecent() {
+    //this is called only when a user does something
+    Object recent = recentTregexPatternsModel.getSelectedItem();
+    if (recent != null) {
+      String selected = recent.toString();
+      if (selected.length() != 0) {
+        tregexPattern.setText(selected);
+      }
+    }
+  }
+
+  private void runBrowse() {
+    this.setPreferredSize(this.getSize());
+    Thread browseThread = new Thread() {
+      @Override
+      public void run() {
+        useProgressBar(true);
+
+        final List<TreeFromFile> trees = new ArrayList<TreeFromFile>();
+
+        //Go through the treebanks and get all the trees
+        List<FileTreeNode> treebanks = FilePanel.getInstance().getActiveTreebanks();
+
+        //Tdiff
+        if(TregexGUI.getInstance().isTdiffEnabled())
+          treebanks.remove(0); //Remove the reference
+
+        double multiplier = 100.0/treebanks.size();
+        for (int i = 0; i < treebanks.size(); i++) {
+          FileTreeNode treebank = treebanks.get(i);
+          String filename = treebank.getFilename();
+          for (Tree curTree : treebank.getTreebank()) {
+            trees.add(new TreeFromFile(curTree, filename));
+          }
+        }
+        SwingUtilities.invokeLater(new Runnable() {
+
+          public void run() {
+            MatchesPanel.getInstance().setMatches(trees, null);
+            MatchesPanel.getInstance().focusOnList();
+            useProgressBar(false);
+          }
+
+        });//end SwingUtilities.invokeLater
+
+      } //end run
+    };//end Thread
+
+    browseThread.start();
+  }
+
+
+  void runSearch() {
+    setTregexState(true);
+    MatchesPanel.getInstance().removeAllMatches();
+    this.setPreferredSize(this.getSize());
+    searchThread = new Thread() {
+      @Override
+      public void run() {
+        final String text = tregexPattern.getText().intern();
+        SwingUtilities.invokeLater(new Runnable() {
+          public void run() {
+            InputPanel.this.addRecentTregexPattern(text);
+            useProgressBar(true);
+          }
+        });
+        final TRegexGUITreeVisitor visitor = getMatchTreeVisitor(text,this);
+        if (visitor != null) {
+
+          SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+              useProgressBar(false);
+              updateFoundStats(text, visitor.getMatches().size(), visitor.numUniqueMatches());
+              //addToHistoryList(text, visitor.getMatches().size(), visitor.numUniqueMatches());
+              MatchesPanel.getInstance().setMatches(visitor.getMatches(), visitor.getMatchedParts());
+              MatchesPanel.getInstance().focusOnList();
+            }
+          });
+        }
+        SwingUtilities.invokeLater(new Runnable() {
+          public void run() {
+            setTregexState(false);
+            InputPanel.this.searchThread = null;
+          }
+        });
+
+      }
+    };
+    searchThread.start();
+
+  }
+
+  private void setTregexState(boolean running) {
+    cancel.setEnabled(running);
+    findMatches.setEnabled(!running);
+    browseButton.setEnabled(!running);
+  }
+
+  //Assumes that it will be called only if Tsurgeon is already enabled
+  private void setTsurgeonState(boolean running) {
+    cancelTsurgeon.setEnabled(running);
+    runScript.setEnabled(!running);
+    findMatches.setEnabled(!running);
+    browseButton.setEnabled(!running);
+  }
+
+  private void runScript() {
+    setTsurgeonState(true);
+    final String script = tsurgeonScript.getText();
+
+    searchThread = new Thread() {
+      @Override
+      public void run() {
+        try {
+          BufferedReader reader = new BufferedReader(new StringReader(script));
+          TsurgeonPattern operation = Tsurgeon.getTsurgeonOperationsFromReader(reader);
+
+          final String text = tregexPattern.getText().intern();
+          SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+              InputPanel.this.addRecentTregexPattern(text);
+              useProgressBar(true);
+            }
+          });
+          final TRegexGUITreeVisitor visitor = getMatchTreeVisitor(text,this);
+          if (visitor == null) return; //means the tregex errored out
+          if (this.isInterrupted()) {
+            returnToValidState(text, visitor, new ArrayList<TreeFromFile>());
+            return;
+          }
+          //System.err.println("Running Script with matches: " + visitor.getMatches());
+          List<TreeFromFile> trees = visitor.getMatches();
+          final List<TreeFromFile> modifiedTrees = new ArrayList<TreeFromFile>();
+          for (TreeFromFile tff : trees) {
+            if (this.isInterrupted()) {
+              returnToValidState(text, visitor, trees);
+              return;
+            }
+            Tree modifiedTree = Tsurgeon.processPattern(visitor.getPattern(), operation, tff.getTree());
+            modifiedTrees.add(new TreeFromFile(modifiedTree,tff.getFilename().intern()));
+          }
+          returnToValidState(text, visitor, modifiedTrees);
+        } catch (Exception e) {
+          doError("Sorry, there was an error compiling or running the Tsurgeon script.  Please press Help if you need assistance.", e);
+          SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+              setTregexState(false);
+              setTsurgeonState(false);
+              InputPanel.this.searchThread = null;
+            }
+          });
+        }
+      }
+    };
+    searchThread.start();
+  }
+
+  private void returnToValidState(final String pattern, final TRegexGUITreeVisitor visitor, final List<TreeFromFile> trees) {
+    SwingUtilities.invokeLater(new Runnable() {
+      public void run() {
+        int numUniqueMatches = 0;
+        if (trees.size() > 0) {
+          numUniqueMatches = visitor.numUniqueMatches();
+        }
+        updateFoundStats(pattern, trees.size(), numUniqueMatches);
+        MatchesPanel.getInstance().setMatches(trees, visitor.getMatchedParts());
+        useProgressBar(false);
+        setTsurgeonState(false);
+      }
+    });
+  }
+
+  public void setScriptAndPattern(String tregexPatternString, String tsurgeonScriptString) {
+    this.tregexPattern.setText(tregexPatternString);
+    this.tsurgeonScript.setText(tsurgeonScriptString);
+  }
+
+  private void addRecentTregexPattern(String pattern) {
+    // If pattern already exists, just move it to the top of the list
+    int existingIndex = recentTregexPatternsModel.getIndexOf(pattern);
+    if (existingIndex != -1) {
+      recentTregexPatternsModel.removeElementAt(existingIndex);
+      recentTregexPatternsModel.insertElementAt(pattern, 0);
+      recentTregexPatterns.setSelectedIndex(0);
+
+      return;
+    }
+
+    if(recentTregexPatternsModel.getSize() >= numRecentPatterns) {
+      recentTregexPatternsModel.removeElementAt(numRecentPatterns - 1);
+    }
+    recentTregexPatternsModel.insertElementAt(pattern,0);
+    recentTregexPatterns.setSelectedIndex(0);
+    recentTregexPatterns.revalidate();
+  }
+
+  public void setNumRecentPatterns(int n) {
+    numRecentPatterns = n;
+    //shrink down the number of recent patterns if necessary
+    while(recentTregexPatternsModel.getSize() > n) {
+      int lastIndex = recentTregexPatternsModel.getSize() - 1;
+      recentTregexPatternsModel.removeElementAt(lastIndex);
+    }
+  }
+
+

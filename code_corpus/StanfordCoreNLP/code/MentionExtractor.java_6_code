@@ -1,0 +1,16 @@
+  public static Tree findExactMatch(Tree tree, int first, int last) {
+    List<Tree> leaves = tree.getLeaves();
+    int thisFirst = ((CoreMap) leaves.get(0).label()).get(CoreAnnotations.IndexAnnotation.class);
+    int thisLast = ((CoreMap) leaves.get(leaves.size() - 1).label()).get(CoreAnnotations.IndexAnnotation.class);
+    if(thisFirst == first && thisLast == last) {
+      return tree;
+    } else {
+      Tree [] kids = tree.children();
+      for(Tree k: kids){
+        Tree t = findExactMatch(k, first, last);
+        if(t != null) return t;
+      }
+    }
+    return null;
+  }
+

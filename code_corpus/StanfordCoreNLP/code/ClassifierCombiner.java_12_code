@@ -1,0 +1,56 @@
+  @Override
+  public List<IN> classify(List<IN> tokens) {
+    if (baseClassifiers.isEmpty()) {
+      return tokens;
+    }
+    List<List<IN>> baseOutputs = new ArrayList<List<IN>>();
+
+    // the first base model works in place, modifying the original tokens
+    List<IN> output = baseClassifiers.get(0).classifySentence(tokens);
+    // classify(List<IN>) is supposed to work in place, so add AnswerAnnotation to tokens!
+    for (int i = 0, sz = output.size(); i < sz; i++) {
+      tokens.get(i).set(CoreAnnotations.AnswerAnnotation.class, output.get(i).get(CoreAnnotations.AnswerAnnotation.class));
+    }
+    baseOutputs.add(tokens);
+
+    for (int i = 1, sz = baseClassifiers.size(); i < sz; i ++) {
+      //List<CoreLabel> copy = deepCopy(tokens);
+      // no need for deep copy: classifySentence creates a copy of the input anyway
+      // List<CoreLabel> copy = tokens;
+      output = baseClassifiers.get(i).classifySentence(tokens);
+      baseOutputs.add(output);
+    }
+    assert(baseOutputs.size() == baseClassifiers.size());
+    List<IN> finalAnswer = mergeDocuments(baseOutputs);
+
+    return finalAnswer;
+  }
+
+
+  @SuppressWarnings("unchecked")
+  @Override
+  public void train(Collection<List<IN>> docs,
+                    DocumentReaderAndWriter<IN> readerAndWriter) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void printProbsDocument(List<IN> document) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void serializeClassifier(String serializePath) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void loadClassifier(ObjectInputStream in, Properties props) throws IOException, ClassCastException, ClassNotFoundException {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public List<IN> classifyWithGlobalInformation(List<IN> tokenSeq, CoreMap doc, CoreMap sent) {
+    return classify(tokenSeq);
+  }
+

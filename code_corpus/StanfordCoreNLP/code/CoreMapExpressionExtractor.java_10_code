@@ -1,0 +1,16 @@
+  public static CoreMapExpressionExtractor createExtractorFromFiles(Env env, List<String> filenames) throws RuntimeException {
+    CoreMapExpressionExtractor extractor = new CoreMapExpressionExtractor(env);
+    for (String filename:filenames) {
+      try {
+        System.err.println("Reading TokensRegex rules from " + filename);
+        BufferedReader br = IOUtils.getBufferedReaderFromClasspathOrFileSystem(filename);
+        TokenSequenceParser parser = new TokenSequenceParser();
+        parser.updateExpressionExtractor(extractor, br);
+        IOUtils.closeIgnoringExceptions(br);
+      } catch (Exception ex) {
+        throw new RuntimeException("Error parsing file: " + filename, ex);
+      }
+    }
+    return extractor;
+  }
+

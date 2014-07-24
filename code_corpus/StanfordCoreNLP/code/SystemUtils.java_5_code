@@ -1,0 +1,16 @@
+  private static void consume(Process process, Writer outputWriter, Writer errorWriter)
+  throws IOException, InterruptedException {
+    if (outputWriter == null) {
+      outputWriter = new OutputStreamWriter(System.out);
+    }
+    if (errorWriter == null) {
+      errorWriter = new OutputStreamWriter(System.err);
+    }
+    WriterThread outputThread = new WriterThread(process.getInputStream(), outputWriter);
+    WriterThread errorThread = new WriterThread(process.getErrorStream(), errorWriter);
+    outputThread.start();
+    errorThread.start();
+    outputThread.join();
+    errorThread.join();
+  }
+  

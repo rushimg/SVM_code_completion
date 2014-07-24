@@ -1,0 +1,75 @@
+  @Override
+  public void applyFeatureMaxCountThreshold(int k) {
+    float[] counts = getFeatureCounts();
+    HashIndex<F> newFeatureIndex = new HashIndex<F>();
+
+    int[] featMap = new int[featureIndex.size()];
+    for (int i = 0; i < featMap.length; i++) {
+      F feat = featureIndex.get(i);
+      if (counts[i] <= k) {
+        int newIndex = newFeatureIndex.size();
+        newFeatureIndex.add(feat);
+        featMap[i] = newIndex;
+      } else {
+        featMap[i] = -1;
+      }
+      // featureIndex.remove(feat);
+    }
+
+    featureIndex = newFeatureIndex;
+    // counts = null; // This is unnecessary; JVM can clean it up
+
+    for (int i = 0; i < size; i++) {
+      List<Integer> featList = new ArrayList<Integer>(data[i].length);
+      List<Double> valueList = new ArrayList<Double>(values[i].length);
+      for (int j = 0; j < data[i].length; j++) {
+        if (featMap[data[i][j]] >= 0) {
+          featList.add(featMap[data[i][j]]);
+          valueList.add(values[i][j]);
+        }
+      }
+      data[i] = new int[featList.size()];
+      values[i] = new double[valueList.size()];
+      for (int j = 0; j < data[i].length; j++) {
+        data[i][j] = featList.get(j);
+        values[i][j] = valueList.get(j);
+      }
+    }
+  }
+
+  private static RVFDataset<String, String> readSVMLightFormat(String filename, Index<String> featureIndex, Index<String> labelIndex, List<String> lines) {
+    BufferedReader in = null;
+    RVFDataset<String, String> dataset;
+    try {
+      dataset = new RVFDataset<String, String>(10, featureIndex, labelIndex);
+      in = IOUtils.readerFromString(filename);
+
+      while (in.ready()) {
+        String line = in.readLine();
+        if (lines != null)
+          lines.add(line);
+        dataset.add(svmLightLineToRVFDatum(line));
+      }
+    } catch (IOException e) {
+      throw new RuntimeIOException(e);
+    } finally {
+      IOUtils.closeIgnoringExceptions(in);
+    }
+    return dataset;
+  }
+
+  public static RVFDatum<String, String> svmLightLineToRVFDatum(String l) {
+    String[] line = l.split("\\s+");
+    ClassicCounter<String> features = new ClassicCounter<String>();
+    for (int i = 1; i < line.length; i++) {
+      String[] f = line[i].split(":");
+      if (f.length != 2) {
+        throw new IllegalArgumentException("Bad data format: " + l);
+      }
+      double val = Double.parseDouble(f[1]);
+      features.incrementCount(f[0], val);
+    }
+    return new RVFDatum<String, String>(features, line[0]);
+  }
+
+  // todo [cdm 2012]: This duplicates the functionality of the methods above. Should be refactored.

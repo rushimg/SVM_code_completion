@@ -1,0 +1,113 @@
+  private Collection<String> makeNGramFeatures(final String input, Flags flags, boolean useSplit, String featPrefix) {
+    String toNGrams = input;
+    boolean internalNGrams;
+    boolean prefixSuffixNGrams;
+    if (useSplit) {
+      internalNGrams = flags.useSplitNGrams;
+      prefixSuffixNGrams = flags.useSplitPrefixSuffixNGrams;
+    } else {
+      internalNGrams = flags.useNGrams;
+      prefixSuffixNGrams = flags.usePrefixSuffixNGrams;
+    }
+    if (flags.lowercaseNGrams) {
+      toNGrams = toNGrams.toLowerCase(Locale.ENGLISH);
+    }
+    if (flags.partialNGramRegexp != null) {
+      Matcher m = flags.partialNGramPattern.matcher(toNGrams);
+      // System.err.print("Matching |" + flags.partialNGramRegexp +
+      //                "| against |" + toNGrams + "|");
+      if (m.find()) {
+        if (m.groupCount() > 0) {
+          toNGrams = m.group(1);
+        } else {
+          toNGrams = m.group();
+        }
+        // System.err.print(" Matched |" + toNGrams + "|");
+      }
+      // System.err.println();
+    }
+    Collection<String> subs = null;
+    if (flags.cacheNGrams) {
+      subs = wordToSubstrings.get(toNGrams);
+    }
+    if (subs == null) {
+      subs = new ArrayList<String>();
+      String strN = featPrefix + '-';
+      String strB = featPrefix + "B-";
+      String strE = featPrefix + "E-";
+      int wleng = toNGrams.length();
+      for (int i = 0; i < wleng; i++) {
+        for (int j = i + flags.minNGramLeng, min = Math.min(wleng, i + flags.maxNGramLeng); j <= min; j++) {
+          if (prefixSuffixNGrams) {
+            if (i == 0) {
+              subs.add(intern(strB + toNGrams.substring(i, j)));
+            }
+            if (j == wleng) {
+              subs.add(intern(strE + toNGrams.substring(i, j)));
+            }
+          }
+          if (internalNGrams) {
+            subs.add(intern(strN + toNGrams.substring(i, j)));
+          }
+        }
+      }
+      if (flags.cacheNGrams) {
+        wordToSubstrings.put(toNGrams, subs);
+      }
+    }
+    return subs;
+  }
+
+
+  private static PrintWriter cliqueWriter;
+
+  private static void newFeaturePrinter(String prefix, String suffix, String encoding) {
+    if (cliqueWriter != null) {
+      closeFeaturePrinter();
+    }
+    try {
+      cliqueWriter = IOUtils.getPrintWriter(prefix + '.' + suffix, encoding);
+    } catch (IOException ioe) {
+      cliqueWriter = null;
+    }
+  }
+
+  private static void closeFeaturePrinter() {
+    cliqueWriter.close();
+    cliqueWriter = null;
+  }
+
+  private static void printFeatures(String[] wi, ClassicCounter<String> features) {
+    if (cliqueWriter != null) {
+      for (int i = 0; i < wi.length; i++) {
+        if (i > 0) {
+          cliqueWriter.print("\t");
+        }
+        cliqueWriter.print(wi[i]);
+      }
+      for (String feat : features.keySet()) {
+        cliqueWriter.print("\t");
+        cliqueWriter.print(feat);
+        cliqueWriter.print("\t");
+        cliqueWriter.print(features.getCount(feat));
+      }
+      cliqueWriter.println();
+    }
+  }
+
+  private static void printFeatures(String[] wi, List<String> features) {
+    if (cliqueWriter != null) {
+      for (int i = 0; i < wi.length; i++) {
+        if (i > 0) {
+          cliqueWriter.print("\t");
+        }
+        cliqueWriter.print(wi[i]);
+      }
+      for (String feat : features) {
+        cliqueWriter.print("\t");
+        cliqueWriter.print(feat);
+      }
+      cliqueWriter.println();
+    }
+  }
+

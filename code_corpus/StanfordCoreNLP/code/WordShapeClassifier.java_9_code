@@ -1,0 +1,192 @@
+  private static String wordShapeChris2(String s, boolean omitIfInBoundary, Collection<String> knownLCWords) {
+    int len = s.length();
+      return wordShapeChris2Short(s, len, knownLCWords);
+    } else {
+      return wordShapeChris2Long(s, omitIfInBoundary, len, knownLCWords);
+    }
+  }
+
+  private static String wordShapeChris2Short(String s, int len, Collection<String> knownLCWords) {
+    int sbLen = (knownLCWords != null) ? len + 1: len;  // markKnownLC makes String 1 longer
+    final StringBuilder sb = new StringBuilder(sbLen);
+    boolean nonLetters = false;
+
+    for (int i = 0; i < len; i++) {
+      char c = s.charAt(i);
+      char m = c;
+      if (Character.isDigit(c)) {
+        m = 'd';
+      } else if (Character.isLowerCase(c)) {
+        m = 'x';
+      } else if (Character.isUpperCase(c) || Character.isTitleCase(c)) {
+        m = 'X';
+      }
+      for (String gr : greek) {
+        if (s.startsWith(gr, i)) {
+          m = 'g';
+          //System.out.println(s + "  ::  " + s.substring(i+1));
+          i += gr.length() - 1;
+          // System.out.println("Position skips to " + i);
+          break;
+        }
+      }
+      if (m != 'x' && m != 'X') {
+        nonLetters = true;
+      }
+
+      sb.append(m);
+    }
+
+    if (knownLCWords != null) {
+      if ( ! nonLetters && knownLCWords.contains(s.toLowerCase())) {
+        sb.append('k');
+      }
+    }
+    // System.out.println(s + " became " + sb);
+    return sb.toString();
+  }
+
+  // introduce sizes and optional allocation to reduce memory churn demands;
+  // this class could blow a lot of memory if used in a tight loop,
+  // as the naive version allocates lots of kind of heavyweight objects
+  // endSB should be of length BOUNDARY_SIZE
+  // sb is maximally of size s.length() + 1, but is usually (much) shorter. The +1 might happen if markKnownLC is true and it applies
+  // That is, of size 6, which become 8, since HashMaps are powers of 2.  Still, it's half the size
+  private static String wordShapeChris2Long(String s, boolean omitIfInBoundary, int len, Collection<String> knownLCWords) {
+    final char[] beginChars = new char[BOUNDARY_SIZE];
+    final char[] endChars = new char[BOUNDARY_SIZE];
+    int beginUpto = 0;
+    int endUpto = 0;
+    final Set<Character> seenSet = new TreeSet<Character>();  // TreeSet guarantees stable ordering; has no size parameter
+
+    boolean nonLetters = false;
+
+    for (int i = 0; i < len; i++) {
+      int iIncr = 0;
+      char c = s.charAt(i);
+      char m = c;
+      if (Character.isDigit(c)) {
+        m = 'd';
+      } else if (Character.isLowerCase(c)) {
+        m = 'x';
+      } else if (Character.isUpperCase(c) || Character.isTitleCase(c)) {
+        m = 'X';
+      }
+      for (String gr : greek) {
+        if (s.startsWith(gr, i)) {
+          m = 'g';
+          //System.out.println(s + "  ::  " + s.substring(i+1));
+          iIncr = gr.length() - 1;
+          break;
+        }
+      }
+      if (m != 'x' && m != 'X') {
+        nonLetters = true;
+      }
+
+      if (i < BOUNDARY_SIZE) {
+        beginChars[beginUpto++] = m;
+      } else if (i < len - BOUNDARY_SIZE) {
+        seenSet.add(Character.valueOf(m));
+      } else {
+        endChars[endUpto++] = m;
+      }
+      i += iIncr;
+      // System.out.println("Position skips to " + i);
+    }
+
+    // Calculate size. This may be an upperbound, but is often correct
+    int sbSize = beginUpto + endUpto + seenSet.size();
+    if (knownLCWords != null) { sbSize++; }
+    final StringBuilder sb = new StringBuilder(sbSize);
+    // put in the beginning chars
+    sb.append(beginChars, 0, beginUpto);
+    // put in the stored ones sorted
+    if (omitIfInBoundary) {
+      for (Character chr : seenSet) {
+        char ch = chr.charValue();
+        boolean insert = true;
+        for (int i = 0; i < beginUpto; i++) {
+          if (beginChars[i] == ch) {
+            insert = false;
+            break;
+          }
+        }
+        for (int i = 0; i < endUpto; i++) {
+          if (endChars[i] == ch) {
+            insert = false;
+            break;
+          }
+        }
+        if (insert) {
+          sb.append(ch);
+        }
+      }
+    } else {
+      for (Character chr : seenSet) {
+        sb.append(chr.charValue());
+      }
+    }
+    // and add end ones
+    sb.append(endChars, 0, endUpto);
+
+    if (knownLCWords != null) {
+      if (!nonLetters && knownLCWords.contains(s.toLowerCase())) {
+        sb.append('k');
+      }
+    }
+    // System.out.println(s + " became " + sb);
+    return sb.toString();
+  }
+
+
+  private static char chris4equivalenceClass(final char c) {
+    int type = Character.getType(c);
+    if (Character.isDigit(c) || type == Character.LETTER_NUMBER
+            || type == Character.OTHER_NUMBER
+            || "一二三四五六七八九十零〇百千万亿兩○◯".indexOf(c) > 0) {
+      // include Chinese numbers that are just of unicode type OTHER_LETTER (and a couple of round symbols often used (by mistake?) for zeroes)
+      return 'd';
+    } else if (c == '第') {
+      return 'o'; // detect those Chinese ordinals!
+    } else if (c == '年' || c == '月' || c == '日') { // || c == '号') {
+      return 'D'; // Chinese date characters.
+    } else if (Character.isLowerCase(c)) {
+      return 'x';
+    } else if (Character.isUpperCase(c) || Character.isTitleCase(c)) {
+      return 'X';
+    } else if (Character.isWhitespace(c) || Character.isSpaceChar(c)) {
+      return 's';
+    } else if (type == Character.OTHER_LETTER) {
+      return 'c'; // Chinese characters, etc. without case
+    } else if (type == Character.CURRENCY_SYMBOL) {
+      return '$';
+    } else if (type == Character.MATH_SYMBOL) {
+      return '+';
+    } else if (type == Character.OTHER_SYMBOL || c == '|') {
+      return '|';
+    } else if (type == Character.START_PUNCTUATION) {
+      return '(';
+    } else if (type == Character.END_PUNCTUATION) {
+      return ')';
+    } else if (type == Character.INITIAL_QUOTE_PUNCTUATION) {
+      return '`';
+    } else if (type == Character.FINAL_QUOTE_PUNCTUATION || c == '\'') {
+      return '\'';
+    } else if (c == '%') {
+      return '%';
+    } else if (type == Character.OTHER_PUNCTUATION) {
+      return '.';
+    } else if (type == Character.CONNECTOR_PUNCTUATION) {
+      return '_';
+    } else if (type == Character.DASH_PUNCTUATION) {
+      return '-';
+    } else {
+      return 'q';
+    }
+  }
+
+  public static String wordShapeChris4(String s) {
+    return wordShapeChris4(s, false, null);
+  }
+

@@ -1,0 +1,142 @@
+  private static final long serialVersionUID = 6672245467246897192L;
+  private double[] weights;
+  private Index<F> featureIndex;
+  private L[] classes = ErasureUtils.<L>mkTArray(Object.class,2);
+  @Deprecated
+  private LogPrior prior;
+  @Deprecated
+  private boolean biased = false;
+
+  @Override
+  public String toString() {
+    if (featureIndex == null) {
+      return "";
+    }
+
+    StringBuilder sb = new StringBuilder();
+    for (F f : featureIndex) {
+      sb.append(classes[1]).append(" / ").append(f).append(" = ").append(weights[featureIndex.indexOf(f)]);
+    }
+
+    return sb.toString();
+  }
+
+  public L getLabelForInternalPositiveClass(){
+    return classes[1];
+  }
+
+  public L getLabelForInternalNegativeClass(){
+    return classes[0];
+  }
+
+  // todo [cdm]: This method should be removed, and weightsAsGenericCounter renamed as weightsAsCounter!
+  public Counter<String> weightsAsCounter() {
+    Counter<String> c = new ClassicCounter<String>();
+    for (F f : featureIndex) {
+      c.incrementCount(classes[1]+" / "+f, weights[featureIndex.indexOf(f)]);
+    }
+
+    return c;
+  }
+
+  public Counter<F> weightsAsGenericCounter() {
+    Counter<F> c = new ClassicCounter<F>();
+    for (F f : featureIndex) {
+      double w =  weights[featureIndex.indexOf(f)];
+      if(w != 0.0)
+        c.setCount(f, w);
+    }
+    return c;
+  }
+
+  public Index<F> getFeatureIndex() {
+    return featureIndex;
+  }
+
+  public double[] getWeights() {
+    return weights;
+  }
+
+
+  public LogisticClassifier(double[] weights, Index<F> featureIndex, L[] classes){
+    this.weights = weights;
+    this.featureIndex = featureIndex;
+    this.classes = classes;
+  }
+
+
+  @Deprecated //use  LogisticClassifierFactory instead
+  public LogisticClassifier(boolean biased) {
+    this(new LogPrior(LogPrior.LogPriorType.QUADRATIC), biased);
+  }
+
+  @Deprecated //use  in LogisticClassifierFactory instead.
+  public LogisticClassifier(LogPrior prior) {
+    this.prior = prior;
+  }
+
+
+  @Deprecated //use  in LogisticClassifierFactory instead
+  public LogisticClassifier(LogPrior prior, boolean biased) {
+    this.prior = prior;
+    this.biased = biased;
+  }
+
+  public Collection<L> labels() {
+    Collection<L> l = new LinkedList<L>();
+    l.add(classes[0]);
+    l.add(classes[1]);
+    return l;
+  }
+
+  public L classOf(Datum<L, F> datum) {
+    if(datum instanceof RVFDatum<?,?>){
+      return classOfRVFDatum((RVFDatum<L,F>) datum);
+    }
+    return classOf(datum.asFeatures());
+  }
+
+  @Deprecated //use classOf(Datum) instead.
+  public L classOf(RVFDatum<L, F> example) {
+    return classOf(example.asFeaturesCounter());
+  }
+
+  private L classOfRVFDatum(RVFDatum<L, F> example) {
+    return classOf(example.asFeaturesCounter());
+  }
+
+  public L classOf(Counter<F> features) {
+    if (scoreOf(features) > 0) {
+      return classes[1];
+    }
+    return classes[0];
+  }
+
+  public L classOf(Collection<F> features) {
+    if (scoreOf(features) > 0) {
+      return classes[1];
+    }
+    return classes[0];
+  }
+
+
+  public double scoreOf(Collection<F> features) {
+    double sum = 0;
+    for (F feature : features) {
+      int f = featureIndex.indexOf(feature);
+      if (f >= 0) {
+        sum += weights[f];
+      }
+    }
+    return sum;
+  }
+
+  public double scoreOf(Counter<F> features) {
+    double sum = 0;
+    for (F feature : features.keySet()) {
+      int f = featureIndex.indexOf(feature);
+      if (f >= 0) {
+      }
+    }
+    return sum;
+  }

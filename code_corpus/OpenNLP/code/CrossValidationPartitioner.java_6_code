@@ -1,0 +1,19 @@
+    public void reset() throws IOException {
+      if (testSampleStream != null || isPoisened) {
+        throw new IllegalStateException();
+      }
+      this.index = 0;
+      this.sampleStream.reset();
+    }
+
+    public void close() throws IOException {
+      sampleStream.close();
+      poison();
+    }
+
+    void poison() {
+      isPoisened = true;
+      if (testSampleStream != null)
+        testSampleStream.poison();
+    }
+

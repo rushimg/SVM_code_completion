@@ -1,0 +1,138 @@
+    Map<String, String> interner = new HashMap<String, String>();
+    for (Class c : classes) {
+      Field[] fields;
+      try {
+        fields = c.getDeclaredFields();
+      } catch (Throwable e) {
+        debug("Could not check fields for class: " + c.getName() + "  (caused by " + e.getClass() + ": " + e.getMessage() + ")");
+        continue;
+      }
+
+      boolean someOptionFilled = false;
+      boolean someOptionFound = false;
+      for (Field f : fields) {
+        Option o = f.getAnnotation(Option.class);
+        if (o != null) {
+          someOptionFound = true;
+          //(check if field is static)
+          if ((f.getModifiers() & Modifier.STATIC) == 0 && instances == null) {
+            continue;
+          }
+          someOptionFilled = true;
+          //(required marker)
+          Pair<Boolean, Boolean> mark = Pair.makePair(false, false);
+          if (o.required()) {
+            mark = Pair.makePair(true, false);
+          }
+          //(add main name)
+          String name = o.name().toLowerCase();
+          if (name.equals("")) {
+            name = f.getName().toLowerCase();
+          }
+          if (canFill.containsKey(name)) {
+            String name1 = canFill.get(name).getDeclaringClass().getCanonicalName() + "." + canFill.get(name).getName();
+            String name2 = f.getDeclaringClass().getCanonicalName() + "." + f.getName();
+            if (!name1.equals(name2)) {
+              fatal("Multiple declarations of option " + name + ": " + name1 + " and " + name2);
+            } else {
+              err("Class is in classpath multiple times: " + canFill.get(name).getDeclaringClass().getCanonicalName());
+            }
+          }
+          canFill.put(name, f);
+          required.put(name, mark);
+          interner.put(name, name);
+          //(add alternate names)
+          if (!o.alt().equals("")) {
+              alt = alt.toLowerCase();
+              if (canFill.containsKey(alt) && !alt.equals(name))
+                throw new IllegalArgumentException("Multiple declarations of option " + alt + ": " + canFill.get(alt) + " and " + f);
+              canFill.put(alt, f);
+              if (mark.first) required.put(alt, mark);
+              interner.put(alt, name);
+            }
+          }
+        }
+      }
+      //(check to ensure that something got filled, if any @Option annotation was found)
+      if (someOptionFound && !someOptionFilled) {
+        warn("found @Option annotations in class " + c + ", but didn't set any of them (all options were instance variables and no instance given?)");
+      }
+    }
+
+    //--Fill Options
+    for (Object rawKey : options.keySet()) {
+      String rawKeyStr = rawKey.toString();
+      String key = rawKey.toString().toLowerCase();
+      // (get values)
+      String value = options.get(rawKey).toString();
+      assert value != null;
+      Field target = canFill.get(key);
+      // (mark required option as fulfilled)
+      Pair<Boolean, Boolean> mark = required.get(key);
+      if (mark != null && mark.first) {
+        required.put(key, Pair.makePair(true, true));
+      }
+      // (fill the field)
+      if (target != null) {
+        // (case: declared option)z
+        fillField(class2object.get(target.getDeclaringClass()), target, value);
+      } else if (ensureAllOptions) {
+        // (case: undeclared option)
+        // split the key
+        int lastDotIndex = rawKeyStr.lastIndexOf('.');
+        if (lastDotIndex < 0) {
+          fatal("Unrecognized option: " + key);
+        }
+        if (!rawKeyStr.startsWith("log.")) {  // ignore Redwood options
+          String className = rawKeyStr.substring(0, lastDotIndex);
+          String fieldName = rawKeyStr.substring(lastDotIndex + 1);
+          // get the class
+          Class clazz = null;
+          try {
+            clazz = ClassLoader.getSystemClassLoader().loadClass(className);
+          } catch (Exception e) {
+            err("Could not set option: " + rawKey + "; either the option is mistyped, not defined, or the class " + className + " does not exist.");
+          }
+          // get the field
+          if (clazz != null) {
+            try {
+              target = clazz.getField(fieldName);
+            } catch (Exception e) {
+              err("Could not set option: " + rawKey + "; no such field: " + fieldName + " in class: " + className);
+            }
+            if (target != null) {
+              log("option overrides " + target + " to '" + value + "'");
+              fillField(class2object.get(target.getDeclaringClass()), target, value);
+            } else {
+              err("Could not set option: " + rawKey + "; no such field: " + fieldName + " in class: " + className);
+            }
+          }
+        }
+      }
+    }
+
+    //--Ensure Required
+    boolean good = true;
+    for (String key : required.keySet()) {
+      Pair<Boolean, Boolean> mark = required.get(key);
+      if (mark.first && !mark.second) {
+        err("Missing required option: " + interner.get(key) + "   <in class: " + canFill.get(key).getDeclaringClass() + ">");
+        required.put(key, Pair.makePair(true, true));  //don't duplicate error messages
+        good = false;
+      }
+    }
+    if (!good) {
+      System.exit(1);
+    }
+
+    return canFill;
+  }
+
+  protected static Map<String, Field> fillOptionsImpl(
+      Object[] instances,
+      Class<?>[] classes,
+      Properties options) {
+    return fillOptionsImpl(instances, classes, options, strict);
+  }
+
+

@@ -1,0 +1,97 @@
+  public Tree findSyntacticHead(EntityMention ent, Tree root, List<CoreLabel> tokens) {
+    if (!useNewHeadFinder) {
+      return originalFindSyntacticHead(ent, root, tokens);
+    }
+
+    logger.fine("Searching for tree matching " + ent);
+    Tree exactMatch = findTreeWithSpan(root, ent.getExtentTokenStart(), ent.getExtentTokenEnd());
+
+    //
+    // found an exact match
+    //
+    if (exactMatch != null) {
+      logger.fine("Mention \"" + ent + "\" mapped to tree: " + printTree(exactMatch));
+      return safeHead(exactMatch);
+    }
+
+    // no exact match found
+    // in this case, we parse the actual extent of the mention, embedded in a sentence
+    // context, so as to make the parser work better :-)
+
+    int approximateness = 0;
+    List<CoreLabel> extentTokens = new ArrayList<CoreLabel>();
+    extentTokens.add(initCoreLabel("It"));
+    extentTokens.add(initCoreLabel("was"));
+    final int ADDED_WORDS = 2;
+    for (int i = ent.getExtentTokenStart(); i < ent.getExtentTokenEnd(); i++) {
+      // Add everything except separated dashes! The separated dashes mess with the parser too badly.
+      CoreLabel label = tokens.get(i);
+      if ( ! "-".equals(label.word())) {
+        extentTokens.add(tokens.get(i));
+      } else {
+        approximateness++;
+      }
+    }
+    extentTokens.add(initCoreLabel("."));
+
+    // constrain the parse to the part we're interested in.
+    // Starting from ADDED_WORDS comes from skipping "It was".
+    // -1 to exclude the period.
+    // We now let it be any kind of nominal constituent, since there
+    // are VP and S ones
+    List<ParserConstraint> constraints = Collections.singletonList(constraint);
+    Tree tree = parse(extentTokens, constraints);
+    logger.fine("No exact match found. Local parse:\n" + tree.pennString());
+    convertToCoreLabels(tree);
+    tree.indexSpans(ent.getExtentTokenStart() - ADDED_WORDS);  // remember it has ADDED_WORDS extra words at the beginning
+    Tree subtree = findPartialSpan(tree, ent.getExtentTokenStart());
+    Tree extentHead = safeHead(subtree);
+    logger.fine("Head is: " + extentHead);
+    assert(extentHead != null);
+    // extentHead is a child in the local extent parse tree. we need to find the corresponding node in the main tree
+    // Because we deleted dashes, it's index will be >= the index in the extent parse tree
+    CoreLabel l = (CoreLabel) extentHead.label();
+    // Tree realHead = findTreeWithSpan(root, l.get(CoreAnnotations.BeginIndexAnnotation.class), l.get(CoreAnnotations.EndIndexAnnotation.class));
+    Tree realHead = funkyFindLeafWithApproximateSpan(root, l.value(), l.get(CoreAnnotations.BeginIndexAnnotation.class), approximateness);
+    if(realHead != null) logger.fine("Chosen head: " + realHead);
+    return realHead;
+  }
+
+  private Tree findPartialSpan(Tree current, int start) {
+    CoreLabel label = (CoreLabel) current.label();
+    int startIndex = label.get(CoreAnnotations.BeginIndexAnnotation.class);
+    if (startIndex == start) {
+      logger.fine("findPartialSpan: Returning " + current);
+      return current;
+    }
+    for (Tree kid : current.children()) {
+      CoreLabel kidLabel = (CoreLabel) kid.label();
+      int kidStart = kidLabel.get(CoreAnnotations.BeginIndexAnnotation.class);
+      int kidEnd = kidLabel.get(CoreAnnotations.EndIndexAnnotation.class);
+      // System.err.println("findPartialSpan: Examining " + kidLabel.value() + " from " + kidStart + " to " + kidEnd);
+      if (kidStart <= start && kidEnd > start) {
+        return findPartialSpan(kid, start);
+      }
+    }
+    throw new RuntimeException("Shouldn't happen: " + start + " " + current);
+  }
+
+  private Tree funkyFindLeafWithApproximateSpan(Tree root, String token, int index, int approximateness) {
+    logger.fine("Looking for " + token + " at pos " + index + " plus upto " + approximateness + " in tree: " + root.pennString());
+    List<Tree> leaves = root.getLeaves();
+    for (Tree leaf : leaves) {
+      CoreLabel label = CoreLabel.class.cast(leaf.label());
+      int ind = label.get(CoreAnnotations.BeginIndexAnnotation.class);
+      // System.err.println("Token #" + ind + ": " + leaf.value());
+      if (token.equals(leaf.value()) && ind >= index && ind <= index + approximateness) {
+        return leaf;
+      }
+    }
+    // this shouldn't happen
+    // but it does happen (VERY RARELY) on some weird web text that includes SGML tags with spaces
+    // TODO: does this mean that somehow tokenization is different for the parser? check this by throwing an Exception in KBP
+    logger.severe("GenericDataSetReader: WARNING: Failed to find head token");
+    logger.severe("  when looking for " + token + " at pos " + index + " plus upto " + approximateness + " in tree: " + root.pennString());
+    return null;
+  }
+

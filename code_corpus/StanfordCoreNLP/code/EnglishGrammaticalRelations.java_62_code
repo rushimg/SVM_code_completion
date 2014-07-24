@@ -1,0 +1,90 @@
+  @SuppressWarnings({"RedundantArrayCreation"})
+  private static final List<GrammaticalRelation> values =
+    Generics.newArrayList(Arrays.asList(new GrammaticalRelation[] {
+      GOVERNOR,
+      DEPENDENT,
+      PREDICATE,
+      AUX_MODIFIER,
+      AUX_PASSIVE_MODIFIER,
+      COPULA,
+      CONJUNCT,
+      COORDINATION,
+      PUNCTUATION,
+      ARGUMENT,
+      SUBJECT,
+      NOMINAL_SUBJECT,
+      NOMINAL_PASSIVE_SUBJECT,
+      CLAUSAL_SUBJECT,
+      CLAUSAL_PASSIVE_SUBJECT,
+      COMPLEMENT,
+      OBJECT,
+      DIRECT_OBJECT,
+      INDIRECT_OBJECT,
+      PREPOSITIONAL_OBJECT,
+      PREPOSITIONAL_COMPLEMENT,
+      CLAUSAL_COMPLEMENT,
+      XCLAUSAL_COMPLEMENT,
+      MARKER,
+      RELATIVE,
+      REFERENT,
+      EXPLETIVE,
+      ADJECTIVAL_COMPLEMENT,
+      MODIFIER,
+      ADV_CLAUSE_MODIFIER,
+      TEMPORAL_MODIFIER,
+      RELATIVE_CLAUSE_MODIFIER,
+      NUMERIC_MODIFIER,
+      ADJECTIVAL_MODIFIER,
+      NOUN_COMPOUND_MODIFIER,
+      APPOSITIONAL_MODIFIER,
+      VERBAL_MODIFIER,
+      ADVERBIAL_MODIFIER,
+      NEGATION_MODIFIER,
+      MULTI_WORD_EXPRESSION,
+      DETERMINER,
+      PREDETERMINER,
+      PRECONJUNCT,
+      POSSESSION_MODIFIER,
+      POSSESSIVE_MODIFIER,
+      PREPOSITIONAL_MODIFIER,
+      PHRASAL_VERB_PARTICLE,
+      SEMANTIC_DEPENDENT,
+      CONTROLLING_SUBJECT,
+      AGENT,
+      NUMBER_MODIFIER,
+      QUANTIFIER_MODIFIER,
+      NP_ADVERBIAL_MODIFIER,
+      PARATAXIS,
+      DISCOURSE_ELEMENT,
+      GOES_WITH,
+    }));
+  // Cache frequently used views of the values list
+  private static final List<GrammaticalRelation> unmodifiableValues =
+    Collections.unmodifiableList(values);
+  private static final List<GrammaticalRelation> synchronizedValues =
+    Collections.synchronizedList(values);
+  private static final List<GrammaticalRelation> unmodifiableSynchronizedValues =
+    Collections.unmodifiableList(values);
+  public static final ReadWriteLock valuesLock = new ReentrantReadWriteLock();
+
+  // Map from English GrammaticalRelation short names to their corresponding
+  // GrammaticalRelation objects
+  public static final Map<String, GrammaticalRelation> shortNameToGRel = new ConcurrentHashMap<String, GrammaticalRelation>();
+  static {
+    for (GrammaticalRelation gr : values()) {
+      shortNameToGRel.put(gr.toString().toLowerCase(), gr);
+    }
+  }
+
+  public static List<GrammaticalRelation> values() {
+    return values(false);
+  }
+
+  public static List<GrammaticalRelation> values(boolean threadSafe) {
+    return threadSafe? unmodifiableSynchronizedValues : unmodifiableValues;
+  }
+
+  public static Lock valuesLock() {
+    return valuesLock.readLock();
+  }
+

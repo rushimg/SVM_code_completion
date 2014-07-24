@@ -1,0 +1,28 @@
+    // This should now be handled at the AbstractCollinsHeadFinder level, so see if we can comment this out
+    // Heuristically repair punctuation heads
+    Tree[] hdChildren = hd.children();
+    if (hdChildren != null && hdChildren.length > 0 &&
+        hdChildren[0].isLeaf()) {
+      if (tlp.isPunctuationWord(hdChildren[0].label().value())) {
+         Tree[] tChildren = t.children();
+         if (DEBUG) {
+           System.err.printf("head is punct: %s\n", hdChildren[0].label());
+         }
+         for (int i = tChildren.length - 1; i >= 0; i--) {
+           if (!tlp.isPunctuationWord(tChildren[i].children()[0].label().value())) {
+             hd = tChildren[i];
+             if (DEBUG) {
+               System.err.printf("New head of %s is %s%n", hd.label(), hd.children()[0].label());
+             }
+             break;
+           }
+         }
+      }
+    }
+
+    if (DEBUG) {
+      System.err.println("Determined head (case 3) for " + t.value() + " is: " + hd);
+    }
+    return hd;
+  }
+

@@ -1,0 +1,58 @@
+/**
+ * <code>EnglishGrammaticalRelations</code> is a
+ * set of {@link GrammaticalRelation} objects for the English language.
+ * These relations are commonly called Stanford Dependencies (SD).
+ * <p/>
+ * Grammatical relations can either be shown in their basic form, where each
+ * input token receives a relation, or "collapsed" which does certain normalizations
+ * which group words or turns them into relations. See
+ * {@link EnglishGrammaticalStructure}.  What is presented here mainly
+ * shows the basic form, though there is some mixture. The "collapsed" grammatical
+ * relations primarily differ as follows:
+ * <ul>
+ * <li>Some multiword conjunctions and prepositions are treated as single
+ * words, and then processed as below.</li>
+ * <li>Prepositions do not appear as words but are turned into new "prep" or "prepc"
+ * grammatical relations, one for each preposition.</li>
+ * <li>Conjunctions do not appear as words but are turned into new "conj"
+ * grammatical relations, one for each conjunction.</li>
+ * <li>The possessive "'s" is deleted, leaving just the relation between the
+ * possessor and possessum.</li>
+ * <li>Agents of passive sentences are recognized and marked as agent and not as prep_by.</li>
+ * </ul>
+ * <p/>
+ * This set of English grammatical relations is not intended to be
+ * exhaustive or immutable.  It's just where we're at now.
+ * <p/>
+ * <p/>
+ * See {@link GrammaticalRelation} for details of fields and matching.
+ * <p/>
+ * <p/>
+ * If using LexicalizedParser, it should be run with the
+ * <code>-retainTmpSubcategories</code> option and one of the
+ * <code>-splitTMP</code> options (e.g., <code>-splitTMP 1</code>) in order to
+ * get the temporal NP dependencies maximally right!
+ * <p/>
+ * <i>Implementation notes: </i> Don't change the set of GRs without discussing it
+ * with people first.  If a change is needed, to add a new grammatical relation:
+ * <ul>
+ * <li> Governor nodes of the grammatical relations should be the lowest ones.</li>
+ * <li> Check the semantic head rules in SemanticHeadFinder and
+ * ModCollinsHeadFinder, both in the trees package. That's what will be used to
+ * match here.</li>
+ * <li> Create and define the GrammaticalRelation similarly to the others.</li>
+ * <li> Add it to the <code>values</code> array at the end of the file.</li>
+ * </ul>
+ * The patterns in this code assume that an NP may be followed by either a
+ * -ADV or -TMP functional tag but there are no other functional tags represented.
+ * This corresponds to what we currently get from NPTmpRetainingTreeNormalizer or
+ * DependencyTreeTransformer.
+ *
+ * @author Bill MacCartney
+ * @author Marie-Catherine de Marneffe
+ * @author Christopher Manning
+ * @author Galen Andrew (refactoring English-specific stuff)
+ * @see GrammaticalStructure
+ * @see GrammaticalRelation
+ * @see EnglishGrammaticalStructure
+ */

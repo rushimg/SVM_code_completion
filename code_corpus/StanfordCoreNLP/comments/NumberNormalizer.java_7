@@ -1,0 +1,23 @@
+  /**
+   * Find and mark numbers (does not need NumberSequenceClassifier)
+   * Each token is annotated with the numeric value and type
+   * - CoreAnnotations.NumericTypeAnnotation.class: ORDINAL, UNIT (hundred, thousand,..., dozen, gross,...), NUMBER
+   * - CoreAnnotations.NumericValueAnnotation.class: Number representing the numeric value of the token
+   *   ( two thousand => 2 1000 )
+   *
+   * Tries also to separate individual numbers like four five six,
+   *   while keeping numbers like four hundred and seven together
+   * Annotate tokens belonging to each composite number with
+   * - CoreAnnotations.NumericCompositeTypeAnnotation.class: ORDINAL (1st, 2nd), NUMBER (one hundred)
+   * - CoreAnnotations.NumericCompositeValueAnnotation.class: Number representing the composite numeric value
+   *   ( two thousand => 2000 2000 )
+   *
+   * Also returns list of CoreMap representing the identified numbers
+   *
+   * The function is overly aggressive in marking possible numbers
+   *  - should either do more checks or use in conjunction with NumberSequenceClassifier
+   *    to avoid marking certain tokens (like second/NN) as numbers...
+   *
+   * @param annotation The annotation structure
+   * @return list of CoreMap representing the identified numbers
+   */

@@ -1,0 +1,21 @@
+  public static <E> String toString(Counter<E> counter, int maxKeysToPrint) {
+    return Counters.toPriorityQueue(counter).toString(maxKeysToPrint);
+  }
+
+  public static <E> String toString(Counter<E> counter, NumberFormat nf) {
+    StringBuilder sb = new StringBuilder();
+    sb.append('{');
+    List<E> list = ErasureUtils.sortedIfPossible(counter.keySet());
+    for (Iterator<E> iter = list.iterator(); iter.hasNext();) {
+      E key = iter.next();
+      sb.append(key);
+      sb.append('=');
+      sb.append(nf.format(counter.getCount(key)));
+      if (iter.hasNext()) {
+        sb.append(", ");
+      }
+    }
+    sb.append('}');
+    return sb.toString();
+  }
+

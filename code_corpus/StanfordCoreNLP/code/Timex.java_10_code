@@ -1,0 +1,156 @@
+
+    init(element);
+  }
+
+  public Timex(String val) {
+    this(null, val);
+  }
+
+  public Timex(String type, String val) {
+    this.val = val;
+    this.type = type;
+    this.beginPoint = -1;
+    this.endPoint = -1;
+    this.xml = (val == null ? "<TIMEX3/>" : String.format("<TIMEX3 VAL=\"%s\" TYPE=\"%s\"/>", this.val, this.type));
+  }
+
+  public Timex(String type, String val, String altVal, String tid, String text, int beginPoint, int endPoint) {
+    this.type = type;
+    this.val = val;
+    this.altVal = altVal;
+    this.tid = tid;
+    this.text = text;
+    this.beginPoint = beginPoint;
+    this.endPoint = endPoint;
+  }
+
+  private void init(Element element) {
+    init(XMLUtils.nodeToString(element, false), element);
+  }
+
+  private void init(String xml, Element element) {
+    this.xml = xml;
+    this.text = element.getTextContent();
+
+    // Mandatory attributes
+    this.tid = XMLUtils.getAttribute(element, "tid");
+    this.val = XMLUtils.getAttribute(element, "VAL");
+    if (this.val == null) {
+      this.val = XMLUtils.getAttribute(element, "value");
+    }
+
+    this.altVal = XMLUtils.getAttribute(element, "alt_value");
+
+    this.type = XMLUtils.getAttribute(element, "type");
+    if (type == null) {
+      this.type = XMLUtils.getAttribute(element, "TYPE");
+    }
+    // if (this.type != null) {
+    // this.type = this.type.intern();
+    // }
+
+    // Optional attributes
+    String beginPoint = XMLUtils.getAttribute(element, "beginPoint");
+    this.beginPoint = (beginPoint == null || beginPoint.length() == 0)? -1 : Integer.parseInt(beginPoint.substring(1));
+    String endPoint = XMLUtils.getAttribute(element, "endPoint");
+    this.endPoint = (endPoint == null || endPoint.length() == 0)? -1 : Integer.parseInt(endPoint.substring(1));
+  }
+
+  public int beginPoint() { return beginPoint; }
+  public int endPoint() { return endPoint; }
+
+  public String toString() {
+    return this.xml;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    Timex timex = (Timex) o;
+
+    if (beginPoint != timex.beginPoint) {
+      return false;
+    }
+    if (endPoint != timex.endPoint) {
+      return false;
+    }
+    if (type != null ? !type.equals(timex.type) : timex.type != null) {
+      return false;
+    }
+    if (val != null ? !val.equals(timex.val) : timex.val != null) {
+      return false;
+    }
+
+    return true;
+  }
+
+  @Override
+  public int hashCode() {
+    int result = val != null ? val.hashCode() : 0;
+    return result;
+  }
+
+  public Element toXmlElement() {
+    Element element = XMLUtils.createElement("TIMEX3");
+    if (tid != null) {
+      element.setAttribute("tid", tid);
+    }
+    if (value() != null) {
+      element.setAttribute("value", val);
+    }
+    if (altVal != null) {
+      element.setAttribute("altVal", altVal);
+    }
+    if (type != null) {
+      element.setAttribute("type", type);
+    }
+    if (beginPoint != -1) {
+      element.setAttribute("beginPoint", "t" + String.valueOf(beginPoint));
+    }
+    if (endPoint != -1) {
+      element.setAttribute("endPoint", "t" + String.valueOf(endPoint));
+    }
+    if (text != null) {
+      element.setTextContent(text);
+    }
+    return element;
+  }
+
+  // Used to create timex from XML (mainly for testing)
+  public static Timex fromXml(String xml) {
+    Element element = XMLUtils.parseElement(xml);
+    if ("TIMEX3".equals(element.getNodeName())) {
+      Timex t = new Timex();
+//      t.init(xml, element);
+
+      // Doesn't preserve original input xml
+      // Will reorder attributes of xml so can match xml of test timex and actual timex
+      // (for which we can't control the order of the attributes now we don't use nu.xom...)
+      t.init(element);
+      return t;
+    } else {
+      throw new IllegalArgumentException("Invalid timex xml: " + xml);
+    }
+  }
+
+  public static Timex fromMap(String text, Map<String, String> map) {
+    try {
+      Element element = XMLUtils.createElement("TIMEX3");
+      for (Map.Entry<String, String> entry : map.entrySet()) {
+        if (entry.getValue() != null) {
+          element.setAttribute(entry.getKey(), entry.getValue());
+        }
+      }
+      element.setTextContent(text);
+      return new Timex(element);
+    } catch (Exception ex) {
+      throw new RuntimeException(ex);
+    }
+  }
+

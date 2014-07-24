@@ -1,0 +1,33 @@
+public class Parser extends AbstractBottomUpParser {
+
+  private MaxentModel buildModel;
+  private MaxentModel checkModel;
+
+  private BuildContextGenerator buildContextGenerator;
+  private CheckContextGenerator checkContextGenerator;
+
+  private double[] bprobs;
+  private double[] cprobs;
+
+  private static final String TOP_START = START + TOP_NODE;
+  private int topStartIndex;
+  private Map<String, String> startTypeMap;
+  private Map<String, String> contTypeMap;
+
+  private int completeIndex;
+  private int incompleteIndex;
+
+  public Parser(ParserModel model, int beamSize, double advancePercentage) {
+    this(model.getBuildModel(), model.getCheckModel(),
+        new POSTaggerME(model.getParserTaggerModel(), 10, 0),
+        new ChunkerME(model.getParserChunkerModel(),
+            ChunkerME.DEFAULT_BEAM_SIZE,
+            new ParserChunkerSequenceValidator(model.getParserChunkerModel()),
+            new ChunkContextGenerator(ChunkerME.DEFAULT_BEAM_SIZE)),
+            model.getHeadRules(), beamSize, advancePercentage);
+  }
+
+  public Parser(ParserModel model) {
+    this(model, defaultBeamSize, defaultAdvancePercentage);
+  }
+

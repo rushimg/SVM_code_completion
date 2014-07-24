@@ -1,0 +1,24 @@
+    if (puncs == null) { puncs = puncs_in; }
+    if (puncsPat == null) {
+      //System.err.println("Compile Puncs");
+      puncsPat = new Pattern[puncs.length];
+      for(int i = 0; i < puncs.length; i++) {
+        Character punc = puncs[i];
+        if (punc == '(' || punc == ')') { // escape
+          puncsPat[i] = Pattern.compile(WHITE + "\\" + punc + WHITE);
+        } else {
+          puncsPat[i] = Pattern.compile(WHITE + punc + WHITE);
+        }
+      }
+    }
+
+    for (int i = 0; i < puncsPat.length; i++) {
+      Pattern p = puncsPat[i];
+      Character punc = puncs[i];
+      Matcher m = p.matcher(ans);
+      ans = m.replaceAll(" "+punc+" ");
+    }
+    ans = ans.trim();
+    return ans;
+  }
+

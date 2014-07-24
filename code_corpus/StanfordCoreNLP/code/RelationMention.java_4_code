@@ -1,0 +1,44 @@
+  protected String signature;
+  
+  public RelationMention(String objectId, 
+      CoreMap sentence,
+      Span span,
+      String type,
+      String subtype,
+      List<ExtractionObject> args) {
+    super(objectId, sentence, span, type, subtype);
+    this.args = args;
+    this.argNames = null;
+    this.signature = null;
+  }
+  
+  public RelationMention(String objectId, 
+      CoreMap sentence,
+      Span span,
+      String type,
+      String subtype,
+      List<ExtractionObject> args,
+      List<String> argNames) {
+    super(objectId, sentence, span, type, subtype);
+    this.args = args;
+    this.argNames = argNames;
+    this.signature = null;
+  }
+  
+  public RelationMention(String objectId, 
+      CoreMap sentence, 
+      Span span,
+      String type,
+      String subtype,
+      ExtractionObject... args) {
+    this(objectId, sentence, span, type, subtype, Arrays.asList(args));
+  }
+
+  public boolean argsMatch(RelationMention rel) {
+    return argsMatch(rel.getArgs());
+  }
+  
+  public boolean argsMatch(ExtractionObject... inputArgs) {
+    return argsMatch(Arrays.asList(inputArgs));
+  }
+

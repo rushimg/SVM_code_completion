@@ -1,0 +1,50 @@
+  public Morphology(Reader in) {
+    lexer = new Morpha(in);
+  }
+
+
+  public Morphology(Reader in, int flags) {
+    lexer = new Morpha(in);
+    lexer.setOptions(flags);
+  }
+
+
+  public Word next() throws IOException {
+    String nx = lexer.next();
+    if (nx == null) {
+      return null;
+    } else {
+      return new Word(nx);
+    }
+  }
+
+  static boolean isProper(String posTag) {
+    return posTag.equals("NNP") || posTag.equals("NNPS") || posTag.equals("NP");
+  }
+
+  public Word stem(Word w) {
+    return new Word(stem(w.value()));
+  }
+
+  public String stem(String word) {
+    try {
+      lexer.yyreset(new StringReader(word));
+      lexer.yybegin(Morpha.any);
+      String wordRes = lexer.next();
+      return wordRes;
+    } catch (IOException e) {
+      LOGGER.warning("Morphology.stem() had error on word " + word);
+      return word;
+    }
+  }
+
+
+  public String lemma(String word, String tag) {
+    return lemmatize(word, tag, lexer, lexer.option(1));
+  }
+
+  public String lemma(String word, String tag, boolean lowercase) {
+    return lemmatize(word, tag, lexer, lowercase);
+  }
+
+

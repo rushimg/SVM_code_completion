@@ -1,0 +1,126 @@
+  private void doSaveHistory() {
+    if (chooser == null)
+      chooser = createFileChooser();
+    int status = chooser.showSaveDialog(this);
+    if(status == JFileChooser.APPROVE_OPTION) {
+      Thread t = new Thread() {
+        @Override
+        public void run() {
+          try {
+            BufferedWriter out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(chooser.getSelectedFile()), FileTreeModel.getCurEncoding()));
+            String hist = InputPanel.getInstance().getHistoryString();
+            out.write(hist);
+            out.flush();
+            out.close();
+          } catch(Exception e) {
+            System.err.println("Exception in save");
+            e.printStackTrace();
+          }
+        }
+      };
+      t.start();
+    }
+  }
+
+
+
+  private void loadTsurgeonScript() {
+    if (chooser == null)
+      chooser = createFileChooser();
+    int status = chooser.showOpenDialog(this);
+    if(status == JFileChooser.APPROVE_OPTION) {
+      Thread t = new Thread() {
+        @Override
+        public void run() {
+          try {
+            BufferedReader reader = new BufferedReader(new FileReader(chooser.getSelectedFile().toString()));
+            final String tregexPatternString = Tsurgeon.getTregexPatternFromReader(reader);
+            final String tsurgeonOperationsString = Tsurgeon.getTsurgeonTextFromReader(reader);
+            SwingUtilities.invokeLater(new Runnable() {
+              public void run() {
+                InputPanel.getInstance().setScriptAndPattern(tregexPatternString, tsurgeonOperationsString);
+              }
+            });
+          } catch (IOException e) {
+            System.out.println("Error parsing Tsurgeon file");
+            //e.printStackTrace();
+          }
+        }
+      };
+      t.start();
+    }
+  }
+
+
+  void doPreferences() {
+    if (preferenceDialog == null) {
+      preferenceDialog = new PreferencesPanel(this);
+    }
+    preferenceDialog.pack();
+    preferenceDialog.setLocationRelativeTo(this);
+    preferenceDialog.setVisible(true);
+  }
+
+  //Tdiff
+  private boolean doTdiff = false;
+  public static final int MAX_TDIFF_TREEBANKS = 2;
+
+  private void doTdiff() {
+    doTdiff = !doTdiff;
+    ((JCheckBoxMenuItem) tDiff).setState(doTdiff);
+
+    // Only allow 2 active treebanks
+    if(doTdiff) {
+      List<FileTreeNode> activeTreebanks = FilePanel.getInstance().getActiveTreebanks();
+      for(int i = 2; i < activeTreebanks.size(); i++)
+        activeTreebanks.get(i).setActive(false);
+    }
+  }
+
+  public boolean isTdiffEnabled() { return doTdiff; }
+
+  public void actionPerformed(ActionEvent e) {
+    Object source = e.getSource();
+
+    if (source == loadFiles) {
+      doLoadFiles();
+    } else if (source == saveMatches) {
+      doSaveFile();
+    } else if (source == saveSentences) {
+      doSaveSentencesFile();
+    } else if (source == loadTsurgeon) {
+      loadTsurgeonScript();
+    } else if (source == preferences) {
+      doPreferences();
+    } else if (source == tDiff) {
+      doTdiff();
+    } else if (source == quit) {
+      doQuit();
+    } else if (source == saveHistory) {
+      doSaveHistory();
+    } else if (source == clearFileList) {
+      doClearFileList();
+    } else if (source == searchMenuItem) {
+      InputPanel.getInstance().runSearch();
+    } else if (source == prevMatch) {
+      MatchesPanel.getInstance().selectPreviousMatch();
+    } else if (source == nextMatch) {
+      MatchesPanel.getInstance().selectNextMatch();
+    } else if (source == prevTreeMatch) {
+      DisplayMatchesPanel.getInstance().showPrevMatchedPart();
+    } else if (source == nextTreeMatch) {
+      DisplayMatchesPanel.getInstance().showNextMatchedPart();
+    }
+  }
+
+  public void doClearFileList() {
+    FilePanel.getInstance().clearAll();
+    clearFileList.setEnabled(false);
+  }
+
+  public static void doQuit() {
+    System.exit(0);
+  }
+
+
+

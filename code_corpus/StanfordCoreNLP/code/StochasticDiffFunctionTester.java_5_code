@@ -1,0 +1,81 @@
+  This function is used to get a lower bound on the condition number.  as it stands this is pretty straight forward:
+
+    a random point (x) and vector (v) are generated, the Raleigh quotient ( v.H(x).v / v.v ) is then taken which provides both
+    a lower bound on the largest eigenvalue, and an upper bound on the smallest eigenvalue.  This can then be used to
+    come up with a lower bound on the condition number of the hessian.
+
+  public double testConditionNumber(int samples){
+    double maxSeen = 0.0;
+    double minSeen = 0.0;
+    double[] thisV = new double[ thisFunc.domainDimension() ];
+    double[] thisX = new double[thisV.length];
+    gradFD = new double[thisV.length];
+    HvFD = new double[thisV.length];
+
+    double thisVHV;
+    boolean isNeg = false;
+    boolean isPos = false;
+    boolean isSemi = false;
+
+    thisFunc.method = StochasticCalculateMethods.ExternalFiniteDifference;
+
+    for(int j=0;j<samples;j++){
+
+      for (int i=0; i< thisV.length; i++){
+        thisV[i] = generator.nextDouble();
+      }
+      for (int i=0; i< thisX.length; i++){
+        thisX[i] = generator.nextDouble();
+      }
+
+      System.err.println("Evaluating Hessian Product");
+      System.arraycopy(thisFunc.derivativeAt(thisX,thisV,testBatchSize ), 0,gradFD, 0, gradFD.length);
+      thisFunc.recalculatePrevBatch = true;
+      System.arraycopy(thisFunc.HdotVAt(thisX,thisV,gradFD,testBatchSize),0,HvFD,0,HvFD.length);
+
+      thisVHV = ArrayMath.innerProduct(thisV,HvFD);
+
+      if( Math.abs(thisVHV) > maxSeen){
+        maxSeen = Math.abs(thisVHV);
+      }
+
+      if( Math.abs(thisVHV) < minSeen){
+        minSeen = Math.abs(thisVHV);
+      }
+
+      if( thisVHV < 0 ){
+        isNeg = true;
+      }
+
+      if( thisVHV > 0){
+        isPos = true;
+      }
+
+      if( thisVHV ==0 ){
+        isSemi = true;
+      }
+
+      System.err.println("It:" + j + "  C:" + maxSeen/minSeen + "N:" + isNeg + "P:" + isPos + "S:" + isSemi);
+    }
+
+    System.out.println("Condition Number of: " + maxSeen/minSeen);
+    System.out.println("Is negative: " + isNeg);
+    System.out.println("Is positive: " + isPos);
+    System.out.println("Is semi:     " + isSemi);
+
+    return maxSeen/minSeen;
+  }
+
+
+  public double[] getVariance(double[] x){
+    return getVariance(x,testBatchSize);
+  }
+
+  public double[] getVariance(double[] x, int batchSize){
+
+    double[] ret = new double[4];
+    double[] fullHx = new double[thisFunc.domainDimension()];
+    double[] thisHx = new double[x.length];
+    double[] thisGrad = new double[x.length];
+    List<double[]> HxList = new ArrayList<double[]>();
+

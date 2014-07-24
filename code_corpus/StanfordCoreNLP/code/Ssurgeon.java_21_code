@@ -1,0 +1,39 @@
+  
+  
+  public static enum RUNTYPE {
+    interactive, // interactively test contents of pattern directory against entered sentences
+    testinfo // test against a given infofile (RTE), generating rewrites for hypotheses
+  }
+  
+  
+  public static class ArgsBox {
+    public RUNTYPE type = RUNTYPE.interactive;
+    
+    public String patternDirStr = null;
+    public File patternDir = null;
+    
+    public String info = null;
+    public File infoPath = null;
+    
+    public void init() {
+      patternDir = new File(patternDirStr);
+      if (type == RUNTYPE.testinfo)
+        infoPath = new File(info);
+    }
+    
+    @Override
+    public String toString() {
+      StringWriter buf = new StringWriter();
+      buf.write("type ="+type+"\n");
+      buf.write("pattern dir = "+patternDir.getAbsolutePath());
+      if (type == RUNTYPE.testinfo) {
+        buf.write("info file = "+info);
+        if (info != null)
+          buf.write(", path = "+infoPath.getAbsolutePath());
+      }
+      return buf.toString();
+    }
+  }
+  
+  protected static ArgsBox argsBox = new ArgsBox();
+  

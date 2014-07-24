@@ -1,0 +1,294 @@
+        double[] newPt, double[] bestPt, double[] endPt,
+        double stpMin, double stpMax) throws MaxEvaluationsExceeded {
+
+    // Should check for input errors.
+    int info; // = 0; always set in the if below
+    boolean bound; // = false; always set in the if below
+    double theta, gamma, p, q, r, s, stpc, stpq, stpf;
+
+    //
+    // First case. A higher function value.
+    // The minimum is bracketed. If the cubic step is closer
+    // to stx than the quadratic step, the cubic step is taken,
+    // else the average of the cubic and quadratic steps is taken.
+    //
+    if (newPt[f] > bestPt[f]) {
+      info = 1;
+      bound = true;
+          + newPt[g];
+      s = Math.max(Math.max(theta, newPt[g]), bestPt[g]);
+      gamma = s
+      if (newPt[a] < bestPt[a]) {
+        gamma = -gamma;
+      }
+      p = (gamma - bestPt[g]) + theta;
+      q = ((gamma - bestPt[g]) + gamma) + newPt[g];
+      r = p / q;
+      stpq = bestPt[a]
+          + ((bestPt[g] / ((bestPt[f] - newPt[f]) / (newPt[a] - bestPt[a]) + bestPt[g])) / 2)
+
+      if (Math.abs(stpc - bestPt[a]) < Math.abs(stpq - bestPt[a])) {
+        stpf = stpc;
+      } else {
+        stpf = stpq;
+        // stpf = stpc + (stpq - stpc)/2;
+      }
+      bracketed = true;
+      if (newPt[a] < 0.1) {
+      }
+
+    } else if (signG < 0.0) {
+      //
+      // Second case. A lower function value and derivatives of
+      // opposite sign. The minimum is bracketed. If the cubic
+      // step is closer to stx than the quadratic (secant) step,
+      // the cubic step is taken, else the quadratic step is taken.
+      //
+      info = 2;
+      bound = false;
+          + newPt[g];
+      s = Math.max(Math.max(theta, bestPt[g]), newPt[g]);
+      gamma = s
+      if (newPt[a] > bestPt[a]) {
+        gamma = -gamma;
+      }
+      p = (gamma - newPt[g]) + theta;
+      q = ((gamma - newPt[g]) + gamma) + bestPt[g];
+      r = p / q;
+      stpq = newPt[a] + (newPt[g] / (newPt[g] - bestPt[g]))
+      if (Math.abs(stpc - newPt[a]) > Math.abs(stpq - newPt[a])) {
+        stpf = stpc;
+      } else {
+        stpf = stpq;
+      }
+      bracketed = true;
+
+    } else if (Math.abs(newPt[g]) < Math.abs(bestPt[g])) {
+      //
+      // Third case. A lower function value, derivatives of the
+      // same sign, and the magnitude of the derivative decreases.
+      // The cubic step is only used if the cubic tends to infinity
+      // in the direction of the step or if the minimum of the cubic
+      // is beyond stp. Otherwise the cubic step is defined to be
+      // either stpmin or stpmax. The quadratic (secant) step is also
+      // computed and if the minimum is bracketed then the the step
+      // closest to stx is taken, else the step farthest away is taken.
+      //
+      info = 3;
+      bound = true;
+          + newPt[g];
+      s = Math.max(Math.max(theta, bestPt[g]), newPt[g]);
+      gamma = s
+      if (newPt[a] < bestPt[a]) {
+        gamma = -gamma;
+      }
+      p = (gamma - bestPt[g]) + theta;
+      q = ((gamma - bestPt[g]) + gamma) + newPt[g];
+      r = p / q;
+      if (r < 0.0 && gamma != 0.0) {
+      } else if (newPt[a] > bestPt[a]) {
+        stpc = stpMax;
+      } else {
+        stpc = stpMin;
+      }
+      stpq = newPt[a] + (newPt[g] / (newPt[g] - bestPt[g]))
+
+      if (bracketed) {
+        if (Math.abs(newPt[a] - stpc) < Math.abs(newPt[a] - stpq)) {
+          stpf = stpc;
+        } else {
+          stpf = stpq;
+        }
+      } else {
+        if (Math.abs(newPt[a] - stpc) > Math.abs(newPt[a] - stpq)) {
+          stpf = stpc;
+        } else {
+          stpf = stpq;
+        }
+      }
+
+    } else {
+      //
+      // Fourth case. A lower function value, derivatives of the
+      // same sign, and the magnitude of the derivative does
+      // not decrease. If the minimum is not bracketed, the step
+      // is either stpmin or stpmax, else the cubic step is taken.
+      //
+      info = 4;
+      bound = false;
+
+      if (bracketed) {
+            + newPt[g];
+        s = Math.max(Math.max(theta, bestPt[g]), newPt[g]);
+        gamma = s
+        if (newPt[a] > bestPt[a]) {
+          gamma = -gamma;
+        }
+        p = (gamma - newPt[g]) + theta;
+        q = ((gamma - newPt[g]) + gamma) + bestPt[g];
+        r = p / q;
+        stpf = stpc;
+      } else if (newPt[a] > bestPt[a]) {
+        stpf = stpMax;
+      } else {
+        stpf = stpMin;
+      }
+
+    }
+
+    //
+    // Update the interval of uncertainty. This update does not
+    // depend on the new step or the case analysis above.
+    //
+    if (newPt[f] > bestPt[f]) {
+      copy(newPt, endPt);
+    } else {
+      if (signG < 0.0) {
+        copy(bestPt, endPt);
+      }
+      copy(newPt, bestPt);
+    }
+
+    say(String.valueOf(info));
+
+    //
+    // Compute the new step and safeguard it.
+    //
+    stpf = Math.min(stpMax, stpf);
+    stpf = Math.max(stpMin, stpf);
+    newPt[a] = stpf;
+
+    if (bracketed && bound) {
+      if (endPt[a] > bestPt[a]) {
+      } else {
+      }
+    }
+
+    return info;
+  }
+
+  private static void copy(double[] src, double[] dest) {
+    System.arraycopy(src, 0, dest, 0, src.length);
+  }
+
+  //
+  //
+  //
+  // private double[] lineSearchNocedal(DiffFunction dfunc, double[] dir,
+  // double[] x, double[] newX, double[] grad, double f0) throws
+  // MaxEvaluationsExceeded {
+  //
+  //
+  // double g0 = ArrayMath.innerProduct(grad,dir);
+  // if(g0 > 0){
+  // //We're looking in a direction of positive gradient. This wont' work.
+  // //set dir = -grad
+  // plusAndConstMult(new double[x.length],grad,-1,dir);
+  // g0 = ArrayMath.innerProduct(grad,dir);
+  // }
+  // say("(" + nf.format(g0) + ")");
+  //
+  //
+  // double[] newPoint = new double[3];
+  // double[] prevPoint = new double[3];
+  // newPoint[a] = 1.0; //Always guess 1 first, this should be right if the
+  // function is "nice" and BFGS is working.
+  //
+  // //Special guess for the first iteration.
+  // if(its == 1){
+  // //Keep aLin within aMin and 1 for the first guess. But make a more
+  // intelligent guess based off the gradient
+  // aLin = Math.min(1.0, aLin);
+  // aLin = Math.max(aMin, aLin);
+  // newPoint[a] = aLin; // Guess low at first since we have no idea of scale at
+  // first.
+  // }
+  //
+  // prevPoint[a] = 0.0;
+  // prevPoint[f] = f0;
+  // prevPoint[g] = g0;
+  //
+  // int cnt = 0;
+  //
+  // do{
+  // newPoint[f] = dfunc.valueAt((plusAndConstMult(x, dir, newPoint[a], newX)));
+  // newPoint[g] = ArrayMath.innerProduct(dfunc.derivativeAt(newX),dir);
+  // fevals += 1;
+  //
+  // ){
+  // //We know there must be a point that satisfies the strong wolfe conditions
+  // between
+  // //the previous and new point, so search between these points.
+  // say("->");
+  // return zoom(dfunc,x,dir,newX,f0,g0,prevPoint,newPoint);
+  // }
+  //
+
+  // //Here we check if the magnitude of the gradient has decreased, if
+  // //it is more negative we can expect to find a much better point
+  // //by stepping a little farther.
+  //
+  // //If |gNew| < 0.9999 |g0|
+  // //This is exactly what we wanted
+  // return newPoint;
+  // }
+  //
+  // if (newPoint[g] > 0){
+  // //Hmm, our step is too big to be a satisfying point, lets look backwards.
+  // say("<-");//say("^");
+  //
+  // return zoom(dfunc,x,dir,newX,f0,g0,newPoint,prevPoint);
+  // }
+  //
+  // //if we made it here, our function value has decreased enough, but the
+  // gradient is more negative.
+  // //we should increase our step size, since we have potential to decrease the
+  // function
+  // //value a lot more.
+  // already have info for quadratic at least.
+  // newPoint[f] = Double.NaN;
+  // newPoint[g] = Double.NaN;
+  // cnt +=1;
+  //
+  // //if(cnt > 10 || fevals > maxFevals){
+  // if(fevals > maxFevals){ throw new MaxEvaluationsExceeded(" Exceeded during
+  // zoom() Function ");}
+  //
+  // if(newPoint[a] > aMax){
+  // System.err.println(" max stepsize reached. This is unusual. ");
+  // System.exit(1);
+  // }
+  //
+  // }while(true);
+  //
+  // }
+
+  // private double interpolate( double[] point0, double[] point1){
+  // double newAlpha;
+
+  // double intvl = Math.abs(point0[a] -point1[a]);
+
+  // //if(point2 == null){
+  // if( Double.isNaN(point0[g]) ){
+  // //We dont know the gradient at aLow so do bisection
+  // }else{
+  // //We know the gradient so do Quadratic 2pt
+  // newAlpha = interpolateQuadratic2pt(point0,point1);
+  // }
+
+  // //If the newAlpha is outside of the bounds just do bisection.
+
+  // if( ((newAlpha > point0[a]) && (newAlpha > point1[a])) ||
+  // ((newAlpha < point0[a]) && (newAlpha < point1[a])) ){
+
+  // //bisection.
+  // }
+
+  // //If we aren't moving fast enough, revert to bisection.
+  // if( ((newAlpha/intvl) < 1e-6) || ((newAlpha/intvl) > (1- 1e-6)) ){
+  // //say("b");
+  // }
+
+  // return newAlpha;
+  // }
+

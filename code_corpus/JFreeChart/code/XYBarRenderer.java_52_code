@@ -1,0 +1,51 @@
+    public LegendItem getLegendItem(int datasetIndex, int series) {
+        LegendItem result = null;
+        XYPlot xyplot = getPlot();
+        if (xyplot != null) {
+            XYDataset dataset = xyplot.getDataset(datasetIndex);
+            if (dataset != null) {
+                XYSeriesLabelGenerator lg = getLegendItemLabelGenerator();
+                String label = lg.generateLabel(dataset, series);
+                String toolTipText = null;
+                if (getLegendItemToolTipGenerator() != null) {
+                    toolTipText = getLegendItemToolTipGenerator().generateLabel(
+                            dataset, series);
+                }
+                String urlText = null;
+                if (getLegendItemURLGenerator() != null) {
+                    urlText = getLegendItemURLGenerator().generateLabel(
+                            dataset, series);
+                }
+                Shape shape = getSeriesShape(series) ;
+                if (shape == null) {
+                    shape = getLegendBar();
+                }
+                Paint paint = lookupSeriesPaint(series);
+                Paint outlinePaint = lookupSeriesOutlinePaint(series);
+                Stroke outlineStroke = lookupSeriesOutlineStroke(series);
+                if (this.drawBarOutline) {
+                    result = new LegendItem(label, label, toolTipText,
+                            urlText, shape, paint, outlineStroke, outlinePaint);
+                }
+                else {
+                    result = new LegendItem(label, label, toolTipText,
+                            urlText, shape, paint);
+                }
+                result.setLabelFont(lookupLegendTextFont(series));
+                Paint labelPaint = lookupLegendTextPaint(series);
+                if (labelPaint != null) {
+                    result.setLabelPaint(labelPaint);
+                }
+                result.setDataset(dataset);
+                result.setDatasetIndex(datasetIndex);
+                result.setSeriesKey(dataset.getSeriesKey(series));
+                result.setSeriesIndex(series);
+                if (getGradientPaintTransformer() != null) {
+                    result.setFillPaintTransformer(
+                            getGradientPaintTransformer());
+                }
+            }
+        }
+        return result;
+    }
+

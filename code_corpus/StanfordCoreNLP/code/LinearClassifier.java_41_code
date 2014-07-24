@@ -1,0 +1,54 @@
+
+  public L experimentalClassOf(Datum<L,F> example) {
+    if(example instanceof RVFDatum<?, ?>) {
+      throw new UnsupportedOperationException();
+    }
+
+    int labelCount = weights[0].length;
+    //System.out.printf("labelCount: %d\n", labelCount);
+    Collection<F> features = example.asFeatures();
+
+    int[] featureInts = new int[features.size()];
+    int fI = 0;
+    for (F feature : features) {
+      featureInts[fI++] = featureIndex.indexOf(feature);
+    }
+    //System.out.println("Features: "+features);
+    double bestScore = Double.NEGATIVE_INFINITY;
+    int bestI = 0;
+    for (int i = 0; i < labelCount; i++) {
+      double score = 0;
+      for (int j = 0; j < featureInts.length; j++) {
+        if (featureInts[j] < 0) continue;
+        score += weights[featureInts[j]][i];
+      }
+      if (score > bestScore) {
+        bestI = i;
+        bestScore = score;
+      }
+      //System.out.printf("Score: %s(%d): %e\n", labelIndex.get(i), i, score);
+    }
+    //System.out.printf("label(%d): %s\n", bestI, labelIndex.get(bestI));;
+    return labelIndex.get(bestI);
+  }
+
+  @Override
+  public L classOf(Datum<L, F> example) {
+    if(example instanceof RVFDatum<?, ?>)return classOfRVFDatum((RVFDatum<L,F>)example);
+    Counter<L> scores = scoresOf(example);
+    return Counters.argmax(scores);
+  }
+
+
+  private L classOfRVFDatum(RVFDatum<L, F> example) {
+    Counter<L> scores = scoresOfRVFDatum(example);
+    return Counters.argmax(scores);
+  }
+
+  @Override
+  @Deprecated
+  public L classOf(RVFDatum<L, F> example) {
+    Counter<L> scores = scoresOf(example);
+    return Counters.argmax(scores);
+  }
+

@@ -1,0 +1,20 @@
+    public Range findRangeBounds(XYDataset dataset) {
+        if (dataset == null) {
+            return null;
+        }
+        double min = Double.POSITIVE_INFINITY;
+        double max = Double.NEGATIVE_INFINITY;
+        TableXYDataset d = (TableXYDataset) dataset;
+        int itemCount = d.getItemCount();
+        for (int i = 0; i < itemCount; i++) {
+            double[] stackValues = getStackValues((TableXYDataset) dataset,
+                    d.getSeriesCount(), i);
+            min = Math.min(min, stackValues[0]);
+            max = Math.max(max, stackValues[1]);
+        }
+        if (min == Double.POSITIVE_INFINITY) {
+            return null;
+        }
+        return new Range(min, max);
+    }
+

@@ -1,0 +1,54 @@
+  public List<RelationMention> getAllRelations(RelationMentionFactory factory) {
+    List<RelationMention> allRelations = new ArrayList<RelationMention>(relationMentions);
+    allRelations.addAll(getAllUnrelatedRelations(factory));
+    return allRelations;
+  }
+
+  public List<RelationMention> getAllUnrelatedRelations(RelationMentionFactory factory) {
+
+    List<RelationMention> nonRelations = new ArrayList<RelationMention>();
+    List<RelationMention> allRelations = new ArrayList<RelationMention>(relationMentions);
+
+    //
+    // scan all possible arguments
+    //
+    for(int i = 0; i < getEntityMentions().size(); i ++){
+      for(int j = 0; j < getEntityMentions().size(); j ++){
+        if(i == j) continue;
+        EntityMention arg1 = getEntityMentions().get(i);
+        EntityMention arg2 = getEntityMentions().get(j);
+        boolean match = false;
+        for (RelationMention rel : allRelations) {
+          if (rel.argsMatch(arg1, arg2)) {
+            match = true;
+            break;
+          }
+        }
+        if ( ! match) {
+          RelationMention nonrel = RelationMention.createUnrelatedRelation(factory, arg1, arg2);
+          nonRelations.add(nonrel);
+          allRelations.add(nonrel);
+        }
+      }
+    }
+
+    return nonRelations;
+  }
+
+  public void addEventMention(EventMention event) {
+    eventMentions.add(event);
+  }
+
+  public List<EventMention> getEventMentions() {
+    return Collections.unmodifiableList(eventMentions);
+  }
+
+  public void setEventMentions(List<EventMention> events) {
+    eventMentions.clear();
+    eventMentions.addAll(events);
+  }
+
+  public String getTextContent() {
+    return textContent;
+  }
+

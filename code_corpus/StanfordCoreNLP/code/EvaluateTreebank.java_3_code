@@ -1,0 +1,296 @@
+  private List<CoreLabel> getInputSentence(Tree t) {
+    if (op.testOptions.forceTags) {
+      if (op.testOptions.preTag) {
+        List<TaggedWord> s = tagger.apply(t.yieldWords());
+        if(op.testOptions.verbose) {
+          System.err.println("Guess tags: "+Arrays.toString(s.toArray()));
+          System.err.println("Gold tags: "+t.labeledYield().toString());
+        }
+        return Sentence.toCoreLabelList(s);
+      } else if(op.testOptions.noFunctionalForcing) {
+        ArrayList<? extends HasWord> s = t.taggedYield();
+        for (HasWord word : s) {
+          String tag = ((HasTag) word).tag();
+          tag = tag.split("-")[0];
+          ((HasTag) word).setTag(tag);
+        }
+        return Sentence.toCoreLabelList(s);
+      } else {
+        return Sentence.toCoreLabelList(t.taggedYield());
+      }
+    } else {
+      return Sentence.toCoreLabelList(t.yieldWords());
+    }
+  }
+
+  public void processResults(ParserQuery pq, Tree goldTree, PrintWriter pwErr, PrintWriter pwOut, PrintWriter pwFileOut, PrintWriter pwStats, TreePrint treePrint) {
+      if (pq.saidMemMessage()) {
+        saidMemMessage = true;
+      }
+
+      Tree tree;
+      List<? extends HasWord> sentence = pq.originalSentence();
+      try {
+        tree = pq.getBestParse();
+      } catch (NoSuchParseException e) {
+        tree = null;
+      }
+
+      List<ScoredObject<Tree>> kbestPCFGTrees = null;
+      if (tree != null && kbestPCFG > 0) {
+        kbestPCFGTrees = pq.getKBestPCFGParses(kbestPCFG);
+      }
+
+      //combo parse goes to pwOut (System.out)
+      if (op.testOptions.verbose) {
+        pwOut.println("ComboParser best");
+        Tree ot = tree;
+        if (ot != null && ! op.tlpParams.treebankLanguagePack().isStartSymbol(ot.value())) {
+          ot = ot.treeFactory().newTreeNode(op.tlpParams.treebankLanguagePack().startSymbol(), Collections.singletonList(ot));
+        }
+        treePrint.printTree(ot, pwOut);
+      } else {
+        treePrint.printTree(tree, pwOut);
+      }
+
+      // print various n-best like outputs (including 1-best)
+      // print various statistics
+      if (tree != null) {
+        if(op.testOptions.printAllBestParses) {
+          List<ScoredObject<Tree>> parses = pq.getBestPCFGParses();
+          int sz = parses.size();
+          if (sz > 1) {
+            pwOut.println("There were " + sz + " best PCFG parses with score " + parses.get(0).score() + '.');
+            Tree transGoldTree = collinizer.transformTree(goldTree);
+            int iii = 0;
+            for (ScoredObject<Tree> sot : parses) {
+              iii++;
+              Tree tb = sot.object();
+              Tree tbd = debinarizer.transformTree(tb);
+              tbd = subcategoryStripper.transformTree(tbd);
+              pq.restoreOriginalWords(tbd);
+              pwOut.println("PCFG Parse #" + iii + " with score " + tbd.score());
+              tbd.pennPrint(pwOut);
+              Tree tbtr = collinizer.transformTree(tbd);
+              // pwOut.println("Tree size = " + tbtr.size() + "; depth = " + tbtr.depth());
+              kGoodLB.evaluate(tbtr, transGoldTree, pwErr);
+            }
+          }
+        }
+        // Huang and Chiang (2006) Algorithm 3 output from the PCFG parser
+        else if (op.testOptions.printPCFGkBest > 0 && op.testOptions.outputkBestEquivocation == null) {
+          List<ScoredObject<Tree>> trees = kbestPCFGTrees.subList(0, op.testOptions.printPCFGkBest);
+          Tree transGoldTree = collinizer.transformTree(goldTree);
+          int i = 0;
+          for (ScoredObject<Tree> tp : trees) {
+            i++;
+            pwOut.println("PCFG Parse #" + i + " with score " + tp.score());
+            Tree tbd = tp.object();
+            tbd.pennPrint(pwOut);
+            Tree tbtr = collinizer.transformTree(tbd);
+            kGoodLB.evaluate(tbtr, transGoldTree, pwErr);
+          }
+        }
+        // Chart parser (factored) n-best list
+        else if (op.testOptions.printFactoredKGood > 0 && pq.hasFactoredParse()) {
+          // DZ: debug n best trees
+          List<ScoredObject<Tree>> trees = pq.getKGoodFactoredParses(op.testOptions.printFactoredKGood);
+          Tree transGoldTree = collinizer.transformTree(goldTree);
+          int ii = 0;
+          for (ScoredObject<Tree> tp : trees) {
+            ii++;
+            pwOut.println("Factored Parse #" + ii + " with score " + tp.score());
+            Tree tbd = tp.object();
+            tbd.pennPrint(pwOut);
+            Tree tbtr = collinizer.transformTree(tbd);
+            kGoodLB.evaluate(tbtr, transGoldTree, pwOut);
+          }
+        }
+        //1-best output
+        else if(pwFileOut != null) {
+          pwFileOut.println(tree.toString());
+        }
+
+        //Print the derivational entropy
+        if(op.testOptions.outputkBestEquivocation != null && op.testOptions.printPCFGkBest > 0) {
+          List<ScoredObject<Tree>> trees = kbestPCFGTrees.subList(0, op.testOptions.printPCFGkBest);
+
+          double[] logScores = new double[trees.size()];
+          int treeId = 0;
+          for(ScoredObject<Tree> kBestTree : trees)
+            logScores[treeId++] = kBestTree.score();
+
+          //Re-normalize
+          double entropy = 0.0;
+          double denom = ArrayMath.logSum(logScores);
+          for (double logScore : logScores) {
+            double logPr = logScore - denom;
+          }
+          pwStats.printf("%f\t%d\t%d\n", entropy,trees.size(),sentence.size());
+        }
+      }
+
+
+      // Perform various evaluations specified by the user
+      if (tree != null) {
+        //Strip subcategories and remove punctuation for evaluation
+        tree = subcategoryStripper.transformTree(tree);
+        Tree treeFact = collinizer.transformTree(tree);
+
+        //Setup the gold tree
+        if (op.testOptions.verbose) {
+          pwOut.println("Correct parse");
+          treePrint.printTree(goldTree, pwOut);
+        }
+        Tree transGoldTree = collinizer.transformTree(goldTree);
+        if(transGoldTree != null)
+          transGoldTree = subcategoryStripper.transformTree(transGoldTree);
+
+        //Can't do evaluation in these two cases
+        if (transGoldTree == null) {
+          pwErr.println("Couldn't transform gold tree for evaluation, skipping eval. Gold tree was:");
+          goldTree.pennPrint(pwErr);
+          numSkippedEvals++;
+          return;
+
+        } else if (treeFact == null) {
+          pwErr.println("Couldn't transform hypothesis tree for evaluation, skipping eval. Tree was:");
+          tree.pennPrint(pwErr);
+          numSkippedEvals++;
+          return;
+
+        } else if(treeFact.yield().size() != transGoldTree.yield().size()) {
+          List<Label> fYield = treeFact.yield();
+          List<Label> gYield = transGoldTree.yield();
+          pwErr.println("WARNING: Evaluation could not be performed due to gold/parsed yield mismatch.");
+          pwErr.printf("  sizes: gold: %d (transf) %d (orig); parsed: %d (transf) %d (orig).%n", gYield.size(), goldTree.yield().size(),
+                       fYield.size(), tree.yield().size());
+          pwErr.println("  gold: " + Sentence.listToString(gYield, true));
+          pwErr.println("  pars: " + Sentence.listToString(fYield, true));
+          numSkippedEvals++;
+          return;
+        }
+
+        if (topKEvals.size() > 0) {
+          List<Tree> transGuesses = new ArrayList<Tree>();
+          int kbest = Math.min(op.testOptions.evalPCFGkBest, kbestPCFGTrees.size());
+          for (ScoredObject<Tree> guess : kbestPCFGTrees.subList(0, kbest)) {
+            transGuesses.add(collinizer.transformTree(guess.object()));
+          }
+          for (BestOfTopKEval eval : topKEvals) {
+            eval.evaluate(transGuesses, transGoldTree, pwErr);
+          }
+        }
+
+        //PCFG eval
+        Tree treePCFG = pq.getBestPCFGParse();
+        if (treePCFG != null) {
+          Tree treePCFGeval = collinizer.transformTree(treePCFG);
+          if (pcfgLB != null) {
+            pcfgLB.evaluate(treePCFGeval, transGoldTree, pwErr);
+          }
+          if (pcfgChildSpecific != null) {
+            pcfgChildSpecific.evaluate(treePCFGeval, transGoldTree, pwErr);
+          }
+          if(pcfgLA != null) {
+            pcfgLA.evaluate(treePCFGeval, transGoldTree, pwErr);
+          }
+          if (pcfgCB != null) {
+            pcfgCB.evaluate(treePCFGeval, transGoldTree, pwErr);
+          }
+          if (pcfgDA != null) {
+            // Re-index the leaves after Collinization, stripping traces, etc.
+            treePCFGeval.indexLeaves(true);
+            transGoldTree.indexLeaves(true);
+            pcfgDA.evaluate(treePCFGeval, transGoldTree, pwErr);
+          }
+          if (pcfgTA != null) {
+            pcfgTA.evaluate(treePCFGeval, transGoldTree, pwErr);
+          }
+          if (pcfgLL != null && pq.getPCFGParser() != null) {
+            pcfgLL.recordScore(pq.getPCFGParser(), pwErr);
+          }
+          if (pcfgRUO != null) {
+            pcfgRUO.evaluate(treePCFGeval, transGoldTree, pwErr);
+          }
+          if (pcfgCUO != null) {
+            pcfgCUO.evaluate(treePCFGeval, transGoldTree, pwErr);
+          }
+          if (pcfgCatE != null) {
+            pcfgCatE.evaluate(treePCFGeval, transGoldTree, pwErr);
+          }
+        }
+
+        //Dependency eval
+        // todo: is treeDep really useful here, or should we really use depDAEval tree (debinarized) throughout? We use it for parse, and it sure seems like we could use it for tag eval, but maybe not factDA?
+        Tree treeDep = pq.getBestDependencyParse(false);
+        if (treeDep != null) {
+          Tree goldTreeB = binarizerOnly.transformTree(goldTree);
+
+          Tree goldTreeEval = goldTree.deepCopy();
+          goldTreeEval.indexLeaves(true);
+          goldTreeEval.percolateHeads(op.langpack().headFinder());
+
+          Tree depDAEval = pq.getBestDependencyParse(true);
+          depDAEval.indexLeaves(true);
+          depDAEval.percolateHeadIndices();
+          if (depDA != null) {
+            depDA.evaluate(depDAEval, goldTreeEval, pwErr);
+          }
+          if (depTA != null) {
+            Tree undoneTree = debinarizer.transformTree(treeDep);
+            undoneTree = subcategoryStripper.transformTree(undoneTree);
+            pq.restoreOriginalWords(undoneTree);
+            // pwErr.println("subcategoryStripped tree: " + undoneTree.toStructureDebugString());
+            depTA.evaluate(undoneTree, goldTree, pwErr);
+          }
+          if (depLL != null && pq.getDependencyParser() != null) {
+            depLL.recordScore(pq.getDependencyParser(), pwErr);
+          }
+          Tree factTreeB;
+          if (pq.hasFactoredParse()) {
+            factTreeB = pq.getBestFactoredParse();
+          } else {
+            factTreeB = treeDep;
+          }
+          if (factDA != null) {
+            factDA.evaluate(factTreeB, goldTreeB, pwErr);
+          }
+        }
+
+        //Factored parser (1best) eval
+        if (factLB != null) {
+          factLB.evaluate(treeFact, transGoldTree, pwErr);
+        }
+        if (factChildSpecific != null) {
+          factChildSpecific.evaluate(treeFact, transGoldTree, pwErr);
+        }
+        if(factLA != null) {
+          factLA.evaluate(treeFact, transGoldTree, pwErr);
+        }
+        if (factTA != null) {
+          factTA.evaluate(tree, boundaryRemover.transformTree(goldTree), pwErr);
+        }
+        if (factLL != null && pq.getFactoredParser() != null) {
+          factLL.recordScore(pq.getFactoredParser(), pwErr);
+        }
+        if (factCB != null) {
+          factCB.evaluate(treeFact, transGoldTree, pwErr);
+        }
+        for (Eval eval : evals) {
+          eval.evaluate(treeFact, transGoldTree, pwErr);
+        }
+        if (parserQueryEvals != null) {
+          for (ParserQueryEval eval : parserQueryEvals) {
+            eval.evaluate(pq, transGoldTree, pwErr);
+          }
+        }
+        if (op.testOptions.evalb) {
+          // empty out scores just in case
+          nanScores(tree);
+          EvalbFormatWriter.writeEVALBline(treeFact, transGoldTree);
+        }
+      }
+      pwErr.println();
+  }
+

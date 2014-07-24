@@ -1,0 +1,19 @@
+  private RelationMention fromProto(CoreNLPProtos.Relation proto, CoreMap sentence) {
+    List<ExtractionObject> args = new ArrayList<ExtractionObject>();
+    for (CoreNLPProtos.Entity arg : proto.getArgList()) {
+      args.add(fromProto(arg, sentence));
+    }
+    RelationMention rtn = new RelationMention(
+        proto.hasObjectID() ? proto.getObjectID() : null,
+        sentence,
+        proto.hasExtentStart() ? new Span(proto.getExtentStart(), proto.getExtentEnd()) : null,
+        proto.hasType() ? proto.getType() : null,
+        proto.hasSubtype() ? proto.getSubtype() : null,
+        args);
+    if (proto.hasSignature()) { rtn.setSignature(proto.getSignature()); }
+    if (proto.getArgNameCount() > 0 || proto.getArgCount() == 0) {
+      rtn.setArgNames(proto.getArgNameList());
+    }
+    return rtn;
+  }
+

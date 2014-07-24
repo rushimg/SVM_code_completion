@@ -1,0 +1,105 @@
+
+  public static void main(String[] args) throws Exception {
+    String headFinderClassName = null;
+    String headFinderOption = "-hf";
+    String[] headFinderArgs = null;
+    String headFinderArgOption = "-hfArg";
+    String encoding = "UTF-8";
+    String encodingOption = "-encoding";
+    if(args.length==0) {
+      System.err.println("Usage: java edu.stanford.nlp.trees.tregex.tsurgeon.Tsurgeon [-s] -treeFile <file-with-trees> [-po <matching-pattern> <operation>] <operation-file-1> <operation-file-2> ... <operation-file-n>");
+      System.exit(0);
+    }
+    String treePrintFormats;
+    String singleLineOption = "-s";
+    String verboseOption = "-v";
+    String matchedOption = "-m"; // if set, then print original form of trees that are matched & thus operated on
+    String patternOperationOption = "-po";
+    String treeFileOption = "-treeFile";
+    String trfOption = "-trf";
+    String macroOption = "-macros";
+    String macroFilename = "";
+    Map<String,Integer> flagMap = Generics.newHashMap();
+    flagMap.put(patternOperationOption,2);
+    flagMap.put(treeFileOption,1);
+    flagMap.put(trfOption,1);
+    flagMap.put(singleLineOption,0);
+    flagMap.put(encodingOption,1);
+    flagMap.put(headFinderOption,1);
+    flagMap.put(macroOption, 1);
+    Map<String,String[]> argsMap = StringUtils.argsToMap(args,flagMap);
+    args = argsMap.get(null);
+
+    if(argsMap.containsKey(headFinderOption)) headFinderClassName = argsMap.get(headFinderOption)[0];
+    if(argsMap.containsKey(headFinderArgOption)) headFinderArgs = argsMap.get(headFinderArgOption);
+    if(argsMap.containsKey(verboseOption))      verbose = true;
+    if(argsMap.containsKey(singleLineOption))   treePrintFormats = "oneline,";   else treePrintFormats = "penn,";
+    if(argsMap.containsKey(encodingOption)) encoding = argsMap.get(encodingOption)[0];
+    if(argsMap.containsKey(macroOption)) macroFilename = argsMap.get(macroOption)[0];
+
+    TreePrint tp = new TreePrint(treePrintFormats, new PennTreebankLanguagePack());
+    PrintWriter pwOut = new PrintWriter(new OutputStreamWriter(System.out,encoding), true);
+
+    TreeReaderFactory trf;
+    if (argsMap.containsKey(trfOption)) {
+      String trfClass = argsMap.get(trfOption)[0];
+      trf = ReflectionLoading.loadByReflection(trfClass);
+    } else {
+      trf = new TregexPattern.TRegexTreeReaderFactory();
+    }
+
+    Treebank trees = new DiskTreebank(trf, encoding);
+    if (argsMap.containsKey(treeFileOption)) {
+      trees.loadPath(argsMap.get(treeFileOption)[0]);
+    }
+    List<Pair<TregexPattern,TsurgeonPattern>> ops = new ArrayList<Pair<TregexPattern,TsurgeonPattern>>();
+
+    TregexPatternCompiler compiler;
+    if (headFinderClassName == null) {
+      compiler = new TregexPatternCompiler();
+    } else {
+      HeadFinder hf;
+      if (headFinderArgs == null) {
+        hf = ReflectionLoading.loadByReflection(headFinderClassName);
+      } else {
+        hf = ReflectionLoading.loadByReflection(headFinderClassName, (Object[]) headFinderArgs);
+      }
+      compiler = new TregexPatternCompiler(hf);
+    }
+    Macros.addAllMacros(compiler, macroFilename, encoding);
+    if (argsMap.containsKey(patternOperationOption)) {
+      TregexPattern matchPattern = compiler.compile(argsMap.get(patternOperationOption)[0]);
+      TsurgeonPattern p = parseOperation(argsMap.get(patternOperationOption)[1]);
+      ops.add(new Pair<TregexPattern,TsurgeonPattern>(matchPattern,p));
+    } else {
+      for (String arg : args) {
+        List<Pair<TregexPattern,TsurgeonPattern>> pairs = getOperationsFromFile(arg, encoding, compiler);
+        for (Pair<TregexPattern,TsurgeonPattern> pair : pairs) {
+          if (verbose) {
+            System.err.println(pair.second());
+          }
+          ops.add(pair);
+        }
+      }
+    }
+
+    for (Tree t : trees ) {
+      Tree original = t.deepCopy();
+      Tree result = processPatternsOnTree(ops, t);
+      if (argsMap.containsKey(matchedOption) && matchedOnTree) {
+        pwOut.println("Operated on: ");
+        displayTree(original,tp,pwOut);
+        pwOut.println("Result: ");
+      }
+      displayTree(result,tp,pwOut);
+    }
+  }
+
+  private static void displayTree(Tree t, TreePrint tp, PrintWriter pw) {
+    if (t==null) {
+      pw.println("null");
+    } else {
+      tp.printTree(t,pw);
+    }
+  }
+

@@ -1,0 +1,75 @@
+  public Tree parseTree(List<? extends HasWord> sentence) {
+    ParserQuery pq = parserQuery();
+    if (pq.parse(sentence)) {
+      return pq.getBestParse();
+    } else {
+      return null;
+    }
+  }
+
+  public List<Eval> getExtraEvals() {
+    if (reranker != null) {
+      return reranker.getEvals();
+    } else {
+      return Collections.emptyList();
+    }
+  }
+
+
+  public List<ParserQueryEval> getParserQueryEvals() {
+    return Collections.emptyList();
+  }
+
+
+  @Override
+  public ParserQuery parserQuery() {
+    if (reranker == null) {
+      return new LexicalizedParserQuery(this);
+    } else {
+      return new RerankingParserQuery(op, new LexicalizedParserQuery(this), reranker);
+    }
+  }
+
+  public LexicalizedParserQuery lexicalizedParserQuery() {
+    return new LexicalizedParserQuery(this);
+  }
+
+  public static LexicalizedParser getParserFromFile(String parserFileOrUrl, Options op) {
+    LexicalizedParser pd = getParserFromSerializedFile(parserFileOrUrl);
+    if (pd == null) {
+      pd = getParserFromTextFile(parserFileOrUrl, op);
+    }
+    return pd;
+  }
+
+  private static Treebank makeTreebank(String treebankPath, Options op, FileFilter filt) {
+    System.err.println("Training a parser from treebank dir: " + treebankPath);
+    Treebank trainTreebank = op.tlpParams.diskTreebank();
+    System.err.print("Reading trees...");
+    if (filt == null) {
+      trainTreebank.loadPath(treebankPath);
+    } else {
+      trainTreebank.loadPath(treebankPath, filt);
+    }
+
+    Timing.tick("done [read " + trainTreebank.size() + " trees].");
+    return trainTreebank;
+  }
+
+  private static DiskTreebank makeSecondaryTreebank(String treebankPath, Options op, FileFilter filt) {
+    System.err.println("Additionally training using secondary disk treebank: " + treebankPath + ' ' + filt);
+    DiskTreebank trainTreebank = op.tlpParams.diskTreebank();
+    System.err.print("Reading trees...");
+    if (filt == null) {
+      trainTreebank.loadPath(treebankPath);
+    } else {
+      trainTreebank.loadPath(treebankPath, filt);
+    }
+    Timing.tick("done [read " + trainTreebank.size() + " trees].");
+    return trainTreebank;
+  }
+
+  public Lexicon getLexicon() {
+    return lex;
+  }
+

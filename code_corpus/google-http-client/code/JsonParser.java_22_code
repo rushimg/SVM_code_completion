@@ -1,0 +1,59 @@
+  private void parse(
+      ArrayList<Type> context, Object destination, CustomizeJsonParser customizeParser)
+      throws IOException {
+    if (destination instanceof GenericJson) {
+      ((GenericJson) destination).setFactory(getFactory());
+    }
+    JsonToken curToken = startParsingObjectOrArray();
+    Class<?> destinationClass = destination.getClass();
+    ClassInfo classInfo = ClassInfo.of(destinationClass);
+    boolean isGenericData = GenericData.class.isAssignableFrom(destinationClass);
+    if (!isGenericData && Map.class.isAssignableFrom(destinationClass)) {
+      // The destination class is not a sub-class of GenericData but is of Map, so parse data
+      // using parseMap.
+      @SuppressWarnings("unchecked")
+      Map<String, Object> destinationMap = (Map<String, Object>) destination;
+      parseMap(null, destinationMap, Types.getMapValueParameter(destinationClass), context,
+          customizeParser);
+      return;
+    }
+    while (curToken == JsonToken.FIELD_NAME) {
+      String key = getText();
+      nextToken();
+      // stop at items for feeds
+      if (customizeParser != null && customizeParser.stopAt(destination, key)) {
+        return;
+      }
+      // get the field from the type information
+      FieldInfo fieldInfo = classInfo.getFieldInfo(key);
+      if (fieldInfo != null) {
+        // skip final fields
+        if (fieldInfo.isFinal() && !fieldInfo.isPrimitive()) {
+          throw new IllegalArgumentException("final array/object fields are not supported");
+        }
+        Field field = fieldInfo.getField();
+        int contextSize = context.size();
+        context.add(field.getGenericType());
+        Object fieldValue = parseValue(field,
+            fieldInfo.getGenericType(),
+            context,
+            destination,
+            customizeParser,
+            true);
+        context.remove(contextSize);
+        fieldInfo.setValue(destination, fieldValue);
+      } else if (isGenericData) {
+        // store unknown field in generic JSON
+        GenericData object = (GenericData) destination;
+        object.set(key, parseValue(null, null, context, destination, customizeParser, true));
+      } else {
+        // unrecognized field, skip value.
+        if (customizeParser != null) {
+          customizeParser.handleUnrecognizedKey(destination, key);
+        }
+        skipChildren();
+      }
+      curToken = nextToken();
+    }
+  }
+

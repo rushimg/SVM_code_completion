@@ -1,0 +1,125 @@
+  private class AddRelativeNodeFunction implements SerializableFunction<TregexMatcher,String> {
+
+    private String annotationMark;
+    private String key;
+    private String key2;
+    private boolean doBasicCat = false;
+    private boolean toLower = false;
+
+    public AddRelativeNodeFunction(String annotationMark, String key, boolean basicCategory) {
+      this.annotationMark = annotationMark;
+      this.key = key;
+      this.key2 = null;
+      doBasicCat = basicCategory;
+    }
+
+    public AddRelativeNodeFunction(String annotationMark, String key1, String key2, boolean basicCategory) {
+      this(annotationMark,key1,basicCategory);
+      this.key2 = key2;
+    }
+
+    public AddRelativeNodeFunction(String annotationMark, String key1, boolean basicCategory, boolean toLower) {
+      this(annotationMark,key1,basicCategory);
+      this.toLower = toLower;
+    }
+
+    public String apply(TregexMatcher m) {
+      String tag;
+      if(key2 == null)
+        tag = annotationMark + ((doBasicCat) ? tlp.basicCategory(m.getNode(key).label().value()) : m.getNode(key).label().value());
+      else {
+        String annot1 = (doBasicCat) ? tlp.basicCategory(m.getNode(key).label().value()) : m.getNode(key).label().value();
+        String annot2 = (doBasicCat) ? tlp.basicCategory(m.getNode(key2).label().value()) : m.getNode(key2).label().value();
+        tag = annotationMark + annot1 + annotationMark + annot2;
+      }
+
+      return (toLower) ? tag.toLowerCase() : tag;
+    }
+
+    @Override
+    public String toString() {
+      if(key2 == null)
+        return "AddRelativeNodeFunction[" + annotationMark + ',' + key + ']';
+      else
+        return "AddRelativeNodeFunction[" + annotationMark + ',' + key + ',' + key2 + ']';
+    }
+
+    private static final long serialVersionUID = 1L;
+
+  }
+
+  private class AddPOSSequenceFunction implements SerializableFunction<TregexMatcher,String> {
+
+    private final String annotationMark;
+    private final boolean doBasicCat;
+    private final double cutoff;
+
+    public AddPOSSequenceFunction(String annotationMark, int cutoff, boolean basicCategory) {
+      this.annotationMark = annotationMark;
+      doBasicCat = basicCategory;
+      this.cutoff = cutoff;
+    }
+
+
+    public String apply(TregexMatcher m) {
+      if(mwCounter == null)
+        throw new RuntimeException("Cannot enable POSSequence features without POS sequence map. Use option -frenchMWMap.");
+
+      Tree t = m.getMatch();
+      StringBuilder sb = new StringBuilder();
+      for(Tree kid : t.children()) {
+        if( ! kid.isPreTerminal())
+          throw new RuntimeException("Not POS sequence for tree: " + t.toString());
+        String tag = doBasicCat ? tlp.basicCategory(kid.value()) : kid.value();
+        sb.append(tag).append(" ");
+      }
+
+      if(mwCounter.getCount(t.value(), sb.toString().trim()) > cutoff)
+        return annotationMark + sb.toString().replaceAll("\\s+", "").toLowerCase();
+      else
+        return "";
+    }
+
+    @Override
+    public String toString() {
+      return "AddPOSSequenceFunction[" + annotationMark + ',' + cutoff + ',' + doBasicCat + ']';
+    }
+
+    private static final long serialVersionUID = 1L;
+  }
+
+
+  @Override
+  public HeadFinder headFinder() {
+    if(headFinder == null)
+      headFinder = new DybroFrenchHeadFinder(treebankLanguagePack()); //Superior for vanilla PCFG over Arun's headfinding rules
+    return headFinder;
+  }
+
+  @Override
+  public HeadFinder typedDependencyHeadFinder() {
+    return headFinder();
+  }
+
+  private void setHeadFinder(HeadFinder hf) {
+    if(hf == null)
+      throw new IllegalArgumentException();
+
+    headFinder = hf;
+
+    // Need to re-initialize all patterns due to the new headFinder
+    initializeAnnotationPatterns();
+
+    activeAnnotations.clear();
+
+    for(String key : baselineFeatures) {
+      Pair<TregexPattern,Function<TregexMatcher,String>> p = annotationPatterns.get(key);
+      activeAnnotations.add(p);
+    }
+    for(String key : additionalFeatures) {
+      Pair<TregexPattern,Function<TregexMatcher,String>> p = annotationPatterns.get(key);
+      activeAnnotations.add(p);
+    }
+  }
+
+

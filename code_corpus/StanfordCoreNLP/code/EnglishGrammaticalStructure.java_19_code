@@ -1,0 +1,20 @@
+  private static void collapse2WP(Collection<TypedDependency> list) {
+    Collection<TypedDependency> newTypedDeps = new ArrayList<TypedDependency>();
+
+    for (String[] mwp : MULTIWORD_PREPS) {
+      // first look for patterns such as:
+      // X(gov, mwp[0])
+      // Y(mpw[0],mwp[1])
+      // Z(mwp[1], compl) or Z(mwp[0], compl)
+      // -> prep_mwp[0]_mwp[1](gov, compl)
+      collapseMultiWordPrep(list, newTypedDeps, mwp[0], mwp[1], mwp[0], mwp[1]);
+
+      // now look for patterns such as:
+      // X(gov, mwp[1])
+      // Y(mpw[1],mwp[0])
+      // Z(mwp[1], compl) or Z(mwp[0], compl)
+      // -> prep_mwp[0]_mwp[1](gov, compl)
+      collapseMultiWordPrep(list, newTypedDeps, mwp[0], mwp[1], mwp[1], mwp[0]);
+    }
+  }
+

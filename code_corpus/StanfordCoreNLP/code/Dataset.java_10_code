@@ -1,0 +1,27 @@
+  public RVFDataset<L,F> getL1NormalizedTFIDFDataset(){
+    RVFDataset<L,F> rvfDataset = new RVFDataset<L,F>(this.size(),this.featureIndex,this.labelIndex);
+    Counter<F> featureDocCounts = getFeatureCounter();
+    for(int i = 0; i < this.size(); i++){
+      Datum<L,F> datum = this.getDatum(i);
+      RVFDatum<L,F> rvfDatum = getL1NormalizedTFIDFDatum(datum,featureDocCounts);
+      rvfDataset.add(rvfDatum);
+    }
+    return rvfDataset;
+  }
+
+  @Override
+  public void add(Datum<L, F> d) {
+    add(d.asFeatures(), d.label());
+  }
+
+  public void add(Collection<F> features, L label) {
+    add(features, label, true);
+  }
+
+  public void add(Collection<F> features, L label, boolean addNewFeatures) {
+    ensureSize();
+    addLabel(label);
+    addFeatures(features, addNewFeatures);
+    size++;
+  }
+

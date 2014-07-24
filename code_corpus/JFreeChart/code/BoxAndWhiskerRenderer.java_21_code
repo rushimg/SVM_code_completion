@@ -1,0 +1,42 @@
+    public CategoryItemRendererState initialise(Graphics2D g2,
+                                                Rectangle2D dataArea,
+                                                CategoryPlot plot,
+                                                int rendererIndex,
+                                                PlotRenderingInfo info) {
+
+        CategoryItemRendererState state = super.initialise(g2, dataArea, plot,
+                rendererIndex, info);
+        // calculate the box width
+        CategoryAxis domainAxis = getDomainAxis(plot, rendererIndex);
+        CategoryDataset dataset = plot.getDataset(rendererIndex);
+        if (dataset != null) {
+            int columns = dataset.getColumnCount();
+            int rows = dataset.getRowCount();
+            double space = 0.0;
+            PlotOrientation orientation = plot.getOrientation();
+            if (orientation == PlotOrientation.HORIZONTAL) {
+                space = dataArea.getHeight();
+            }
+            else if (orientation == PlotOrientation.VERTICAL) {
+                space = dataArea.getWidth();
+            }
+            double categoryMargin = 0.0;
+            double currentItemMargin = 0.0;
+            if (columns > 1) {
+                categoryMargin = domainAxis.getCategoryMargin();
+            }
+            if (rows > 1) {
+                currentItemMargin = getItemMargin();
+            }
+                                     - domainAxis.getUpperMargin()
+                                     - categoryMargin - currentItemMargin);
+                state.setBarWidth(Math.min(used / (dataset.getColumnCount()
+            }
+            else {
+                state.setBarWidth(Math.min(used, maxWidth));
+            }
+        }
+        return state;
+
+    }
+

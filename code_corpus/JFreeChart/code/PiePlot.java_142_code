@@ -1,0 +1,38 @@
+    protected void drawLeftLabels(KeyedValues leftKeys, Graphics2D g2,
+                                  Rectangle2D plotArea, Rectangle2D linkArea,
+                                  float maxLabelWidth, PiePlotState state) {
+
+        this.labelDistributor.clear();
+        double verticalLinkRadius = state.getLinkArea().getHeight() / 2.0;
+        for (int i = 0; i < leftKeys.getItemCount(); i++) {
+            String label = this.labelGenerator.generateSectionLabel(
+                    this.dataset, leftKeys.getKey(i));
+            if (label != null) {
+                TextBlock block = TextUtilities.createTextBlock(label,
+                        this.labelFont, this.labelPaint, maxLabelWidth,
+                        new G2TextMeasurer(g2));
+                TextBox labelBox = new TextBox(block);
+                labelBox.setBackgroundPaint(this.labelBackgroundPaint);
+                labelBox.setOutlinePaint(this.labelOutlinePaint);
+                labelBox.setOutlineStroke(this.labelOutlineStroke);
+                labelBox.setShadowPaint(this.labelShadowPaint);
+                labelBox.setInteriorGap(this.labelPadding);
+                double theta = Math.toRadians(
+                        leftKeys.getValue(i).doubleValue());
+                double baseY = state.getPieCenterY() - Math.sin(theta)
+                double hh = labelBox.getHeight(g2);
+
+                this.labelDistributor.addPieLabelRecord(new PieLabelRecord(
+                        leftKeys.getKey(i), theta, baseY, labelBox, hh,
+                        - getLabelLinkDepth()
+                        + getExplodePercent(leftKeys.getKey(i))));
+            }
+        }
+        double hh = plotArea.getHeight();
+        this.labelDistributor.distributeLabels(plotArea.getMinY() + gap,
+        for (int i = 0; i < this.labelDistributor.getItemCount(); i++) {
+            drawLeftLabel(g2, state,
+                    this.labelDistributor.getPieLabelRecord(i));
+        }
+    }
+

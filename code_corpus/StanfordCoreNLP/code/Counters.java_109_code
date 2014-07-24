@@ -1,0 +1,23 @@
+  public static <T> T sample(Counter<T> c, Random rand) {
+    // OMITTED: Seems like there should be a way to directly check if T is comparable
+    // Set<T> keySet = c.keySet();
+    // if (!keySet.isEmpty() && keySet.iterator().next() instanceof Comparable) {
+    //   List l = new ArrayList<T>(keySet);
+    //   Collections.sort(l);
+    //   objects = l;
+    // } else {
+    //   throw new RuntimeException("Results won't be stable since Counters keys are comparable.");
+    // }
+    if (rand == null) rand = RAND;
+    double total = 0.0;
+
+    for (T t : c.keySet()) { // arbitrary ordering, but presumably stable
+      total += c.getCount(t);
+      if (total >= r)
+        return t;
+    }
+    // only chance of reaching here is if c isn't properly normalized, or if
+    // double math makes total<1.0
+    return c.keySet().iterator().next();
+  }
+

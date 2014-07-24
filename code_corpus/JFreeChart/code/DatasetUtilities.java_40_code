@@ -1,0 +1,43 @@
+    public static Number findMinimumDomainValue(XYDataset dataset) {
+        if (dataset == null) {
+            throw new IllegalArgumentException("Null 'dataset' argument.");
+        }
+        Number result = null;
+        // if the dataset implements DomainInfo, life is easy
+        if (dataset instanceof DomainInfo) {
+            DomainInfo info = (DomainInfo) dataset;
+            return new Double(info.getDomainLowerBound(true));
+        }
+        else {
+            double minimum = Double.POSITIVE_INFINITY;
+            int seriesCount = dataset.getSeriesCount();
+            for (int series = 0; series < seriesCount; series++) {
+                int itemCount = dataset.getItemCount(series);
+                for (int item = 0; item < itemCount; item++) {
+
+                    double value;
+                    if (dataset instanceof IntervalXYDataset) {
+                        IntervalXYDataset intervalXYData
+                            = (IntervalXYDataset) dataset;
+                        value = intervalXYData.getStartXValue(series, item);
+                    }
+                    else {
+                        value = dataset.getXValue(series, item);
+                    }
+                    if (!Double.isNaN(value)) {
+                        minimum = Math.min(minimum, value);
+                    }
+
+                }
+            }
+            if (minimum == Double.POSITIVE_INFINITY) {
+                result = null;
+            }
+            else {
+                result = new Double(minimum);
+            }
+        }
+
+        return result;
+    }
+

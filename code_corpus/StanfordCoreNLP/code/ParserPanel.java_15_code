@@ -1,0 +1,63 @@
+  public void loadFile(String filename) {
+    if (filename == null) {
+      return;
+    }
+
+    File file = new File(filename);
+
+    String urlOrFile = filename;
+    // if file can't be found locally, try prepending http:// and looking on web
+    if (!file.exists() && filename.indexOf("://") == -1) {
+      urlOrFile = "http://" + filename;
+    }
+    // else prepend file:// to handle local html file urls
+    else if (filename.indexOf("://") == -1) {
+      urlOrFile = "file://" + filename;
+    }
+
+    // TODO: why do any of this instead of just reading the file?
+    // Also, is this working correctly still?
+    // load the document
+    Document<Object, Word, Word> doc;
+    try {
+      if (urlOrFile.startsWith("http://") || urlOrFile.endsWith(".htm") || urlOrFile.endsWith(".html")) {
+        // strip tags from html documents
+        Document<Object, Word, Word> docPre = new BasicDocument<Object>().init(new URL(urlOrFile));
+        DocumentProcessor<Word, Word, Object, Word> noTags = new StripTagsProcessor<Object, Word>();
+        doc = noTags.processDocument(docPre);
+      } else {
+        doc = new BasicDocument<Object>(this.getTokenizerFactory()).init(new InputStreamReader(new FileInputStream(filename), encoding));
+      }
+    } catch (Exception e) {
+      JOptionPane.showMessageDialog(this, "Could not load file " + filename + "\n" + e, null, JOptionPane.ERROR_MESSAGE);
+      e.printStackTrace();
+      setStatus("Error loading document");
+      return;
+    }
+
+    // load the document into the text pane
+    StringBuilder docStr = new StringBuilder();
+    for (Iterator<?> it = doc.iterator(); it.hasNext(); ) {
+      if (docStr.length() > 0) {
+        docStr.append(' ');
+      }
+      docStr.append(it.next().toString());
+    }
+    textPane.setText(docStr.toString());
+    dataFileLabel.setText(urlOrFile);
+
+    highlightSentence(0);
+    forwardButton.setEnabled(endIndex != textPane.getText().length() - 1);
+    // scroll to top of document
+    textPane.setCaretPosition(0);
+
+    setStatus("Done");
+  }
+
+  // TreebankLanguagePack returns a TokenizerFactory<? extends HasWord>
+  // which isn't close enough in the type system, but is probably okay in practice
+  @SuppressWarnings("unchecked")
+  private TokenizerFactory<Word> getTokenizerFactory() {
+    return (TokenizerFactory<Word>)tlp.getTokenizerFactory();
+  }
+

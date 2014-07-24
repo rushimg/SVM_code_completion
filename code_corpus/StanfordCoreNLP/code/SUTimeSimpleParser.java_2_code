@@ -1,0 +1,34 @@
+  public static class SUTimeParsingError extends Exception {
+    private static final long serialVersionUID = 1L;
+    public String timeExpression;
+
+    public SUTimeParsingError(String timeExpression) {
+      this.timeExpression = timeExpression;
+    }
+
+    public String getLocalizedMessage() {
+      return "Error while parsing '" + timeExpression + "'";
+    }
+
+  }
+
+  private static AnnotationPipeline pipeline;
+  private static Map<String, Temporal> cache;
+  public static int calls = 0;
+  public static int misses = 0;
+
+  static {
+    pipeline = makeNumericPipeline();
+    cache = Generics.newHashMap();
+  }
+
+  private static AnnotationPipeline makeNumericPipeline() {
+    AnnotationPipeline pipeline = new AnnotationPipeline();
+    pipeline.addAnnotator(new PTBTokenizerAnnotator(false));
+    pipeline.addAnnotator(new WordsToSentencesAnnotator(false));
+    pipeline.addAnnotator(new POSTaggerAnnotator(false));
+    pipeline.addAnnotator(new TimeAnnotator(true));
+
+    return pipeline;
+  }
+

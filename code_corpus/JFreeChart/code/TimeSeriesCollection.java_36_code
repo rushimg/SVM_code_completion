@@ -1,0 +1,24 @@
+    public Range getDomainBounds(boolean includeInterval) {
+        Range result = null;
+        Iterator iterator = this.data.iterator();
+        while (iterator.hasNext()) {
+            TimeSeries series = (TimeSeries) iterator.next();
+            int count = series.getItemCount();
+            if (count > 0) {
+                RegularTimePeriod start = series.getTimePeriod(0);
+                RegularTimePeriod end = series.getTimePeriod(count - 1);
+                Range temp;
+                if (!includeInterval) {
+                    temp = new Range(getX(start), getX(end));
+                }
+                else {
+                    temp = new Range(
+                            start.getFirstMillisecond(this.workingCalendar),
+                            end.getLastMillisecond(this.workingCalendar));
+                }
+                result = Range.combine(result, temp);
+            }
+        }
+        return result;
+    }
+

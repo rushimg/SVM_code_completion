@@ -1,0 +1,50 @@
+    //This class supllies enumeration of integer till 100.
+    public class IteratorExample implements Enumeration{
+    private int counter=0;
+    private PrefetchIterator nextSupplier;
+
+        IteratorExample()
+        {
+            nextSupplier = new PrefetchIterator(new PrefetchIterator.NextElementFunctor(){
+
+                public Object nextElement() throws NoSuchElementException {
+                    counter++;
+                    if (counter>=100)
+                        throw new NoSuchElementException();
+                    else
+                        return new Integer(counter);
+                }
+
+            });
+        }
+        //forwarding to nextSupplier and return its returned value
+        public boolean hasMoreElements() {
+            return this.nextSupplier.hasMoreElements();
+        }
+    //  forwarding to nextSupplier and return its returned value
+        public Object nextElement() {
+            return this.nextSupplier.nextElement();
+        }
+  }</pre>
+public class PrefetchIterator<E>
+    implements Iterator<E>,
+        Enumeration<E>
+{
+    //~ Instance fields --------------------------------------------------------
+
+    private NextElementFunctor<E> innerEnum;
+    private E getNextLastResult;
+    private boolean isGetNextLastResultUpToDate = false;
+    private boolean endOfEnumerationReached = false;
+    private boolean flagIsEnumerationStartedEmpty = true;
+    private int innerFunctorUsageCounter = 0;
+
+    //~ Constructors -----------------------------------------------------------
+
+    public PrefetchIterator(NextElementFunctor<E> aEnum)
+    {
+        innerEnum = aEnum;
+    }
+
+    //~ Methods ----------------------------------------------------------------
+

@@ -1,0 +1,41 @@
+    public static void sendTempFile(File file, HttpServletResponse response,
+                                    String mimeType) throws IOException {
+
+        if (file.exists()) {
+            BufferedInputStream bis = new BufferedInputStream(
+                    new FileInputStream(file));
+
+            //  Set HTTP headers
+            if (mimeType != null) {
+                response.setHeader("Content-Type", mimeType);
+            }
+            response.setHeader("Content-Length", String.valueOf(file.length()));
+            SimpleDateFormat sdf = new SimpleDateFormat(
+                    "EEE, dd MMM yyyy HH:mm:ss z", Locale.ENGLISH);
+            sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
+            response.setHeader("Last-Modified",
+                    sdf.format(new Date(file.lastModified())));
+
+            BufferedOutputStream bos = new BufferedOutputStream(
+                    response.getOutputStream());
+            byte[] input = new byte[1024];
+            boolean eof = false;
+            while (!eof) {
+                int length = bis.read(input);
+                if (length == -1) {
+                    eof = true;
+                }
+                else {
+                    bos.write(input, 0, length);
+                }
+            }
+            bos.flush();
+            bis.close();
+            bos.close();
+        }
+        else {
+            throw new FileNotFoundException(file.getAbsolutePath());
+        }
+        return;
+    }
+

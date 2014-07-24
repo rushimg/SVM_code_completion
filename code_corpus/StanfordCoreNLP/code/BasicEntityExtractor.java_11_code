@@ -1,0 +1,14 @@
+  private CRFClassifier<CoreLabel> createClassifier() {
+    Properties props = new Properties();
+    props.setProperty("macro", "true"); // use a generic CRF configuration
+    props.setProperty("useIfInteger", "true");
+    props.setProperty("featureFactory", "edu.stanford.nlp.ie.NERFeatureFactory");
+    props.setProperty("saveFeatureIndexToDisk", "false");
+    if (this.gazetteerLocation != null) {
+      System.err.println("Using gazetteer: " + this.gazetteerLocation);
+      props.setProperty("gazette", this.gazetteerLocation);
+      props.setProperty("sloppyGazette", "true");
+    }
+    return new CRFClassifier<CoreLabel>(props);
+  }
+

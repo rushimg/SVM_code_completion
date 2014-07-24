@@ -1,0 +1,198 @@
+  public static class SingleAnnotationExtractor implements Function<CoreMap,Value> {
+    public String name;
+    public double priority;      // Priority/Order in which this rule should be applied with respect to others
+    public double weight;        // Weight given to the rule (how likely is this rule to fire)
+//    public Class annotationField;  // Annotation field to apply rule over: text or tokens or numerizedtokens
+    public Class tokensAnnotationField = CoreAnnotations.TokensAnnotation.class;  // Tokens or numerizedtokens
+    public List<Class> tokensResultAnnotationField;
+    public List<Class> resultAnnotationField;  // Annotation field to put new annotation
+    public Class resultNestedAnnotationField; // Annotation field for child/nested annotations
+    public boolean includeNested = false;
+    public Function<CoreMap, Value> valueExtractor;
+    public Function<MatchedExpression,?> resultAnnotationExtractor;
+    public Map<Class, CoreMapAttributeAggregator> tokensAggregators;
+
+    @Override
+    public Value apply(CoreMap in) {
+      return valueExtractor.apply(in);
+    }
+
+    private static void setAnnotations(CoreMap cm, List<Class> annotationKeys, Object obj) {
+      if (annotationKeys.size() > 1 && obj instanceof List) {
+        // List of annotationKeys, obj also list, we should try to match the objects to annotationKeys
+        List list = (List) obj;
+        int n = Math.min(list.size(), annotationKeys.size());
+        for (int i = 0; i < n; i++) {
+          Object v = list.get(i);
+          Class key = annotationKeys.get(i);
+          if (key == null) {
+            throw new RuntimeException("Invalid null annotation key");
+          }
+          if (v instanceof Value) {
+            cm.set(key, ((Value) v).get());
+          } else {
+            cm.set(key, v);
+          }
+        }
+      } else {
+        // Only a single object, set all annotationKeys to that obj
+        for (Class key:annotationKeys) {
+          if (key == null) {
+            throw new RuntimeException("Invalid null annotation key");
+          }
+          cm.set(key, obj);
+        }
+      }
+    }
+
+    public void annotate(MatchedExpression matchedExpression, List<? extends CoreMap> nested) {
+      if (resultNestedAnnotationField != null) {
+        matchedExpression.annotation.set(resultNestedAnnotationField, nested);
+      }
+      // NOTE: for now value must be extracted after nested annotation is in place...
+      annotate(matchedExpression);
+    }
+
+    public void annotate(MatchedExpression matchedExpression) {
+      matchedExpression.value = valueExtractor.apply(matchedExpression.annotation);
+
+      if (resultAnnotationField != null) {
+        if (resultAnnotationExtractor != null) {
+          Object result = resultAnnotationExtractor.apply(matchedExpression);
+          setAnnotations(matchedExpression.annotation, resultAnnotationField, result);
+        } else {
+          // TODO: Should default result be the matchedExpression, value, object???
+          //matchedExpression.annotation.set(resultAnnotationField, matchedExpression);
+          Value v = matchedExpression.getValue();
+          setAnnotations(matchedExpression.annotation, resultAnnotationField, (v != null)? v.get():null);
+        }
+      }
+
+      if (tokensResultAnnotationField != null) {
+        List<? extends CoreMap> tokens = (List<? extends CoreMap>) matchedExpression.annotation.get(tokensAnnotationField);
+        if (resultAnnotationExtractor != null) {
+          Object result = resultAnnotationExtractor.apply(matchedExpression);
+          for (CoreMap cm:tokens) {
+            setAnnotations(cm, tokensResultAnnotationField, result);
+          }
+        } else {
+          // TODO: Should default result be the matchedExpression, value, object???
+          //matchedExpression.annotation.set(resultAnnotationField, matchedExpression);
+          Value v = matchedExpression.getValue();
+          for (CoreMap cm:tokens) {
+            setAnnotations(cm, tokensResultAnnotationField, (v != null)? v.get():null);
+          }
+        }
+      }
+    }
+
+    public MatchedExpression createMatchedExpression(Interval<Integer> charOffsets, Interval<Integer> tokenOffsets)
+    {
+      MatchedExpression me = new MatchedExpression(charOffsets, tokenOffsets, this, priority, weight);
+      return me;
+    }
+  }
+
+  public MatchedExpression(MatchedExpression me)
+  {
+    this.annotation = me.annotation;
+    this.extractFunc = me.extractFunc;
+    this.text = me.text;
+    this.value = me.value;
+    //this.attributes = me.attributes;
+    this.priority = me.priority;
+    this.weight = me.weight;
+    this.order = me.order;
+    this.charOffsets = me.charOffsets;
+    this.tokenOffsets = me.tokenOffsets;
+    this.chunkOffsets = me.tokenOffsets;
+  }
+
+  public MatchedExpression(Interval<Integer> charOffsets, Interval<Integer> tokenOffsets,
+                           SingleAnnotationExtractor extractFunc, double priority, double weight)
+  {
+    this.charOffsets = charOffsets;
+    this.tokenOffsets = tokenOffsets;
+    this.chunkOffsets = tokenOffsets;
+    this.extractFunc = extractFunc;
+    this.priority = priority;
+    this.weight = weight;
+  }
+
+  public boolean extractAnnotation(Env env, CoreMap sourceAnnotation)
+  {
+    return extractAnnotation(sourceAnnotation, extractFunc.tokensAggregators);
+  }
+
+  private boolean extractAnnotation(CoreMap sourceAnnotation,
+                                    Map<Class, CoreMapAttributeAggregator> aggregators)
+  {
+    Class tokensAnnotationKey = extractFunc.tokensAnnotationField;
+    if (chunkOffsets != null) {
+      annotation = ChunkAnnotationUtils.getMergedChunk((List<? extends CoreMap>) sourceAnnotation.get(tokensAnnotationKey),
+              chunkOffsets.getBegin(), chunkOffsets.getEnd(), aggregators );
+      if (sourceAnnotation.containsKey(CoreAnnotations.TextAnnotation.class)) {
+        ChunkAnnotationUtils.annotateChunkText(annotation, sourceAnnotation);
+      }
+      if (tokenOffsets != null) {
+        if (annotation.get(CoreAnnotations.TokenBeginAnnotation.class) == null) {
+          annotation.set(CoreAnnotations.TokenBeginAnnotation.class, tokenOffsets.getBegin());
+        }
+        if (annotation.get(CoreAnnotations.TokenEndAnnotation.class) == null) {
+          annotation.set(CoreAnnotations.TokenEndAnnotation.class, tokenOffsets.getEnd());
+        }
+      }
+
+      charOffsets = Interval.toInterval(annotation.get(CoreAnnotations.CharacterOffsetBeginAnnotation.class), annotation.get(CoreAnnotations.CharacterOffsetEndAnnotation.class));
+      tokenOffsets = Interval.toInterval(annotation.get(CoreAnnotations.TokenBeginAnnotation.class),
+              annotation.get(CoreAnnotations.TokenEndAnnotation.class), Interval.INTERVAL_OPEN_END);
+    } else {
+      Integer baseCharOffset = sourceAnnotation.get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);
+      if (baseCharOffset == null) {
+        baseCharOffset = 0;
+      }
+
+      chunkOffsets = ChunkAnnotationUtils.getChunkOffsetsUsingCharOffsets((List<? extends CoreMap>) sourceAnnotation.get(tokensAnnotationKey),
+              charOffsets.getBegin() + baseCharOffset, charOffsets.getEnd()  + baseCharOffset);
+      CoreMap annotation2 = ChunkAnnotationUtils.getMergedChunk((List<? extends CoreMap>) sourceAnnotation.get(tokensAnnotationKey),
+              chunkOffsets.getBegin(), chunkOffsets.getEnd(), aggregators );
+
+      annotation = ChunkAnnotationUtils.getAnnotatedChunkUsingCharOffsets(sourceAnnotation, charOffsets.getBegin(), charOffsets.getEnd());
+      tokenOffsets = Interval.toInterval(annotation.get(CoreAnnotations.TokenBeginAnnotation.class),
+              annotation.get(CoreAnnotations.TokenEndAnnotation.class), Interval.INTERVAL_OPEN_END);
+      annotation.set(tokensAnnotationKey, annotation2.get(tokensAnnotationKey));
+    }
+    text = annotation.get(CoreAnnotations.TextAnnotation.class);
+    extractFunc.annotate(this, (List<? extends CoreMap>) annotation.get(tokensAnnotationKey));
+    return true;
+  }
+
+  public boolean extractAnnotation(Env env, List<? extends CoreMap> source)
+  {
+    return extractAnnotation(source, CoreMapAttributeAggregator.getDefaultAggregators());
+  }
+
+  protected boolean extractAnnotation(List<? extends CoreMap> source, Map<Class, CoreMapAttributeAggregator> chunkAggregators)
+  {
+    annotation = ChunkAnnotationUtils.getMergedChunk(source,  chunkOffsets.getBegin(), chunkOffsets.getEnd(), chunkAggregators);
+    charOffsets = Interval.toInterval(annotation.get(CoreAnnotations.CharacterOffsetBeginAnnotation.class),
+            annotation.get(CoreAnnotations.CharacterOffsetEndAnnotation.class), Interval.INTERVAL_OPEN_END);
+    tokenOffsets = Interval.toInterval(annotation.get(CoreAnnotations.TokenBeginAnnotation.class),
+              annotation.get(CoreAnnotations.TokenEndAnnotation.class), Interval.INTERVAL_OPEN_END);
+    text = annotation.get(CoreAnnotations.TextAnnotation.class);
+    extractFunc.annotate(this, source.subList(chunkOffsets.getBegin(), chunkOffsets.getEnd()));
+    return true;
+  }
+
+  public Interval<Integer> getCharOffsets() {
+    return charOffsets;
+  }
+
+  public Interval<Integer> getTokenOffsets() {
+    return tokenOffsets;
+  }
+
+  public Interval<Integer> getChunkOffsets() {
+    return chunkOffsets;
+  }
+

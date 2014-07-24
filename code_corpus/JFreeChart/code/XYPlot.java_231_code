@@ -1,0 +1,25 @@
+    public void zoomDomainAxes(double factor, PlotRenderingInfo info,
+                               Point2D source, boolean useAnchor) {
+
+        // perform the zoom on each domain axis
+        for (int i = 0; i < this.domainAxes.size(); i++) {
+            ValueAxis domainAxis = (ValueAxis) this.domainAxes.get(i);
+            if (domainAxis != null) {
+                if (useAnchor) {
+                    // get the relevant source coordinate given the plot
+                    // orientation
+                    double sourceX = source.getX();
+                    if (this.orientation == PlotOrientation.HORIZONTAL) {
+                        sourceX = source.getY();
+                    }
+                    double anchorX = domainAxis.java2DToValue(sourceX,
+                            info.getDataArea(), getDomainAxisEdge());
+                    domainAxis.resizeRange2(factor, anchorX);
+                }
+                else {
+                    domainAxis.resizeRange(factor);
+                }
+            }
+        }
+    }
+

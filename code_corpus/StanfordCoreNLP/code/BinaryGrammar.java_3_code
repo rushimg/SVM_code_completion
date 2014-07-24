@@ -1,0 +1,51 @@
+  public Set<BinaryRule> ruleSetByRightChild(int state) {
+    if (state >= ruleSetWithRC.length) {
+      return Collections.<BinaryRule>emptySet();
+    }
+    return ruleSetWithRC[state];
+  }
+
+  public Set<BinaryRule> ruleSetByLeftChild(int state) {
+    if (state >= ruleSetWithRC.length) {
+      return Collections.<BinaryRule>emptySet();
+    }
+    return ruleSetWithLC[state];
+  }
+
+
+  private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
+    stream.defaultReadObject();
+    init();
+    for (BinaryRule br : allRules) {
+      rulesWithParent[br.parent].add(br);
+      rulesWithLC[br.leftChild].add(br);
+      rulesWithRC[br.rightChild].add(br);
+      ruleMap.put(br, br);
+    }
+    splitRules();
+  }
+
+  @SuppressWarnings("unchecked")
+  private void init() {
+    ruleMap = Generics.newHashMap();
+    int numStates = index.size();
+    rulesWithParent = new List[numStates];
+    rulesWithLC = new List[numStates];
+    rulesWithRC = new List[numStates];
+    ruleSetWithLC = new Set[numStates];
+    ruleSetWithRC = new Set[numStates];
+    for (int s = 0; s < numStates; s++) {
+      rulesWithParent[s] = new ArrayList<BinaryRule>();
+      rulesWithLC[s] = new ArrayList<BinaryRule>();
+      rulesWithRC[s] = new ArrayList<BinaryRule>();
+      ruleSetWithLC[s] = Generics.newHashSet();
+      ruleSetWithRC[s] = Generics.newHashSet();
+    }
+  }
+
+  public BinaryGrammar(Index<String> stateIndex) {
+    this.index = stateIndex;
+    allRules = new ArrayList<BinaryRule>();
+    init();
+  }
+

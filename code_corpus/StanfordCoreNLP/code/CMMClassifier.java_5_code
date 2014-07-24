@@ -1,0 +1,53 @@
+  private void classifyNoSeq(List<IN> document) {
+    if (flags.useReverse) {
+      Collections.reverse(document);
+    }
+
+    if (flags.lowerNewgeneThreshold) {
+      // Used to raise recall for task 1B
+      System.err.println("Using NEWGENE threshold: " + flags.newgeneThreshold);
+      for (int i = 0, docSize = document.size(); i < docSize; i++) {
+        CoreLabel wordInfo = document.get(i);
+        Datum<String, String> d = makeDatum(document, i, featureFactories);
+        Counter<String> scores = classifier.scoresOf(d);
+        //String answer = BACKGROUND;
+        String answer = flags.backgroundSymbol;
+        // HN: The evaluation of scoresOf seems to result in some
+        // kind of side effect.  Specifically, the symptom is that
+        // if scoresOf is not evaluated at every position, the
+        // answers are different
+        if ("NEWGENE".equals(wordInfo.get(CoreAnnotations.GazAnnotation.class))) {
+          for (String label : scores.keySet()) {
+            if ("G".equals(label)) {
+              System.err.println(wordInfo.word() + ':' + scores.getCount(label));
+              if (scores.getCount(label) > flags.newgeneThreshold) {
+                answer = label;
+              }
+            }
+          }
+        }
+        wordInfo.set(CoreAnnotations.AnswerAnnotation.class, answer);
+      }
+    } else {
+      for (int i = 0, listSize = document.size(); i < listSize; i++) {
+        String answer = classOf(document, i);
+        CoreLabel wordInfo = document.get(i);
+        //System.err.println("XXX answer for " +
+        //        wordInfo.word() + " is " + answer);
+        wordInfo.set(CoreAnnotations.AnswerAnnotation.class, answer);
+      }
+      if (flags.justify && (classifier instanceof LinearClassifier)) {
+        LinearClassifier<String, String> lc = (LinearClassifier<String, String>) classifier;
+        for (int i = 0, lsize = document.size(); i < lsize; i++) {
+          CoreLabel lineInfo = document.get(i);
+          System.err.print("@@ Position " + i + ": ");
+          System.err.println(lineInfo.word() + " chose " + lineInfo.get(CoreAnnotations.AnswerAnnotation.class));
+          lc.justificationOf(makeDatum(document, i, featureFactories));
+        }
+      }
+    }
+    if (flags.useReverse) {
+      Collections.reverse(document);
+    }
+  }
+

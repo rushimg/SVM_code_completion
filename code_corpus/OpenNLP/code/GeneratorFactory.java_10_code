@@ -1,0 +1,22 @@
+  static class W2VClassesFeatureGeneratorFactory implements XmlFeatureGeneratorFactory {
+
+    public AdaptiveFeatureGenerator create(Element generatorElement,
+        FeatureGeneratorResourceProvider resourceManager) throws InvalidFormatException {
+
+      String dictResourceKey = generatorElement.getAttribute("dict");
+
+      Object dictResource = resourceManager.getResource(dictResourceKey);
+
+
+      if (!(dictResource instanceof W2VClassesDictionary)) {
+        throw new InvalidFormatException("Not a W2VClassesDictionary resource for key: " + dictResourceKey);
+      }
+
+      return new WordClusterFeatureGenerator((W2VClassesDictionary) dictResource);
+    }
+
+    static void register(Map<String, XmlFeatureGeneratorFactory> factoryMap) {
+      factoryMap.put("w2vwordcluster", new W2VClassesFeatureGeneratorFactory());
+    }
+  }
+

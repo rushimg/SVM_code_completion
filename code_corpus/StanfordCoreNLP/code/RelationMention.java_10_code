@@ -1,0 +1,43 @@
+  			logger.info("Failed to match relation argument: " + goldEnt);
+  			return false;
+  			newArgs.add(goldEnt);
+  			predictedMentions.add(goldEnt);
+  			logger.info("Failed to match relation argument, so keeping gold: " + goldEnt);
+  		}
+  	}
+  	this.args = newArgs;
+  	return true;
+  }
+  
+  public void removeArgument(ExtractionObject argToRemove, boolean removeParent) {
+    Set<ExtractionObject> thisEvent = new IdentityHashSet<ExtractionObject>();
+    thisEvent.add(argToRemove);
+    removeArguments(thisEvent, removeParent);
+  }
+  
+  public void removeArguments(Set<ExtractionObject> argsToRemove, boolean removeParent) {
+    List<ExtractionObject> newArgs = new ArrayList<ExtractionObject>();
+    List<String> newArgNames = new ArrayList<String>();
+    for(int i = 0; i < args.size(); i ++){
+      ExtractionObject a = args.get(i);
+      String n = argNames.get(i);
+      if(! argsToRemove.contains(a)){
+        newArgs.add(a);
+        newArgNames.add(n);
+      } else {
+        if(a instanceof EventMention && removeParent){
+          ((EventMention) a).removeParent(this);
+        }
+      }
+    }
+    args = newArgs;
+    argNames = newArgNames;
+  }
+  
+  public boolean printableObject(double beam) {
+    return printableObject(beam, RelationMention.UNRELATED);
+  }
+  
+  public void setSignature(String s) { signature = s; }
+  public String getSignature() { return signature; }
+  

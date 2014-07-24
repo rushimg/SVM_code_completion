@@ -1,0 +1,40 @@
+  public void loadClassifier(String loadPath, Properties props) throws ClassCastException, IOException, ClassNotFoundException {
+    InputStream is;
+    // ms, 10-04-2010: check first is this path exists in our CLASSPATH. This
+    // takes priority over the file system.
+    if ((is = loadStreamFromClasspath(loadPath)) != null) {
+      Timing.startDoing("Loading classifier from " + loadPath);
+      loadClassifier(is, props);
+      is.close();
+      Timing.endDoing();
+    } else {
+      loadClassifier(new File(loadPath), props);
+    }
+  }
+
+  public void loadClassifierNoExceptions(String loadPath) {
+    loadClassifierNoExceptions(loadPath, null);
+  }
+
+  public void loadClassifierNoExceptions(String loadPath, Properties props) {
+    InputStream is;
+    // ms, 10-04-2010: check first is this path exists in our CLASSPATH. This
+    // takes priority over the file system.
+    if ((is = loadStreamFromClasspath(loadPath)) != null) {
+      Timing.startDoing("Loading classifier from " + loadPath);
+      loadClassifierNoExceptions(is, props);
+      try {
+        is.close();
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+      Timing.endDoing();
+    } else {
+      loadClassifierNoExceptions(new File(loadPath), props);
+    }
+  }
+
+  public void loadClassifier(File file) throws ClassCastException, IOException, ClassNotFoundException {
+    loadClassifier(file, null);
+  }
+

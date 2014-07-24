@@ -1,0 +1,25 @@
+  @SuppressWarnings("unchecked")
+  private void init() {
+    int numStates = index.size();
+    coreRules = Generics.newHashMap();
+    rulesWithParent = new List[numStates];
+    rulesWithChild = new List[numStates];
+    closedRulesWithParent = new List[numStates];
+    closedRulesWithChild = new List[numStates];
+    bestRulesUnderMax = Generics.newHashMap();
+    // backTrace = Generics.newHashMap();
+    for (int s = 0; s < numStates; s++) {
+      rulesWithParent[s] = new ArrayList<UnaryRule>();
+      rulesWithChild[s] = new ArrayList<UnaryRule>();
+      closedRulesWithParent[s] = new ArrayList<UnaryRule>();
+      closedRulesWithChild[s] = new ArrayList<UnaryRule>();
+      UnaryRule selfR = new UnaryRule(s, s, 0.0);
+      relaxRule(selfR);
+    }
+  }
+
+  public UnaryGrammar(Index<String> stateIndex) {
+    this.index = stateIndex;
+    init();
+  }
+

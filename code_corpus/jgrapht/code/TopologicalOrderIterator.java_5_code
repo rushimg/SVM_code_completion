@@ -1,0 +1,30 @@
+    public TopologicalOrderIterator(DirectedGraph<V, E> dg, Queue<V> queue)
+    {
+        this(dg, queue, new HashMap<V, ModifiableInteger>());
+    }
+
+    // NOTE: This is a hack to deal with the fact that CrossComponentIterator
+    // needs to know the start vertex in its constructor
+    private TopologicalOrderIterator(
+        DirectedGraph<V, E> dg,
+        Queue<V> queue,
+        Map<V, ModifiableInteger> inDegreeMap)
+    {
+        this(dg, initialize(dg, queue, inDegreeMap));
+        this.queue = queue;
+        this.inDegreeMap = inDegreeMap;
+
+        // empty queue for non-empty graph would indicate presence of
+        // cycles (no roots found)
+        assert dg.vertexSet().isEmpty() || !queue.isEmpty();
+    }
+
+    // NOTE: This is intentionally private, because starting the sort "in the
+    // middle" doesn't make sense.
+    private TopologicalOrderIterator(DirectedGraph<V, E> dg, V start)
+    {
+        super(dg, start);
+    }
+
+    //~ Methods ----------------------------------------------------------------
+

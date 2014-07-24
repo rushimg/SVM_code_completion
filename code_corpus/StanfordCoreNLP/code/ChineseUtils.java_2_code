@@ -1,0 +1,40 @@
+  private static final boolean ONLY_BMP = false;
+
+  // These are good Unicode whitespace regexes for any language!
+  public static final String ONEWHITE = "[\\s\\p{Zs}]";
+  public static final String WHITEPLUS = ONEWHITE + "+";
+
+  // Chinese numbers 1-10
+  public static final String NUMBERS = "[\u4e00\u4e8c\u4e09\u56db\u4e94\u516d\u4e03\u516b\u4e5d\u5341]";
+
+  // List of characters similar to \u00B7 listed in the Unicode 5.0 manual
+  public static final String MID_DOT_REGEX_STR = "[\u00B7\u0387\u2022\u2024\u2027\u2219\u22C5\u30FB]";
+
+
+  // These are the constants for the normalize method
+  public static final int LEAVE = 0;
+  public static final int ASCII = 1;
+  public static final int NORMALIZE = 1; // Unicode normalization moves to low
+  public static final int FULLWIDTH = 2;
+  public static final int DELETE = 3;
+  public static final int DELETE_EXCEPT_BETWEEN_ASCII = 4;
+  public static final int MAX_LEGAL = 4;
+
+  // private int[] puaChars = { 0xE005 };
+  // private int[] uniChars = { 0x42B5 };
+
+
+  // not instantiable
+  private ChineseUtils() {}
+
+  public static boolean isNumber(char c) {
+    return (StringUtils.matches(String.valueOf(c), NUMBERS) || Character.isDigit(c));
+  }
+
+  public static String normalize(String in) {
+    return normalize(in, FULLWIDTH, ASCII);
+  }
+
+  public static String normalize(String in, int ascii, int spaceChar) {
+    return normalize(in, ascii, spaceChar, LEAVE);
+  }

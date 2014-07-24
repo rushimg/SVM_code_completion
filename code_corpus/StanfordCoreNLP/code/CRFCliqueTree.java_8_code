@@ -1,0 +1,72 @@
+  public double prob(int position, E[] labels) {
+    return Math.exp(logProb(position, labels));
+  }
+
+  public GeneralizedCounter logProbs(int position, int window) {
+    GeneralizedCounter<E> gc = new GeneralizedCounter<E>(window);
+    int[] labels = new int[window];
+    // cdm july 2005: below array initialization isn't necessary: JLS (3rd ed.)
+    // 4.12.5
+    // Arrays.fill(labels, 0);
+
+    OUTER: while (true) {
+      List<E> labelsList = intArrayToListE(labels);
+      gc.incrementCount(labelsList, logProb(position, labels));
+      for (int i = 0; i < labels.length; i++) {
+        labels[i]++;
+        if (labels[i] < numClasses) {
+          break;
+        }
+        if (i == labels.length - 1) {
+          break OUTER;
+        }
+        labels[i] = 0;
+      }
+    }
+    return gc;
+  }
+
+  public GeneralizedCounter probs(int position, int window) {
+    GeneralizedCounter<E> gc = new GeneralizedCounter<E>(window);
+    int[] labels = new int[window];
+    // cdm july 2005: below array initialization isn't necessary: JLS (3rd ed.)
+    // 4.12.5
+    // Arrays.fill(labels, 0);
+
+    OUTER: while (true) {
+      List<E> labelsList = intArrayToListE(labels);
+      gc.incrementCount(labelsList, prob(position, labels));
+      for (int i = 0; i < labels.length; i++) {
+        labels[i]++;
+        if (labels[i] < numClasses) {
+          break;
+        }
+        if (i == labels.length - 1) {
+          break OUTER;
+        }
+        labels[i] = 0;
+      }
+    }
+    return gc;
+  }
+
+  //
+  // HELPER METHODS
+  //
+
+  private int[] objectArrayToIntArray(E[] os) {
+    int[] is = new int[os.length];
+    for (int i = 0; i < os.length; i++) {
+      is[i] = classIndex.indexOf(os[i]);
+    }
+    return is;
+  }
+
+  private List<E> intArrayToListE(int[] is) {
+    List<E> os = new ArrayList<E>(is.length);
+    for (int i : is) {
+      os.add(classIndex.get(i));
+    }
+    return os;
+  }
+

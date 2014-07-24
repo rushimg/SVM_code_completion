@@ -1,0 +1,136 @@
+  private void findParameters(int iterations, double correctionConstant) {
+    double prevLL = 0.0;
+    double currLL = 0.0;
+    display("Performing " + iterations + " iterations.\n");
+    for (int i = 1; i <= iterations; i++) {
+      if (i < 10)
+        display("  " + i + ":  ");
+      else if (i < 100)
+        display(" " + i + ":  ");
+      else
+        display(i + ":  ");
+      currLL = nextIteration(correctionConstant);
+      if (i > 1) {
+        if (prevLL > currLL) {
+          System.err.println("Model Diverging: loglikelihood decreased");
+          break;
+        }
+        if (currLL - prevLL < LLThreshold) {
+          break;
+        }
+      }
+      prevLL = currLL;
+    }
+
+    // kill a bunch of these big objects now that we don't need them
+    observedExpects = null;
+    modelExpects = null;
+    numTimesEventsSeen = null;
+    contexts = null;
+  }
+
+  //modeled on implementation in  Zhang Le's maxent kit
+  private double gaussianUpdate(int predicate, int oid, int n, double correctionConstant) {
+    double param = params[predicate].getParameters()[oid];
+    double x0 = 0.0;
+    double modelValue = modelExpects[0][predicate].getParameters()[oid];
+    double observedValue = observedExpects[predicate].getParameters()[oid];
+    for (int i = 0; i < 50; i++) {
+      double f = tmp + (param + x0) / sigma - observedValue;
+      if (fp == 0) {
+        break;
+      }
+      double x = x0 - f / fp;
+      if (Math.abs(x - x0) < 0.000001) {
+        x0 = x;
+        break;
+      }
+      x0 = x;
+    }
+    return x0;
+  }
+
+  private class ModelExpactationComputeTask implements Callable<ModelExpactationComputeTask> {
+
+    private final int startIndex;
+    private final int length;
+
+    private double loglikelihood = 0;
+
+    private int numEvents = 0;
+    private int numCorrect = 0;
+
+    final private int threadIndex;
+
+    // startIndex to compute, number of events to compute
+    ModelExpactationComputeTask(int threadIndex, int startIndex, int length) {
+      this.startIndex = startIndex;
+      this.length = length;
+      this.threadIndex = threadIndex;
+    }
+
+    public ModelExpactationComputeTask call() {
+
+      final double[] modelDistribution = new double[numOutcomes];
+
+
+      for (int ei = startIndex; ei < startIndex + length; ei++) {
+
+        // TODO: check interruption status here, if interrupted set a poisoned flag and return
+
+        if (values != null) {
+          prior.logPrior(modelDistribution, contexts[ei], values[ei]);
+          GISModel.eval(contexts[ei], values[ei], modelDistribution, evalParams);
+        }
+        else {
+          prior.logPrior(modelDistribution,contexts[ei]);
+          GISModel.eval(contexts[ei], modelDistribution, evalParams);
+        }
+        for (int j = 0; j < contexts[ei].length; j++) {
+          int pi = contexts[ei][j];
+          if (predicateCounts[pi] >= cutoff) {
+            int[] activeOutcomes = modelExpects[threadIndex][pi].getOutcomes();
+            for (int aoi=0;aoi<activeOutcomes.length;aoi++) {
+              int oi = activeOutcomes[aoi];
+
+              // numTimesEventsSeen must also be thread safe
+              if (values != null && values[ei] != null) {
+              }
+              else {
+              }
+            }
+          }
+        }
+
+
+        numEvents += numTimesEventsSeen[ei];
+        if (printMessages) {
+          int max = 0;
+          for (int oi = 1; oi < numOutcomes; oi++) {
+            if (modelDistribution[oi] > modelDistribution[max]) {
+              max = oi;
+            }
+          }
+          if (max == outcomeList[ei]) {
+            numCorrect += numTimesEventsSeen[ei];
+          }
+        }
+
+      }
+
+      return this;
+    }
+
+    synchronized int getNumEvents() {
+      return numEvents;
+    }
+
+    synchronized int getNumCorrect() {
+      return numCorrect;
+    }
+
+    synchronized double getLoglikelihood() {
+      return loglikelihood;
+    }
+  }
+

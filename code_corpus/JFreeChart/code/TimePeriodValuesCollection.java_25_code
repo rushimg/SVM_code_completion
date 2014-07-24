@@ -1,0 +1,48 @@
+    public Range getDomainBounds(boolean includeInterval) {
+        boolean interval = includeInterval || this.domainIsPointsInTime;
+        Range result = null;
+        Range temp = null;
+        Iterator iterator = this.data.iterator();
+        while (iterator.hasNext()) {
+            TimePeriodValues series = (TimePeriodValues) iterator.next();
+            int count = series.getItemCount();
+            if (count > 0) {
+                TimePeriod start = series.getTimePeriod(
+                        series.getMinStartIndex());
+                TimePeriod end = series.getTimePeriod(series.getMaxEndIndex());
+                if (!interval) {
+                    if (this.xPosition == TimePeriodAnchor.START) {
+                        TimePeriod maxStart = series.getTimePeriod(
+                                series.getMaxStartIndex());
+                        temp = new Range(start.getStart().getTime(),
+                                maxStart.getStart().getTime());
+                    }
+                    else if (this.xPosition == TimePeriodAnchor.MIDDLE) {
+                        TimePeriod minMiddle = series.getTimePeriod(
+                                series.getMinMiddleIndex());
+                        long s1 = minMiddle.getStart().getTime();
+                        long e1 = minMiddle.getEnd().getTime();
+                        TimePeriod maxMiddle = series.getTimePeriod(
+                                series.getMaxMiddleIndex());
+                        long s2 = maxMiddle.getStart().getTime();
+                        long e2 = maxMiddle.getEnd().getTime();
+                        temp = new Range(s1 + (e1 - s1) / 2,
+                                s2 + (e2 - s2) / 2);
+                    }
+                    else if (this.xPosition == TimePeriodAnchor.END) {
+                        TimePeriod minEnd = series.getTimePeriod(
+                                series.getMinEndIndex());
+                        temp = new Range(minEnd.getEnd().getTime(),
+                                end.getEnd().getTime());
+                    }
+                }
+                else {
+                    temp = new Range(start.getStart().getTime(),
+                            end.getEnd().getTime());
+                }
+                result = Range.combine(result, temp);
+            }
+        }
+        return result;
+    }
+

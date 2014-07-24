@@ -1,0 +1,57 @@
+  private static <E extends CoreMap> String detectQuantityModifier(List<E> list, int beforeIndex, int afterIndex) {
+    String prev = (beforeIndex >= 0) ? list.get(beforeIndex).get(CoreAnnotations.TextAnnotation.class).toLowerCase(): "";
+    String prev2 = (beforeIndex - 1 >= 0) ? list.get(beforeIndex - 1).get(CoreAnnotations.TextAnnotation.class).toLowerCase(): "";
+    String prev3 = (beforeIndex - 2 >= 0) ? list.get(beforeIndex - 2).get(CoreAnnotations.TextAnnotation.class).toLowerCase(): "";
+    int sz = list.size();
+    String next = (afterIndex < sz) ? list.get(afterIndex).get(CoreAnnotations.TextAnnotation.class).toLowerCase(): "";
+    String next2 = (afterIndex + 1 < sz) ? list.get(afterIndex + 1).get(CoreAnnotations.TextAnnotation.class).toLowerCase(): "";
+    String next3 = (afterIndex + 2 < sz) ? list.get(afterIndex + 2).get(CoreAnnotations.TextAnnotation.class).toLowerCase(): "";
+
+    if (DEBUG) {
+      err.println("Quantifiable: previous: " + prev3 + ' ' + prev2+ ' ' + prev);
+      err.println("Quantifiable: next: " + next + ' ' + next2 + ' ' + next3);
+    }
+
+    String longPrev = prev3 + ' ' + prev2 + ' ' + prev;
+    if (longPrev.matches(lessEqualThreeWords)) { return "<="; }
+    if (longPrev.matches(greaterEqualThreeWords)) { return ">="; }
+
+    longPrev = prev2 + ' ' + prev;
+    if (longPrev.matches(greaterThanTwoWords)) { return ">"; }
+    if (longPrev.matches(lessEqualTwoWords)) { return "<="; }
+    if (longPrev.matches(greaterEqualTwoWords)) { return ">="; }
+    if (longPrev.matches(lessThanTwoWords)) { return "<"; }
+    if (longPrev.matches(approxTwoWords)) { return "~"; }
+
+    String longNext = next + ' ' + next2;
+    if (longNext.matches(greaterEqualTwoWords)) { return ">="; }
+    if (longNext.matches(lessEqualTwoWords)) { return "<="; }
+
+    if (prev.matches(greaterThanOneWord)) { return ">"; }
+    if (prev.matches(lessThanOneWord)) { return "<"; }
+    if (prev.matches(lessEqualOneWord)) { return "<="; }
+    if (prev.matches(approxOneWord)) { return "~"; }
+
+    if (next.matches(other)) { return ">="; }
+
+    if (DEBUG) { err.println("Quantifiable: not a quantity modifier"); }
+    return null;
+  }
+
+
+  private static String earlyOneWord = "early";
+  private static String earlyTwoWords = "(?:dawn|eve|beginning) of";
+  private static String earlyThreeWords = "early in the";
+  private static String lateOneWord = "late";
+  private static String lateTwoWords = "late at|end of";
+  private static String lateThreeWords = "end of the";
+  private static String middleTwoWords = "(?:middle|midst) of";
+  private static String middleThreeWords = "(?:middle|midst) of the";
+
+  private static String amOneWord = "[Aa]\\.?[Mm]\\.?";
+  private static String pmOneWord = "[Pp]\\.?[Mm]\\.?";
+  private static String amThreeWords = "in the morning";
+  private static String pmTwoWords = "at night";
+  private static String pmThreeWords = "in the (?:afternoon|evening)";
+
+

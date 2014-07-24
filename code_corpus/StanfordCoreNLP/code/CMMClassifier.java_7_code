@@ -1,0 +1,48 @@
+  public double loglikelihood(List<IN> lineInfos) {
+    double cll = 0.0;
+
+    for (int i = 0; i < lineInfos.size(); i++) {
+      Datum<String, String> d = makeDatum(lineInfos, i, featureFactories);
+      Counter<String> c = classifier.logProbabilityOf(d);
+
+      double total = Double.NEGATIVE_INFINITY;
+      for (String s : c.keySet()) {
+        total = SloppyMath.logAdd(total, c.getCount(s));
+      }
+      cll -= c.getCount(d.label()) - total;
+    }
+    // quadratic prior
+    // HN: TODO: add other priors
+
+    if (classifier instanceof LinearClassifier) {
+      LinearClassifier<String, String> lc = (LinearClassifier<String, String>)classifier;
+      for (String feature: lc.features()) {
+        for (String classLabel: classIndex) {
+          double w = lc.weight(feature, classLabel);
+        }
+      }
+    }
+    return cll;
+  }
+
+  @Override
+  public SequenceModel getSequenceModel(List<IN> document) {
+    //System.err.println(flags.useReverse);
+
+    if (flags.useReverse) {
+      Collections.reverse(document);
+    }
+
+    // cdm Aug 2005: why is this next line needed?  Seems really ugly!!!  [2006: it broke things! removed]
+    // document.add(0, new CoreLabel());
+
+    SequenceModel ts = new Scorer<IN>(document,
+                                      classIndex,
+                                      this,
+                                      (!flags.useTaggySequences ? (flags.usePrevSequences ? 1 : 0) : flags.maxLeft),
+                                      (flags.useNextSequences ? 1 : 0),
+                                      answerArrays);
+
+    return ts;
+  }
+

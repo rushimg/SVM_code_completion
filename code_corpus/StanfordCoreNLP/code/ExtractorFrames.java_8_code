@@ -1,0 +1,44 @@
+  static class ExtractorTwoWordsTag extends Extractor {
+
+    private static final long serialVersionUID = 277004119652781188L;
+
+    private final int leftWord, rightWord, tag;
+    private final int rightContext, leftContext;
+
+    public ExtractorTwoWordsTag(int leftWord, int rightWord, int tag) {
+      this.leftWord = Math.min(leftWord, rightWord);
+      this.rightWord = Math.max(leftWord, rightWord);
+      this.tag = tag;
+
+      this.rightContext = Math.max(tag, 0);
+      this.leftContext = -Math.min(tag, 0);
+    }
+
+    @Override
+    public int rightContext() {
+      return rightContext;
+    }
+
+    @Override
+    public int leftContext() {
+      return leftContext;
+    }
+
+    @Override
+      String extract(History h, PairsHolder pH) {
+      return (pH.getWord(h, leftWord) + '!' + pH.getTag(h, tag) + '!' +
+              pH.getWord(h, rightWord));
+    }
+
+    @Override public boolean isLocal() { return false; }
+    @Override public boolean isDynamic() { return true; }
+
+    @Override
+    public String toString() {
+      return (getClass().getName() + "(w" + leftWord +
+              ",t" + tag + ",w" + rightWord + ')');
+    }
+  }
+
+
+

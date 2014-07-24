@@ -1,0 +1,41 @@
+public class ChineseCharacterBasedLexicon implements Lexicon {
+
+  private final double lengthPenalty;
+  // penaltyType should be set as follows:
+  // 0: no length penalty
+  // 1: quadratic length penalty
+  // 2: penalty for continuation chars only
+  private final int penaltyType;
+
+  private Map<List,Distribution<Symbol>> charDistributions;
+  private Set<Symbol> knownChars;
+
+  private Distribution<String> POSDistribution;
+
+  private final boolean useUnknownCharacterModel;
+
+  private static final int CONTEXT_LENGTH = 2;
+
+  private final Index<String> wordIndex;
+  private final Index<String> tagIndex;
+
+  public ChineseCharacterBasedLexicon(ChineseTreebankParserParams params,
+                                      Index<String> wordIndex,
+                                      Index<String> tagIndex) {
+    this.wordIndex = wordIndex;
+    this.tagIndex = tagIndex;
+    this.lengthPenalty = params.lengthPenalty;
+    this.penaltyType = params.penaltyType;
+    this.useUnknownCharacterModel = params.useUnknownCharacterModel;
+  }
+
+  // We need to make two passes over the data, whereas the calling
+  // routines only pass in the sentences or trees once, so we keep all
+  // the sentences and then process them at the end
+  private transient List<List<TaggedWord>> trainingSentences;
+
+  @Override
+  public void initializeTraining(double numTrees) {
+    trainingSentences = new ArrayList<List<TaggedWord>>();
+  }
+

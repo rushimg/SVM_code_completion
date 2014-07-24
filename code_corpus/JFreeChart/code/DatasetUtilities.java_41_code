@@ -1,0 +1,45 @@
+    public static Number findMaximumDomainValue(XYDataset dataset) {
+        if (dataset == null) {
+            throw new IllegalArgumentException("Null 'dataset' argument.");
+        }
+        Number result = null;
+        // if the dataset implements DomainInfo, life is easy
+        if (dataset instanceof DomainInfo) {
+            DomainInfo info = (DomainInfo) dataset;
+            return new Double(info.getDomainUpperBound(true));
+        }
+
+        // hasn't implemented DomainInfo, so iterate...
+        else {
+            double maximum = Double.NEGATIVE_INFINITY;
+            int seriesCount = dataset.getSeriesCount();
+            for (int series = 0; series < seriesCount; series++) {
+                int itemCount = dataset.getItemCount(series);
+                for (int item = 0; item < itemCount; item++) {
+
+                    double value;
+                    if (dataset instanceof IntervalXYDataset) {
+                        IntervalXYDataset intervalXYData
+                            = (IntervalXYDataset) dataset;
+                        value = intervalXYData.getEndXValue(series, item);
+                    }
+                    else {
+                        value = dataset.getXValue(series, item);
+                    }
+                    if (!Double.isNaN(value)) {
+                        maximum = Math.max(maximum, value);
+                    }
+                }
+            }
+            if (maximum == Double.NEGATIVE_INFINITY) {
+                result = null;
+            }
+            else {
+                result = new Double(maximum);
+            }
+
+        }
+
+        return result;
+    }
+

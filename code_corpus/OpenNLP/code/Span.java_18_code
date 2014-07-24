@@ -1,0 +1,22 @@
+  public Span trim(CharSequence text) {
+
+    int newStartOffset = getStart();
+
+    for (int i = getStart(); i < getEnd() && StringUtil.isWhitespace(text.charAt(i)); i++) {
+      newStartOffset++;
+    }
+
+    int newEndOffset = getEnd();
+    for (int i = getEnd(); i > getStart() && StringUtil.isWhitespace(text.charAt(i - 1)); i--) {
+      newEndOffset--;
+    }
+
+    if (newStartOffset == getStart() && newEndOffset == getEnd()) {
+      return this;
+    } else if (newStartOffset > newEndOffset) {
+      return new Span(getStart(), getStart(), getType());
+    } else {
+      return new Span(newStartOffset, newEndOffset, getType());
+    }
+  }
+

@@ -1,0 +1,32 @@
+  public static class out {
+
+    private out() {} // uninstantiable
+
+    private static void setupOutWriter(String encoding) {
+      if (encoding == null) {
+        encoding = DEFAULT_ENCODING;
+      }
+      if (cachedOutWriter == null || ! cachedOutEncoding.equals(encoding)) {
+        try {
+          cachedOutWriter = new PrintWriter(new OutputStreamWriter(System.out, encoding), true);
+          cachedOutEncoding = encoding;
+        } catch (UnsupportedEncodingException e) {
+          System.err.println("Error " + e + "Printing as default encoding.");
+          cachedOutWriter = new PrintWriter(new OutputStreamWriter(System.out), true);
+          cachedOutEncoding = "";
+        }
+      }
+    }
+
+    public static void println(String o, String encoding) {
+      setupOutWriter(encoding);
+      cachedOutWriter.println(o);
+
+    }
+
+    public static void print(String o, String encoding) {
+      setupOutWriter(encoding);
+      cachedOutWriter.print(o);
+      cachedOutWriter.flush();
+    }
+

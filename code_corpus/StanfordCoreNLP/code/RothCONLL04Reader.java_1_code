@@ -1,0 +1,89 @@
+public class RothCONLL04Reader extends GenericDataSetReader {
+  public RothCONLL04Reader() {
+    super(null, true, true, true);
+
+    // change the logger to one from our namespace
+    logger = Logger.getLogger(RothCONLL04Reader.class.getName());
+    // run quietly by default
+    logger.setLevel(Level.SEVERE);
+  }
+
+  public Annotation read(String path) throws IOException {
+    Annotation doc = new Annotation("");
+
+    logger.info("Reading file: " + path);
+    Iterator<String> lineIterator = IOUtils.readLines(path).iterator();
+
+    // Each iteration through this loop processes a single sentence
+    // along with any relations in it
+    while (lineIterator.hasNext()) {
+      Annotation sentence = readSentence(doc, path, lineIterator);
+      AnnotationUtils.addSentence(doc, sentence);
+    }
+
+    return doc;
+  }
+
+
+  private static String getNormalizedNERTag(String ner){
+    if(ner.equalsIgnoreCase("O"))
+      return "O";
+    else if(ner.equalsIgnoreCase("Peop"))
+      return "PERSON";
+    else if(ner.equalsIgnoreCase("Loc"))
+      return "LOCATION";
+    else if(ner.equalsIgnoreCase("Org"))
+      return "ORGANIZATION";
+    else if(ner.equalsIgnoreCase("Other"))
+      return "OTHER";
+    throw new RuntimeException("Cannot normalize ner tag " + ner);
+  }
+  
+  private static Annotation readSentence(Annotation doc, String docId, Iterator<String> lineIterator) {
+    Annotation sentence = new Annotation("");
+    sentence.set(CoreAnnotations.DocIDAnnotation.class, docId);
+    sentence.set(MachineReadingAnnotations.EntityMentionsAnnotation.class, new ArrayList<EntityMention>());
+    // we'll need to set things like the tokens and textContent after we've
+    // fully read the sentence
+
+    // contains the full text that we've read so far
+    StringBuilder textContent = new StringBuilder();
+    int tokenCount = 0; // how many tokens we've seen so far
+    List<CoreLabel> tokens = new ArrayList<CoreLabel>();
+
+    // when we've seen two blank lines in a row, this sentence is over (one
+    // blank line separates the sentence and the relations
+    int numBlankLinesSeen = 0;
+    String sentenceID = null;
+
+    // keeps tracks of entities we've seen so far for use by relations
+    Map<String, EntityMention> indexToEntityMention = new HashMap<String, EntityMention>();
+
+    while (lineIterator.hasNext() && numBlankLinesSeen < 2) {
+      String currentLine = lineIterator.next();
+      currentLine = currentLine.replace("COMMA", ",");
+
+      List<String> pieces = StringUtils.split(currentLine);
+      String identifier;
+
+      int size = pieces.size();
+      switch (size) {
+      case 1: // blank line between sentences or relations
+        numBlankLinesSeen++;
+        break;
+      case 3: // relation
+        String type = pieces.get(2);
+        List<ExtractionObject> args = new ArrayList<ExtractionObject>();
+        EntityMention entity1 = indexToEntityMention.get(pieces.get(0));
+        EntityMention entity2 = indexToEntityMention.get(pieces.get(1));
+        args.add(entity1);
+        args.add(entity2);
+        Span span = new Span(entity1.getExtentTokenStart(), entity2
+            .getExtentTokenEnd());
+        // identifier = "relation" + sentenceID + "-" + sentence.getAllRelations().size();
+        identifier = RelationMention.makeUniqueId();
+        RelationMention relationMention = new RelationMention(identifier,
+            sentence, span, type, null, args);
+        AnnotationUtils.addRelationMention(sentence, relationMention);
+        break;
+      case 9: // token

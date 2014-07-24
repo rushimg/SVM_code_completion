@@ -1,0 +1,38 @@
+  public static int ptb2Text(Reader ptbText, Writer w) throws IOException {
+    int numTokens = 0;
+    PTB2TextLexer lexer = new PTB2TextLexer(ptbText);
+    for (String token; (token = lexer.next()) != null; ) {
+      numTokens++;
+      w.write(token);
+    }
+    return numTokens;
+  }
+
+  private static void untok(List<String> inputFileList, List<String> outputFileList, String charset) throws IOException {
+    final long start = System.nanoTime();
+    int numTokens = 0;
+    int sz = inputFileList.size();
+    if (sz == 0) {
+      Reader r = new InputStreamReader(System.in, charset);
+      BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(System.out, charset));
+      numTokens = ptb2Text(r, writer);
+      writer.close();
+    } else {
+      for (int j = 0; j < sz; j++) {
+        Reader r = IOUtils.readerFromString(inputFileList.get(j), charset);
+        BufferedWriter writer;
+        if (outputFileList == null) {
+          writer = new BufferedWriter(new OutputStreamWriter(System.out, charset));
+        } else {
+          writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputFileList.get(j)), charset));
+        }
+        numTokens += ptb2Text(r, writer);
+        writer.close();
+        r.close();
+      }
+    }
+    final long duration = System.nanoTime() - start;
+    final double wordsPerSec = (double) numTokens / ((double) duration / 1000000000.0);
+    System.err.printf("PTBTokenizer untokenized %d tokens at %.2f tokens per second.%n", numTokens, wordsPerSec);
+  }
+

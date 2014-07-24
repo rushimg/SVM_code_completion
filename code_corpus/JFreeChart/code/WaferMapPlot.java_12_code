@@ -1,0 +1,25 @@
+    public void draw(Graphics2D g2, Rectangle2D area, Point2D anchor,
+                     PlotState state,
+                     PlotRenderingInfo info) {
+
+        // if the plot area is too small, just return...
+        boolean b1 = (area.getWidth() <= MINIMUM_WIDTH_TO_DRAW);
+        boolean b2 = (area.getHeight() <= MINIMUM_HEIGHT_TO_DRAW);
+        if (b1 || b2) {
+            return;
+        }
+
+        // record the plot area...
+        if (info != null) {
+            info.setPlotArea(area);
+        }
+
+        // adjust the drawing area for the plot insets (if any)...
+        RectangleInsets insets = getInsets();
+        insets.trim(area);
+
+        drawChipGrid(g2, area);
+        drawWaferEdge(g2, area);
+
+    }
+

@@ -1,0 +1,40 @@
+  @Deprecated
+  public ADNameSampleStream(InputStream in, String charsetName,
+      boolean splitHyphenatedTokens) {
+
+    try {
+      this.adSentenceStream = new ADSentenceStream(new PlainTextByLineStream(
+          in, charsetName));
+      this.splitHyphenatedTokens = splitHyphenatedTokens;
+    } catch (UnsupportedEncodingException e) {
+      // UTF-8 is available on all JVMs, will never happen
+      throw new IllegalStateException(e);
+    }
+  }
+
+  int textID = -1;
+
+  public NameSample read() throws IOException {
+
+    Sentence paragraph;
+    // we should look for text here.
+    while ((paragraph = this.adSentenceStream.read()) != null) {
+
+      int currentTextID = getTextID(paragraph);
+      boolean clearData = false;
+      if(currentTextID != textID) {
+        clearData = true;
+        textID = currentTextID;
+      }
+
+      Node root = paragraph.getRoot();
+      List<String> sentence = new ArrayList<String>();
+      List<Span> names = new ArrayList<Span>();
+      process(root, sentence, names);
+
+      return new NameSample(sentence.toArray(new String[sentence.size()]),
+          names.toArray(new Span[names.size()]), clearData);
+    }
+    return null;
+  }
+

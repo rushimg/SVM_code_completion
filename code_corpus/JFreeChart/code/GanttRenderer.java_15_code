@@ -1,0 +1,126 @@
+    protected void drawTasks(Graphics2D g2,
+                             CategoryItemRendererState state,
+                             Rectangle2D dataArea,
+                             CategoryPlot plot,
+                             CategoryAxis domainAxis,
+                             ValueAxis rangeAxis,
+                             GanttCategoryDataset dataset,
+                             int row,
+                             int column) {
+
+        int count = dataset.getSubIntervalCount(row, column);
+        if (count == 0) {
+            drawTask(g2, state, dataArea, plot, domainAxis, rangeAxis,
+                    dataset, row, column);
+        }
+
+        PlotOrientation orientation = plot.getOrientation();
+        for (int subinterval = 0; subinterval < count; subinterval++) {
+
+            RectangleEdge rangeAxisLocation = plot.getRangeAxisEdge();
+
+            // value 0
+            Number value0 = dataset.getStartValue(row, column, subinterval);
+            if (value0 == null) {
+                return;
+            }
+            double translatedValue0 = rangeAxis.valueToJava2D(
+                    value0.doubleValue(), dataArea, rangeAxisLocation);
+
+            // value 1
+            Number value1 = dataset.getEndValue(row, column, subinterval);
+            if (value1 == null) {
+                return;
+            }
+            double translatedValue1 = rangeAxis.valueToJava2D(
+                    value1.doubleValue(), dataArea, rangeAxisLocation);
+
+            if (translatedValue1 < translatedValue0) {
+                double temp = translatedValue1;
+                translatedValue1 = translatedValue0;
+                translatedValue0 = temp;
+            }
+
+            double rectStart = calculateBarW0(plot, plot.getOrientation(),
+                    dataArea, domainAxis, state, row, column);
+            double rectLength = Math.abs(translatedValue1 - translatedValue0);
+            double rectBreadth = state.getBarWidth();
+
+            // DRAW THE BARS...
+            Rectangle2D bar = null;
+            RectangleEdge barBase = null;
+            if (plot.getOrientation() == PlotOrientation.HORIZONTAL) {
+                bar = new Rectangle2D.Double(translatedValue0, rectStart,
+                        rectLength, rectBreadth);
+                barBase = RectangleEdge.LEFT;
+            }
+            else if (plot.getOrientation() == PlotOrientation.VERTICAL) {
+                bar = new Rectangle2D.Double(rectStart, translatedValue0,
+                        rectBreadth, rectLength);
+                barBase = RectangleEdge.BOTTOM;
+            }
+
+            Rectangle2D completeBar = null;
+            Rectangle2D incompleteBar = null;
+            Number percent = dataset.getPercentComplete(row, column,
+                    subinterval);
+            double start = getStartPercent();
+            double end = getEndPercent();
+            if (percent != null) {
+                double p = percent.doubleValue();
+                if (orientation == PlotOrientation.HORIZONTAL) {
+                    completeBar = new Rectangle2D.Double(translatedValue0,
+                    incompleteBar = new Rectangle2D.Double(translatedValue0
+                }
+                else if (orientation == PlotOrientation.VERTICAL) {
+                    completeBar = new Rectangle2D.Double(rectStart + start
+                    incompleteBar = new Rectangle2D.Double(rectStart + start
+                }
+
+            }
+
+            if (getShadowsVisible()) {
+                getBarPainter().paintBarShadow(g2, this, row, column, bar,
+                        barBase, true);
+            }
+            getBarPainter().paintBar(g2, this, row, column, bar, barBase);
+
+            if (completeBar != null) {
+                g2.setPaint(getCompletePaint());
+                g2.fill(completeBar);
+            }
+            if (incompleteBar != null) {
+                g2.setPaint(getIncompletePaint());
+                g2.fill(incompleteBar);
+            }
+            if (isDrawBarOutline()
+                    && state.getBarWidth() > BAR_OUTLINE_WIDTH_THRESHOLD) {
+                g2.setStroke(getItemStroke(row, column));
+                g2.setPaint(getItemOutlinePaint(row, column));
+                g2.draw(bar);
+            }
+
+            if (subinterval == count - 1) {
+                // submit the current data point as a crosshair candidate
+                int datasetIndex = plot.indexOf(dataset);
+                Comparable columnKey = dataset.getColumnKey(column);
+                Comparable rowKey = dataset.getRowKey(row);
+                double xx = domainAxis.getCategorySeriesMiddle(columnKey,
+                        rowKey, dataset, getItemMargin(), dataArea,
+                        plot.getDomainAxisEdge());
+                updateCrosshairValues(state.getCrosshairState(),
+                        dataset.getRowKey(row), dataset.getColumnKey(column),
+                        value1.doubleValue(), datasetIndex, xx,
+                        translatedValue1, orientation);
+
+            }
+            // collect entity and tool tip information...
+            if (state.getInfo() != null) {
+                EntityCollection entities = state.getEntityCollection();
+                if (entities != null) {
+                    addItemEntity(entities, dataset, row, column, bar);
+                }
+            }
+        }
+    }
+

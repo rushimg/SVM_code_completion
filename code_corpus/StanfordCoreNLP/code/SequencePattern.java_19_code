@@ -1,0 +1,67 @@
+  static class BackRefState extends State {
+
+    private final NodesMatchChecker matcher;
+    private final int captureGroupId;
+
+    public BackRefState(NodesMatchChecker matcher, int captureGroupId)
+    {
+      this.matcher = matcher;
+      this.captureGroupId = captureGroupId;
+    }
+
+    protected <T> boolean match(int bid, SequenceMatcher.MatchedStates<T> matchedStates,
+                                SequenceMatcher.MatchedGroup matchedGroup, int matchedNodes)
+    {
+      T node = matchedStates.get();
+      if (matcher.matches(node, matchedStates.elements().get(matchedGroup.matchBegin+matchedNodes))) {
+        matchedNodes++;
+        matchedStates.getBranchStates().setMatchStateInfo(bid, this,
+                new Pair<SequenceMatcher.MatchedGroup, Integer>(matchedGroup, matchedNodes));
+        int len = matchedGroup.matchEnd - matchedGroup.matchBegin;
+        if (len == matchedNodes) {
+          matchedStates.addStates(bid, next);
+        } else {
+          matchedStates.addState(bid, this);
+        }
+        return true;
+      }
+      return false;
+    }
+
+    @Override
+    protected <T> boolean match(int bid, SequenceMatcher.MatchedStates<T> matchedStates, boolean consume, State prevState)
+    {
+      // Try to match previous node/nodes exactly
+      if (consume) {
+        // First element is group that is matched, second is number of nodes matched so far
+        Pair<SequenceMatcher.MatchedGroup, Integer> backRefState =
+                (Pair<SequenceMatcher.MatchedGroup, Integer>) matchedStates.getBranchStates().getMatchStateInfo(bid, this);
+        if (backRefState == null) {
+          // Haven't tried to match this node before, try now
+          // Get element and return if it matched or not
+          SequenceMatcher.MatchedGroup matchedGroup = matchedStates.getBranchStates().getMatchedGroup(bid, captureGroupId);
+          if (matchedGroup != null) {
+            // See if the first node matches
+            if (matchedGroup.matchEnd > matchedGroup.matchBegin) {
+              boolean matched = match(bid, matchedStates, matchedGroup, 0);
+              return matched;
+            } else {
+              // TODO: Check handling of previous nodes that are zero elements?
+              return super.match(bid, matchedStates, consume, prevState);
+            }
+          }
+          return false;
+        } else {
+          SequenceMatcher.MatchedGroup matchedGroup = backRefState.first();
+          int matchedNodes = backRefState.second();
+          boolean matched = match(bid, matchedStates, matchedGroup, matchedNodes);
+          return matched;
+        }
+      } else {
+        // Not consuming, just add this state back to list of states to be processed
+        matchedStates.addState(bid, this);
+        return false;
+      }
+    }
+  }
+

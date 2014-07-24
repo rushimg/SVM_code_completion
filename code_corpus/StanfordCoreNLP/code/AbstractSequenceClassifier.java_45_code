@@ -1,0 +1,18 @@
+  public abstract void loadClassifier(ObjectInputStream in, Properties props) throws IOException, ClassCastException,
+      ClassNotFoundException;
+
+  private InputStream loadStreamFromClasspath(String path) {
+    InputStream is = getClass().getClassLoader().getResourceAsStream(path);
+    if (is == null)
+      return null;
+    try {
+      if (path.endsWith(".gz"))
+        is = new GZIPInputStream(new BufferedInputStream(is));
+      else
+        is = new BufferedInputStream(is);
+    } catch (IOException e) {
+      System.err.println("CLASSPATH resource " + path + " is not a GZIP stream!");
+    }
+    return is;
+  }
+

@@ -1,0 +1,32 @@
+  public static int longestCommonContiguousSubstring(String s, String t) {
+    if (s.isEmpty() || t.isEmpty()) {
+      return 0;
+    }
+    int M = s.length();
+    int N = t.length();
+    int[][] d = new int[M + 1][N + 1];
+    for (int j = 0; j <= N; j++) {
+      d[0][j] = 0;
+    }
+    for (int i = 0; i <= M; i++) {
+      d[i][0] = 0;
+    }
+
+    int max = 0;
+    for (int i = 1; i <= M; i++) {
+      for (int j = 1; j <= N; j++) {
+        if (s.charAt(i - 1) == t.charAt(j - 1)) {
+          d[i][j] = d[i - 1][j - 1] + 1;
+        } else {
+          d[i][j] = 0;
+        }
+
+        if (d[i][j] > max) {
+          max = d[i][j];
+        }
+      }
+    }
+    // System.err.println("LCCS(" + s + "," + t + ") = " + max);
+    return max;
+  }
+

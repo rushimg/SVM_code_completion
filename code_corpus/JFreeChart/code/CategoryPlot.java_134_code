@@ -1,0 +1,21 @@
+    public void rendererChanged(RendererChangeEvent event) {
+        Plot parent = getParent();
+        if (parent != null) {
+            if (parent instanceof RendererChangeListener) {
+                RendererChangeListener rcl = (RendererChangeListener) parent;
+                rcl.rendererChanged(event);
+            }
+            else {
+                // this should never happen with the existing code, but throw
+                // an exception in case future changes make it possible...
+                throw new RuntimeException(
+                    "The renderer has changed and I don't know what to do!");
+            }
+        }
+        else {
+            configureRangeAxes();
+            PlotChangeEvent e = new PlotChangeEvent(this);
+            notifyListeners(e);
+        }
+    }
+

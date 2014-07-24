@@ -1,0 +1,43 @@
+  private static final String editStr = 
+    
+    //Delete sentence-initial punctuation
+    ("@PUNC=punc <: __ >>, (/^S/ > @ROOT) \n"
+        + "prune punc\n"
+        + "\n") +
+
+    //Delete sentence-initial punctuation (again)
+    ("@PUNC=punc <: __ >>, (/^S/ > @ROOT) \n"
+        + "prune punc\n"
+        + "\n") +
+
+    //Delete sentence final punctuation that is preceded by punctuation (first time)
+    ("@PUNC=punc >>- (/^S/ > @ROOT) <: __ $, @PUNC \n"
+        + "prune punc\n"
+        + "\n") +
+   
+    //Delete sentence final punctuation that is preceded by punctuation (second time)
+    ("@PUNC=punc >>- (/^S/ > @ROOT) <: __ $, @PUNC \n"
+        + "prune punc\n"
+        + "\n") +
+    
+    //Convert remaining sentence-final punctuation to . if it is not [.!?]
+    ("@PUNC=pos >>- (/^S/ > @ROOT) <: /[^\\.\\?!]/=term !$, @PUNC \n"
+        + "relabel pos PUNC\n"
+        + "relabel term /./\n" 
+        + "\n") +
+    
+    //Delete medial, sentence-final punctuation
+//    ("@PUNC=punc <: /[!\\.\\?]+/ $. __\n"
+//        + "prune punc\n"
+//        + "\n") +
+        
+    //Now move the sentence-final mark under the top-level node
+    ("@PUNC=punc <: /^[\\.!\\?]+$/ >>- (/^S/ > @ROOT <- __=sfpos) !> (/^S/ > @ROOT)\n"
+        + "move punc $- sfpos\n" 
+        + "\n");
+    
+    //For those trees that lack a sentence-final punc, add one.
+//    ("/^[^\\.!\\?]$/ >>- (__ > @ROOT <- __=loc) <: __\n"
+//        + "insert (PUNC .) $- loc\n"
+//        + "\n");
+  

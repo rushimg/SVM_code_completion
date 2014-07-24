@@ -1,0 +1,76 @@
+  @Override
+  public String toString() {
+    Collection<IndexedWord> rootNodes = getRoots();
+    if (rootNodes.isEmpty()) {
+      // Shouldn't happen, but return something!
+      return toString("readable");
+    }
+
+    StringBuilder sb = new StringBuilder();
+    Set<IndexedWord> used = Generics.newHashSet();
+    for (IndexedWord root : rootNodes) {
+      sb.append("-> ").append(root).append(" (root)\n");
+      recToString(root, sb, 1, used);
+    }
+    Set<IndexedWord> nodes = Generics.newHashSet(vertexSet());
+    nodes.removeAll(used);
+    while (!nodes.isEmpty()) {
+      IndexedWord node = nodes.iterator().next();
+      sb.append(node).append("\n");
+      recToString(node, sb, 1, used);
+      nodes.removeAll(used);
+    }
+    return sb.toString();
+  }
+
+  // helper for toString()
+  private void recToString(IndexedWord curr, StringBuilder sb, int offset, Set<IndexedWord> used) {
+    used.add(curr);
+    List<SemanticGraphEdge> edges = outgoingEdgeList(curr);
+    Collections.sort(edges);
+    for (SemanticGraphEdge edge : edges) {
+      IndexedWord target = edge.getTarget();
+      if (!used.contains(target)) { // recurse
+        recToString(target, sb, offset + 1, used);
+      }
+    }
+  }
+
+  private static String space(int width) {
+    StringBuilder b = new StringBuilder();
+    for (int i = 0; i < width; i++) {
+      b.append(' ');
+    }
+    return b.toString();
+  }
+
+  public String toRecoveredSentenceString() {
+    StringBuilder sb = new StringBuilder();
+    boolean pastFirst = false;
+    for (IndexedWord word : vertexListSorted()) {
+      if (pastFirst) {
+        sb.append(' ');
+      }
+      pastFirst = true;
+      sb.append(word.word());
+    }
+    return sb.toString();
+  }
+
+  public String toRecoveredSentenceStringWithIndexMarking() {
+    StringBuilder sb = new StringBuilder();
+    boolean pastFirst = false;
+    int index = 0;
+    for (IndexedWord word : vertexListSorted()) {
+      if (pastFirst) {
+        sb.append(' ');
+      }
+      pastFirst = true;
+      sb.append(word.word());
+      sb.append("(");
+      sb.append(index++);
+      sb.append(")");
+    }
+    return sb.toString();
+  }
+

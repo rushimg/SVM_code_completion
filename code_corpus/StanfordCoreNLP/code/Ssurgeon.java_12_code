@@ -1,0 +1,28 @@
+  @SuppressWarnings("unchecked")
+  public static SsurgeonPattern ssurgeonPatternFromXML(Element elt) throws Exception {
+    String uid = getTagText(elt, SsurgeonPattern.UID_ELEM_TAG);
+    String notes = getTagText(elt, SsurgeonPattern.NOTES_ELEM_TAG);
+    String semgrexString = getTagText(elt, SsurgeonPattern.SEMGREX_ELEM_TAG);
+    SemgrexPattern semgrexPattern = SemgrexPattern.compile(semgrexString);
+    SsurgeonPattern retPattern = new SsurgeonPattern(uid, semgrexPattern);
+    retPattern.setNotes(notes);
+    NodeList editNodes = elt.getElementsByTagName(SsurgeonPattern.EDIT_LIST_ELEM_TAG);
+    for (int i=0; i<editNodes.getLength(); i++) {
+      Node node = editNodes.item(i);
+      if (node.getNodeType() == Node.ELEMENT_NODE) {
+        Element editElt = (Element) node;
+        String editVal = getEltText(editElt);
+        retPattern.addEdit(Ssurgeon.parseEditLine(editVal));
+      }
+    }
+
+
+    // If predicate available, parse
+    Element predElt = getFirstTag(elt, SsurgeonPattern.PREDICATE_TAG);
+    if (predElt != null) {
+      SsurgPred pred = assemblePredFromXML(getFirstChildElement(predElt));
+      retPattern.setPredicate(pred);
+    }
+    return retPattern;
+  }
+

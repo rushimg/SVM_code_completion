@@ -1,0 +1,57 @@
+  public void add(int [] features, int label) {
+    ensureSize();
+    addLabelIndex(label);
+    addFeatureIndices(features);
+    size++;
+  }
+
+  protected void ensureSize() {
+    if (labels.length == size) {
+      System.arraycopy(labels, 0, newLabels, 0, size);
+      labels = newLabels;
+      System.arraycopy(data, 0, newData, 0, size);
+      data = newData;
+    }
+  }
+
+  protected void addLabel(L label) {
+    labelIndex.add(label);
+    labels[size] = labelIndex.indexOf(label);
+  }
+
+  protected void addLabelIndex(int label) {
+    labels[size] = label;
+  }
+
+  protected void addFeatures(Collection<F> features) {
+    addFeatures(features, true);
+  }
+
+  protected void addFeatures(Collection<F> features, boolean addNewFeatures) {
+    int[] intFeatures = new int[features.size()];
+    int j = 0;
+    for (F feature : features) {
+      if(addNewFeatures) featureIndex.add(feature);
+      int index = featureIndex.indexOf(feature);
+      if (index >= 0) {
+        intFeatures[j] = featureIndex.indexOf(feature);
+        j++;
+      }
+    }
+    data[size] = new int[j];
+    System.arraycopy(intFeatures, 0, data[size], 0, j);
+  }
+
+  protected void addFeatureIndices(int [] features) {
+    data[size] = features;
+  }
+
+  @Override
+  protected final void initialize(int numDatums) {
+    labelIndex = new HashIndex<L>();
+    featureIndex = new HashIndex<F>();
+    labels = new int[numDatums];
+    data = new int[numDatums][];
+    size = 0;
+  }
+

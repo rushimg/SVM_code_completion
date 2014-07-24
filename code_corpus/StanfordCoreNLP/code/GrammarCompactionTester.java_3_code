@@ -1,0 +1,80 @@
+  private static void testOneAtATimeMerging() {
+
+    // use the parser constructor to extract the grammars from the treebank once
+    LexicalizedParser lp = new LexicalizedParser(path, new NumberRangeFileFilter(trainLow, trainHigh, true), tlpParams);
+
+    ParserData pd = lp.parserData();
+    Pair originalGrammar = new Pair(pd.ug, pd.bg);
+
+    // extract a bunch of paths
+    Timing.startTime();
+    System.out.print("Extracting other paths...");
+    allTrainPaths = extractPaths(path, trainLow, trainHigh, true);
+    allTestPaths = extractPaths(path, testLow, testHigh, true);
+    Timing.tick("done");
+
+    List mergePairs = null;
+    if (inputFile != null) {
+      // read merge pairs from file and do them and parse
+      System.out.println("getting pairs from file: " + inputFile);
+      mergePairs = getMergePairsFromFile(inputFile);
+    }
+    // try one merge at a time and parse afterwards
+    Numberer originalNumberer = Numberer.getGlobalNumberer("states");
+    String header = "index\tmergePair\tmergeCost\tparseF1\n";
+    StringUtils.printToFile(outputFile, header, true);
+
+    for (int i = indexRangeLow; i < indexRangeHigh; i++) {
+
+      Timing.startTime();
+      Numberer.getNumberers().put("states", originalNumberer);
+      if (mergePairs != null)
+        System.out.println("passing merge pairs to compactor: " + mergePairs);
+      CategoryMergingGrammarCompactor compactor = new CategoryMergingGrammarCompactor(mergePairs, i);
+      System.out.println("Compacting grammars with index " + i);
+      Pair compactedGrammar = compactor.compactGrammar(originalGrammar, allTrainPaths, allTestPaths);
+      Pair mergePair = null;
+      double mergeCosts = Double.NEGATIVE_INFINITY;
+      List mergeList = compactor.getCompletedMergeList();
+      if (mergeList != null && mergeList.size() > 0) {
+        mergePair = (Pair) mergeList.get(0);
+        mergeCosts = compactor.getActualScores().getCount(mergePair);
+      }
+
+
+      ParserData newPd = new ParserData(pd.lex,
+                                        (BinaryGrammar) compactedGrammar.second, (UnaryGrammar) compactedGrammar.first,
+                                        pd.dg, pd.numbs, pd.pt);
+
+      lp = new LexicalizedParser(newPd);
+      Timing.tick("done.");
+
+      Treebank testTreebank = tlpParams.testMemoryTreebank();
+      testTreebank.loadPath(path, new NumberRangeFileFilter(testLow, testHigh, true));
+      System.out.println("Currently " + new Date());
+      double f1 = lp.testOnTreebank(testTreebank);
+      System.out.println("Currently " + new Date());
+
+      String resultString = i + "\t" + mergePair + "\t" + mergeCosts + "\t" + f1 + "\n";
+      StringUtils.printToFile(outputFile, resultString, true);
+    }
+  }
+
+  private static List getMergePairsFromFile(String filename) {
+    List result = new ArrayList();
+    try {
+      String fileString = StringUtils.slurpFile(new File(filename));
+      StringTokenizer st = new StringTokenizer(fileString);
+      while (st.hasMoreTokens()) {
+        String token1 = st.nextToken();
+        if (st.hasMoreTokens()) {
+          String token2 = st.nextToken();
+          UnorderedPair pair = new UnorderedPair(token1, token2);
+          result.add(pair);
+        }
+      }
+    } catch (Exception e) {
+      throw new RuntimeException("couldn't access file: " + filename);
+    }
+    return result;
+  }

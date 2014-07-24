@@ -1,0 +1,34 @@
+@Immutable
+public class NetscapeDomainHandler extends BasicDomainHandler {
+
+    public NetscapeDomainHandler() {
+        super();
+    }
+
+    @Override
+    public void validate(final Cookie cookie, final CookieOrigin origin)
+            throws MalformedCookieException {
+        super.validate(cookie, origin);
+        // Perform Netscape Cookie draft specific validation
+        final String host = origin.getHost();
+        final String domain = cookie.getDomain();
+        if (host.contains(".")) {
+            final int domainParts = new StringTokenizer(domain, ".").countTokens();
+
+            if (isSpecialDomain(domain)) {
+                if (domainParts < 2) {
+                    throw new CookieRestrictionViolationException("Domain attribute \""
+                        + domain
+                        + "\" violates the Netscape cookie specification for "
+                        + "special domains");
+                }
+            } else {
+                if (domainParts < 3) {
+                    throw new CookieRestrictionViolationException("Domain attribute \""
+                        + domain
+                        + "\" violates the Netscape cookie specification");
+                }
+            }
+        }
+    }
+

@@ -1,0 +1,38 @@
+  public static Type resolveTypeVariable(List<Type> context, TypeVariable<?> typeVariable) {
+    // determine where the type variable was declared
+    GenericDeclaration genericDeclaration = typeVariable.getGenericDeclaration();
+    if (genericDeclaration instanceof Class<?>) {
+      Class<?> rawGenericDeclaration = (Class<?>) genericDeclaration;
+      // check if the context extends that declaration
+      int contextIndex = context.size();
+      ParameterizedType parameterizedType = null;
+      while (parameterizedType == null && --contextIndex >= 0) {
+        parameterizedType =
+            getSuperParameterizedType(context.get(contextIndex), rawGenericDeclaration);
+      }
+      if (parameterizedType != null) {
+        // find the type variable's index in the declaration's type parameters
+        TypeVariable<?>[] typeParameters = genericDeclaration.getTypeParameters();
+        int index = 0;
+        for (; index < typeParameters.length; index++) {
+          TypeVariable<?> typeParameter = typeParameters[index];
+          if (typeParameter.equals(typeVariable)) {
+            break;
+          }
+        }
+        // use that index to get the actual type argument
+        Type result = parameterizedType.getActualTypeArguments()[index];
+        if (result instanceof TypeVariable<?>) {
+          // attempt to resolve type variable
+          Type resolve = resolveTypeVariable(context, (TypeVariable<?>) result);
+          if (resolve != null) {
+            return resolve;
+          }
+          // partially resolved type variable is okay
+        }
+        return result;
+      }
+    }
+    return null;
+  }
+

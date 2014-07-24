@@ -1,0 +1,103 @@
+    public boolean isDecompressionEnabled() {
+        return decompressionEnabled;
+    }
+
+    @Override
+    protected RequestConfig clone() throws CloneNotSupportedException {
+        return (RequestConfig) super.clone();
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder builder = new StringBuilder();
+        builder.append(", expectContinueEnabled=").append(expectContinueEnabled);
+        builder.append(", proxy=").append(proxy);
+        builder.append(", localAddress=").append(localAddress);
+        builder.append(", cookieSpec=").append(cookieSpec);
+        builder.append(", redirectsEnabled=").append(redirectsEnabled);
+        builder.append(", relativeRedirectsAllowed=").append(relativeRedirectsAllowed);
+        builder.append(", maxRedirects=").append(maxRedirects);
+        builder.append(", circularRedirectsAllowed=").append(circularRedirectsAllowed);
+        builder.append(", authenticationEnabled=").append(authenticationEnabled);
+        builder.append(", targetPreferredAuthSchemes=").append(targetPreferredAuthSchemes);
+        builder.append(", proxyPreferredAuthSchemes=").append(proxyPreferredAuthSchemes);
+        builder.append(", connectionRequestTimeout=").append(connectionRequestTimeout);
+        builder.append(", connectTimeout=").append(connectTimeout);
+        builder.append(", socketTimeout=").append(socketTimeout);
+        builder.append(", decompressionEnabled=").append(decompressionEnabled);
+        builder.append("]");
+        return builder.toString();
+    }
+
+    public static RequestConfig.Builder custom() {
+        return new Builder();
+    }
+
+    @SuppressWarnings("deprecation")
+    public static RequestConfig.Builder copy(final RequestConfig config) {
+        return new Builder()
+            .setExpectContinueEnabled(config.isExpectContinueEnabled())
+            .setProxy(config.getProxy())
+            .setLocalAddress(config.getLocalAddress())
+            .setStaleConnectionCheckEnabled(config.isStaleConnectionCheckEnabled())
+            .setCookieSpec(config.getCookieSpec())
+            .setRedirectsEnabled(config.isRedirectsEnabled())
+            .setRelativeRedirectsAllowed(config.isRelativeRedirectsAllowed())
+            .setCircularRedirectsAllowed(config.isCircularRedirectsAllowed())
+            .setMaxRedirects(config.getMaxRedirects())
+            .setAuthenticationEnabled(config.isAuthenticationEnabled())
+            .setTargetPreferredAuthSchemes(config.getTargetPreferredAuthSchemes())
+            .setProxyPreferredAuthSchemes(config.getProxyPreferredAuthSchemes())
+            .setConnectionRequestTimeout(config.getConnectionRequestTimeout())
+            .setConnectTimeout(config.getConnectTimeout())
+            .setSocketTimeout(config.getSocketTimeout())
+            .setDecompressionEnabled(config.isDecompressionEnabled());
+    }
+
+    public static class Builder {
+
+        private boolean expectContinueEnabled;
+        private HttpHost proxy;
+        private InetAddress localAddress;
+        private boolean staleConnectionCheckEnabled;
+        private String cookieSpec;
+        private boolean redirectsEnabled;
+        private boolean relativeRedirectsAllowed;
+        private boolean circularRedirectsAllowed;
+        private int maxRedirects;
+        private boolean authenticationEnabled;
+        private Collection<String> targetPreferredAuthSchemes;
+        private Collection<String> proxyPreferredAuthSchemes;
+        private int connectionRequestTimeout;
+        private int connectTimeout;
+        private int socketTimeout;
+        private boolean decompressionEnabled;
+
+        Builder() {
+            super();
+            this.staleConnectionCheckEnabled = false;
+            this.redirectsEnabled = true;
+            this.maxRedirects = 50;
+            this.relativeRedirectsAllowed = true;
+            this.authenticationEnabled = true;
+            this.connectionRequestTimeout = -1;
+            this.connectTimeout = -1;
+            this.socketTimeout = -1;
+            this.decompressionEnabled = true;
+        }
+
+        public Builder setExpectContinueEnabled(final boolean expectContinueEnabled) {
+            this.expectContinueEnabled = expectContinueEnabled;
+            return this;
+        }
+
+        public Builder setProxy(final HttpHost proxy) {
+            this.proxy = proxy;
+            return this;
+        }
+
+        public Builder setLocalAddress(final InetAddress localAddress) {
+            this.localAddress = localAddress;
+            return this;
+        }
+

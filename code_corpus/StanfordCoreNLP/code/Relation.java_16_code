@@ -1,0 +1,62 @@
+    @Override
+    Iterator<Tree> searchNodeIterator(final Tree t,
+                                      final TregexMatcher matcher) {
+      return new SearchNodeIterator() {
+        private IdentityHashSet<Tree> nodesToSearch;
+        private Stack<Tree> searchStack;
+
+        @Override
+        public void initialize() {
+          nodesToSearch = new IdentityHashSet<Tree>();
+          searchStack = new Stack<Tree>();
+          initializeHelper(searchStack, t, matcher.getRoot());
+          advance();
+        }
+
+        private void initializeHelper(Stack<Tree> stack, Tree node, Tree root) {
+          if (node==root) {
+            return;
+          }
+          Tree parent = matcher.getParent(node);
+          int i = parent.objectIndexOf(node);
+          while (i == parent.children().length-1 && parent != root) {
+            node = parent;
+            parent = matcher.getParent(parent);
+            i = parent.objectIndexOf(node);
+          }
+          Tree followingNode;
+          if (i+1 < parent.children().length) {
+            followingNode = parent.children()[i+1];
+          } else {
+            followingNode = null;
+          }
+          while (followingNode != null) {
+            //System.err.println("adding to stack node " + followingNode.toString());
+            if (! nodesToSearch.contains(followingNode)) {
+              stack.add(followingNode);
+              nodesToSearch.add(followingNode);
+            }
+            if (pathMatchesNode(followingNode)) {
+              initializeHelper(stack, followingNode, root);
+            }
+            if (! followingNode.isLeaf()) {
+              followingNode = followingNode.children()[0];
+            } else {
+              followingNode = null;
+            }
+          }
+        }
+
+        @Override
+        void advance() {
+          if (searchStack.isEmpty()) {
+            next = null;
+          } else {
+            next = searchStack.pop();
+          }
+        }
+      };
+    }
+  }
+
+

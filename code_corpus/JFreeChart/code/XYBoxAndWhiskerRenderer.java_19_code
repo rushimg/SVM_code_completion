@@ -1,0 +1,70 @@
+
+        for (int i = 0; i < yOutliers.size(); i++) {
+            double outlier = ((Number) yOutliers.get(i)).doubleValue();
+            if (outlier > boxAndWhiskerData.getMaxOutlier(series,
+                    item).doubleValue()) {
+                outlierListCollection.setHighFarOut(true);
+            }
+            else if (outlier < boxAndWhiskerData.getMinOutlier(series,
+                    item).doubleValue()) {
+                outlierListCollection.setLowFarOut(true);
+            }
+            else if (outlier > boxAndWhiskerData.getMaxRegularValue(series,
+                    item).doubleValue()) {
+                yyOutlier = rangeAxis.valueToJava2D(outlier, dataArea,
+                        location);
+                outliers.add(new Outlier(xx, yyOutlier, oRadius));
+            }
+            else if (outlier < boxAndWhiskerData.getMinRegularValue(series,
+                    item).doubleValue()) {
+                yyOutlier = rangeAxis.valueToJava2D(outlier, dataArea,
+                        location);
+                outliers.add(new Outlier(xx, yyOutlier, oRadius));
+            }
+            Collections.sort(outliers);
+        }
+
+        // Process outliers. Each outlier is either added to the appropriate
+        // outlier list or a new outlier list is made
+        for (Iterator iterator = outliers.iterator(); iterator.hasNext();) {
+            Outlier outlier = (Outlier) iterator.next();
+            outlierListCollection.add(outlier);
+        }
+
+        // draw yOutliers
+        double maxAxisValue = rangeAxis.valueToJava2D(rangeAxis.getUpperBound(),
+                dataArea, location) + aRadius;
+        double minAxisValue = rangeAxis.valueToJava2D(rangeAxis.getLowerBound(),
+                dataArea, location) - aRadius;
+
+        // draw outliers
+        for (Iterator iterator = outlierListCollection.iterator();
+                iterator.hasNext();) {
+            OutlierList list = (OutlierList) iterator.next();
+            Outlier outlier = list.getAveragedOutlier();
+            Point2D point = outlier.getPoint();
+
+            if (list.isMultiple()) {
+                drawMultipleEllipse(point, width, oRadius, g2);
+            }
+            else {
+                drawEllipse(point, oRadius, g2);
+            }
+        }
+
+        // draw farout
+        if (outlierListCollection.isHighFarOut()) {
+            drawHighFarOut(aRadius, g2, xx, maxAxisValue);
+        }
+
+        if (outlierListCollection.isLowFarOut()) {
+            drawLowFarOut(aRadius, g2, xx, minAxisValue);
+        }
+
+        // add an entity for the item...
+        if (entities != null && box.intersects(dataArea)) {
+            addEntity(entities, box, dataset, series, item, xx, yyAverage);
+        }
+
+    }
+

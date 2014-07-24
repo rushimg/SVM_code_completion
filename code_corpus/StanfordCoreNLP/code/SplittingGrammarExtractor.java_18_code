@@ -1,0 +1,57 @@
+  public boolean recalculateBetas(boolean splitStates) {
+    if (splitStates) {
+      if (DEBUG()) {
+        System.out.println("Pre-split betas");
+        outputBetas();
+      }
+      splitBetas();
+      if (DEBUG()) {
+        System.out.println("Post-split betas");
+        outputBetas();
+      }
+    }
+
+    TwoDimensionalMap<String, String, double[][]> tempUnaryBetas = new TwoDimensionalMap<String, String, double[][]>();
+    ThreeDimensionalMap<String, String, String, double[][][]> tempBinaryBetas = new ThreeDimensionalMap<String, String, String, double[][][]>();
+
+    recalculateTemporaryBetas(splitStates, null, tempUnaryBetas, tempBinaryBetas);
+    boolean converged = useNewBetas(!splitStates, tempUnaryBetas, tempBinaryBetas);
+
+    if (DEBUG()) {
+      outputBetas();
+    }
+
+    return converged;
+  }
+
+  public boolean useNewBetas(boolean testConverged,
+                             TwoDimensionalMap<String, String, double[][]> tempUnaryBetas,
+                             ThreeDimensionalMap<String, String, String, double[][][]> tempBinaryBetas) {
+    rescaleTemporaryBetas(tempUnaryBetas, tempBinaryBetas);
+
+    // if we just split states, we have obviously not converged
+    boolean converged = testConverged && testConvergence(tempUnaryBetas, tempBinaryBetas);
+
+    unaryBetas = tempUnaryBetas;
+    binaryBetas = tempBinaryBetas;
+
+    wordIndex = tempWordIndex;
+    tagIndex = tempTagIndex;
+    lex = tempLex;
+    if (DEBUG()) {
+      System.out.println("LEXICON");
+      try {
+        OutputStreamWriter osw = new OutputStreamWriter(System.out, "utf-8");
+        lex.writeData(osw);
+        osw.flush();
+      } catch (IOException e) {
+        throw new RuntimeIOException(e);
+      }
+    }
+    tempWordIndex = null;
+    tempTagIndex = null;
+    tempLex = null;
+
+    return converged;
+  }
+

@@ -1,0 +1,233 @@
+  private String mRawBuffer;
+
+  static Logger mLog = Logger.getLogger(AceReader.class.getName());
+
+  public AceDocument(String id) {
+    super(id);
+
+    mEntities = Generics.newHashMap();
+    mEntityMentions = Generics.newHashMap();
+    mSentenceEntityMentions = new ArrayList<ArrayList<AceEntityMention>>();
+
+    mRelations = Generics.newHashMap();
+    mRelationMentions = Generics.newHashMap();
+    mSentenceRelationMentions = new ArrayList<ArrayList<AceRelationMention>>();
+
+    mEvents = Generics.newHashMap();
+    mEventMentions = Generics.newHashMap();
+    mSentenceEventMentions = new ArrayList<ArrayList<AceEventMention>>();
+    
+    mTokens = new Vector<AceToken>();
+  }
+
+  public void setPrefix(String p) {
+    mPrefix = p;
+    setSource(mPrefix);
+  }
+
+  public String getPrefix() {
+    return mPrefix;
+  }
+
+  public void setSource(String p) {
+    if (p.indexOf("bc/") >= 0)
+      mSource = "broadcast conversation";
+    else if (p.indexOf("bn/") >= 0)
+      mSource = "broadcast news";
+    else if (p.indexOf("cts/") >= 0)
+      mSource = "telephone";
+    else if (p.indexOf("nw/") >= 0)
+      mSource = "newswire";
+    else if (p.indexOf("un/") >= 0)
+      mSource = "usenet";
+    else if (p.indexOf("wl/") >= 0)
+      mSource = "weblog";
+    else {
+      System.err.println("WARNING: Unknown source for doc: " + p);
+      mSource = "none";
+    }
+  }
+
+  public int getSentenceCount() {
+    return mSentenceEntityMentions.size();
+  }
+
+  public ArrayList<AceEntityMention> getEntityMentions(int sent) {
+    return mSentenceEntityMentions.get(sent);
+  }
+
+  public ArrayList<ArrayList<AceEntityMention>> getAllEntityMentions() {
+    return mSentenceEntityMentions;
+  }
+
+  public ArrayList<AceRelationMention> getRelationMentions(int sent) {
+    return mSentenceRelationMentions.get(sent);
+  }
+
+  public ArrayList<ArrayList<AceRelationMention>> getAllRelationMentions() {
+    return mSentenceRelationMentions;
+  }
+  
+  public ArrayList<AceEventMention> getEventMentions(int sent) {
+    return mSentenceEventMentions.get(sent);
+  }
+
+  public ArrayList<ArrayList<AceEventMention>> getAllEventMentions() {
+    return mSentenceEventMentions;
+  }
+
+  public AceEntity getEntity(String id) {
+    return mEntities.get(id);
+  }
+
+  public Set<String> getKeySetEntities() {
+    return mEntities.keySet();
+  }
+
+  public void addEntity(AceEntity e) {
+    mEntities.put(e.getId(), e);
+  }
+
+  public Map<String, AceEntityMention> getEntityMentions() {
+    return mEntityMentions;
+  }
+
+  public AceEntityMention getEntityMention(String id) {
+    return mEntityMentions.get(id);
+  }
+
+  public void addEntityMention(AceEntityMention em) {
+    mEntityMentions.put(em.getId(), em);
+  }
+
+  public AceRelation getRelation(String id) {
+    return mRelations.get(id);
+  }
+
+  public void addRelation(AceRelation r) {
+    mRelations.put(r.getId(), r);
+  }
+
+  public Map<String, AceRelationMention> getRelationMentions() {
+    return mRelationMentions;
+  }
+
+  public AceRelationMention getRelationMention(String id) {
+    return mRelationMentions.get(id);
+  }
+
+  public void addRelationMention(AceRelationMention e) {
+    mRelationMentions.put(e.getId(), e);
+  }
+  
+  public AceEvent getEvent(String id) {
+    return mEvents.get(id);
+  }
+
+  public void addEvent(AceEvent r) {
+    mEvents.put(r.getId(), r);
+  }
+
+  public Map<String, AceEventMention> getEventMentions() {
+    return mEventMentions;
+  }
+
+  public AceEventMention getEventMention(String id) {
+    return mEventMentions.get(id);
+  }
+
+  public void addEventMention(AceEventMention e) {
+    mEventMentions.put(e.getId(), e);
+  }
+
+  public void addToken(AceToken t) {
+    mTokens.add(t);
+  }
+
+  public int getTokenCount() {
+    return mTokens.size();
+  }
+
+  public AceToken getToken(int i) {
+    return mTokens.get(i);
+  }
+
+  public List<AceToken> getSentence(int index) {
+    return mSentences.get(index);
+  }
+  
+  public List<List<AceToken>> getSentences() {
+    return mSentences;
+  }
+
+  public void setSentences(List<List<AceToken>> sentences) {
+    mSentences = sentences;
+  }
+
+  public String toString() {
+    return toXml(0);
+  }
+
+  public String toXml(int offset) {
+    StringBuffer buffer = new StringBuffer();
+    appendOffset(buffer, offset);
+    buffer.append("<?xml version=\"1.0\"?>\n");
+    appendOffset(buffer, offset);
+    buffer.append("<!DOCTYPE source_file SYSTEM \"apf.v5.1.2.dtd\">\n");
+    appendOffset(buffer, offset);
+    buffer.append("<source_file URI=\"" + mId + ".sgm\" SOURCE=\"" + mSource
+        + "\" TYPE=\"text\" AUTHOR=\"LDC\" ENCODING=\"UTF-8\">\n");
+    appendOffset(buffer, offset);
+    buffer.append("<document DOCID=\"" + getId() + "\">\n");
+
+    // display all entities
+    Set<String> entKeys = mEntities.keySet();
+    for (String key : entKeys) {
+      AceEntity e = mEntities.get(key);
+      buffer.append(e.toXml(offset));
+      buffer.append("\n");
+    }
+
+    // display all relations
+    Set<String> relKeys = mRelations.keySet();
+    for (String key : relKeys) {
+      AceRelation r = mRelations.get(key);
+      if (!r.getType().equals(AceRelation.NIL_LABEL)) {
+        buffer.append(r.toXml(offset));
+        buffer.append("\n");
+      }
+    }
+    
+    // TODO: display all events
+
+    appendOffset(buffer, offset);
+    buffer.append("</document>\n");
+    appendOffset(buffer, offset);
+    buffer.append("</source_file>\n");
+    return buffer.toString();
+  }
+
+  private String tokensWithByteSpan(int start, int end) {
+    StringBuffer buf = new StringBuffer();
+    boolean doPrint = false;
+    buf.append("...");
+    for (int i = 0; i < mTokens.size(); i++) {
+      // start printing
+      if (doPrint == false && mTokens.get(i).getByteOffset().start() > start - 20
+          && mTokens.get(i).getByteOffset().end() < end) {
+        doPrint = true;
+      }
+
+      // end printing
+      else if (doPrint == true && mTokens.get(i).getByteOffset().start() > end + 20) {
+        doPrint = false;
+      }
+
+      if (doPrint) {
+        buf.append(" " + mTokens.get(i).display());
+      }
+    }
+    buf.append("...");
+    return buf.toString();
+  }
+

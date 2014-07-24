@@ -1,0 +1,27 @@
+  private Counter goodwords = new Counter();
+  private Counter badwords = new Counter();
+
+  public void printGoodBad() {
+    System.out.println("Printing bad categories");
+    for (Object key : Counters.keysAbove(badwords, 5.0)) {
+      System.out.println("In badwords 5 times: " + key);
+      double numb = badwords.getCount(key);
+      double numg = goodwords.getCount(key);
+      if (numb / (numb + numg) > 0.1) {
+        System.out.println("Bad word!  " + key + " (" +
+                           (numb / (numb + numg)) + " bad)");
+        // EncodingPrintWriter.out.println("Bad word!  " + key + " (" +
+        //                 (numb / (numb + numg)) + " bad)",
+        //                              "GB18030");
+      }
+    }
+  }
+
+  public void display(boolean verbose) {
+    display(verbose, new PrintWriter(System.out, true));
+  }
+
+  public void display(boolean verbose, PrintWriter pw) {
+    double prec = precision2 / pnum2;//(num > 0.0 ? precision/num : 0.0);
+    double rec = recall2 / rnum2;//(num > 0.0 ? recall/num : 0.0);
+    double f = 2.0 / (1.0 / prec + 1.0 / rec);//(num > 0.0 ? f1/num : 0.0);

@@ -1,0 +1,42 @@
+    public void drawItem(Graphics2D g2,
+                         CategoryItemRendererState state,
+                         Rectangle2D dataArea,
+                         CategoryPlot plot,
+                         CategoryAxis domainAxis,
+                         ValueAxis rangeAxis,
+                         CategoryDataset dataset,
+                         int row,
+                         int column,
+                         int pass) {
+
+        // wait till we are at the last item for the row then draw the
+        // whole stack at once
+        if (row < dataset.getRowCount() - 1) {
+            return;
+        }
+        Comparable category = dataset.getColumnKey(column);
+
+        List values = createStackedValueList(dataset,
+                dataset.getColumnKey(column), state.getVisibleSeriesArray(),
+                getBase(), this.renderAsPercentages);
+
+        Rectangle2D adjusted = new Rectangle2D.Double(dataArea.getX(),
+                dataArea.getY() + getYOffset(),
+                dataArea.getWidth() - getXOffset(),
+                dataArea.getHeight() - getYOffset());
+
+
+        PlotOrientation orientation = plot.getOrientation();
+
+        // handle rendering separately for the two plot orientations...
+        if (orientation == PlotOrientation.HORIZONTAL) {
+            drawStackHorizontal(values, category, g2, state, adjusted, plot,
+                    domainAxis, rangeAxis, dataset);
+        }
+        else {
+            drawStackVertical(values, category, g2, state, adjusted, plot,
+                    domainAxis, rangeAxis, dataset);
+        }
+
+    }
+

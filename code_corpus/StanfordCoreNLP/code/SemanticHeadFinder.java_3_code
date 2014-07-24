@@ -1,0 +1,53 @@
+  @Override
+  protected int postOperationFix(int headIdx, Tree[] daughterTrees) {
+    if (headIdx >= 2) {
+      String prevLab = tlp.basicCategory(daughterTrees[headIdx - 1].value());
+      if (prevLab.equals("CC") || prevLab.equals("CONJP")) {
+        boolean origWasInterjection = "UH".equals(tlp.basicCategory(daughterTrees[headIdx].value()));
+        int newHeadIdx = headIdx - 2;
+        // newHeadIdx is now left of conjunction.  Now try going back over commas, etc. for 3+ conjuncts
+        // Don't allow INTJ unless conjoined with INTJ - important in informal genres "Oh and don't forget to call!"
+        while (newHeadIdx >= 0 && shouldSkip(daughterTrees[newHeadIdx], origWasInterjection)) {
+          newHeadIdx--;
+        }
+        // We're now at newHeadIdx < 0 or have found a left head
+        // Now consider going back some number of punct that includes a , or : tagged thing and then find non-punct
+        while (newHeadIdx >= 2) {
+          int nextHead = findPreviousHead(newHeadIdx, daughterTrees, origWasInterjection);
+          if (nextHead < 0) {
+            break;
+          }
+          newHeadIdx = nextHead;
+        }
+        if (newHeadIdx >= 0) {
+          headIdx = newHeadIdx;
+        }
+      }
+    }
+    return headIdx;
+  }
+
+  // Note: The first two SBARQ patterns only work when the SQ
+  // structure has already been removed in CoordinationTransformer.
+  static final TregexPattern[] headOfCopulaTregex = {
+    // Matches phrases such as "what is wrong"
+    TregexPattern.compile("SBARQ < (WHNP $++ (/^VB/ < " + EnglishGrammaticalRelations.copularWordRegex + " $++ ADJP=head))"),
+
+    // matches WHNP $+ VB<copula $+ NP
+    // for example, "Who am I to judge?"
+    // !$++ ADJP matches against "Why is the dog pink?"
+    TregexPattern.compile("SBARQ < (WHNP=head $++ (/^VB/ < " + EnglishGrammaticalRelations.copularWordRegex + " $+ NP !$++ ADJP))"),
+
+    // Actually somewhat limited in scope, this detects "Tuesday it is", 
+    // "Such a great idea this was", etc
+    TregexPattern.compile("SINV < (NP=head $++ (NP $++ (VP < (/^(?:VB|AUX)/ < " + EnglishGrammaticalRelations.copularWordRegex + "))))"),
+  };
+
+  static final TregexPattern[] headOfConjpTregex = {
+    TregexPattern.compile("CONJP < (CC <: /^(?i:but|and)$/ $+ (RB=head <: /^(?i:not)$/))"),
+    TregexPattern.compile("CONJP < (CC <: /^(?i:but)$/ [ ($+ (RB=head <: /^(?i:also|rather)$/)) | ($+ (ADVP=head <: (RB <: /^(?i:also|rather)$/))) ])"),
+    TregexPattern.compile("CONJP < (CC <: /^(?i:and)$/ [ ($+ (RB=head <: /^(?i:yet)$/)) | ($+ (ADVP=head <: (RB <: /^(?i:yet)$/))) ])"),
+  };
+
+  static final TregexPattern noVerbOverTempTregex = TregexPattern.compile("/^VP/ < NP-TMP !< /^V/ !< NNP|NN|NNPS|NNS|NP|JJ|ADJP|S");
+

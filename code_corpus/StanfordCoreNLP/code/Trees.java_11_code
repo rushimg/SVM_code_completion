@@ -1,0 +1,27 @@
+  public static Tree getPreTerminal(Tree tree, int n) {
+    return getPreTerminal(tree, new MutableInteger(0), n);
+  }
+
+  static Tree getPreTerminal(Tree tree, MutableInteger i, int n) {
+    if (i.intValue() == n) {
+      if (tree.isPreTerminal()) {
+        return tree;
+      } else {
+        return getPreTerminal(tree.children()[0], i, n);
+      }
+    } else {
+      if (tree.isPreTerminal()) {
+        i.set(i.intValue() + tree.yield().size());
+        return null;
+      } else {
+        for (Tree kid : tree.children()) {
+          Tree result = getPreTerminal(kid, i, n);
+          if (result != null) {
+            return result;
+          }
+        }
+        return null;
+      }
+    }
+  }
+

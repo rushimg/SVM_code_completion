@@ -1,0 +1,42 @@
+    public boolean equals(Object obj) {
+        if (obj == this) {
+            return true;
+        }
+        if (!(obj instanceof KeyedObjects2D)) {
+            return false;
+        }
+
+        KeyedObjects2D that = (KeyedObjects2D) obj;
+        if (!getRowKeys().equals(that.getRowKeys())) {
+            return false;
+        }
+        if (!getColumnKeys().equals(that.getColumnKeys())) {
+            return false;
+        }
+        int rowCount = getRowCount();
+        if (rowCount != that.getRowCount()) {
+            return false;
+        }
+        int colCount = getColumnCount();
+        if (colCount != that.getColumnCount()) {
+            return false;
+        }
+        for (int r = 0; r < rowCount; r++) {
+            for (int c = 0; c < colCount; c++) {
+                Object v1 = getObject(r, c);
+                Object v2 = that.getObject(r, c);
+                if (v1 == null) {
+                    if (v2 != null) {
+                        return false;
+                    }
+                }
+                else {
+                    if (!v1.equals(v2)) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+

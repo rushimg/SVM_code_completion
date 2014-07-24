@@ -1,0 +1,61 @@
+  public void appendRules(List<SequenceMatchRules.Rule> rules)
+  {
+    // Put rules into stages
+    for (SequenceMatchRules.Rule r:rules) {
+      if (r instanceof SequenceMatchRules.AssignmentRule) {
+        // Nothing to do
+        // Assignments are added to environment as they are parsed
+        ((SequenceMatchRules.AssignmentRule) r).evaluate(env);
+      } else if (r instanceof SequenceMatchRules.AnnotationExtractRule) {
+        SequenceMatchRules.AnnotationExtractRule aer = (SequenceMatchRules.AnnotationExtractRule) r;
+        Stage<T> stage = stages.get(aer.stage);
+        if (stage == null) {
+          stages.put(aer.stage, stage = new Stage<T>());
+          stage.stageId = aer.stage;
+          Boolean clearMatched = (Boolean) env.getDefaults().get("stage.clearMatched");
+          if (clearMatched != null) {
+            stage.clearMatched = clearMatched;
+          }
+          Integer limitIters = (Integer) env.getDefaults().get("stage.limitIters");
+          if (limitIters != null) {
+            stage.limitIters = limitIters;
+          }
+        }
+        if (aer.active) {
+          if (SequenceMatchRules.FILTER_RULE_TYPE.equals(aer.ruleType)) {
+            stage.addFilterRule(aer);
+          } else {
+            if (aer.isComposite) {
+//            if (SequenceMatchRules.COMPOSITE_RULE_TYPE.equals(aer.ruleType)) {
+              stage.addCompositeRule(aer);
+            } else {
+              stage.addBasicRule(aer);
+            }
+          }
+        } else {
+          logger.log(Level.INFO, "Ignoring inactive rule: " + aer.name);
+        }
+      }
+    }
+  }
+
+  public Env getEnv() {
+    return env;
+  }
+
+  public void setLogger(Logger logger) {
+    this.logger = logger;
+  }
+
+  public void setExtractRules(SequenceMatchRules.ExtractRule<CoreMap, T> basicExtractRule,
+                              SequenceMatchRules.ExtractRule<List<? extends CoreMap>, T> compositeExtractRule,
+                              Filter<T> filterRule)
+  {
+    Stage<T> stage = new Stage<T>();
+    stage.basicExtractRule = basicExtractRule;
+    stage.compositeExtractRule = compositeExtractRule;
+    stage.filterRule = filterRule;
+    this.stages.clear();
+    this.stages.put(1, stage);
+  }
+

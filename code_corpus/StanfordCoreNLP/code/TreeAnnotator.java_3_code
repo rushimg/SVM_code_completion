@@ -1,0 +1,94 @@
+  private Tree transformTreeHelper(Tree t, Tree root) {
+    if (t == null) {
+      // handle null
+      return null;
+    }
+    if (t.isLeaf()) {
+      //No need to change the label
+      return t;
+    }
+
+    String cat = t.label().value();
+    Tree parent;
+    String parentStr;
+    String grandParentStr;
+    if (root == null || t.equals(root)) {
+      parent = null;
+      parentStr = "";
+    } else {
+      parent = t.parent(root);
+      parentStr = parent.label().value();
+    }
+    if (parent == null || parent.equals(root)) {
+      grandParentStr = "";
+    } else {
+      grandParentStr = parent.parent(root).label().value();
+    }
+    String baseParentStr = tlpParams.treebankLanguagePack().basicCategory(parentStr);
+    String baseGrandParentStr = tlpParams.treebankLanguagePack().basicCategory(grandParentStr);
+    //System.out.println(t.label().value() + " " + parentStr + " " + grandParentStr);
+
+    if (t.isPreTerminal()) {
+      // handle tags
+      Tree childResult = transformTreeHelper(t.children()[0], null); // recurse
+      String word = childResult.value();  // would be nicer if Word/CWT ??
+
+      if ( ! trainOptions.noTagSplit) {
+        if (trainOptions.tagPA) {
+          String test = cat + "^" + baseParentStr;
+          if (!trainOptions.tagSelectiveSplit || trainOptions.splitters.contains(test)) {
+            cat = test;
+          }
+        }
+        if (trainOptions.markUnaryTags && parent.numChildren() == 1) {
+          cat = cat + "^U";
+        }
+      } // otherwise, leave the tags alone!
+
+      // Label label = new CategoryWordTag(cat, word, cat);
+      Label label = t.label().labelFactory().newLabel(t.label());
+      label.setValue(cat);
+      if(label instanceof HasCategory)
+        ((HasCategory) label).setCategory(cat);
+      if(label instanceof HasWord)
+        ((HasWord) label).setWord(word);
+      if(label instanceof HasTag)
+        ((HasTag) label).setTag(cat);
+
+
+      t.setLabel(label);
+      t.setChild(0, childResult);  // just in case word is changed
+      if (trainOptions.noTagSplit) {
+        return t;
+      } else {
+        // language-specific transforms
+        return tlpParams.transformTree(t, root);
+      }
+    } // end isPreTerminal()
+
+    // handle phrasal categories
+    Tree[] kids = t.children();
+    for (int childNum = 0; childNum < kids.length; childNum++) {
+      Tree child = kids[childNum];
+      Tree childResult = transformTreeHelper(child, root); // recursive call
+      t.setChild(childNum, childResult);
+    }
+
+    Tree headChild = hf.determineHead(t);
+    if(headChild == null || headChild.label() == null) {
+      throw new RuntimeException("TreeAnnotator: null head found for tree [suggesting incomplete/wrong HeadFinder]:\n" + t);
+    }
+
+    Label headLabel = headChild.label();
+
+    if( ! (headLabel instanceof HasWord))
+      throw new RuntimeException("TreeAnnotator: Head label lacks a Word annotation!");
+    if( ! (headLabel instanceof HasTag))
+      throw new RuntimeException("TreeAnnotator: Head label lacks a Tag annotation!");
+
+    String word = ((HasWord) headLabel).word();
+    String tag = ((HasTag) headLabel).tag();
+
+    // String baseTag = tlpParams.treebankLanguagePack().basicCategory(tag);
+    String baseCat = tlpParams.treebankLanguagePack().basicCategory(cat);
+

@@ -1,0 +1,21 @@
+  public static boolean isStartOfChunk(String prevTag, String prevType, String curTag, String curType)
+  {
+    boolean chunkStart = false;
+
+    boolean prevTagE = "E".equals(prevTag) || "L".equals(prevTag) || "S".equals(prevTag) || "U".equals(prevTag);
+    boolean curTagE = "E".equals(curTag) || "L".equals(curTag) || "S".equals(curTag) || "U".equals(curTag);
+    if ( prevTagE && curTagE ) { chunkStart = true; }
+    if ( prevTagE && "I".equals(curTag) ) { chunkStart = true; }
+    if ( "O".equals(prevTag) && curTagE ) { chunkStart = true; }
+    if ( "O".equals(prevTag) && "I".equals(curTag) ) { chunkStart = true; }
+
+    if ( "B".equals(curTag) || "S".equals(curTag) || "U".equals(curTag)
+          || "[".equals(curTag) || "]".equals(curTag)) { chunkStart = true; }
+
+    if (!"O".equals(curTag) && !".".equals(curTag) && !prevType.equals(curType)) {
+      chunkStart = true;
+    }
+
+    return chunkStart;
+  }
+

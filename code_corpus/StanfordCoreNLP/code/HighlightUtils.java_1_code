@@ -1,0 +1,23 @@
+  public static boolean addHighlight(JTextField label, MouseEvent mouseEvent1, MouseEvent mouseEvent2) {
+    FontMetrics fm = label.getFontMetrics(label.getFont());
+    int firstXpos = mouseEvent1.getX();
+    int lastXpos = mouseEvent2.getX();
+    int firstOffset = getCharOffset(fm, label.getText(), firstXpos);
+    int lastOffset = getCharOffset(fm, label.getText(), lastXpos);
+    if(lastOffset != firstOffset) {
+      if(firstOffset > lastOffset) {
+        int tmp = firstOffset;
+        firstOffset = lastOffset;
+        lastOffset = tmp;
+      }
+      try {
+        label.getHighlighter().removeAllHighlights();
+        label.getHighlighter().addHighlight(firstOffset, lastOffset, new DefaultHighlighter.DefaultHighlightPainter(Color.yellow));
+        return true;
+      } catch (BadLocationException e1) {
+        return false;
+      }
+    } else
+      return false;
+  }
+

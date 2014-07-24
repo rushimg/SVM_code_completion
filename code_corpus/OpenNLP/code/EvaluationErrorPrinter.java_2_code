@@ -1,0 +1,81 @@
+public abstract class EvaluationErrorPrinter<T> implements EvaluationMonitor<T> {
+
+  private PrintStream printStream;
+
+  protected EvaluationErrorPrinter(OutputStream outputStream) {
+    this.printStream = new PrintStream(outputStream);
+  }
+
+  // for the sentence detector
+  protected void printError(Span references[], Span predictions[],
+      T referenceSample, T predictedSample, String sentence) {
+    List<Span> falseNegatives = new ArrayList<Span>();
+    List<Span> falsePositives = new ArrayList<Span>();
+
+    findErrors(references, predictions, falseNegatives, falsePositives);
+
+    if (falsePositives.size() + falseNegatives.size() > 0) {
+
+      printSamples(referenceSample, predictedSample);
+
+      printErrors(falsePositives, falseNegatives, sentence);
+
+    }
+  }
+
+  // for namefinder, chunker...
+  protected void printError(String id, Span references[], Span predictions[],
+      T referenceSample, T predictedSample, String[] sentenceTokens) {
+    List<Span> falseNegatives = new ArrayList<Span>();
+    List<Span> falsePositives = new ArrayList<Span>();
+
+    findErrors(references, predictions, falseNegatives, falsePositives);
+
+    if (falsePositives.size() + falseNegatives.size() > 0) {
+
+      if (id != null) {
+        printStream.println("Id: {" + id + "}");
+      }
+
+      printSamples(referenceSample, predictedSample);
+
+      printErrors(falsePositives, falseNegatives, sentenceTokens);
+
+    }
+  }
+
+  protected void printError(Span references[], Span predictions[],
+      T referenceSample, T predictedSample, String[] sentenceTokens) {
+    printError(null, references, predictions, referenceSample, predictedSample, sentenceTokens);
+  }
+
+  // for pos tagger
+  protected void printError(String references[], String predictions[],
+      T referenceSample, T predictedSample, String[] sentenceTokens) {
+    List<String> filteredDoc = new ArrayList<String>();
+    List<String> filteredRefs = new ArrayList<String>();
+    List<String> filteredPreds = new ArrayList<String>();
+
+    for (int i = 0; i < references.length; i++) {
+      if (!references[i].equals(predictions[i])) {
+        filteredDoc.add(sentenceTokens[i]);
+        filteredRefs.add(references[i]);
+        filteredPreds.add(predictions[i]);
+      }
+    }
+
+    if (filteredDoc.size() > 0) {
+
+      printSamples(referenceSample, predictedSample);
+
+      printErrors(filteredDoc, filteredRefs, filteredPreds);
+
+    }
+  }
+
+  // for others
+  protected void printError(T referenceSample, T predictedSample) {
+      printSamples(referenceSample, predictedSample);
+      printStream.println();
+  }
+

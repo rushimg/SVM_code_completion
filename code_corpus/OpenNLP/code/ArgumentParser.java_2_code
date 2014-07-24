@@ -1,0 +1,163 @@
+public class ArgumentParser {
+
+  public @Retention(RetentionPolicy.RUNTIME)
+  @interface OptionalParameter {
+    public static final String DEFAULT_CHARSET = "DEFAULT_CHARSET";
+    public String defaultValue() default "";
+  }
+
+  public @Retention(RetentionPolicy.RUNTIME)
+  @interface ParameterDescription {
+    public String valueName();
+    public String description() default "";
+  }
+
+  private interface ArgumentFactory {
+
+    static final String INVALID_ARG = "Invalid argument: %s %s \n";
+
+    Object parseArgument(Method method, String argName, String argValue);
+  }
+
+  private static class IntegerArgumentFactory  implements ArgumentFactory {
+
+    public Object parseArgument(Method method, String argName, String argValue) {
+
+      Object value;
+
+      try {
+        value = Integer.parseInt(argValue);
+      }
+      catch (NumberFormatException e) {
+        throw new TerminateToolException(1, String.format(INVALID_ARG, argName, argValue) +
+            "Value must be an integer!", e);
+      }
+
+      return value;
+    }
+  }
+
+  private static class BooleanArgumentFactory implements ArgumentFactory {
+
+    public Object parseArgument(Method method, String argName, String argValue) {
+      return Boolean.parseBoolean(argValue);
+    }
+  }
+
+  private static class StringArgumentFactory implements ArgumentFactory {
+
+    public Object parseArgument(Method method, String argName, String argValue) {
+      return argValue;
+    }
+  }
+
+  private static class FileArgumentFactory implements ArgumentFactory {
+
+    public Object parseArgument(Method method, String argName, String argValue) {
+      return new File(argValue);
+    }
+  }
+
+  private static class CharsetArgumentFactory implements ArgumentFactory {
+
+    public Object parseArgument(Method method, String argName, String charsetName) {
+
+      try {
+        if(OptionalParameter.DEFAULT_CHARSET.equals(charsetName)) {
+          return Charset.defaultCharset();
+        } else if (Charset.isSupported(charsetName)) {
+          return Charset.forName(charsetName);
+        } else {
+          throw new TerminateToolException(1,  String.format(INVALID_ARG, argName, charsetName) +
+              "Encoding not supported on this platform.");
+        }
+      } catch (IllegalCharsetNameException e) {
+        throw new TerminateToolException(1, String.format(INVALID_ARG, argName, charsetName) +
+            "Illegal encoding name.");
+      }
+    }
+  }
+
+  private static class ArgumentProxy implements InvocationHandler {
+
+    private final Map<String, Object> arguments;
+
+    ArgumentProxy(Map<String, Object> arguments) {
+      this.arguments = arguments;
+    }
+
+    public Object invoke(Object proxy, Method method, Object[] args)
+        throws Throwable {
+
+      if (args != null)
+        throw new IllegalStateException();
+
+      return arguments.get(method.getName());
+    }
+  }
+
+  private static final Map<Class<?>, ArgumentFactory> argumentFactories;
+
+  static {
+    Map<Class<?>, ArgumentFactory> factories = new HashMap<Class<?>, ArgumentParser.ArgumentFactory>();
+    factories.put(Integer.class, new IntegerArgumentFactory());
+    factories.put(Boolean.class, new BooleanArgumentFactory());
+    factories.put(String.class, new StringArgumentFactory());
+    factories.put(File.class, new FileArgumentFactory());
+    factories.put(Charset.class, new CharsetArgumentFactory());
+
+    argumentFactories = Collections.unmodifiableMap(factories);
+  }
+
+  private ArgumentParser() {
+  }
+
+  private static <T> void checkProxyInterfaces(Class<T>... proxyInterfaces) {
+    for (Class<T> proxyInterface : proxyInterfaces) {
+      if (null != proxyInterface) {
+        if (!proxyInterface.isInterface())
+          throw new IllegalArgumentException("proxy interface is not an interface!");
+
+        // all checks should also be performed for super interfaces
+
+        Method methods[] = proxyInterface.getMethods();
+
+        if (methods.length == 0)
+          throw new IllegalArgumentException("proxy interface must at least declare one method!");
+
+        for (Method method : methods) {
+
+          // check that method names start with get
+          if (!method.getName().startsWith("get") && method.getName().length() > 3)
+            throw new IllegalArgumentException(method.getName() + " method name does not start with 'get'!");
+
+          // check that method has zero arguments
+          if (method.getParameterTypes().length != 0)
+            throw new IllegalArgumentException(method.getName() + " method must have zero parameters but has " +
+                    method.getParameterTypes().length + "!");
+
+          // check return types of interface
+          Class<?> returnType = method.getReturnType();
+
+          Set<Class<?>> compatibleReturnTypes = argumentFactories.keySet();
+
+          if(!compatibleReturnTypes.contains(returnType))
+             throw new IllegalArgumentException(method.getName() + " method must have compatible return type! Got " +
+                     returnType + ", expected one of " + compatibleReturnTypes);
+        }
+      }
+    }
+  }
+
+  private static String methodNameToParameter(String methodName) {
+    // remove get from method name
+    char parameterNameChars[] = methodName.toCharArray();
+
+    // name length is checked to be at least 4 prior
+    parameterNameChars[3] = Character.toLowerCase(parameterNameChars[3]);
+
+    String parameterName = "-" + new String(parameterNameChars).substring(3);
+
+    return parameterName;
+  }
+

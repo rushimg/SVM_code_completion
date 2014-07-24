@@ -1,0 +1,18 @@
+  public static void writeModel(MaxentModel model, final OutputStream out)
+          throws IOException, IllegalArgumentException {
+
+    if (model == null)
+      throw new IllegalArgumentException("model parameter must not be null!");
+
+    if (out == null)
+      throw new IllegalArgumentException("out parameter must not be null!");
+
+    GenericModelWriter modelWriter = new GenericModelWriter((AbstractModel) model, new DataOutputStream(new OutputStream() {
+      @Override
+      public void write(int b) throws IOException {
+        out.write(b);
+      }
+    }));
+    modelWriter.persist();
+  }
+

@@ -1,0 +1,31 @@
+  private Object getNext(String txt, String originalText) {
+    if (tokenFactory == null) {
+      throw new RuntimeException(this.getClass().getName() + ": Token factory is null.");
+    }
+    if (invertible) {
+      //String str = prevWordAfter.toString();
+      //prevWordAfter.setLength(0);
+      CoreLabel word = (CoreLabel) tokenFactory.makeToken(txt, yychar, yylength());
+      word.set(CoreAnnotations.OriginalTextAnnotation.class, originalText);
+      //word.set(CoreAnnotations.BeforeAnnotation.class, str);
+      //prevWord.set(CoreAnnotations.AfterAnnotation.class, str);
+      //prevWord = word;
+      return word;
+    } else {
+      return tokenFactory.makeToken(txt, yychar, yylength());
+    }
+  }
+  
+  private Object getNext(boolean isWord) {
+    String text = yytext();
+    String normText = normalizeToken(text, isWord);
+    return getNext(normText, text);
+  }
+
+  private Object getEllipsis() {
+    String ellipsisString = useUTF8Ellipsis ? "\u2026" : "...";
+    return getNext(ellipsisString, yytext());
+  }
+
+
+

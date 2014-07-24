@@ -1,0 +1,47 @@
+    protected void applyToCategoryItemRenderer(CategoryItemRenderer renderer) {
+        if (renderer == null) {
+            throw new IllegalArgumentException("Null 'renderer' argument.");
+        }
+
+        if (renderer instanceof AbstractRenderer) {
+            applyToAbstractRenderer((AbstractRenderer) renderer);
+        }
+
+        renderer.setBaseItemLabelFont(this.regularFont);
+        renderer.setBaseItemLabelPaint(this.itemLabelPaint);
+
+        // now we handle some special cases - yes, UGLY code alert!
+
+        // BarRenderer
+        if (renderer instanceof BarRenderer) {
+            BarRenderer br = (BarRenderer) renderer;
+            br.setBarPainter(this.barPainter);
+            br.setShadowVisible(this.shadowVisible);
+            br.setShadowPaint(this.shadowPaint);
+        }
+
+        // BarRenderer3D
+        if (renderer instanceof BarRenderer3D) {
+            BarRenderer3D br3d = (BarRenderer3D) renderer;
+            br3d.setWallPaint(this.wallPaint);
+        }
+
+        // LineRenderer3D
+        if (renderer instanceof LineRenderer3D) {
+            LineRenderer3D lr3d = (LineRenderer3D) renderer;
+            lr3d.setWallPaint(this.wallPaint);
+        }
+
+        //  StatisticalBarRenderer
+        if (renderer instanceof StatisticalBarRenderer) {
+            StatisticalBarRenderer sbr = (StatisticalBarRenderer) renderer;
+            sbr.setErrorIndicatorPaint(this.errorIndicatorPaint);
+        }
+
+        // MinMaxCategoryRenderer
+        if (renderer instanceof MinMaxCategoryRenderer) {
+            MinMaxCategoryRenderer mmcr = (MinMaxCategoryRenderer) renderer;
+            mmcr.setGroupPaint(this.errorIndicatorPaint);
+        }
+    }
+

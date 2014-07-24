@@ -1,0 +1,90 @@
+  private static void collapseMultiWordPrep(Collection<TypedDependency> list, Collection<TypedDependency> newTypedDeps, String str_mwp0, String str_mwp1, String w_mwp0, String w_mwp1) {
+
+    // first find the multiword_preposition: dep(mpw[0], mwp[1])
+    // the two words should be next to another in the sentence (difference of
+    // indexes = 1)
+    TreeGraphNode mwp0 = null;
+    TreeGraphNode mwp1 = null;
+    TypedDependency dep = null;
+    for (TypedDependency td : list) {
+      if (td.gov().value().equalsIgnoreCase(w_mwp0) && td.dep().value().equalsIgnoreCase(w_mwp1) && Math.abs(td.gov().index() - td.dep().index()) == 1) {
+        mwp0 = td.gov();
+        mwp1 = td.dep();
+        dep = td;
+      }
+    }
+
+    // now search for prep|advmod|dep|amod(gov, mwp0)
+    TreeGraphNode governor = null;
+    TypedDependency prep = null;
+    for (TypedDependency td1 : list) {
+      if (td1.dep() == mwp0 && (td1.reln() == PREPOSITIONAL_MODIFIER || td1.reln() == ADVERBIAL_MODIFIER || td1.reln() == ADJECTIVAL_MODIFIER || td1.reln() == DEPENDENT || td1.reln() == MULTI_WORD_EXPRESSION)) {
+        // we found prep|advmod|dep|amod(gov, mwp0)
+        prep = td1;
+        governor = prep.gov();
+      }
+    }
+
+    // search for the complement: pobj|pcomp(mwp1,X)
+    // or for pobj|pcomp(mwp0,X)
+    // There may be more than one in weird constructions; if there are several,
+    // take the one with the LOWEST index!
+    TypedDependency pobj = null;
+    TypedDependency newtd = null;
+    for (TypedDependency td2 : list) {
+      if ((td2.gov() == mwp1 || td2.gov() == mwp0) && (td2.reln() == PREPOSITIONAL_OBJECT || td2.reln() == PREPOSITIONAL_COMPLEMENT)) {
+        if (pobj == null || pobj.dep().index() > td2.dep().index()) {
+          pobj = td2;
+          // create the new gr relation
+          GrammaticalRelation gr;
+          if (td2.reln() == PREPOSITIONAL_COMPLEMENT) {
+            gr = EnglishGrammaticalRelations.getPrepC(str_mwp0 + '_' + str_mwp1);
+          } else {
+            gr = EnglishGrammaticalRelations.getPrep(str_mwp0 + '_' + str_mwp1);
+          }
+          if (governor != null) {
+            newtd = new TypedDependency(gr, governor, pobj.dep());
+          }
+        }
+      }
+    }
+
+    // only if we found the three parts, set to KILL and remove
+    // and add the new one
+    if (prep != null && dep != null && pobj != null && newtd != null) {
+      if (DEBUG) {
+        System.err.println("Removing " + prep + ", " + dep + ", and " + pobj);
+        System.err.println("  and adding " + newtd);
+      }
+      prep.setReln(KILL);
+      dep.setReln(KILL);
+      pobj.setReln(KILL);
+      newTypedDeps.add(newtd);
+
+      // now remove typed dependencies with reln "kill"
+      // and promote possible orphans
+      for (TypedDependency td1 : list) {
+        if (td1.reln() != KILL) {
+          if (td1.gov() == mwp0 || td1.gov() == mwp1) {
+            // CDM: Thought of adding this in Jan 2010, but it causes
+            // conflicting relations tmod vs. pobj. Needs more thought
+            // maybe restrict pobj to first NP in PP, and allow tmod for a later
+            // one?
+            if (td1.reln() == TEMPORAL_MODIFIER) {
+              // special case when an extra NP-TMP is buried in a PP for
+              // "during the same period last year"
+              td1.setGov(pobj.dep());
+            } else {
+              td1.setGov(governor);
+            }
+          }
+          if (!newTypedDeps.contains(td1)) {
+            newTypedDeps.add(td1);
+          }
+        }
+      }
+      list.clear();
+      list.addAll(newTypedDeps);
+    }
+  }
+

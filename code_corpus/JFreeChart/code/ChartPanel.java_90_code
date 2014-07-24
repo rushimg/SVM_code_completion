@@ -1,0 +1,92 @@
+    public void mouseReleased(MouseEvent e) {
+
+        // if we've been panning, we need to reset now that the mouse is 
+        // released...
+        if (this.panLast != null) {
+            this.panLast = null;
+            setCursor(Cursor.getDefaultCursor());
+        }
+
+        else if (this.zoomRectangle != null) {
+            boolean hZoom = false;
+            boolean vZoom = false;
+            if (this.orientation == PlotOrientation.HORIZONTAL) {
+                hZoom = this.rangeZoomable;
+                vZoom = this.domainZoomable;
+            }
+            else {
+                hZoom = this.domainZoomable;
+                vZoom = this.rangeZoomable;
+            }
+
+            boolean zoomTrigger1 = hZoom && Math.abs(e.getX()
+                - this.zoomPoint.getX()) >= this.zoomTriggerDistance;
+            boolean zoomTrigger2 = vZoom && Math.abs(e.getY()
+                - this.zoomPoint.getY()) >= this.zoomTriggerDistance;
+            if (zoomTrigger1 || zoomTrigger2) {
+                if ((hZoom && (e.getX() < this.zoomPoint.getX()))
+                    || (vZoom && (e.getY() < this.zoomPoint.getY()))) {
+                    restoreAutoBounds();
+                }
+                else {
+                    double x, y, w, h;
+                    Rectangle2D screenDataArea = getScreenDataArea(
+                            (int) this.zoomPoint.getX(),
+                            (int) this.zoomPoint.getY());
+                    double maxX = screenDataArea.getMaxX();
+                    double maxY = screenDataArea.getMaxY();
+                    // for mouseReleased event, (horizontalZoom || verticalZoom)
+                    // will be true, so we can just test for either being false;
+                    // otherwise both are true
+                    if (!vZoom) {
+                        x = this.zoomPoint.getX();
+                        y = screenDataArea.getMinY();
+                        w = Math.min(this.zoomRectangle.getWidth(),
+                                maxX - this.zoomPoint.getX());
+                        h = screenDataArea.getHeight();
+                    }
+                    else if (!hZoom) {
+                        x = screenDataArea.getMinX();
+                        y = this.zoomPoint.getY();
+                        w = screenDataArea.getWidth();
+                        h = Math.min(this.zoomRectangle.getHeight(),
+                                maxY - this.zoomPoint.getY());
+                    }
+                    else {
+                        x = this.zoomPoint.getX();
+                        y = this.zoomPoint.getY();
+                        w = Math.min(this.zoomRectangle.getWidth(),
+                                maxX - this.zoomPoint.getX());
+                        h = Math.min(this.zoomRectangle.getHeight(),
+                                maxY - this.zoomPoint.getY());
+                    }
+                    Rectangle2D zoomArea = new Rectangle2D.Double(x, y, w, h);
+                    zoom(zoomArea);
+                }
+                this.zoomPoint = null;
+                this.zoomRectangle = null;
+            }
+            else {
+                // erase the zoom rectangle
+                Graphics2D g2 = (Graphics2D) getGraphics();
+                if (this.useBuffer) {
+                    repaint();
+                }
+                else {
+                    drawZoomRectangle(g2, true);
+                }
+                g2.dispose();
+                this.zoomPoint = null;
+                this.zoomRectangle = null;
+            }
+
+        }
+
+        else if (e.isPopupTrigger()) {
+            if (this.popup != null) {
+                displayPopupMenu(e.getX(), e.getY());
+            }
+        }
+
+    }
+

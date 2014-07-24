@@ -1,0 +1,97 @@
+  private SimpleMatrix randomTransformMatrix() {
+    SimpleMatrix matrix;
+    switch (op.trainOptions.transformMatrixType) {
+    case DIAGONAL:
+      break;
+    case RANDOM:
+      matrix = SimpleMatrix.random(numRows,numCols,-1.0/Math.sqrt((double)numCols),1.0/Math.sqrt((double)numCols),rand);
+      break;
+    case OFF_DIAGONAL:
+      for (int i = 0; i < numCols; ++i) {
+        int x = rand.nextInt(numCols);
+        int y = rand.nextInt(numCols);
+        int scale = rand.nextInt(3) - 1;  // -1, 0, or 1
+        matrix.set(x, y, matrix.get(x, y) + scale);
+      }
+      break;
+    case RANDOM_ZEROS:
+      for (int i = 0; i < numCols; ++i) {
+        int x = rand.nextInt(numCols);
+        int y = rand.nextInt(numCols);
+        matrix.set(x, y, 0.0);
+      }
+      break;
+    default:
+      throw new IllegalArgumentException("Unexpected matrix initialization type " + op.trainOptions.transformMatrixType);
+    }
+    return matrix;
+  }
+
+  public void addRandomUnaryMatrix(String childBasic) {
+    if (unaryTransform.get(childBasic) != null) {
+      return;
+    }
+
+    ++numUnaryMatrices;
+
+    // scoring matrix
+    SimpleMatrix score = SimpleMatrix.random(1, numCols, -1.0/Math.sqrt((double)numCols),1.0/Math.sqrt((double)numCols),rand);
+    unaryScore.put(childBasic, score.scale(op.trainOptions.scalingForInit));
+
+    SimpleMatrix transform;
+    if (op.trainOptions.useContextWords) {
+      // leave room for bias term
+      transform.insertIntoThis(0,numCols + 1, randomContextMatrix());
+    } else {
+      transform = new SimpleMatrix(numRows, numCols + 1);
+    }
+    SimpleMatrix unary = randomTransformMatrix();
+    transform.insertIntoThis(0, 0, unary);
+    unaryTransform.put(childBasic, transform.scale(op.trainOptions.scalingForInit));
+  }
+
+  public void addRandomBinaryMatrix(String leftBasic, String rightBasic) {
+    if (binaryTransform.get(leftBasic, rightBasic) != null) {
+      return;
+    }
+
+    ++numBinaryMatrices;
+
+    // scoring matrix
+    SimpleMatrix score = SimpleMatrix.random(1, numCols, -1.0/Math.sqrt((double)numCols),1.0/Math.sqrt((double)numCols),rand);
+    binaryScore.put(leftBasic, rightBasic, score.scale(op.trainOptions.scalingForInit));
+
+    SimpleMatrix binary;
+    if (op.trainOptions.useContextWords) {
+      // leave room for bias term
+    } else {
+    }
+    SimpleMatrix left = randomTransformMatrix();
+    SimpleMatrix right = randomTransformMatrix();
+    binary.insertIntoThis(0, 0, left);
+    binary.insertIntoThis(0, numCols, right);
+    binaryTransform.put(leftBasic, rightBasic, binary.scale(op.trainOptions.scalingForInit));
+  }
+
+  public void setRulesForTrainingSet(List<Tree> sentences, Map<Tree, byte[]> compressedTrees) {
+    TwoDimensionalSet<String, String> binaryRules = TwoDimensionalSet.treeSet();
+    Set<String> unaryRules = new HashSet<String>();
+    Set<String> words = new HashSet<String>();
+    for (Tree sentence : sentences) {
+      searchRulesForBatch(binaryRules, unaryRules, words, sentence);
+
+      for (Tree hypothesis : CacheParseHypotheses.convertToTrees(compressedTrees.get(sentence))) {
+        searchRulesForBatch(binaryRules, unaryRules, words, hypothesis);
+      }
+    }
+
+    for (Pair<String, String> binary : binaryRules) {
+      addRandomBinaryMatrix(binary.first, binary.second);
+    }
+    for (String unary : unaryRules) {
+      addRandomUnaryMatrix(unary);
+    }
+
+    filterRulesForBatch(binaryRules, unaryRules, words);
+  }
+

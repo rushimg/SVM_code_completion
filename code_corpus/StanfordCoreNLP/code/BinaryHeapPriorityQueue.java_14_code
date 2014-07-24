@@ -1,0 +1,38 @@
+  @Override
+  public boolean add(E key, double priority) {
+//    System.err.println("Adding " + key + " with priority " + priority);
+    if (add(key)) {
+      relaxPriority(key, priority);
+      return true;
+    }
+    return false;
+  }
+
+
+  @SuppressWarnings("unchecked")
+  @Override
+  public boolean remove(Object key) {
+    E eKey = (E) key;
+    Entry<E> entry = getEntry(eKey);
+    if (entry == null) {
+      return false;
+    }
+    removeEntry(entry);
+    return true;
+  }
+
+  private void removeEntry(Entry<E> entry) {
+    Entry<E> lastEntry = getLastEntry();
+    if (entry != lastEntry) {
+      swap(entry, lastEntry);
+      removeLastEntry();
+      heapify(lastEntry);
+    } else {
+      removeLastEntry();
+    }
+  }
+
+  private Entry<E> getLastEntry() {
+    return getEntry(size() - 1);
+  }
+

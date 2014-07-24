@@ -1,0 +1,33 @@
+public class MWETreeVisitorExternal implements TreeVisitor {
+
+  private static final String mweFile = "/home/rayder441/sandbox/javanlp/projects/core/data/edu/stanford/nlp/pipeline/attia-mwe-list.txt.out.tok.fixed.proc.uniq";
+  
+  private final Set<String> mweDictionary;
+  
+  public MWETreeVisitorExternal() {
+    mweDictionary = loadMWEs();
+  }
+  
+  private Set<String> loadMWEs() {
+    Set<String> mweSet = Generics.newHashSet();  
+    try {
+      BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(mweFile), "UTF-8"));
+      for (String line; (line = br.readLine()) != null;) {
+        mweSet.add(line.trim());
+      }
+      br.close();
+    
+    } catch (UnsupportedEncodingException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    } catch (FileNotFoundException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    } catch (IOException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+    return mweSet;
+  }
+
+

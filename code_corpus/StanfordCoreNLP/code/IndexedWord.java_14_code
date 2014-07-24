@@ -1,0 +1,62 @@
+  public String toString(String format) {
+
+    if (this.equals(NO_WORD)) return "NO_WORD";
+    StringBuilder result = new StringBuilder();
+
+    // word
+    if (format == WORD_FORMAT ||
+        format == WORD_TAG_FORMAT ||
+        format == WORD_TAG_INDEX_FORMAT) {
+      result.append(word());
+
+      // tag
+      if (format == WORD_TAG_FORMAT ||
+          format == WORD_TAG_INDEX_FORMAT) {
+        String tag = tag();
+        if (tag != null && tag.length() != 0) {
+          result.append('-').append(tag);
+        }
+
+        // index
+        if (format == WORD_TAG_INDEX_FORMAT) {
+          result.append('-').append(sentIndex()).append(':').append(index());
+        }
+      }
+
+      // value format
+    } else if (format == VALUE_FORMAT) {
+      result.append(value());
+      if (index() >= 0) {
+        result.append(':').append(index());
+      }
+
+    } else {
+      return super.toString();
+    }
+
+    return result.toString();
+  }
+
+  public static LabelFactory factory() {
+    return new LabelFactory() {
+
+      public Label newLabel(String labelStr) {
+        IndexedWord label = new IndexedWord();
+        label.setValue(labelStr);
+        return label;
+      }
+
+      public Label newLabel(String labelStr, int options) {
+        return newLabel(labelStr);
+      }
+
+      public Label newLabel(Label oldLabel) {
+        return new IndexedWord(oldLabel);
+      }
+
+      public Label newLabelFromString(String encodedLabelStr) {
+        throw new UnsupportedOperationException("This code branch left blank" +
+        " because we do not understand what this method should do.");
+      }
+    };
+  }

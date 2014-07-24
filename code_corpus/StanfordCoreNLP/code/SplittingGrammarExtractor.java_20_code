@@ -1,0 +1,337 @@
+  public void mergeTransitions(Tree parent, 
+                               IdentityHashMap<Tree, double[][]> oldUnaryTransitions,
+                               IdentityHashMap<Tree, double[][][]> oldBinaryTransitions,
+                               IdentityHashMap<Tree, double[][]> newUnaryTransitions,
+                               IdentityHashMap<Tree, double[][][]> newBinaryTransitions,
+                               double[] stateWeights, 
+                               Map<String, int[]> mergeCorrespondence) {
+    if (parent.isPreTerminal() || parent.isLeaf()) {
+      return;
+    }
+    if (parent.children().length == 1) {
+      double[][] oldTransitions = oldUnaryTransitions.get(parent);
+
+      String parentLabel = parent.label().value();
+      int[] parentCorrespondence = mergeCorrespondence.get(parentLabel);
+      int parentStates = parentCorrespondence[parentCorrespondence.length - 1] + 1;
+
+      String childLabel = parent.children()[0].label().value();
+      int[] childCorrespondence = mergeCorrespondence.get(childLabel);
+      int childStates = childCorrespondence[childCorrespondence.length - 1] + 1;
+
+      // System.out.println("P: " + parentLabel + " " + parentStates + 
+      //                    " C: " + childLabel + " " + childStates);
+
+
+      // Add up the probabilities of transitioning to each state,
+      // scaled by the probability of being in a given state to begin
+      // with.  This accounts for when two states in the parent are
+      // collapsed into one state.
+      double[][] newTransitions = new double[parentStates][childStates];
+      for (int i = 0; i < parentStates; ++i) {
+        for (int j = 0; j < childStates; ++j) {
+          newTransitions[i][j] = Double.NEGATIVE_INFINITY;
+        }
+      }
+      newUnaryTransitions.put(parent, newTransitions);
+      for (int i = 0; i < oldTransitions.length; ++i) {
+        int ti = parentCorrespondence[i];
+        for (int j = 0; j < oldTransitions[0].length; ++j) {
+          int tj = childCorrespondence[j];
+          // System.out.println(i + " " + ti + " " + j + " " + tj);
+          newTransitions[ti][tj] = SloppyMath.logAdd(newTransitions[ti][tj], oldTransitions[i][j] + stateWeights[i]);
+        }
+      }
+
+      // renormalize
+      for (int i = 0; i < parentStates; ++i) {
+        double total = Double.NEGATIVE_INFINITY;
+        for (int j = 0; j < childStates; ++j) {
+          total = SloppyMath.logAdd(total, newTransitions[i][j]);
+        }
+        if (Double.isInfinite(total)) {
+          for (int j = 0; j < childStates; ++j) {
+            newTransitions[i][j] = -Math.log(childStates);
+          }
+        } else {
+          for (int j = 0; j < childStates; ++j) {
+            newTransitions[i][j] -= total;
+          }
+        }
+      }
+
+      double[] childWeights = neginfDoubles(oldTransitions[0].length);
+      for (int i = 0; i < oldTransitions.length; ++i) {
+        for (int j = 0; j < oldTransitions[0].length; ++j) {
+          double weight = oldTransitions[i][j];
+          childWeights[j] = SloppyMath.logAdd(childWeights[j], weight + stateWeights[i]);
+        }
+      }
+
+      mergeTransitions(parent.children()[0], oldUnaryTransitions, oldBinaryTransitions, newUnaryTransitions, newBinaryTransitions, childWeights, mergeCorrespondence);
+    } else {
+      double[][][] oldTransitions = oldBinaryTransitions.get(parent);
+
+      String parentLabel = parent.label().value();
+      int[] parentCorrespondence = mergeCorrespondence.get(parentLabel);
+      int parentStates = parentCorrespondence[parentCorrespondence.length - 1] + 1;
+
+      String leftLabel = parent.children()[0].label().value();
+      int[] leftCorrespondence = mergeCorrespondence.get(leftLabel);
+      int leftStates = leftCorrespondence[leftCorrespondence.length - 1] + 1;
+
+      String rightLabel = parent.children()[1].label().value();
+      int[] rightCorrespondence = mergeCorrespondence.get(rightLabel);
+      int rightStates = rightCorrespondence[rightCorrespondence.length - 1] + 1;
+
+      // System.out.println("P: " + parentLabel + " " + parentStates + 
+      //                    " L: " + leftLabel + " " + leftStates +
+      //                    " R: " + rightLabel + " " + rightStates);
+
+      double[][][] newTransitions = new double[parentStates][leftStates][rightStates];
+      for (int i = 0; i < parentStates; ++i) {
+        for (int j = 0; j < leftStates; ++j) {
+          for (int k = 0; k < rightStates; ++k) {
+            newTransitions[i][j][k] = Double.NEGATIVE_INFINITY;
+          }
+        }
+      }
+      newBinaryTransitions.put(parent, newTransitions);
+      for (int i = 0; i < oldTransitions.length; ++i) {
+        int ti = parentCorrespondence[i];
+        for (int j = 0; j < oldTransitions[0].length; ++j) {
+          int tj = leftCorrespondence[j];
+          for (int k = 0; k < oldTransitions[0][0].length; ++k) {
+            int tk = rightCorrespondence[k];
+            // System.out.println(i + " " + ti + " " + j + " " + tj + " " + k + " " + tk);
+            newTransitions[ti][tj][tk] = SloppyMath.logAdd(newTransitions[ti][tj][tk], oldTransitions[i][j][k] + stateWeights[i]);
+          }
+        }
+      }
+
+      // renormalize
+      for (int i = 0; i < parentStates; ++i) {
+        double total = Double.NEGATIVE_INFINITY;
+        for (int j = 0; j < leftStates; ++j) {
+          for (int k = 0; k < rightStates; ++k) {
+            total = SloppyMath.logAdd(total, newTransitions[i][j][k]);
+          }
+        }
+        if (Double.isInfinite(total)) {
+          for (int j = 0; j < leftStates; ++j) {
+            for (int k = 0; k < rightStates; ++k) {
+            }
+          }
+        } else {
+          for (int j = 0; j < leftStates; ++j) {
+            for (int k = 0; k < rightStates; ++k) {
+              newTransitions[i][j][k] -= total;
+            }
+          }
+        }
+      }
+
+      double[] leftWeights = neginfDoubles(oldTransitions[0].length);
+      double[] rightWeights = neginfDoubles(oldTransitions[0][0].length);
+      for (int i = 0; i < oldTransitions.length; ++i) {
+        for (int j = 0; j < oldTransitions[0].length; ++j) {
+          for (int k = 0; k < oldTransitions[0][0].length; ++k) {
+            double weight = oldTransitions[i][j][k];
+            leftWeights[j] = SloppyMath.logAdd(leftWeights[j], weight + stateWeights[i]);
+            rightWeights[k] = SloppyMath.logAdd(rightWeights[k], weight + stateWeights[i]);
+          }
+        }
+      }
+
+      mergeTransitions(parent.children()[0], oldUnaryTransitions, oldBinaryTransitions, newUnaryTransitions, newBinaryTransitions, leftWeights, mergeCorrespondence);
+      mergeTransitions(parent.children()[1], oldUnaryTransitions, oldBinaryTransitions, newUnaryTransitions, newBinaryTransitions, rightWeights, mergeCorrespondence);
+    }
+  }
+
+  Map<String, int[]> buildMergeCorrespondence(List<Triple<String, Integer, Double>> deltas) {
+    Map<String, int[]> mergeCorrespondence = Generics.newHashMap();
+    for (String state : originalStates) {
+      int states = getStateSplitCount(state);
+      int[] correspondence = new int[states];
+      for (int i = 0; i < states; ++i) {
+        correspondence[i] = i;
+      }
+      mergeCorrespondence.put(state, correspondence);
+    }
+    for (Triple<String, Integer, Double> merge : deltas) {
+      int states = getStateSplitCount(merge.first());
+      int split = merge.second();
+      int[] correspondence = mergeCorrespondence.get(merge.first());
+      for (int i = split + 1; i < states; ++i) {
+        correspondence[i] = correspondence[i] - 1;
+      }
+    }
+    return mergeCorrespondence;
+  }
+
+  public void countMergeEffects(Tree tree, Map<String, double[]> totalStateMass, 
+                                Map<String, double[]> deltaAnnotations) {
+    IdentityHashMap<Tree, double[]> probIn = new IdentityHashMap<Tree, double[]>();
+    IdentityHashMap<Tree, double[]> probOut = new IdentityHashMap<Tree, double[]>();
+    IdentityHashMap<Tree, double[][]> unaryTransitions = new IdentityHashMap<Tree, double[][]>();
+    IdentityHashMap<Tree, double[][][]> binaryTransitions = new IdentityHashMap<Tree, double[][][]>();
+    recountTree(tree, false, probIn, probOut, unaryTransitions, binaryTransitions);
+
+    // no need to count the root
+    for (Tree child : tree.children()) {
+      countMergeEffects(child, totalStateMass, deltaAnnotations, probIn, probOut);
+    }
+  }
+
+  public void countMergeEffects(Tree tree, Map<String, double[]> totalStateMass, 
+                                Map<String, double[]> deltaAnnotations,
+                                IdentityHashMap<Tree, double[]> probIn,
+                                IdentityHashMap<Tree, double[]> probOut) {
+    if (tree.isLeaf()) {
+      return;
+    }
+    if (tree.label().value().equals(Lexicon.BOUNDARY_TAG)) {
+      return;
+    }
+
+    String label = tree.label().value();
+    double totalMass = 0.0;
+    double[] stateMass = totalStateMass.get(label);
+    for (double mass : stateMass) {
+      totalMass += mass;
+    }
+    
+    double[] nodeProbIn = probIn.get(tree);
+    double[] nodeProbOut = probOut.get(tree);
+
+    double[] nodeDelta = deltaAnnotations.get(label);
+    if (nodeDelta == null) {
+      nodeDelta = new double[nodeProbIn.length / 2];
+      deltaAnnotations.put(label, nodeDelta);
+    }
+
+    for (int i = 0; i < nodeProbIn.length / 2; ++i) {
+      double probMerged = probInMerged + probOutMerged;
+      nodeDelta[i] = nodeDelta[i] + probMerged - probUnmerged;
+    }
+
+    if (tree.isPreTerminal()) {
+      return;
+    }
+    for (Tree child : tree.children()) {
+      countMergeEffects(child, totalStateMass, deltaAnnotations, probIn, probOut);
+    }
+  }
+
+  public void buildStateIndex() {
+    stateIndex = new HashIndex<String>();
+    for (String key : stateSplitCounts.keySet()) {
+      for (int i = 0; i < stateSplitCounts.getIntCount(key); ++i) {
+        stateIndex.indexOf(state(key, i), true);
+      }
+    }
+  }
+
+  public void buildGrammars() {
+    // In order to build the grammars, we first need to fill in the
+    // temp betas with the sums of the transitions from Ax to By or Ax
+    // to By,Cz.  We also need the sum total of the mass in each state
+    // Ax over all the trees.
+
+    // we go through the machinery to sum up the temporary betas,
+    // counting the total mass...
+    TwoDimensionalMap<String, String, double[][]> tempUnaryBetas = new TwoDimensionalMap<String, String, double[][]>();
+    ThreeDimensionalMap<String, String, String, double[][][]> tempBinaryBetas = new ThreeDimensionalMap<String, String, String, double[][][]>();
+    Map<String, double[]> totalStateMass = Generics.newHashMap();
+    recalculateTemporaryBetas(false, totalStateMass, tempUnaryBetas, tempBinaryBetas);
+
+    // ... but note we don't actually rescale the betas.
+    // instead we use the temporary betas and the total mass in each
+    // state to calculate the grammars
+
+    // First build up a BinaryGrammar.
+    // The score for each rule will be the Beta scores found earlier,
+    // scaled by the total weight of a transition between unsplit states
+    BinaryGrammar bg = new BinaryGrammar(stateIndex);
+    for (String parent : tempBinaryBetas.firstKeySet()) {
+      int parentStates = getStateSplitCount(parent);
+      double[] stateTotal = totalStateMass.get(parent);
+      for (String left : tempBinaryBetas.get(parent).firstKeySet()) {
+        int leftStates = getStateSplitCount(left);
+        for (String right : tempBinaryBetas.get(parent).get(left).keySet()) {
+          int rightStates = getStateSplitCount(right);
+          double[][][] betas = tempBinaryBetas.get(parent, left, right);
+          for (int i = 0; i < parentStates; ++i) {
+            if (stateTotal[i] < EPSILON) {
+              continue;
+            }
+            for (int j = 0; j < leftStates; ++j) {
+              for (int k = 0; k < rightStates; ++k) {
+                int parentIndex = stateIndex.indexOf(state(parent, i));
+                int leftIndex = stateIndex.indexOf(state(left, j));
+                int rightIndex = stateIndex.indexOf(state(right, k));
+                double score = betas[i][j][k] - Math.log(stateTotal[i]);
+                BinaryRule br = new BinaryRule(parentIndex, leftIndex, rightIndex, score);
+                bg.addRule(br);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Now build up a UnaryGrammar
+    UnaryGrammar ug = new UnaryGrammar(stateIndex);
+    for (String parent : tempUnaryBetas.firstKeySet()) {
+      int parentStates = getStateSplitCount(parent);
+      double[] stateTotal = totalStateMass.get(parent);
+      for (String child : tempUnaryBetas.get(parent).keySet()) {
+        int childStates = getStateSplitCount(child);
+        double[][] betas = tempUnaryBetas.get(parent, child);
+        for (int i = 0; i < parentStates; ++i) {
+          if (stateTotal[i] < EPSILON) {
+            continue;
+          }
+          for (int j = 0; j < childStates; ++j) {
+            int parentIndex = stateIndex.indexOf(state(parent, i));
+            int childIndex = stateIndex.indexOf(state(child, j));
+            double score = betas[i][j] - Math.log(stateTotal[i]);
+            UnaryRule ur = new UnaryRule(parentIndex, childIndex, score);
+            ug.addRule(ur);
+          }
+        }
+      }
+    }
+
+
+    bgug = new Pair<UnaryGrammar, BinaryGrammar>(ug, bg);
+  }
+
+  public void saveTrees(Collection<Tree> trees1, double weight1,
+                        Collection<Tree> trees2, double weight2) {
+    trainSize = 0.0;
+    int treeCount = 0;
+    trees.clear();
+    treeWeights.clear();
+    for (Tree tree : trees1) {
+      trees.add(tree);
+      treeWeights.incrementCount(tree, weight1);
+      trainSize += weight1;
+    }
+    treeCount += trees1.size();
+    if (trees2 != null && weight2 >= 0.0) {
+      for (Tree tree : trees2) {
+        trees.add(tree);
+        treeWeights.incrementCount(tree, weight2);
+        trainSize += weight2;
+      }
+      treeCount += trees2.size();
+    }
+    System.err.println("Found " + treeCount + 
+                       " trees with total weight " + trainSize);
+  }
+
+  public void extract(Collection<Tree> treeList) {
+    extract(treeList, 1.0, null, 0.0);
+  }
+

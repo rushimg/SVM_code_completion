@@ -1,0 +1,53 @@
+  public double[] heldOutSetSigma(final GeneralDataset<L, F> trainSet, final GeneralDataset<L, F> devSet, final Scorer<L> scorer, LineSearcher minimizer) {
+
+    featureIndex = trainSet.featureIndex;
+    labelIndex = trainSet.labelIndex;
+    //double[] resultWeights = null;
+    Timing timer = new Timing();
+
+    NegativeScorer negativeScorer = new NegativeScorer(trainSet,devSet,scorer,timer);
+
+    timer.start();
+    double bestSigma = minimizer.minimize(negativeScorer);
+    System.err.println("##best sigma: " + bestSigma);
+    setSigma(bestSigma);
+
+    return ArrayUtils.flatten(trainWeights(trainSet,negativeScorer.weights,true)); // make sure it's actually the interim weights from best sigma
+  }
+
+  class NegativeScorer implements Function<Double, Double> {
+    public double[] weights = null;
+    GeneralDataset<L, F> trainSet;
+    GeneralDataset<L, F> devSet;
+    Scorer<L> scorer;
+    Timing timer;
+
+    public NegativeScorer(GeneralDataset<L, F> trainSet, GeneralDataset<L, F> devSet, Scorer<L> scorer,Timing timer) {
+      super();
+      this.trainSet = trainSet;
+      this.devSet = devSet;
+      this.scorer = scorer;
+      this.timer = timer;
+    }
+
+    public Double apply(Double sigmaToTry) {
+      double[][] weights2D;
+      setSigma(sigmaToTry);
+
+      weights2D = trainWeights(trainSet, weights,true); //bypass.
+
+      weights = ArrayUtils.flatten(weights2D);
+
+      LinearClassifier<L, F> classifier = new LinearClassifier<L, F>(weights2D, trainSet.featureIndex, trainSet.labelIndex);
+
+      double score = scorer.score(classifier, devSet);
+      //System.out.println("score: "+score);
+      //System.out.print(".");
+      System.err.print("##sigma = "+getSigma()+" ");
+      System.err.println("-> average Score: "+ score);
+      System.err.println("##time elapsed: " + timer.stop() + " milliseconds.");
+      timer.restart();
+      return -score;
+    }
+  }
+

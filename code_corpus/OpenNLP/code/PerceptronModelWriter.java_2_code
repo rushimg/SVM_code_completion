@@ -1,0 +1,76 @@
+public abstract class PerceptronModelWriter extends AbstractModelWriter {
+    protected Context[] PARAMS;
+    protected String[] OUTCOME_LABELS;
+    protected String[] PRED_LABELS;
+    int numOutcomes;
+
+    public PerceptronModelWriter (AbstractModel model) {
+
+      Object[] data = model.getDataStructures();
+      this.numOutcomes = model.getNumOutcomes();
+      PARAMS = (Context[]) data[0];
+      IndexHashTable<String> pmap = (IndexHashTable<String>) data[1];
+      OUTCOME_LABELS = (String[])data[2];
+
+      PRED_LABELS = new String[pmap.size()];
+      pmap.toArray(PRED_LABELS);
+    }
+
+    protected ComparablePredicate[] sortValues () {
+      ComparablePredicate[] sortPreds;
+      ComparablePredicate[] tmpPreds = new ComparablePredicate[PARAMS.length];
+      int[] tmpOutcomes = new int[numOutcomes];
+      double[] tmpParams = new double[numOutcomes];
+      int numPreds = 0;
+      //remove parameters with 0 weight and predicates with no parameters
+      for (int pid=0; pid<PARAMS.length; pid++) {
+        int numParams = 0;
+        double[] predParams = PARAMS[pid].getParameters();
+        int[] outcomePattern = PARAMS[pid].getOutcomes();
+        for (int pi=0;pi<predParams.length;pi++) {
+          if (predParams[pi] != 0d) {
+            tmpOutcomes[numParams]=outcomePattern[pi];
+            tmpParams[numParams]=predParams[pi];
+            numParams++;
+          }
+        }
+
+        int[] activeOutcomes = new int[numParams];
+        double[] activeParams = new double[numParams];
+
+        for (int pi=0;pi<numParams;pi++) {
+          activeOutcomes[pi] = tmpOutcomes[pi];
+          activeParams[pi] = tmpParams[pi];
+        }
+        if (numParams != 0) {
+          tmpPreds[numPreds] = new ComparablePredicate(PRED_LABELS[pid],activeOutcomes,activeParams);
+          numPreds++;
+        }
+      }
+      System.err.println("Compressed "+PARAMS.length+" parameters to "+numPreds);
+      sortPreds = new ComparablePredicate[numPreds];
+      System.arraycopy(tmpPreds, 0, sortPreds, 0, numPreds);
+      Arrays.sort(sortPreds);
+      return sortPreds;
+    }
+
+
+    protected List<List<ComparablePredicate>> computeOutcomePatterns(ComparablePredicate[] sorted) {
+      ComparablePredicate cp = sorted[0];
+      List<List<ComparablePredicate>> outcomePatterns = new ArrayList<List<ComparablePredicate>>();
+      List<ComparablePredicate> newGroup = new ArrayList<ComparablePredicate>();
+      for (ComparablePredicate predicate : sorted) {
+        if (cp.compareTo(predicate) == 0) {
+          newGroup.add(predicate);
+        } else {
+          cp = predicate;
+          outcomePatterns.add(newGroup);
+          newGroup = new ArrayList<ComparablePredicate>();
+          newGroup.add(predicate);
+        }
+      }
+      outcomePatterns.add(newGroup);
+      System.err.println(outcomePatterns.size()+" outcome patterns");
+      return outcomePatterns;
+    }
+

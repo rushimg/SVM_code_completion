@@ -1,0 +1,22 @@
+  public Map<Integer, CorefChain> coref(Document document) throws Exception {
+
+    // Multi-pass sieve coreference resolution
+    for (int i = 0; i < sieves.length ; i++){
+      currentSieve = i;
+      DeterministicCorefSieve sieve = sieves[i];
+      // Do coreference resolution using this pass
+      coreference(document, sieve);
+    }
+
+    // post processing (e.g., removing singletons, appositions for conll)
+    if((!Constants.USE_GOLD_MENTIONS && doPostProcessing) || replicateCoNLL) postProcessing(document);
+
+    // coref system output: CorefChain
+    Map<Integer, CorefChain> result = Generics.newHashMap();
+    for(CorefCluster c : document.corefClusters.values()) {
+      result.put(c.clusterID, new CorefChain(c, document.positions));
+    }
+
+    return result;
+  }
+

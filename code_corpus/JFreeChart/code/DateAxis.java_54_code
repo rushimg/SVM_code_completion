@@ -1,0 +1,28 @@
+    protected void selectHorizontalAutoTickUnit(Graphics2D g2,
+            Rectangle2D dataArea, RectangleEdge edge) {
+
+        long shift = 0;
+        if (this.timeline instanceof SegmentedTimeline) {
+            shift = ((SegmentedTimeline) this.timeline).getStartTime();
+        }
+        double zero = valueToJava2D(shift + 0.0, dataArea, edge);
+        double tickLabelWidth = estimateMaximumTickLabelWidth(g2,
+                getTickUnit());
+
+        // start with the current tick unit...
+        TickUnitSource tickUnits = getStandardTickUnits();
+        TickUnit unit1 = tickUnits.getCeilingTickUnit(getTickUnit());
+        double x1 = valueToJava2D(shift + unit1.getSize(), dataArea, edge);
+        double unit1Width = Math.abs(x1 - zero);
+
+        // then extrapolate...
+        DateTickUnit unit2 = (DateTickUnit) tickUnits.getCeilingTickUnit(guess);
+        double x2 = valueToJava2D(shift + unit2.getSize(), dataArea, edge);
+        double unit2Width = Math.abs(x2 - zero);
+        tickLabelWidth = estimateMaximumTickLabelWidth(g2, unit2);
+        if (tickLabelWidth > unit2Width) {
+            unit2 = (DateTickUnit) tickUnits.getLargerTickUnit(unit2);
+        }
+        setTickUnit(unit2, false, false);
+    }
+

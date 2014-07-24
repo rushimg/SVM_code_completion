@@ -1,0 +1,124 @@
+
+public class EnglishTreebankParserParams extends AbstractTreebankParserParams {
+
+  protected class EnglishSubcategoryStripper implements TreeTransformer {
+
+    protected TreeFactory tf = new LabeledScoredTreeFactory();
+
+    @Override
+    public Tree transformTree(Tree tree) {
+      Label lab = tree.label();
+      String s = lab.value();
+      String tag = null;
+      if (lab instanceof HasTag) {
+        tag = ((HasTag) lab).tag();
+      }
+      if (tree.isLeaf()) {
+        Tree leaf = tf.newLeaf(lab);
+        leaf.setScore(tree.score());
+        return leaf;
+      } else if (tree.isPhrasal()) {
+        if (englishTest.retainADVSubcategories && s.contains("-ADV")) {
+          s = tlp.basicCategory(s);
+          s += "-ADV";
+        } else if (englishTest.retainTMPSubcategories && s.contains("-TMP")) {
+          s = tlp.basicCategory(s);
+          s += "-TMP";
+        } else if (englishTest.retainNPTMPSubcategories && s.startsWith("NP-TMP")) {
+          s = "NP-TMP";
+        } else {
+          s = tlp.basicCategory(s);
+        }
+        // remove the extra NPs inserted in the splitBaseNP == Collins option
+        if (englishTrain.splitBaseNP == 2 &&
+            s.equals("NP")) {
+          Tree[] kids = tree.children();
+          if (kids.length == 1 &&
+              tlp.basicCategory(kids[0].value()).equals("NP")) {
+            // go through kidkids here so as to keep any annotation on me.
+            List<Tree> kidkids = new ArrayList<Tree>();
+            for (int cNum = 0; cNum < kids[0].children().length; cNum++) {
+              Tree child = kids[0].children()[cNum];
+              Tree newChild = transformTree(child);
+              if (newChild != null) {
+                kidkids.add(newChild);
+              }
+            }
+            CategoryWordTag myLabel = new CategoryWordTag(lab);
+            myLabel.setCategory(s);
+            return tf.newTreeNode(myLabel, kidkids);
+          }
+        }
+        // remove the extra POSSPs inserted by restructurePossP
+        if (englishTrain.splitPoss == 2 &&
+            s.equals("POSSP")) {
+          Tree[] kids = tree.children();
+          List<Tree> newkids = new ArrayList<Tree>();
+          for (int j = 0; j < kids.length - 1; j++) {
+            for (int cNum = 0; cNum < kids[j].children().length; cNum++) {
+              Tree child = kids[0].children()[cNum];
+              Tree newChild = transformTree(child);
+              if (newChild != null) {
+                newkids.add(newChild);
+              }
+            }
+          }
+          Tree finalChild = transformTree(kids[kids.length - 1]);
+          newkids.add(finalChild);
+          CategoryWordTag myLabel = new CategoryWordTag(lab);
+          myLabel.setCategory("NP");
+          return tf.newTreeNode(myLabel, newkids);
+        }
+      } else { // preterminal
+        s = tlp.basicCategory(s);
+        if (tag != null) {
+          tag = tlp.basicCategory(tag);
+        }
+      }
+      List<Tree> children = new ArrayList<Tree>();
+      for (int cNum = 0; cNum < tree.numChildren(); cNum++) {
+        Tree child = tree.getChild(cNum);
+        Tree newChild = transformTree(child);
+        if (newChild != null) {
+          children.add(newChild);
+        }
+      }
+      if (children.isEmpty()) {
+        return null;
+      }
+      CategoryWordTag newLabel = new CategoryWordTag(lab);
+      newLabel.setCategory(s);
+      if (tag != null) {
+        newLabel.setTag(tag);
+      }
+      Tree node = tf.newTreeNode(newLabel, children);
+      node.setScore(tree.score());
+      return node;
+    }
+
+  } // end class EnglishSubcategoryStripper
+
+
+  public EnglishTreebankParserParams() {
+    super(new PennTreebankLanguagePack());
+    headFinder = new ModCollinsHeadFinder(tlp);
+  }
+
+
+  private HeadFinder headFinder;
+
+  private EnglishTrain englishTrain = new EnglishTrain();
+
+  private EnglishTest englishTest = new EnglishTest();
+
+  @Override
+  public HeadFinder headFinder() {
+    return headFinder;
+  }
+
+  @Override
+  public HeadFinder typedDependencyHeadFinder() {
+    return new SemanticHeadFinder(treebankLanguagePack(), !englishTest.makeCopulaHead);
+  }
+
+

@@ -1,0 +1,100 @@
+    private void dfsB(
+        V vertex,
+        Set<V> db,
+        Visited visited,
+        Region affectedRegion)
+    {
+        // Assumption: vertex is in the AR and so we will get a topoIndex from
+        // the map
+        int topoIndex = topoOrderMap.getTopologicalIndex(vertex);
+        visited.setVisited(topoIndex);
+
+        db.add(vertex);
+
+        for (E inEdge : incomingEdgesOf(vertex)) {
+            V previousVertex = getEdgeSource(inEdge);
+            Integer previousVertexTopoIndex =
+                topoOrderMap.getTopologicalIndex(previousVertex);
+
+            // note, order of checks is important as we need to make sure the
+            // vertex is in the affected region before we check its visited
+            // status (otherwise we will be causing an
+            // ArrayIndexOutOfBoundsException).
+            if (affectedRegion.isIn(previousVertexTopoIndex)
+                && !visited.getVisited(previousVertexTopoIndex))
+            {
+                // if prevousVertexTopoIndex != null, the vertex is in the
+                // Affected Region according to our topoIndexMap
+
+                dfsB(previousVertex, db, visited, affectedRegion);
+            }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void reorder(Set<V> df, Set<V> db, Visited visited)
+    {
+        List<V> topoDf = new ArrayList<V>(df);
+        List<V> topoDb = new ArrayList<V>(db);
+
+        Collections.sort(topoDf, topoComparator);
+        Collections.sort(topoDb, topoComparator);
+
+        // merge these suckers together in topo order
+
+        SortedSet<Integer> availableTopoIndices = new TreeSet<Integer>();
+
+        // we have to cast to the generic type, can't do "new V[size]" in java
+        // 5;
+        V [] bigL = (V []) new Object[df.size() + db.size()];
+        int lIndex = 0; // this index is used for the sole purpose of pushing
+                        // into
+
+        // the correct index of bigL
+
+        // assume (for now) that we are resetting visited
+        boolean clearVisited = true;
+
+        for (V vertex : topoDb) {
+            Integer topoIndex = topoOrderMap.getTopologicalIndex(vertex);
+
+            // add the available indices to the set
+            availableTopoIndices.add(topoIndex);
+
+            bigL[lIndex++] = vertex;
+
+            if (clearVisited) { // reset visited status if supported
+                try {
+                    visited.clearVisited(topoIndex);
+                } catch (UnsupportedOperationException e) {
+                    clearVisited = false;
+                }
+            }
+        }
+
+        for (V vertex : topoDf) {
+            Integer topoIndex = topoOrderMap.getTopologicalIndex(vertex);
+
+            // add the available indices to the set
+            availableTopoIndices.add(topoIndex);
+            bigL[lIndex++] = vertex;
+
+            if (clearVisited) { // reset visited status if supported
+                try {
+                    visited.clearVisited(topoIndex);
+                } catch (UnsupportedOperationException e) {
+                    clearVisited = false;
+                }
+            }
+        }
+
+        lIndex = 0; // reusing lIndex
+        for (Integer topoIndex : availableTopoIndices) {
+            // assign the indexes to the elements of bigL in order
+            V vertex = bigL[lIndex++]; // note the post-increment
+            topoOrderMap.putVertex(topoIndex, vertex);
+        }
+    }
+
+    //~ Inner Interfaces -------------------------------------------------------
+

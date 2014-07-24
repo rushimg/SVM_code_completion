@@ -1,0 +1,45 @@
+    private void dfsF(
+        V vertex,
+        Set<V> df,
+        Visited visited,
+        Region affectedRegion)
+        throws CycleFoundException
+    {
+        int topoIndex = topoOrderMap.getTopologicalIndex(vertex);
+
+        // Assumption: vertex is in the AR and so it will be in visited
+        visited.setVisited(topoIndex);
+
+        df.add(vertex);
+
+        for (E outEdge : outgoingEdgesOf(vertex)) {
+            V nextVertex = getEdgeTarget(outEdge);
+            Integer nextVertexTopoIndex =
+                topoOrderMap.getTopologicalIndex(nextVertex);
+
+            if (nextVertexTopoIndex.intValue() == affectedRegion.finish) {
+                // reset visited
+                try {
+                    for (V visitedVertex : df) {
+                        visited.clearVisited(
+                            topoOrderMap.getTopologicalIndex(visitedVertex));
+                    }
+                } catch (UnsupportedOperationException e) {
+                    // okay, fine, some implementations (ones that automatically
+                    // clear themselves out) don't work this way
+                }
+                throw new CycleFoundException();
+            }
+
+            // note, order of checks is important as we need to make sure the
+            // vertex is in the affected region before we check its visited
+            // status (otherwise we will be causing an
+            // ArrayIndexOutOfBoundsException).
+            if (affectedRegion.isIn(nextVertexTopoIndex)
+                && !visited.getVisited(nextVertexTopoIndex))
+            {
+                dfsF(nextVertex, df, visited, affectedRegion); // recurse
+            }
+        }
+    }
+

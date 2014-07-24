@@ -1,0 +1,24 @@
+  public static List<CoreLabel> wordsToCoreLabels(List<Word> words) {
+    List<CoreLabel> labels = new ArrayList<CoreLabel>();
+    for(Word word: words){
+      CoreLabel l = new CoreLabel();
+      l.setWord(word.word());
+      l.set(CoreAnnotations.TextAnnotation.class, word.word());
+      l.setBeginPosition(word.beginPosition());
+      l.setEndPosition(word.endPosition());
+      labels.add(l);
+    }
+    return labels;
+  }
+
+  public static String tokensToString(List<CoreLabel> tokens) {
+    StringBuffer os = new StringBuffer();
+    boolean first = true;
+    for(CoreLabel t: tokens){
+      if(! first) os.append(" ");
+      os.append(t.word() + "{" + t.beginPosition() + ", " + t.endPosition() + "}");
+      first = false;
+    }
+    return os.toString();
+  }
+

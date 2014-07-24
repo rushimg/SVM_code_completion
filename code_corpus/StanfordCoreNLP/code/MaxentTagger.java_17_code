@@ -1,0 +1,84 @@
+  private void simplifyLambda() {
+    double[] lambda = getLambdaSolve().lambda;
+    int[] map = new int[lambda.length];
+    int current = 0;
+    for (int index = 0; index < lambda.length; ++index) {
+      if (lambda[index] == 0.0) {
+        map[index] = -1;
+      } else {
+        map[index] = current;
+        current++;
+      }
+    }
+
+    double[] condensedLambda = new double[current];
+    for (int i = 0; i < lambda.length; ++i) {
+      if (map[i] != -1) {
+        condensedLambda[map[i]] = lambda[i];
+      }
+    }
+
+    for (Map<String, int[]> featureMap : fAssociations) {
+      for (Map.Entry<String, int[]> entry : featureMap.entrySet()) {
+        int[] fAssociations = entry.getValue();
+        for (int index = 0; index < ySize; ++index) {
+          if (fAssociations[index] >= 0) {
+            fAssociations[index] = map[fAssociations[index]];
+          }
+        }
+      }
+    }
+
+    prob = new LambdaSolveTagger(condensedLambda);
+  }
+
+  protected void saveModel(String filename) {
+    try {
+      DataOutputStream file = IOUtils.getDataOutputStream(filename);
+      saveModel(file);
+      file.close();
+    } catch (IOException ioe) {
+      System.err.println("Error saving tagger to file " + filename);
+      throw new RuntimeIOException(ioe);
+    }
+  }
+
+  protected void saveModel(DataOutputStream file) throws IOException {
+      config.saveConfig(file);
+      file.writeInt(xSize);
+      file.writeInt(ySize);
+      dict.save(file);
+      tags.save(file, tagTokens);
+
+      saveExtractors(file);
+
+      int sizeAssoc = 0;
+      for (Map<String, int[]> fValueAssociations : fAssociations) {
+        for (int[] fTagAssociations : fValueAssociations.values()) {
+          for (int association : fTagAssociations) {
+            if (association >= 0) {
+              ++sizeAssoc;
+            }
+          }
+        }
+      }
+      file.writeInt(sizeAssoc);
+      for (int i = 0; i < fAssociations.size(); ++i) {
+        Map<String, int[]> fValueAssociations = fAssociations.get(i);
+        for (Map.Entry<String, int[]> item : fValueAssociations.entrySet()) {
+          String featureValue = item.getKey();
+          int[] fTagAssociations = item.getValue();
+          for (int j = 0; j < fTagAssociations.length; ++j) {
+            int association = fTagAssociations[j];
+            if (association >= 0) {
+              file.writeInt(association);
+              FeatureKey fk = new FeatureKey(i, featureValue, tags.getTag(j));
+              fk.save(file);
+            }
+          }
+        }
+      }
+
+      LambdaSolve.save_lambdas(file, prob.lambda);
+  }
+

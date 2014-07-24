@@ -1,0 +1,38 @@
+  public String topFeaturesToString(List<Triple<F,L,Double>> topFeatures)
+  {
+    // find longest key length (for pretty printing) with a limit
+    int maxLeng = 0;
+    for (Triple<F,L,Double> t : topFeatures) {
+      String key = "(" + t.first + "," + t.second + ")";
+      int leng = key.length();
+      if (leng > maxLeng) {
+        maxLeng = leng;
+      }
+    }
+    maxLeng = Math.min(64, maxLeng);
+
+    // set up pretty printing of weights
+    NumberFormat nf = NumberFormat.getNumberInstance();
+    nf.setMinimumFractionDigits(4);
+    nf.setMaximumFractionDigits(4);
+    if (nf instanceof DecimalFormat) {
+      ((DecimalFormat) nf).setPositivePrefix(" ");
+    }
+
+    //print high weight features to a String
+    StringBuilder sb = new StringBuilder();
+    for (Triple<F,L,Double> t : topFeatures) {
+      String key = "(" + t.first + "," + t.second + ")";
+      sb.append(StringUtils.pad(key, maxLeng));
+      sb.append(" ");
+      double cnt = t.third();
+      if (Double.isInfinite(cnt)) {
+        sb.append(cnt);
+      } else {
+        sb.append(nf.format(cnt));
+      }
+      sb.append("\n");
+    }
+    return sb.toString();
+  }
+

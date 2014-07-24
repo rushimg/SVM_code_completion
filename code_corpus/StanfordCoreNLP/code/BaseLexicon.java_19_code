@@ -1,0 +1,66 @@
+  public void printLexStats() {
+    System.out.println("BaseLexicon statistics");
+    System.out.println("unknownLevel is " + getUnknownWordModel().getUnknownLevel());
+    // System.out.println("Rules size: " + rules.size());
+    System.out.println("Sum of rulesWithWord: " + numRules());
+    System.out.println("Tags size: " + tags.size());
+    int wsize = words.size();
+    System.out.println("Words size: " + wsize);
+    // System.out.println("Unseen Sigs size: " + sigs.size() +
+    // " [number of unknown equivalence classes]");
+    System.out.println("rulesWithWord length: " + rulesWithWord.length
+                       + " [should be sum of words + unknown sigs]");
+    int[] lengths = new int[STATS_BINS];
+    ArrayList<String>[] wArr = new ArrayList[STATS_BINS];
+    for (int j = 0; j < STATS_BINS; j++) {
+      wArr[j] = new ArrayList<String>();
+    }
+    for (int i = 0; i < rulesWithWord.length; i++) {
+      int num = rulesWithWord[i].size();
+      if (num > STATS_BINS - 1) {
+        num = STATS_BINS - 1;
+      }
+      lengths[num]++;
+      if (wsize <= 20 || num >= STATS_BINS / 2) {
+        wArr[num].add(wordIndex.get(i));
+      }
+    }
+    System.out.println("Stats on how many taggings for how many words");
+    for (int j = 0; j < STATS_BINS; j++) {
+      System.out.print(j + " taggings: " + lengths[j] + " words ");
+      if (wsize <= 20 || j >= STATS_BINS / 2) {
+        System.out.print(wArr[j]);
+      }
+      System.out.println();
+    }
+    NumberFormat nf = NumberFormat.getNumberInstance();
+    nf.setMaximumFractionDigits(0);
+    System.out.println("Unseen counter: " + Counters.toString(uwModel.unSeenCounter(), nf));
+
+    if (wsize < 50 && tags.size() < 10) {
+      nf.setMaximumFractionDigits(3);
+      StringWriter sw = new StringWriter();
+      PrintWriter pw = new PrintWriter(sw);
+      pw.println("Tagging probabilities log P(word|tag)");
+      for (int t = 0; t < tags.size(); t++) {
+        pw.print('\t');
+        pw.print(tagIndex.get(t));
+      }
+      pw.println();
+      for (int w = 0; w < wsize; w++) {
+        pw.print(wordIndex.get(w));
+        pw.print('\t');
+        for (int t = 0; t < tags.size(); t++) {
+          IntTaggedWord iTW = new IntTaggedWord(w, t);
+          pw.print(nf.format(score(iTW, 1, wordIndex.get(w), null)));
+          if (t == tags.size() -1) {
+            pw.println();
+          } else
+            pw.print('\t');
+        }
+      }
+      pw.close();
+      System.out.println(sw.toString());
+    }
+  }
+

@@ -1,0 +1,39 @@
+    protected Range findRangeBounds(XYDataset dataset,
+            boolean includeInterval) {
+        if (dataset == null) {
+            return null;
+        }
+        if (getDataBoundsIncludesVisibleSeriesOnly()) {
+            List visibleSeriesKeys = new ArrayList();
+            int seriesCount = dataset.getSeriesCount();
+            for (int s = 0; s < seriesCount; s++) {
+                if (isSeriesVisible(s)) {
+                    visibleSeriesKeys.add(dataset.getSeriesKey(s));
+                }
+            }
+            // the bounds should be calculated using just the items within
+            // the current range of the x-axis...if there is one
+            Range xRange = null;
+            XYPlot p = getPlot();
+            if (p != null) {
+                ValueAxis xAxis = null;
+                int index = p.getIndexOf(this);
+                if (index >= 0) {
+                    xAxis = plot.getDomainAxisForDataset(index);
+                }
+                if (xAxis != null) {
+                    xRange = xAxis.getRange();
+                }
+            }
+            if (xRange == null) {
+                xRange = new Range(Double.NEGATIVE_INFINITY,
+                        Double.POSITIVE_INFINITY);
+            }
+            return DatasetUtilities.findRangeBounds(dataset,
+                    visibleSeriesKeys, xRange, includeInterval);
+        }
+        else {
+            return DatasetUtilities.findRangeBounds(dataset, includeInterval);
+        }
+    }
+

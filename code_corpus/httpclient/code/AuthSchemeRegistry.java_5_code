@@ -1,0 +1,12 @@
+    public AuthScheme getAuthScheme(final String name, final HttpParams params)
+        throws IllegalStateException {
+
+        Args.notNull(name, "Name");
+        final AuthSchemeFactory factory = registeredSchemes.get(name.toLowerCase(Locale.ENGLISH));
+        if (factory != null) {
+            return factory.newInstance(params);
+        } else {
+            throw new IllegalStateException("Unsupported authentication scheme: " + name);
+        }
+    }
+

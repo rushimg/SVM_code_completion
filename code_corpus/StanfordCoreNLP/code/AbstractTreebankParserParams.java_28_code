@@ -1,0 +1,119 @@
+  public static <E> Collection<E> dependencyObjectify(Tree t, HeadFinder hf, TreeTransformer collinizer, DependencyTyper<E> typer) {
+    Collection<E> deps = new ArrayList<E>();
+    Tree t1 = collinizer.transformTree(t);
+    if(t1==null)
+      return deps;
+    dependencyObjectifyHelper(t1, t1, hf, deps, typer);
+    return deps;
+  }
+
+  private static <E> void dependencyObjectifyHelper(Tree t, Tree root, HeadFinder hf, Collection<E> c, DependencyTyper<E> typer) {
+    if (t.isLeaf() || t.isPreTerminal()) {
+      return;
+    }
+    Tree headDtr = hf.determineHead(t);
+    for (Tree child : t.children()) {
+      dependencyObjectifyHelper(child, root, hf, c, typer);
+      if (child != headDtr) {
+        c.add(typer.makeDependency(headDtr, child, root));
+      }
+    }
+  }
+
+
+  private static class UntypedDependencyTyper implements DependencyTyper<List<String>> {
+    HeadFinder hf;
+
+    public UntypedDependencyTyper(HeadFinder hf) {
+      this.hf = hf;
+    }
+
+    @Override
+    public List<String> makeDependency(Tree head, Tree dep, Tree root) {
+      List<String> result = new ArrayList<String>(3);
+      Tree headTerm = head.headTerminal(hf);
+      Tree depTerm = dep.headTerminal(hf);
+      boolean headLeft = root.leftCharEdge(headTerm) < root.leftCharEdge(depTerm);
+      result.add(headTerm.value());
+      result.add(depTerm.value());
+      if(headLeft)
+        result.add(leftHeaded);
+      else
+        result.add(rightHeaded);
+      return result;
+    }
+
+  }
+
+  private static class UnorderedUntypedDependencyTyper implements DependencyTyper<List<String>> {
+    HeadFinder hf;
+
+    public UnorderedUntypedDependencyTyper(HeadFinder hf) {
+      this.hf = hf;
+    }
+
+    @Override
+    public List<String> makeDependency(Tree head, Tree dep, Tree root) {
+      List<String> result = new ArrayList<String>(3);
+      Tree headTerm = head.headTerminal(hf);
+      Tree depTerm = dep.headTerminal(hf);
+      result.add(headTerm.value());
+      result.add(depTerm.value());
+      return result;
+    }
+
+  }
+
+  private static final String leftHeaded = "leftHeaded";
+  private static final String rightHeaded = "rightHeaded";
+
+  private static class TypedDependencyTyper implements DependencyTyper<List<String>> {
+    HeadFinder hf;
+
+    public TypedDependencyTyper(HeadFinder hf) {
+      this.hf = hf;
+    }
+
+
+    @Override
+    public List<String> makeDependency(Tree head, Tree dep, Tree root) {
+      List<String> result = new ArrayList<String>(6);
+      Tree headTerm = head.headTerminal(hf);
+      Tree depTerm = dep.headTerminal(hf);
+      boolean headLeft = root.leftCharEdge(headTerm) < root.leftCharEdge(depTerm);
+      result.add(headTerm.value());
+      result.add(depTerm.value());
+      result.add(head.parent(root).value());
+      result.add(head.value());
+      result.add(dep.value());
+      if(headLeft)
+        result.add(leftHeaded);
+      else
+        result.add(rightHeaded);
+      return result;
+    }
+
+  }
+
+    private static class UnorderedTypedDependencyTyper implements DependencyTyper<List<String>> {
+    HeadFinder hf;
+
+    public UnorderedTypedDependencyTyper(HeadFinder hf) {
+      this.hf = hf;
+    }
+
+    @Override
+    public List<String> makeDependency(Tree head, Tree dep, Tree root) {
+      List<String> result = new ArrayList<String>(6);
+      Tree headTerm = head.headTerminal(hf);
+      Tree depTerm = dep.headTerminal(hf);
+      result.add(headTerm.value());
+      result.add(depTerm.value());
+      result.add(head.parent(root).value());
+      result.add(head.value());
+      result.add(dep.value());
+      return result;
+    }
+
+  }
+

@@ -1,0 +1,17 @@
+
+  @SuppressWarnings({"unchecked"})
+  public Tree deepCopy(TreeFactory tf, LabelFactory lf) {
+    Label label = lf.newLabel(label());
+    if (isLeaf()) {
+      return tf.newLeaf(label);
+    }
+    Tree[] kids = children();
+    // NB: The below list may not be of type Tree but TreeGraphNode, so we leave it untyped
+    List newKids = new ArrayList(kids.length);
+    for (Tree kid : kids) {
+      newKids.add(kid.deepCopy(tf, lf));
+    }
+    return tf.newTreeNode(label, newKids);
+  }
+
+

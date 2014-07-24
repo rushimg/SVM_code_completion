@@ -1,0 +1,22 @@
+  public void improvedIterative(int iters) {
+    int iterations = 0;
+    lambda_converged = new boolean[p.fSize];
+    int numNConverged = p.fSize;
+    //double lOld=logLikelihood();
+    do {
+      iterations++;
+      for (int i = 0; i < lambda.length; i++) {
+        if (lambda_converged[i]) {
+          continue;
+        }
+        MutableDouble deltaI = new MutableDouble();
+        boolean fl = iterate(i, eps, deltaI);
+        if (fl) {
+          updateConds(i, deltaI.doubleValue());
+          // checkCorrectness();
+        } else {
+          //lambda_converged[i]=true;
+          numNConverged--;
+        }
+      }
+

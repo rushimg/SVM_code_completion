@@ -1,0 +1,24 @@
+  public static String resolveVars(String str, Map props) {
+    if (str == null)
+      return null;
+    // ${VAR_NAME} or $VAR_NAME
+    Pattern p = Pattern.compile("\\$\\{(\\w+)\\}");
+    Matcher m = p.matcher(str);
+    StringBuffer sb = new StringBuffer();
+    while (m.find()) {
+      String varName = null == m.group(1) ? m.group(2) : m.group(1);
+      String vrValue;
+      //either in the props file
+      if (props.containsKey(varName)) {
+        vrValue = ((String) props.get(varName));
+      } else {
+        //or as the environment variable
+        vrValue = System.getenv(varName);
+      }
+      m.appendReplacement(sb, null == vrValue ? "" : vrValue);
+    }
+    m.appendTail(sb);
+    return sb.toString();
+  }
+
+

@@ -1,0 +1,39 @@
+  public ChunkerME(ChunkerModel model) {
+    this(model, DEFAULT_BEAM_SIZE);
+  }
+
+  @Deprecated
+  public List<String> chunk(List<String> toks, List<String> tags) {
+    bestSequence =
+        model.bestSequence(toks.toArray(new String[toks.size()]), new Object[] { tags.toArray(new String[tags.size()]) },
+            contextGenerator, sequenceValidator);
+    return bestSequence.getOutcomes();
+  }
+
+  public String[] chunk(String[] toks, String[] tags) {
+    bestSequence = model.bestSequence(toks, new Object[] {tags}, contextGenerator, sequenceValidator);
+    List<String> c = bestSequence.getOutcomes();
+    return c.toArray(new String[c.size()]);
+  }
+
+  public Span[] chunkAsSpans(String[] toks, String[] tags) {
+    String[] preds = chunk(toks, tags);
+    return ChunkSample.phrasesAsSpanList(toks, tags, preds);
+  }
+
+  @Deprecated
+  public Sequence[] topKSequences(List<String> sentence, List<String> tags) {
+    return topKSequences(sentence.toArray(new String[sentence.size()]),
+        tags.toArray(new String[tags.size()]));
+  }
+
+  public Sequence[] topKSequences(String[] sentence, String[] tags) {
+    return model.bestSequences(DEFAULT_BEAM_SIZE, sentence,
+        new Object[] { tags }, contextGenerator, sequenceValidator);
+  }
+
+  public Sequence[] topKSequences(String[] sentence, String[] tags, double minSequenceScore) {
+    return model.bestSequences(DEFAULT_BEAM_SIZE, sentence, new Object[] { tags }, minSequenceScore,
+        contextGenerator, sequenceValidator);
+  }
+

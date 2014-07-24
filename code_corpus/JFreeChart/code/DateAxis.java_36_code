@@ -1,0 +1,17 @@
+    public void setMaximumDate(Date maximumDate) {
+        if (maximumDate == null) {
+            throw new IllegalArgumentException("Null 'maximumDate' argument.");
+        }
+        // check the new maximum date relative to the current minimum date
+        Date minDate = getMinimumDate();
+        long minMillis = minDate.getTime();
+        long newMaxMillis = maximumDate.getTime();
+        if (minMillis >= newMaxMillis) {
+            Date oldMax = getMaximumDate();
+            long length = oldMax.getTime() - minMillis;
+            minDate = new Date(newMaxMillis - length);
+        }
+        setRange(new DateRange(minDate, maximumDate), true, false);
+        notifyListeners(new AxisChangeEvent(this));
+    }
+

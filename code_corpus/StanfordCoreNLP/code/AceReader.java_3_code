@@ -1,0 +1,92 @@
+  @Override
+  public Annotation read(String path) throws IOException, SAXException, ParserConfigurationException {
+    List<CoreMap> allSentences = new ArrayList<CoreMap>();
+    File basePath = new File(path);
+    assert basePath.exists();
+    Annotation corpus = new Annotation("");
+
+    if (basePath.isDirectory()) {
+      for (File aceFile : IOUtils.iterFilesRecursive(basePath, ".apf.xml")) {
+        if (aceFile.getName().endsWith(".UPC1.apf.xml")) {
+          continue;
+        }
+        allSentences.addAll(readDocument(aceFile, corpus));
+      }
+    } else {
+      // in case it's a file
+      allSentences.addAll(readDocument(basePath, corpus));
+    }
+
+    AnnotationUtils.addSentences(corpus, allSentences);
+
+    // quick stats
+    if (VERBOSE) {
+      printCounter(entityCounts, "entity mention");
+      printCounter(relationCounts, "relation mention");
+      printCounter(eventCounts, "event mention");
+    }
+
+
+    for(CoreMap sent: allSentences){
+      // check for entity mentions of the same type that are adjacent
+      countAdjacentMentions(sent);
+      // count relations between two proper nouns
+      countNameRelations(sent);
+      // count types of mentions
+      countMentionTypes(sent);
+    }
+    if (VERBOSE) {
+      printCounter(adjacentEntityMentions, "adjacent entity mention");
+      printCounter(nameRelationCounts, "name relation mention");
+      printCounter(mentionTypeCounts, "mention type counts");
+    }
+
+    return corpus;
+  }
+
+  private void countMentionTypes(CoreMap sent) {
+    List<EntityMention> mentions = sent.get(MachineReadingAnnotations.EntityMentionsAnnotation.class);
+    if(mentions != null){
+      for(EntityMention m: mentions){
+        mentionTypeCounts.incrementCount(m.getMentionType());
+      }
+    }
+  }
+
+  private void countNameRelations(CoreMap sent) {
+    List<RelationMention> mentions = sent.get(MachineReadingAnnotations.RelationMentionsAnnotation.class);
+    if(mentions != null){
+      for(RelationMention m: mentions) {
+        List<EntityMention> args = m.getEntityMentionArgs();
+        if(args.size() == 2 && args.get(0).getMentionType().equals("NAM") && args.get(1).getMentionType().equals("NAM")){
+          nameRelationCounts.incrementCount(m.getType() + "." + m.getSubType());
+        }
+      }
+    }
+  }
+
+  private void countAdjacentMentions(CoreMap sent) {
+    List<EntityMention> mentions = sent.get(MachineReadingAnnotations.EntityMentionsAnnotation.class);
+    if(mentions != null){
+      for(EntityMention m1: mentions){
+        for(EntityMention m2: mentions){
+          if(m1 == m2) continue;
+          if(m1.getHeadTokenEnd() == m2.getHeadTokenStart() && m1.getType().equals(m2.getType())){
+            adjacentEntityMentions.incrementCount(m1.getType());
+          }
+        }
+      }
+    }
+  }
+
+  // todo: Change to use a counters print method (get sorting for free!)
+  private void printCounter(Counter<String> c, String h) {
+    StringBuilder b = new StringBuilder();
+    b.append(h).append(" counts:\n");
+    Set<String> keys = c.keySet();
+    for(String k: keys){
+      b.append("\t").append(k).append(": ").append(c.getCount(k)).append("\n");
+    }
+    logger.info(b.toString());
+  }
+

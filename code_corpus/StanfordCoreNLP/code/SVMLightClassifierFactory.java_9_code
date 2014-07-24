@@ -1,0 +1,52 @@
+  private static Pair<Double, ClassicCounter<Integer>> readModel(File modelFile, boolean multiclass) {
+    int modelLineCount = 0;
+    try {
+
+      int numLinesToSkip = multiclass ? 13 : 10;
+      String stopToken   = "#";
+
+      BufferedReader in = new BufferedReader(new FileReader(modelFile));
+
+      for (int i=0; i < numLinesToSkip; i++) { 
+        in.readLine();
+        modelLineCount ++;
+      }
+
+      List<Pair<Double, ClassicCounter<Integer>>> supportVectors = new ArrayList<Pair<Double, ClassicCounter<Integer>>>();
+      // Read Threshold
+      String thresholdLine = in.readLine();
+      modelLineCount ++;
+      String[] pieces = thresholdLine.split("\\s+");
+      double threshold = Double.parseDouble(pieces[0]);
+      // Read Support Vectors
+      while (in.ready()) {
+        String svLine = in.readLine();
+        modelLineCount ++;
+        pieces = svLine.split("\\s+");
+        double  alpha = Double.parseDouble(pieces[0]);
+        ClassicCounter<Integer> supportVector  = new ClassicCounter<Integer>();
+        for (int i=1; i < pieces.length; ++i) {
+          String piece = pieces[i];
+          if (piece.equals(stopToken)) break;
+          // Each in featureIndex:num class
+          String[] indexNum = piece.split(":");
+          String featureIndex = indexNum[0];
+          // mihai: we may see "qid" as indexNum[0]. just skip this piece. this is the block id useful only for reranking, which we don't do here.
+          if(! featureIndex.equals("qid")){
+            double count = Double.parseDouble(indexNum[1]);
+            supportVector.incrementCount(Integer.valueOf(featureIndex), count);
+          }
+        }
+        supportVectors.add(new Pair<Double, ClassicCounter<Integer>>(alpha, supportVector));
+      }
+
+      in.close();
+
+      return new Pair<Double, ClassicCounter<Integer>>(threshold, getWeights(supportVectors));
+    }
+    catch (Exception e) {
+      e.printStackTrace();
+      throw new RuntimeException("Error reading SVM model (line " + modelLineCount + " in file " + modelFile.getAbsolutePath() + ")");
+    }
+  }
+

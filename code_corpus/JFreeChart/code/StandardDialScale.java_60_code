@@ -1,0 +1,76 @@
+    public void draw(Graphics2D g2, DialPlot plot, Rectangle2D frame,
+            Rectangle2D view) {
+
+        Rectangle2D arcRect = DialPlot.rectangleByRadius(frame,
+                this.tickRadius, this.tickRadius);
+        Rectangle2D arcRectMajor = DialPlot.rectangleByRadius(frame,
+                this.tickRadius - this.majorTickLength,
+                this.tickRadius - this.majorTickLength);
+        Rectangle2D arcRectMinor = arcRect;
+        if (this.minorTickCount > 0 && this.minorTickLength > 0.0) {
+            arcRectMinor = DialPlot.rectangleByRadius(frame,
+                    this.tickRadius - this.minorTickLength,
+                    this.tickRadius - this.minorTickLength);
+        }
+        Rectangle2D arcRectForLabels = DialPlot.rectangleByRadius(frame,
+                this.tickRadius - this.tickLabelOffset,
+                this.tickRadius - this.tickLabelOffset);
+
+        boolean firstLabel = true;
+
+        Arc2D arc = new Arc2D.Double();
+        Line2D workingLine = new Line2D.Double();
+        for (double v = this.lowerBound; v <= this.upperBound;
+                v += this.majorTickIncrement) {
+            arc.setArc(arcRect, this.startAngle, valueToAngle(v)
+                    - this.startAngle, Arc2D.OPEN);
+            Point2D pt0 = arc.getEndPoint();
+            arc.setArc(arcRectMajor, this.startAngle, valueToAngle(v)
+                    - this.startAngle, Arc2D.OPEN);
+            Point2D pt1 = arc.getEndPoint();
+            g2.setPaint(this.majorTickPaint);
+            g2.setStroke(this.majorTickStroke);
+            workingLine.setLine(pt0, pt1);
+            g2.draw(workingLine);
+            arc.setArc(arcRectForLabels, this.startAngle, valueToAngle(v)
+                    - this.startAngle, Arc2D.OPEN);
+            Point2D pt2 = arc.getEndPoint();
+
+            if (this.tickLabelsVisible) {
+                if (!firstLabel || this.firstTickLabelVisible) {
+                    g2.setFont(this.tickLabelFont);
+                    g2.setPaint(this.tickLabelPaint);
+                    TextUtilities.drawAlignedString(
+                            this.tickLabelFormatter.format(v), g2,
+                            (float) pt2.getX(), (float) pt2.getY(),
+                            TextAnchor.CENTER);
+                }
+            }
+            firstLabel = false;
+
+            // now do the minor tick marks
+            if (this.minorTickCount > 0 && this.minorTickLength > 0.0) {
+                double minorTickIncrement = this.majorTickIncrement
+                        / (this.minorTickCount + 1);
+                for (int i = 0; i < this.minorTickCount; i++) {
+                    if (vv >= this.upperBound) {
+                        break;
+                    }
+                    double angle = valueToAngle(vv);
+
+                    arc.setArc(arcRect, this.startAngle, angle
+                            - this.startAngle, Arc2D.OPEN);
+                    pt0 = arc.getEndPoint();
+                    arc.setArc(arcRectMinor, this.startAngle, angle
+                            - this.startAngle, Arc2D.OPEN);
+                    Point2D pt3 = arc.getEndPoint();
+                    g2.setStroke(this.minorTickStroke);
+                    g2.setPaint(this.minorTickPaint);
+                    workingLine.setLine(pt0, pt3);
+                    g2.draw(workingLine);
+                }
+            }
+
+        }
+    }
+

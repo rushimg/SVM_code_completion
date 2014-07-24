@@ -1,0 +1,57 @@
+public class TestSentence implements SequenceModel {
+
+  protected final boolean VERBOSE;
+  protected static final String naTag = "NA";
+  private static final String[] naTagArr = { naTag };
+  protected static final boolean DBG = false;
+  protected static final int kBestSize = 1;
+
+  protected final String tagSeparator;
+  protected final String encoding;
+  protected final PairsHolder pairs = new PairsHolder();
+  protected List<String> sent;
+  protected List<String> originalTags;
+  // origWords is only set when run with a list of HasWords; when run
+  // with a list of strings, this will be null
+  protected List<HasWord> origWords;
+  protected int size; // TODO this always has the value of sent.size(). Remove it? [cdm 2008]
+  // protected double[][][] probabilities;
+  protected String[] correctTags;
+  protected String[] finalTags;
+  ArrayList<TaggedWord> result;
+  int numRight;
+  int numWrong;
+  int numUnknown;
+  int numWrongUnknown;
+  private int endSizePairs; // = 0;
+
+  private volatile History history;
+  protected volatile Map<String,double[]> localScores = Generics.newHashMap();
+  protected volatile double[][] localContextScores;
+
+  protected final MaxentTagger maxentTagger;
+
+  public TestSentence(MaxentTagger maxentTagger) {
+    assert(maxentTagger != null);
+    assert(maxentTagger.getLambdaSolve() != null);
+    this.maxentTagger = maxentTagger;
+    if (maxentTagger.config != null) {
+      tagSeparator = maxentTagger.config.getTagSeparator();
+      encoding = maxentTagger.config.getEncoding();
+      VERBOSE = maxentTagger.config.getVerbose();
+    } else {
+      tagSeparator = TaggerConfig.getDefaultTagSeparator();
+      encoding = "utf-8";
+      VERBOSE = false;
+    }
+    history = new History(pairs, maxentTagger.extractors);
+  }
+
+  public void setCorrectTags(List<? extends HasTag> sentence) {
+    int len = sentence.size();
+    correctTags = new String[len];
+    for (int i = 0; i < len; i++) {
+      correctTags[i] = sentence.get(i).tag();
+    }
+  }
+

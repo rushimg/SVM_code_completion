@@ -1,0 +1,35 @@
+  public Cache(int size) {
+    map = new HashMap(size);
+    wrappers = new ObjectWrapper[size];
+    this.size=size;
+    Object o = new Object();
+    first = new DoubleLinkedListElement(null, null, o);
+    map.put(o, new ObjectWrapper(null, first));
+    wrappers[0] = new ObjectWrapper(null, first);
+
+    DoubleLinkedListElement e = first;
+    for(int i=1; i<size; i++) {
+      o = new Object();
+      e = new DoubleLinkedListElement(e, null, o);
+      wrappers[i] = new ObjectWrapper(null, e);
+      map.put(o, wrappers[i]);
+      e.prev.next = e;
+    }
+    last = e;
+  }
+
+  public void clear() {
+    map.clear();
+    DoubleLinkedListElement e = first;
+    for (int oi=0;oi<size;oi++) {
+      wrappers[oi].object=null;
+      Object o = new Object();
+      map.put(o,wrappers[oi]);
+      e.object = o;
+      e = e.next;
+    }
+  }
+
+  public Object put(Object key, Object value) {
+    ObjectWrapper o = (ObjectWrapper) map.get(key);
+    if (o != null) {

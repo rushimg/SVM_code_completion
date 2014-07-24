@@ -1,0 +1,19 @@
+    public Object clone() throws CloneNotSupportedException {
+        MultipleXYSeriesLabelGenerator clone
+                = (MultipleXYSeriesLabelGenerator) super.clone();
+        clone.seriesLabelLists = new HashMap();
+        Set keys = this.seriesLabelLists.keySet();
+        Iterator iterator = keys.iterator();
+        while (iterator.hasNext()) {
+            Object key = iterator.next();
+            Object entry = this.seriesLabelLists.get(key);
+            Object toAdd = entry;
+            if (entry instanceof PublicCloneable) {
+                PublicCloneable pc = (PublicCloneable) entry;
+                toAdd = pc.clone();
+            }
+            clone.seriesLabelLists.put(key, toAdd);
+        }
+        return clone;
+    }
+

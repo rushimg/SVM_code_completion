@@ -1,0 +1,36 @@
+public class Ssurgeon {
+  private static final boolean VERBOSE = false;
+
+  // singleton, to ensure all use the same resources
+  private static Ssurgeon instance = null;
+
+  private Ssurgeon() {}
+
+  public static Ssurgeon inst() {
+    synchronized(Ssurgeon.class) {
+      if (instance == null)
+        instance = new Ssurgeon();
+    }
+    return instance;
+  }
+
+  // Logging to file facilities.
+  // The prefix is used to append stuff in front of the logging messages
+  private static final Logger log = Logger.getLogger(Ssurgeon.class.getName());
+  private String logPrefix = null;
+  public void initLog(File logFilePath) throws IOException {
+    FileHandler fh = new FileHandler(logFilePath.toString(), false);
+    log.addHandler(fh);
+    log.setLevel(Level.FINE);
+    fh.setFormatter(new NewlineLogFormatter());
+    
+    System.out.println("Starting Ssurgeon log, at "+logFilePath.getAbsolutePath()+" date=" + DateFormat.getDateInstance(DateFormat.FULL).format(new Date()));
+    log.info("Starting Ssurgeon log, date=" + DateFormat.getDateInstance(DateFormat.FULL).format(new Date()));
+  }
+  
+  public void setLogPrefix(String logPrefix) {
+    this.logPrefix = logPrefix;
+  }
+  
+
+

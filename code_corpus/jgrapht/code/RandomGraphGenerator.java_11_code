@@ -1,0 +1,33 @@
+    public class DefaultEdgeTopologyFactory<VV, EE>
+        implements EdgeTopologyFactory<VV, EE>
+    {
+        public void createEdges(
+            Graph<VV, EE> targetGraph,
+            Map<Integer, VV> orderToVertexMap,
+            int numberOfEdges,
+            Random randomizer)
+        {
+            int iterationsCounter = 0;
+            int edgesCounter = 0;
+            while (edgesCounter < numberOfEdges) {
+                // randomizer.nextInt(int n) return a number between zero
+                // (inclusive) and n(exclusive)
+                VV startVertex =
+                    orderToVertexMap.get(
+                        Integer.valueOf(randomizer.nextInt(numOfVertexes)));
+                VV endVertex =
+                    orderToVertexMap.get(
+                        Integer.valueOf(randomizer.nextInt(numOfVertexes)));
+                try {
+                    EE resultEdge = targetGraph.addEdge(startVertex, endVertex);
+                    if (resultEdge != null) {
+                        edgesCounter++;
+                    }
+                } catch (Exception e) {
+                    // do nothing.just ignore the edge
+                }
+
+                iterationsCounter++;
+            }
+        }
+

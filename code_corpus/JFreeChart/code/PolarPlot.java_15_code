@@ -1,0 +1,20 @@
+    public void setDataset(XYDataset dataset) {
+        // if there is an existing dataset, remove the plot from the list of
+        // change listeners...
+        XYDataset existing = this.dataset;
+        if (existing != null) {
+            existing.removeChangeListener(this);
+        }
+
+        // set the new m_Dataset, and register the chart as a change listener...
+        this.dataset = dataset;
+        if (this.dataset != null) {
+            setDatasetGroup(this.dataset.getGroup());
+            this.dataset.addChangeListener(this);
+        }
+
+        // send a m_Dataset change event to self...
+        DatasetChangeEvent event = new DatasetChangeEvent(this, this.dataset);
+        datasetChanged(event);
+    }
+

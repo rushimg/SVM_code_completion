@@ -1,0 +1,248 @@
+    protected BranchState getBranchState(int bid, boolean add)
+    {
+      BranchState bs = getBranchState(bid);
+      if (add) {
+        if (bs == null) {
+          bs = new BranchState(bid);
+        } else if (bs.bid != bid) {
+          bs = new BranchState(bid, bs);
+        }
+        branchStates.put(bid, bs);
+      }
+      return bs;
+    }
+
+    protected Map<Integer,MatchedGroup> getMatchedGroups(int bid, boolean add)
+    {
+      BranchState bs = getBranchState(bid, add);
+      if (bs == null) {
+        return null;
+      }
+      if (add && bs.matchedGroups == null) {
+        bs.matchedGroups = new LinkedHashMap<Integer,MatchedGroup>();
+      }
+      return bs.matchedGroups;
+    }
+
+    protected MatchedGroup getMatchedGroup(int bid, int groupId)
+    {
+      Map<Integer,MatchedGroup> map = getMatchedGroups(bid, false);
+      if (map != null) {
+        return map.get(groupId);
+      } else {
+        return null;
+      }
+    }
+
+    protected void setGroupStart(int bid, int captureGroupId, int curPosition)
+    {
+      if (captureGroupId >= 0) {
+        Map<Integer,MatchedGroup> matchedGroups = getMatchedGroups(bid, true);
+        MatchedGroup mg = matchedGroups.get(captureGroupId);
+        if (mg != null) {
+          // This is possible if we have patterns like "( ... )+" in which case multiple nodes can match as the subgroup
+          // We will match the first occurence and use that as the subgroup  (Java uses the last match as the subgroup)
+          logger.fine("Setting matchBegin=" + curPosition + ": Capture group " + captureGroupId + " already exists: " + mg);
+        }
+        matchedGroups.put(captureGroupId, new MatchedGroup(curPosition, -1, null));
+      }
+    }
+
+    protected void setGroupEnd(int bid, int captureGroupId, int curPosition, Object value)
+    {
+      if (captureGroupId >= 0) {
+        Map<Integer,MatchedGroup> matchedGroups = getMatchedGroups(bid, true);
+        MatchedGroup mg = matchedGroups.get(captureGroupId);
+        int end = curPosition+1;
+        if (mg != null) {
+          if (mg.matchEnd == -1) {
+            matchedGroups.put(captureGroupId, new MatchedGroup(mg.matchBegin, end, value));
+          } else {
+            if (mg.matchEnd != end) {
+              logger.warning("Cannot set matchEnd=" + end + ": Capture group " + captureGroupId + " already ended: " + mg);
+            }
+          }
+        } else {
+          logger.warning("Cannot set matchEnd=" + end + ": Capture group " + captureGroupId + " is null");
+        }
+      }
+    }
+
+    protected void clearGroupStart(int bid, int captureGroupId)
+    {
+      if (captureGroupId >= 0) {
+        Map<Integer,MatchedGroup> matchedGroups = getMatchedGroups(bid, false);
+        if (matchedGroups != null) {
+          matchedGroups.remove(captureGroupId);
+        }
+      }
+    }
+
+    protected Map<Integer,Object> getMatchedResults(int bid, boolean add)
+    {
+      BranchState bs = getBranchState(bid, add);
+      if (bs == null) {
+        return null;
+      }
+      if (add && bs.matchedResults == null) {
+        bs.matchedResults = new LinkedHashMap<Integer,Object>();
+      }
+      return bs.matchedResults;
+    }
+
+    protected Object getMatchedResult(int bid, int index)
+    {
+      Map<Integer,Object> map = getMatchedResults(bid, false);
+      if (map != null) {
+        return map.get(index);
+      } else {
+        return null;
+      }
+    }
+
+    protected void setMatchedResult(int bid, int index, Object obj)
+    {
+      if (index >= 0) {
+        Map<Integer,Object> matchedResults = getMatchedResults(bid, true);
+        Object oldObj = matchedResults.get(index);
+        if (oldObj != null) {
+          logger.warning("Setting matchedResult=" + obj + ": index " + index + " already exists: " + oldObj);
+        }
+        matchedResults.put(index, obj);
+      }
+    }
+
+    protected int getBranchId(int bid, int nextBranchIndex, int nextTotal)
+    {
+      if (nextBranchIndex <= 0 || nextBranchIndex > nextTotal) {
+        throw new IllegalArgumentException("Invalid nextBranchIndex=" + nextBranchIndex + ", nextTotal=" + nextTotal);
+      }
+      if (nextTotal == 1) {
+        return bid;
+      } else {
+        Pair<Integer,Integer> p = new Pair<Integer,Integer>(bid, nextBranchIndex);
+        int i = bidIndex.indexOf(p);
+        if (i < 0) {
+          for (int j = 0; j < nextTotal; j++) {
+            bidIndex.add(new Pair<Integer,Integer>(bid, j+1));
+          }
+          i = bidIndex.indexOf(p);
+        }
+        return i;
+      }
+    }
+
+    protected Map<SequencePattern.State,Object> getMatchStateInfo(int bid, boolean add)
+    {
+      BranchState bs = getBranchState(bid, add);
+      if (bs == null) {
+        return null;
+      }
+      if (add && bs.matchStateInfo == null) {
+        bs.matchStateInfo = new LinkedHashMap<SequencePattern.State,Object>();
+      }
+      return bs.matchStateInfo;
+    }
+
+    protected Object getMatchStateInfo(int bid, SequencePattern.State node)
+    {
+      Map<SequencePattern.State,Object> matchStateInfo = getMatchStateInfo(bid, false);
+      return (matchStateInfo != null)? matchStateInfo.get(node):null;
+    }
+
+    protected void removeMatchStateInfo(int bid, SequencePattern.State node)
+    {
+      Object obj = getMatchStateInfo(bid, node);
+      if (obj != null) {
+        Map<SequencePattern.State,Object> matchStateInfo = getMatchStateInfo(bid, true);
+        matchStateInfo.remove(node);
+      }
+    }
+
+    protected void setMatchStateInfo(int bid, SequencePattern.State node, Object obj)
+    {
+      Map<SequencePattern.State,Object> matchStateInfo = getMatchStateInfo(bid, true);
+      matchStateInfo.put(node, obj);
+    }
+
+    protected void startMatchedCountInc(int bid, SequencePattern.State node)
+    {
+      Map<SequencePattern.State,Object> matchStateCount = getMatchStateInfo(bid, true);
+      Pair<Integer,Boolean> p = (Pair<Integer,Boolean>) matchStateCount.get(node);
+      if (p == null) {
+        matchStateCount.put(node, new Pair<Integer,Boolean>(1,false));
+      } else {
+        matchStateCount.put(node, new Pair<Integer,Boolean>(p.first() + 1,false));
+      }
+    }
+
+    protected int endMatchedCountInc(int bid, SequencePattern.State node)
+    {
+      Map<SequencePattern.State,Object> matchStateCount = getMatchStateInfo(bid, false);
+      if (matchStateCount == null) { return 0; }
+      matchStateCount = getMatchStateInfo(bid, true);
+      Pair<Integer,Boolean> p = (Pair<Integer,Boolean>) matchStateCount.get(node);
+      if (p != null) {
+        int v = p.first();
+        matchStateCount.put(node, new Pair<Integer,Boolean>(v,true));
+        return v;
+      } else {
+        return 0;
+      }
+    }
+
+    protected void clearMatchedCount(int bid, SequencePattern.State node)
+    {
+      removeMatchStateInfo(bid, node);
+    }
+
+    protected void setMatchedInterval(int bid, SequencePattern.State node, HasInterval<Integer> interval)
+    {
+      Map<SequencePattern.State,Object> matchStateInfo = getMatchStateInfo(bid, true);
+      HasInterval<Integer> p = (HasInterval<Integer>) matchStateInfo.get(node);
+      if (p == null) {
+        matchStateInfo.put(node, interval);
+      } else {
+        logger.warning("Interval already exists for bid=" + bid);
+      }
+    }
+
+    protected HasInterval<Integer> getMatchedInterval(int bid, SequencePattern.State node)
+    {
+      Map<SequencePattern.State,Object> matchStateInfo = getMatchStateInfo(bid, true);
+      HasInterval<Integer> p = (HasInterval<Integer>) matchStateInfo.get(node);
+      return p;
+    }
+
+    protected void addBidsToCollapse(int bid, int[] bids)
+    {
+      BranchState bs = getBranchState(bid, true);
+      bs.addBidsToCollapse(bids);
+    }
+
+    private void mergeBranchStates(BranchState bs)
+    {
+      if (bs.bidsToCollapse != null && bs.bidsToCollapse.size() > 0) {
+        for (int cbid:bs.bidsToCollapse) {
+          // Copy over the matched group info
+          if (cbid != bs.bid) {
+            BranchState cbs = getBranchState(cbid);
+            if (cbs != null) {
+              bs.addMatchedGroups(cbs.matchedGroups);
+              bs.addMatchedResults(cbs.matchedResults);
+            } else {
+              logger.finest("Unable to find state info for bid=" + cbid);
+            }
+          }
+        }
+        if (bs.collapsedBids == null) {
+          bs.collapsedBids = bs.bidsToCollapse;
+        } else {
+          bs.collapsedBids.addAll(bs.bidsToCollapse);
+        }
+        bs.bidsToCollapse = null;
+      }
+    }
+
+  }
+

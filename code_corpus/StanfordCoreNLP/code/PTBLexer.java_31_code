@@ -1,0 +1,403 @@
+  public Object next() throws java.io.IOException {
+    int zzInput;
+    int zzAction;
+
+    // cached fields:
+    int zzCurrentPosL;
+    int zzMarkedPosL;
+    int zzEndReadL = zzEndRead;
+    char [] zzBufferL = zzBuffer;
+    char [] zzCMapL = ZZ_CMAP;
+
+    int [] zzTransL = ZZ_TRANS;
+    int [] zzRowMapL = ZZ_ROWMAP;
+    int [] zzAttrL = ZZ_ATTRIBUTE;
+
+    while (true) {
+      zzMarkedPosL = zzMarkedPos;
+
+      yychar+= zzMarkedPosL-zzStartRead;
+
+      zzAction = -1;
+
+      zzCurrentPosL = zzCurrentPos = zzStartRead = zzMarkedPosL;
+  
+      zzState = ZZ_LEXSTATE[zzLexicalState];
+
+      // set up zzAction for empty match case:
+      int zzAttributes = zzAttrL[zzState];
+      if ( (zzAttributes & 1) == 1 ) {
+        zzAction = zzState;
+      }
+
+
+      zzForAction: {
+        while (true) {
+    
+          if (zzCurrentPosL < zzEndReadL)
+            zzInput = zzBufferL[zzCurrentPosL++];
+          else if (zzAtEOF) {
+            zzInput = YYEOF;
+            break zzForAction;
+          }
+          else {
+            // store back cached positions
+            zzCurrentPos  = zzCurrentPosL;
+            zzMarkedPos   = zzMarkedPosL;
+            boolean eof = zzRefill();
+            // get translated positions and possibly new buffer
+            zzCurrentPosL  = zzCurrentPos;
+            zzMarkedPosL   = zzMarkedPos;
+            zzBufferL      = zzBuffer;
+            zzEndReadL     = zzEndRead;
+            if (eof) {
+              zzInput = YYEOF;
+              break zzForAction;
+            }
+            else {
+              zzInput = zzBufferL[zzCurrentPosL++];
+            }
+          }
+          int zzNext = zzTransL[ zzRowMapL[zzState] + zzCMapL[zzInput] ];
+          if (zzNext == -1) break zzForAction;
+          zzState = zzNext;
+
+          zzAttributes = zzAttrL[zzState];
+          if ( (zzAttributes & 1) == 1 ) {
+            zzAction = zzState;
+            zzMarkedPosL = zzCurrentPosL;
+            if ( (zzAttributes & 8) == 8 ) break zzForAction;
+          }
+
+        }
+      }
+
+      // store back cached position
+      zzMarkedPos = zzMarkedPosL;
+
+      switch (zzAction < 0 ? zzAction : ZZ_ACTION[zzAction]) {
+        case 1: 
+          { String str = yytext();
+          int first = str.charAt(0);
+          String msg = String.format("Untokenizable: %s (U+%s, decimal: %s)", yytext(), Integer.toHexString(first).toUpperCase(), Integer.toString(first));
+          switch (untokenizable) {
+            case NONE_DELETE:
+              if (invertible) {
+                prevWordAfter.append(str);
+              }
+              break;
+            case FIRST_DELETE:
+              if (invertible) {
+                prevWordAfter.append(str);
+              }
+              if ( ! this.seenUntokenizableCharacter) {
+                LOGGER.warning(msg);
+                this.seenUntokenizableCharacter = true;
+              }
+              break;
+            case ALL_DELETE:
+              if (invertible) {
+                prevWordAfter.append(str);
+              }
+              LOGGER.warning(msg);
+              this.seenUntokenizableCharacter = true;
+              break;
+            case NONE_KEEP:
+              return getNext();
+            case FIRST_KEEP:
+              if ( ! this.seenUntokenizableCharacter) {
+                LOGGER.warning(msg);
+                this.seenUntokenizableCharacter = true;
+              }
+              return getNext();
+            case ALL_KEEP:
+              LOGGER.warning(msg);
+              this.seenUntokenizableCharacter = true;
+              return getNext();
+          }
+          }
+        case 55: break;
+        case 2: 
+          { return getNext("<", yytext());
+          }
+        case 56: break;
+        case 3: 
+          { return getNext();
+          }
+        case 57: break;
+        case 4: 
+          { if (yylength() >= 3 && yylength() <= 4 && ptb3Dashes) {
+                    return getNext(ptbmdash, yytext());
+                  } else {
+                    return getNext();
+                  }
+          }
+        case 58: break;
+        case 5: 
+          { if (tokenizeNLs) {
+                      return getNext(NEWLINE_TOKEN, yytext()); // js: for tokenizing carriage returns
+                  } else if (invertible) {
+                      prevWordAfter.append(yytext());
+                  }
+          }
+        case 59: break;
+        case 6: 
+          { final String origTxt = yytext();
+                          String tmp = removeSoftHyphens(origTxt);
+                          if (americanize) {
+                            tmp = Americanize.americanize(tmp);
+                          }
+                          return getNext(tmp, origTxt);
+          }
+        case 60: break;
+        case 7: 
+          { if (invertible) {
+                     prevWordAfter.append(yytext());
+                  }
+          }
+        case 61: break;
+        case 8: 
+          { return handleQuotes(yytext(), false);
+          }
+        case 62: break;
+        case 9: 
+          { if (escapeForwardSlashAsterisk) {
+                    return getNext(delimit(yytext(), '/'), yytext()); }
+                  else {
+                    return getNext();
+                  }
+          }
+        case 63: break;
+        case 10: 
+          { return getNext(">", yytext());
+          }
+        case 64: break;
+        case 11: 
+          { if (ptb3Dashes) {
+                            return getNext(ptbmdash, yytext()); }
+                          else {
+                            return getNext();
+                          }
+          }
+        case 65: break;
+        case 12: 
+          { return getNext(removeSoftHyphens(yytext()),
+                                         yytext());
+          }
+        case 66: break;
+        case 13: 
+          { return handleEllipsis(yytext());
+          }
+        case 67: break;
+        case 14: 
+          { return normalizeFractions(yytext());
+          }
+        case 68: break;
+        case 15: 
+          { if (normalizeCurrency) {
+                            return getNext(normalizeCurrency(yytext()), yytext()); }
+                          else {
+                            return getNext();
+                          }
+          }
+        case 69: break;
+        case 16: 
+          { if (normalizeOtherBrackets) {
+                    return getNext(closebrace, yytext()); }
+                  else {
+                    return getNext();
+                  }
+          }
+        case 70: break;
+        case 17: 
+          { if (normalizeParentheses) {
+                    return getNext(openparen, yytext()); }
+                  else {
+                    return getNext();
+                  }
+          }
+        case 71: break;
+        case 18: 
+          { if (normalizeParentheses) {
+                    return getNext(closeparen, yytext()); }
+                  else {
+                    return getNext();
+                  }
+          }
+        case 72: break;
+        case 19: 
+          { if (escapeForwardSlashAsterisk) {
+                  else {
+                    return getNext();
+                  }
+          }
+        case 73: break;
+        case 20: 
+          { if (normalizeOtherBrackets) {
+                    return getNext(openbrace, yytext()); }
+                  else {
+                    return getNext();
+                  }
+          }
+        case 74: break;
+        case 21: 
+          { if (normalizeOtherBrackets) {
+                    return getNext("-RSB-", yytext()); }
+                  else {
+                    return getNext();
+                  }
+          }
+        case 75: break;
+        case 22: 
+          { if (normalizeOtherBrackets) {
+                    return getNext("-LSB-", yytext()); }
+                  else {
+                    return getNext();
+                  }
+          }
+        case 76: break;
+        case 23: 
+          { if (invertible) {
+                            prevWordAfter.append(yytext());
+                        }
+          }
+        case 77: break;
+        case 24: 
+          // general lookahead, find correct zzMarkedPos
+          { int zzFState = 13;
+            int zzFPos = zzStartRead;
+            if (zzFin.length <= zzBufferL.length) { zzFin = new boolean[zzBufferL.length+1]; }
+            boolean zzFinL[] = zzFin;
+            while (zzFState != -1 && zzFPos < zzMarkedPos) {
+              zzFinL[zzFPos] = ((zzAttrL[zzFState] & 1) == 1);
+              zzInput = zzBufferL[zzFPos++];
+              zzFState = zzTransL[ zzRowMapL[zzFState] + zzCMapL[zzInput] ];
+            }
+            if (zzFState != -1) { zzFinL[zzFPos++] = ((zzAttrL[zzFState] & 1) == 1); } 
+            while (zzFPos <= zzMarkedPos) {
+              zzFinL[zzFPos++] = false;
+            }
+
+            zzFState = 14;
+            zzFPos = zzMarkedPos;
+            while (!zzFinL[zzFPos] || (zzAttrL[zzFState] & 1) != 1) {
+              zzInput = zzBufferL[--zzFPos];
+              zzFState = zzTransL[ zzRowMapL[zzFState] + zzCMapL[zzInput] ];
+            };
+            zzMarkedPos = zzFPos;
+          }
+          { return getNext();
+          }
+        case 78: break;
+        case 25: 
+          // lookahead expression with fixed lookahead length
+          yypushback(1);
+          { return getNext();
+          }
+        case 79: break;
+        case 26: 
+          // lookahead expression with fixed lookahead length
+          yypushback(1);
+          { return handleQuotes(yytext(), true);
+          }
+        case 80: break;
+        case 27: 
+          { final String origTxt = yytext();
+                          String txt = origTxt;
+                          if (normalizeSpace) {
+                            // txt = SINGLE_SPACE_PATTERN.matcher(txt).replaceAll("\u00A0"); // change to non-breaking space
+                            txt = txt.replace(' ', '\u00A0'); // change space to non-breaking space
+                          }
+                          return getNext(txt, origTxt);
+          }
+        case 81: break;
+        case 28: 
+          { String txt = yytext();
+                  String origText = txt;
+                  if (normalizeParentheses) {
+                    txt = LEFT_PAREN_PATTERN.matcher(txt).replaceAll(openparen);
+                    txt = RIGHT_PAREN_PATTERN.matcher(txt).replaceAll(closeparen);
+                  }
+                  return getNext(txt, origText);
+          }
+        case 82: break;
+        case 29: 
+          { return getNext(removeSoftHyphens(yytext()), yytext());
+          }
+        case 83: break;
+        case 30: 
+          // general lookahead, find correct zzMarkedPos
+          { int zzFState = 3;
+            int zzFPos = zzStartRead;
+            if (zzFin.length <= zzBufferL.length) { zzFin = new boolean[zzBufferL.length+1]; }
+            boolean zzFinL[] = zzFin;
+            while (zzFState != -1 && zzFPos < zzMarkedPos) {
+              zzFinL[zzFPos] = ((zzAttrL[zzFState] & 1) == 1);
+              zzInput = zzBufferL[zzFPos++];
+              zzFState = zzTransL[ zzRowMapL[zzFState] + zzCMapL[zzInput] ];
+            }
+            if (zzFState != -1) { zzFinL[zzFPos++] = ((zzAttrL[zzFState] & 1) == 1); } 
+            while (zzFPos <= zzMarkedPos) {
+              zzFinL[zzFPos++] = false;
+            }
+
+            zzFState = 4;
+            zzFPos = zzMarkedPos;
+            while (!zzFinL[zzFPos] || (zzAttrL[zzFState] & 1) != 1) {
+              zzInput = zzBufferL[--zzFPos];
+              zzFState = zzTransL[ zzRowMapL[zzFState] + zzCMapL[zzInput] ];
+            };
+            zzMarkedPos = zzFPos;
+          }
+          { final String origTxt = yytext();
+                          String tmp = removeSoftHyphens(origTxt);
+                          if (americanize) {
+                            tmp = Americanize.americanize(tmp);
+                          }
+                          return getNext(tmp, origTxt);
+          }
+        case 84: break;
+        case 31: 
+          { if (escapeForwardSlashAsterisk) {
+                            return getNext(delimit(yytext(), '/'), yytext());
+                          } else {
+                            return getNext();
+                          }
+          }
+        case 85: break;
+        case 32: 
+          // lookahead expression with fixed lookahead length
+          yypushback(1);
+          { return getNext(removeSoftHyphens(yytext()),
+                                         yytext());
+          }
+        case 86: break;
+        case 33: 
+          { // this one should only match if we're basically at the end of file
+                          // since the last one matches two things, even newlines
+                          String s;
+                          if (strictTreebank3 && ! "U.S.".equals(yytext())) {
+                            yypushback(1); // return a period for next time
+                            s = yytext();
+                          } else {
+                            s = yytext();
+                            yypushback(1); // return a period for next time
+                          }
+                          return getNext(s, yytext());
+          }
+        case 87: break;
+        case 34: 
+          // lookahead expression with fixed lookahead length
+          yypushback(1);
+          { String txt = yytext();
+                  String origText = txt;
+                  if (normalizeParentheses) {
+                    txt = LEFT_PAREN_PATTERN.matcher(txt).replaceAll(openparen);
+                    txt = RIGHT_PAREN_PATTERN.matcher(txt).replaceAll(closeparen);
+                  }
+                  return getNext(txt, origText);
+          }
+        case 88: break;
+        case 35: 
+          // lookahead expression with fixed base length
+          zzMarkedPos = zzStartRead + 1;

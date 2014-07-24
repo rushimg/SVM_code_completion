@@ -1,0 +1,99 @@
+        System.err.println("lw:"+leftWindow());
+        match &= tags[i] == lastWindow[i - pos + leftWindow()];
+      }
+      if (!match) {
+        scoreCache = scoresOf(tags, pos);
+        for (int i = pos - leftWindow(); i <= pos + rightWindow(); i++) {
+          if (i < 0) {
+            continue;
+          }
+          lastWindow[i - pos + leftWindow()] = tags[i];
+        }
+        lastPos = pos;
+      }
+      return scoreCache[tags[pos]];
+    }
+
+    private int percent = -1;
+    private int num = 0;
+    private long secs = System.currentTimeMillis();
+    private long hit = 0;
+    private long tot = 0;
+
+    @Override
+    public double[] scoresOf(int[] tags, int pos) {
+      if (VERBOSE) {
+        if (p > percent) {
+          long secs2 = System.currentTimeMillis();
+          // + "% [hit=" + hit + ", tot=" + tot + "]");
+          percent = p;
+          num = 0;
+          secs = secs2;
+        }
+        tot++;
+      }
+      String[] answers = new String[1 + leftWindow() + rightWindow()];
+      String[] pre = new String[leftWindow()];
+      for (int i = 0; i < 1 + leftWindow() + rightWindow(); i++) {
+        int absPos = pos - leftWindow() + i;
+        if (absPos < 0) {
+          continue;
+        }
+        answers[i] = tagIndex.get(tags[absPos]);
+        CoreLabel li = lineInfos.get(absPos);
+        li.set(CoreAnnotations.AnswerAnnotation.class, answers[i]);
+        if (i < leftWindow()) {
+          pre[i] = answers[i];
+        }
+      }
+      double[] scores = new double[tagIndex.size()];
+      //System.out.println("Considering: "+Arrays.asList(pre));
+      if (!legalTags.contains(Arrays.asList(pre)) && classifier.flags.useObservedSequencesOnly) {
+        // System.out.println("Rejecting: " + Arrays.asList(pre));
+        // System.out.println(legalTags);
+        Arrays.fill(scores, -1000);// Double.NEGATIVE_INFINITY;
+        return scores;
+      }
+      num++;
+      hit++;
+      Counter<String> c = classifier.scoresOf(lineInfos, pos);
+      //System.out.println("Pos "+pos+" hist "+Arrays.asList(pre)+" result "+c);
+      //System.out.println(c);
+      //if (false && flags.justify) {
+      //    System.out.println("Considering position " + pos + ", word is " + ((CoreLabel) lineInfos.get(pos)).word());
+      //    //System.out.println("Datum is "+d.asFeatures());
+      //    System.out.println("History: " + Arrays.asList(pre));
+      //}
+      for (String s : c.keySet()) {
+        int t = tagIndex.indexOf(s);
+        if (t > -1) {
+          int[] tA = getPossibleValues(pos);
+          for (int j = 0; j < tA.length; j++) {
+            if (tA[j] == t) {
+              scores[j] = c.getCount(s);
+              //if (false && flags.justify) {
+              //    System.out.println("Label " + s + " got score " + scores[j]);
+              //}
+            }
+          }
+        }
+      }
+      // normalize?
+      if (classifier.normalize()) {
+        ArrayMath.logNormalize(scores);
+      }
+      return scores;
+    }
+
+    static double[] recenter(double[] x) {
+      double[] r = new double[x.length];
+      // double logTotal = Double.NEGATIVE_INFINITY;
+      // for (int i = 0; i < x.length; i++)
+      //    logTotal = SloppyMath.logAdd(logTotal, x[i]);
+      double logTotal = ArrayMath.logSum(x);
+      for (int i = 0; i < x.length; i++) {
+        r[i] = x[i] - logTotal;
+      }
+      return r;
+    }
+

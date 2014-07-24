@@ -1,0 +1,33 @@
+    public void addDomainMarker(int index, CategoryMarker marker, Layer layer,
+            boolean notify) {
+        if (marker == null) {
+            throw new IllegalArgumentException("Null 'marker' not permitted.");
+        }
+        if (layer == null) {
+            throw new IllegalArgumentException("Null 'layer' not permitted.");
+        }
+        Collection markers;
+        if (layer == Layer.FOREGROUND) {
+            markers = (Collection) this.foregroundDomainMarkers.get(
+                    new Integer(index));
+            if (markers == null) {
+                markers = new java.util.ArrayList();
+                this.foregroundDomainMarkers.put(new Integer(index), markers);
+            }
+            markers.add(marker);
+        }
+        else if (layer == Layer.BACKGROUND) {
+            markers = (Collection) this.backgroundDomainMarkers.get(
+                    new Integer(index));
+            if (markers == null) {
+                markers = new java.util.ArrayList();
+                this.backgroundDomainMarkers.put(new Integer(index), markers);
+            }
+            markers.add(marker);
+        }
+        marker.addChangeListener(this);
+        if (notify) {
+            fireChangeEvent();
+        }
+    }
+

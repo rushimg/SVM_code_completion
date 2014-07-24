@@ -1,0 +1,58 @@
+        case DIAGONAL:
+
+          double sDs;
+          // Gamma is designed to scale such that a step length of one is
+          // generally accepted.
+          sDs = 0.0;
+          for (int i = 0; i < d.length; i++) {
+          }
+          // This diagonal update was introduced by Andrew Bradley
+          for (int i = 0; i < d.length; i++) {
+          }
+          // Here we make sure that the diagonal is alright
+          double minD = ArrayMath.min(d);
+          double maxD = ArrayMath.max(d);
+
+          // If things have gone bad, just fill with the SCALAR approx.
+          if (minD <= 0 || Double.isInfinite(maxD) || maxD / minD > 1e12) {
+            System.err
+                .println("QNInfo:update() : PROBLEM WITH DIAGONAL UPDATE");
+            double fill = yy / sy;
+            for (int i = 0; i < d.length; i++) {
+              d[i] = fill;
+            }
+          }
+
+        }
+
+        // If s is already of size mem, remove the oldest vector and free it up.
+
+        if (mem > 0 && s.size() == mem || s.size() == maxMem) {
+          s.remove(0);
+          y.remove(0);
+          rho.remove(0);
+        }
+
+        // Actually add the pair.
+        s.add(newS);
+        y.add(newY);
+        rho.add(1 / sy);
+
+      } catch (NegativeCurvature nc) {
+        // NOTE: if applying QNMinimizer to a non convex problem, we would still
+        // like to update the matrix
+        // or we could get stuck in a series of skipped updates.
+        say(" Negative curvature detected, update skipped ");
+      } catch (ZeroGradient zg) {
+        say(" Either convergence, or floating point errors combined with extremely linear region ");
+      }
+
+      return s.size();
+    } // end update
+
+  } // end class QNInfo
+
+  public void setHistory(List<double[]> s, List<double[]> y) {
+    presetInfo = new QNInfo(s, y);
+  }
+

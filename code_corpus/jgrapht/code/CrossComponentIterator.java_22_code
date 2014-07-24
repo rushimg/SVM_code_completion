@@ -1,0 +1,58 @@
+    static <V, E> Specifics<V, E> createGraphSpecifics(Graph<V, E> g)
+    {
+        if (g instanceof DirectedGraph<?, ?>) {
+            return new DirectedSpecifics<V, E>((DirectedGraph<V, E>) g);
+        } else {
+            return new UndirectedSpecifics<V, E>(g);
+        }
+    }
+
+    private void addUnseenChildrenOf(V vertex)
+    {
+        for (E edge : specifics.edgesOf(vertex)) {
+            if (nListeners != 0) {
+                fireEdgeTraversed(createEdgeTraversalEvent(edge));
+            }
+
+            V oppositeV = Graphs.getOppositeVertex(graph, edge, vertex);
+
+            if (isSeenVertex(oppositeV)) {
+                encounterVertexAgain(oppositeV, edge);
+            } else {
+                encounterVertex(oppositeV, edge);
+            }
+        }
+    }
+
+    private EdgeTraversalEvent<V, E> createEdgeTraversalEvent(E edge)
+    {
+        if (isReuseEvents()) {
+            reusableEdgeEvent.setEdge(edge);
+
+            return reusableEdgeEvent;
+        } else {
+            return new EdgeTraversalEvent<V, E>(this, edge);
+        }
+    }
+
+    private VertexTraversalEvent<V> createVertexTraversalEvent(V vertex)
+    {
+        if (isReuseEvents()) {
+            reusableVertexEvent.setVertex(vertex);
+
+            return reusableVertexEvent;
+        } else {
+            return new VertexTraversalEvent<V>(this, vertex);
+        }
+    }
+
+    private void encounterStartVertex()
+    {
+        encounterVertex(startVertex, null);
+        startVertex = null;
+    }
+
+    //~ Inner Interfaces -------------------------------------------------------
+
+    static interface SimpleContainer<T>
+    {

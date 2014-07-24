@@ -1,0 +1,48 @@
+
+package opennlp.tools.util;
+
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.math.BigInteger;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+
+import opennlp.tools.ml.model.Event;
+import opennlp.tools.ml.model.EventStream;
+
+@Deprecated
+public class HashSumEventStream implements EventStream {
+
+  private final EventStream eventStream;
+
+  private MessageDigest digest;
+
+  public HashSumEventStream(EventStream eventStream) {
+    this.eventStream = eventStream;
+
+    try {
+      digest = MessageDigest.getInstance("MD5");
+    } catch (NoSuchAlgorithmException e) {
+      // should never happen, does all java runtimes have md5 ?!
+     throw new IllegalStateException(e);
+    }
+  }
+
+  public boolean hasNext() throws IOException {
+    return eventStream.hasNext();
+  }
+
+  public Event next() throws IOException {
+
+    Event event = eventStream.next();
+
+    try {
+      digest.update(event.toString().getBytes("UTF-8"));
+    }
+    catch (UnsupportedEncodingException e) {
+      throw new IllegalStateException(e);
+    }
+
+    return event;
+  }
+

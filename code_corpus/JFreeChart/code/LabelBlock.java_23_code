@@ -1,0 +1,35 @@
+    public Object draw(Graphics2D g2, Rectangle2D area, Object params) {
+        area = trimMargin(area);
+        drawBorder(g2, area);
+        area = trimBorder(area);
+        area = trimPadding(area);
+
+        // check if we need to collect chart entities from the container
+        EntityBlockParams ebp = null;
+        StandardEntityCollection sec = null;
+        Shape entityArea = null;
+        if (params instanceof EntityBlockParams) {
+            ebp = (EntityBlockParams) params;
+            if (ebp.getGenerateEntities()) {
+                sec = new StandardEntityCollection();
+                entityArea = (Shape) area.clone();
+            }
+        }
+        g2.setPaint(this.paint);
+        g2.setFont(this.font);
+        Point2D pt = RectangleAnchor.coordinates(area, this.textAnchor);
+        this.label.draw(g2, (float) pt.getX(), (float) pt.getY(),
+                this.contentAlignmentPoint);
+        BlockResult result = null;
+        if (ebp != null && sec != null) {
+            if (this.toolTipText != null || this.urlText != null) {
+                ChartEntity entity = new ChartEntity(entityArea,
+                        this.toolTipText, this.urlText);
+                sec.add(entity);
+                result = new BlockResult();
+                result.setEntityCollection(sec);
+            }
+        }
+        return result;
+    }
+

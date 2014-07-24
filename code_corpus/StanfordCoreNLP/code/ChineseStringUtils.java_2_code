@@ -1,0 +1,69 @@
+             the comment above was from DanC.
+             I changed the code but I think I'm doing the same thing here.
+          if (testContentIdx > 0) {
+            char prevChar = pwi.get(CoreAnnotations.OriginalCharAnnotation.class).charAt(0);
+            char currChar = wi.get(CoreAnnotations.OriginalCharAnnotation.class).charAt(0);
+            if ((prevChar < (char)128) != (currChar < (char)128)) {
+              if (ChineseUtils.isNumber(prevChar) && ChineseUtils.isNumber(currChar)) {
+                // cdm: you would get here if you had an ASCII number next to a
+                // Unihan range number.  Does that happen?  It presumably
+                // shouldn't do any harm.... [cdm, oct 2007]
+              } else if (flags.separateASCIIandRange) {
+                seg = true;
+              }
+            }
+          }
+
+          if (flags.keepEnglishWhitespaces) {
+            if (testContentIdx > 0) {
+              char prevChar = pwi.get(CoreAnnotations.OriginalCharAnnotation.class).charAt(0);
+              char currChar = wi.get(CoreAnnotations.OriginalCharAnnotation.class).charAt(0);
+              if (isLetterASCII(prevChar) && isLetterASCII(currChar) ||
+                  isLetterASCII(prevChar) &&  ChineseUtils.isNumber(currChar) ||
+                  ChineseUtils.isNumber(prevChar) && isLetterASCII(currChar)) {
+                // keep the "space" before wi
+                if ("1".equals(wi.get(CoreAnnotations.SpaceBeforeAnnotation.class))) {
+                  seg = true;
+                }
+              }
+            }
+          }
+
+          // if there was space and keepAllWhitespaces is true, restore it no matter what
+          if (flags.keepAllWhitespaces) {
+            if (!("0".equals(String.valueOf(wi.get(CoreAnnotations.PositionAnnotation.class))))
+                && "1".equals(wi.get(CoreAnnotations.SpaceBeforeAnnotation.class))) {
+              seg = true;
+            }
+          }
+          if (seg) {
+            if (originalWhiteSpace) {
+              ans.append('\u1924'); // a pretty Limbu character which is later changed to a space
+            } else {
+              ans.append(' ');
+            }
+          }
+        }
+        ans.append(wi.get(CoreAnnotations.OriginalCharAnnotation.class));
+        unmod_ans.append(wi.get(CoreAnnotations.OriginalCharAnnotation.class));
+        unmod_normed_ans.append(wi.get(CoreAnnotations.CharAnnotation.class));
+      }
+      String ansStr = ans.toString();
+      if (flags.sighanPostProcessing) {
+        if ( ! flags.keepAllWhitespaces) {
+          // remove the Limbu char now, so it can be deleted in postprocessing
+          ansStr = ansStr.replaceAll("\u1924", " ");
+        }
+        ansStr = postProcessingAnswer(ansStr, flags);
+      }
+      // definitely remove the Limbu char if it survived till now
+      ansStr = ansStr.replaceAll("\u1924", " ");
+      if (DEBUG) {
+        EncodingPrintWriter.err.println("CLASSIFIER(normed): " + unmod_normed_ans, "UTF-8");
+        EncodingPrintWriter.err.println("CLASSIFIER: " + unmod_ans, "UTF-8");
+        EncodingPrintWriter.err.println("POSTPROCESSED: "+ans, "UTF-8");
+      }
+      return ansStr;
+  }
+
+

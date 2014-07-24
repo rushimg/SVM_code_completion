@@ -1,0 +1,171 @@
+    public static void testCategoryMergingProblem() {
+      LexicalizedParser lp = new LexicalizedParser(path, new NumberRangeFileFilter(trainLow, trainHigh, true), tlpParams);
+
+      // test it without the change
+      Treebank testTreebank = tlpParams.testMemoryTreebank();
+      testTreebank.loadPath(path, new NumberRangeFileFilter(testLow, testHigh, true));
+      System.out.println("Currently " + new Date());
+      lp.testOnTreebank(testTreebank);
+      System.out.println("Currently " + new Date());
+
+      // pull out the rules and consistently change the name of one of the states
+      ParserData pd = lp.parserData();
+      BinaryGrammar bg = pd.bg;
+      UnaryGrammar ug = pd.ug;
+      Numberer stateNumberer = Numberer.getGlobalNumberer("states");
+      UnaryGrammar newUG = new UnaryGrammar(stateNumberer.total()+1);
+      for (Iterator urIter = ug.iterator(); urIter.hasNext();) {
+        UnaryRule rule = (UnaryRule) urIter.next();
+        rule.parent = changeIfNecessary(rule.parent, stateNumberer);
+        rule.child = changeIfNecessary(rule.child, stateNumberer);
+        newUG.addRule(rule);
+      }
+      BinaryGrammar newBG = new BinaryGrammar(stateNumberer.total()+1);
+      for (Iterator urIter = bg.iterator(); urIter.hasNext();) {
+        BinaryRule rule = (BinaryRule) urIter.next();
+        rule.parent = changeIfNecessary(rule.parent, stateNumberer);
+        rule.leftChild = changeIfNecessary(rule.leftChild, stateNumberer);
+        rule.rightChild = changeIfNecessary(rule.rightChild, stateNumberer);
+        newBG.addRule(rule);
+      }
+      newUG.purgeRules();
+      newBG.splitRules();
+      pd.ug = newUG;
+      pd.bg = newBG;
+      lp = new LexicalizedParser(pd);
+
+      // test it with the change
+      testTreebank = tlpParams.testMemoryTreebank();
+      testTreebank.loadPath(path, new NumberRangeFileFilter(testLow, testHigh, true));
+      System.out.println("Currently " + new Date());
+      lp.testOnTreebank(testTreebank);
+      System.out.println("Currently " + new Date());
+    }
+
+  public Pair<UnaryGrammar, BinaryGrammar> translateAndSort(Pair<UnaryGrammar, BinaryGrammar> grammar, Index<String> oldIndex, Index<String> newIndex) {
+    System.out.println("oldIndex.size()" + oldIndex.size() + " newIndex.size()" + newIndex.size());
+    UnaryGrammar ug = grammar.first;
+    List<UnaryRule> unaryRules = new ArrayList<UnaryRule>();
+    for (UnaryRule rule : ug.rules()) {
+      rule.parent = translate(rule.parent, oldIndex, newIndex);
+      rule.child = translate(rule.child, oldIndex, newIndex);
+      unaryRules.add(rule);
+    }
+    Collections.sort(unaryRules);
+
+    UnaryGrammar newUG = new UnaryGrammar(newIndex);
+    for (UnaryRule unaryRule : unaryRules) {
+      newUG.addRule(unaryRule);
+    }
+    newUG.purgeRules();
+
+    BinaryGrammar bg = grammar.second;
+    List<BinaryRule> binaryRules = new ArrayList<BinaryRule>();
+    for (BinaryRule rule : bg.rules()) {
+      rule.parent = translate(rule.parent, oldIndex, newIndex);
+      rule.leftChild = translate(rule.leftChild, oldIndex, newIndex);
+      rule.rightChild = translate(rule.rightChild, oldIndex, newIndex);
+      binaryRules.add(rule);
+    }
+    Collections.sort(unaryRules);
+
+    BinaryGrammar newBG = new BinaryGrammar(newIndex);
+    for (BinaryRule binaryRule : binaryRules) {
+      newBG.addRule(binaryRule);
+    }
+    newBG.splitRules();
+
+    return Generics.newPair(newUG, newBG);
+  }
+
+  private static int translate(int i, Index<String> oldIndex, Index<String> newIndex) {
+    return newIndex.indexOf(oldIndex.get(i), true);
+  }
+
+  // WTF is this?
+  public int changeIfNecessary(int i, Index<String> n) {
+    String s = n.get(i);
+    if (s.equals("NP^PP")) {
+      System.out.println("changed");
+      return n.indexOf("NP-987928374", true);
+    }
+    return i;
+  }
+
+  public boolean equalsBinary(List<BinaryRule> l1, List<BinaryRule> l2) {
+    // put each into a map to itself
+    Map<BinaryRule, BinaryRule> map1 = Generics.newHashMap();
+    for (BinaryRule o : l1) {
+      map1.put(o, o);
+    }
+    Map<BinaryRule, BinaryRule> map2 = Generics.newHashMap();
+    for (BinaryRule o : l2) {
+      map2.put(o, o);
+    }
+    boolean isEqual = true;
+    for (BinaryRule rule1 : map1.keySet()) {
+      BinaryRule rule2 = map2.get(rule1);
+      if (rule2 == null) {
+        System.out.println("no rule for " + rule1);
+        isEqual = false;
+      } else {
+        map2.remove(rule2);
+        if (rule1.score != rule2.score) {
+          System.out.println(rule1 + " and " + rule2 + " have diff scores");
+          isEqual = false;
+        }
+      }
+    }
+    System.out.println("left over: " + map2.keySet());
+    return isEqual;
+  }
+
+  public boolean equalsUnary(List<UnaryRule> l1, List<UnaryRule> l2) {
+    // put each into a map to itself
+    Map<UnaryRule, UnaryRule> map1 = Generics.newHashMap();
+    for (UnaryRule o : l1) {
+      map1.put(o, o);
+    }
+    Map<UnaryRule, UnaryRule> map2 = Generics.newHashMap();
+    for (UnaryRule o : l2) {
+      map2.put(o, o);
+    }
+    boolean isEqual = true;
+    for (UnaryRule rule1 : map1.keySet()) {
+      UnaryRule rule2 = map2.get(rule1);
+      if (rule2 == null) {
+        System.out.println("no rule for " + rule1);
+        isEqual = false;
+      } else {
+        map2.remove(rule2);
+        if (rule1.score != rule2.score) {
+          System.out.println(rule1 + " and " + rule2 + " have diff scores");
+          isEqual = false;
+        }
+      }
+    }
+    System.out.println("left over: " + map2.keySet());
+    return isEqual;
+  }
+
+  private static <T> boolean equalSets(Set<T> set1, Set<T> set2) {
+    boolean isEqual = true;
+    if (set1.size() != set2.size()) {
+      System.out.println("sizes different: " + set1.size() + " vs. " + set2.size());
+      isEqual = false;
+    }
+    Set<T> newSet1 = (Set<T>) ((HashSet<T>) set1).clone();
+    newSet1.removeAll(set2);
+    if (newSet1.size() > 0) {
+      isEqual = false;
+      System.out.println("set1 left with: " + newSet1);
+    }
+    Set<T> newSet2 = (Set<T>) ((HashSet<T>) set2).clone();
+    newSet2.removeAll(set1);
+    if (newSet2.size() > 0) {
+      isEqual = false;
+      System.out.println("set2 left with: " + newSet2);
+    }
+    return isEqual;
+  }
+

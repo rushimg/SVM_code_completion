@@ -1,0 +1,43 @@
+@NotThreadSafe
+public class RequestBuilder {
+
+    private String method;
+    private Charset charset;
+    private ProtocolVersion version;
+    private URI uri;
+    private HeaderGroup headergroup;
+    private HttpEntity entity;
+    private List<NameValuePair> parameters;
+    private RequestConfig config;
+
+    RequestBuilder(final String method) {
+        super();
+        this.charset = Consts.UTF_8;
+        this.method = method;
+    }
+
+    RequestBuilder(final String method, final URI uri) {
+        super();
+        this.method = method;
+        this.uri = uri;
+    }
+
+    RequestBuilder(final String method, final String uri) {
+        super();
+        this.method = method;
+        this.uri = uri != null ? URI.create(uri) : null;
+    }
+
+    RequestBuilder() {
+        this(null);
+    }
+
+    public static RequestBuilder create(final String method) {
+        Args.notBlank(method, "HTTP method");
+        return new RequestBuilder(method);
+    }
+
+    public static RequestBuilder get() {
+        return new RequestBuilder(HttpGet.METHOD_NAME);
+    }
+

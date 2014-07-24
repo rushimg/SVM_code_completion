@@ -1,0 +1,29 @@
+  public static void annotateChunk(CoreMap chunk,
+                                   List<CoreLabel> tokens, int tokenStartIndex, int tokenEndIndex,  int totalTokenOffset)
+  {
+    List<CoreLabel> chunkTokens = new ArrayList<CoreLabel>(tokens.subList(tokenStartIndex, tokenEndIndex));
+    chunk.set(CoreAnnotations.CharacterOffsetBeginAnnotation.class,
+            chunkTokens.get(0).get(CoreAnnotations.CharacterOffsetBeginAnnotation.class));
+    chunk.set(CoreAnnotations.CharacterOffsetEndAnnotation.class,
+            chunkTokens.get(chunkTokens.size()-1).get(CoreAnnotations.CharacterOffsetEndAnnotation.class));
+    chunk.set(CoreAnnotations.TokensAnnotation.class, chunkTokens);
+    chunk.set(CoreAnnotations.TokenBeginAnnotation.class, tokenStartIndex+totalTokenOffset);
+    chunk.set(CoreAnnotations.TokenEndAnnotation.class, tokenEndIndex+totalTokenOffset);
+  }
+
+  public static String getTokenText(List<? extends CoreMap> tokens, Class tokenTextKey)
+  {
+    return getTokenText(tokens, tokenTextKey, " ");
+  }
+  public static String getTokenText(List<? extends CoreMap> tokens, Class tokenTextKey, String delimiter)
+  {
+    StringBuilder sb = new StringBuilder();
+    for (CoreMap t: tokens) {
+      if (sb.length() != 0) {
+        sb.append(delimiter);
+      }
+      sb.append(t.get(tokenTextKey));
+    }
+    return sb.toString();
+  }
+

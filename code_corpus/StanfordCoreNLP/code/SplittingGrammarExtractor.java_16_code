@@ -1,0 +1,23 @@
+  private void splitStateCounts() {
+    // double the count of states...
+    IntCounter<String> newStateSplitCounts = new IntCounter<String>();
+    newStateSplitCounts.addAll(stateSplitCounts);
+    newStateSplitCounts.addAll(stateSplitCounts);
+
+    // root states should only have 1
+    for (String root : startSymbols) {
+      if (newStateSplitCounts.getCount(root) > 1) {
+        newStateSplitCounts.setCount(root, 1);
+      }
+    }
+
+    if (newStateSplitCounts.getCount(Lexicon.BOUNDARY_TAG) > 1) {
+      newStateSplitCounts.setCount(Lexicon.BOUNDARY_TAG, 1);
+    }
+
+    stateSplitCounts = newStateSplitCounts;
+  }
+  
+
+  static final double EPSILON = 0.0001;
+

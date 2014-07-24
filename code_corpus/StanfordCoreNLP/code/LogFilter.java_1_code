@@ -1,0 +1,20 @@
+public interface LogFilter {
+  public boolean matches(Record message);
+  
+  public static class HasChannel implements LogFilter {
+    private Object matchingChannel;
+
+    public HasChannel(Object message) {
+      this.matchingChannel = message;
+    }
+
+    public boolean matches(Record record) {
+      for (Object tag : record.channels()) {
+        if (tag.equals(matchingChannel)) {
+          return true;
+        }
+      }
+      return false;
+    }
+  }
+  

@@ -1,0 +1,21 @@
+    protected Range findRangeBounds(CategoryDataset dataset,
+            boolean includeInterval) {
+        if (dataset == null) {
+            return null;
+        }
+        if (getDataBoundsIncludesVisibleSeriesOnly()) {
+            List visibleSeriesKeys = new ArrayList();
+            int seriesCount = dataset.getRowCount();
+            for (int s = 0; s < seriesCount; s++) {
+                if (isSeriesVisible(s)) {
+                    visibleSeriesKeys.add(dataset.getRowKey(s));
+                }
+            }
+            return DatasetUtilities.findRangeBounds(dataset,
+                    visibleSeriesKeys, includeInterval);
+        }
+        else {
+            return DatasetUtilities.findRangeBounds(dataset, includeInterval);
+        }
+    }
+

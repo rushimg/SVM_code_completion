@@ -1,0 +1,100 @@
+  public static CoreMap alignSentence(CoreMap sentence) {
+
+    String text = sentence.get(CoreAnnotations.TextAnnotation.class);
+    if(text != null){
+      // original text is preserved; no need to align anything
+      return sentence;
+    }
+
+    CoreMap newSentence = buildSentenceFromTokens(
+        sentence.get(CoreAnnotations.TokensAnnotation.class),
+        sentence.get(CoreAnnotations.CharacterOffsetBeginAnnotation.class),
+        sentence.get(CoreAnnotations.CharacterOffsetEndAnnotation.class));
+
+    newSentence.set(CoreAnnotations.TokenBeginAnnotation.class,
+        sentence.get(CoreAnnotations.TokenBeginAnnotation.class));
+    newSentence.set(CoreAnnotations.TokenEndAnnotation.class,
+        sentence.get(CoreAnnotations.TokenEndAnnotation.class));
+
+    return newSentence;
+  }
+
+  private static CoreMap buildSentenceFromTokens(List<CoreLabel> tokens) {
+    return buildSentenceFromTokens(tokens, null, null);
+  }
+
+  private static CoreMap buildSentenceFromTokens(
+      List<CoreLabel> tokens,
+      Integer characterOffsetStart,
+      Integer characterOffsetEnd) {
+
+    //
+    // Recover the sentence text:
+    // a) try to get it from TextAnnotation
+    // b) if not present, build it from the OriginalTextAnnotation of each token
+    // c) if not present, build it from the TextAnnotation of each token
+    //
+    boolean adjustCharacterOffsets = false;
+    // try to recover the text from the original tokens
+    String text = buildText(tokens, CoreAnnotations.OriginalTextAnnotation.class);
+    if(text == null){
+      text = buildText(tokens, CoreAnnotations.TextAnnotation.class);
+      // character offset will point to the original tokens
+      //   so we need to align them to the text built from normalized tokens
+      adjustCharacterOffsets = true;
+      if(text == null){
+        throw new RuntimeException("ERROR: to use SUTime, sentences must have TextAnnotation set, or the individual tokens must have OriginalTextAnnotation or TextAnnotation set!");
+      }
+    }
+
+    // make sure token character offsets are aligned with text
+    List<CoreLabel> tokenSequence = copyTokens(tokens, adjustCharacterOffsets, false);
+
+    Annotation newSentence = new Annotation(text);
+    newSentence.set(CoreAnnotations.TokensAnnotation.class, tokenSequence);
+    if (! adjustCharacterOffsets &&
+        characterOffsetStart != null &&
+        characterOffsetEnd != null){
+      newSentence.set(CoreAnnotations.CharacterOffsetBeginAnnotation.class, characterOffsetStart);
+      newSentence.set(CoreAnnotations.CharacterOffsetEndAnnotation.class, characterOffsetEnd);
+    } else {
+      int tokenCharStart = tokenSequence.get(0).get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);
+      int tokenCharEnd = tokenSequence.get(tokenSequence.size() - 1).get(CoreAnnotations.CharacterOffsetEndAnnotation.class);
+      newSentence.set(CoreAnnotations.CharacterOffsetBeginAnnotation.class, tokenCharStart);
+      newSentence.set(CoreAnnotations.CharacterOffsetEndAnnotation.class, tokenCharEnd);
+    }
+
+    // some default token offsets
+    newSentence.set(CoreAnnotations.TokenBeginAnnotation.class, 0);
+    newSentence.set(CoreAnnotations.TokenEndAnnotation.class, tokenSequence.size());
+
+    return newSentence;
+  }
+
+  private static String buildText(List<CoreLabel> tokens, Class<? extends CoreAnnotation<String>> textAnnotation) {
+    StringBuilder os = new StringBuilder();
+    for (int i = 0, sz = tokens.size(); i < sz; i ++) {
+      CoreLabel crt = tokens.get(i);
+      // System.out.println("\t" + crt.word() + "\t" + crt.get(CoreAnnotations.CharacterOffsetBeginAnnotation.class) + "\t" + crt.get(CoreAnnotations.CharacterOffsetEndAnnotation.class));
+      if (i > 0) {
+        CoreLabel prev = tokens.get(i - 1);
+        int spaces = 1;
+        if (crt.containsKey(CoreAnnotations.CharacterOffsetBeginAnnotation.class)) {
+          spaces = crt.get(CoreAnnotations.CharacterOffsetBeginAnnotation.class) -
+              prev.get(CoreAnnotations.CharacterOffsetEndAnnotation.class);
+        }
+        while (spaces > 0) {
+          os.append(' ');
+          spaces--;
+        }
+      }
+      String word = crt.get(textAnnotation);
+      if (word == null) {
+        // this annotation does not exist; bail out
+        return null;
+      }
+      os.append(word);
+    }
+    return os.toString();
+  }
+

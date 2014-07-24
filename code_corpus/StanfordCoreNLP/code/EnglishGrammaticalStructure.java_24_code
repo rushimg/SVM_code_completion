@@ -1,0 +1,70 @@
+  private static void collapseFlatMWP(Collection<TypedDependency> list) {
+    Collection<TypedDependency> newTypedDeps = new ArrayList<TypedDependency>();
+
+    for (String[] mwp : MULTIWORD_PREPS) {
+      newTypedDeps.clear();
+
+      TreeGraphNode mwp1 = null;
+      TreeGraphNode governor = null;
+
+      TypedDependency prep = null;
+      TypedDependency dep = null;
+      TypedDependency pobj = null;
+
+      // first find the multi_preposition: dep(mpw[1], mwp[0])
+      for (TypedDependency td : list) {
+        if (td.gov().value().equalsIgnoreCase(mwp[1]) && td.dep().value().equalsIgnoreCase(mwp[0]) && Math.abs(td.gov().index() - td.dep().index()) == 1) {
+          mwp1 = td.gov();
+          dep = td;
+        }
+      }
+
+      // now search for prep(gov, mwp1)
+      for (TypedDependency td1 : list) {
+        if (td1.dep() == mwp1 && td1.reln() == PREPOSITIONAL_MODIFIER) {
+          // we found prep(gov, mwp1)
+          prep = td1;
+          governor = prep.gov();
+        }
+      }
+
+      // search for the complement: pobj|pcomp(mwp1,X)
+      for (TypedDependency td2 : list) {
+        if (td2.gov() == mwp1 && td2.reln() == PREPOSITIONAL_OBJECT) {
+          pobj = td2;
+          // create the new gr relation
+          GrammaticalRelation gr = EnglishGrammaticalRelations.getPrep(mwp[0] + '_' + mwp[1]);
+          newTypedDeps.add(new TypedDependency(gr, governor, pobj.dep()));
+        }
+        if (td2.gov() == mwp1 && td2.reln() == PREPOSITIONAL_COMPLEMENT) {
+          pobj = td2;
+          // create the new gr relation
+          GrammaticalRelation gr = EnglishGrammaticalRelations.getPrepC(mwp[0] + '_' + mwp[1]);
+          newTypedDeps.add(new TypedDependency(gr, governor, pobj.dep()));
+        }
+      }
+
+      // only if we found the three parts, set to KILL and remove
+      if (prep != null && dep != null && pobj != null) {
+        prep.setReln(KILL);
+        dep.setReln(KILL);
+        pobj.setReln(KILL);
+
+        // now remove typed dependencies with reln "kill"
+        // and promote possible orphans
+        for (TypedDependency td1 : list) {
+          if (td1.reln() != KILL) {
+            if (td1.gov() == mwp1) {
+              td1.setGov(governor);
+            }
+            if (!newTypedDeps.contains(td1)) {
+              newTypedDeps.add(td1);
+            }
+          }
+        }
+        list.clear();
+        list.addAll(newTypedDeps);
+      }
+    }
+  }
+

@@ -1,0 +1,38 @@
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof CollectionValuedMap<?, ?>)) {
+      return false;
+    }
+
+    CollectionValuedMap<K, V> other = ErasureUtils.uncheckedCast(o);
+
+    if (other.size() != size()) {
+      return false;
+    }
+
+    try {
+      for (Map.Entry<K, Collection<V>> e : entrySet()) {
+        K key = e.getKey();
+        Collection<V> value = e.getValue();
+        if (value == null) {
+          if (!(other.get(key) == null && other.containsKey(key))) {
+            return false;
+          }
+        } else {
+          if (!value.equals(other.get(key))) {
+            return false;
+          }
+        }
+      }
+    } catch (ClassCastException unused) {
+      return false;
+    } catch (NullPointerException unused) {
+      return false;
+    }
+
+    return true;
+  }
+

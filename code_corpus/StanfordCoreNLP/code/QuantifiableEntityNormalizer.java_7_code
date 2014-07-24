@@ -1,0 +1,45 @@
+  static boolean isYear(CoreMap word) {
+    String wordString = word.get(CoreAnnotations.TextAnnotation.class);
+    if(word.get(CoreAnnotations.PartOfSpeechAnnotation.class) == null || word.get(CoreAnnotations.PartOfSpeechAnnotation.class).equals("CD")) {
+      //one possibility: it's a two digit year with an apostrophe: '90
+      if(wordString.length() == 3  && wordString.startsWith("'")) {
+        if (DEBUG) {
+          System.err.println("Found potential two digit year: " + wordString);
+        }
+        wordString = wordString.substring(1);
+        try {
+          Integer.parseInt(wordString);
+          return true;
+        } catch(Exception e) {
+          return false;
+        }
+      }
+      //if it is 4 digits, with first one <3 (usually we're not talking about
+      //the far future, say it's a year
+      if(wordString.length() == 4) {
+        try {
+          int num = Integer.parseInt(wordString);
+          if(num < 3000)
+            return true;
+        } catch(Exception e) {
+          return false;
+        }
+      }
+    }
+    return false;
+  }
+
+
+  private static final String dateRangeAfterOneWord = "after|since";
+  private static final String dateRangeBeforeOneWord = "before|until";
+  private static final List<Pair<String, String>> dateRangeBeforePairedOneWord;
+  static {
+    dateRangeBeforePairedOneWord = new ArrayList<Pair<String,String>>();
+    dateRangeBeforePairedOneWord.add(new Pair<String, String>("between", "and"));
+    dateRangeBeforePairedOneWord.add(new Pair<String, String>("from", "to"));
+    dateRangeBeforePairedOneWord.add(new Pair<String, String>("from", "-"));
+  }
+
+  private static final String datePrepositionAfterWord = "in|of";
+
+

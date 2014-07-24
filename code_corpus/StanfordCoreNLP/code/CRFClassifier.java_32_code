@@ -1,0 +1,51 @@
+  @Override
+  @SuppressWarnings( { "unchecked" })
+  // can't have right types in deserialization
+  public void loadClassifier(ObjectInputStream ois, Properties props) throws ClassCastException, IOException,
+      ClassNotFoundException {
+    Object o = ois.readObject();
+    // TODO: when we next break serialization, get rid of this fork and only read the List<Index>
+    if (o instanceof List) {
+      labelIndices = (List<Index<CRFLabel>>) o;
+    } else {
+      Index<CRFLabel>[] indexArray = (Index<CRFLabel>[]) o;
+      labelIndices = new ArrayList<Index<CRFLabel>>(indexArray.length);
+      for (Index<CRFLabel> index : indexArray) {
+        labelIndices.add(index);
+      }
+    }
+    classIndex = (Index<String>) ois.readObject();
+    featureIndex = (Index<String>) ois.readObject();
+    flags = (SeqClassifierFlags) ois.readObject();
+    if (flags.useEmbedding) {
+      embeddings = (Map<String, double[]>) ois.readObject();
+    }
+    Object featureFactory = ois.readObject();
+    if (featureFactory instanceof List) {
+      featureFactories = ErasureUtils.uncheckedCast(featureFactories);
+    } else if (featureFactory instanceof FeatureFactory) {
+      featureFactories = Generics.newArrayList();
+      featureFactories.add((FeatureFactory) featureFactory);
+    }
+
+    if (props != null) {
+      flags.setProperties(props, false);
+    }
+    reinit();
+
+    windowSize = ois.readInt();
+    weights = (double[][]) ois.readObject();
+
+    // WordShapeClassifier.setKnownLowerCaseWords((Set) ois.readObject());
+    knownLCWords = (Set<String>) ois.readObject();
+
+    if (flags.labelDictionaryCutoff > 0) {
+      labelDictionary = (LabelDictionary) ois.readObject();
+    }
+
+    if (VERBOSE) {
+      System.err.println("windowSize=" + windowSize);
+      System.err.println("flags=\n" + flags);
+    }
+  }
+

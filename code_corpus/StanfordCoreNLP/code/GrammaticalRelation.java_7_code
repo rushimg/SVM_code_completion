@@ -1,0 +1,10 @@
+  public static GrammaticalRelation valueOf(Language language, String s) {
+    GrammaticalRelation reln = (stringsToRelations.get(language) != null ? valueOf(s, stringsToRelations.get(language).values()) : null);
+    if (reln == null) {
+      // TODO this breaks the hierarchical structure of the classes,
+      //      but it makes English relations that much likelier to work.
+      reln = EnglishGrammaticalRelations.valueOf(s);
+    }
+    if (reln == null) {
+      // the block below fails when 'specific' includes underscores.
+      // this is possible on weird web text, which generates relations such as prep______

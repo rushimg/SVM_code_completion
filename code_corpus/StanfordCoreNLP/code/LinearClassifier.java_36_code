@@ -1,0 +1,104 @@
+  public <T> void justificationOf(Datum<L, F> example, PrintWriter pw,
+      Function<F, T> printer, boolean sortedByFeature) {
+
+    if(example instanceof RVFDatum<?, ?>) {
+      justificationOfRVFDatum((RVFDatum<L,F>)example,pw);
+      return;
+    }
+    NumberFormat nf = NumberFormat.getNumberInstance();
+    nf.setMinimumFractionDigits(2);
+    nf.setMaximumFractionDigits(2);
+    if (nf instanceof DecimalFormat) {
+      ((DecimalFormat) nf).setPositivePrefix(" ");
+    }
+
+    // determine width for features, making it at least total's width
+    int featureLength = 0;
+    //TODO: not really sure what this Printer is supposed to spit out...
+    for (F f : example.asFeatures()) {
+      int length = f.toString().length();
+      if (printer != null) {
+        length = printer.apply(f).toString().length();
+      }
+      featureLength = Math.max(featureLength, length);
+    }
+    // make as wide as total printout
+    featureLength = Math.max(featureLength, "Total:".length());
+    // don't make it ridiculously wide
+    featureLength = Math.min(featureLength, MAX_FEATURE_ALIGN_WIDTH);
+
+    // determine width for labels
+    int labelLength = 6;
+    for (L l : labels()) {
+      labelLength = Math.max(labelLength, l.toString().length());
+    }
+
+    // print header row of output listing classes
+    StringBuilder header = new StringBuilder("");
+    for (int s = 0; s < featureLength; s++) {
+      header.append(' ');
+    }
+    for (L l : labels()) {
+      header.append(' ');
+      header.append(StringUtils.pad(l, labelLength));
+    }
+    pw.println(header);
+
+    // print active features and weights per class
+    Collection<F> featColl = example.asFeatures();
+    if (sortedByFeature){
+      featColl = ErasureUtils.sortedIfPossible(featColl);
+    }
+    for (F f : featColl) {
+      String fStr;
+      if (printer != null) {
+        fStr = printer.apply(f).toString();
+      } else {
+        fStr = f.toString();
+      }
+      StringBuilder line = new StringBuilder(fStr);
+      for (int s = fStr.length(); s < featureLength; s++) {
+        line.append(' ');
+      }
+      for (L l : labels()) {
+        String lStr = nf.format(weight(f, l));
+        line.append(' ');
+        line.append(lStr);
+        for (int s = lStr.length(); s < labelLength; s++) {
+          line.append(' ');
+        }
+      }
+      pw.println(line);
+    }
+
+    // Print totals, probs, etc.
+    Counter<L> scores = scoresOf(example);
+    StringBuilder footer = new StringBuilder("Total:");
+    for (int s = footer.length(); s < featureLength; s++) {
+      footer.append(' ');
+    }
+    for (L l : labels()) {
+      footer.append(' ');
+      String str = nf.format(scores.getCount(l));
+      footer.append(str);
+      for (int s = str.length(); s < labelLength; s++) {
+        footer.append(' ');
+      }
+    }
+    pw.println(footer);
+    Distribution<L> distr = Distribution.distributionFromLogisticCounter(scores);
+    footer = new StringBuilder("Prob:");
+    for (int s = footer.length(); s < featureLength; s++) {
+      footer.append(' ');
+    }
+    for (L l : labels()) {
+      footer.append(' ');
+      String str = nf.format(distr.getCount(l));
+      footer.append(str);
+      for (int s = str.length(); s < labelLength; s++) {
+        footer.append(' ');
+      }
+    }
+    pw.println(footer);
+  }
+

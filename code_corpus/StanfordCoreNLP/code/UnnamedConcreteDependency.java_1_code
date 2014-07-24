@@ -1,0 +1,62 @@
+public class UnnamedConcreteDependency extends UnnamedDependency {
+
+  private static final long serialVersionUID = -8836949694741145222L;
+
+  private final int headIndex;
+  private final int depIndex;
+
+  public UnnamedConcreteDependency(String regent, int regentIndex, String dependent, int dependentIndex) {
+    super(regent, dependent);
+
+    headIndex = regentIndex;
+    depIndex = dependentIndex;
+  }
+  
+  public UnnamedConcreteDependency(Label regent, int regentIndex, Label dependent, int dependentIndex) {
+    super(regent, dependent);
+    
+    headIndex = regentIndex;
+    depIndex = dependentIndex;
+  }
+
+  public UnnamedConcreteDependency(Label regent, Label dependent) {
+    super(regent, dependent);
+
+    if (governor() instanceof HasIndex) {
+      headIndex = ((HasIndex) governor()).index();
+    } else {
+      throw new IllegalArgumentException("Label argument lacks IndexAnnotation.");
+    }
+    if (dependent() instanceof HasIndex) {
+      depIndex = ((HasIndex) dependent()).index();
+    } else {
+      throw new IllegalArgumentException("Label argument lacks IndexAnnotation.");
+    }
+  }
+  
+  public int getGovernorIndex() { return headIndex; }
+  
+  public int getDependentIndex() { return depIndex; }
+  
+  @Override
+  public int hashCode() {
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    } else if( !(o instanceof UnnamedConcreteDependency)) {
+      return false;
+    }
+    UnnamedConcreteDependency d = (UnnamedConcreteDependency) o;
+    return headIndex == d.headIndex && depIndex == d.depIndex;
+  }
+
+  @Override
+  public String toString() {
+    String headWord = getText(governor());
+    String depWord = getText(dependent());
+    return String.format("%s [%d] --> %s [%d]", headWord, headIndex, depWord, depIndex);
+  }
+

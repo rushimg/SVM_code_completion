@@ -1,0 +1,24 @@
+  private void loadDemonymLists(String demonymFile) {
+    BufferedReader reader = null;
+    try {
+      reader = IOUtils.readerFromString(demonymFile);
+      for (String line; (line = reader.readLine()) != null; ) {
+        line = line.toLowerCase(Locale.ENGLISH);
+        String[] tokens = line.split("\t");
+        if (tokens[0].startsWith("#")) continue;
+        Set<String> set = Generics.newHashSet();
+        for (String s : tokens) {
+          set.add(s);
+          demonymSet.add(s);
+        }
+        demonyms.put(tokens[0], set);
+      }
+      adjectiveNation.addAll(demonymSet);
+      adjectiveNation.removeAll(demonyms.keySet());
+    } catch (IOException e) {
+      throw new RuntimeIOException(e);
+    } finally {
+      IOUtils.closeIgnoringExceptions(reader);
+    }
+  }
+

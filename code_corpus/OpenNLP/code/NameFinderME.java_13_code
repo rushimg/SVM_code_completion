@@ -1,0 +1,16 @@
+  @Deprecated
+  public static TokenNameFinderModel train(String languageCode, String type,
+          ObjectStream<NameSample> samples, TrainingParameters trainParams,
+          byte[] featureGeneratorBytes, final Map<String, Object> resources)
+          throws IOException {
+
+    TokenNameFinderModel model = train(languageCode, type, samples, trainParams,
+            createFeatureGenerator(featureGeneratorBytes, resources), resources);
+
+    if (featureGeneratorBytes != null) {
+      model = model.updateFeatureGenerator(featureGeneratorBytes);
+    }
+
+    return model;
+  }
+

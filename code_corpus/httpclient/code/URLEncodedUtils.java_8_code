@@ -1,0 +1,21 @@
+    public static void parse(
+            final List <NameValuePair> parameters,
+            final Scanner scanner,
+            final String parameterSepartorPattern,
+            final String charset) {
+        scanner.useDelimiter(parameterSepartorPattern);
+        while (scanner.hasNext()) {
+            String name = null;
+            String value = null;
+            final String token = scanner.next();
+            final int i = token.indexOf(NAME_VALUE_SEPARATOR);
+            if (i != -1) {
+                name = decodeFormFields(token.substring(0, i).trim(), charset);
+                value = decodeFormFields(token.substring(i + 1).trim(), charset);
+            } else {
+                name = decodeFormFields(token.trim(), charset);
+            }
+            parameters.add(new BasicNameValuePair(name, value));
+        }
+    }
+

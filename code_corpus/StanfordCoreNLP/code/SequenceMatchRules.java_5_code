@@ -1,0 +1,24 @@
+  public static class FilterExtractRule<I,O> implements ExtractRule<I,O>
+  {
+    Filter<I> filter;
+    ExtractRule<I,O> rule;
+
+    public FilterExtractRule(Filter<I> filter, ExtractRule<I,O> rule) {
+      this.filter = filter;
+      this.rule = rule;
+    }
+
+    public FilterExtractRule(Filter<I> filter, ExtractRule<I,O>... rules) {
+      this.filter = filter;
+      this.rule = new ListExtractRule<I,O>(rules);
+    }
+
+    public boolean extract(I in, List<O> out) {
+      if (filter.accept(in)) {
+        return rule.extract(in,out);
+      } else {
+        return false;
+      }
+    }
+  }
+

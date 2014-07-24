@@ -1,0 +1,26 @@
+  public void printFeatures(String exportFile, int[][][][] docsData, int[][] labels)  {
+    try {
+      PrintWriter pw = IOUtils.getPrintWriter(exportFile);
+      for (int i = 0; i < docsData.length; i++) {
+        for (int j = 0; j < docsData[i].length; j++) {
+          StringBuilder sb = new StringBuilder();
+          int label = labels[i][j];
+          sb.append(classifier.classIndex.get(label));
+          for (int k = 0; k < docsData[i][j].length; k++) {
+            for (int m = 0; m < docsData[i][j][k].length; m++) {
+              String feat = classifier.featureIndex.get(docsData[i][j][k][m]);
+              feat = ubPrefixFeatureString(feat);
+              sb.append(delimiter);
+              sb.append(feat);
+            }
+          }
+          pw.println(sb.toString());
+        }
+        pw.println();
+      }
+      pw.close();
+    } catch (IOException ex) {
+      throw new RuntimeException(ex);
+    }
+  }
+

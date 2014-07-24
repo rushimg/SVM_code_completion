@@ -1,0 +1,158 @@
+  public static class CompositeValue extends SimpleCachedExpression<Map<String,Expression>> implements Value<Map<String,Expression>>{
+    public CompositeValue(String... tags) {
+      super(TYPE_COMPOSITE, Generics.<String,Expression>newHashMap(), tags);
+    }
+
+    public CompositeValue(Map<String, Expression> m, boolean isEvaluated, String... tags) {
+      super(TYPE_COMPOSITE, m, tags);
+      if (isEvaluated) {
+        evaluated = this;
+        disableCaching = !checkValue();
+      }
+    }
+
+    private boolean checkValue() {
+      boolean ok = true;
+      for (String key:value.keySet()) {
+        Expression expr = value.get(key);
+        if (expr != null && !expr.hasValue()) {
+          ok = false;
+        }
+      }
+      return ok;
+    }
+
+    public Set<String> getAttributes() {
+      return value.keySet();
+    }
+
+    public Expression getExpression(String attr) {
+      return value.get(attr);
+    }
+
+    public Value getValue(String attr) {
+      Expression expr = value.get(attr);
+      if (expr == null) return null;
+      if (expr instanceof Value) {
+        return (Value) expr;
+      }
+      throw new UnsupportedOperationException("Expression was not evaluated....");
+    }
+
+    public <T> T get(String attr) {
+      Expression expr = value.get(attr);
+      if (expr == null) return null;
+      if (expr instanceof Value) {
+        return ((Value<T>) expr).get();
+      }
+      throw new UnsupportedOperationException("Expression was not evaluated....");
+    }
+
+    public void set(String attr, Object obj) {
+      if (obj instanceof Expression) {
+        value.put(attr, (Expression) obj);
+      } else {
+        value.put(attr, createValue(null, obj));
+      }
+      evaluated = null;
+    }
+
+    private static Object toCompatibleObject(Field f, Object value) {
+      if (value == null) return value;
+      if (!f.getDeclaringClass().isAssignableFrom(value.getClass())) {
+        if (Number.class.isAssignableFrom(value.getClass())) {
+          Number number = (Number) value;
+          if (f.getType().isAssignableFrom(Double.class)) {
+            return number.doubleValue();
+          } else if (f.getType().isAssignableFrom(Float.class)) {
+              return number.floatValue();
+          } else if (f.getType().isAssignableFrom(Long.class)) {
+            return number.longValue();
+          } else if (f.getType().isAssignableFrom(Integer.class)) {
+            return number.intValue();
+          }
+        }
+      }
+      return value;
+    }
+
+    private static Value attemptTypeConversion(CompositeValue cv, Env env, Object... args) {
+      Expression typeFieldExpr = cv.value.get("type");
+      if (typeFieldExpr != null) {
+        // Automatically convert types ....
+        Value typeValue = typeFieldExpr.evaluate(env, args);
+        if (typeFieldExpr instanceof VarExpression) {
+          VarExpression varExpr = (VarExpression) typeFieldExpr;
+          // The name of the variable is used to indicate the "type" of object
+          String typeName = varExpr.get();
+          if (typeValue != null) {
+            // Check if variable points to a class
+            // If so, then try to instantiate a new instance of the class
+            if (TYPE_CLASS.equals(typeValue.getType())) {
+              // Variable maps to a java class
+              Class c = (Class) typeValue.get();
+              try {
+                Object obj = c.newInstance();
+                // for any field other than the "type", set the value of the field
+                //   of the created object to the specified value
+                for (String s:cv.value.keySet()) {
+                  if (!"type".equals(s)) {
+                    Value v = cv.value.get(s).evaluate(env, args);
+                    try {
+                      Field f = c.getField(s);
+                      Object objVal =  toCompatibleObject(f, v.get());
+                      f.set(obj, objVal);
+                    } catch (NoSuchFieldException ex){
+                      throw new RuntimeException("Unknown field " + s + " for type " + typeName + ", trying to set to " + v, ex);
+                    } catch (IllegalArgumentException ex){
+                      throw new RuntimeException("Incompatible type " + s + " for type " + typeName + ", trying to set to " + v, ex);
+                    }
+                  }
+                }
+                return new PrimitiveValue<Object>(typeName, obj);
+              } catch (InstantiationException ex) {
+                throw new RuntimeException("Cannot instantiate " + c, ex);
+              } catch (IllegalAccessException ex) {
+                throw new RuntimeException("Cannot instantiate " + c, ex);
+              }
+            } else if (typeValue.get() != null){
+              // When evaluated, variable does not explicitly map to "CLASS"
+              // See if we can convert this CompositeValue into appropriate object
+              // by calling "create(CompositeValue cv)"
+              Class c = typeValue.get().getClass();
+              try {
+                Method m = c.getMethod("create", CompositeValue.class);
+                CompositeValue evaluatedCv = cv.evaluateNoTypeConversion(env, args);
+                try {
+                  return new PrimitiveValue<Object>(typeName, m.invoke(typeValue.get(), evaluatedCv));
+                } catch (InvocationTargetException ex) {
+                  throw new RuntimeException("Cannot instantiate " + c, ex);
+                } catch (IllegalAccessException ex) {
+                  throw new RuntimeException("Cannot instantiate " + c, ex);
+                }
+              } catch (NoSuchMethodException ex) {}
+            }
+          }
+        } else if (typeValue != null && typeValue.get() instanceof String) {
+          String typeName = (String) typeValue.get();
+          // Predefined types:
+          Expression valueField = cv.value.get("value");
+          Value value = valueField.evaluate(env, args);
+          if (TYPE_ANNOTATION_KEY.equals(typeName)) {
+            String className = (String) value.get();
+            try {
+              return new PrimitiveValue<Class>(TYPE_ANNOTATION_KEY, Class.forName(className));
+            } catch (ClassNotFoundException ex) {
+              throw new RuntimeException("Unknown class " + className, ex);
+            }
+          } else if (TYPE_CLASS.equals(typeName)) {
+            String className = (String) value.get();
+            try {
+              return new PrimitiveValue<Class>(TYPE_CLASS, Class.forName(className));
+            } catch (ClassNotFoundException ex) {
+              throw new RuntimeException("Unknown class " + className, ex);
+            }
+          } else if (TYPE_STRING.equals(typeName)) {
+            return new PrimitiveValue<String>(TYPE_STRING, (String) value.get());
+          } else if (TYPE_REGEX.equals(typeName)) {
+            return new RegexValue((String) value.get());

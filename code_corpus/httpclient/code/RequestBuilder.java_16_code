@@ -1,0 +1,74 @@
+    public static RequestBuilder options(final String uri) {
+        return new RequestBuilder(HttpOptions.METHOD_NAME, uri);
+    }
+
+    public static RequestBuilder copy(final HttpRequest request) {
+        Args.notNull(request, "HTTP request");
+        return new RequestBuilder().doCopy(request);
+    }
+
+    private RequestBuilder doCopy(final HttpRequest request) {
+        if (request == null) {
+            return this;
+        }
+        method = request.getRequestLine().getMethod();
+        version = request.getRequestLine().getProtocolVersion();
+
+        if (headergroup == null) {
+            headergroup = new HeaderGroup();
+        }
+        headergroup.clear();
+        headergroup.setHeaders(request.getAllHeaders());
+
+        parameters = null;
+        entity = null;
+
+        if (request instanceof HttpEntityEnclosingRequest) {
+            final HttpEntity originalEntity = ((HttpEntityEnclosingRequest) request).getEntity();
+            final ContentType contentType = ContentType.get(originalEntity);
+            if (contentType != null &&
+                    contentType.getMimeType().equals(ContentType.APPLICATION_FORM_URLENCODED.getMimeType())) {
+                try {
+                    final List<NameValuePair> formParams = URLEncodedUtils.parse(originalEntity);
+                    if (!formParams.isEmpty()) {
+                        parameters = formParams;
+                    }
+                } catch (IOException ignore) {
+                }
+            } else {
+                entity = originalEntity;
+            }
+        }
+
+        final URI originalUri;
+        if (request instanceof HttpUriRequest) {
+            originalUri = ((HttpUriRequest) request).getURI();
+        } else {
+            originalUri = URI.create(request.getRequestLine().getUri());
+        }
+
+        final URIBuilder uriBuilder = new URIBuilder(originalUri);
+        if (parameters == null) {
+            final List<NameValuePair> queryParams = uriBuilder.getQueryParams();
+            if (!queryParams.isEmpty()) {
+                parameters = queryParams;
+                uriBuilder.clearParameters();
+            } else {
+                parameters = null;
+            }
+        }
+        try {
+            uri = uriBuilder.build();
+        } catch (URISyntaxException ex) {
+            // Should never happen
+            uri = originalUri;
+        }
+
+        if (request instanceof Configurable) {
+            config = ((Configurable) request).getConfig();
+        } else {
+            config = null;
+        }
+        return this;
+    }
+

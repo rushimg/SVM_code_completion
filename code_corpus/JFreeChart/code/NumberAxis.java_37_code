@@ -1,0 +1,26 @@
+    protected void selectVerticalAutoTickUnit(Graphics2D g2,
+                                              Rectangle2D dataArea,
+                                              RectangleEdge edge) {
+
+        double tickLabelHeight = estimateMaximumTickLabelHeight(g2);
+
+        // start with the current tick unit...
+        TickUnitSource tickUnits = getStandardTickUnits();
+        TickUnit unit1 = tickUnits.getCeilingTickUnit(getTickUnit());
+        double unitHeight = lengthToJava2D(unit1.getSize(), dataArea, edge);
+
+        // then extrapolate...
+
+        NumberTickUnit unit2
+            = (NumberTickUnit) tickUnits.getCeilingTickUnit(guess);
+        double unit2Height = lengthToJava2D(unit2.getSize(), dataArea, edge);
+
+        tickLabelHeight = estimateMaximumTickLabelHeight(g2);
+        if (tickLabelHeight > unit2Height) {
+            unit2 = (NumberTickUnit) tickUnits.getLargerTickUnit(unit2);
+        }
+
+        setTickUnit(unit2, false, false);
+
+    }
+

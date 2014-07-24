@@ -1,0 +1,73 @@
+    public void executeQuery(Connection con, String query) throws SQLException {
+
+        Statement statement = null;
+        ResultSet resultSet = null;
+
+        try {
+            statement = con.createStatement();
+            resultSet = statement.executeQuery(query);
+            ResultSetMetaData metaData = resultSet.getMetaData();
+
+            int columnCount = metaData.getColumnCount();
+            if (columnCount != 2) {
+                throw new SQLException(
+                    "Invalid sql generated.  PieDataSet requires 2 columns only"
+                );
+            }
+
+            int columnType = metaData.getColumnType(2);
+            double value = Double.NaN;
+            while (resultSet.next()) {
+                Comparable key = resultSet.getString(1);
+                switch (columnType) {
+                    case Types.NUMERIC:
+                    case Types.REAL:
+                    case Types.INTEGER:
+                    case Types.DOUBLE:
+                    case Types.FLOAT:
+                    case Types.DECIMAL:
+                    case Types.BIGINT:
+                        value = resultSet.getDouble(2);
+                        setValue(key, value);
+                        break;
+
+                    case Types.DATE:
+                    case Types.TIME:
+                    case Types.TIMESTAMP:
+                        Timestamp date = resultSet.getTimestamp(2);
+                        value = date.getTime();
+                        setValue(key, value);
+                        break;
+
+                    default:
+                        System.err.println(
+                            "JDBCPieDataset - unknown data type"
+                        );
+                        break;
+                }
+            }
+
+            fireDatasetChanged();
+
+        }
+        finally {
+            if (resultSet != null) {
+                try {
+                    resultSet.close();
+                }
+                catch (Exception e) {
+                    System.err.println("JDBCPieDataset: swallowing exception.");
+                }
+            }
+            if (statement != null) {
+                try {
+                    statement.close();
+                }
+                catch (Exception e) {
+                    System.err.println("JDBCPieDataset: swallowing exception.");
+                }
+            }
+        }
+    }
+
+

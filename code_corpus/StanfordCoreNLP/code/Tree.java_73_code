@@ -1,0 +1,22 @@
+  public Tree flatten(TreeFactory tf) {
+    if (isLeaf() || isPreTerminal()) {
+      return this;
+    }
+    Tree[] kids = children();
+    List<Tree> newChildren = new ArrayList<Tree>(kids.length);
+    for (Tree child : kids) {
+      if (child.isLeaf() || child.isPreTerminal()) {
+        newChildren.add(child);
+      } else {
+        Tree newChild = child.flatten(tf);
+        if (label().equals(newChild.label())) {
+          newChildren.addAll(newChild.getChildrenAsList());
+        } else {
+          newChildren.add(newChild);
+        }
+      }
+    }
+    return tf.newTreeNode(label(), newChildren);
+  }
+
+

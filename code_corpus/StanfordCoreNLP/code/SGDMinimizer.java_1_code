@@ -1,0 +1,119 @@
+public class SGDMinimizer<T extends Function> implements Minimizer<T>, HasEvaluators {
+
+  protected double xscale, xnorm;
+  protected double[] x;
+  protected int t0;  // Initial stochastic iteration count
+  protected final double sigma;
+  protected double lambda;
+  protected boolean quiet = false;
+  private static final int DEFAULT_NUM_PASSES = 50;
+  protected final int numPasses; //-1;
+  protected int bSize = 1;  // NOTE: If bSize does not divide evenly into total number of samples,
+                            // some samples may get accounted for twice in one pass
+  private static final int DEFAULT_TUNING_SAMPLES = 1000;
+  protected final int tuningSamples;
+
+  protected Random gen = new Random(1);
+  protected long maxTime = Long.MAX_VALUE;
+
+  private int evaluateIters = 0;    // Evaluate every x iterations (0 = no evaluation)
+  private Evaluator[] evaluators;  // separate set of evaluators to check how optimization is going
+
+
+  public SGDMinimizer(double sigma, int numPasses)
+  {
+    this(sigma, numPasses, -1, 1);
+  }
+
+  public SGDMinimizer(double sigma, int numPasses, int tuningSamples) {
+    this(sigma, numPasses, tuningSamples, 1);
+  }
+
+  public SGDMinimizer(double sigma, int numPasses, int tuningSamples, int batchSize)
+  {
+    this.bSize = batchSize;
+    this.sigma = sigma;
+    if (numPasses >= 0) {
+      this.numPasses = numPasses;
+    } else {
+      this.numPasses = DEFAULT_NUM_PASSES;
+      sayln("  SGDMinimizer: numPasses=" + numPasses + ", defaulting to " + this.numPasses);
+    }
+    if (tuningSamples > 0) {
+      this.tuningSamples = tuningSamples;
+    } else {
+      this.tuningSamples = DEFAULT_TUNING_SAMPLES;
+      sayln("  SGDMinimizer: tuneSampleSize=" + tuningSamples + ", defaulting to " + this.tuningSamples);
+    }
+  }
+
+  public SGDMinimizer(LogPrior prior, int numPasses, int batchSize, int tuningSamples)
+  {
+    if (LogPrior.LogPriorType.QUADRATIC == prior.getType()) {
+      sigma = prior.getSigma();
+    } else {
+      throw new RuntimeException("Unsupported prior type " + prior.getType());
+    }
+    if (numPasses >= 0) {
+      this.numPasses = numPasses;
+    } else {
+      this.numPasses = DEFAULT_NUM_PASSES;
+      sayln("  SGDMinimizer: numPasses=" + numPasses + ", defaulting to " + this.numPasses);
+    }
+    this.bSize = batchSize;
+    if (tuningSamples > 0) {
+      this.tuningSamples = tuningSamples;
+    } else {
+      this.tuningSamples = DEFAULT_TUNING_SAMPLES;
+      sayln("  SGDMinimizer: tuneSampleSize=" + tuningSamples + ", defaulting to " + this.tuningSamples);
+    }
+  }
+
+  public void shutUp() {
+    this.quiet = true;
+  }
+
+  private static final NumberFormat nf = new DecimalFormat("0.000E0");
+
+  protected String getName() {
+    return "SGD_InPlace_b" + bSize + "_lambda" + nf.format(lambda);
+  }
+
+  @Override
+  public void setEvaluators(int iters, Evaluator[] evaluators)
+  {
+    this.evaluateIters = iters;
+    this.evaluators = evaluators;
+  }
+
+
+  //This can be filled if an extending class needs to initialize things.
+  protected void init(AbstractStochasticCachingDiffUpdateFunction func) {
+  }
+
+  public double getObjective(AbstractStochasticCachingDiffUpdateFunction function, double[] w, double wscale, int[] sample)
+  {
+    double obj = function.valueAt(w,wscale,sample);
+    // Calculate objective with L2 regularization
+  }
+
+  public double tryEta(AbstractStochasticCachingDiffUpdateFunction function, double[] initial, int[] sample, double eta)
+  {
+    int numBatches =  sample.length / bSize;
+    double[] w = new double[initial.length];
+    double wscale = 1;
+    System.arraycopy(initial, 0, w, 0, w.length);
+    int[] sampleBatch = new int[bSize];
+    int sampleIndex = 0;
+    for (int batch = 0; batch < numBatches; batch++) {
+      for (int i = 0; i < bSize; i++) {
+        sampleBatch[i] = sample[(sampleIndex + i) % sample.length];
+      }
+      sampleIndex += bSize;
+      double gain = eta/wscale;
+      function.calculateStochasticUpdate(w, wscale, sampleBatch, gain);
+    }
+    double obj = getObjective(function, w, wscale, sample);
+    return obj;
+  }
+

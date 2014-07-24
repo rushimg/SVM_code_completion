@@ -1,0 +1,53 @@
+  private static <OUT> Map<OUT, String> getPads(Set<OUT> keys) {
+    Map<OUT, String> pads = Generics.newHashMap();
+    int max = 0;
+    for (OUT key : keys) {
+      String keyString = key==null ? "null" : key.toString();
+      if (keyString.length() > max) {
+        max = keyString.length();
+      }
+    }
+    for (OUT key : keys) {
+      String keyString = key==null ? "null" : key.toString();
+      int diff = max - keyString.length();
+      String pad = "";
+      for (int j = 0; j < diff; j++) {
+        pad += " ";
+      }
+      pads.put(key, pad);
+    }
+    return pads;
+  }
+
+  public static void main(String[] args) {
+    Collection<String> guesses = Arrays.asList(new String[]{"S:a", "S:b", "VP:c", "VP:d", "S:a"});
+    Collection<String> golds = Arrays.asList(new String[]{"S:a", "S:b", "S:b", "VP:d", "VP:a"});
+    EqualityChecker<String> e = new EqualityChecker<String>() {
+      public boolean areEqual(String o1, String o2) {
+        Matcher m1 = p.matcher(o1);
+        m1.find();
+        String s1 = m1.group(2);
+        System.out.println(s1);
+        Matcher m2 = p.matcher(o2);
+        m2.find();
+        String s2 = m2.group(2);
+        System.out.println(s2);
+        return s1.equals(s2);
+      }
+    };
+    EquivalenceClasser<String, String> eq = new EquivalenceClasser<String, String>() {
+      public String equivalenceClass(String o) {
+        Matcher m = p.matcher(o);
+        m.find();
+        return m.group(1);
+      }
+    };
+    EquivalenceClassEval<String, String> eval = new EquivalenceClassEval<String, String>(eq, e, "testing");
+    eval.setBagEval(false);
+    eval.eval(guesses, golds);
+    eval.displayLast();
+    eval.display();
+
+  }
+
+

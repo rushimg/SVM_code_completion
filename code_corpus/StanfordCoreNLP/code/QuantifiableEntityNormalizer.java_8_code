@@ -1,0 +1,77 @@
+  private static <E extends CoreMap> String detectDateRangeModifier(List<E> date, List<E> list, int beforeIndex, int afterIndex) {
+    E prev = (beforeIndex >= 0) ? list.get(beforeIndex) : null;
+    int sz = list.size();
+    E next = (afterIndex < sz) ? list.get(afterIndex) : null;
+    E next2 = (afterIndex + 1 < sz) ? list.get(afterIndex + 1) : null;
+    E next3 = (afterIndex + 2 < sz) ? list.get(afterIndex + 2) : null;
+
+
+    if (DEBUG) {
+      err.println("DateRange: previous: " + prev);
+      err.println("Quantifiable: next: " + next + ' ' + next2 + ' ' + next3);
+    }
+
+    //sometimes the year gets tagged as CD but not as a date - if this happens, we want to add it in
+    if (next != null && isYear(next)) {
+      date.add(next);
+      next.set(CoreAnnotations.NamedEntityTagAnnotation.class, "DATE");
+      afterIndex++;
+    }
+    if (next2 != null && isYear(next2)) {
+      // This code here just seems wrong.... why are we marking next as a date without checking anything?
+      date.add(next);
+      assert(next != null); // keep the static analysis happy.
+      next.set(CoreAnnotations.NamedEntityTagAnnotation.class, "DATE");
+      date.add(next2);
+      next2.set(CoreAnnotations.NamedEntityTagAnnotation.class, "DATE");
+      afterIndex += 2;
+    }
+
+    //sometimes the date will be stated in a form like "June of 1984" -> we'd like this to be 198406
+    if(next != null && next.get(CoreAnnotations.TextAnnotation.class).matches(datePrepositionAfterWord)) {
+      //check if the next next word is a year or month
+      if(next2 != null && (isYear(next2))) {//TODO: implement month!
+        date.add(next);
+        date.add(next2);
+        afterIndex += 2;
+      }
+    }
+
+    //String range = detectTwoSidedRangeModifier(date.get(0), list, beforeIndex, afterIndex);
+    //if(range !=ISODateInstance.NO_RANGE) return range;
+    //check if it's an open range - two sided ranges get checked elsewhere
+    //based on the prev word
+    if(prev != null) {
+      String prevWord = prev.get(CoreAnnotations.TextAnnotation.class).toLowerCase();
+      if(prevWord.matches(dateRangeBeforeOneWord)) {
+        //we have an open range of the before type - e.g., Before June 6, John was 5
+        prev.set(CoreAnnotations.PartOfSpeechAnnotation.class, "DATE_MOD");
+        return ISODateInstance.OPEN_RANGE_BEFORE;
+      } else if(prevWord.matches(dateRangeAfterOneWord)) {
+        //we have an open range of the after type - e.g., After June 6, John was 6
+        prev.set(CoreAnnotations.PartOfSpeechAnnotation.class, "DATE_MOD");
+        return ISODateInstance.OPEN_RANGE_AFTER;
+      }
+    }
+
+
+    return ISODateInstance.NO_RANGE;
+  }
+
+  // Version of above without any weird stuff
+  private static <E extends CoreMap> String detectDateRangeModifier(E prev)
+  {
+    if(prev != null) {
+      String prevWord = prev.get(CoreAnnotations.TextAnnotation.class).toLowerCase();
+      if(prevWord.matches(dateRangeBeforeOneWord)) {
+        //we have an open range of the before type - e.g., Before June 6, John was 5
+        return ISODateInstance.OPEN_RANGE_BEFORE;
+      } else if(prevWord.matches(dateRangeAfterOneWord)) {
+        //we have an open range of the after type - e.g., After June 6, John was 6
+        return ISODateInstance.OPEN_RANGE_AFTER;
+      }
+    }
+    return ISODateInstance.NO_RANGE;
+  }
+
+

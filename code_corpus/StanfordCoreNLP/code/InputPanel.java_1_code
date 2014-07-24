@@ -1,0 +1,329 @@
+public class InputPanel extends JPanel implements ActionListener, ChangeListener {
+
+  private static final long serialVersionUID = -8219840036914495876L;
+
+  private static InputPanel inputPanel; // = null;
+
+  private JLabel foundStats;
+  private JButton findMatches;
+  private JButton cancel;
+  private JButton help;
+  private JTextArea tregexPattern;
+  private JComboBox recentTregexPatterns;
+  private DefaultComboBoxModel recentTregexPatternsModel;
+  private int numRecentPatterns = 5;// we save the last n patterns in our combo box, where n = numRecentPatterns
+  private JTextArea tsurgeonScript;
+  private TregexPatternCompiler compiler;//this should change only when someone changes the headfinder/basic category finder
+  private List<HistoryEntry> historyList;
+  private JFrame historyFrame; // = null;
+  private JLabel scriptLabel;
+  private boolean tsurgeonEnabled; // = false;
+  private JButton tsurgeonHelp;
+  private JButton cancelTsurgeon;
+  private Thread searchThread;
+  private JButton historyButton;
+  private JProgressBar progressBar;
+  private JButton browseButton;
+
+  private JFrame helpFrame;
+
+  private JFrame tsurgeonHelpFrame;
+
+  private JButton runScript;
+
+  public static synchronized InputPanel getInstance() {
+    if (inputPanel == null)
+      inputPanel = new InputPanel();
+    return inputPanel;
+  }
+
+
+  private InputPanel() {
+    //data stuff
+    compiler = new TregexPatternCompiler();
+    historyList = new ArrayList<HistoryEntry>();
+
+    //layout/image stuff
+    this.setLayout(new GridBagLayout());
+    this.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEmptyBorder(),"Search pattern: "));
+
+    //pattern/history area
+    JPanel tregexInput = makeTregexPatternArea();
+
+    //buttons
+    JPanel buttonBox = makeTregexButtonBox();
+    JPanel browseButtonBox = makeBrowseButtonBox();
+
+    //interactive (if set in prefs) tsurgeon pattern
+    Box tsurgeonBox = makeTSurgeonScriptArea();
+
+    //tsurgeon buttons
+    JPanel tsurgeonButtonBox = makeTSurgeonButtons();
+
+    //enable/disable tsurgeon by default
+    enableTsurgeonHelper(tsurgeonEnabled);//helper method used for initial call
+
+    //statistics/status
+    JPanel foundStatsBox = makeFoundStatsBox();
+
+    //put it together
+    JLabel bigEmptyLabel = new JLabel();
+    //bigEmptyLabel.setBorder(BorderFactory.createEtchedBorder());
+
+    GridBagConstraints c = new GridBagConstraints();
+    c.fill = GridBagConstraints.BOTH;
+    c.gridwidth = GridBagConstraints.REMAINDER;
+    c.weightx = 1.0;
+    c.weighty = 3.0/12;
+    c.gridx = 0;
+    c.gridy = 0;
+    this.add(tregexInput,c);
+
+    c.weighty = 1.0/12;
+    c.gridy = 1;
+    this.add(buttonBox,c);
+
+    c.weighty = 1.0/12;
+    c.gridy = 2;
+    this.add(browseButtonBox,c);
+
+    c.weighty = 0.5/12;
+    c.gridy = 3;
+    this.add(bigEmptyLabel,c);
+
+    c.weighty = 3.0/12;
+    c.gridy = 4;
+    c.anchor = GridBagConstraints.SOUTH;
+    this.add(tsurgeonBox,c);
+
+    c.weighty = 1.0/12;
+    c.gridy = 5;
+    //c.gridheight = GridBagConstraints.REMAINDER;
+    c.anchor = GridBagConstraints.SOUTH;
+    this.add(tsurgeonButtonBox,c);
+
+    c.gridheight = GridBagConstraints.REMAINDER;
+    c.weighty = 1.0/12;
+    c.gridy = 6;
+    this.add(foundStatsBox, c);
+  }
+
+
+  //separated out to make constructor more readable
+  private JPanel makeFoundStatsBox() {
+    JPanel foundStatsBox = new JPanel();
+    foundStatsBox.setLayout(new GridBagLayout());
+    Box labelBox = Box.createHorizontalBox();
+    foundStats = new JLabel(" ");
+    labelBox.add(foundStats);
+    historyButton = new JButton("Statistics");
+    historyButton.setEnabled(false);
+    historyButton.addActionListener(this);
+
+    GridBagConstraints c = new GridBagConstraints();
+    c.fill = GridBagConstraints.BOTH;
+    c.weightx = 1.7;
+    foundStatsBox.add(labelBox,c);
+    c.weightx = .3;
+    c.gridwidth = 1;
+    foundStatsBox.add(historyButton);
+    return foundStatsBox;
+
+  }
+
+  //separated out to make constructor more readable
+  private JPanel makeTSurgeonButtons() {
+    JPanel tsurgeonButtonBox = new JPanel();
+    tsurgeonButtonBox.setComponentOrientation(ComponentOrientation.RIGHT_TO_LEFT);
+    tsurgeonButtonBox.setLayout(new GridBagLayout());
+    tsurgeonHelp = new JButton("Help");
+    tsurgeonHelp.addActionListener(this);
+    cancelTsurgeon = new JButton("Cancel");
+    cancelTsurgeon.addActionListener(this);
+    runScript = new JButton("Run script");
+    runScript.addActionListener(this);
+
+    //make constraints and add in
+    GridBagConstraints c = new GridBagConstraints();
+    c.anchor = GridBagConstraints.NORTHEAST;
+    c.fill = GridBagConstraints.HORIZONTAL;
+    tsurgeonButtonBox.add(runScript,c);
+    tsurgeonButtonBox.add(cancelTsurgeon,c);
+    tsurgeonButtonBox.add(tsurgeonHelp,c);
+
+    c.gridwidth = GridBagConstraints.REMAINDER;
+    c.weightx = 1.0;
+    c.weighty = 1.0;
+    tsurgeonButtonBox.add(new JLabel(), c);
+
+
+    return tsurgeonButtonBox;
+  }
+  //separated out to make constructor more readable
+  private Box makeTSurgeonScriptArea() {
+    Box tsurgeonBox = Box.createHorizontalBox();
+    scriptLabel = new JLabel("Tsurgeon script: ");
+    tsurgeonScript = new JTextArea();
+    tsurgeonScript.setBorder(BorderFactory.createEmptyBorder());
+    tsurgeonScript.setFocusTraversalKeysEnabled(true);
+    JScrollPane scriptScroller = new JScrollPane(tsurgeonScript);
+    scriptScroller.setBorder(BorderFactory.createBevelBorder(javax.swing.border.BevelBorder.LOWERED));
+
+    //scriptScroller.setEnabled(tsurgeonEnabled);
+    tsurgeonBox.add(scriptLabel);
+    tsurgeonBox.add(scriptScroller);
+    //tsurgeonBox.setBorder(BorderFactory.createEtchedBorder());
+    return tsurgeonBox;
+  }
+
+  //separated out to make constructor more readable
+  private JPanel makeTregexPatternArea() {
+    //combo box with recent searches
+    recentTregexPatternsModel = new DefaultComboBoxModel();
+    recentTregexPatterns = new JComboBox(recentTregexPatternsModel);
+    recentTregexPatterns.setMinimumSize(new Dimension(120, 24));
+    recentTregexPatterns.addActionListener(this);
+
+    JLabel recentLabel = new JLabel("Recent: ");
+    //interactive tregex pattern
+    JLabel patternLabel = new JLabel("Pattern: ");
+    tregexPattern = new JTextArea();
+    tregexPattern.setFocusTraversalKeysEnabled(true);
+    tregexPattern.setLineWrap(true);
+
+    JScrollPane patternScroller = new JScrollPane(tregexPattern);
+    patternScroller.setBorder(BorderFactory.createBevelBorder(javax.swing.border.BevelBorder.LOWERED));
+
+    //add them into the panel
+    JPanel tregexInput = new JPanel();
+    tregexInput.setLayout(new GridBagLayout());
+    GridBagConstraints c = new GridBagConstraints();
+    c.fill = GridBagConstraints.BOTH;
+    c.weightx = 1.0;
+    c.weighty = 1.0;
+    c.gridx = 0;
+    c.gridy = 0;
+    tregexInput.add(recentLabel, c);
+    c.weightx = 12.0;
+    c.gridwidth = GridBagConstraints.REMAINDER;
+    c.gridx = 1;
+    tregexInput.add(recentTregexPatterns, c);
+    c.weightx = 1.0;
+    c.gridwidth = 1; //reset to default
+    c.gridheight = GridBagConstraints.REMAINDER;
+    c.gridx = 0;
+    c.gridy = 1;
+    tregexInput.add(patternLabel,c);
+    c.gridx = 1;
+    c.weightx = 12.0;
+    c.weighty = 2.0;
+    c.gridwidth = GridBagConstraints.REMAINDER;
+    tregexInput.add(patternScroller,c);
+    //tregexInput.setBorder(BorderFactory.createEtchedBorder());
+
+    return tregexInput;
+  }
+
+  //separated out to make constructor more readable
+  private JPanel makeTregexButtonBox() {
+    JPanel buttonBox = new JPanel();
+    buttonBox.setComponentOrientation(ComponentOrientation.RIGHT_TO_LEFT);
+    buttonBox.setLayout(new GridBagLayout());
+    //buttonBox.setBorder(BorderFactory.createEtchedBorder());
+    help = new JButton("Help");
+    help.addActionListener(this);
+    cancel = new JButton("Cancel");
+    cancel.setEnabled(false);
+    cancel.addActionListener(this);
+    findMatches = new JButton("Search");
+    findMatches.addActionListener(this);
+//  browseButton = new JButton("Browse Trees");
+//  browseButton.addActionListener(this);
+    JLabel emptyLabel = new JLabel();
+   // JLabel emptyLabel2 = new JLabel();
+
+    GridBagConstraints buttonConstraints = new GridBagConstraints();
+    buttonConstraints.fill = GridBagConstraints.HORIZONTAL;
+    buttonBox.add(findMatches,buttonConstraints);
+    buttonBox.add(cancel,buttonConstraints);
+    buttonBox.add(help,buttonConstraints);
+
+    buttonConstraints.gridwidth = GridBagConstraints.REMAINDER;
+    buttonConstraints.weightx = 1.0;
+    buttonConstraints.weighty = 1.0;
+    buttonBox.add(emptyLabel, buttonConstraints);
+//  buttonConstraints.gridwidth = 1;
+//  buttonBox.add(browseButton, buttonConstraints);
+//  buttonConstraints.gridwidth = GridBagConstraints.REMAINDER;
+//  buttonBox.add(emptyLabel2, buttonConstraints);
+
+    return buttonBox;
+  }
+
+  private JPanel makeBrowseButtonBox() {
+    JPanel buttonBox = new JPanel();
+    buttonBox.setComponentOrientation(ComponentOrientation.RIGHT_TO_LEFT);
+    buttonBox.setLayout(new GridBagLayout());
+    browseButton = new JButton("Browse Trees");
+    browseButton.addActionListener(this);
+    JLabel sizeLabel = new JLabel("Tree size:");
+    JSlider fontSlider = new JSlider(2, 64, 12);
+    fontSlider.addChangeListener(this);
+    GridBagConstraints buttonConstraints = new GridBagConstraints();
+    buttonConstraints.fill = GridBagConstraints.HORIZONTAL;
+    buttonConstraints.weightx = 0.2;
+    buttonConstraints.weighty = 0.2;
+    buttonBox.add(browseButton,buttonConstraints);
+    buttonConstraints.weightx = 0.6;
+    buttonBox.add(fontSlider, buttonConstraints);
+    buttonConstraints.weightx = 0.2;
+    buttonBox.add(sizeLabel, buttonConstraints);
+    return buttonBox;
+  }
+
+
+  public void enableTsurgeon(boolean enable) {
+    if(tsurgeonEnabled == enable)
+      return;//nothing changes
+    enableTsurgeonHelper(enable);
+  }
+
+  //Doesn't check if tsurgeon is already in this enable state - used by enableTsurgeon and for
+  //initially enabling/disabling tsurgeon.
+  private void enableTsurgeonHelper(boolean enable) {
+    scriptLabel.setEnabled(enable);
+    tsurgeonScript.setEnabled(enable);
+    tsurgeonHelp.setEnabled(enable);
+    cancelTsurgeon.setEnabled(false);//should always be off unless we're running a script
+    runScript.setEnabled(enable);
+    tsurgeonEnabled = enable;
+    TregexGUI.getInstance().setTsurgeonEnabled(enable);
+  }
+
+  public List<HistoryEntry> getHistoryList() {
+    return historyList;
+  }
+
+  public String getHistoryString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append(HistoryEntry.header());
+    sb.append('\n');
+    for(HistoryEntry e : this.getHistoryList()) {
+      sb.append(e.toString());
+      sb.append('\n');
+    }
+    return sb.toString();
+  }
+
+  private void addToHistoryList(String pattern, int numTreesMatched, int numMatches) {
+    if(!historyButton.isEnabled()) {
+      historyButton.setEnabled(true);
+      TregexGUI.getInstance().setSaveHistoryEnabled(true);
+    }
+    historyList.add(new HistoryEntry(pattern, numTreesMatched, numMatches));
+  }
+
+  public void setHeadFinder(HeadFinder hf) {
+    compiler = new TregexPatternCompiler(hf);
+  }
+

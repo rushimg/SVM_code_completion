@@ -1,0 +1,15 @@
+  public static final GrammaticalRelation ADJECTIVAL_COMPLEMENT =
+    new GrammaticalRelation(Language.English, "acomp", "adjectival complement",
+        AdjectivalComplementGRAnnotation.class, COMPLEMENT, "VP", tregexCompiler,
+        new String[] {
+          // ADJP=target used to be limited by !$-- NP, but that
+          // stopped the converter from finding the right dependency
+          // in cases such as "driving prices lower"
+          // The second half of the expression leaves out relations
+          // which should be xcomp because they are actually
+          // passivized verbs
+          "VP [ < ADJP=target | ( < (/^VB/ $+ (@S=target < (@ADJP < /^JJ/ ! $-- @NP|S))) !$-- (/^VB/ < " + copularWordRegex + " )) ]",
+        });
+  public static class AdjectivalComplementGRAnnotation extends GrammaticalRelationAnnotation { }
+
+

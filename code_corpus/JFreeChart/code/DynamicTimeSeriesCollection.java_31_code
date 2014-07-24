@@ -1,0 +1,27 @@
+        if (extremaChanged) {
+            invalidateRangeInfo();
+        }
+        //  wipe the next (about to be used) set of data slots
+        float wiper = (float) 0.0;
+        for (int s = 0; s < getSeriesCount(); s++) {
+            this.valueHistory[s].enterData(this.newestAt, wiper);
+        }
+        // Update the array of TimePeriods:
+        this.pointsInTime[this.newestAt] = nextInstant;
+        // Now advance "oldestAt", wrapping at end of the array
+        this.oldestAt++;
+        if (this.oldestAt >= this.historyCount) {
+            this.oldestAt = 0;
+        }
+        // Update the domain limits:
+        long startL = this.domainStart.longValue();  //(time is kept in msec)
+        this.domainStart = new Long(startL + this.deltaTime);
+        long endL = this.domainEnd.longValue();
+        this.domainEnd = new Long(endL + this.deltaTime);
+        this.domainRange = new Range(startL, endL);
+        fireSeriesChanged();
+        return nextInstant;
+    }
+
+    //  If data can be < 0, the next 2 methods should be modified
+

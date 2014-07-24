@@ -1,0 +1,33 @@
+public class BinaryGrammar implements Serializable, Iterable<BinaryRule> {
+
+  // private static final BinaryRule[] EMPTY_BINARY_RULE_ARRAY = new BinaryRule[0];
+
+  private final Index<String> index;
+
+  private final List<BinaryRule> allRules;
+
+  private transient List<BinaryRule>[] rulesWithParent;
+  private transient List<BinaryRule>[] rulesWithLC;
+  private transient List<BinaryRule>[] rulesWithRC;
+  private transient Set<BinaryRule>[] ruleSetWithLC;
+  private transient Set<BinaryRule>[] ruleSetWithRC;
+  private transient BinaryRule[][] splitRulesWithLC;
+  private transient BinaryRule[][] splitRulesWithRC;
+  //  private transient BinaryRule[][] splitRulesWithParent = null;
+  private transient Map<BinaryRule,BinaryRule> ruleMap;
+  // for super speed! (maybe)
+  private transient boolean[] synthetic;
+
+
+  public int numRules() {
+    return allRules.size();
+  }
+
+  public List<BinaryRule> rules() {
+    return allRules;
+  }
+
+  public boolean isSynthetic(int state) {
+    return synthetic[state];
+  }
+

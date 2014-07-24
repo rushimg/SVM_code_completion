@@ -1,0 +1,34 @@
+  public class Contingency {
+    private double tp = 0;
+    private double fp = 0;
+    private double tn = 0;
+    private double fn = 0;
+    
+    private double prec = 0.0;
+    private double recall = 0.0;
+    private double spec = 0.0;
+    private double f1 = 0.0;
+    
+    public Contingency(int tp_, int fp_, int tn_, int fn_) {
+      tp = tp_;
+      fp = fp_;
+      tn = tn_;
+      fn = fn_;
+      
+      prec = tp / (tp + fp);
+      recall = tp / (tp + fn);
+      spec = tn / (fp + tn);
+    }
+    
+    public String toString() {
+      return StringUtils.join(Arrays.asList("prec=" + (((tp + fp) > 0) ? format.format(prec) : "n/a"),
+                                            "recall=" + (((tp + fn) > 0) ? format.format(recall) : "n/a"),
+                                            "spec=" + (((fp + tn) > 0) ? format.format(spec) : "n/a"), "f1="
+                                            + (((prec + recall) > 0) ? format.format(f1) : "n/a")),
+                              ", ");
+    }
+    
+  }
+  
+  private ConcurrentHashMap<Pair<U, U>, Integer> confTable = new ConcurrentHashMap<Pair<U, U>, Integer>();
+  

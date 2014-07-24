@@ -1,0 +1,91 @@
+    if (flags.useWord2) {
+      // features.add(charc +"c");
+      // features.add(charc2+"c2");
+      // features.add(charp +"p");
+      // features.add(charp + charc  +"pc");
+      // features.add(charc + charc2  +"cc2");
+      // // cdm: need hyphen so you can see which of charp or charc2 is null....
+      // features.add(charp + "-" + charc2 + "pc2");
+
+
+      features.add(charc +"::c");
+      features.add(charc2+"::c1");
+      features.add(charp +"::p");
+      features.add(charp2 +"::p2");
+      // trying to restore the features that Huihsin described in SIGHAN 2005 paper
+      features.add(charp +charc  +"::pc");
+      features.add(charp +charc2  +"::pn");
+      features.add(charp2 +charp  +"::p2p");
+      features.add(charp2 +charc  +"::p2c");
+
+    }
+    if (flags.useFeaturesCpC4gram || flags.useFeaturesCpC5gram || flags.useFeaturesCpC6gram) {
+      // todo: Both these features duplicate ones already in useWord2
+      features.add(charp2 + charp  +"p2p");
+      features.add(charp2 + "p2");
+    }
+    if (flags.useFeaturesCpC5gram || flags.useFeaturesCpC6gram) {
+      features.add(charc3+"c3");
+      features.add(charc2 + charc3 + "c2c3");
+    }
+    if (flags.useFeaturesCpC6gram) {
+      features.add(charp3 + "p3");
+      features.add(charp3 + charp2 + "p3p2");
+    }
+    if (flags.useGoodForNamesCpC) {
+      // these 2 features should be distinctively good at biasing from
+      // picking up a Chinese family name in the p2 or p3 positions:
+      // familyName X X startWord AND familyName X startWord
+      // But actually they seem to have negative value.
+      features.add(charp2 + "p2");
+      features.add(charp3 + "p3");
+    }
+
+    if (flags.useUnicodeType || flags.useUnicodeType4gram || flags.useUnicodeType5gram) {
+      features.add(uTypep + "-" + uTypec + "-" + uTypec2 + "-uType3");
+    }
+    if (flags.useUnicodeType4gram || flags.useUnicodeType5gram) {
+      features.add(uTypep2 + "-" + uTypep + "-" + uTypec + "-" + uTypec2 + "-uType4");
+    }
+    if (flags.useUnicodeType5gram) {
+      features.add(uTypep2 + "-" + uTypep + "-" + uTypec + "-" + uTypec2 + "-" + uTypec3 + "-uType5");
+    }
+    if (flags.useWordUTypeConjunctions2) {
+      features.add(uTypep + charc + "putcc");
+      features.add(charp + uTypec + "pccut");
+    }
+    if (flags.useWordUTypeConjunctions3) {
+      features.add(uTypep2 + uTypep + charc + "p2utputcc");
+      features.add(uTypep + charc + uTypec2 + "putccc2ut");
+      features.add(charc + uTypec2 + uTypec3 + "ccc2utc3ut");
+    }
+    if (flags.useUnicodeBlock) {
+      features.add(p.getString(CoreAnnotations.UBlockAnnotation.class) + "-" + c.getString(CoreAnnotations.UBlockAnnotation.class) + "-" + c2.getString(CoreAnnotations.UBlockAnnotation.class) + "-uBlock");
+    }
+
+    if (flags.useShapeStrings) {
+      if (flags.useShapeStrings1) {
+        features.add(p.getString(CoreAnnotations.ShapeAnnotation.class) + "ps");
+        features.add(c.getString(CoreAnnotations.ShapeAnnotation.class) + "cs");
+        features.add(c2.getString(CoreAnnotations.ShapeAnnotation.class) + "c2s");
+      }
+      if (flags.useShapeStrings3) {
+        features.add(p.getString(CoreAnnotations.ShapeAnnotation.class) + c.getString(CoreAnnotations.ShapeAnnotation.class) + c2.getString(CoreAnnotations.ShapeAnnotation.class) + "pscsc2s");
+      }
+      if (flags.useShapeStrings4) {
+        features.add(p2.getString(CoreAnnotations.ShapeAnnotation.class) + p.getString(CoreAnnotations.ShapeAnnotation.class) + c.getString(CoreAnnotations.ShapeAnnotation.class) + c2.getString(CoreAnnotations.ShapeAnnotation.class) + "p2spscsc2s");
+      }
+      if (flags.useShapeStrings5) {
+        features.add(p2.getString(CoreAnnotations.ShapeAnnotation.class) + p.getString(CoreAnnotations.ShapeAnnotation.class) + c.getString(CoreAnnotations.ShapeAnnotation.class) + c2.getString(CoreAnnotations.ShapeAnnotation.class) + c3.getString(CoreAnnotations.ShapeAnnotation.class) + "p2spscsc2sc3s");
+      }
+      if (flags.useWordShapeConjunctions2) {
+        features.add(p.getString(CoreAnnotations.ShapeAnnotation.class) + charc + "pscc");
+        features.add(charp + c.getString(CoreAnnotations.ShapeAnnotation.class) + "pccs");
+      }
+      if (flags.useWordShapeConjunctions3) {
+        features.add(p2.getString(CoreAnnotations.ShapeAnnotation.class) + p.getString(CoreAnnotations.ShapeAnnotation.class) + charc + "p2spscc");
+        features.add(p.getString(CoreAnnotations.ShapeAnnotation.class) + charc + c2.getString(CoreAnnotations.ShapeAnnotation.class) + "psccc2s");
+        features.add(charc + c2.getString(CoreAnnotations.ShapeAnnotation.class) + c3.getString(CoreAnnotations.ShapeAnnotation.class) + "ccc2sc3s");
+      }
+    }
+

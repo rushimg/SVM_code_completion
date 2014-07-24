@@ -1,0 +1,48 @@
+  public  Collection<SemanticGraph> exhaustFromPatterns(List<SsurgeonPattern> patternList, SemanticGraph sg) throws Exception {
+    Collection<SemanticGraph> generated = exhaustFromPatterns(patternList, sg, 1);
+    if (generated.size() > 1) {
+      if (log != null)
+        log.info("Before remove dupe, size="+generated.size());
+      generated = SemanticGraphUtils.removeDuplicates(generated, sg);
+      if (log != null)
+        log.info("AFTER remove dupe, size="+generated.size());
+    }
+    return generated;
+  }
+  private  List<SemanticGraph> exhaustFromPatterns(List<SsurgeonPattern> patternList, SemanticGraph sg, int depth) throws Exception {
+    List<SemanticGraph> retList = new ArrayList<SemanticGraph>();
+    for (SsurgeonPattern pattern : patternList) {
+      Collection<SemanticGraph> generated = pattern.execute(sg);
+      for (SemanticGraph modGraph : generated) {
+        //modGraph = SemanticGraphUtils.resetVerticeOrdering(modGraph);
+        //modGraph.vertexList(true);
+        //modGraph.edgeList(true);
+        retList.add(modGraph);
+      }
+      
+      if (log != null && generated.size() > 0) {
+        log.info("Exhaust from patterns, depth="+depth);
+        if (logPrefix != null) log.info(logPrefix);
+        log.info("Pattern = '"+pattern.getUID()+"' generated "+generated.size()+" matches");
+        log.info("= = = = = = = = = =\nSrc graph:\n"+sg.toString()+"\n= = = = = = = = = =\n");
+        int index=1;
+        for (SemanticGraph genSg : generated) {
+          log.info("REWRITE "+(index++));
+          log.info(genSg.toString());
+          log.info(". . . . .\n");
+        }
+      }
+    }
+    
+    if (retList.size() > 0) {
+      List<SemanticGraph> referenceList = new ArrayList<SemanticGraph>();
+      referenceList.addAll(retList);
+      for (SemanticGraph childGraph : referenceList) {
+        if (depth < 3)
+          retList.addAll(exhaustFromPatterns(patternList, childGraph, depth + 1));
+      }
+    }
+    return retList;
+  }
+  
+  

@@ -1,0 +1,23 @@
+  public String toString(String format) {
+    if ("xml".equals(format)) {
+      return "  <dep>\n    <governor>" + XMLUtils.escapeXML(governor().value()) + "</governor>\n    <dependent>" + XMLUtils.escapeXML(dependent().value()) + "</dependent>\n  </dep>";
+    } else if ("predicate".equals(format)) {
+      return "dep(" + governor() + "," + dependent() + ")";
+    } else {
+      return toString();
+    }
+  }
+  
+  public DependencyFactory dependencyFactory() {
+    return DependencyFactoryHolder.df;
+  }
+  
+  public static DependencyFactory factory() {
+    return DependencyFactoryHolder.df;
+  }
+
+  // extra class guarantees correct lazy loading (Bloch p.194)
+  private static class DependencyFactoryHolder {
+    private static final DependencyFactory df = new UnnamedDependencyFactory();
+  }
+

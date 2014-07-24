@@ -1,0 +1,88 @@
+  public static OutputStream getFileOutputStream(String filename) throws IOException {
+    OutputStream out = new FileOutputStream(filename);
+    if (filename.endsWith(".gz")) {
+      out = new GZIPOutputStream(out);
+    } else if (filename.endsWith(".bz2")) {
+      //out = new CBZip2OutputStream(out);
+      out = getBZip2PipedOutputStream(filename);
+    }
+    return out;
+  }
+
+  public static BufferedReader getBufferedFileReader(String filename) throws IOException {
+    return getBufferedFileReader(filename, defaultEncoding);
+  }
+
+  public static BufferedReader getBufferedFileReader(String filename, String encoding) throws IOException {
+    InputStream in = getFileInputStream(filename);
+    return new BufferedReader(new InputStreamReader(in, encoding));
+  }
+
+  public static BufferedReader getBufferedReaderFromClasspathOrFileSystem(String filename) throws IOException {
+    return getBufferedReaderFromClasspathOrFileSystem(filename, defaultEncoding);
+  }
+
+  public static BufferedReader getBufferedReaderFromClasspathOrFileSystem(String filename, String encoding) throws IOException {
+    InputStream in = findStreamInClasspathOrFileSystem(filename);
+    return new BufferedReader(new InputStreamReader(in, encoding));
+  }
+
+  public static PrintWriter getPrintWriter(File textFile) throws IOException {
+    return getPrintWriter(textFile, null);
+  }
+
+  public static PrintWriter getPrintWriter(File textFile, String encoding) throws IOException {
+    File f = textFile.getAbsoluteFile();
+    if (encoding == null) {
+      encoding = defaultEncoding;
+    }
+    return new PrintWriter(new BufferedWriter(new OutputStreamWriter(new FileOutputStream(f), encoding)), true);
+  }
+
+  public static PrintWriter getPrintWriter(String filename) throws IOException {
+    return getPrintWriter(filename, defaultEncoding);
+  }
+
+  public static PrintWriter getPrintWriterIgnoringExceptions(String filename) {
+    try {
+      return getPrintWriter(filename, defaultEncoding);
+    } catch (IOException ioe) {
+      return null;
+    }
+  }
+
+  public static PrintWriter getPrintWriterOrDie(String filename) {
+    try {
+      return getPrintWriter(filename, defaultEncoding);
+    } catch (IOException ioe) {
+      throw new RuntimeIOException(ioe);
+    }
+  }
+
+  public static PrintWriter getPrintWriter(String filename, String encoding) throws IOException {
+    OutputStream out = getFileOutputStream(filename);
+    if (encoding == null) {
+      encoding = defaultEncoding;
+    }
+    return new PrintWriter(new BufferedWriter(new OutputStreamWriter(out, encoding)), true);
+  }
+
+  public static InputStream getBZip2PipedInputStream(String filename) throws IOException
+  {
+    String bzcat = System.getProperty("bzcat", "bzcat");
+    Runtime rt = Runtime.getRuntime();
+    String cmd = bzcat + " " + filename;
+    //System.err.println("getBZip2PipedInputStream: Running command: "+cmd);
+    Process p = rt.exec(cmd);
+    Writer errWriter = new BufferedWriter(new OutputStreamWriter(System.err));
+    StreamGobbler errGobler = new StreamGobbler(p.getErrorStream(), errWriter);
+    errGobler.start();
+    return p.getInputStream();
+  }
+
+  public static OutputStream getBZip2PipedOutputStream(String filename) throws IOException
+  {
+    return new BZip2PipedOutputStream(filename);
+  }
+
+  private static final Pattern tab = Pattern.compile("\t");

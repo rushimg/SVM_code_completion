@@ -1,0 +1,16 @@
+  private static <E> void loadIntoCounter(String filename, Class<E> c, Counter<E> counter) throws RuntimeException {
+    try {
+      Constructor<E> m = c.getConstructor(String.class);
+      BufferedReader in = IOUtils.getBufferedFileReader(filename);
+      for (String line; (line = in.readLine()) != null;) {
+        String[] tokens = line.trim().split("\\s+");
+        if (tokens.length != 2) throw new RuntimeException();
+        double value = Double.parseDouble(tokens[1]);
+        counter.setCount(m.newInstance(tokens[0]), value);
+      }
+      in.close();
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+

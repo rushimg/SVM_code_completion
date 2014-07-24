@@ -1,0 +1,85 @@
+    public XMLTag(String tag) {
+      if (tag == null || tag.length() == 0) {
+        throw new NullPointerException("Attempted to parse empty/null tag");
+      }
+      if (tag.charAt(0) != '<') {
+        throw new IllegalArgumentException("Tag did not start with <");
+      }
+      if (tag.charAt(tag.length() - 1) != '>') {
+        throw new IllegalArgumentException("Tag did not end with >");
+      }
+      text = tag;
+      int begin = 1;
+      if (tag.charAt(1) == '/') {
+        begin = 2;
+        isEndTag = true;
+      } else {
+        isEndTag = false;
+      }
+      int end = tag.length() - 1;
+      if (tag.charAt(tag.length() - 2) == '/') {
+        end = tag.length() - 2;
+        isSingleTag = true;
+      } else {
+        isSingleTag = false;
+      }
+      tag = tag.substring(begin, end);
+      attributes = Generics.newHashMap();
+      begin = 0;
+      end = findSpace(tag, 0);
+
+      if (end < 0) {
+        name = tag;
+      } else {
+        name = tag.substring(begin, end);
+        do {
+          begin = end + 1;
+          while (begin < tag.length() && tag.charAt(begin) < 0x21) {
+            begin++; // get rid of leading whitespace
+          }
+          if (begin == tag.length()) {
+            break;
+          }
+          end = tag.indexOf('=', begin);
+          if (end < 0) {
+            String att = tag.substring(begin);
+            attributes.put(att, "");
+            break;
+          }
+          String att = tag.substring(begin, end).trim();
+          begin = end + 1;
+          String value = null;
+          if (tag.length() > begin) {
+            while (begin < tag.length() && tag.charAt(begin) < 0x21) {
+              begin++;
+            }
+            if (begin < tag.length() && tag.charAt(begin) == '\"') {
+              // get quoted expression
+              begin++;
+              end = tag.indexOf('\"', begin);
+              if (end < 0) {
+                break; // this is a problem
+              }
+              value = tag.substring(begin, end);
+              end++;
+            } else {
+              // get unquoted expression
+              end = findSpace(tag, begin);
+              if (end < 0) {
+                end = tag.length();
+              }
+              System.out.println(begin + " " + end);
+              value = tag.substring(begin, end);
+            }
+          }
+          attributes.put(att, value);
+        } while (end < tag.length() - 3);
+      }
+    }
+
+    public String toString() {
+      return text;
+    }
+  } // end static class XMLTag
+
+

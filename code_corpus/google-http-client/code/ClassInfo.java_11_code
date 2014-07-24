@@ -1,0 +1,51 @@
+  public Collection<String> getNames() {
+    return names;
+  }
+
+  private ClassInfo(Class<?> srcClass, boolean ignoreCase) {
+    clazz = srcClass;
+    this.ignoreCase = ignoreCase;
+    Preconditions.checkArgument(
+        !ignoreCase || !srcClass.isEnum(), "cannot ignore case on an enum: " + srcClass);
+    // name set has a special comparator to keep null first
+    TreeSet<String> nameSet = new TreeSet<String>(new Comparator<String>() {
+      public int compare(String s0, String s1) {
+        return s0 == s1 ? 0 : s0 == null ? -1 : s1 == null ? 1 : s0.compareTo(s1);
+      }
+    });
+    // iterate over declared fields
+    for (Field field : srcClass.getDeclaredFields()) {
+      FieldInfo fieldInfo = FieldInfo.of(field);
+      if (fieldInfo == null) {
+        continue;
+      }
+      String fieldName = fieldInfo.getName();
+      if (ignoreCase) {
+        fieldName = fieldName.toLowerCase().intern();
+      }
+      FieldInfo conflictingFieldInfo = nameToFieldInfoMap.get(fieldName);
+      Preconditions.checkArgument(conflictingFieldInfo == null,
+          "two fields have the same %sname <%s>: %s and %s",
+          ignoreCase ? "case-insensitive " : "",
+          fieldName,
+          field,
+          conflictingFieldInfo == null ? null : conflictingFieldInfo.getField());
+      nameToFieldInfoMap.put(fieldName, fieldInfo);
+      nameSet.add(fieldName);
+    }
+    // inherit from super class and add only fields not already in nameToFieldInfoMap
+    Class<?> superClass = srcClass.getSuperclass();
+    if (superClass != null) {
+      ClassInfo superClassInfo = ClassInfo.of(superClass, ignoreCase);
+      nameSet.addAll(superClassInfo.names);
+      for (Map.Entry<String, FieldInfo> e : superClassInfo.nameToFieldInfoMap.entrySet()) {
+        String name = e.getKey();
+        if (!nameToFieldInfoMap.containsKey(name)) {
+          nameToFieldInfoMap.put(name, e.getValue());
+        }
+      }
+    }
+    names = nameSet.isEmpty() ? Collections.<String>emptyList() : Collections.unmodifiableList(
+        new ArrayList<String>(nameSet));
+  }
+

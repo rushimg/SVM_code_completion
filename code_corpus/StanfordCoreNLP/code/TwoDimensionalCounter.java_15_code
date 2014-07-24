@@ -1,0 +1,23 @@
+  @Override
+  public String toString() {
+    StringBuilder buff = new StringBuilder();
+    for (K1 key1 : map.keySet()) {
+      ClassicCounter<K2> c = getCounter(key1);
+      for (K2 key2 : c.keySet()) {
+        double score = c.getCount(key2);
+        buff.append(key1).append("\t").append(key2).append("\t").append(score).append("\n");
+      }
+    }
+    return buff.toString();
+  }
+
+  @SuppressWarnings( { "unchecked" })
+  public String toMatrixString(int cellSize) {
+    List<K1> firstKeys = new ArrayList<K1>(firstKeySet());
+    List<K2> secondKeys = new ArrayList<K2>(secondKeySet());
+    Collections.sort((List<? extends Comparable>) firstKeys);
+    Collections.sort((List<? extends Comparable>) secondKeys);
+    double[][] counts = toMatrix(firstKeys, secondKeys);
+    return ArrayMath.toString(counts, cellSize, firstKeys.toArray(), secondKeys.toArray(), new DecimalFormat(), true);
+  }
+

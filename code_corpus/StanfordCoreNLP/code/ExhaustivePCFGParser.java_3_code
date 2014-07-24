@@ -1,0 +1,147 @@
+  protected void initializePossibles() {
+    for (int loc = 0; loc < length; loc++) {
+      Arrays.fill(iPossibleByL[loc], false);
+      Arrays.fill(oPossibleByL[loc], false);
+    }
+    for (int loc = 0; loc <= length; loc++) {
+      Arrays.fill(iPossibleByR[loc], false);
+      Arrays.fill(oPossibleByR[loc], false);
+    }
+    for (int start = 0; start < length; start++) {
+      for (int end = start + 1; end <= length; end++) {
+        for (int state = 0; state < numStates; state++) {
+          if (iScore[start][end][state] > Float.NEGATIVE_INFINITY && oScore[start][end][state] > Float.NEGATIVE_INFINITY) {
+            iPossibleByL[start][state] = true;
+            iPossibleByR[end][state] = true;
+            oPossibleByL[start][state] = true;
+            oPossibleByR[end][state] = true;
+          }
+        }
+      }
+    }
+  }
+
+  private void doOutsideScores() {
+    for (int diff = length; diff >= 1; diff--) {
+      if (Thread.interrupted()) {
+        throw new RuntimeInterruptedException();
+      }
+
+      for (int start = 0; start + diff <= length; start++) {
+        int end = start + diff;
+        // do unaries
+        for (int s = 0; s < numStates; s++) {
+          float oS = oScore[start][end][s];
+          if (oS == Float.NEGATIVE_INFINITY) {
+            continue;
+          }
+          UnaryRule[] rules = ug.closedRulesByParent(s);
+          for (UnaryRule ur : rules) {
+            float pS = ur.score;
+            float tot = oS + pS;
+            if (tot > oScore[start][end][ur.child] && iScore[start][end][ur.child] > Float.NEGATIVE_INFINITY) {
+              oScore[start][end][ur.child] = tot;
+            }
+          }
+        }
+        // do binaries
+        for (int s = 0; s < numStates; s++) {
+          int min1 = narrowRExtent[start][s];
+          if (end < min1) {
+            continue;
+          }
+          BinaryRule[] rules = bg.splitRulesWithLC(s);
+          for (BinaryRule br  : rules) {
+            float oS = oScore[start][end][br.parent];
+            if (oS == Float.NEGATIVE_INFINITY) {
+              continue;
+            }
+            int max1 = narrowLExtent[end][br.rightChild];
+            if (max1 < min1) {
+              continue;
+            }
+            int min = min1;
+            int max = max1;
+            if (max - min > 2) {
+              int min2 = wideLExtent[end][br.rightChild];
+              min = (min1 > min2 ? min1 : min2);
+              if (max1 < min) {
+                continue;
+              }
+              int max2 = wideRExtent[start][br.leftChild];
+              max = (max1 < max2 ? max1 : max2);
+              if (max < min) {
+                continue;
+              }
+            }
+            float pS = br.score;
+            for (int split = min; split <= max; split++) {
+              float lS = iScore[start][split][br.leftChild];
+              if (lS == Float.NEGATIVE_INFINITY) {
+                continue;
+              }
+              float rS = iScore[split][end][br.rightChild];
+              if (rS == Float.NEGATIVE_INFINITY) {
+                continue;
+              }
+              float totL = pS + rS + oS;
+              if (totL > oScore[start][split][br.leftChild]) {
+                oScore[start][split][br.leftChild] = totL;
+              }
+              float totR = pS + lS + oS;
+              if (totR > oScore[split][end][br.rightChild]) {
+                oScore[split][end][br.rightChild] = totR;
+              }
+            }
+          }
+        }
+        for (int s = 0; s < numStates; s++) {
+          int max1 = narrowLExtent[end][s];
+          if (max1 < start) {
+            continue;
+          }
+          BinaryRule[] rules = bg.splitRulesWithRC(s);
+          for (BinaryRule br : rules) {
+            float oS = oScore[start][end][br.parent];
+            if (oS == Float.NEGATIVE_INFINITY) {
+              continue;
+            }
+            int min1 = narrowRExtent[start][br.leftChild];
+            if (max1 < min1) {
+              continue;
+            }
+            int min = min1;
+            int max = max1;
+            if (max - min > 2) {
+              int min2 = wideLExtent[end][br.rightChild];
+              min = (min1 > min2 ? min1 : min2);
+              if (max1 < min) {
+                continue;
+              }
+              int max2 = wideRExtent[start][br.leftChild];
+              max = (max1 < max2 ? max1 : max2);
+              if (max < min) {
+                continue;
+              }
+            }
+            float pS = br.score;
+            for (int split = min; split <= max; split++) {
+              float lS = iScore[start][split][br.leftChild];
+              if (lS == Float.NEGATIVE_INFINITY) {
+                continue;
+              }
+              float rS = iScore[split][end][br.rightChild];
+              if (rS == Float.NEGATIVE_INFINITY) {
+                continue;
+              }
+              float totL = pS + rS + oS;
+              if (totL > oScore[start][split][br.leftChild]) {
+                oScore[start][split][br.leftChild] = totL;
+              }
+              float totR = pS + lS + oS;
+              if (totR > oScore[split][end][br.rightChild]) {
+                oScore[split][end][br.rightChild] = totR;
+              }
+            }
+          }
+        }

@@ -1,0 +1,35 @@
+  public UnlabeledAttachmentEval(String str, boolean runningAverages, HeadFinder headFinder) {
+    this(str, runningAverages, headFinder, Filters.<String>acceptFilter());
+  }
+  
+  public UnlabeledAttachmentEval(String str, boolean runningAverages, HeadFinder headFinder, Filter<String> punctRejectFilter) {
+    super(str, runningAverages);
+    this.headFinder = headFinder;
+    this.punctRejectWordFilter = punctRejectFilter;
+ 
+    this.punctRejectFilter = new Filter<Dependency<Label,Label,Object>>() {
+      private static final long serialVersionUID = 649358302237611081L;
+      // Semantics of this method are weird. If accept() returns true, then the dependent is
+      // dependencies.
+      public boolean accept(Dependency<Label, Label, Object> dep) {
+        String depString = dep.dependent().value();
+        return punctRejectWordFilter.accept(depString);
+      }
+    };
+  }
+
+  @Override
+  public void evaluate(Tree guess, Tree gold, PrintWriter pw) {
+    if(gold == null || guess == null) {
+      System.err.printf("%s: Cannot compare against a null gold or guess tree!\n", this.getClass().getName());
+      return;
+
+    } else if (guess.yield().size() != gold.yield().size()) {
+      System.err.println("Warning: yield differs:");
+      System.err.println("Guess: " + Sentence.listToString(guess.yield()));
+      System.err.println("Gold:  " + Sentence.listToString(gold.yield()));
+    }
+
+    super.evaluate(guess, gold, pw);
+  }
+  

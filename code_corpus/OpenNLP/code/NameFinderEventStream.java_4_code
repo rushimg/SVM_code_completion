@@ -1,0 +1,57 @@
+  @Deprecated
+  public static String[] generateOutcomes(Span[] names, String type, int length) {
+    String[] outcomes = new String[length];
+    for (int i = 0; i < outcomes.length; i++) {
+      outcomes[i] = NameFinderME.OTHER;
+    }
+    for (Span name : names) {
+      if (name.getType() == null) {
+        outcomes[name.getStart()] = type + "-" + NameFinderME.START;
+      }
+      else {
+        outcomes[name.getStart()] = name.getType() + "-" + NameFinderME.START;
+      }
+      // now iterate from begin + 1 till end
+      for (int i = name.getStart() + 1; i < name.getEnd(); i++) {
+        if (name.getType() == null) {
+          outcomes[i] = type + "-" + NameFinderME.CONTINUE;
+        }
+        else {
+          outcomes[i] = name.getType() + "-" + NameFinderME.CONTINUE;
+        }
+      }
+    }
+    return outcomes;
+  }
+
+  public static List<Event> generateEvents(String[] sentence, String[] outcomes, NameContextGenerator cg) {
+    List<Event> events = new ArrayList<Event>(outcomes.length);
+    for (int i = 0; i < outcomes.length; i++) {
+      events.add(new Event(outcomes[i], cg.getContext(i, sentence, outcomes,null)));
+    }
+
+    cg.updateAdaptiveData(sentence, outcomes);
+
+    return events;
+  }
+
+  @Override
+  protected Iterator<Event> createEvents(NameSample sample) {
+
+    if (sample.isClearAdaptiveDataSet()) {
+      contextGenerator.clearAdaptiveData();
+    }
+
+    String outcomes[] = codec.encode(sample.getNames(), sample.getSentence().length);
+//    String outcomes[] = generateOutcomes(sample.getNames(), type, sample.getSentence().length);
+    additionalContextFeatureGenerator.setCurrentContext(sample.getAdditionalContext());
+    String[] tokens = new String[sample.getSentence().length];
+
+    for (int i = 0; i < sample.getSentence().length; i++) {
+      tokens[i] = sample.getSentence()[i];
+    }
+
+    return generateEvents(tokens, outcomes, contextGenerator).iterator();
+  }
+
+

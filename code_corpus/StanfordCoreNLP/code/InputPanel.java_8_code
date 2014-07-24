@@ -1,0 +1,46 @@
+    public static String header() {
+      return "pattern\tnumTreesMatched\tnumMatches";
+    }
+
+  } // end class HistoryEntry
+
+
+  public static class TRegexGUITreeVisitor implements TreeVisitor {
+
+    private int totalMatches; // = 0;
+    private final TregexPattern p;
+    private final List<TreeFromFile> matchedTrees;
+    private final Map<TreeFromFile,List<Tree>> matchedParts;
+    private String filename = "";
+
+
+    TRegexGUITreeVisitor(TregexPattern p) { //String[] handles) {
+      this.p = p;
+      //this.handles = handles;
+      matchedTrees = new ArrayList<TreeFromFile>();
+      matchedParts = Generics.newHashMap();
+    }
+
+    public Map<TreeFromFile,List<Tree>> getMatchedParts() {
+      return matchedParts;
+    }
+
+    public void visitTree(Tree t) {
+      int numMatches = 0;
+      TregexMatcher match = p.matcher(t);
+      List<Tree> matchedPartList = null; // initialize lazily, since usually most trees don't match!
+      while (match.find()) {
+        Tree curMatch = match.getMatch();
+        //System.out.println("Found match is: " + curMatch);
+        if (matchedPartList == null) matchedPartList = new ArrayList<Tree>();
+        matchedPartList.add(curMatch);
+        numMatches++;
+      } // end while match.find()
+      if(numMatches > 0) {
+        TreeFromFile tff = new TreeFromFile(t, filename);
+        matchedTrees.add(tff);
+        matchedParts.put(tff,matchedPartList);
+        totalMatches += numMatches;
+      }
+    } // end visitTree
+

@@ -1,0 +1,32 @@
+    private Icon getIcon(Shape shape, final Paint fillPaint,
+                        final Paint outlinePaint) {
+
+      final int width = shape.getBounds().width;
+      final int height = shape.getBounds().height;
+      final GeneralPath path = new GeneralPath(shape);
+      return new Icon() {
+          public void paintIcon(Component c, Graphics g, int x, int y) {
+              Graphics2D g2 = (Graphics2D) g;
+              path.transform(AffineTransform.getTranslateInstance(x, y));
+              if (fillPaint != null) {
+                  g2.setPaint(fillPaint);
+                  g2.fill(path);
+              }
+              if (outlinePaint != null) {
+                  g2.setPaint(outlinePaint);
+                  g2.draw(path);
+              }
+              path.transform(AffineTransform.getTranslateInstance(-x, -y));
+        }
+
+        public int getIconWidth() {
+            return width;
+        }
+
+        public int getIconHeight() {
+            return height;
+        }
+
+      };
+    }
+

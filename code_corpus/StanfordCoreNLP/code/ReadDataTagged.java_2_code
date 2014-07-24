@@ -1,0 +1,30 @@
+public class ReadDataTagged {
+
+  private final ArrayList<DataWordTag> v = new ArrayList<DataWordTag>();
+  private int numElements = 0;
+  private int totalSentences = 0;
+  private int totalWords = 0;
+  private final PairsHolder pairs;
+  private final MaxentTagger maxentTagger;
+
+  //TODO: make a class DataHolder that holds the dict, tags, pairs, etc, for tagger
+  // and pass it around
+
+  protected ReadDataTagged(TaggerConfig config, MaxentTagger maxentTagger,
+                           PairsHolder pairs)
+    throws IOException
+  {
+    this.maxentTagger = maxentTagger;
+    this.pairs = pairs;
+    List<TaggedFileRecord> fileRecords = TaggedFileRecord.createRecords(config, config.getFile());
+    Map<String, IntCounter<String>> wordTagCounts = Generics.newHashMap();
+    for (TaggedFileRecord record : fileRecords) {
+      loadFile(record.reader(), wordTagCounts);
+    }
+    // By counting the words and then filling the Dictionary, we can
+    // make it so there are no calls that mutate the Dictionary or its
+    // TagCount objects later
+    maxentTagger.dict.fillWordTagCounts(wordTagCounts);
+  }
+
+

@@ -1,0 +1,44 @@
+  public static <T> T readObjectFromFileNoExceptions(File file) {
+    Object o = null;
+    try {
+      ObjectInputStream ois = new ObjectInputStream(new BufferedInputStream(
+              new GZIPInputStream(new FileInputStream(file))));
+      o = ois.readObject();
+      ois.close();
+    } catch (IOException e) {
+      e.printStackTrace();
+    } catch (ClassNotFoundException e) {
+      e.printStackTrace();
+    }
+    return ErasureUtils.uncheckedCast(o);
+  }
+
+  public static int lineCount(String textFileOrUrl) throws IOException {
+    BufferedReader r = readerFromString(textFileOrUrl);
+    int numLines = 0;
+    while (r.readLine() != null) {
+      numLines++;
+    }
+    return numLines;
+  }
+
+  public static ObjectOutputStream writeStreamFromString(String serializePath)
+          throws IOException {
+    ObjectOutputStream oos;
+    if (serializePath.endsWith(".gz")) {
+      oos = new ObjectOutputStream(new BufferedOutputStream(
+              new GZIPOutputStream(new FileOutputStream(serializePath))));
+    } else {
+      oos = new ObjectOutputStream(new BufferedOutputStream(
+              new FileOutputStream(serializePath)));
+    }
+
+    return oos;
+  }
+
+  public static ObjectInputStream readStreamFromString(String filenameOrUrl)
+          throws IOException {
+    InputStream is = getInputStreamFromURLOrClasspathOrFileSystem(filenameOrUrl);
+    return new ObjectInputStream(is);
+  }
+

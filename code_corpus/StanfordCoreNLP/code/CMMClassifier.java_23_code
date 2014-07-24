@@ -1,0 +1,19 @@
+  public Datum<String, String> makeDatum(List<IN> info, int loc, List<FeatureFactory<IN>> featureFactories) {
+    PaddedList<IN> pInfo = new PaddedList<IN>(info, pad);
+
+    Collection<String> features = new ArrayList<String>();
+    for (FeatureFactory featureFactory : featureFactories) {
+      List<Clique> cliques = featureFactory.getCliques();
+      for (Clique c : cliques) {
+        Collection<String> feats = featureFactory.getCliqueFeatures(pInfo, loc, c);
+        feats = addOtherClasses(feats, pInfo, loc, c);
+        features.addAll(feats);
+      }
+    }
+
+    printFeatures(pInfo.get(loc), features);
+    CoreLabel c = info.get(loc);
+    return new BasicDatum<String, String>(features, c.get(CoreAnnotations.AnswerAnnotation.class));
+  }
+
+

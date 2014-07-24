@@ -1,0 +1,60 @@
+  public double logProbStartPos() {
+    double u = factorTables[0].unnormalizedLogProbFront(backgroundIndex);
+    return u - z;
+  }
+
+  public double logProb(int position, int label) {
+    double u = factorTables[position].unnormalizedLogProbEnd(label);
+    return u - z;
+  }
+
+  public double prob(int position, int label) {
+    return Math.exp(logProb(position, label));
+  }
+
+  public double logProb(int position, E label) {
+    return logProb(position, classIndex.indexOf(label));
+  }
+
+  public double prob(int position, E label) {
+    return Math.exp(logProb(position, label));
+  }
+
+  public double[] probsToDoubleArr(int position) {
+    double[] probs = new double[classIndex.size()];
+    for (int i = 0, sz = classIndex.size(); i < sz; i++) {
+      probs[i] = prob(position, i);
+    }
+    return probs;
+  }
+
+  public double[] logProbsToDoubleArr(int position) {
+    double[] probs = new double[classIndex.size()];
+    for (int i = 0, sz = classIndex.size(); i < sz; i++) {
+      probs[i] = logProb(position, i);
+    }
+    return probs;
+  }
+
+  public Counter<E> probs(int position) {
+    Counter<E> c = new ClassicCounter<E>();
+    for (int i = 0, sz = classIndex.size(); i < sz; i++) {
+      E label = classIndex.get(i);
+      c.incrementCount(label, prob(position, i));
+    }
+    return c;
+  }
+
+  public Counter<E> logProbs(int position) {
+    Counter<E> c = new ClassicCounter<E>();
+    for (int i = 0, sz = classIndex.size(); i < sz; i++) {
+      E label = classIndex.get(i);
+      c.incrementCount(label, logProb(position, i));
+    }
+    return c;
+  }
+
+  //
+  // MARGINAL PROBS OF TAGS AT MULTIPLE POSITIONS
+  //
+

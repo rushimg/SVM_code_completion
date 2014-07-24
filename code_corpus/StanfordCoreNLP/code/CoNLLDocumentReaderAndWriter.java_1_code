@@ -1,0 +1,78 @@
+  private static final boolean TREAT_FILE_AS_ONE_DOCUMENT = false;
+
+
+  private SeqClassifierFlags flags; // = null;
+
+
+  @Override
+  public void init(SeqClassifierFlags flags) {
+    this.flags = flags;
+  }
+
+  @Override
+  public String toString() {
+    return "CoNLLDocumentReaderAndWriter[entitySubclassification: " +
+        flags.entitySubclassification + ", intern: " + flags.intern + ']';
+  }
+
+
+  @Override
+  public Iterator<List<CoreLabel>> getIterator(Reader r) {
+    return new CoNLLIterator(r);
+  }
+
+  private class CoNLLIterator extends AbstractIterator<List<CoreLabel>> {
+
+    public CoNLLIterator (Reader r) {
+      stringIter = splitIntoDocs(r);
+    }
+
+    @Override
+    public boolean hasNext() { return stringIter.hasNext(); }
+
+    @Override
+    public List<CoreLabel> next() { return processDocument(stringIter.next()); }
+
+    private Iterator<String> stringIter; // = null;
+
+  } // end class CoNLLIterator
+
+
+  private static Iterator<String> splitIntoDocs(Reader r) {
+    if (TREAT_FILE_AS_ONE_DOCUMENT) {
+      return Collections.singleton(IOUtils.slurpReader(r)).iterator();
+    } else {
+      Collection<String> docs = new ArrayList<String>();
+      ObjectBank<String> ob = ObjectBank.getLineIterator(r);
+      StringBuilder current = new StringBuilder();
+      for (String line : ob) {
+        if (docPattern.matcher(line).lookingAt()) {
+          // Start new doc, store old one if non-empty
+          if (current.length() > 0) {
+            docs.add(current.toString());
+            current = new StringBuilder();
+          }
+        }
+        current.append(line);
+        current.append('\n');
+      }
+      if (current.length() > 0) {
+        docs.add(current.toString());
+      }
+      return docs.iterator();
+    }
+  }
+
+
+  private List<CoreLabel> processDocument(String doc) {
+    List<CoreLabel> lis = new ArrayList<CoreLabel>();
+    String[] lines = doc.split("\n");
+    for (String line : lines) {
+      if ( ! flags.deleteBlankLines || ! white.matcher(line).matches()) {
+        lis.add(makeCoreLabel(line));
+      }
+    }
+    entitySubclassify(lis, flags.entitySubclassification);
+    return lis;
+  }
+

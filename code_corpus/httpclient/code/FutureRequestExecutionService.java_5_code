@@ -1,0 +1,18 @@
+    public <T> HttpRequestFutureTask<T> execute(
+            final HttpUriRequest request,
+            final HttpContext context,
+            final ResponseHandler<T> responseHandler,
+            final FutureCallback<T> callback) {
+        if(closed.get()) {
+            throw new IllegalStateException("Close has been called on this httpclient instance.");
+        }
+        metrics.getScheduledConnections().incrementAndGet();
+        final HttpRequestTaskCallable<T> callable = new HttpRequestTaskCallable<T>(
+            httpclient, request, context, responseHandler, callback, metrics);
+        final HttpRequestFutureTask<T> httpRequestFutureTask = new HttpRequestFutureTask<T>(
+            request, callable);
+        executorService.execute(httpRequestFutureTask);
+
+        return httpRequestFutureTask;
+    }
+

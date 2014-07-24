@@ -1,0 +1,25 @@
+        NTLMMessage(final String messageBody, final int expectedType) throws NTLMEngineException {
+            messageContents = Base64.decodeBase64(messageBody.getBytes(DEFAULT_CHARSET));
+            // Look for NTLM message
+            if (messageContents.length < SIGNATURE.length) {
+                throw new NTLMEngineException("NTLM message decoding error - packet too short");
+            }
+            int i = 0;
+            while (i < SIGNATURE.length) {
+                if (messageContents[i] != SIGNATURE[i]) {
+                    throw new NTLMEngineException(
+                            "NTLM message expected - instead got unrecognized bytes");
+                }
+                i++;
+            }
+
+            // Check to be sure there's a type 2 message indicator next
+            final int type = readULong(SIGNATURE.length);
+            if (type != expectedType) {
+                throw new NTLMEngineException("NTLM type " + Integer.toString(expectedType)
+                        + " message expected - instead got type " + Integer.toString(type));
+            }
+
+            currentOutputPosition = messageContents.length;
+        }
+

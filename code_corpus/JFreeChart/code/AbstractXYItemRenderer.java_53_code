@@ -1,0 +1,26 @@
+    public void drawAnnotations(Graphics2D g2,
+                                Rectangle2D dataArea,
+                                ValueAxis domainAxis,
+                                ValueAxis rangeAxis,
+                                Layer layer,
+                                PlotRenderingInfo info) {
+
+        Iterator iterator = null;
+        if (layer.equals(Layer.FOREGROUND)) {
+            iterator = this.foregroundAnnotations.iterator();
+        }
+        else if (layer.equals(Layer.BACKGROUND)) {
+            iterator = this.backgroundAnnotations.iterator();
+        }
+        else {
+            // should not get here
+            throw new RuntimeException("Unknown layer.");
+        }
+        while (iterator.hasNext()) {
+            XYAnnotation annotation = (XYAnnotation) iterator.next();
+            annotation.draw(g2, this.plot, dataArea, domainAxis, rangeAxis,
+                    0, info);
+        }
+
+    }
+

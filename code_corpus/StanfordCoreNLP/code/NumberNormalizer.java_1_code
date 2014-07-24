@@ -1,0 +1,121 @@
+
+  private static final Pattern numberTermPattern = Pattern.compile("(?i)(zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|million|billion|trillion|first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|eleventh|twelfth|thirteenth|fourteenth|fifteenth|sixteenth|seventeenth|eighteenth|nineteenth|twentieth|thirtieth|fortieth|fiftieth|sixtieth|seventieth|eightieth|ninetieth|hundred?th|thousandth|millionth|billionth|trillionth)");
+  private static final Pattern numberTermPattern2 = Pattern.compile("(?i)(" + numberTermPattern.pattern() + "(-" + numberTermPattern.pattern() + ")?)");
+  private static final Pattern ordinalUnitPattern = Pattern.compile("(?i)(hundredth|thousandth|millionth)");
+
+  // private static final String[] unitWords = {"trillion", "billion", "million", "thousand", "hundred"};
+  // private static final String[] endUnitWords = {"gross", "dozen", "score"};
+
+  // Converts numbers in words to numeric form
+  // works through trillions
+  protected static final Pattern digitsPattern = Pattern.compile("\\d+");
+  private static final Pattern numRangePattern = Pattern.compile("(" + numPattern.pattern() + ")-(" + numPattern.pattern() + ")");
+  // private static final Pattern[] endUnitWordsPattern = new Pattern[endUnitWords.length];
+  // private static final Pattern[] unitWordsPattern = new Pattern[unitWords.length];
+  // static {
+  //   int i = 0;
+  //   for (String uw:endUnitWords) {
+  //     i++;
+  //   }
+  //   int ii = 0;
+  //   for (String uw:unitWords) {
+  //     ii++;
+  //   }
+  // }
+
+  // TODO: similar to QuantifiableEntityNormalizer.wordsToValues
+  //       QuantifiableEntityNormalizer also has bn (for billion)
+  //       should consolidate
+  //       here we use Number representation instead of double...
+  private static final  Map<String,Number> word2NumMap = Generics.newHashMap();
+  static
+  {
+    // Special words for numbers
+    word2NumMap.put("dozen", 12);
+    word2NumMap.put("score", 20);
+    word2NumMap.put("gross", 144);
+    word2NumMap.put("quarter", 0.25);
+    word2NumMap.put("half", 0.5);
+    word2NumMap.put("oh", 0);
+    word2NumMap.put("a"  ,  1);
+    word2NumMap.put("an"  ,  1);
+
+    // Standard words for numbers
+    word2NumMap.put("zero", 0);
+    word2NumMap.put("one", 1);
+    word2NumMap.put("two",  2);
+    word2NumMap.put("three",  3);
+    word2NumMap.put("four", 4);
+    word2NumMap.put("five",  5);
+    word2NumMap.put("six",  6);
+    word2NumMap.put("seven", 7);
+    word2NumMap.put("eight",  8);
+    word2NumMap.put("nine",  9);
+    word2NumMap.put("ten", 10);
+    word2NumMap.put("eleven", 11);
+    word2NumMap.put("twelve",  12);
+    word2NumMap.put("thirteen", 13);
+    word2NumMap.put("fourteen", 14);
+    word2NumMap.put("fifteen",  15);
+    word2NumMap.put("sixteen", 16);
+    word2NumMap.put("seventeen", 17);
+    word2NumMap.put("eighteen",  18);
+    word2NumMap.put("nineteen", 19);
+    word2NumMap.put("twenty", 20);
+    word2NumMap.put("thirty",  30);
+    word2NumMap.put("forty", 40);
+    word2NumMap.put("fifty", 50);
+    word2NumMap.put("sixty",  60);
+    word2NumMap.put("seventy", 70);
+    word2NumMap.put("eighty", 80);
+    word2NumMap.put("ninety",  90);
+    word2NumMap.put("hundred", 100);
+    word2NumMap.put("thousand", 1000);
+    word2NumMap.put("million",  1000000);
+    word2NumMap.put("billion", 1000000000);
+    word2NumMap.put("trillion", 1000000000000L);
+  }
+
+  // similar to QuantifiableEntityNormalizer.ordinalsToValues
+  private static final Map<String,Number> ordWord2NumMap = Generics.newHashMap();
+  static {
+    ordWord2NumMap.put("zeroth", 0);
+    ordWord2NumMap.put("first", 1);
+    ordWord2NumMap.put("second", 2);
+    ordWord2NumMap.put("third", 3);
+    ordWord2NumMap.put("fourth", 4);
+    ordWord2NumMap.put("fifth", 5);
+    ordWord2NumMap.put("sixth", 6);
+    ordWord2NumMap.put("seventh", 7);
+    ordWord2NumMap.put("eighth", 8);
+    ordWord2NumMap.put("ninth", 9);
+    ordWord2NumMap.put("tenth", 10);
+    ordWord2NumMap.put("eleventh", 11);
+    ordWord2NumMap.put("twelfth", 12);
+    ordWord2NumMap.put("thirteenth", 13);
+    ordWord2NumMap.put("fourteenth", 14);
+    ordWord2NumMap.put("fifteenth", 15);
+    ordWord2NumMap.put("sixteenth", 16);
+    ordWord2NumMap.put("seventeenth", 17);
+    ordWord2NumMap.put("eighteenth", 18);
+    ordWord2NumMap.put("nineteenth", 19);
+    ordWord2NumMap.put("twentieth", 20);
+    ordWord2NumMap.put("thirtieth", 30);
+    ordWord2NumMap.put("fortieth", 40);
+    ordWord2NumMap.put("fiftieth", 50);
+    ordWord2NumMap.put("sixtieth", 60);
+    ordWord2NumMap.put("seventieth", 70);
+    ordWord2NumMap.put("eightieth", 80);
+    ordWord2NumMap.put("ninetieth", 90);
+    ordWord2NumMap.put("hundredth", 100);
+    ordWord2NumMap.put("hundreth", 100); // really a spelling error
+    ordWord2NumMap.put("thousandth", 1000);
+    ordWord2NumMap.put("millionth", 1000000);
+    ordWord2NumMap.put("billionth", 1000000000);
+    ordWord2NumMap.put("trillionth", 1000000000000L);
+  }
+
+  // Seems to work better than quantifiable entity normalizer's numeric conversion
+  private static final Pattern alphaPattern = Pattern.compile("([a-zA-Z]+)");
+  private static final Pattern wsPattern = Pattern.compile("\\s+");
+

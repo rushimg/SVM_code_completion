@@ -1,0 +1,86 @@
+  public void printSparseFeatureValues(int datumNo, PrintWriter pw) {
+    pw.print(labelIndex.get(labels[datumNo]));
+    pw.print('\t');
+    pw.println("LABEL");
+    int[] datum = data[datumNo];
+    double[] vals = values[datumNo];
+    assert datum.length == vals.length;
+    for (int i = 0; i < datum.length; i++) {
+      pw.print(featureIndex.get(datum[i]));
+      pw.print('\t');
+      pw.println(vals[i]);
+    }
+    pw.println();
+  }
+
+  public static void main(String[] args) {
+    RVFDataset<String, String> data = new RVFDataset<String, String>();
+    ClassicCounter<String> c1 = new ClassicCounter<String>();
+    c1.incrementCount("fever", 3.5);
+    c1.incrementCount("cough", 1.1);
+    c1.incrementCount("congestion", 4.2);
+
+    ClassicCounter<String> c2 = new ClassicCounter<String>();
+    c2.incrementCount("fever", 1.5);
+    c2.incrementCount("cough", 2.1);
+    c2.incrementCount("nausea", 3.2);
+
+    ClassicCounter<String> c3 = new ClassicCounter<String>();
+    c3.incrementCount("cough", 2.5);
+    c3.incrementCount("congestion", 3.2);
+
+    data.add(new RVFDatum<String, String>(c1, "cold"));
+    data.add(new RVFDatum<String, String>(c2, "flu"));
+    data.add(new RVFDatum<String, String>(c3, "cold"));
+    data.summaryStatistics();
+
+    LinearClassifierFactory<String, String> factory = new LinearClassifierFactory<String, String>();
+    factory.useQuasiNewton();
+
+    LinearClassifier<String, String> c = factory.trainClassifier(data);
+
+    ClassicCounter<String> c4 = new ClassicCounter<String>();
+    c4.incrementCount("cough", 2.3);
+    c4.incrementCount("fever", 1.3);
+
+    RVFDatum<String, String> datum = new RVFDatum<String, String>(c4);
+
+    c.justificationOf((Datum<String, String>) datum);
+  }
+
+  @Override
+  public double[][] getValuesArray() {
+    if (size == 0) {
+      return new double[0][];
+    }
+    values = trimToSize(values);
+    data = trimToSize(data);
+    return values;
+  }
+
+  @Override
+  public String toString() {
+    return "Dataset of size " + size;
+  }
+
+  public String toSummaryString() {
+    StringWriter sw = new StringWriter();
+    PrintWriter pw = new PrintWriter(sw);
+    pw.println("Number of data points: " + size());
+
+    pw.print("Number of labels: " + labelIndex.size() + " [");
+    Iterator<L> iter = labelIndex.iterator();
+    while (iter.hasNext()) {
+      pw.print(iter.next());
+      if (iter.hasNext()) {
+        pw.print(", ");
+      }
+    }
+    pw.println("]");
+    pw.println("Number of features (Phi(X) types): " + featureIndex.size());
+    pw.println("Number of active feature types: " + numFeatureTypes());
+    pw.println("Number of active feature tokens: " + numFeatureTokens());
+
+    return sw.toString();
+  }
+

@@ -1,0 +1,55 @@
+  public static class RefTime extends Time {
+    String label;
+
+    public RefTime(String label) {
+      this.label = label;
+    }
+
+    public RefTime(StandardTemporalType timeType, String timeLabel, String label) {
+      this.standardTemporalType = timeType;
+      this.timeLabel = timeLabel;
+      this.label = label;
+    }
+
+    @Override
+    public boolean isRef() {
+      return true;
+    }
+
+    @Override
+    public String toFormattedString(int flags) {
+      if (getTimeLabel() != null) {
+        return getTimeLabel();
+      }
+      if ((flags & FORMAT_ISO) != 0) {
+        return null;
+      } // TODO: is there iso standard?
+      return label;
+    }
+
+    @Override
+    public Time add(Duration offset) {
+      return new RelativeTime(this, TemporalOp.OFFSET_EXACT, offset);
+    }
+
+    @Override
+    public Time offset(Duration offset, int offsetFlags) {
+      if ((offsetFlags | RELATIVE_OFFSET_INEXACT) != 0)
+        return new RelativeTime(this, TemporalOp.OFFSET, offset);
+      else return new RelativeTime(this, TemporalOp.OFFSET_EXACT, offset);
+    }
+
+    @Override
+    public Time resolve(Time refTime, int flags) {
+      if (this == TIME_REF) {
+        return refTime;
+      } else if (this == TIME_NOW && (flags & RESOLVE_NOW) != 0) {
+        return refTime;
+      } else {
+        return this;
+      }
+    }
+
+    private static final long serialVersionUID = 1;
+  }
+

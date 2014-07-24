@@ -1,0 +1,420 @@
+    public ExtractRule<S, T> extractRule;
+    public Filter<T> filterRule;
+
+    public void update(Env env, Map<String, Object> attributes) {
+      for (String key:attributes.keySet()) {
+        Object obj = attributes.get(key);
+        if ("name".equals(key)) {
+          name = (String) Expressions.asObject(env, obj);
+        } else if ("priority".equals(key)) {
+          priority = ((Number) Expressions.asObject(env, obj)).doubleValue();
+        } else if ("stage".equals(key)) {
+          stage = ((Number) Expressions.asObject(env, obj)).intValue();
+        } else if ("weight".equals(key)) {
+          weight = ((Number) Expressions.asObject(env, obj)).doubleValue();
+        } else if ("over".equals(key)) {
+          Object annoKey = Expressions.asObject(env, obj);
+          if (annoKey instanceof Class) {
+            annotationField = (Class) annoKey;
+          } else if (annoKey instanceof String) {
+            annotationField = EnvLookup.lookupAnnotationKey(env, (String) annoKey);
+          } else if (annotationField == null) {
+            annotationField = CoreMap.class;
+          } else {
+            throw new IllegalArgumentException("Invalid annotation key " + annoKey);
+          }
+        } else if ("active".equals(key)) {
+          active = (Boolean) Expressions.asObject(env, obj);
+        } else if ("ruleType".equals(key)) {
+          ruleType = (String) Expressions.asObject(env, obj);
+        } else if ("matchFindType".equals(key)) {
+          matchFindType = SequenceMatcher.FindType.valueOf((String) Expressions.asObject(env, obj));
+        } else if ("matchWithResults".equals(key)) {
+          matchWithResults = ((Boolean) Expressions.asObject(env, obj)).booleanValue();
+        } else if ("matchedExpressionGroup".equals(key)) {
+          matchedExpressionGroup = ((Number) Expressions.asObject(env, obj)).intValue();
+        }
+      }
+    }
+
+    public boolean extract(S in, List<T> out) {
+      return extractRule.extract(in, out);
+    }
+
+    public boolean accept(T obj) {
+      return filterRule.accept(obj);
+    }
+  }
+
+  public static AssignmentRule createAssignmentRule(Env env, AssignableExpression var, Expression result)
+  {
+    AssignmentRule ar = new AssignmentRule(var, result);
+    ar.evaluate(env);
+    return ar;
+  }
+
+  public static Rule createRule(Env env, Expressions.CompositeValue cv) {
+    Map<String, Object> attributes;
+    cv = cv.simplifyNoTypeConversion(env);
+    attributes = Generics.newHashMap();
+    for (String s:cv.getAttributes()) {
+      attributes.put(s, cv.getExpression(s));
+    }
+    return createExtractionRule(env, attributes);
+  }
+
+  protected static AnnotationExtractRule createExtractionRule(Env env, Map<String,Object> attributes)
+  {
+    String ruleType = (String) Expressions.asObject(env, attributes.get("ruleType"));
+    if (ruleType == null && env != null) {
+      ruleType = (String) env.getDefaults().get("ruleType");
+    }
+    AnnotationExtractRuleCreator ruleCreator = lookupExtractRuleCreator(env, ruleType);
+    if (ruleCreator != null) {
+      return ruleCreator.create(env, attributes);
+    } else {
+      throw new IllegalArgumentException("Unknown rule type: " + ruleType);
+    }
+  }
+
+  public static AnnotationExtractRule createExtractionRule(Env env, String ruleType, Object pattern, Expression result)
+  {
+    if (ruleType == null && env != null) {
+      ruleType = (String) env.getDefaults().get("ruleType");
+    }
+    AnnotationExtractRuleCreator ruleCreator = lookupExtractRuleCreator(env, ruleType);
+    if (ruleCreator != null) {
+      Map<String,Object> attributes = Generics.newHashMap();
+      attributes.put("ruleType", ruleType);
+      attributes.put("pattern", pattern);
+      attributes.put("result", result);
+      return ruleCreator.create(env, attributes);
+    } else {
+      throw new IllegalArgumentException("Unknown rule type: " + ruleType);
+    }
+  }
+
+  public final static String COMPOSITE_RULE_TYPE = "composite";
+  public final static String TOKEN_PATTERN_RULE_TYPE = "tokens";
+  public final static String TEXT_PATTERN_RULE_TYPE = "text";
+  public final static String FILTER_RULE_TYPE = "filter";
+  public final static TokenPatternExtractRuleCreator TOKEN_PATTERN_EXTRACT_RULE_CREATOR = new TokenPatternExtractRuleCreator();
+  public final static CompositeExtractRuleCreator COMPOSITE_EXTRACT_RULE_CREATOR = new CompositeExtractRuleCreator();
+  public final static TextPatternExtractRuleCreator TEXT_PATTERN_EXTRACT_RULE_CREATOR = new TextPatternExtractRuleCreator();
+  public final static AnnotationExtractRuleCreator DEFAULT_EXTRACT_RULE_CREATOR = TOKEN_PATTERN_EXTRACT_RULE_CREATOR;
+  final static Map<String, AnnotationExtractRuleCreator> registeredRuleTypes = Generics.newHashMap();
+  static {
+    registeredRuleTypes.put(TOKEN_PATTERN_RULE_TYPE, TOKEN_PATTERN_EXTRACT_RULE_CREATOR);
+    registeredRuleTypes.put(COMPOSITE_RULE_TYPE, COMPOSITE_EXTRACT_RULE_CREATOR);
+    registeredRuleTypes.put(TEXT_PATTERN_RULE_TYPE, TEXT_PATTERN_EXTRACT_RULE_CREATOR);
+    registeredRuleTypes.put(FILTER_RULE_TYPE, TOKEN_PATTERN_EXTRACT_RULE_CREATOR);
+  }
+
+  protected static AnnotationExtractRuleCreator lookupExtractRuleCreator(Env env, String ruleType) {
+    if (env != null) {
+      Object obj = env.get(ruleType);
+      if (obj != null && obj instanceof AnnotationExtractRuleCreator) {
+        return (AnnotationExtractRuleCreator) obj;
+      }
+    }
+    if (ruleType == null) {
+      return DEFAULT_EXTRACT_RULE_CREATOR;
+    } else {
+      return registeredRuleTypes.get(ruleType);
+    }
+  }
+
+  static public AnnotationExtractRule createTokenPatternRule(Env env, SequencePattern.PatternExpr expr, Expression result)
+  {
+    return TOKEN_PATTERN_EXTRACT_RULE_CREATOR.create(env, expr, result);
+  }
+
+  static public AnnotationExtractRule createTextPatternRule(Env env, String expr, Expression result)
+  {
+    return TEXT_PATTERN_EXTRACT_RULE_CREATOR.create(env, expr, result);
+  }
+
+  public static class AnnotationExtractRuleCreator {
+    public AnnotationExtractRule create(Env env) {
+      AnnotationExtractRule r = new AnnotationExtractRule();
+      r.resultAnnotationField = EnvLookup.getDefaultResultAnnotationKey(env);
+      r.resultNestedAnnotationField = EnvLookup.getDefaultNestedResultsAnnotationKey(env);
+      r.tokensAnnotationField = EnvLookup.getDefaultTokensAnnotationKey(env);
+      r.tokensResultAnnotationField = EnvLookup.getDefaultTokensResultAnnotationKey(env);
+      if (env != null) {
+        r.update(env, env.getDefaults());
+      }
+      return r;
+    }
+
+    public AnnotationExtractRule create(Env env, Map<String,Object> attributes) {
+      // Get default annotation extract rule from env
+      AnnotationExtractRule r = create(env);
+      if (attributes != null) {
+        r.update(env, attributes);
+      }
+      return r;
+    }
+  }
+
+  public static MatchedExpression.SingleAnnotationExtractor createAnnotationExtractor(Env env, AnnotationExtractRule r) {
+    MatchedExpression.SingleAnnotationExtractor valueExtractor =
+            new MatchedExpression.SingleAnnotationExtractor();
+    valueExtractor.name = r.name;
+    valueExtractor.tokensAnnotationField = r.tokensAnnotationField;
+    valueExtractor.tokensResultAnnotationField = r.tokensResultAnnotationField;
+    valueExtractor.resultAnnotationField = r.resultAnnotationField;
+    valueExtractor.resultNestedAnnotationField = r.resultNestedAnnotationField;
+    valueExtractor.priority = r.priority;
+    valueExtractor.weight = r.weight;
+    valueExtractor.includeNested = r.includeNested;
+    valueExtractor.resultAnnotationExtractor = EnvLookup.getDefaultResultAnnotationExtractor(env);
+    valueExtractor.tokensAggregators = EnvLookup.getDefaultTokensAggregators(env);
+    return valueExtractor;
+  }
+
+  public static class CompositeExtractRuleCreator extends AnnotationExtractRuleCreator {
+    protected void updateExtractRule(AnnotationExtractRule r,
+                                     Env env,
+                                     SequencePattern.PatternExpr expr,
+                                     Expression action,
+                                     Expression result)
+    {
+      TokenSequencePattern pattern = TokenSequencePattern.compile(expr);
+      updateExtractRule(r, env, pattern, action, result);
+    }
+
+    protected void updateExtractRule(AnnotationExtractRule r,
+                                     Env env,
+                                     TokenSequencePattern pattern,
+                                     Expression action,
+                                     Expression result)
+    {
+      MatchedExpression.SingleAnnotationExtractor valueExtractor = createAnnotationExtractor(env, r);
+      valueExtractor.valueExtractor =
+              new CoreMapFunctionApplier< List<? extends CoreMap>, Value>(
+                      env, r.annotationField,
+                      new SequencePatternExtractRule<CoreMap, Value>(
+                              pattern,
+                              new SequenceMatchResultExtractor<CoreMap>(env, action, result), r.matchFindType, r.matchWithResults));
+      r.extractRule = new SequencePatternExtractRule<CoreMap, MatchedExpression>(pattern,
+                      new SequenceMatchedExpressionExtractor( valueExtractor, r.matchedExpressionGroup), r.matchFindType, r.matchWithResults);
+      r.filterRule = new AnnotationMatchedFilter(valueExtractor);
+    }
+
+    protected AnnotationExtractRule create(Env env, SequencePattern.PatternExpr expr, Expression result)
+    {
+      AnnotationExtractRule r = super.create(env, null);
+      r.isComposite = true;
+      if (r.annotationField == null) { r.annotationField = r.resultNestedAnnotationField;  }
+      if (r.annotationField == null) { throw new IllegalArgumentException("Error creating composite rule: no annotation field"); }
+      r.ruleType = TOKEN_PATTERN_RULE_TYPE;
+      updateExtractRule(r, env, expr, null, result);
+      return r;
+    }
+
+    public AnnotationExtractRule create(Env env, Map<String,Object> attributes) {
+      AnnotationExtractRule r = super.create(env, attributes);
+      r.isComposite = true;
+      if (r.annotationField == null) { r.annotationField = r.resultNestedAnnotationField;  }
+      if (r.annotationField == null) { throw new IllegalArgumentException("Error creating composite rule: no annotation field"); }
+      if (r.ruleType == null) { r.ruleType = TOKEN_PATTERN_RULE_TYPE; }
+      //SequencePattern.PatternExpr expr = (SequencePattern.PatternExpr) attributes.get("pattern");
+      TokenSequencePattern expr = (TokenSequencePattern) Expressions.asObject(env, attributes.get("pattern"));
+      Expression action = Expressions.asExpression(env, attributes.get("action"));
+      Expression result = Expressions.asExpression(env, attributes.get("result"));
+      updateExtractRule(r, env, expr, action, result);
+      return r;
+    }
+  }
+
+  public static class TokenPatternExtractRuleCreator extends AnnotationExtractRuleCreator {
+
+    protected void updateExtractRule(AnnotationExtractRule r,
+                                     Env env,
+                                     SequencePattern.PatternExpr expr,
+                                     Expression action,
+                                     Expression result)
+    {
+      TokenSequencePattern pattern = TokenSequencePattern.compile(expr);
+      updateExtractRule(r, env, pattern, action, result);
+    }
+
+    protected void updateExtractRule(AnnotationExtractRule r,
+                                     Env env,
+                                     TokenSequencePattern pattern,
+                                     Expression action,
+                                     Expression result)
+    {
+      MatchedExpression.SingleAnnotationExtractor valueExtractor = createAnnotationExtractor(env, r);
+      if (r.annotationField != null && r.annotationField != CoreMap.class) {
+        valueExtractor.valueExtractor =
+              new CoreMapFunctionApplier< List<? extends CoreMap>, Value >(
+                      env, r.annotationField,
+                      new SequencePatternExtractRule<CoreMap, Value>(
+                              pattern,
+                              new SequenceMatchResultExtractor<CoreMap>(env, action, result), r.matchFindType, r.matchWithResults));
+        r.extractRule = new CoreMapExtractRule< List<? extends CoreMap>, MatchedExpression >(
+              env, r.annotationField,
+              new SequencePatternExtractRule<CoreMap, MatchedExpression>(pattern,
+                      new SequenceMatchedExpressionExtractor( valueExtractor, r.matchedExpressionGroup), r.matchFindType, r.matchWithResults));
+      } else {
+        valueExtractor.valueExtractor =
+                new CoreMapToListFunctionApplier< Value >(
+                        env, new SequencePatternExtractRule<CoreMap, Value>(
+                                pattern,
+                                new SequenceMatchResultExtractor<CoreMap>(env, action, result), r.matchFindType, r.matchWithResults));
+        r.extractRule = new CoreMapToListExtractRule< MatchedExpression >(
+                new SequencePatternExtractRule<CoreMap, MatchedExpression>(pattern,
+                        new SequenceMatchedExpressionExtractor( valueExtractor, r.matchedExpressionGroup), r.matchFindType, r.matchWithResults));
+
+      }
+      r.filterRule = new AnnotationMatchedFilter(valueExtractor);
+    }
+
+    protected AnnotationExtractRule create(Env env, SequencePattern.PatternExpr expr, Expression result)
+    {
+      AnnotationExtractRule r = super.create(env, null);
+      if (r.annotationField == null) { r.annotationField = r.tokensAnnotationField;  }
+      r.ruleType = TOKEN_PATTERN_RULE_TYPE;
+      updateExtractRule(r, env, expr, null, result);
+      return r;
+    }
+
+    public AnnotationExtractRule create(Env env, Map<String,Object> attributes) {
+      AnnotationExtractRule r = super.create(env, attributes);
+      if (r.annotationField == null) { r.annotationField = r.tokensAnnotationField;  }
+      if (r.ruleType == null) { r.ruleType = TOKEN_PATTERN_RULE_TYPE; }
+      //SequencePattern.PatternExpr expr = (SequencePattern.PatternExpr) attributes.get("pattern");
+      TokenSequencePattern expr = (TokenSequencePattern) Expressions.asObject(env, attributes.get("pattern"));
+      Expression action = Expressions.asExpression(env, attributes.get("action"));
+      Expression result = Expressions.asExpression(env, attributes.get("result"));
+      updateExtractRule(r, env, expr, action, result);
+      return r;
+    }
+  }
+
+  public static class TextPatternExtractRuleCreator extends AnnotationExtractRuleCreator {
+    protected void updateExtractRule(AnnotationExtractRule r,
+                                     Env env,
+                                     String expr,
+                                     Expression action,
+                                     Expression result)
+    {
+      final MatchedExpression.SingleAnnotationExtractor valueExtractor = createAnnotationExtractor(env, r);
+      Pattern pattern = env.getStringPattern(expr);
+      valueExtractor.valueExtractor =
+              new CoreMapFunctionApplier< String, Value >(
+                      env, r.annotationField,
+                      new StringPatternExtractRule<Value>(
+                              pattern,
+                              new StringMatchResultExtractor(env, action, result)));
+      r.extractRule = new CoreMapExtractRule< String, MatchedExpression >(
+              env, r.annotationField,
+              new StringPatternExtractRule<MatchedExpression>(pattern,
+                      new StringMatchedExpressionExtractor( valueExtractor, r.matchedExpressionGroup)));
+      r.filterRule = new AnnotationMatchedFilter(valueExtractor);
+    }
+
+    protected AnnotationExtractRule create(Env env, String expr, Expression result)
+    {
+      AnnotationExtractRule r = super.create(env, null);
+      if (r.annotationField == null) { r.annotationField = EnvLookup.getDefaultTextAnnotationKey(env);  }
+      r.ruleType = TEXT_PATTERN_RULE_TYPE;
+      updateExtractRule(r, env, expr, null, result);
+      return r;
+    }
+
+    public AnnotationExtractRule create(Env env, Map<String,Object> attributes) {
+      AnnotationExtractRule r = super.create(env, attributes);
+      if (r.annotationField == null) { r.annotationField = EnvLookup.getDefaultTextAnnotationKey(env);  }
+      if (r.ruleType == null) { r.ruleType = TEXT_PATTERN_RULE_TYPE; }
+      String expr = (String) Expressions.asObject(env, attributes.get("pattern"));
+      Expression action = Expressions.asExpression(env, attributes.get("action"));
+      Expression result = Expressions.asExpression(env, attributes.get("result"));
+      updateExtractRule(r, env, expr, action, result);
+      return r;
+    }
+  }
+
+  public static class AnnotationMatchedFilter implements Filter<MatchedExpression> {
+
+    MatchedExpression.SingleAnnotationExtractor extractor;
+
+    public AnnotationMatchedFilter(MatchedExpression.SingleAnnotationExtractor extractor) {
+      this.extractor = extractor;
+    }
+
+    public boolean accept(MatchedExpression me) {
+      CoreMap cm = me.getAnnotation();
+      Value v = extractor.apply(cm);
+      if (v != null) {
+        if (v.get() == null) {
+          return true;
+        } else {
+          extractor.annotate(me);
+          return false;
+        }
+        //return v.get() == null;
+      } else {
+        return false;
+      }
+    }
+  }
+
+  public static class StringMatchResultExtractor implements Function<MatchResult,Value> {
+    Env env;
+    Expression action;
+    Expression result;
+
+    public StringMatchResultExtractor(Env env, Expression action, Expression result) {
+      this.env = env;
+      this.action = action;
+      this.result = result;
+    }
+    
+    public StringMatchResultExtractor(Env env, Expression result) {
+      this.env = env;
+      this.result = result;
+    }
+
+    public Value apply(MatchResult matchResult) {
+      Value v = null;
+      if (action != null) {
+        action.evaluate(env, matchResult);
+      }
+      if (result != null) {
+        v = result.evaluate(env, matchResult);
+      }
+      return v;
+    }
+  }
+
+  public static class SequenceMatchResultExtractor<T> implements Function<SequenceMatchResult<T>,Value> {
+    Env env;
+    Expression action;
+    Expression result;
+
+    public SequenceMatchResultExtractor(Env env, Expression action, Expression result) {
+      this.env = env;
+      this.action = action;
+      this.result = result;
+    }
+
+    public SequenceMatchResultExtractor(Env env, Expression result) {
+      this.env = env;
+      this.result = result;
+    }
+
+    public Value apply(SequenceMatchResult<T> matchResult) {
+      Value v = null;
+      if (action != null) {
+        action.evaluate(env, matchResult);
+      }
+      if (result != null) {
+        v = result.evaluate(env, matchResult);
+      }
+      return v;
+    }
+  }
+

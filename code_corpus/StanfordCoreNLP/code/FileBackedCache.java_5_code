@@ -1,0 +1,39 @@
+    Occasionally clean up the cache, removing keys which have been garbage collected.
+    Thread mappingCleaner = new Thread() {
+      @SuppressWarnings({"unchecked", "StatementWithEmptyBody", "EmptyCatchBlock", "InfiniteLoopStatement"})
+      @Override
+      public void run() {
+        while (true) {
+          try {
+            if (reaper.poll() != null) {
+              // Clear reference queue
+              while (reaper.poll() != null) {
+              }
+              // GC stale cache entries
+              List<KEY> toRemove = Generics.newLinkedList();
+              try {
+                for (Entry<KEY, SoftReference<T>> entry : mapping.entrySet()) {
+                  if (entry.getValue().get() == null) {
+                    // Remove stale SoftReference
+                    toRemove.add(entry.getKey());
+                  }
+                }
+              } catch (ConcurrentModificationException e) {
+                // Do nothing --
+              }
+              // Actually remove entries
+              for (KEY key : toRemove) {
+                mapping.remove(key);
+              }
+            }
+            // Sleep a bit
+            Thread.sleep(100);
+          } catch (InterruptedException e) {
+          }
+        }
+      }
+    };
+    mappingCleaner.setDaemon(true);
+    mappingCleaner.start();
+  }
+

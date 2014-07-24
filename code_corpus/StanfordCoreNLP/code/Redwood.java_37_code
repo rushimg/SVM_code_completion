@@ -1,0 +1,190 @@
+  protected static class RecordHandlerTree implements Iterable<LogRecordHandler>{
+    // -- Overhead --
+    private final boolean isRoot;
+    private final LogRecordHandler head;
+    private final List<RecordHandlerTree> children = new ArrayList<RecordHandlerTree>();
+
+    public RecordHandlerTree() {
+      isRoot = true;
+      head = null;
+    }
+
+    public RecordHandlerTree(LogRecordHandler head) {
+      this.isRoot = false;
+      this.head = head;
+    }
+
+    // -- Core Tree Methods --
+    public LogRecordHandler head(){
+      return head;
+    }
+    public Iterator<RecordHandlerTree> children(){
+      return children.iterator();
+    }
+    // -- Utility Methods --
+    public void addChild(LogRecordHandler handler){
+      if(Redwood.depth != 0){
+        throw new IllegalStateException("Cannot modify Redwood when within a track");
+      }
+      children.add(new RecordHandlerTree(handler));
+    }
+    protected void addChildTree(RecordHandlerTree tree){
+      if(Redwood.depth != 0){
+        throw new IllegalStateException("Cannot modify Redwood when within a track");
+      }
+      children.add(tree);
+    }
+    public LogRecordHandler removeChild(LogRecordHandler handler){
+      if(Redwood.depth != 0){
+        throw new IllegalStateException("Cannot modify Redwood when within a track");
+      }
+      Iterator<RecordHandlerTree> iter = children();
+      while(iter.hasNext()){
+        LogRecordHandler cand = iter.next().head();
+        if(cand == handler){
+          iter.remove();
+          return cand;
+        }
+      }
+      return null;
+    }
+    public RecordHandlerTree find(LogRecordHandler toFind){
+      if(toFind == head()){
+        return this;
+      } else {
+        Iterator<RecordHandlerTree> iter = children();
+        while(iter.hasNext()){
+          RecordHandlerTree cand = iter.next().find(toFind);
+          if(cand != null){ return cand; }
+        }
+      }
+      return null;
+    }
+    @Override
+    public Iterator<LogRecordHandler> iterator() {
+      return new Iterator<LogRecordHandler>(){
+        // -- Variables
+        private boolean seenHead = isRoot;
+        private final Iterator<RecordHandlerTree> childrenIter = children();
+        private final RecordHandlerTree childOnPrix = childrenIter.hasNext() ? childrenIter.next() : null;
+        private Iterator<LogRecordHandler> childIter = childOnPrix == null ? null : childOnPrix.iterator();
+        private LogRecordHandler lastReturned = null;
+        // -- HasNext
+        @Override
+        public boolean hasNext() {
+          while(childIter != null && !childIter.hasNext()){
+            if(!childrenIter.hasNext()) {
+              break;
+            } else {
+              childIter = childrenIter.next().iterator();
+            }
+          }
+          return !seenHead || (childIter != null && childIter.hasNext());
+        }
+        // -- Next
+        @Override
+        public LogRecordHandler next() {
+          if(!seenHead){ seenHead = true; return head(); }
+          lastReturned = childIter.next();
+          return lastReturned;
+        }
+        // -- Remove
+        @Override
+        public void remove() {
+          if(!seenHead){ throw new IllegalStateException("INTERNAL: this shouldn't happen..."); }
+          if(lastReturned == null){ throw new IllegalStateException("Called remove() before any elements returned"); }
+          if(childOnPrix != null && lastReturned == childOnPrix.head()){
+            childrenIter.remove();
+          } else if(childIter != null){
+            childIter.remove();
+          } else {
+            throw new IllegalStateException("INTERNAL: not sure what we're removing");
+          }
+        }
+      };
+    }
+
+    private static List<Record> append(List<Record> lst, Record toAppend){
+      if(lst == LogRecordHandler.EMPTY){
+        lst = new ArrayList<Record>();
+      }
+      lst.add(toAppend);
+      return lst;
+    }
+
+    private void process(Record toPass, MessageType type, int newDepth, long timestamp){
+      //--Handle Message
+      //(records to pass on)
+      List<Record> toPassOn;
+      if(head != null){
+        //(case: not root)
+        switch(type){
+          case SIMPLE:
+            //(case: simple log message)
+            toPassOn = head.handle(toPass);
+            break;
+          case START_TRACK:
+            //(case: begin a new track)
+            toPassOn = head.signalStartTrack(toPass);
+            break;
+          case END_TRACK:
+            //case: end a track)
+            toPassOn = head.signalEndTrack(newDepth, timestamp);
+            break;
+          case SHUTDOWN:
+            //case: end a track)
+            toPassOn = head.signalShutdown();
+            break;
+          default:
+            throw new IllegalStateException("MessageType was non-exhaustive: " + type);
+        }
+      } else {
+        //(case: is root)
+        toPassOn = new ArrayList<Record>();
+        switch(type){
+          case SIMPLE:
+            toPassOn = append(toPassOn, toPass);
+            break;
+          case START_TRACK: break;
+          case END_TRACK: break;
+          case SHUTDOWN: break;
+          default: throw new IllegalStateException("MessageType was non-exhaustive: " + type);
+        }
+      }
+      //--Propagate Children
+      Iterator<RecordHandlerTree> iter = children();
+      while(iter.hasNext()){       //for each child...
+        RecordHandlerTree child = iter.next();
+        //(auxilliary records)
+        for(Record r : toPassOn){  //for each record...
+          child.process(r, MessageType.SIMPLE, newDepth, timestamp);
+        }
+        //(special record)
+        switch(type){
+          case START_TRACK:
+          case END_TRACK:
+          case SHUTDOWN:
+            child.process(toPass, type, newDepth, timestamp);
+            break;
+          case SIMPLE: break;
+          default: throw new IllegalStateException("MessageType was non-exhaustive: " + type);
+        }
+      }
+    }
+
+    private StringBuilder toStringHelper(StringBuilder b, int depth){
+      for(int i=0; i<depth; i++){
+        b.append("  ");
+      }
+      b.append(head == null ? "ROOT" : head).append("\n");
+      for(RecordHandlerTree child : children){
+        child.toStringHelper(b, depth+1);
+      }
+      return b;
+    }
+    @Override
+    public String toString(){
+      return toStringHelper(new StringBuilder(), 0).toString();
+    }
+  }
+

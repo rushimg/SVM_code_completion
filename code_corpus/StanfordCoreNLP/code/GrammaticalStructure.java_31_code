@@ -1,0 +1,91 @@
+  private static class TreeBankGrammaticalStructureWrapper implements Iterable<GrammaticalStructure> {
+
+    private final Iterable<Tree> trees;
+    private final boolean keepPunct;
+    private final TreebankLangParserParams params;
+
+    private final Map<GrammaticalStructure, Tree> origTrees = new WeakHashMap<GrammaticalStructure, Tree>();
+
+    public TreeBankGrammaticalStructureWrapper(Iterable<Tree> wrappedTrees, boolean keepPunct, TreebankLangParserParams params) {
+      trees = wrappedTrees;
+      this.keepPunct = keepPunct;
+      this.params = params;
+    }
+
+    @Override
+    public Iterator<GrammaticalStructure> iterator() {
+      return new GsIterator();
+    }
+
+    public Tree getOriginalTree(GrammaticalStructure gs) {
+      return origTrees.get(gs);
+    }
+
+
+    private class GsIterator implements Iterator<GrammaticalStructure> {
+
+      private final Iterator<Tree> tbIterator = trees.iterator();
+      private final Filter<String> puncFilter;
+      private final HeadFinder hf;
+      private GrammaticalStructure next;
+
+      public GsIterator() {
+        // TODO: this is very english specific
+        if (keepPunct) {
+          puncFilter = Filters.acceptFilter();
+        } else {
+          puncFilter = new PennTreebankLanguagePack().punctuationWordRejectFilter();
+        }
+        hf = params.typedDependencyHeadFinder();
+        primeGs();
+      }
+
+      private void primeGs() {
+        GrammaticalStructure gs = null;
+        while (gs == null && tbIterator.hasNext()) {
+          Tree t = tbIterator.next();
+          // System.err.println("GsIterator: Next tree is");
+          // System.err.println(t);
+          if (t == null) {
+            continue;
+          }
+          try {
+            gs = params.getGrammaticalStructure(t, puncFilter, hf);
+            origTrees.put(gs, t);
+            next = gs;
+            // System.err.println("GsIterator: Next tree is");
+            // System.err.println(t);
+            return;
+          } catch (NullPointerException npe) {
+            System.err.println("Bung tree caused below dump. Continuing....");
+            System.err.println(t);
+            npe.printStackTrace();
+          }
+        }
+        next = null;
+      }
+
+      @Override
+      public boolean hasNext() {
+        return next != null;
+      }
+
+      @Override
+      public GrammaticalStructure next() {
+        GrammaticalStructure ret = next;
+        if (ret == null) {
+          throw new NoSuchElementException();
+        }
+        primeGs();
+        return ret;
+      }
+
+      @Override
+      public void remove() {
+        throw new UnsupportedOperationException();
+      }
+
+    }
+  } // end static class TreebankGrammaticalStructureWrapper
+
+

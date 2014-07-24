@@ -1,0 +1,26 @@
+  public enum FindType { FIND_NONOVERLAPPING, FIND_ALL }
+  FindType findType = FIND_NONOVERLAPPING;
+
+  // For FIND_ALL
+  Iterator<Integer> curMatchIter = null;
+  MatchedStates<T> curMatchStates = null;
+
+  // Branching limit for searching with back tracking
+  int branchLimit = 2;
+
+  protected SequenceMatcher(SequencePattern<T> pattern, List<? extends T> elements)
+  {
+    this.pattern = pattern;
+    // NOTE: It is important elements DO NOT change as we do matches
+    // TODO: Should we just make a copy of the elements?  
+    this.elements = elements;
+    if (elements == null) {
+      throw new IllegalArgumentException("Cannot match against null elements");
+    }
+    this.regionEnd = elements.size();
+    this.priority = pattern.priority;
+    this.score = pattern.weight;
+    this.varGroupBindings = pattern.varGroupBindings;
+    matchedGroups = new MatchedGroup[pattern.totalGroups];
+  }
+

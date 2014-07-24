@@ -1,0 +1,212 @@
+  private static void printGenProps(PrintStream out) {
+    out.println("## Sample properties file for maxent tagger. This file is used for three main");
+    out.println("## operations: training, testing, and tagging. It may also be used to dump");
+    out.println("## the contents of a model.");
+    out.println("## To train or test a model, or to tag something, run:");
+    out.println("##   java edu.stanford.nlp.tagger.maxent.MaxentTagger -prop <properties file>");
+    out.println("## Arguments can be overridden on the commandline, e.g.:");
+    out.println("##   java ....MaxentTagger -prop <properties file> -testFile /other/file ");
+    out.println();
+
+    out.println("# Model file name (created at train time; used at tag and test time)");
+    out.println("# (you can leave this blank and specify it on the commandline with -model)");
+    out.println("# model = ");
+    out.println();
+
+    out.println("# Path to file to be operated on (trained from, tested against, or tagged)");
+    out.println("# Specify -textFile <filename> to tag text in the given file, -trainFile <filename> to");
+    out.println("# to train a model using data in the given file, or -testFile <filename> to test your");
+    out.println("# model using data in the given file.  Alternatively, you may specify");
+    out.println("# -dump <filename> to dump the parameters stored in a model or ");
+    out.println("# -convertToSingleFile <filename> to save an old, multi-file model (specified as -model)");
+    out.println("# to the new single file format.  The new model will be saved in the file filename.");
+    out.println("# If you choose to convert an old file, you must specify ");
+    out.println("# the correct 'arch' parameter used to create the original model.");
+    out.println("# trainFile = ");
+    out.println();
+
+    out.println("# Path to outputFile to write tagged output to.");
+    out.println("# If empty, stdout is used.");
+    out.println("# outputFile = " + OUTPUT_FILE);
+    out.println();
+
+    out.println("# Output format. One of: slashTags (default), xml, or tsv");
+    out.println("# outputFormat = " + OUTPUT_FORMAT);
+    out.println();
+
+    out.println("# Output format options. Comma separated list.");
+    out.println("# currently \"lemmatize\" and \"keepEmptySentences\" are supported.");
+    out.println("# outputFormatOptions = " + OUTPUT_FORMAT_OPTIONS);
+    out.println();
+
+    out.println("# Tag separator character that separates word and pos tags");
+    out.println("# (for both training and test data) and used for");
+    out.println("# separating words and tags in slashTags format output.");
+    out.println("# tagSeparator = " + TAG_SEPARATOR);
+    out.println();
+
+    out.println("# Encoding format in which files are stored.  If left blank, UTF-8 is assumed.");
+    out.println("# encoding = " + ENCODING);
+    out.println();
+
+    out.println("# A couple flags for controlling the amount of output:");
+    out.println("# - print extra debugging information:");
+    out.println("# verbose = " + VERBOSE);
+    out.println("# - print intermediate results:");
+    out.println("# verboseResults = " + VERBOSE_RESULTS);
+
+    out.println("######### parameters for tag and test operations #########");
+    out.println();
+
+    out.println("# Class to use for tokenization. Default blank value means Penn Treebank");
+    out.println("# tokenization.  If you'd like to just assume that tokenization has been done,");
+    out.println("# and the input is whitespace-tokenized, use");
+    out.println("# edu.stanford.nlp.process.WhitespaceTokenizer or set tokenize to false.");
+    out.println("# tokenizerFactory = ");
+    out.println();
+
+    out.println("# Options to the tokenizer.  A comma separated list.");
+    out.println("# This depends on what the tokenizer supports.");
+    out.println("# For PTBTokenizer, you might try options like americanize=false");
+    out.println("# or asciiQuotes (for German!).");
+    out.println("# tokenizerOptions = ");
+    out.println();
+    out.println("# Whether to tokenize text for tag and test operations. Default is true.");
+    out.println("# If false, your text must already be whitespace tokenized.");
+    out.println("# tokenize = " + TOKENIZE);
+    out.println();
+
+    out.println("# Write debugging information (words, top words, unknown words). Useful for");
+    out.println("# error analysis. Default is false.");
+    out.println("# debug = "+ DEBUG);
+    out.println();
+
+    out.println("# Prefix for debugging output (if debug == true). Default is to use the");
+    out.println("# filename from 'file'");
+    out.println("# debugPrefix = ");
+    out.println();
+
+    out.println("######### parameters for training  #########");
+    out.println();
+
+    out.println("# model architecture: This is one or more comma separated strings, which");
+    out.println("# specify which extractors to use. Some of them take one or more integer");
+    out.println("# or string ");
+    out.println("# (file path) arguments in parentheses, written as m, n, and s below:");
+    out.println("# 'left3words', 'left5words', 'bidirectional', 'bidirectional5words',");
+    out.println("# 'generic', 'sighan2005', 'german', 'words(m,n)', 'wordshapes(m,n)',");
+    out.println("# 'biwords(m,n)', 'lowercasewords(m,n)', 'vbn(n)', distsimconjunction(s,m,n)',");
+    out.println("# 'naacl2003unknowns', 'naacl2003conjunctions', 'distsim(s,m,n)',");
+    out.println("# 'suffix(n)', 'prefix(n)', 'prefixsuffix(n)', 'capitalizationsuffix(n)',");
+    out.println("# 'wordshapes(m,n)', 'unicodeshapes(m,n)', 'unicodeshapeconjunction(m,n)',");
+    out.println("# 'lctagfeatures', 'order(k)', 'chinesedictionaryfeatures(s)'.");
+    out.println("# These keywords determines the features extracted.  'generic' is language independent.");
+    out.println("# distsim: Distributional similarity classes can be an added source of information");
+    out.println("# about your words. An English distsim file is included, or you can use your own.");
+    out.println("# arch = ");
+    out.println();
+    out.println("# 'wordFunction'.  A function applied to the text before training or tagging.");
+    out.println("# For example, edu.stanford.nlp.util.LowercaseFunction");
+    out.println("# This function turns all the words into lowercase");
+    out.println("# The function must implement edu.stanford.nlp.util.Function<String, String>");
+    out.println("# Blank means no preprocessing function");
+    out.println("# wordFunction = ");
+    out.println();
+
+
+    out.println("# 'language'.  This is really the tag set which is used for the");
+    out.println("# list of open-class tags, and perhaps deterministic  tag");
+    out.println("# expansion). Currently we have 'english', 'arabic', 'german', 'chinese'");
+    out.println("# or 'polish' predefined. For your own language, you can specify ");
+    out.println("# the same information via openClassTags or closedClassTags below");
+    out.println("# (only ONE of these three options may be specified). ");
+    out.println("# 'english' means UPenn English treebank tags. 'german' is STTS");
+    out.println("# 'chinese' is CTB, and Arabic is an expanded Bies mapping from the ATB");
+    out.println("# 'polish' means some tags that some guy on the internet once used. ");
+    out.println("# See the TTags class for more information.");
+    out.println("# lang = ");
+    out.println();
+
+    out.println("# a space-delimited list of open-class parts of speech");
+    out.println("# alternatively, you can specify language above to use a pre-defined list or specify the closed class tags (below)");
+    out.println("# openClassTags = ");
+    out.println();
+
+    out.println("# a space-delimited list of closed-class parts of speech");
+    out.println("# alternatively, you can specify language above to use a pre-defined list or specify the open class tags (above)");
+    out.println("# closedClassTags = ");
+    out.println();
+
+    out.println("# A boolean indicating whether you would like the trained model to set POS tags as closed");
+    out.println("# based on their frequency in training; default is false.  The frequency threshold can be set below. ");
+    out.println("# This option is ignored if any of {openClassTags, closedClassTags, lang} are specified.");
+    out.println("# learnClosedClassTags = ");
+    out.println();
+
+    out.println("# Used only if learnClosedClassTags=true.  Tags that have fewer tokens than this threshold are");
+    out.println("# considered closed in the trained model.");
+    out.println("# closedClassTagThreshold = ");
+    out.println();
+
+    out.println("# search method for optimization. Normally use the default 'qn'. choices: 'qn' (quasi-Newton),");
+    out.println("# 'cg' (conjugate gradient, 'owlqn' (L1 regularization) or 'iis' (improved iterative scaling)");
+    out.println("# search = " + SEARCH);
+    out.println();
+
+    out.println("# for conjugate gradient or quasi-Newton search, sigma-squared smoothing/regularization");
+    out.println("# parameter. if left blank, the default is 0.5, which is usually okay");
+    out.println("# sigmaSquared = " + SIGMA_SQUARED);
+    out.println();
+
+    out.println("# for OWLQN search, regularization");
+    out.println("# parameter. if left blank, the default is 1.0, which is usually okay");
+    out.println("# regL1 = " + DEFAULT_REG_L1);
+    out.println();
+
+    out.println("# For improved iterative scaling, the number of iterations, otherwise ignored");
+    out.println("# iterations = " + ITERATIONS);
+    out.println();
+
+    out.println("# rare word threshold. words that occur less than this number of");
+    out.println("# times are considered rare words.");
+    out.println("# rareWordThresh = " + RARE_WORD_THRESH);
+    out.println();
+
+    out.println("# minimum feature threshold. features whose history appears less");
+    out.println("# than this number of times are ignored.");
+    out.println("# minFeatureThresh = " + MIN_FEATURE_THRESH);
+    out.println();
+
+    out.println("# current word feature threshold. words that occur more than this");
+    out.println("# number of times will generate features with all of their occurring");
+    out.println("# tags.");
+    out.println("# curWordMinFeatureThresh = " + CUR_WORD_MIN_FEATURE_THRESH);
+    out.println();
+
+    out.println("# rare word minimum feature threshold. features of rare words whose histories");
+    out.println("# appear less than this times will be ignored.");
+    out.println("# rareWordMinFeatureThresh = " + RARE_WORD_MIN_FEATURE_THRESH);
+    out.println();
+
+    out.println("# very common word threshold. words that occur more than this number of");
+    out.println("# times will form an equivalence class by themselves. ignored unless");
+    out.println("# you are using equivalence classes.");
+    out.println("# veryCommonWordThresh = " + VERY_COMMON_WORD_THRESH);
+    out.println();
+
+    out.println("# sgml = ");
+    out.println("# tagInside = ");
+    out.println();
+
+    out.println("# testFile and textFile can use multiple threads to process text.");
+    out.println("# nthreads = " + NTHREADS);
+  }
+
+  public Mode getMode() {
+    if (!containsKey("mode")) {
+      return null;
+    }
+    return Mode.valueOf(getProperty("mode"));
+  }
+
+

@@ -1,0 +1,14 @@
+  public String getFirstHeaderStringValue(String name) {
+    Object value = get(name.toLowerCase());
+    if (value == null) {
+      return null;
+    }
+    Class<? extends Object> valueClass = value.getClass();
+    if (value instanceof Iterable<?> || valueClass.isArray()) {
+      for (Object repeatedValue : Types.iterableOf(value)) {
+        return toStringValue(repeatedValue);
+      }
+    }
+    return toStringValue(value);
+  }
+

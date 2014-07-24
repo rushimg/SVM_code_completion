@@ -1,0 +1,141 @@
+    public void draw(Graphics2D g2, Rectangle2D area, Point2D anchor,
+                     PlotState parentState,
+                     PlotRenderingInfo info) {
+
+        // if the plot area is too small, just return...
+        boolean b1 = (area.getWidth() <= MINIMUM_WIDTH_TO_DRAW);
+        boolean b2 = (area.getHeight() <= MINIMUM_HEIGHT_TO_DRAW);
+        if (b1 || b2) {
+            return;
+        }
+
+        // record the plot area...
+        if (info != null) {
+            info.setPlotArea(area);
+        }
+
+        // adjust the drawing area for plot insets (if any)...
+        RectangleInsets insets = getInsets();
+        insets.trim(area);
+
+        AxisSpace space = new AxisSpace();
+
+        space = this.domainAxis.reserveSpace(g2, this, area,
+                RectangleEdge.BOTTOM, space);
+        space = this.rangeAxis.reserveSpace(g2, this, area,
+                RectangleEdge.LEFT, space);
+
+        Rectangle2D estimatedDataArea = space.shrink(area, null);
+
+        AxisSpace space2 = new AxisSpace();
+        space2 = this.colorBar.reserveSpace(g2, this, area, estimatedDataArea,
+                this.colorBarLocation, space2);
+        Rectangle2D adjustedPlotArea = space2.shrink(area, null);
+
+        Rectangle2D dataArea = space.shrink(adjustedPlotArea, null);
+
+        Rectangle2D colorBarArea = space2.reserved(area, this.colorBarLocation);
+
+        // additional dataArea modifications
+        if (getDataAreaRatio() != 0.0) { //check whether modification is
+            double ratio = getDataAreaRatio();
+            Rectangle2D tmpDataArea = (Rectangle2D) dataArea.clone();
+            double h = tmpDataArea.getHeight();
+            double w = tmpDataArea.getWidth();
+
+            if (ratio > 0) { // ratio represents pixels
+                }
+                else {
+                    w = h / ratio;
+                }
+            }
+            else {  // ratio represents axis units
+                double xLength = getDomainAxis().getRange().getLength();
+                double yLength = getRangeAxis().getRange().getLength();
+                double unitRatio = yLength / xLength;
+
+
+                }
+                else {
+                    w = h / ratio;
+                }
+            }
+
+            dataArea.setRect(tmpDataArea.getX() + tmpDataArea.getWidth() / 2
+                    - w / 2, tmpDataArea.getY(), w, h);
+        }
+
+        if (info != null) {
+            info.setDataArea(dataArea);
+        }
+
+        CrosshairState crosshairState = new CrosshairState();
+        crosshairState.setCrosshairDistance(Double.POSITIVE_INFINITY);
+
+        // draw the plot background...
+        drawBackground(g2, dataArea);
+
+        double cursor = dataArea.getMaxY();
+        if (this.domainAxis != null) {
+            this.domainAxis.draw(g2, cursor, adjustedPlotArea, dataArea,
+                    RectangleEdge.BOTTOM, info);
+        }
+
+        if (this.rangeAxis != null) {
+            cursor = dataArea.getMinX();
+            this.rangeAxis.draw(g2, cursor, adjustedPlotArea, dataArea,
+                    RectangleEdge.LEFT, info);
+        }
+
+        if (this.colorBar != null) {
+            cursor = 0.0;
+            cursor = this.colorBar.draw(g2, cursor, adjustedPlotArea, dataArea,
+                    colorBarArea, this.colorBarLocation);
+        }
+        Shape originalClip = g2.getClip();
+        Composite originalComposite = g2.getComposite();
+
+        g2.clip(dataArea);
+        g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER,
+                getForegroundAlpha()));
+        render(g2, dataArea, info, crosshairState);
+
+        if (this.domainMarkers != null) {
+            Iterator iterator = this.domainMarkers.iterator();
+            while (iterator.hasNext()) {
+                Marker marker = (Marker) iterator.next();
+                drawDomainMarker(g2, this, getDomainAxis(), marker, dataArea);
+            }
+        }
+
+        if (this.rangeMarkers != null) {
+            Iterator iterator = this.rangeMarkers.iterator();
+            while (iterator.hasNext()) {
+                Marker marker = (Marker) iterator.next();
+                drawRangeMarker(g2, this, getRangeAxis(), marker, dataArea);
+            }
+        }
+
+// TO DO:  these annotations only work with XYPlot, see if it is possible to
+// make ContourPlot a subclass of XYPlot (DG);
+
+//        // draw the annotations...
+//        if (this.annotations != null) {
+//            Iterator iterator = this.annotations.iterator();
+//            while (iterator.hasNext()) {
+//                Annotation annotation = (Annotation) iterator.next();
+//                if (annotation instanceof XYAnnotation) {
+//                    XYAnnotation xya = (XYAnnotation) annotation;
+//                    // get the annotation to draw itself...
+//                    xya.draw(g2, this, dataArea, getDomainAxis(),
+//                             getRangeAxis());
+//                }
+//            }
+//        }
+
+        g2.setClip(originalClip);
+        g2.setComposite(originalComposite);
+        drawOutline(g2, dataArea);
+
+    }
+

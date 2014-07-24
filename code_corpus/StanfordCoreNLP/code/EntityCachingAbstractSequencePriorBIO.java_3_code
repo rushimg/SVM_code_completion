@@ -1,0 +1,61 @@
+  public int getNumClasses() {
+    return classIndex.size();
+  }
+
+  public  double[] getConditionalDistribution (int[] sequence, int position) {
+    double[] probs = scoresOf(sequence, position);
+    ArrayMath.logNormalize(probs);
+    probs = ArrayMath.exp(probs);
+    //System.out.println(this);
+    return probs;
+  }
+
+  public  double[] scoresOf (int[] sequence, int position) {
+    double[] probs = new double[numClasses];
+    int origClass = sequence[position];
+    int oldVal = origClass;
+    // if (BisequenceEmpiricalNERPrior.debugIndices.indexOf(position) != -1)
+    //  EmpiricalNERPriorBIO.DEBUG = true;  
+    for (int label = 0; label < numClasses; label++) {
+      if (label != origClass) {
+        sequence[position] = label;
+        updateSequenceElement(sequence, position, oldVal);
+        probs[label] = scoreOf(sequence);
+        oldVal = label;
+        // if (BisequenceEmpiricalNERPrior.debugIndices.indexOf(position) != -1)
+        //   System.out.println(this);
+      }
+    }
+    sequence[position] = origClass;
+    updateSequenceElement(sequence, position, oldVal);
+    probs[origClass] = scoreOf(sequence);
+    // EmpiricalNERPriorBIO.DEBUG = false;
+    return probs;
+  }
+
+  public void setInitialSequence(int[] initialSequence) {
+    this.sequence = initialSequence;
+    entities = new EntityBIO[initialSequence.length];
+    Arrays.fill(entities, null);
+    String rawTag = null;
+    String[] parts = null;
+    for (int i = 0; i < initialSequence.length; i++) {
+      if (initialSequence[i] != backgroundSymbol) {
+        rawTag = classIndex.get(sequence[i]);
+        parts = rawTag.split("-");
+        //TODO(mengqiu) this needs to be updated, so that initial can be I as well
+        if (parts[0].equals("B")) { // B-
+          EntityBIO entity = extractEntity(initialSequence, i, parts[1]);
+          addEntityToEntitiesArray(entity);
+          i += entity.words.size() - 1;
+        }
+      }
+    }
+  }
+
+  private void addEntityToEntitiesArray(EntityBIO entity) {
+    for (int j = entity.startPosition; j < entity.startPosition + entity.words.size(); j++) {
+      entities[j] = entity;
+    }
+  }
+

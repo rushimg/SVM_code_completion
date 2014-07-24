@@ -1,0 +1,106 @@
+  public static final int RANGE_FLAGS_PAD_SPECIFIED = 0x0004;
+
+  public static final int FORMAT_ISO = 0x01;
+  public static final int FORMAT_TIMEX3_VALUE = 0x02;
+  public static final int FORMAT_FULL = 0x04;
+  public static final int FORMAT_PAD_UNKNOWN = 0x1000;
+
+  protected static final int timexVersion = 3;
+
+  public static final SUTime.Time getCurrentTime() {
+    return new GroundedTime(new DateTime());
+  }
+
+  // Index of time id to temporal object
+  public static class TimeIndex {
+    Index<TimeExpression> temporalExprIndex = new HashIndex<TimeExpression>();
+    Index<Temporal> temporalIndex = new HashIndex<Temporal>();
+    Index<Temporal> temporalFuncIndex = new HashIndex<Temporal>();
+
+    SUTime.Time docDate;
+
+    public TimeIndex() {
+      addTemporal(SUTime.TIME_REF);
+    }
+
+    public void clear() {
+      temporalExprIndex.clear();
+      temporalIndex.clear();
+      temporalFuncIndex.clear();
+      // t0 is the document date (reserve)
+      temporalExprIndex.add(null);
+      addTemporal(SUTime.TIME_REF);
+    }
+
+    public int getNumberOfTemporals() { return temporalIndex.size(); }
+    public int getNumberOfTemporalExprs() { return temporalExprIndex.size(); }
+    public int getNumberOfTemporalFuncs() { return temporalFuncIndex.size(); }
+
+    public TimeExpression getTemporalExpr(String s) {
+      Matcher m = ID_PATTERN.matcher(s);
+      if (m.matches()) {
+        String prefix = m.group(1);
+        int id = Integer.parseInt(m.group(2));
+        if ("t".equals(prefix) || prefix.isEmpty()) {
+          return temporalExprIndex.get(id);
+        }
+      }
+      return null;
+    }
+
+    public Temporal getTemporal(String s) {
+      Matcher m = ID_PATTERN.matcher(s);
+      if (m.matches()) {
+        String prefix = m.group(1);
+        int id = Integer.parseInt(m.group(2));
+        if ("t".equals(prefix)) {
+          TimeExpression te = temporalExprIndex.get(id);
+          return (te != null)? te.getTemporal(): null;
+        } else if (prefix.isEmpty()) {
+          return temporalIndex.get(id);
+        }
+      }
+      return null;
+    }
+
+    public TimeExpression getTemporalExpr(int i) {
+      return temporalExprIndex.get(i);
+    }
+
+    public Temporal getTemporal(int i) {
+      return temporalIndex.get(i);
+    }
+
+    public Temporal getTemporalFunc(int i) {
+      return temporalFuncIndex.get(i);
+    }
+
+    public boolean addTemporalExpr(TimeExpression t) {
+      Temporal temp = t.getTemporal();
+      if (temp != null) {
+        addTemporal(temp);
+      }
+      return temporalExprIndex.add(t);
+    }
+
+    public boolean addTemporal(Temporal t) {
+      return temporalIndex.add(t);
+    }
+
+    public boolean addTemporalFunc(Temporal t) {
+      return temporalFuncIndex.add(t);
+    }
+
+    public int indexOfTemporalExpr(TimeExpression t, boolean add) {
+      return temporalExprIndex.indexOf(t, add);
+    }
+
+    public int indexOfTemporal(Temporal t, boolean add) {
+      return temporalIndex.indexOf(t, add);
+    }
+
+    public int indexOfTemporalFunc(Temporal t, boolean add) {
+      return temporalFuncIndex.indexOf(t, add);
+    }
+  }
+

@@ -1,0 +1,41 @@
+  public final void tune() {
+    double bestScore = Double.NEGATIVE_INFINITY;
+    double[] bestSmooth = { 0.0, 0.0 };
+        double score = 0.0;
+        // score = scoreAll(trees);
+        if (testOptions.verbose) {
+          System.err.println("Tuning lexicon: s0 " + smooth[0] +
+                             " s1 " + smooth[1] + " is " + score);
+        }
+        if (score > bestScore) {
+          System.arraycopy(smooth, 0, bestSmooth, 0, smooth.length);
+          bestScore = score;
+        }
+      }
+    }
+    System.arraycopy(bestSmooth, 0, smooth, 0, bestSmooth.length);
+    if (smartMutation) {
+      smooth[0] = 8.0;
+      // smooth[1] = 1.6;
+      // smooth[0] = 0.5;
+      smooth[1] = 0.1;
+    }
+    if (testOptions.unseenSmooth > 0.0) {
+      smooth[0] = testOptions.unseenSmooth;
+    }
+    if (testOptions.verbose) {
+      System.err.println("Tuning selected smoothUnseen " + smooth[0] + " smoothSeen " + smooth[1]
+                         + " at " + bestScore);
+    }
+  }
+
+  private void readObject(ObjectInputStream ois)
+    throws IOException, ClassNotFoundException
+  {
+    ois.defaultReadObject();
+    // Reinitialize the transient objects.  This must be done here
+    // rather than lazily so that there is no race condition to
+    // reinitialize them later.
+    initRulesWithWord();
+  }
+

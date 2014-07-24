@@ -1,0 +1,37 @@
+  private static void collapseReferent(Collection<TypedDependency> list) {
+    // find typed deps of form ref(gov, dep)
+    // put them in a List for processing; remove them from the set of deps
+    List<TypedDependency> refs = new ArrayList<TypedDependency>();
+    for (Iterator<TypedDependency> iter = list.iterator(); iter.hasNext();) {
+      TypedDependency td = iter.next();
+      if (td.reln() == REFERENT) {
+        refs.add(td);
+        iter.remove();
+      }
+    }
+
+    // now substitute target of referent where possible
+    for (TypedDependency ref : refs) {
+      TreeGraphNode dep = ref.dep();// take the relative word
+      TreeGraphNode ant = ref.gov();// take the antecedent
+      for (TypedDependency td : list) {
+        // the last condition below maybe shouldn't be necessary, but it has
+        // helped stop things going haywire a couple of times (it stops the
+        // creation of a unit cycle that probably leaves something else
+        // disconnected) [cdm Jan 2010]
+        if (td.dep() == dep && td.reln() != REFERENT && td.gov() != ant) {
+          if (DEBUG)
+            System.err.print("referent: changing " + td);
+          td.setDep(ant);
+          if (DEBUG)
+            System.err.println(" to " + td);
+        }
+      }
+    }
+  }
+
+  // TODO: is there some better pattern to look for?
+  // We do not have tag information at this point
+  private static final String RELATIVIZING_WORD_REGEX = "(?i:that|what|which|who|whom|whose)";
+  private static final Pattern RELATIVIZING_WORD_PATTERN = Pattern.compile(RELATIVIZING_WORD_REGEX);
+

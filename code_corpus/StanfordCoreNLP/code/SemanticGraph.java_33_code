@@ -1,0 +1,33 @@
+  public SemanticGraphEdge getEdge(IndexedWord gov, IndexedWord dep, GrammaticalRelation reln) {
+    Collection<SemanticGraphEdge> edges = getAllEdges(gov, dep);
+    if (edges != null) {
+      for (SemanticGraphEdge edge : edges) {
+        if (!edge.getSource().equals(gov))
+          continue;
+        if ((edge.getRelation().equals(reln))) {
+          return edge;
+        }
+      }
+    }
+    return null;
+  }
+
+  public boolean isNegatedVertex(IndexedWord vertex) {
+    if (vertex == IndexedWord.NO_WORD) {
+      return false;
+    }
+    if (!vertexSet().contains(vertex)) {
+      throw new IllegalArgumentException("Vertex " + vertex + " not in graph " + this);
+    }
+
+    return hasChildWithReln(vertex, EnglishGrammaticalRelations.NEGATION_MODIFIER)
+        || hasChild(vertex, GrammaticalRelation.DEPENDENT, "nor");
+  }
+
+  private boolean isNegatedVerb(IndexedWord vertex) {
+    if (!vertexSet().contains(vertex)) {
+      throw new IllegalArgumentException();
+    }
+    return (vertex.tag().startsWith("VB") && isNegatedVertex(vertex));
+  }
+

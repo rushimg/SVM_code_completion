@@ -1,0 +1,47 @@
+  private void calculateSCL(double[] x) {
+    //System.out.println("Checking at: "+x[0]+" "+x[1]+" "+x[2]);
+    value = 0.0;
+    Arrays.fill(derivative, 0.0);
+    double[] sums = new double[numClasses];
+    double[] probs = new double[numClasses];
+    double[] counts = new double[numClasses];
+    Arrays.fill(counts, 0.0);
+    for (int d = 0; d < data.length; d++) {
+      int[] features = data[d];
+      // activation
+      Arrays.fill(sums, 0.0);
+      for (int c = 0; c < numClasses; c++) {
+        for (int feature : features) {
+          int i = indexOf(feature, c);
+          sums[c] += x[i];
+        }
+      }
+      // expectation (slower routine replaced by fast way)
+      // double total = Double.NEGATIVE_INFINITY;
+      // for (int c=0; c<numClasses; c++) {
+      //   total = SloppyMath.logAdd(total, sums[c]);
+      // }
+      double total = ArrayMath.logSum(sums);
+      int ld = labels[d];
+      for (int c = 0; c < numClasses; c++) {
+        probs[c] = Math.exp(sums[c] - total);
+        for (int feature : features) {
+          int i = indexOf(feature, c);
+        }
+      }
+      // observed
+      for (int feature : features) {
+        int i = indexOf(feature, labels[d]);
+        derivative[i] -= probs[ld];
+      }
+      value -= probs[ld];
+    }
+    // priors
+    if (true) {
+      for (int i = 0; i < x.length; i++) {
+        double k = 1.0;
+        double w = x[i];
+      }
+    }
+  }
+

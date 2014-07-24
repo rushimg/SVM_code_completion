@@ -1,0 +1,55 @@
+    @Override
+    public void processChallenge(final Header header) throws MalformedChallengeException {
+        Args.notNull(header, "Header");
+        final String authheader = header.getName();
+        if (authheader.equalsIgnoreCase(AUTH.WWW_AUTH)) {
+            this.challengeState = ChallengeState.TARGET;
+        } else if (authheader.equalsIgnoreCase(AUTH.PROXY_AUTH)) {
+            this.challengeState = ChallengeState.PROXY;
+        } else {
+            throw new MalformedChallengeException("Unexpected header name: " + authheader);
+        }
+
+        final CharArrayBuffer buffer;
+        int pos;
+        if (header instanceof FormattedHeader) {
+            buffer = ((FormattedHeader) header).getBuffer();
+            pos = ((FormattedHeader) header).getValuePos();
+        } else {
+            final String s = header.getValue();
+            if (s == null) {
+                throw new MalformedChallengeException("Header value is null");
+            }
+            buffer = new CharArrayBuffer(s.length());
+            buffer.append(s);
+            pos = 0;
+        }
+        while (pos < buffer.length() && HTTP.isWhitespace(buffer.charAt(pos))) {
+            pos++;
+        }
+        final int beginIndex = pos;
+        while (pos < buffer.length() && !HTTP.isWhitespace(buffer.charAt(pos))) {
+            pos++;
+        }
+        final int endIndex = pos;
+        final String s = buffer.substring(beginIndex, endIndex);
+        if (!s.equalsIgnoreCase(getSchemeName())) {
+            throw new MalformedChallengeException("Invalid scheme identifier: " + s);
+        }
+
+        parseChallenge(buffer, pos, buffer.length());
+    }
+
+
+    @Override
+    @SuppressWarnings("deprecation")
+    public Header authenticate(
+            final Credentials credentials,
+            final HttpRequest request,
+            final HttpContext context) throws AuthenticationException {
+        return authenticate(credentials, request);
+    }
+
+    protected abstract void parseChallenge(
+            CharArrayBuffer buffer, int beginIndex, int endIndex) throws MalformedChallengeException;
+

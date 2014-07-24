@@ -1,0 +1,73 @@
+    public int degreeOf(V vertex)
+    {
+        return edgesOf(vertex).size();
+    }
+
+    public Set<E> edgeSet()
+    {
+        return this.edges;
+    }
+
+    public Set<E> edgesOf(V vertex)
+    {
+        assertVertexExist(vertex);
+
+        return new MaskEdgeSet<V, E>(
+            this.base,
+            this.base.edgesOf(vertex),
+            this.mask);
+    }
+
+    public Set<E> getAllEdges(V sourceVertex, V targetVertex)
+    {
+        Set<E> edges = null;
+
+        if (containsVertex(sourceVertex) && containsVertex(targetVertex)) {
+            return new MaskEdgeSet<V, E>(
+                this.base,
+                this.base.getAllEdges(
+                    sourceVertex,
+                    targetVertex),
+                this.mask);
+        }
+
+        return edges;
+    }
+
+    public E getEdge(V sourceVertex, V targetVertex)
+    {
+        Set<E> edges = getAllEdges(sourceVertex, targetVertex);
+
+        if ((edges == null) || edges.isEmpty()) {
+            return null;
+        } else {
+            return edges.iterator().next();
+        }
+    }
+
+    public EdgeFactory<V, E> getEdgeFactory()
+    {
+        return this.base.getEdgeFactory();
+    }
+
+    public V getEdgeSource(E edge)
+    {
+        assert (edgeSet().contains(edge));
+
+        return this.base.getEdgeSource(edge);
+    }
+
+    public V getEdgeTarget(E edge)
+    {
+        assert (edgeSet().contains(edge));
+
+        return this.base.getEdgeTarget(edge);
+    }
+
+    public double getEdgeWeight(E edge)
+    {
+        assert (edgeSet().contains(edge));
+
+        return this.base.getEdgeWeight(edge);
+    }
+

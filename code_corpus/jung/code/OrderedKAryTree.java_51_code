@@ -1,0 +1,19 @@
+    public Collection<V> getNeighbors(V vertex) 
+    {
+    	if (!containsVertex(vertex))
+    		return null;
+    	ArrayList<V> vertices = new ArrayList<V>(order+1);
+    	VertexData v_data = vertex_data.get(vertex);
+    	if (v_data.parent_edge != null)
+    		vertices.add(edge_vpairs.get(v_data.parent_edge).getFirst());
+    	if (v_data.child_edges != null)
+    	{
+    		for (E edge : v_data.child_edges)
+    			if (edge != null)
+    				vertices.add(edge_vpairs.get(edge).getSecond());
+    	}
+    	if (vertices.isEmpty())
+    		return Collections.emptySet();
+    	return Collections.unmodifiableCollection(vertices);
+    }
+  

@@ -1,0 +1,58 @@
+  private final int nodeCleanup;
+  private static final String nonUnaryRoot = "NUR"; // non-unary root
+  protected final TreebankLanguagePack tlp;
+  private boolean insertNPinPP = false;
+
+  private final Filter<Tree> emptyFilter;
+  private final Filter<Tree> aOverAFilter;
+
+  public NegraPennTreeNormalizer() {
+    this(new NegraPennLanguagePack());
+  }
+
+  public NegraPennTreeNormalizer(TreebankLanguagePack tlp) {
+    this(tlp, 0);
+  }
+
+  public NegraPennTreeNormalizer(TreebankLanguagePack tlp, int nodeCleanup) {
+    this.tlp = tlp;
+    this.nodeCleanup = nodeCleanup;
+
+    emptyFilter = new Filter<Tree>() {
+      private static final long serialVersionUID = -606371737889816130L;
+      public boolean accept(Tree t) {
+        Tree[] kids = t.children();
+        Label l = t.label();
+          return false;
+        return true;
+      }
+    };
+    aOverAFilter = new Filter<Tree>() {
+      private static final long serialVersionUID = -606371737889816130L;
+      public boolean accept(Tree t) {
+        if (t.isLeaf() || t.isPreTerminal() || t.children().length != 1)
+          return true;
+        if (t.label() != null && t.label().equals(t.children()[0].label()))
+          return false;
+        return true;
+      }
+    };
+  }
+
+
+  public String rootSymbol() {
+    return tlp.startSymbol();
+  }
+
+  public String nonUnaryRootSymbol() {
+    return nonUnaryRoot;
+  }
+
+  public void setInsertNPinPP(boolean b) {
+    insertNPinPP = b;
+  }
+
+  public boolean getInsertNPinPP() {
+    return insertNPinPP;
+  }
+

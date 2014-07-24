@@ -1,0 +1,106 @@
+      // previous character == current character
+      if(charp.equals(charc)){ features.add("11-R2");}
+      // previous character == next character
+      if(charp.equals(charc2)){ features.add("22-R2");}
+
+      // current character == next next character
+      // fire only when usePk and useHk are both false.
+      // Notice: this should be (almost) the same as the "22" feature, but we keep it for now.
+      if( !flags.usePk && !flags.useHk) {
+        if(charc.equals(charc2)){features.add("33-R2");}
+      }
+
+      char cur1 = ' ';
+      char cur2 = ' ';
+      char cur =  ' ';
+      char pre =  ' ';
+      // actually their length must be either 0 or 1
+      if (charc2.length() > 0) { cur1 = charc2.charAt(0); }
+      if (charc3.length() > 0) { cur2 = charc3.charAt(0); }
+      if (charc.length() > 0) { cur = charc.charAt(0); }
+      if (charp.length() > 0) { pre = charp.charAt(0); }
+
+      String prer= String.valueOf(rcharp); // the radical of previous character
+
+      Pattern E = Pattern.compile("[a-zA-Z]");
+      Pattern N = Pattern.compile("[0-9]");
+      Matcher m = E.matcher(charp);
+      Matcher ce = E.matcher(charc);
+      Matcher pe = E.matcher(charp2);
+      Matcher cn = N.matcher(charc);
+      Matcher pn = N.matcher(charp2);
+
+
+      // if current and previous characters are numbers...
+      if (cur >= '0' && cur <= '9'&& pre >= '0' && pre <= '9'){
+        if (cur == '9' && pre == '1' && cur1 == '9'&& cur2 >= '0' && cur2 <= '9'){ //199x
+          features.add("YR-R2");
+        }else{
+          features.add("2N-R2");
+        }
+
+        // if current and previous characters are not both numbers
+        // but previous char is a number
+        // i.e. patterns like "1N" , "2A", etc
+      } else if (pre >= '0' && pre <= '9'){
+        features.add("1N-R2");
+
+        // if previous character is an English character
+      } else if(m.matches()){
+        features.add("E-R2");
+
+        // if the previous character contains no radical (and it exist)
+      } else if(prer.equals(".") && charp.length() == 1){
+        if(ce.matches()){
+          features.add("PU+E-R2");
+        }
+        if(pe.matches()){
+          features.add("E+PU-R2");
+        }
+        if(cn.matches()){
+          features.add("PU+N-R2");
+        }
+        if(pn.matches()){
+          features.add("N+PU-R2");
+        }
+        features.add("PU-R2");
+      }
+
+      String engType = isEnglish(charp, charc);
+      String engPU = isEngPU(charp);
+      if ( ! engType.equals(""))
+        features.add(engType);
+      if ( ! engPU.equals("") && ! engType.equals("")) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(engPU).append(engType).append("R2");
+        features.add(sb.toString());
+      }
+    }//end of use rule
+
+
+    // features using "Character.getType" information!
+    String origS = c.getString(CoreAnnotations.OriginalCharAnnotation.class);
+    char origC = ' ';
+    if (origS.length() > 0) { origC = origS.charAt(0); }
+    int type = Character.getType(origC);
+    switch (type) {
+    case Character.UPPERCASE_LETTER: // A-Z and full-width A-Z
+    case Character.LOWERCASE_LETTER: // a-z and full-width a-z
+      features.add("CHARTYPE-LETTER");
+      break;
+    case Character.DECIMAL_DIGIT_NUMBER:
+      features.add("CHARTYPE-DECIMAL_DIGIT_NUMBER");
+      break;
+    case Character.OTHER_LETTER: // mostly chinese chars
+      features.add("CHARTYPE-OTHER_LETTER");
+      break;
+    default: // other types
+      features.add("CHARTYPE-MISC");
+    }
+
+    features.add("cliqueCpC");
+
+    return features;
+  } // end featuresCpC
+
+

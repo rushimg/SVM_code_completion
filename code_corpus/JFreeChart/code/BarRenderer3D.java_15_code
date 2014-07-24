@@ -1,0 +1,72 @@
+    public void drawRangeMarker(Graphics2D g2,
+                                CategoryPlot plot,
+                                ValueAxis axis,
+                                Marker marker,
+                                Rectangle2D dataArea) {
+
+
+        Rectangle2D adjusted = new Rectangle2D.Double(dataArea.getX(),
+                dataArea.getY() + getYOffset(), dataArea.getWidth()
+                - getXOffset(), dataArea.getHeight() - getYOffset());
+        if (marker instanceof ValueMarker) {
+            ValueMarker vm = (ValueMarker) marker;
+            double value = vm.getValue();
+            Range range = axis.getRange();
+            if (!range.contains(value)) {
+                return;
+            }
+
+            GeneralPath path = null;
+            PlotOrientation orientation = plot.getOrientation();
+            if (orientation == PlotOrientation.HORIZONTAL) {
+                float x = (float) axis.valueToJava2D(value, adjusted,
+                        plot.getRangeAxisEdge());
+                float y = (float) adjusted.getMaxY();
+                path = new GeneralPath();
+                path.moveTo(x, y);
+                path.lineTo((float) (x + getXOffset()),
+                        y - (float) getYOffset());
+                path.lineTo((float) (x + getXOffset()),
+                        (float) (adjusted.getMinY() - getYOffset()));
+                path.lineTo(x, (float) adjusted.getMinY());
+                path.closePath();
+            }
+            else if (orientation == PlotOrientation.VERTICAL) {
+                float y = (float) axis.valueToJava2D(value, adjusted,
+                        plot.getRangeAxisEdge());
+                float x = (float) dataArea.getX();
+                path = new GeneralPath();
+                path.moveTo(x, y);
+                path.lineTo(x + (float) this.xOffset, y - (float) this.yOffset);
+                path.lineTo((float) (adjusted.getMaxX() + this.xOffset),
+                        y - (float) this.yOffset);
+                path.lineTo((float) (adjusted.getMaxX()), y);
+                path.closePath();
+            }
+            g2.setPaint(marker.getPaint());
+            g2.fill(path);
+            g2.setPaint(marker.getOutlinePaint());
+            g2.draw(path);
+
+            String label = marker.getLabel();
+            RectangleAnchor anchor = marker.getLabelAnchor();
+            if (label != null) {
+                Font labelFont = marker.getLabelFont();
+                g2.setFont(labelFont);
+                g2.setPaint(marker.getLabelPaint());
+                Point2D coordinates = calculateRangeMarkerTextAnchorPoint(
+                        g2, orientation, dataArea, path.getBounds2D(),
+                        marker.getLabelOffset(), LengthAdjustmentType.EXPAND,
+                        anchor);
+                TextUtilities.drawAlignedString(label, g2,
+                        (float) coordinates.getX(), (float) coordinates.getY(),
+                        marker.getLabelTextAnchor());
+            }
+
+        }
+        else {
+            super.drawRangeMarker(g2, plot, axis, marker, adjusted);
+            // TODO: draw the interval marker with a 3D effect
+        }
+    }
+

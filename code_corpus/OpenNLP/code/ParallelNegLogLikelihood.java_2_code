@@ -1,0 +1,23 @@
+public class ParallelNegLogLikelihood extends NegLogLikelihood {
+  
+  // Number of threads
+  int threads;
+
+  // Partial value of negative log-likelihood to be computed by each thread
+  private double[] negLogLikelihoodThread;
+  
+  // Partial gradient
+  private double[][] gradientThread;
+  
+  public ParallelNegLogLikelihood(DataIndexer indexer, int threads) {
+    super(indexer);
+    
+    if (threads <= 0)
+      throw new IllegalArgumentException(
+          "Number of threads must 1 or larger");
+    
+    this.threads                = threads;
+    this.negLogLikelihoodThread = new double[threads];
+    this.gradientThread         = new double[threads][dimension];
+  }
+

@@ -1,0 +1,85 @@
+    public boolean addPathElements(
+        RankingPathElementList<V, E> elementList,
+        E edge)
+    {
+        assert (this.vertex.equals(
+            Graphs.getOppositeVertex(
+                this.graph,
+                edge,
+                elementList.getVertex())));
+
+        boolean pathAdded = false;
+
+        // loop over the paths elements of the list at vertex v.
+        for (
+            int vIndex = 0, yIndex = 0;
+            vIndex < elementList.size();
+            vIndex++)
+        {
+            RankingPathElement<V, E> prevPathElement = elementList.get(vIndex);
+
+            if (isNotValidPath(prevPathElement, edge)) {
+                // checks if path is simple and if guard-vertex is not
+                // disconnected.
+                continue;
+            }
+            double newPathWeight = calculatePathWeight(prevPathElement, edge);
+            RankingPathElement<V, E> newPathElement =
+                new RankingPathElement<V, E>(
+                    this.graph,
+                    prevPathElement,
+                    edge,
+                    newPathWeight);
+
+            // loop over the paths of the list at vertex y from yIndex to the
+            // end.
+            RankingPathElement<V, E> yPathElement = null;
+            for (; yIndex < size(); yIndex++) {
+                yPathElement = get(yIndex);
+
+                // case when the new path is shorter than the path Py stored at
+                // index y
+                if (newPathWeight < yPathElement.getWeight()) {
+                    this.pathElements.add(yIndex, newPathElement);
+                    pathAdded = true;
+
+                    // ensures max size limit is not exceeded.
+                    if (size() > this.maxSize) {
+                        this.pathElements.remove(this.maxSize);
+                    }
+                    break;
+                }
+
+                // case when the new path is of the same length as the path Py
+                // stored at index y
+                if (newPathWeight == yPathElement.getWeight()) {
+                    this.pathElements.add(yIndex + 1, newPathElement);
+                    pathAdded = true;
+
+                    // ensures max size limit is not exceeded.
+                    if (size() > this.maxSize) {
+                        this.pathElements.remove(this.maxSize);
+                    }
+                    break;
+                }
+            }
+
+            // case when the new path is longer than the longest path in the
+            // list (Py stored at the last index y)
+            if (newPathWeight > yPathElement.getWeight()) {
+                // ensures max size limit is not exceeded.
+                if (size() < this.maxSize) {
+                    // the new path is inserted at the end of the list.
+                    this.pathElements.add(newPathElement);
+                    pathAdded = true;
+                } else {
+                    // max size limit is reached -> end of the loop over the
+                    // paths elements of the list at vertex v.
+                    break;
+                }
+            }
+        }
+
+        return pathAdded;
+    }
+

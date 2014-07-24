@@ -1,0 +1,83 @@
+public class FrenchTreeNormalizer extends BobChrisTreeNormalizer {
+
+  private static final long serialVersionUID = 7868735300308066991L;
+
+  private final String rootLabel;
+
+  private final MorphoFeatureSpecification morpho = new FrenchMorphoFeatureSpecification();
+
+  private final boolean ccTagset;
+
+  public FrenchTreeNormalizer(boolean ccTagset) {
+    super(new FrenchTreebankLanguagePack());
+
+    rootLabel = tlp.startSymbol();
+
+    this.ccTagset = ccTagset;
+
+    aOverAFilter = new FrenchAOverAFilter();
+
+    emptyFilter = new Filter<Tree>() {
+      private static final long serialVersionUID = -22673346831392110L;
+      public boolean accept(Tree tree) {
+        if(tree.isPreTerminal() && (tree.firstChild().value().equals("") || tree.firstChild().value().equals("-NONE-"))) {
+          return false;
+        }
+        return true;
+      }
+    };
+  }
+
+  @Override
+  public String normalizeTerminal(String terminal) {
+    if(terminal == null) return terminal;
+
+    // PTB escaping
+    if(terminal.equals(")"))
+      return "-RRB-";
+    else if(terminal.equals("("))
+      return "-LRB-";
+
+    return super.normalizeTerminal(terminal).intern();
+  }
+
+  @Override
+  public String normalizeNonterminal(String category) {
+    return super.normalizeNonterminal(category).intern();
+  }
+
+  private static void replacePOSTag(Tree t, MorphoFeatureSpecification morpho) {
+    if (!t.isPreTerminal()) {
+      throw new IllegalArgumentException("Can only operate on preterminals");
+    }
+
+    if (!(t.label() instanceof CoreLabel)) {
+      throw new IllegalArgumentException("Only operates on CoreLabels");
+    }
+    CoreLabel label = (CoreLabel) t.label();
+
+    Tree child = t.children()[0];
+    if (!(child.label() instanceof CoreLabel)) {
+      throw new IllegalArgumentException("Only operates on CoreLabels");
+    }
+    CoreLabel childLabel = (CoreLabel) child.label();
+
+    // Morphological Analysis
+    String morphStr = childLabel.originalText();
+    if (morphStr == null || morphStr.equals("")) {
+      morphStr = label.value();
+      // POS subcategory
+      String subCat = childLabel.category();
+      if (subCat != null && subCat != "") {
+        morphStr += "-" + subCat + "--";
+      } else {
+        morphStr += "---";
+      }
+    }
+    MorphoFeatures feats = morpho.strToFeatures(morphStr);
+    if(feats.getAltTag() != null && !feats.getAltTag().equals("")) {
+      label.setValue(feats.getAltTag());
+      label.setTag(feats.getAltTag());
+    }
+  }
+

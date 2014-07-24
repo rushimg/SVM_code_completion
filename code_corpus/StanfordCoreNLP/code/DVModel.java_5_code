@@ -1,0 +1,417 @@
+
+  public void readWordVectors() {
+    SimpleMatrix unknownNumberVector = null;
+    SimpleMatrix unknownCapsVector = null;
+    SimpleMatrix unknownChineseYearVector = null;
+    SimpleMatrix unknownChineseNumberVector = null;
+    SimpleMatrix unknownChinesePercentVector = null;
+
+    wordVectors = Generics.newTreeMap();
+    int numberCount = 0;
+    int capsCount = 0;
+    int chineseYearCount = 0;
+    int chineseNumberCount = 0;
+    int chinesePercentCount = 0;
+
+    //Map<String, SimpleMatrix> rawWordVectors = NeuralUtils.readRawWordVectors(op.lexOptions.wordVectorFile, op.lexOptions.numHid);
+    Embedding rawWordVectors = new Embedding(op.lexOptions.wordVectorFile, op.lexOptions.numHid);
+
+    for (String word : rawWordVectors.keySet()) {
+      SimpleMatrix vector = rawWordVectors.get(word);
+
+      if (op.wordFunction != null) {
+        word = op.wordFunction.apply(word);
+      }
+
+      wordVectors.put(word, vector);
+
+      if (op.lexOptions.numHid <= 0) {
+        op.lexOptions.numHid = vector.getNumElements();
+      }
+
+      // TODO: factor out all of these identical blobs
+      if (op.trainOptions.unknownNumberVector &&
+          (NUMBER_PATTERN.matcher(word).matches() || DG_PATTERN.matcher(word).matches())) {
+        ++numberCount;
+        if (unknownNumberVector == null) {
+          unknownNumberVector = new SimpleMatrix(vector);
+        } else {
+          unknownNumberVector = unknownNumberVector.plus(vector);
+        }
+      }
+
+      if (op.trainOptions.unknownCapsVector && CAPS_PATTERN.matcher(word).matches()) {
+        ++capsCount;
+        if (unknownCapsVector == null) {
+          unknownCapsVector = new SimpleMatrix(vector);
+        } else {
+          unknownCapsVector = unknownCapsVector.plus(vector);
+        }
+      }
+
+      if (op.trainOptions.unknownChineseYearVector && CHINESE_YEAR_PATTERN.matcher(word).matches()) {
+        ++chineseYearCount;
+        if (unknownChineseYearVector == null) {
+          unknownChineseYearVector = new SimpleMatrix(vector);
+        } else {
+          unknownChineseYearVector = unknownChineseYearVector.plus(vector);
+        }
+      }
+
+      if (op.trainOptions.unknownChineseNumberVector &&
+          (CHINESE_NUMBER_PATTERN.matcher(word).matches() || DG_PATTERN.matcher(word).matches())) {
+        ++chineseNumberCount;
+        if (unknownChineseNumberVector == null) {
+          unknownChineseNumberVector = new SimpleMatrix(vector);
+        } else {
+          unknownChineseNumberVector = unknownChineseNumberVector.plus(vector);
+        }
+      }
+
+      if (op.trainOptions.unknownChinesePercentVector && CHINESE_PERCENT_PATTERN.matcher(word).matches()) {
+        ++chinesePercentCount;
+        if (unknownChinesePercentVector == null) {
+          unknownChinesePercentVector = new SimpleMatrix(vector);
+        } else {
+          unknownChinesePercentVector = unknownChinesePercentVector.plus(vector);
+        }
+      }
+    }
+
+    String unkWord = op.trainOptions.unkWord;
+    if (op.wordFunction != null) {
+      unkWord = op.wordFunction.apply(unkWord);
+    }
+    SimpleMatrix unknownWordVector = wordVectors.get(unkWord);
+    wordVectors.put(UNKNOWN_WORD, unknownWordVector);
+    if (unknownWordVector == null) {
+      throw new RuntimeException("Unknown word vector not specified in the word vector file");
+    }
+
+    if (op.trainOptions.unknownNumberVector) {
+      if (numberCount > 0) {
+        unknownNumberVector = unknownNumberVector.divide(numberCount);
+      } else {
+        unknownNumberVector = new SimpleMatrix(unknownWordVector);
+      }
+      wordVectors.put(UNKNOWN_NUMBER, unknownNumberVector);
+    }
+
+    if (op.trainOptions.unknownCapsVector) {
+      if (capsCount > 0) {
+        unknownCapsVector = unknownCapsVector.divide(capsCount);
+      } else {
+        unknownCapsVector = new SimpleMatrix(unknownWordVector);
+      }
+      wordVectors.put(UNKNOWN_CAPS, unknownCapsVector);
+    }
+
+    if (op.trainOptions.unknownChineseYearVector) {
+      System.err.println("Matched " + chineseYearCount + " chinese year vectors");
+      if (chineseYearCount > 0) {
+        unknownChineseYearVector = unknownChineseYearVector.divide(chineseYearCount);
+      } else {
+        unknownChineseYearVector = new SimpleMatrix(unknownWordVector);
+      }
+      wordVectors.put(UNKNOWN_CHINESE_YEAR, unknownChineseYearVector);
+    }
+
+    if (op.trainOptions.unknownChineseNumberVector) {
+      System.err.println("Matched " + chineseNumberCount + " chinese number vectors");
+      if (chineseNumberCount > 0) {
+        unknownChineseNumberVector = unknownChineseNumberVector.divide(chineseNumberCount);
+      } else {
+        unknownChineseNumberVector = new SimpleMatrix(unknownWordVector);
+      }
+      wordVectors.put(UNKNOWN_CHINESE_NUMBER, unknownChineseNumberVector);
+    }
+
+    if (op.trainOptions.unknownChinesePercentVector) {
+      System.err.println("Matched " + chinesePercentCount + " chinese percent vectors");
+      if (chinesePercentCount > 0) {
+        unknownChinesePercentVector = unknownChinesePercentVector.divide(chinesePercentCount);
+      } else {
+        unknownChinesePercentVector = new SimpleMatrix(unknownWordVector);
+      }
+      wordVectors.put(UNKNOWN_CHINESE_PERCENT, unknownChinesePercentVector);
+    }
+
+    if (op.trainOptions.useContextWords) {
+      SimpleMatrix start = SimpleMatrix.random(op.lexOptions.numHid, 1, -0.5, 0.5, rand);
+      SimpleMatrix end = SimpleMatrix.random(op.lexOptions.numHid, 1, -0.5, 0.5, rand);
+      wordVectors.put(START_WORD, start);
+      wordVectors.put(END_WORD, end);
+    }
+  }
+
+
+  public int totalParamSize() {
+    int totalSize = 0;
+    if (op.trainOptions.trainWordVectors) {
+    }
+    return totalSize;
+  }
+
+
+  @SuppressWarnings("unchecked")
+  public double[] paramsToVector(double scale) {
+    int totalSize = totalParamSize();
+    if (op.trainOptions.trainWordVectors) {
+      return NeuralUtils.paramsToVector(scale, totalSize,
+                                        binaryTransform.valueIterator(), unaryTransform.values().iterator(),
+                                        binaryScore.valueIterator(), unaryScore.values().iterator(),
+                                        wordVectors.values().iterator());
+    } else {
+      return NeuralUtils.paramsToVector(scale, totalSize,
+                                        binaryTransform.valueIterator(), unaryTransform.values().iterator(),
+                                        binaryScore.valueIterator(), unaryScore.values().iterator());
+    }
+  }
+
+
+  @SuppressWarnings("unchecked")
+  public double[] paramsToVector() {
+    int totalSize = totalParamSize();
+    if (op.trainOptions.trainWordVectors) {
+      return NeuralUtils.paramsToVector(totalSize,
+                                        binaryTransform.valueIterator(), unaryTransform.values().iterator(),
+                                        binaryScore.valueIterator(), unaryScore.values().iterator(),
+                                        wordVectors.values().iterator());
+    } else {
+      return NeuralUtils.paramsToVector(totalSize,
+                                        binaryTransform.valueIterator(), unaryTransform.values().iterator(),
+                                        binaryScore.valueIterator(), unaryScore.values().iterator());
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  public void vectorToParams(double[] theta) {
+    if (op.trainOptions.trainWordVectors) {
+      NeuralUtils.vectorToParams(theta,
+                                 binaryTransform.valueIterator(), unaryTransform.values().iterator(),
+                                 binaryScore.valueIterator(), unaryScore.values().iterator(),
+                                 wordVectors.values().iterator());
+    } else {
+      NeuralUtils.vectorToParams(theta,
+                                 binaryTransform.valueIterator(), unaryTransform.values().iterator(),
+                                 binaryScore.valueIterator(), unaryScore.values().iterator());
+    }
+  }
+
+  public SimpleMatrix getWForNode(Tree node) {
+    if (node.children().length == 1) {
+      String childLabel = node.children()[0].value();
+      String childBasic = basicCategory(childLabel);
+      return unaryTransform.get(childBasic);
+    } else if (node.children().length == 2) {
+      String leftLabel = node.children()[0].value();
+      String leftBasic = basicCategory(leftLabel);
+      String rightLabel = node.children()[1].value();
+      String rightBasic = basicCategory(rightLabel);
+      return binaryTransform.get(leftBasic, rightBasic);
+    }
+    throw new AssertionError("Should only have unary or binary nodes");
+  }
+
+  public SimpleMatrix getScoreWForNode(Tree node) {
+    if (node.children().length == 1) {
+      String childLabel = node.children()[0].value();
+      String childBasic = basicCategory(childLabel);
+      return unaryScore.get(childBasic);
+    } else if (node.children().length == 2) {
+      String leftLabel = node.children()[0].value();
+      String leftBasic = basicCategory(leftLabel);
+      String rightLabel = node.children()[1].value();
+      String rightBasic = basicCategory(rightLabel);
+      return binaryScore.get(leftBasic, rightBasic);
+    }
+    throw new AssertionError("Should only have unary or binary nodes");
+  }
+
+  public SimpleMatrix getStartWordVector() {
+    return wordVectors.get(START_WORD);
+  }
+
+  public SimpleMatrix getEndWordVector() {
+    return wordVectors.get(END_WORD);
+  }
+
+  public SimpleMatrix getWordVector(String word) {
+    return wordVectors.get(getVocabWord(word));
+  }
+
+  public String getVocabWord(String word) {
+    if (op.wordFunction != null) {
+      word = op.wordFunction.apply(word);
+    }
+    if (op.trainOptions.lowercaseWordVectors) {
+      word = word.toLowerCase();
+    }
+    if (wordVectors.containsKey(word)) {
+      return word;
+    }
+    //System.err.println("Unknown word: [" + word + "]");
+    if (op.trainOptions.unknownNumberVector && NUMBER_PATTERN.matcher(word).matches()) {
+      return UNKNOWN_NUMBER;
+    }
+    if (op.trainOptions.unknownCapsVector && CAPS_PATTERN.matcher(word).matches()) {
+      return UNKNOWN_CAPS;
+    }
+    if (op.trainOptions.unknownChineseYearVector && CHINESE_YEAR_PATTERN.matcher(word).matches()) {
+      return UNKNOWN_CHINESE_YEAR;
+    }
+    if (op.trainOptions.unknownChineseNumberVector && CHINESE_NUMBER_PATTERN.matcher(word).matches()) {
+      return UNKNOWN_CHINESE_NUMBER;
+    }
+    if (op.trainOptions.unknownChinesePercentVector && CHINESE_PERCENT_PATTERN.matcher(word).matches()) {
+      return UNKNOWN_CHINESE_PERCENT;
+    }
+    if (op.trainOptions.unknownDashedWordVectors) {
+      int index = word.lastIndexOf('-');
+      if (index >= 0 && index < word.length()) {
+        String lastPiece = word.substring(index + 1);
+        String wv = getVocabWord(lastPiece);
+        if (wv != null) {
+          return wv;
+        }
+      }
+    }
+    return UNKNOWN_WORD;
+  }
+
+  public SimpleMatrix getUnknownWordVector() {
+    return wordVectors.get(UNKNOWN_WORD);
+  }
+
+  public void printMatrixNames(PrintStream out) {
+    out.println("Binary matrices:");
+    for (TwoDimensionalMap.Entry<String, String, SimpleMatrix> binary : binaryTransform) {
+      out.println("  " + binary.getFirstKey() + ":" + binary.getSecondKey());
+    }
+    out.println("Unary matrices:");
+    for (String unary : unaryTransform.keySet()) {
+      out.println("  " + unary);
+    }
+  }
+
+  public void printMatrixStats(PrintStream out) {
+    System.err.println("Model loaded with " + numUnaryMatrices + " unary and " + numBinaryMatrices + " binary");
+    for (TwoDimensionalMap.Entry<String, String, SimpleMatrix> binary : binaryTransform) {
+      out.println("Binary transform " + binary.getFirstKey() + ":" + binary.getSecondKey());
+      double normf = binary.getValue().normF();
+      normf = binary.getValue().extractMatrix(0, op.lexOptions.numHid, 0, op.lexOptions.numHid).normF();
+
+    }
+  }
+
+  public void printAllMatrices(PrintStream out) {
+    for (TwoDimensionalMap.Entry<String, String, SimpleMatrix> binary : binaryTransform) {
+      out.println("Binary transform " + binary.getFirstKey() + ":" + binary.getSecondKey());
+      out.println(binary.getValue());
+    }
+    for (TwoDimensionalMap.Entry<String, String, SimpleMatrix> binary : binaryScore) {
+      out.println("Binary score " + binary.getFirstKey() + ":" + binary.getSecondKey());
+      out.println(binary.getValue());
+    }
+    for (Map.Entry<String, SimpleMatrix> unary : unaryTransform.entrySet()) {
+      out.println("Unary transform " + unary.getKey());
+      out.println(unary.getValue());
+    }
+    for (Map.Entry<String, SimpleMatrix> unary : unaryScore.entrySet()) {
+      out.println("Unary score " + unary.getKey());
+      out.println(unary.getValue());
+    }
+  }
+
+
+  public int binaryTransformIndex(String leftChild, String rightChild) {
+    int pos = 0;
+    for (TwoDimensionalMap.Entry<String, String, SimpleMatrix> binary : binaryTransform) {
+      if (binary.getFirstKey().equals(leftChild) && binary.getSecondKey().equals(rightChild)) {
+        return pos;
+      }
+      pos += binary.getValue().getNumElements();
+    }
+    return -1;
+  }
+
+  public int unaryTransformIndex(String child) {
+    for (Map.Entry<String, SimpleMatrix> unary : unaryTransform.entrySet()) {
+      if (unary.getKey().equals(child)) {
+        return pos;
+      }
+      pos += unary.getValue().getNumElements();
+    }
+    return -1;
+  }
+
+  public int binaryScoreIndex(String leftChild, String rightChild) {
+    for (TwoDimensionalMap.Entry<String, String, SimpleMatrix> binary : binaryScore) {
+      if (binary.getFirstKey().equals(leftChild) && binary.getSecondKey().equals(rightChild)) {
+        return pos;
+      }
+      pos += binary.getValue().getNumElements();
+    }
+    return -1;
+  }
+
+  public int unaryScoreIndex(String child) {
+    for (Map.Entry<String, SimpleMatrix> unary : unaryScore.entrySet()) {
+      if (unary.getKey().equals(child)) {
+        return pos;
+      }
+      pos += unary.getValue().getNumElements();
+    }
+    return -1;
+  }
+
+  public Pair<String, String> indexToBinaryTransform(int pos) {
+      for (TwoDimensionalMap.Entry<String, String, SimpleMatrix> entry : binaryTransform) {
+        if (binaryTransformSize < pos) {
+          pos -= binaryTransformSize;
+        } else {
+          return Pair.makePair(entry.getFirstKey(), entry.getSecondKey());
+        }
+      }
+    }
+    return null;
+  }
+
+  public String indexToUnaryTransform(int pos) {
+      for (Map.Entry<String, SimpleMatrix> entry : unaryTransform.entrySet()) {
+        if (unaryTransformSize < pos) {
+          pos -= unaryTransformSize;
+        } else {
+          return entry.getKey();
+        }
+      }
+    }
+    return null;
+  }
+
+  public Pair<String, String> indexToBinaryScore(int pos) {
+      for (TwoDimensionalMap.Entry<String, String, SimpleMatrix> entry : binaryScore) {
+        if (binaryScoreSize < pos) {
+          pos -= binaryScoreSize;
+        } else {
+          return Pair.makePair(entry.getFirstKey(), entry.getSecondKey());
+        }
+      }
+    }
+    return null;
+  }
+
+  public String indexToUnaryScore(int pos) {
+      for (Map.Entry<String, SimpleMatrix> entry : unaryScore.entrySet()) {
+        if (unaryScoreSize < pos) {
+          pos -= unaryScoreSize;
+        } else {
+          return entry.getKey();
+        }
+      }
+    }
+    return null;
+  }
+
+
+

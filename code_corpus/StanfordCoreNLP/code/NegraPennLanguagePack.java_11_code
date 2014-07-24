@@ -1,0 +1,30 @@
+  public String[] sentenceFinalPunctuationWords() {
+    return negraSFPunctWords;
+  }
+
+//wsg2010: Disabled limited grammatical functions for now, which decrease F1 by ~10.0.
+  @Override
+  public String basicCategory(String category) {
+    String basicCat;
+    if (leaveGF) {
+      basicCat = stripGF(category);
+    } else {
+      basicCat = super.basicCategory(category);
+    }
+    // System.err.println("NPLP stripping " + category + " with leaveGF = " + leaveGF + " gives " + basicCat);
+    return basicCat;
+  }
+
+  @Override
+  public String stripGF(String category) {
+    if(category == null) {
+      return null;
+    }
+    int index = category.lastIndexOf(gfCharacter);
+    if(index > 0) {
+      if(!containsKeptGF(category, index))
+        category = category.substring(0, index);
+    }
+    return category;
+  }
+

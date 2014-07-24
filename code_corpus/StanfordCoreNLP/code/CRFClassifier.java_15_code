@@ -1,0 +1,178 @@
+  public CRFDatum<List<String>, CRFLabel> makeDatum(List<IN> info, int loc,
+                                                    List<FeatureFactory<IN>> featureFactories) {
+    // pad.set(CoreAnnotations.AnswerAnnotation.class, flags.backgroundSymbol); // cdm: isn't this unnecessary, as this is how it's initialized in AbstractSequenceClassifier.reinit?
+    PaddedList<IN> pInfo = new PaddedList<IN>(info, pad);
+
+    ArrayList<List<String>> features = new ArrayList<List<String>>();
+    List<double[]> featureVals = new ArrayList<double[]>();
+
+    // for (int i = 0; i < windowSize; i++) {
+    // List featuresC = new ArrayList();
+    // for (int j = 0; j < FeatureFactory.win[i].length; j++) {
+    // featuresC.addAll(featureFactory.features(info, loc,
+    // FeatureFactory.win[i][j]));
+    // }
+    // features.add(featuresC);
+    // }
+
+    // todo [cdm Aug 2012]: Since getCliques returns all cliques within its bounds, can't the for loop here be eliminated? But my first attempt to removed failed to produce identical results....
+    Collection<Clique> done = Generics.newHashSet();
+    for (int i = 0; i < windowSize; i++) {
+      List<String> featuresC = new ArrayList<String>();
+      List<Clique> windowCliques = FeatureFactory.getCliques(i, 0);
+      windowCliques.removeAll(done);
+      done.addAll(windowCliques);
+      double[] featureValArr = null;
+      if (flags.useEmbedding && i == 0) { // only activated for node features
+        featureValArr = makeDatumUsingEmbedding(info, loc, featureFactories, pInfo, featuresC, windowCliques);
+      } else {
+        for (Clique c : windowCliques) {
+          for (FeatureFactory featureFactory : featureFactories) {
+            featuresC.addAll(featureFactory.getCliqueFeatures(pInfo, loc, c)); //todo useless copy because of typing reasons
+          }
+        }
+      }
+      features.add(featuresC);
+      featureVals.add(featureValArr);
+    }
+
+    int[] labels = new int[windowSize];
+
+    for (int i = 0; i < windowSize; i++) {
+      String answer = pInfo.get(loc + i - windowSize + 1).get(CoreAnnotations.AnswerAnnotation.class);
+      labels[i] = classIndex.indexOf(answer);
+    }
+
+    printFeatureLists(pInfo.get(loc), features);
+
+    CRFDatum<List<String>, CRFLabel> d = new CRFDatum<List<String>, CRFLabel>(features, new CRFLabel(labels), featureVals);
+    // System.err.println(d);
+    return d;
+  }
+
+  private double[] makeDatumUsingEmbedding(List<IN> info, int loc, List<FeatureFactory<IN>> featureFactories, PaddedList<IN> pInfo, List<String> featuresC, List<Clique> windowCliques) {
+    double[] featureValArr;
+    List<double[]> embeddingList = new ArrayList<double[]>();
+    int concatEmbeddingLen = 0;
+    String currentWord = null;
+    for (int currLoc = loc-2; currLoc <= loc+2; currLoc++) {
+      double[] embedding = null;
+      if (currLoc >=0 && currLoc < info.size()) {
+        currentWord = info.get(loc).get(CoreAnnotations.TextAnnotation.class);
+        String word = currentWord.toLowerCase();
+        if (embeddings.containsKey(word))
+          embedding = embeddings.get(word);
+        else
+          embedding = embeddings.get("UNKNOWN");
+      } else {
+        embedding = embeddings.get("PADDING");
+      }
+
+      for (int e = 0; e < embedding.length; e++) {
+        featuresC.add("EMBEDDING-(" + (currLoc-loc) + ")-" + e);
+      }
+
+      if (flags.addCapitalFeatures) {
+        int numOfCapitalFeatures = 4;
+        double[] newEmbedding = new double[embedding.length + numOfCapitalFeatures];
+        int currLen = embedding.length;
+        System.arraycopy(embedding, 0, newEmbedding, 0, currLen);
+        for (int e = 0; e < numOfCapitalFeatures; e++)
+          featuresC.add("CAPITAL-(" + (currLoc-loc) + ")-" + e);
+
+        if (currLoc >=0 && currLoc < info.size()) { // skip PADDING
+          // check if word is all caps
+          if (currentWord.toUpperCase().equals(currentWord))
+            newEmbedding[currLen] = 1;
+          else {
+            currLen += 1;
+            // check if word is all lower
+            if (currentWord.toLowerCase().equals(currentWord))
+              newEmbedding[currLen] = 1;
+            else {
+              currLen += 1;
+              // check first letter cap
+              if (Character.isUpperCase(currentWord.charAt(0)))
+                newEmbedding[currLen] = 1;
+              else {
+                currLen += 1;
+                // check if at least one non-initial letter is cap
+                String remainder = currentWord.substring(1);
+                if (!remainder.toLowerCase().equals(remainder))
+                  newEmbedding[currLen] = 1;
+              }
+            }
+          }
+        }
+        embedding = newEmbedding;
+      }
+
+      embeddingList.add(embedding);
+      concatEmbeddingLen += embedding.length;
+    }
+    double[] concatEmbedding = new double[concatEmbeddingLen];
+    int currPos = 0;
+    for (double[] em: embeddingList) {
+      System.arraycopy(em, 0, concatEmbedding, currPos, em.length);
+      currPos += em.length;
+    }
+
+    if (flags.prependEmbedding) {
+      int additionalFeatureCount = 0;
+      for (Clique c : windowCliques) {
+        for (FeatureFactory featureFactory : featureFactories) {
+          Collection<String> fCol = featureFactory.getCliqueFeatures(pInfo, loc, c); //todo useless copy because of typing reasons
+          featuresC.addAll(fCol);
+          additionalFeatureCount += fCol.size();
+        }
+      }
+      featureValArr = new double[concatEmbedding.length + additionalFeatureCount];
+      System.arraycopy(concatEmbedding, 0, featureValArr, 0, concatEmbedding.length);
+      Arrays.fill(featureValArr, concatEmbedding.length, featureValArr.length, 1.0);
+    } else {
+      featureValArr = concatEmbedding;
+    }
+
+    if (flags.addBiasToEmbedding) {
+      featuresC.add("BIAS-FEATURE");
+      double[] newFeatureValArr = new double[featureValArr.length + 1];
+      System.arraycopy(featureValArr, 0, newFeatureValArr, 0, featureValArr.length);
+      newFeatureValArr[newFeatureValArr.length-1] = 1;
+      featureValArr = newFeatureValArr;
+    }
+    return featureValArr;
+  }
+
+  @Override
+  public List<IN> classify(List<IN> document) {
+    if (flags.doGibbs) {
+      try {
+        return classifyGibbs(document);
+      } catch (Exception e) {
+        System.err.println("Error running testGibbs inference!");
+        e.printStackTrace();
+        return null;
+      }
+    } else if (flags.crfType.equalsIgnoreCase("maxent")) {
+      return classifyMaxEnt(document);
+    } else {
+      throw new RuntimeException("Unsupported inference type: " + flags.crfType);
+    }
+  }
+
+  private List<IN> classify(List<IN> document, Triple<int[][][], int[], double[][][]> documentDataAndLabels) {
+    if (flags.doGibbs) {
+      try {
+        return classifyGibbs(document, documentDataAndLabels);
+      } catch (Exception e) {
+        System.err.println("Error running testGibbs inference!");
+        e.printStackTrace();
+        return null;
+      }
+    } else if (flags.crfType.equalsIgnoreCase("maxent")) {
+      return classifyMaxEnt(document, documentDataAndLabels);
+    } else {
+      throw new RuntimeException("Unsupported inference type: " + flags.crfType);
+    }
+  }
+

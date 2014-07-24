@@ -1,0 +1,39 @@
+    public void render(Graphics2D g2, Rectangle2D dataArea,
+                       PlotRenderingInfo info, CrosshairState crosshairState) {
+
+
+        //long start = System.currentTimeMillis();
+        //System.out.println("Start: " + start);
+        g2.setPaint(this.paint);
+
+        // if the axes use a linear scale, you can uncomment the code below and
+        // switch to the alternative transX/transY calculation inside the loop
+        // that follows - it is a little bit faster then.
+        //
+        // int xx = (int) dataArea.getMinX();
+        // int ww = (int) dataArea.getWidth();
+        // int yy = (int) dataArea.getMaxY();
+        // int hh = (int) dataArea.getHeight();
+        // double domainMin = this.domainAxis.getLowerBound();
+        // double domainLength = this.domainAxis.getUpperBound() - domainMin;
+        // double rangeMin = this.rangeAxis.getLowerBound();
+        // double rangeLength = this.rangeAxis.getUpperBound() - rangeMin;
+
+        if (this.data != null) {
+            for (int i = 0; i < this.data[0].length; i++) {
+                float x = this.data[0][i];
+                float y = this.data[1][i];
+
+                int transX = (int) this.domainAxis.valueToJava2D(x, dataArea,
+                        RectangleEdge.BOTTOM);
+                int transY = (int) this.rangeAxis.valueToJava2D(y, dataArea,
+                        RectangleEdge.LEFT);
+                g2.fillRect(transX, transY, 1, 1);
+            }
+        }
+        //long finish = System.currentTimeMillis();
+        //System.out.println("Finish: " + finish);
+        //System.out.println("Time: " + (finish - start));
+
+    }
+

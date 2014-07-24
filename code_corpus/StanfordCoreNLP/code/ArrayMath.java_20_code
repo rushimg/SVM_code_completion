@@ -1,0 +1,115 @@
+  public static void pairwiseDivideInPlace(double[] a, double[] b) {
+    if (a.length != b.length) {
+      throw new RuntimeException();
+    }
+    for (int i = 0; i < a.length; i++) {
+      a[i] = a[i] / b[i];
+    }
+  }
+
+  // ERROR CHECKING
+
+  public static boolean hasNaN(double[] a) {
+    for (double x : a) {
+      if (Double.isNaN(x)) return true;
+    }
+    return false;
+  }
+
+  public static boolean hasInfinite(double[] a) {
+    for (int i = 0; i < a.length; i++) {
+      if (Double.isInfinite(a[i])) return true;
+    }
+    return false;
+  }
+
+  public static boolean hasNaN(float[] a) {
+    for (float x : a) {
+      if (Float.isNaN(x)) return true;
+    }
+    return false;
+  }
+
+  // methods for filtering vectors ------------------------------------------
+
+  public static int countNaN(double[] v) {
+    int c = 0;
+    for (double d : v) {
+      if (Double.isNaN(d)) {
+        c++;
+      }
+    }
+    return c;
+  }
+
+  public static double[] filterNaN(double[] v) {
+    double[] u = new double[numRows(v) - countNaN(v)];
+    int j = 0;
+    for (double d : v) {
+      if ( ! Double.isNaN(d)) {
+        u[j++] = d;
+      }
+    }
+    return u;
+  }
+
+  public static int countInfinite(double[] v) {
+    int c = 0;
+    for (int i = 0; i < v.length; i++)
+      if (Double.isInfinite(v[i]))
+        c++;
+    return c;
+  }
+
+  public static int countNonZero(double[] v) {
+    int c = 0;
+    for (int i = 0; i < v.length; i++)
+      if (v[i] != 0.0)
+        ++c;
+    return c;
+  }
+
+  public static int countCloseToZero(double[] v, double epsilon) {
+    int c = 0;
+    for (int i = 0; i < v.length; i++)
+      if (Math.abs(v[i])< epsilon)
+        ++c;
+    return c;
+  }
+
+  public static int countPositive(double[] v) {
+    int c = 0;
+    for (double a : v) {
+      if (a > 0.0) {
+        ++c;
+      }
+    }
+    return c;
+  }
+
+  public static int countNegative(double[] v) {
+    int c = 0;
+    for (int i = 0; i < v.length; i++)
+      if (v[i] < 0.0)
+        ++c;
+    return c;
+  }
+
+  public static double[] filterInfinite(double[] v) {
+    double[] u = new double[numRows(v) - countInfinite(v)];
+    int j = 0;
+    for (int i = 0; i < v.length; i++) {
+      if (!Double.isInfinite(v[i])) {
+        u[j++] = v[i];
+      }
+    }
+    return u;
+  }
+
+  public static double[] filterNaNAndInfinite(double[] v) {
+    return filterInfinite(filterNaN(v));
+  }
+
+
+  // VECTOR PROPERTIES
+

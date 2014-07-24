@@ -1,0 +1,37 @@
+  public String toEnUncollapsedSentenceString() {
+    List<IndexedWord> uncompressedList = Generics.newLinkedList(vertexSet());
+    List<Pair<String, IndexedWord>> specifics = Generics.newArrayList();
+
+    // Collect the specific relations and the governed nodes, and then process
+    // them one by one,
+    // to avoid concurrent modification exceptions.
+    for (IndexedWord word : vertexSet()) {
+      for (SemanticGraphEdge edge : getIncomingEdgesSorted(word)) {
+        GrammaticalRelation relation = edge.getRelation();
+        // Extract the specific: need to account for possibility that relation
+        // can
+        // be a String or GrammaticalRelation (how did it happen this way?)
+        String specific = relation.getSpecific();
+
+        if (specific == null) {
+          if (edge.getRelation().equals(EnglishGrammaticalRelations.AGENT)) {
+            specific = "by";
+          }
+        }
+
+        // Insert the specific at the leftmost token that is not governed by
+        // this node.
+        if (specific != null) {
+          Pair<String, IndexedWord> specPair = new Pair<String, IndexedWord>(specific, word);
+          specifics.add(specPair);
+        }
+      }
+    }
+
+    for (Pair<String, IndexedWord> tuple : specifics) {
+      insertSpecificIntoList(tuple.first(), tuple.second(), uncompressedList);
+    }
+
+    return StringUtils.join(uncompressedList, " ");
+  }
+

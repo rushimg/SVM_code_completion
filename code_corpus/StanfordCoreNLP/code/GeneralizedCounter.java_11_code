@@ -1,0 +1,34 @@
+  private Set<Object> keySet(Set<Object> s, Object[] key, boolean useList) {
+    if (depth == 1) {
+      //System.out.println("key is long enough to add to set");
+      Set<K> keys = map.keySet();
+      for (Object oldKey: keys) {
+        Object[] newKey = new Object[key.length + 1];
+        if (key.length > 0) {
+          System.arraycopy(key, 0, newKey, 0, key.length);
+        }
+        newKey[key.length] = oldKey;
+        if (useList) {
+          s.add(Arrays.asList(newKey));
+        } else {
+          s.add(newKey[0]);
+        }
+      }
+    } else {
+      Set<K> keys = map.keySet();
+      //System.out.println("key length " + key.length);
+      //System.out.println("keyset level " + depth + " " + keys);
+      for (K o: keys) {
+        Object[] newKey = new Object[key.length + 1];
+        if (key.length > 0) {
+          System.arraycopy(key, 0, newKey, 0, key.length);
+        }
+        newKey[key.length] = o;
+        //System.out.println("level " + key.length + " current key " + Arrays.asList(newKey));
+        conditionalizeHelper(o).keySet(s, newKey, true);
+      }
+    }
+    //System.out.println("leaving key length " + key.length);
+    return s;
+  }
+

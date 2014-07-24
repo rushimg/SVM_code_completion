@@ -1,0 +1,119 @@
+  public void processFile(File file) {
+    TreeReader tr = null;
+
+    // SRL stuff
+    CollectionValuedMap<Integer,String> srlMap = null;
+    if (this.srlMap != null) {
+      // there must be a better way ...
+      String filename = file.getAbsolutePath();
+      for (String suffix : this.srlMap.keySet()) {
+        if (filename.endsWith(suffix)) {
+          srlMap = this.srlMap.get(suffix);
+          break;
+        }
+      }
+      if (srlMap == null) {
+        System.err.println("could not find SRL entries for file: "+file);
+      }
+    }
+
+    try {
+      // maybe print file name to stdout to get some feedback
+      if (PRINT_FILENAMES) {
+        System.err.println(file);
+      }
+      // could throw an IO exception if can't open for reading
+      tr = treeReaderFactory().newTreeReader(new BufferedReader(new InputStreamReader(new FileInputStream(file), encoding())));
+      int sentIndex=0;
+      Tree pt;
+      while ((pt = tr.readTree()) != null) {
+        if (pt.label() instanceof HasIndex) { // so we can trace where this tree came from
+          HasIndex hi = (HasIndex) pt.label();
+          hi.setDocID(file.getName());
+          hi.setSentIndex(sentIndex);
+        }
+        if (srlMap == null) {
+          parseTrees.add(pt);
+        } else {
+          Collection<String> srls = srlMap.get(sentIndex);
+//           pt.pennPrint();
+//           System.err.println(srls);
+          parseTrees.add(pt);
+          if (srls.isEmpty()) {
+//            parseTrees.add(pt);
+          } else {
+            for (String srl : srls) {
+//              Tree t = pt.deepCopy();
+              String[] bits = srl.split("\\s+");
+              int verbIndex = Integer.parseInt(bits[0]);
+              String lemma = bits[2].split("\\.")[0];
+//              Tree verb = Trees.getTerminal(t, verbIndex);
+              Tree verb = Trees.getTerminal(pt, verbIndex);
+//              ((CoreLabel)verb.label()).set(SRLIDAnnotation.class, SRL_ID.REL);
+              ((CoreLabel)verb.label()).set(CoreAnnotations.CoNLLPredicateAnnotation.class, true);
+              for (int i = 4; i < bits.length; i++) {
+                String arg = bits[i];
+                String[] bits1;
+                if (arg.indexOf("ARGM") >= 0) {
+                  bits1 = arg.split("-");
+                } else {
+                  bits1 = arg.split("-");
+                }
+                String locs = bits1[0];
+                String argType = bits1[1];
+                if (argType.equals("rel")) {
+                  continue;
+                }
+                  bits1 = loc.split(":");
+                  int term = Integer.parseInt(bits1[0]);
+                  int height = Integer.parseInt(bits1[1]);
+//                  Tree t1 = Trees.getPreTerminal(t, term);
+                  Tree t1 = Trees.getPreTerminal(pt, term);
+                  for (int j = 0; j < height; j++) {
+//                    t1 = t1.parent(t);
+                    t1 = t1.parent(pt);
+                  }
+                  Map<Integer,String> roleMap = ((CoreLabel)t1.label()).get(CoreAnnotations.CoNLLSRLAnnotation.class);
+                  if (roleMap == null) {
+                    roleMap = Generics.newHashMap();
+                    ((CoreLabel)t1.label()).set(CoreAnnotations.CoNLLSRLAnnotation.class, roleMap);
+                  }
+                  roleMap.put(verbIndex, argType);
+//                  ((CoreLabel)t1.label()).set(SRLIDAnnotation.class, SRL_ID.ARG);
+                }
+              }
+//               for (Tree t1 : t) {
+//                 if (t1.isLeaf()) { continue; }
+//                 CoreLabel fl = (CoreLabel)t1.label();
+//                 if (fl.value() == null) { continue; }
+//                 if (!fl.has(SRLIDAnnotation.class)) {
+//                   boolean allNone = true;
+//                   for (Tree t2 : t1) {
+//                     SRL_ID s = ((CoreLabel)t2.label()).get(SRLIDAnnotation.class);
+//                     if (s == SRL_ID.ARG || s == SRL_ID.REL) {
+//                       allNone = false;
+//                       break;
+//                     }
+//                   }
+//                   if (allNone) {
+//                     fl.set(SRLIDAnnotation.class, SRL_ID.ALL_NO);
+//                   } else {
+//                     fl.set(SRLIDAnnotation.class, SRL_ID.NO);
+//                   }
+//                 }
+//               }
+//              parseTrees.add(t);
+            }
+          }
+        }
+
+        sentIndex++;
+      }
+    } catch (IOException e) {
+      throw new RuntimeIOException("MemoryTreebank.processFile IOException in file " + file, e);
+    } finally {
+      IOUtils.closeIgnoringExceptions(tr);
+    }
+  }
+
+

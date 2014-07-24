@@ -1,0 +1,106 @@
+  private static String foundMiscYearPattern(String inputDate) {
+    String year = "";
+    if (inputDate.toLowerCase().contains("century")) {
+      if (inputDate.endsWith("A.D. ")) {
+        inputDate = inputDate.substring(0, inputDate.length()-5);
+        if(DEBUG) {
+          System.out.println("inputDate: |" + inputDate + "|");
+        }
+      }
+      if (inputDate.startsWith("late")) {
+        inputDate = inputDate.substring(5, inputDate.length());
+        if(DEBUG) {
+          System.out.println("inputDate: |" + inputDate + "|");
+        }
+      }
+      if (inputDate.startsWith("early")) {
+        inputDate = inputDate.substring(6, inputDate.length());
+        if(DEBUG) {
+          System.out.println("inputDate: |" + inputDate + "|");
+        }
+      }
+      if (Character.isDigit(inputDate.charAt(0))) {
+        // just parse number part, assuming last two letters are st/nd/rd
+        year = QuantifiableEntityNormalizer.normalizedNumberStringQuiet(inputDate.substring(0, inputDate.length() - 2), 1, "", null);
+        if (year.contains(".")) {//number format issue
+          year = year.substring(0, year.indexOf('.'));
+        }
+        while (year.length() < 4) {
+        }
+      } else if (QuantifiableEntityNormalizer.ordinalsToValues.containsKey(inputDate)) {
+        year = Double.toString(QuantifiableEntityNormalizer.ordinalsToValues.getCount(inputDate));
+        while (year.length() < 4) {
+        }
+      } else {
+        if (DEBUG) {
+          System.out.println("ISODateInstance: Couldn't parse probable century: " + inputDate);
+        }
+        year = "";
+      }
+    }
+    return year;
+  }
+
+  private static final Pattern[] extractorArray = {Pattern.compile("[Jj]anuary|JANUARY|[Jj]an\\.?|JAN\\.?"), Pattern.compile("[Ff]ebruary|FEBRUARY|[Ff]eb\\.?|FEB\\.?"), Pattern.compile("[Mm]arch|MARCH|[Mm]ar\\.?|MAR\\.?"), Pattern.compile("[Aa]pril|APRIL|[Aa]pr\\.?|APR\\.?"), Pattern.compile("[Mm]ay|MAY"), Pattern.compile("[Jj]une|JUNE|[Jj]un\\.?|JUN\\.?"), Pattern.compile("[Jj]uly|JULY|[Jj]ul\\.?|JUL\\.?"), Pattern.compile("[Aa]ugust|AUGUST|[Aa]ug\\.?|AUG\\.?"), Pattern.compile("[Ss]eptember|SEPTEMBER|[Ss]ept?\\.?|SEPT?\\.?"), Pattern.compile("[Oo]ctober|OCTOBER|[Oo]ct\\.?|OCT\\.?"), Pattern.compile("[Nn]ovember|NOVEMBER|[Nn]ov\\.?|NOV\\.?"), Pattern.compile("[Dd]ecember|DECEMBER|[Dd]ec(?:\\.|[^aeiou]|$)|DEC(?:\\.|[^aeiou]|$)")}; // avoid matching "decades"!
+
+  public boolean extractMonth(String inputDate) {
+    boolean foundMonth = false;
+
+    for (int i = 0; i < 12; i++) {
+      String extract = "";
+      Matcher m = extractorArray[i].matcher(inputDate);
+      if (m.find()) {
+        extract = m.group(0);
+      }
+      if ( ! "".equals(extract)) {
+        if (!foundMonth) {
+          if (DEBUG) {
+            System.err.println("month extracted: " + extract);
+          }
+          int monthNum = i + 1;
+          if (isoDate.length() != 4) {
+          }
+          String month = (monthNum < 10) ? "0" + monthNum : String.valueOf(monthNum);
+          isoDate += month;
+          foundMonth = true;
+        }
+      }
+    }
+    return foundMonth;
+  }
+
+  public boolean extractDay(String inputDate) {
+    for (int a = 0; a < tokens.size(); a++) {
+      String extract = tokens.get(a);
+      if (QuantifiableEntityNormalizer.wordsToValues.containsKey(extract)) {
+        extract = Integer.toString(Double.valueOf(QuantifiableEntityNormalizer.wordsToValues.getCount(extract)).intValue());
+      } else if (QuantifiableEntityNormalizer.ordinalsToValues.containsKey(extract)) {
+        extract = Integer.toString(Double.valueOf(QuantifiableEntityNormalizer.ordinalsToValues.getCount(extract)).intValue());
+      }
+      extract = extract.replaceAll("[^0-9]", "");
+      if (!extract.equals("")) {
+        try {
+          Integer i = Integer.valueOf(extract);
+          if (i.intValue() < 32 && i.intValue() > 0) {
+            if (isoDate.length() < 6) {//should already have year and month
+              if (isoDate.length() != 4)//throw new RuntimeException("Error extracting dates; should have had month and year but didn't");
+              {
+              } else {
+              }
+            }
+            String day = (i < 10) ? "0" + i : String.valueOf(i);
+            isoDate = isoDate + day;
+            return true;
+          }
+        } catch (NumberFormatException e) {
+          System.err.println("Exception in extract Day.");
+          System.err.println("tokens size :" + tokens.size());
+          e.printStackTrace();
+        }
+      }
+    }
+    return false;
+  }
+
+  private static Pattern[] weekdayArray = {Pattern.compile("[Ss]unday"), Pattern.compile("[Mm]onday"), Pattern.compile("[Tt]uesday"), Pattern.compile("[Ww]ednesday"), Pattern.compile("[Tt]hursday"), Pattern.compile("[Ff]riday"), Pattern.compile("[Ss]aturday")};
+

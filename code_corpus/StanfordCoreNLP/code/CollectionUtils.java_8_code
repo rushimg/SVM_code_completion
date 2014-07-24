@@ -1,0 +1,42 @@
+  public static <T> void loadCollection(File file, Class<T> itemClass, Collection<T> collection) throws NoSuchMethodException, InstantiationException, IllegalAccessException,
+      InvocationTargetException, IOException {
+    Constructor<T> itemConstructor = itemClass.getConstructor(String.class);
+    BufferedReader in = new BufferedReader(new FileReader(file));
+    String line = in.readLine();
+    while (line != null && line.length() > 0) {
+      T t = itemConstructor.newInstance(line);
+      collection.add(t);
+      line = in.readLine();
+    }
+    in.close();
+  }
+
+  public static <K, V> Map<K, V> getMapFromString(String s, Class<K> keyClass, Class<V> valueClass, MapFactory<K, V> mapFactory) throws ClassNotFoundException,
+      NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
+    Constructor<K> keyC = keyClass.getConstructor(new Class[] { String.class });
+    Constructor<V> valueC = valueClass.getConstructor(new Class[] { String.class });
+    if (s.charAt(0) != '{')
+      throw new RuntimeException("");
+    s = s.substring(1); // get rid of first brace
+    String[] fields = s.split("\\s+");
+    Map<K, V> m = mapFactory.newMap();
+    // populate m
+    for (int i = 0; i < fields.length; i++) {
+      // System.err.println("Parsing " + fields[i]);
+      fields[i] = fields[i].substring(0, fields[i].length() - 1); // get rid of
+      // following
+      // comma or
+      // brace
+      String[] a = fields[i].split("=");
+      K key = keyC.newInstance(a[0]);
+      V value;
+      if (a.length > 1) {
+        value = valueC.newInstance(a[1]);
+      } else {
+        value = valueC.newInstance("");
+      }
+      m.put(key, value);
+    }
+    return m;
+  }
+

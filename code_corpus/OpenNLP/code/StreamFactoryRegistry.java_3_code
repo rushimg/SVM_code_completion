@@ -1,0 +1,18 @@
+  public static boolean registerFactory(Class sampleClass,
+                                        String formatName,
+                                        ObjectStreamFactory factory) {
+    boolean result;
+    Map<String, ObjectStreamFactory> formats = registry.get(sampleClass);
+    if (null == formats) {
+      formats = new HashMap<String, ObjectStreamFactory>();
+    }
+    if (!formats.containsKey(formatName)) {
+      formats.put(formatName, factory);
+      registry.put(sampleClass, formats);
+      result = true;
+    } else {
+      result = false;
+    }
+    return result;
+  }
+

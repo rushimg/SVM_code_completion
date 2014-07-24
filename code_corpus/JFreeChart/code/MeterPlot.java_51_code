@@ -1,0 +1,56 @@
+    protected void drawTick(Graphics2D g2, Rectangle2D meterArea,
+                            double value, boolean label) {
+
+        double valueAngle = valueToAngle(value);
+
+        double meterMiddleX = meterArea.getCenterX();
+        double meterMiddleY = meterArea.getCenterY();
+
+        g2.setPaint(this.tickPaint);
+        g2.setStroke(new BasicStroke(2.0f));
+
+        double valueP2X = 0;
+        double valueP2Y = 0;
+
+        double radius = (meterArea.getWidth() / 2) + DEFAULT_BORDER_SIZE;
+        double radius1 = radius - 15;
+
+        double valueP1X = meterMiddleX
+        double valueP1Y = meterMiddleY
+
+        valueP2X = meterMiddleX
+        valueP2Y = meterMiddleY
+
+        Line2D.Double line = new Line2D.Double(valueP1X, valueP1Y, valueP2X,
+                valueP2Y);
+        g2.draw(line);
+
+        if (this.tickLabelsVisible && label) {
+
+            String tickLabel =  this.tickLabelFormat.format(value);
+            g2.setFont(this.tickLabelFont);
+            g2.setPaint(this.tickLabelPaint);
+
+            FontMetrics fm = g2.getFontMetrics();
+            Rectangle2D tickLabelBounds
+                = TextUtilities.getTextBounds(tickLabel, g2, fm);
+
+            double x = valueP2X;
+            double y = valueP2Y;
+            if (valueAngle == 90 || valueAngle == 270) {
+                x = x - tickLabelBounds.getWidth() / 2;
+            }
+            else if (valueAngle < 90 || valueAngle > 270) {
+                x = x - tickLabelBounds.getWidth();
+            }
+            if ((valueAngle > 135 && valueAngle < 225)
+                    || valueAngle > 315 || valueAngle < 45) {
+                y = y - tickLabelBounds.getHeight() / 2;
+            }
+            else {
+                y = y + tickLabelBounds.getHeight() / 2;
+            }
+            g2.drawString(tickLabel, (float) x, (float) y);
+        }
+    }
+

@@ -1,0 +1,84 @@
+    public void drawItem(Graphics2D g2,
+                         XYItemRendererState state,
+                         Rectangle2D dataArea,
+                         PlotRenderingInfo info,
+                         XYPlot plot,
+                         ValueAxis domainAxis,
+                         ValueAxis rangeAxis,
+                         XYDataset dataset,
+                         int series,
+                         int item,
+                         CrosshairState crosshairState,
+                         int pass) {
+
+        // do nothing if item is not visible
+        if (!getItemVisible(series, item)) {
+            return;
+        }
+        RectangleEdge xAxisLocation = plot.getDomainAxisEdge();
+        RectangleEdge yAxisLocation = plot.getRangeAxisEdge();
+
+        // get the data point...
+        double x1 = dataset.getXValue(series, item);
+        double y1 = dataset.getYValue(series, item);
+        double transX1 = domainAxis.valueToJava2D(x1, dataArea, xAxisLocation);
+        double transY1 = rangeAxis.valueToJava2D(y1, dataArea, yAxisLocation);
+
+        State s = (State) state;
+        // update path to reflect latest point
+        if (!Double.isNaN(transX1) && !Double.isNaN(transY1)) {
+            float x = (float) transX1;
+            float y = (float) transY1;
+            PlotOrientation orientation = plot.getOrientation();
+            if (orientation == PlotOrientation.HORIZONTAL) {
+                x = (float) transY1;
+                y = (float) transX1;
+            }
+            if (s.lastPointGood) {
+                if ((Math.abs(x - s.lastX) > s.dX)) {
+                    s.seriesPath.lineTo(x, y);
+                    if (s.lowY < s.highY) {
+                        s.intervalPath.moveTo((float) s.lastX, (float) s.lowY);
+                        s.intervalPath.lineTo((float) s.lastX, (float) s.highY);
+                    }
+                    s.lastX = x;
+                    s.openY = y;
+                    s.highY = y;
+                    s.lowY = y;
+                    s.closeY = y;
+                }
+                else {
+                    s.highY = Math.max(s.highY, y);
+                    s.lowY = Math.min(s.lowY, y);
+                    s.closeY = y;
+                }
+            }
+            else {
+                s.seriesPath.moveTo(x, y);
+                s.lastX = x;
+                s.openY = y;
+                s.highY = y;
+                s.lowY = y;
+                s.closeY = y;
+            }
+            s.lastPointGood = true;
+        }
+        else {
+            s.lastPointGood = false;
+        }
+        // if this is the last item, draw the path ...
+        if (item == s.getLastItemIndex()) {
+            // draw path
+            PathIterator pi = s.seriesPath.getPathIterator(null);
+            int count = 0;
+            while (!pi.isDone()) {
+                count++;
+                pi.next();
+            }
+            g2.setStroke(getItemStroke(series, item));
+            g2.setPaint(getItemPaint(series, item));
+            g2.draw(s.seriesPath);
+            g2.draw(s.intervalPath);
+        }
+    }
+

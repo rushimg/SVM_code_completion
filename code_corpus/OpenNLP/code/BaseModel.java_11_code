@@ -1,0 +1,77 @@
+  protected void validateArtifactMap() throws InvalidFormatException {
+    if (!(artifactMap.get(MANIFEST_ENTRY) instanceof Properties))
+      throw new InvalidFormatException("Missing the " + MANIFEST_ENTRY + "!");
+
+    // First check version, everything else might change in the future
+    String versionString = getManifestProperty(VERSION_PROPERTY);
+
+    if (versionString != null) {
+      Version version;
+
+      try {
+        version = Version.parse(versionString);
+      }
+      catch (NumberFormatException e) {
+        throw new InvalidFormatException("Unable to parse model version '" + versionString + "'!", e);
+      }
+
+      // Version check is only performed if current version is not the dev/debug version
+      if (!Version.currentVersion().equals(Version.DEV_VERSION)) {
+        // Major and minor version must match, revision might be
+        if (Version.currentVersion().getMajor() != version.getMajor() ||
+            Version.currentVersion().getMinor() != version.getMinor()) {
+          //this check allows for the use of models one minor release behind current minor release
+          if(Version.currentVersion().getMajor() == version.getMajor() && (Version.currentVersion().getMinor()-1) != version.getMinor()){
+          throw new InvalidFormatException("Model version " + version + " is not supported by this ("
+              + Version.currentVersion() +") version of OpenNLP!");
+          }
+        }
+
+        // Reject loading a snapshot model with a non-snapshot version
+        if (!Version.currentVersion().isSnapshot() && version.isSnapshot()) {
+          throw new InvalidFormatException("Model version " + version + " is a snapshot - snapshot models are not " +
+          		"supported by this non-snapshot version (" + Version.currentVersion() + ") of OpenNLP!");
+        }
+      }
+    }
+    else {
+      throw new InvalidFormatException("Missing " + VERSION_PROPERTY + " property in " +
+            MANIFEST_ENTRY + "!");
+    }
+
+    if (getManifestProperty(COMPONENT_NAME_PROPERTY) == null)
+      throw new InvalidFormatException("Missing " + COMPONENT_NAME_PROPERTY + " property in " +
+            MANIFEST_ENTRY + "!");
+
+    if (!getManifestProperty(COMPONENT_NAME_PROPERTY).equals(componentName))
+        throw new InvalidFormatException("The " + componentName + " cannot load a model for the " +
+            getManifestProperty(COMPONENT_NAME_PROPERTY) + "!");
+
+    if (getManifestProperty(LANGUAGE_PROPERTY) == null)
+      throw new InvalidFormatException("Missing " + LANGUAGE_PROPERTY + " property in " +
+      		MANIFEST_ENTRY + "!");
+
+    // Validate the factory. We try to load it using the ExtensionLoader. It
+    // will return the factory, null or raise an exception
+    String factoryName = getManifestProperty(FACTORY_NAME);
+    if (factoryName != null) {
+      try {
+        if (ExtensionLoader.instantiateExtension(BaseToolFactory.class,
+            factoryName) == null) {
+          throw new InvalidFormatException(
+              "Could not load an user extension specified by the model: "
+                  + factoryName);
+        }
+      } catch (Exception e) {
+        throw new InvalidFormatException(
+            "Could not load an user extension specified by the model: "
+                + factoryName, e);
+      }
+    }
+
+    // validate artifacts declared by the factory
+    if(toolFactory != null) {
+      toolFactory.validateArtifactMap();
+    }
+  }
+

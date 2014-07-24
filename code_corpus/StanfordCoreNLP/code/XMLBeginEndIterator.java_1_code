@@ -1,0 +1,138 @@
+public class XMLBeginEndIterator<E> extends AbstractIterator<E> {
+
+  private final Pattern tagNamePattern;
+  private final BufferedReader inputReader;
+  private final Function<String,E> op;
+  private final boolean keepInternalTags;
+  private final boolean keepDelimitingTags;
+  private final boolean countDepth;
+  private E nextToken; // stores the read-ahead next token to return
+
+  @SuppressWarnings({"unchecked"}) // Can't seem to do IdentityFunction without warning!
+  public XMLBeginEndIterator(Reader in, String tagNameRegexp) {
+    this(in, tagNameRegexp, new IdentityFunction(), false);
+  }
+
+  @SuppressWarnings({"unchecked"})
+  public XMLBeginEndIterator(Reader in, String tagNameRegexp, boolean keepInternalTags) {
+    this(in, tagNameRegexp, new IdentityFunction(), keepInternalTags);
+  }
+
+  public XMLBeginEndIterator(Reader in, String tagNameRegexp, Function<String,E> op, boolean keepInternalTags) {
+    this(in, tagNameRegexp, op, keepInternalTags, false);
+  }
+
+  @SuppressWarnings({"unchecked"})
+  public XMLBeginEndIterator(Reader in, String tagNameRegexp, boolean keepInternalTags, boolean keepDelimitingTags) {
+    this(in, tagNameRegexp, new IdentityFunction(), keepInternalTags, keepDelimitingTags);
+  }
+
+  @SuppressWarnings({"unchecked"})
+  public XMLBeginEndIterator(Reader in, String tagNameRegexp, boolean keepInternalTags, boolean keepDelimitingTags, boolean countDepth) {
+    this(in, tagNameRegexp, new IdentityFunction(), keepInternalTags, keepDelimitingTags, countDepth);
+  }
+
+  public XMLBeginEndIterator(Reader in, String tagNameRegexp, Function<String,E> op, boolean keepInternalTags, boolean keepDelimitingTags) {
+    this(in, tagNameRegexp, op, keepInternalTags, keepDelimitingTags, false);
+  }
+
+  public XMLBeginEndIterator(Reader in, String tagNameRegexp, Function<String,E> op,
+                             boolean keepInternalTags, boolean keepDelimitingTags, boolean countDepth) {
+    this.tagNamePattern = Pattern.compile(tagNameRegexp);
+    this.op = op;
+    this.keepInternalTags = keepInternalTags;
+    this.keepDelimitingTags = keepDelimitingTags;
+    this.countDepth = countDepth;
+    this.inputReader = new BufferedReader(in);
+    setNext();
+  }
+
+  private void setNext() {
+    String s = getNext();
+    nextToken = parseString(s);
+  }
+
+  // returns null if there is no next object
+  private String getNext() {
+    StringBuilder result = new StringBuilder();
+    try {
+      XMLUtils.XMLTag tag;
+      do {
+        // String text =
+        XMLUtils.readUntilTag(inputReader);
+        // there may or may not be text before the next tag, but we discard it
+        //        System.out.println("outside text: " + text );
+        tag = XMLUtils.readAndParseTag(inputReader);
+        //        System.out.println("outside tag: " + tag);
+        if (tag == null) {
+          return null; // couldn't find any more tags, so no more elements
+        }
+      } while (!tagNamePattern.matcher(tag.name).matches() ||
+               tag.isEndTag || tag.isSingleTag);
+      if (keepDelimitingTags) {
+        result.append(tag.toString());
+      }
+      int depth = 1;
+      while (true) {
+        String text = XMLUtils.readUntilTag(inputReader);
+        if (text != null) {
+          // if the text isn't null, we append it
+          //        System.out.println("inside text: " + text );
+          result.append(text);
+        }
+        String tagString = XMLUtils.readTag(inputReader);
+        tag = XMLUtils.parseTag(tagString);
+        if (tag == null) {
+          return null; // unexpected end of this element, so no more elements
+        }
+        if (tagNamePattern.matcher(tag.name).matches() && tag.isEndTag) {
+          if ((countDepth && depth == 1) || !countDepth) {
+            if (keepDelimitingTags) {
+              result.append(tagString);
+            }
+            // this is our end tag so we stop
+            break;
+          } else {
+            --depth;
+            if (keepInternalTags) {
+              result.append(tagString);
+            }
+          }
+        } else if (tagNamePattern.matcher(tag.name).matches() && !tag.isEndTag &&
+                   !tag.isSingleTag && countDepth) {
+          ++depth;
+          if (keepInternalTags) {
+            result.append(tagString);
+          }
+        } else {
+          // not our end tag, so we optionally append it and keep going
+          if (keepInternalTags) {
+            result.append(tagString);
+          }
+        }
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    return result.toString();
+  }
+
+  protected E parseString(String s) {
+    return op.apply(s);
+  }
+
+  @Override
+  public boolean hasNext() {
+    return nextToken != null;
+  }
+
+  @Override
+  public E next() {
+    if (nextToken == null) {
+      throw new NoSuchElementException();
+    }
+    E token = nextToken;
+    setNext();
+    return token;
+  }
+

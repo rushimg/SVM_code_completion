@@ -1,0 +1,35 @@
+  public int getLastSyntacticHeadPosition() {
+    int pos = Integer.MIN_VALUE;
+    for (ExtractionObject obj : args) {
+      if(obj instanceof EntityMention){
+        EntityMention em = (EntityMention) obj;
+        if(em.getSyntacticHeadTokenPosition() > pos) {
+          pos = em.getSyntacticHeadTokenPosition();
+        }
+      }
+    }
+    if(pos != Integer.MIN_VALUE) return pos;
+    return -1;
+  }
+  
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append("RelationMention [type=" + type
+      + (subType != null ? ", subType=" + subType : "")
+      + ", start=" + getExtentTokenStart() + ", end=" + getExtentTokenEnd());
+    if(typeProbabilities != null){
+      sb.append(", " + probsToString());
+    }
+    
+    if(args != null){
+      for(int i = 0; i < args.size(); i ++){
+        sb.append("\n\t");
+        if(argNames != null) sb.append(argNames.get(i) + " ");
+        sb.append(args.get(i));
+      }
+    }
+    sb.append("\n]");
+    return sb.toString();
+  }
+  

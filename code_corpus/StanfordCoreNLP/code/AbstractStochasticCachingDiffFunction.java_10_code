@@ -1,0 +1,67 @@
+  void stochasticEnsure(double[] x, double[] v, int batchSize) {
+
+
+    if (lastXBatch == null) {
+      lastXBatch = new double[domainDimension()];
+      System.out.println("Setting previous position (x).");
+    }
+
+    if (lastVBatch == null) {
+      lastVBatch = new double[domainDimension()];
+      System.out.println("Setting previous gain (v)");
+    }
+
+    if (derivative == null) {
+      derivative = new double[domainDimension()];
+      System.out.println("Setting Derivative.");
+    }
+
+    if (HdotV == null) {
+      HdotV = new double[domainDimension()];
+      System.out.println("Setting HdotV.");
+    }
+
+
+
+    //If we want to recalculate using the previous batch
+    if(recalculatePrevBatch){
+
+      decrementBatch(batchSize);
+
+    }else{
+
+      //
+      //If we dont want to calculate anything we just want the last values.  This is especially usefull if you know
+      //   the values have already been calculated, and you don't want to waste time comparing the entire
+      //   array of x's and v's.
+      //
+      if(returnPreviousValues){
+        returnPreviousValues = false;
+        return;
+      }
+
+      //If we dont know there are new values, and we havnt asked to recalculate then compare
+      //to avoid needing to recalculate
+      if( !hasNewVals && lastElement!=curElement ){
+        if ((lastBatchSize==batchSize) && Arrays.equals(x, lastXBatch) && Arrays.equals(v,lastVBatch)) {
+          return;
+        }
+      }
+
+    }
+
+
+    copy(lastXBatch,x);
+    if(v!=null){copy(lastVBatch,v);}
+    lastBatchSize = batchSize;
+    calculateStochastic(x,v,batchSize);
+
+    lastElement = curElement;
+
+    incrementBatch(batchSize);
+
+  }
+
+
+
+

@@ -1,0 +1,60 @@
+public class Beam<T> extends AbstractSet<T> {
+
+  protected int maxBeamSize;
+  protected Heap<T> elements;
+
+  public int capacity() {
+    return maxBeamSize;
+  }
+
+  @Override
+  public int size() {
+    return elements.size();
+  }
+
+  @Override
+  public Iterator<T> iterator() {
+    return asSortedList().iterator();
+  }
+
+  public List<T> asSortedList() {
+    LinkedList<T> list = new LinkedList<T>();
+    for (Iterator<T> i = elements.iterator(); i.hasNext();) {
+      list.addFirst(i.next());
+    }
+    return list;
+  }
+
+  @Override
+  public boolean add(T o) {
+    boolean added = true;
+    elements.add(o);
+    while (size() > capacity()) {
+      Object dumped = elements.extractMin();
+      if (dumped.equals(o)) {
+        added = false;
+      }
+    }
+    return added;
+  }
+
+  @Override
+  public boolean remove(Object o) {
+    //return elements.remove(o);
+    throw new UnsupportedOperationException();
+  }
+
+  public Beam() {
+    this(100);
+  }
+
+  // TODO dlwh: This strikes me as unsafe even now.
+  public Beam(int maxBeamSize) {
+    this(maxBeamSize, ErasureUtils.<Comparator<T>>uncheckedCast(ScoredComparator.ASCENDING_COMPARATOR));
+  }
+
+  public Beam(int maxBeamSize, Comparator<? super T> cmp) {
+    elements = new ArrayHeap<T>(cmp);
+    this.maxBeamSize = maxBeamSize;
+  }
+

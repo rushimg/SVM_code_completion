@@ -1,0 +1,31 @@
+    protected Paint lookupSectionPaint(Comparable key, boolean autoPopulate) {
+
+        // is there an override?
+        Paint result = getSectionPaint();
+        if (result != null) {
+            return result;
+        }
+
+        // if not, check if there is a paint defined for the specified key
+        result = this.sectionPaintMap.getPaint(key);
+        if (result != null) {
+            return result;
+        }
+
+        // nothing defined - do we autoPopulate?
+        if (autoPopulate) {
+            DrawingSupplier ds = getDrawingSupplier();
+            if (ds != null) {
+                result = ds.getNextPaint();
+                this.sectionPaintMap.put(key, result);
+            }
+            else {
+                result = this.baseSectionPaint;
+            }
+        }
+        else {
+            result = this.baseSectionPaint;
+        }
+        return result;
+    }
+

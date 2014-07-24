@@ -1,0 +1,44 @@
+  public ChineseUnknownWordModel(Options op, Lexicon lex,
+                                 Index<String> wordIndex,
+                                 Index<String> tagIndex) {
+    this(op, lex, wordIndex, tagIndex,
+         new ClassicCounter<IntTaggedWord>(),
+         Generics.<Label,ClassicCounter<String>>newHashMap(),
+         Generics.<String,Float>newHashMap(),
+         false, Generics.<String>newHashSet());
+  }
+
+  @Override
+  public float score(IntTaggedWord itw, String word) {
+    // Label tagL = itw.tagLabel();
+    // String tag = tagL.value();
+    String tag = itw.tagString(tagIndex);
+    Label tagL = new Tag(tag);
+
+    float logProb;
+
+    if (VERBOSE) EncodingPrintWriter.out.println("Scoring unknown word |" + word + "| with tag " + tag, encoding);
+
+    if (word.matches(dateMatch)) {
+      //EncodingPrintWriter.out.println("Date match for " + word,encoding);
+      if (tag.equals("NT")) {
+        logProb = 0.0f;
+      } else {
+        logProb = Float.NEGATIVE_INFINITY;
+      }
+    } else if (word.matches(numberMatch)) {
+      //EncodingPrintWriter.out.println("Number match for " + word,encoding);
+      if (tag.equals("CD") && (!word.matches(ordinalMatch))) {
+        logProb = 0.0f;
+      } else if (tag.equals("OD") && word.matches(ordinalMatch)) {
+        logProb = 0.0f;
+      } else {
+        logProb = Float.NEGATIVE_INFINITY;
+      }
+    } else if (word.matches(properNameMatch)) {
+      //EncodingPrintWriter.out.println("Proper name match for " + word,encoding);
+      if (tag.equals("NR")) {
+        logProb = 0.0f;
+      } else {
+        logProb = Float.NEGATIVE_INFINITY;
+      }

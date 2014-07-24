@@ -1,0 +1,28 @@
+  public static String stemAcronym(String s, CliqueTemplates ct) {
+    if (ct.stemmedAcronymIndex.containsKey(s)) {
+      return (String) ct.stemmedAcronymIndex.get(s);
+    }
+    Matcher matcher = acronymPattern.matcher(s);
+    if (!matcher.matches() || s.equalsIgnoreCase("www")) {
+      System.err.println("Not a valid acronym: " + s);
+      return "null";
+    }
+
+    String stemmed = matcher.group(1).toLowerCase();
+    if (stemmed.endsWith("-")) {
+      stemmed = stemmed.substring(0, stemmed.length() - 1);
+    }
+
+    ct.stemmedAcronymIndex.put(s, stemmed);
+    System.err.println("Stemmed: " + s + " to: " + stemmed);
+    if (ct.inverseAcronymMap.containsKey(stemmed)) {
+      HashSet set = (HashSet) ct.inverseAcronymMap.get(stemmed);
+      set.add(s);
+    } else {
+      HashSet set = new HashSet();
+      set.add(s);
+      ct.inverseAcronymMap.put(stemmed, set);
+    }
+    return stemmed;
+  }
+

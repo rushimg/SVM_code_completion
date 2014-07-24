@@ -1,0 +1,19 @@
+  public class DisableTimeout implements HttpRequestInitializer {
+    public void initialize(HttpRequest request) {
+      request.setConnectTimeout(0);
+      request.setReadTimeout(0);
+    }
+  }
+  public static HttpRequestFactory createRequestFactory(HttpTransport transport) {
+    return transport.createRequestFactory(new DisableTimeout());
+  }
+  public static HttpRequestFactory createRequestFactory2(HttpTransport transport) {
+    final DisableTimeout disableTimeout = new DisableTimeout();
+    return transport.createRequestFactory(new HttpRequestInitializer() {
+      public void initialize(HttpRequest request) {
+        disableTimeout.initialize(request);
+      }
+    });
+  }
+public interface HttpRequestInitializer {
+

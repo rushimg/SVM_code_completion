@@ -1,0 +1,25 @@
+  public void join(boolean destroyThreadpool) {
+    // Make blocking calls to the last processes that are running
+    if ( ! threadPool.isShutdown()) {
+      try {
+        for (int i = nThreads; i > 0; --i) {
+          idleProcessors.take();
+        }
+        if (destroyThreadpool) {
+          threadPool.shutdown();
+          // Sanity check. The threadpool should be done after iterating over
+          // the processors.
+          threadPool.awaitTermination(10, TimeUnit.SECONDS);
+        } else {
+          // Repopulate the list of processors
+          for (int i = 0; i < nThreads; ++i) {
+            idleProcessors.put(i);
+          }
+        }
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e);
+      }
+    }
+  }
+
+

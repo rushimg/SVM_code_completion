@@ -1,0 +1,21 @@
+  public static List<Map<String,String>> readCSVWithHeader(String path, char quoteChar, char escapeChar) throws IOException {
+    String[] labels = null;
+    List<Map<String,String>> rows = Generics.newArrayList();
+    for (String line : IOUtils.readLines(path)) {
+      System.out.println("Splitting "+line);
+      if (labels == null) {
+        labels = StringUtils.splitOnCharWithQuoting(line,',','"',escapeChar);
+      } else {
+        String[] cells = StringUtils.splitOnCharWithQuoting(line,',',quoteChar,escapeChar);
+        assert(cells.length == labels.length);
+        Map<String,String> cellMap = Generics.newHashMap();
+        for (int i=0; i<labels.length; i++) cellMap.put(labels[i],cells[i]);
+        rows.add(cellMap);
+      }
+    }
+    return rows;
+  }
+  public static List<Map<String,String>> readCSVWithHeader(String path) throws IOException {
+    return readCSVWithHeader(path, '"', '"');
+  }
+

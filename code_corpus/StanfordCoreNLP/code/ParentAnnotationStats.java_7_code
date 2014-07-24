@@ -1,0 +1,41 @@
+  public static void main(String[] args) {
+    boolean doTags = false;
+    if (args.length < 1) {
+      System.out.println("Usage: java edu.stanford.nlp.parser.lexparser.ParentAnnotationStats [-tags] treebankPath");
+    } else {
+      int i = 0;
+      boolean useCutOff = false;
+      double cutOff = 0.0;
+      while (args[i].startsWith("-")) {
+        if (args[i].equals("-tags")) {
+          doTags = true;
+          i++;
+        } else if (args[i].equals("-cutOff") && i + 1 < args.length) {
+          useCutOff = true;
+          cutOff = Double.parseDouble(args[i + 1]);
+          i += 2;
+        } else {
+          System.err.println("Unknown option: " + args[i]);
+          i++;
+        }
+      }
+
+      Treebank treebank = new DiskTreebank(new TreeReaderFactory() {
+        public TreeReader newTreeReader(Reader in) {
+          return new PennTreeReader(in, new LabeledScoredTreeFactory(new StringLabelFactory()), new BobChrisTreeNormalizer());
+        }
+      });
+      treebank.loadPath(args[i]);
+
+      if (useCutOff) {
+        Set<String> splitters = getSplitCategories(treebank, doTags, 0, cutOff, cutOff, null);
+        System.out.println(splitters);
+      } else {
+        ParentAnnotationStats pas = new ParentAnnotationStats(null, doTags);
+        treebank.apply(pas);
+        pas.printStats();
+      }
+    }
+  }
+
+

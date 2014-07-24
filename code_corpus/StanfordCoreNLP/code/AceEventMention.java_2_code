@@ -1,0 +1,18 @@
+  public int getMinTokenStart() {
+    Collection<AceEventMentionArgument> args = getArgs();
+    int earliestTokenStart = -1;
+    for (AceEventMentionArgument arg : args) {
+      int tokenStart = arg.getContent().getHead().getTokenStart();
+      if (earliestTokenStart == -1)
+        earliestTokenStart = tokenStart;
+      else
+        earliestTokenStart = Math.min(earliestTokenStart, tokenStart);
+    }
+
+    // this will happen when we have no arguments
+    if (earliestTokenStart == -1)
+      return mExtent.getTokenStart();
+
+    return earliestTokenStart;
+  }
+

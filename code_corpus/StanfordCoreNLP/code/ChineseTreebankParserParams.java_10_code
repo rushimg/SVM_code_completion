@@ -1,0 +1,358 @@
+  @Override
+  public Tree transformTree(Tree t, Tree root) {
+    if (t == null || t.isLeaf()) {
+      return t;
+    }
+
+    String parentStr;
+    String grandParentStr;
+    Tree parent;
+    Tree grandParent;
+    if (root == null || t.equals(root)) {
+      parent = null;
+      parentStr = "";
+    } else {
+      parent = t.parent(root);
+      parentStr = parent.label().value();
+    }
+    if (parent == null || parent.equals(root)) {
+      grandParent = null;
+      grandParentStr = "";
+    } else {
+      grandParent = parent.parent(root);
+      grandParentStr = grandParent.label().value();
+    }
+
+    String baseParentStr = ctlp.basicCategory(parentStr);
+    String baseGrandParentStr = ctlp.basicCategory(grandParentStr);
+
+    CoreLabel lab = (CoreLabel) t.label();
+    String word = lab.word();
+    String tag = lab.tag();
+    String baseTag = ctlp.basicCategory(tag);
+    String category = lab.value();
+    String baseCategory = ctlp.basicCategory(category);
+
+    if (t.isPreTerminal()) { // it's a POS tag
+      List<String> leftAunts = listBasicCategories(SisterAnnotationStats.leftSisterLabels(parent, grandParent));
+      List<String> rightAunts = listBasicCategories(SisterAnnotationStats.rightSisterLabels(parent, grandParent));
+
+      // Chinese-specific punctuation splits
+      if (chineseSplitPunct && baseTag.equals("PU")) {
+        if (ChineseTreebankLanguagePack.chineseDouHaoAcceptFilter().accept(word)) {
+          tag = tag + "-DOU";
+          // System.out.println("Punct: Split dou hao"); // debugging
+        } else if (ChineseTreebankLanguagePack.chineseCommaAcceptFilter().accept(word)) {
+          tag = tag + "-COMMA";
+          // System.out.println("Punct: Split comma"); // debugging
+        } else if (ChineseTreebankLanguagePack.chineseColonAcceptFilter().accept(word)) {
+          tag = tag + "-COLON";
+          // System.out.println("Punct: Split colon"); // debugging
+        } else if (ChineseTreebankLanguagePack.chineseQuoteMarkAcceptFilter().accept(word)) {
+          if (chineseSplitPunctLR) {
+            if (ChineseTreebankLanguagePack.chineseLeftQuoteMarkAcceptFilter().accept(word)) {
+              tag += "-LQUOTE";
+            } else {
+              tag += "-RQUOTE";
+            }
+          } else {
+            tag = tag + "-QUOTE";
+          }
+          // System.out.println("Punct: Split quote"); // debugging
+        } else if (ChineseTreebankLanguagePack.chineseEndSentenceAcceptFilter().accept(word)) {
+          tag = tag + "-ENDSENT";
+          // System.out.println("Punct: Split end sent"); // debugging
+        } else if (ChineseTreebankLanguagePack.chineseParenthesisAcceptFilter().accept(word)) {
+          if (chineseSplitPunctLR) {
+            if (ChineseTreebankLanguagePack.chineseLeftParenthesisAcceptFilter().accept(word)) {
+              tag += "-LPAREN";
+            } else {
+              tag += "-RPAREN";
+            }
+          } else {
+            tag += "-PAREN";
+            //printlnErr("Just used -PAREN annotation");
+            //printlnErr(word);
+            //throw new RuntimeException();
+          }
+          // System.out.println("Punct: Split paren"); // debugging
+        } else if (ChineseTreebankLanguagePack.chineseDashAcceptFilter().accept(word)) {
+          tag = tag + "-DASH";
+          // System.out.println("Punct: Split dash"); // debugging
+        } else if (ChineseTreebankLanguagePack.chineseOtherAcceptFilter().accept(word)) {
+          tag = tag + "-OTHER";
+        } else {
+          printlnErr("Unknown punct (you should add it to CTLP): " + tag + " |" + word + "|");
+        }
+      } else if (chineseSplitDouHao) {   // only split DouHao
+        if (ChineseTreebankLanguagePack.chineseDouHaoAcceptFilter().accept(word) && baseTag.equals("PU")) {
+          tag = tag + "-DOU";
+        }
+      }
+
+      // Chinese-specific POS tag splits (non-punctuation)
+
+      if (tagWordSize) {
+        int l = word.length();
+        tag += "-" + l + "CHARS";
+      }
+
+      if (mergeNNVV && baseTag.equals("NN")) {
+        tag = "VV";
+      }
+
+      if ((chineseSelectiveTagPA || chineseVerySelectiveTagPA) && (baseTag.equals("CC") || baseTag.equals("P"))) {
+        tag += "-" + baseParentStr;
+      }
+      if (chineseSelectiveTagPA && (baseTag.equals("VV"))) {
+        tag += "-" + baseParentStr;
+      }
+
+      if (markMultiNtag && tag.startsWith("N")) {
+        for (int i = 0; i < parent.numChildren(); i++) {
+          if (parent.children()[i].label().value().startsWith("N") && parent.children()[i] != t) {
+            tag += "=N";
+            //System.out.println("Found multi=N rewrite");
+          }
+        }
+      }
+
+      if (markVVsisterIP && baseTag.equals("VV")) {
+        boolean seenIP = false;
+        for (int i = 0; i < parent.numChildren(); i++) {
+          if (parent.children()[i].label().value().startsWith("IP")) {
+            seenIP = true;
+          }
+        }
+        if (seenIP) {
+          tag += "-IP";
+          //System.out.println("Found VV with IP sister"); // testing
+        }
+      }
+
+      if (markPsisterIP && baseTag.equals("P")) {
+        boolean seenIP = false;
+        for (int i = 0; i < parent.numChildren(); i++) {
+          if (parent.children()[i].label().value().startsWith("IP")) {
+            seenIP = true;
+          }
+        }
+        if (seenIP) {
+          tag += "-IP";
+        }
+      }
+
+      if (markADgrandchildOfIP && baseTag.equals("AD") && baseGrandParentStr.equals("IP")) {
+        tag += "~IP";
+        //System.out.println("Found AD with IP grandparent"); // testing
+      }
+
+      if (gpaAD && baseTag.equals("AD")) {
+        tag += "~" + baseGrandParentStr;
+        //System.out.println("Found AD with grandparent " + grandParentStr); // testing
+      }
+
+      if (markPostverbalP && leftAunts.contains("VV") && baseTag.equals("P")) {
+        //System.out.println("Found post-verbal P");
+        tag += "^=lVV";
+      }
+
+      // end Chinese-specific tag splits
+
+      Label label = new CategoryWordTag(tag, word, tag);
+      t.setLabel(label);
+    } else {
+      // it's a phrasal category
+      Tree[] kids = t.children();
+
+      // Chinese-specific category splits
+      List<String> leftSis = listBasicCategories(SisterAnnotationStats.leftSisterLabels(t, parent));
+      List<String> rightSis = listBasicCategories(SisterAnnotationStats.rightSisterLabels(t, parent));
+
+      if (paRootDtr && baseParentStr.equals("ROOT")) {
+        category += "^ROOT";
+      }
+
+      if (markIPsisterBA && baseCategory.equals("IP")) {
+        if (leftSis.contains("BA")) {
+          category += "=BA";
+          //System.out.println("Found IP sister of BA");
+        }
+      }
+
+      if (dominatesV && hasV(t.preTerminalYield())) {
+        // mark categories containing a verb
+        category += "-v";
+      }
+
+      if (markIPsisterVVorP && baseCategory.equals("IP")) {
+        // todo: cdm: is just looking for "P" here selective enough??
+        if (leftSis.contains("VV") || leftSis.contains("P")) {
+          category += "=VVP";
+        }
+      }
+
+      if (markIPsisDEC && baseCategory.equals("IP")) {
+        if (rightSis.contains("DEC")) {
+          category += "=DEC";
+          //System.out.println("Found prenominal IP");
+        }
+      }
+
+      if (baseCategory.equals("VP")) {
+        // cdm 2008: this used to just check that it startsWith("VP"), but
+        // I think that was bad because it also matched VPT verb compounds
+        if (chineseSplitVP == 3) {
+          boolean hasCC = false;
+          boolean hasPU = false;
+          boolean hasLexV = false;
+          for (Tree kid : kids) {
+            if (kid.label().value().startsWith("CC")) {
+              hasCC = true;
+            } else if (kid.label().value().startsWith("PU")) {
+              hasPU = true;
+            } else if (StringUtils.lookingAt(kid.label().value(), "(V[ACEV]|VCD|VCP|VNV|VPT|VRD|VSB)")) {
+              hasLexV = true;
+            }
+          }
+          if (hasCC || (hasPU && ! hasLexV)) {
+            category += "-CRD";
+            //System.out.println("Found coordinate VP"); // testing
+          } else if (hasLexV) {
+            category += "-COMP";
+            //System.out.println("Found complementing VP"); // testing
+          } else {
+            category += "-ADJT";
+            //System.out.println("Found adjoining VP"); // testing
+          }
+        } else if (chineseSplitVP >= 1) {
+          boolean hasBA = false;
+          for (Tree kid : kids) {
+            if (kid.label().value().startsWith("BA")) {
+              hasBA = true;
+            } else if (chineseSplitVP == 2 && tlp.basicCategory(kid.label().value()).equals("VP")) {
+              for (Tree kidkid : kid.children()) {
+                if (kidkid.label().value().startsWith("BA")) {
+                  hasBA = true;
+                }
+              }
+            }
+          }
+          if (hasBA) {
+            category += "-BA";
+          }
+        }
+      }
+
+      if (markVPadjunct && baseParentStr.equals("VP")) {
+        // cdm 2008: This used to use startsWith("VP") but changed to baseCat
+        Tree[] sisters = parent.children();
+        boolean hasVPsister = false;
+        boolean hasCC = false;
+        boolean hasPU = false;
+        boolean hasLexV = false;
+        for (Tree sister : sisters) {
+          if (tlp.basicCategory(sister.label().value()).equals("VP")) {
+            hasVPsister = true;
+          }
+          if (sister.label().value().startsWith("CC")) {
+            hasCC = true;
+          }
+          if (sister.label().value().startsWith("PU")) {
+            hasPU = true;
+          }
+          if (StringUtils.lookingAt(sister.label().value(), "(V[ACEV]|VCD|VCP|VNV|VPT|VRD|VSB)")) {
+            hasLexV = true;
+          }
+        }
+        if (hasVPsister && !(hasCC || hasPU || hasLexV)) {
+          category += "-VPADJ";
+          //System.out.println("Found adjunct of VP"); // testing
+        }
+      }
+
+      if (markNPmodNP && baseCategory.equals("NP") && baseParentStr.equals("NP")) {
+        if (rightSis.contains("NP")) {
+          category += "=MODIFIERNP";
+          //System.out.println("Found NP modifier of NP"); // testing
+        }
+      }
+
+      if (markModifiedNP && baseCategory.equals("NP") && baseParentStr.equals("NP")) {
+        if (rightSis.isEmpty() && (leftSis.contains("ADJP") || leftSis.contains("NP") || leftSis.contains("DNP") || leftSis.contains("QP") || leftSis.contains("CP") || leftSis.contains("PP"))) {
+          category += "=MODIFIEDNP";
+          //System.out.println("Found modified NP"); // testing
+        }
+      }
+
+      if (markNPconj && baseCategory.equals("NP") && baseParentStr.equals("NP")) {
+        if (rightSis.contains("CC") || rightSis.contains("PU") || leftSis.contains("CC") || leftSis.contains("PU")) {
+          category += "=CONJ";
+          //System.out.println("Found NP conjunct"); // testing
+        }
+      }
+
+      if (markIPconj && baseCategory.equals("IP") && baseParentStr.equals("IP")) {
+        Tree[] sisters = parent.children();
+        boolean hasCommaSis = false;
+        boolean hasIPSis = false;
+        for (Tree sister : sisters) {
+          if (ctlp.basicCategory(sister.label().value()).equals("PU") && ChineseTreebankLanguagePack.chineseCommaAcceptFilter().accept(sister.children()[0].label().toString())) {
+            hasCommaSis = true;
+            //System.out.println("Found CommaSis"); // testing
+          }
+          if (ctlp.basicCategory(sister.label().value()).equals("IP") && sister != t) {
+            hasIPSis = true;
+          }
+        }
+        if (hasCommaSis && hasIPSis) {
+          category += "-CONJ";
+          //System.out.println("Found IP conjunct"); // testing
+        }
+      }
+
+      if (unaryIP && baseCategory.equals("IP") && t.numChildren() == 1) {
+        category += "-U";
+        //System.out.println("Found unary IP"); //testing
+      }
+      if (unaryCP && baseCategory.equals("CP") && t.numChildren() == 1) {
+        category += "-U";
+        //System.out.println("Found unary CP"); //testing
+      }
+
+      if (splitBaseNP && baseCategory.equals("NP")) {
+        if (t.isPrePreTerminal()) {
+          category = category + "-B";
+        }
+      }
+
+      //if (Test.verbose) printlnErr(baseCategory + " " + leftSis.toString()); //debugging
+
+      if (markPostverbalPP && leftSis.contains("VV") && baseCategory.equals("PP")) {
+        //System.out.println("Found post-verbal PP");
+        category += "=lVV";
+      }
+
+      if ((markADgrandchildOfIP || gpaAD) && listBasicCategories(SisterAnnotationStats.kidLabels(t)).contains("AD")) {
+        category += "^ADVP";
+      }
+
+      if (markCC) {
+        // was: for (int i = 0; i < kids.length; i++) {
+        // This second version takes an idea from Collins: don't count
+        // marginal conjunctions which don't conjoin 2 things.
+        for (int i = 1; i < kids.length - 1; i++) {
+          String cat2 = kids[i].label().value();
+          if (cat2.startsWith("CC")) {
+            category += "-CC";
+          }
+        }
+      }
+
+      Label label = new CategoryWordTag(category, word, tag);
+      t.setLabel(label);
+    }
+    return t;
+  }
+
+

@@ -1,0 +1,61 @@
+  private void combineWeights(CRFClassifier<IN> crf, double weight) {
+    int numFeatures = featureIndex.size();
+    int oldNumFeatures = weights.length;
+
+    // Create a map of other crf labels to this crf labels
+    Map<CRFLabel, CRFLabel> crfLabelMap = Generics.newHashMap();
+    for (int i = 0; i < crf.labelIndices.size(); i++) {
+      for (int j = 0; j < crf.labelIndices.get(i).size(); j++) {
+        CRFLabel labels = crf.labelIndices.get(i).get(j);
+        int[] newLabelIndices = new int[i + 1];
+        for (int ci = 0; ci <= i; ci++) {
+          String classLabel = crf.classIndex.get(labels.getLabel()[ci]);
+          newLabelIndices[ci] = this.classIndex.indexOf(classLabel);
+        }
+        CRFLabel newLabels = new CRFLabel(newLabelIndices);
+        crfLabelMap.put(labels, newLabels);
+        int k = this.labelIndices.get(i).indexOf(newLabels); // IMPORTANT: the indexing is needed, even when not printed out!
+        // System.err.println("LabelIndices " + i + " " + labels + ": " + j +
+        // " mapped to " + k);
+      }
+    }
+
+    // Create map of featureIndex to featureTypeIndex
+    map = new int[numFeatures];
+    for (int i = 0; i < numFeatures; i++) {
+      map[i] = getFeatureTypeIndex(i);
+    }
+
+    // Create new weights
+    double[][] newWeights = new double[numFeatures][];
+    for (int i = 0; i < numFeatures; i++) {
+      int length = labelIndices.get(map[i]).size();
+      newWeights[i] = new double[length];
+      if (i < oldNumFeatures) {
+        assert (length >= weights[i].length);
+        System.arraycopy(weights[i], 0, newWeights[i], 0, weights[i].length);
+      }
+    }
+    weights = newWeights;
+
+    // Get original weight indices from other crf and weight them in
+    // depending on the type of the feature, different number of weights is
+    // associated with it
+    for (int i = 0; i < crf.weights.length; i++) {
+      String feature = crf.featureIndex.get(i);
+      int newIndex = featureIndex.indexOf(feature);
+      // Check weights are okay dimension
+      if (weights[newIndex].length < crf.weights[i].length) {
+        throw new RuntimeException("Incompatible CRFClassifier: weight length mismatch for feature " + newIndex + ": "
+            + featureIndex.get(newIndex) + " (also feature " + i + ": " + crf.featureIndex.get(i) + ") " + ", len1="
+            + weights[newIndex].length + ", len2=" + crf.weights[i].length);
+      }
+      int featureTypeIndex = map[newIndex];
+      for (int j = 0; j < crf.weights[i].length; j++) {
+        CRFLabel labels = crf.labelIndices.get(featureTypeIndex).get(j);
+        CRFLabel newLabels = crfLabelMap.get(labels);
+        int k = this.labelIndices.get(featureTypeIndex).indexOf(newLabels);
+      }
+    }
+  }
+

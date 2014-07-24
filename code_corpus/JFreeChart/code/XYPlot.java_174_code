@@ -1,0 +1,41 @@
+    protected void drawRangeGridlines(Graphics2D g2, Rectangle2D area,
+                                      List ticks) {
+
+        // no renderer, no gridlines...
+        if (getRenderer() == null) {
+            return;
+        }
+
+        // draw the range grid lines, if any...
+        if (isRangeGridlinesVisible() || isRangeMinorGridlinesVisible()) {
+            Stroke gridStroke = null;
+            Paint gridPaint = null;
+            ValueAxis axis = getRangeAxis();
+            if (axis != null) {
+                Iterator iterator = ticks.iterator();
+                boolean paintLine = false;
+                while (iterator.hasNext()) {
+                    paintLine = false;
+                    ValueTick tick = (ValueTick) iterator.next();
+                    if ((tick.getTickType() == TickType.MINOR)
+                            && isRangeMinorGridlinesVisible()) {
+                        gridStroke = getRangeMinorGridlineStroke();
+                        gridPaint = getRangeMinorGridlinePaint();
+                        paintLine = true;
+                    }
+                    else if ((tick.getTickType() == TickType.MAJOR)
+                            && isRangeGridlinesVisible()) {
+                        gridStroke = getRangeGridlineStroke();
+                        gridPaint = getRangeGridlinePaint();
+                        paintLine = true;
+                    }
+                    if ((tick.getValue() != 0.0
+                            || !isRangeZeroBaselineVisible()) && paintLine) {
+                        getRenderer().drawRangeLine(g2, this, getRangeAxis(),
+                                area, tick.getValue(), gridPaint, gridStroke);
+                    }
+                }
+            }
+        }
+    }
+

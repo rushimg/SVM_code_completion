@@ -1,0 +1,34 @@
+  class NegLLComputeTask extends ComputeTask {
+
+    final double[] tempSums;
+    
+    public NegLLComputeTask(int threadIndex, int startIndex, int length, double[] x) {
+      super(threadIndex, startIndex, length, x);
+      this.tempSums = new double[numOutcomes];
+    }
+    
+    @Override
+    public NegLLComputeTask call() {
+      int ci, oi, ai, vectorIndex, outcome;
+      double predValue, logSumOfExps;
+      negLogLikelihoodThread[threadIndex] = 0;
+      
+      for (ci = startIndex; ci < startIndex + length; ci++) {
+        for (oi = 0; oi < numOutcomes; oi++) {
+          tempSums[oi] = 0;
+          for (ai = 0; ai < contexts[ci].length; ai++) {
+            vectorIndex = indexOf(oi, contexts[ci][ai]);
+            predValue = values != null? values[ci][ai] : 1.0;
+          }
+        }
+        
+        logSumOfExps = ArrayMath.logSumOfExps(tempSums);
+        
+        outcome = outcomeList[ci];
+        negLogLikelihoodThread[threadIndex] -= 
+      }
+      
+      return this;
+    }
+  }
+  

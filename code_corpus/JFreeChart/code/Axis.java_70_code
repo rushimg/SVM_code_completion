@@ -1,0 +1,87 @@
+    protected AxisState drawLabel(String label, Graphics2D g2,
+            Rectangle2D plotArea, Rectangle2D dataArea, RectangleEdge edge,
+            AxisState state) {
+
+        // it is unlikely that 'state' will be null, but check anyway...
+        if (state == null) {
+            throw new IllegalArgumentException("Null 'state' argument.");
+        }
+
+        if ((label == null) || (label.equals(""))) {
+            return state;
+        }
+
+        Font font = getLabelFont();
+        RectangleInsets insets = getLabelInsets();
+        g2.setFont(font);
+        g2.setPaint(getLabelPaint());
+        FontMetrics fm = g2.getFontMetrics();
+        Rectangle2D labelBounds = TextUtilities.getTextBounds(label, g2, fm);
+
+        if (edge == RectangleEdge.TOP) {
+            AffineTransform t = AffineTransform.getRotateInstance(
+                    getLabelAngle(), labelBounds.getCenterX(),
+                    labelBounds.getCenterY());
+            Shape rotatedLabelBounds = t.createTransformedShape(labelBounds);
+            labelBounds = rotatedLabelBounds.getBounds2D();
+            double labelx = dataArea.getCenterX();
+            double labely = state.getCursor() - insets.getBottom()
+                            - labelBounds.getHeight() / 2.0;
+            TextUtilities.drawRotatedString(label, g2, (float) labelx,
+                    (float) labely, TextAnchor.CENTER, getLabelAngle(),
+                    TextAnchor.CENTER);
+            state.cursorUp(insets.getTop() + labelBounds.getHeight()
+                    + insets.getBottom());
+        }
+        else if (edge == RectangleEdge.BOTTOM) {
+            AffineTransform t = AffineTransform.getRotateInstance(
+                    getLabelAngle(), labelBounds.getCenterX(),
+                    labelBounds.getCenterY());
+            Shape rotatedLabelBounds = t.createTransformedShape(labelBounds);
+            labelBounds = rotatedLabelBounds.getBounds2D();
+            double labelx = dataArea.getCenterX();
+            double labely = state.getCursor()
+                            + insets.getTop() + labelBounds.getHeight() / 2.0;
+            TextUtilities.drawRotatedString(label, g2, (float) labelx,
+                    (float) labely, TextAnchor.CENTER, getLabelAngle(),
+                    TextAnchor.CENTER);
+            state.cursorDown(insets.getTop() + labelBounds.getHeight()
+                    + insets.getBottom());
+        }
+        else if (edge == RectangleEdge.LEFT) {
+            AffineTransform t = AffineTransform.getRotateInstance(
+                    getLabelAngle() - Math.PI / 2.0, labelBounds.getCenterX(),
+                    labelBounds.getCenterY());
+            Shape rotatedLabelBounds = t.createTransformedShape(labelBounds);
+            labelBounds = rotatedLabelBounds.getBounds2D();
+            double labelx = state.getCursor()
+                            - insets.getRight() - labelBounds.getWidth() / 2.0;
+            double labely = dataArea.getCenterY();
+            TextUtilities.drawRotatedString(label, g2, (float) labelx,
+                    (float) labely, TextAnchor.CENTER,
+                    getLabelAngle() - Math.PI / 2.0, TextAnchor.CENTER);
+            state.cursorLeft(insets.getLeft() + labelBounds.getWidth()
+                    + insets.getRight());
+        }
+        else if (edge == RectangleEdge.RIGHT) {
+
+            AffineTransform t = AffineTransform.getRotateInstance(
+                    getLabelAngle() + Math.PI / 2.0,
+                    labelBounds.getCenterX(), labelBounds.getCenterY());
+            Shape rotatedLabelBounds = t.createTransformedShape(labelBounds);
+            labelBounds = rotatedLabelBounds.getBounds2D();
+            double labelx = state.getCursor()
+                            + insets.getLeft() + labelBounds.getWidth() / 2.0;
+            double labely = dataArea.getY() + dataArea.getHeight() / 2.0;
+            TextUtilities.drawRotatedString(label, g2, (float) labelx,
+                    (float) labely, TextAnchor.CENTER,
+                    getLabelAngle() + Math.PI / 2.0, TextAnchor.CENTER);
+            state.cursorRight(insets.getLeft() + labelBounds.getWidth()
+                    + insets.getRight());
+
+        }
+
+        return state;
+
+    }
+

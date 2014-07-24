@@ -1,0 +1,38 @@
+  @Override
+  public Tree determineHead(Tree t, Tree parent) {
+    if (nonTerminalInfo == null) {
+      throw new IllegalStateException("Classes derived from AbstractCollinsHeadFinder must create and fill HashMap nonTerminalInfo.");
+    }
+    if (t == null || t.isLeaf()) {
+      throw new IllegalArgumentException("Can't return head of null or leaf Tree.");
+    }
+    if (DEBUG) {
+      System.err.println("determineHead for " + t.value());
+    }
+
+    Tree[] kids = t.children();
+
+    Tree theHead;
+    // first check if subclass found explicitly marked head
+    if ((theHead = findMarkedHead(t)) != null) {
+      if (DEBUG) {
+        System.err.println("Find marked head method returned " +
+                           theHead.label() + " as head of " + t.label());
+      }
+      return theHead;
+    }
+
+    // if the node is a unary, then that kid must be the head
+    // it used to special case preterminal and ROOT/TOP case
+    // but that seemed bad (especially hardcoding string "ROOT")
+    if (kids.length == 1) {
+      if (DEBUG) {
+        System.err.println("Only one child determines " +
+                           kids[0].label() + " as head of " + t.label());
+      }
+      return kids[0];
+    }
+
+    return determineNonTrivialHead(t, parent);
+  }
+

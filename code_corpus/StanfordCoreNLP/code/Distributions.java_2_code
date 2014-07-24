@@ -1,0 +1,18 @@
+  public static <K> double overlap(Distribution<K> d1, Distribution<K> d2) {
+    Set<K> allKeys = getSetOfAllKeys(d1, d2);
+
+    double result = 0.0;
+    double remainingMass1 = 1.0;
+    double remainingMass2 = 1.0;
+
+    for (K key : allKeys){
+      double p1 = d1.probabilityOf(key);
+      double p2 = d2.probabilityOf(key);
+      remainingMass1 -= p1;
+      remainingMass2 -= p2;
+      result += Math.min(p1, p2);
+    }
+    result += Math.min(remainingMass1, remainingMass2);
+    return result;
+  }
+

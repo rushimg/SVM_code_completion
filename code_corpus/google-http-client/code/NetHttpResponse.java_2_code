@@ -1,0 +1,51 @@
+  @Override
+  public InputStream getContent() throws IOException {
+    try {
+      return connection.getInputStream();
+    } catch (IOException ioe) {
+      return connection.getErrorStream();
+    }
+  }
+
+  @Override
+  public String getContentEncoding() {
+    return connection.getContentEncoding();
+  }
+
+  @Override
+  public long getContentLength() {
+    String string = connection.getHeaderField("Content-Length");
+    return string == null ? -1 : Long.parseLong(string);
+  }
+
+  @Override
+  public String getContentType() {
+    return connection.getHeaderField("Content-Type");
+  }
+
+  @Override
+  public String getReasonPhrase() {
+    return responseMessage;
+  }
+
+  @Override
+  public String getStatusLine() {
+    String result = connection.getHeaderField(0);
+    return result != null && result.startsWith("HTTP/1.") ? result : null;
+  }
+
+  @Override
+  public int getHeaderCount() {
+    return headerNames.size();
+  }
+
+  @Override
+  public String getHeaderName(int index) {
+    return headerNames.get(index);
+  }
+
+  @Override
+  public String getHeaderValue(int index) {
+    return headerValues.get(index);
+  }
+

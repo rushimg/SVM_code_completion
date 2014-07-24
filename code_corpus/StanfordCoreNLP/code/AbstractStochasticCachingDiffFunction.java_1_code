@@ -1,0 +1,49 @@
+
+public abstract class AbstractStochasticCachingDiffFunction extends AbstractCachingDiffFunction {
+
+  public boolean hasNewVals = true;
+  public boolean recalculatePrevBatch = false;
+  public boolean returnPreviousValues = false;
+
+  protected int lastBatchSize = 0;
+  protected int[] lastBatch = null;
+  protected int[] thisBatch = null;
+  protected double[] lastXBatch = null;
+  protected double[] lastVBatch = null;
+  // protected double[] extFiniteDiffDerivative = null;
+
+  protected int lastElement = 0;
+  protected double[] HdotV = null;
+  protected double[] gradPerturbed = null;
+  protected double[] xPerturbed = null;
+  protected int curElement = 0;
+
+  protected List<Integer> allIndices = null;
+  protected Random randGenerator = new Random(1);//System.currentTimeMillis());
+
+  protected boolean scaleUp = false;
+
+  private int[] shuffledArray = null;
+
+  public enum SamplingMethod {
+    NoneSpecified,
+    RandomWithReplacement,
+    RandomWithoutReplacement,
+    Ordered,
+    Shuffled,
+  }
+
+  public void incrementRandom(int numTimes) {
+    System.err.println("incrementing random "+numTimes+" times.");
+    for (int i = 0; i < numTimes; i++) {
+      randGenerator.nextInt(this.dataDimension());
+    }
+  }
+
+  public void scaleUp(boolean toScaleUp){
+    scaleUp = toScaleUp;
+  }
+
+  public StochasticCalculateMethods method = StochasticCalculateMethods.ExternalFiniteDifference;
+  public SamplingMethod sampleMethod = SamplingMethod.RandomWithoutReplacement;
+

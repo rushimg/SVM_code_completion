@@ -1,0 +1,36 @@
+    private BellmanFordPathElement<V, E> createSeenData(
+        V vertex,
+        E edge,
+        double cost)
+    {
+        BellmanFordPathElement<V, E> prevPathElement =
+            getPrevSeenData(
+                Graphs.getOppositeVertex(graph, edge, vertex));
+
+        BellmanFordPathElement<V, E> data =
+            new BellmanFordPathElement<V, E>(
+                graph,
+                prevPathElement,
+                edge,
+                cost,
+                epsilon);
+
+        return data;
+    }
+
+    private void encounterStartVertex()
+    {
+        BellmanFordPathElement<V, E> data =
+            new BellmanFordPathElement<V, E>(
+                this.startVertex,
+                epsilon);
+
+        // first the only vertex considered as improved is the start vertex.
+        this.prevImprovedVertices.add(this.startVertex);
+
+        putSeenData(this.startVertex, data);
+        putPrevSeenData(this.startVertex, data);
+
+        this.startVertexEncountered = true;
+    }
+

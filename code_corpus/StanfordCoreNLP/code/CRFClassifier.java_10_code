@@ -1,0 +1,72 @@
+  public void combine(CRFClassifier<IN> crf, double weight) {
+    Timing timer = new Timing();
+
+    // Check the CRFClassifiers are compatible
+    if (!this.pad.equals(crf.pad)) {
+      throw new RuntimeException("Incompatible CRFClassifier: pad does not match");
+    }
+    if (this.windowSize != crf.windowSize) {
+      throw new RuntimeException("Incompatible CRFClassifier: windowSize does not match");
+    }
+    if (this.labelIndices.size() != crf.labelIndices.size()) {
+      // Should match since this should be same as the windowSize
+      throw new RuntimeException("Incompatible CRFClassifier: labelIndices length does not match");
+    }
+    this.classIndex.addAll(crf.classIndex.objectsList());
+
+    // Combine weights of the other classifier with this classifier,
+    // weighing the other classifier's weights by weight
+    // First merge the feature indicies
+    int oldNumFeatures1 = this.featureIndex.size();
+    int oldNumFeatures2 = crf.featureIndex.size();
+    int oldNumWeights1 = this.getNumWeights();
+    int oldNumWeights2 = crf.getNumWeights();
+    this.featureIndex.addAll(crf.featureIndex.objectsList());
+    this.knownLCWords.addAll(crf.knownLCWords);
+    assert (weights.length == oldNumFeatures1);
+
+    // Combine weights of this classifier with other classifier
+    for (int i = 0; i < labelIndices.size(); i++) {
+      this.labelIndices.get(i).addAll(crf.labelIndices.get(i).objectsList());
+    }
+    System.err.println("Combining weights: will automatically match labelIndices");
+    combineWeights(crf, weight);
+
+    int numFeatures = featureIndex.size();
+    int numWeights = getNumWeights();
+    long elapsedMs = timer.stop();
+    System.err.println("numFeatures: orig1=" + oldNumFeatures1 + ", orig2=" + oldNumFeatures2 + ", combined="
+        + numFeatures);
+    System.err
+        .println("numWeights: orig1=" + oldNumWeights1 + ", orig2=" + oldNumWeights2 + ", combined=" + numWeights);
+    System.err.println("Time to combine CRFClassifier: " + Timing.toSecondsString(elapsedMs) + " seconds");
+  }
+
+  public void dropFeaturesBelowThreshold(double threshold) {
+    Index<String> newFeatureIndex = new HashIndex<String>();
+    for (int i = 0; i < weights.length; i++) {
+      double smallest = weights[i][0];
+      double biggest = weights[i][0];
+      for (int j = 1; j < weights[i].length; j++) {
+        if (weights[i][j] > biggest) {
+          biggest = weights[i][j];
+        }
+        if (weights[i][j] < smallest) {
+          smallest = weights[i][j];
+        }
+        if (biggest - smallest > threshold) {
+          newFeatureIndex.add(featureIndex.get(i));
+          break;
+        }
+      }
+    }
+
+    int[] newMap = new int[newFeatureIndex.size()];
+    for (int i = 0; i < newMap.length; i++) {
+      int index = featureIndex.indexOf(newFeatureIndex.get(i));
+      newMap[i] = map[index];
+    }
+    map = newMap;
+    featureIndex = newFeatureIndex;
+  }
+

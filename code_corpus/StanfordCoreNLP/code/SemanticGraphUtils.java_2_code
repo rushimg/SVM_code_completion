@@ -1,0 +1,31 @@
+  public static SemanticGraph makeGraphFromNodes(Collection<IndexedWord> nodes, SemanticGraph srcGraph) {
+    if (nodes.size() == 1) {
+      SemanticGraph retSg = new SemanticGraph();
+      for (IndexedWord node :nodes)
+        retSg.addVertex(node);
+      return retSg;
+    }
+
+    if (nodes.isEmpty()) {
+      return null;
+    }
+
+    // TODO: if any nodes are not connected to edges in the original
+    // graph, this will leave them out
+    List<SemanticGraphEdge> edges = new ArrayList<SemanticGraphEdge>();
+    for (IndexedWord nodeG : nodes) {
+      for (IndexedWord nodeD: nodes) {
+        Collection<SemanticGraphEdge> existingEdges =
+          srcGraph.getAllEdges(nodeG, nodeD);
+        if (existingEdges != null) {
+          edges.addAll(existingEdges);
+        }
+      }
+    }
+    return SemanticGraphFactory.makeFromEdges(edges);
+  }
+
+  //----------------------------------------------------------------------------------------
+  //Query routines (obtaining sets of edges/vertices over predicates, etc)
+  //----------------------------------------------------------------------------------------
+

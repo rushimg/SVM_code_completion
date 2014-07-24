@@ -1,0 +1,16 @@
+  @SuppressWarnings({"UnusedDeclaration"})
+  private void readOldLambdas(String filename, String oldfilename) {
+    double[] lambdaold;
+    lambdaold = read_lambdas(oldfilename);
+    HashMap<FeatureKey,Integer> oldAssocs = GlobalHolder.readAssociations(oldfilename);
+    HashMap<FeatureKey,Integer> newAssocs = GlobalHolder.readAssociations(filename);
+    for (FeatureKey fk : oldAssocs.keySet()) {
+      int numOld = GlobalHolder.getNum(fk, oldAssocs);
+      int numNew = GlobalHolder.getNum(fk, newAssocs);
+      if ((numOld > -1) && (numNew > -1)) {
+        lambda[numNew] = lambdaold[numOld];
+        updateConds(numNew, lambdaold[numOld]);
+      }
+    }
+  }
+

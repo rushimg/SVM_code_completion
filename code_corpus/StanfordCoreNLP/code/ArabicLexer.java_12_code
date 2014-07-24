@@ -1,0 +1,236 @@
+ private LexedTokenFactory<?> tokenFactory;
+ private boolean invertible;
+ 
+ // Convert Arabic digits to ASCII digits
+ private boolean normArDigits;
+ 
+ // Convert Arabic punctuation to ASCII equivalents
+ private boolean normArPunc;
+ 
+ // Substitute newlines with newlineChar.
+ // Otherwise, treat them like whitespace
+ private boolean tokenizeNLs;
+
+ // Use \u2026 for ellipses
+ private boolean useUTF8Ellipsis;
+ 
+ // Arabic-specific orthographic normalization rules
+ private boolean normAlif;
+ private boolean normYa;
+ private boolean removeDiacritics;
+ private boolean removeTatweel;
+ private boolean removeQuranChars;
+ 
+ // Penn ATB vocalized section normalizations
+ private boolean removeProMarker;
+ private boolean removeSegMarker;
+ private boolean removeMorphMarker;
+ 
+ // Lengthening effects (yAAAAAAA): replace three or more of the same character with one
+ private boolean removeLengthening;
+
+ private final Pattern segmentationMarker = Pattern.compile("^-+|-+$");
+ 
+ // Escape parens for ATB parsing
+ private boolean atbEscaping;
+
+ private Map<String,String> normMap;
+ 
+ public ArabicLexer(Reader r, LexedTokenFactory<?> tf, Properties props) {
+   this(r);
+   this.tokenFactory = tf;
+   
+   tokenizeNLs = PropertiesUtils.getBool(props, "tokenizeNLs", false);
+   useUTF8Ellipsis = PropertiesUtils.getBool(props, "useUTF8Ellipsis", false);
+   invertible = PropertiesUtils.getBool(props, "invertible", false);
+   normArDigits = PropertiesUtils.getBool(props, "normArDigits", false);
+   normArPunc = PropertiesUtils.getBool(props, "normArPunc", false);
+   normAlif = PropertiesUtils.getBool(props, "normAlif", false);
+   normYa = PropertiesUtils.getBool(props, "normYa", false);
+   removeDiacritics = PropertiesUtils.getBool(props, "removeDiacritics", false);
+   removeTatweel = PropertiesUtils.getBool(props, "removeTatweel", false);
+   removeQuranChars = PropertiesUtils.getBool(props, "removeQuranChars", false);
+   removeProMarker = PropertiesUtils.getBool(props, "removeProMarker", false);
+   removeSegMarker = PropertiesUtils.getBool(props, "removeSegMarker", false);
+   removeMorphMarker = PropertiesUtils.getBool(props, "removeMorphMarker", false);
+   removeLengthening = PropertiesUtils.getBool(props, "removeLengthening", false);
+   atbEscaping = PropertiesUtils.getBool(props, "atbEscaping", false);
+
+   setupNormalizationMap();
+ }
+
+ private void setupNormalizationMap() {
+   normMap = Generics.newHashMap(200);
+
+   // Junk characters that we always remove
+   normMap.put("\u0600","#");
+   normMap.put("\u0601","");
+   normMap.put("\u0602","");
+   normMap.put("\u0603","");
+   normMap.put("\u0606","\u221B");
+   normMap.put("\u0607","\u221C");
+   normMap.put("\u0608","");
+   normMap.put("\u0609","%");
+   normMap.put("\u060A","%");
+   normMap.put("\u060B","");
+   normMap.put("\u060E","");
+   normMap.put("\u060F","");
+   normMap.put("\u066E","\u0628");
+   normMap.put("\u066F","\u0642");
+   normMap.put("\u06CC","\u0649");
+   normMap.put("\u06D6","");
+   normMap.put("\u06D7","");
+   normMap.put("\u06D8","");
+   normMap.put("\u06D9","");
+   normMap.put("\u06DA","");
+   normMap.put("\u06DB","");
+   normMap.put("\u06DC","");
+   normMap.put("\u06DD","");
+   normMap.put("\u06DE","");
+   normMap.put("\u06DF","");
+   normMap.put("\u06E0","");
+   normMap.put("\u06E1","");
+   normMap.put("\u06E2","");
+   normMap.put("\u06E3","");
+   normMap.put("\u06E4","");
+   normMap.put("\u06E5","");
+   normMap.put("\u06E6","");
+   normMap.put("\u06E7","");
+   normMap.put("\u06E8","");
+   normMap.put("\u06E9","");
+   normMap.put("\u06EA","");
+   normMap.put("\u06EB","");
+   normMap.put("\u06EC","");
+   normMap.put("\u06ED","");
+
+   if (normArDigits) {
+      normMap.put("\u0660","0");
+      normMap.put("\u0661","1");
+      normMap.put("\u0662","2");
+      normMap.put("\u0663","3");
+      normMap.put("\u0664","4");
+      normMap.put("\u0665","5");
+      normMap.put("\u0666","6");
+      normMap.put("\u0667","7");
+      normMap.put("\u0668","8");
+      normMap.put("\u0669","9");
+      normMap.put("\u06F0","0");
+      normMap.put("\u06F1","1");
+      normMap.put("\u06F2","2");
+      normMap.put("\u06F3","3");
+      normMap.put("\u06F4","4");
+      normMap.put("\u06F5","5");
+      normMap.put("\u06F6","6");
+      normMap.put("\u06F7","7");
+      normMap.put("\u06F8","8");
+      normMap.put("\u06F9","9");
+   }
+   if (normArPunc) {
+      normMap.put("\u00BB","\"");
+      normMap.put("\u00AB","\"");
+      normMap.put("\u060C",",");
+      normMap.put("\u060D",",");
+      normMap.put("\u061B",";");
+      normMap.put("\u061E",".");
+      normMap.put("\u061F","?");
+      normMap.put("\u066A","%");
+      normMap.put("\u066B",",");
+      normMap.put("\u066C","\u0027");
+      normMap.put("\u06DF",".");
+   }
+   if (normAlif) {
+      normMap.put("\u0622","\u0627");
+      normMap.put("\u0623","\u0627");
+      normMap.put("\u0625","\u0627");
+      normMap.put("\u0671","\u0627");
+      normMap.put("\u0672","\u0627");
+      normMap.put("\u0673","\u0627");
+   }
+   if (normYa) {
+      normMap.put("\u064A","\u0649");
+   }
+   if (removeDiacritics) {
+      normMap.put("\u064B","");
+      normMap.put("\u064C","");
+      normMap.put("\u064D","");
+      normMap.put("\u064E","");
+      normMap.put("\u064F","");
+      normMap.put("\u0650","");
+      normMap.put("\u0651","");
+      normMap.put("\u0652","");
+      normMap.put("\u0653","");
+      normMap.put("\u0654","");
+      normMap.put("\u0655","");
+      normMap.put("\u0656","");
+      normMap.put("\u0657","");
+      normMap.put("\u0658","");
+      normMap.put("\u0659","");
+      normMap.put("\u065A","");
+      normMap.put("\u065B","");
+      normMap.put("\u065C","");
+      normMap.put("\u065D","");
+      normMap.put("\u065E","");
+      normMap.put("\u0670","");
+   }
+   if (removeTatweel) {
+      normMap.put("\u0640","");
+      normMap.put("_","");
+   }
+   if (removeQuranChars) {
+      // Arabic honorifics
+      normMap.put("\u0610","");
+      normMap.put("\u0611","");
+      normMap.put("\u0612","");
+      normMap.put("\u0613","");
+      normMap.put("\u0614","");
+      normMap.put("\u0615","");
+      normMap.put("\u0616","");
+      normMap.put("\u0617","");
+      normMap.put("\u0618","");
+      normMap.put("\u0619","");
+      normMap.put("\u061A","");
+   }
+   if (atbEscaping) {
+      normMap.put("(","-LRB-");
+      normMap.put(")","-RRB-");
+   }
+ }
+
+ private String normalizeToken(String text, boolean isWord) {
+   // Remove segmentation markers from the ATB
+   if (isWord && removeSegMarker) {
+     text = segmentationMarker.matcher(text).replaceAll("");
+   }
+   int len = text.length();
+   StringBuilder sb = new StringBuilder(len);
+   for (int i = 0; i < len; ++i) {
+     String thisChar = String.valueOf(text.charAt(i));
+     // Remove morpheme markers from the ATB vocalized section
+     if (isWord && removeMorphMarker && thisChar.equals("+")) {
+       continue;
+     }
+     if (removeLengthening && isLengthening(text, i)) {
+       continue;
+     }
+     if (normMap.containsKey(thisChar)) {
+       thisChar = normMap.get(thisChar);
+     }
+     if (thisChar.length() > 0) {
+       sb.append(thisChar);
+     }
+   }
+   return sb.toString();
+ }
+ 
+ private boolean isLengthening(String text, int pos) {
+   if (pos == 0) return false;
+   String thisChar = String.valueOf(text.charAt(pos));
+   if (!thisChar.equals(String.valueOf(text.charAt(pos - 1))))
+     return false;
+   if (pos < text.length() - 1 && thisChar.equals(String.valueOf(text.charAt(pos + 1))))
+     return true;
+   if (pos >= 2 && thisChar.equals(String.valueOf(text.charAt(pos - 2))))
+     return true;
+   return false;
+ }
+ 

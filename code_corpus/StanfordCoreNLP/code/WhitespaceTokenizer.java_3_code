@@ -1,0 +1,53 @@
+    public static TokenizerFactory<Word> newTokenizerFactory() {
+      return new WhitespaceTokenizerFactory<Word>(new WordTokenFactory(),
+                                                  false);
+    }
+
+    public WhitespaceTokenizerFactory(LexedTokenFactory<T> factory) {
+      this(factory, false);
+    }
+
+    public WhitespaceTokenizerFactory(LexedTokenFactory<T> factory,
+                                      String options) {
+      this.factory = factory;
+      Properties prop = StringUtils.stringToProperties(options);
+      this.tokenizeNLs = PropertiesUtils.getBool(prop, "tokenizeNLs", false);
+    }
+
+    public WhitespaceTokenizerFactory(LexedTokenFactory<T> factory,
+                                      boolean tokenizeNLs) {
+      this.factory = factory;
+      this.tokenizeNLs = tokenizeNLs;
+    }
+
+    public Iterator<T> getIterator(Reader r) {
+      return getTokenizer(r);
+    }
+
+    public Tokenizer<T> getTokenizer(Reader r) {
+      return new WhitespaceTokenizer<T>(factory, r, tokenizeNLs);
+    }
+
+    public Tokenizer<T> getTokenizer(Reader r, String extraOptions) {
+      Properties prop = StringUtils.stringToProperties(extraOptions);
+      boolean tokenizeNewlines =
+        PropertiesUtils.getBool(prop, "tokenizeNLs", this.tokenizeNLs);
+
+      return new WhitespaceTokenizer<T>(factory, r, tokenizeNewlines);
+    }
+
+
+    public void setOptions(String options) {
+      Properties prop = StringUtils.stringToProperties(options);
+      tokenizeNLs = PropertiesUtils.getBool(prop, "tokenizeNLs", tokenizeNLs);
+    }
+  } // end class WhitespaceTokenizerFactory
+
+  public static WhitespaceTokenizerFactory<CoreLabel> newCoreLabelTokenizerFactory(String options) {
+    return new WhitespaceTokenizerFactory<CoreLabel>(new CoreLabelTokenFactory(), options);
+  }
+
+  public static WhitespaceTokenizerFactory<CoreLabel> newCoreLabelTokenizerFactory() {
+    return new WhitespaceTokenizerFactory<CoreLabel>(new CoreLabelTokenFactory());
+  }
+

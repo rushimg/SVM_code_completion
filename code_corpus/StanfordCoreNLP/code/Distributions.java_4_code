@@ -1,0 +1,42 @@
+  public static <K> double klDivergence(Distribution<K> from, Distribution<K> to) {
+    Set<K> allKeys = getSetOfAllKeys(from, to);
+    int numKeysRemaining = from.getNumberOfKeys();
+    double result = 0.0;
+    double assignedMass1 = 0.0;
+    double assignedMass2 = 0.0;
+    double log2 = Math.log(2.0);
+    double p1, p2;
+    double epsilon = 1e-10;
+
+    for (K key : allKeys){
+      p1 = from.probabilityOf(key);
+      p2 = to.probabilityOf(key);
+      numKeysRemaining--;
+      assignedMass1 += p1;
+      assignedMass2 += p2;
+      if (p1 < epsilon) {
+        continue;
+      }
+      double logFract = Math.log(p1 / p2);
+      if (logFract == Double.POSITIVE_INFINITY) {
+        System.out.println("Didtributions.kldivergence returning +inf: p1=" + p1 + ", p2=" +p2);
+        System.out.flush();
+        return Double.POSITIVE_INFINITY; // can't recover
+      }
+    }
+
+    if (numKeysRemaining != 0){
+      p1 = (1.0 - assignedMass1) / numKeysRemaining;
+      if (p1 > epsilon){
+        p2 = (1.0 - assignedMass2) / numKeysRemaining;
+        double logFract = Math.log(p1 / p2);
+        if (logFract == Double.POSITIVE_INFINITY) {
+          System.out.println("Didtributions.kldivergence (remaining mass) returning +inf: p1=" + p1 + ", p2=" +p2);
+          System.out.flush();
+          return Double.POSITIVE_INFINITY; // can't recover
+        }
+      }
+    }
+    return result;
+  }
+

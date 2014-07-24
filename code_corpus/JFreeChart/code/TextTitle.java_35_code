@@ -1,0 +1,39 @@
+    protected void drawVertical(Graphics2D g2, Rectangle2D area) {
+        Rectangle2D titleArea = (Rectangle2D) area.clone();
+        g2.setFont(this.font);
+        g2.setPaint(this.paint);
+        TextBlockAnchor anchor = null;
+        float y = 0.0f;
+        VerticalAlignment verticalAlignment = getVerticalAlignment();
+        if (verticalAlignment == VerticalAlignment.TOP) {
+            y = (float) titleArea.getY();
+            anchor = TextBlockAnchor.TOP_RIGHT;
+        }
+        else if (verticalAlignment == VerticalAlignment.BOTTOM) {
+            y = (float) titleArea.getMaxY();
+            anchor = TextBlockAnchor.TOP_LEFT;
+        }
+        else if (verticalAlignment == VerticalAlignment.CENTER) {
+            y = (float) titleArea.getCenterY();
+            anchor = TextBlockAnchor.TOP_CENTER;
+        }
+        float x = 0.0f;
+        RectangleEdge position = getPosition();
+        if (position == RectangleEdge.LEFT) {
+            x = (float) titleArea.getX();
+        }
+        else if (position == RectangleEdge.RIGHT) {
+            x = (float) titleArea.getMaxX();
+            if (verticalAlignment == VerticalAlignment.TOP) {
+                anchor = TextBlockAnchor.BOTTOM_RIGHT;
+            }
+            else if (verticalAlignment == VerticalAlignment.CENTER) {
+                anchor = TextBlockAnchor.BOTTOM_CENTER;
+            }
+            else if (verticalAlignment == VerticalAlignment.BOTTOM) {
+                anchor = TextBlockAnchor.BOTTOM_LEFT;
+            }
+        }
+        this.content.draw(g2, x, y, anchor, x, y, -Math.PI / 2.0);
+    }
+

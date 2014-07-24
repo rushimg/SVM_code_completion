@@ -1,0 +1,42 @@
+public class Execution {
+
+  @Documented
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target(ElementType.FIELD)
+  public @interface Option {
+    String name() default "";
+
+    String gloss() default "";
+
+    boolean required() default false;
+
+    String alt() default "";
+  }
+
+  @SuppressWarnings("MismatchedReadAndWriteOfArray")
+  private static final String[] IGNORED_JARS = {
+  };
+  private static final Class[] BOOTSTRAP_CLASSES = {
+      Execution.class,
+  };
+
+  @Option(name = "option_classes", gloss = "Fill options from these classes")
+  public static Class<?>[] optionClasses = null;
+  @Option(name = "threads", gloss = "Number of threads on machine")
+  public static int threads = Runtime.getRuntime().availableProcessors();
+  @Option(name = "host", gloss = "Name of computer we are running on")
+  public static String host = "(unknown)";
+  @SuppressWarnings("FieldCanBeLocal")
+  @Option(name = "strict", gloss = "If true, make sure that all options passed in are used somewhere")
+  private static boolean strict = false;
+  @SuppressWarnings("FieldCanBeLocal")
+  @Option(name = "exec.verbose", gloss = "If true, print options as they are set.")
+  private static boolean verbose = false;
+
+  static {
+    try {
+      host = InetAddress.getLocalHost().getHostName();
+    } catch (Exception ignored) {
+    }
+  }
+

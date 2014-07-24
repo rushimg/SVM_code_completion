@@ -1,0 +1,145 @@
+  public static String IOBToString(List<CoreLabel> labeledSequence) {
+    return IOBToString(labeledSequence, null, null, false, false);
+  }
+
+  private static String IOBToString(List<CoreLabel> labeledSequence,
+      String prefixMarker, String suffixMarker, boolean addSpace, boolean applyRewrites) {
+    StringBuilder sb = new StringBuilder();
+    String lastLabel = "";
+    final boolean addPrefixMarker = prefixMarker != null && prefixMarker.length() > 0;
+    final boolean addSuffixMarker = suffixMarker != null && suffixMarker.length() > 0;
+    if (addPrefixMarker || addSuffixMarker)
+      annotateMarkers(labeledSequence);
+    final int sequenceLength = labeledSequence.size();
+    for (int i = 0; i < sequenceLength; ++i) {
+      CoreLabel labeledChar = labeledSequence.get(i);
+      String token = labeledChar.get(CoreAnnotations.CharAnnotation.class);
+      if (addPrefixMarker && token.equals(prefixMarker))
+        token = "#pm#";
+      if (addSuffixMarker && token.equals(suffixMarker))
+        token = "#sm#";
+      String label = labeledChar.get(CoreAnnotations.AnswerAnnotation.class);
+      if (token.equals(BoundaryChar)) {
+        sb.append(" ");
+
+      } else if (label.equals(BeginSymbol)) {
+        if (lastLabel.equals(ContinuationSymbol) || lastLabel.equals(BeginSymbol) ||
+            lastLabel.equals(RewriteSymbol)) {
+          if (addPrefixMarker && (!addSpace || addPrefixMarker(i, labeledSequence))) {
+            sb.append(prefixMarker);
+          }
+          if (addSpace) {
+            sb.append(" ");
+          }
+          if (addSuffixMarker && (!addSpace || addSuffixMarker(i, labeledSequence))) {
+            sb.append(suffixMarker);
+          }
+        }
+        sb.append(token);
+
+      } else if (label.equals(ContinuationSymbol) || label.equals(BoundarySymbol)) {
+        sb.append(token);
+
+      } else if (label.equals(NosegSymbol)) {
+        if ( ! lastLabel.equals(BoundarySymbol) && addSpace) {
+          sb.append(" ");
+        }
+        sb.append(token);
+
+      } else if (label.equals(RewriteSymbol) || label.equals("REWAL") || label.equals("REWTA")) {
+        if (token.equals("ت") || token.equals("ه")) {
+          sb.append(applyRewrites ? "ة" : token);
+        } else if (token.equals("ل")) {
+          sb.append((addPrefixMarker ? prefixMarker : "") +
+                    (addSpace ? " " : "") + 
+                    (applyRewrites ? "ال" : "ل"));
+        } else if (token.equals("ي") || token.equals("ا")) {
+          sb.append(applyRewrites ? "ى" : token);
+        } else if (token.equals("ى")) {
+          sb.append(applyRewrites ? "ي" : token);
+        } else {
+          // Nonsense rewrite predicted by the classifier--just assume CONT
+          sb.append(token);
+        }
+      } else {
+        throw new RuntimeException("Unknown label: " + label);
+      }
+      lastLabel = label;
+    }
+    return sb.toString().trim();
+  }
+  
+  private static class PrefixMarkerAnnotation implements CoreAnnotation<Boolean> {
+    @Override
+    public Class<Boolean> getType() {
+      return Boolean.class;
+    }
+  }
+  
+  private static class SuffixMarkerAnnotation implements CoreAnnotation<Boolean> {
+    @Override
+    public Class<Boolean> getType() {
+      return Boolean.class;
+    }
+  }
+  
+  private static void annotateMarkers(List<CoreLabel> labeledSequence) {
+    StringBuilder segment = new StringBuilder();
+    List<String> segments = CollectionUtils.makeList();
+    int wordBegin = 0;
+    for (int i = 0; i < labeledSequence.size(); i++) {
+      String token = labeledSequence.get(i).get(CoreAnnotations.CharAnnotation.class);
+      String label = labeledSequence.get(i).get(CoreAnnotations.AnswerAnnotation.class);
+      if (label.equals(BeginSymbol)) {
+        if (i != wordBegin) {
+          segments.add(segment.toString());
+          segment.setLength(0);
+        }
+        segment.append(token);
+      } else if (label.equals(BoundarySymbol)) {
+        segments.add(segment.toString());
+        segment.setLength(0);
+        annotateMarkersOnWord(labeledSequence, wordBegin, i, segments);
+        segments.clear();
+        wordBegin = i + 1;
+      } else {
+        segment.append(token);
+      }
+    }
+    segments.add(segment.toString());
+    annotateMarkersOnWord(labeledSequence, wordBegin, labeledSequence.size(), segments);
+  }
+
+  private static void annotateMarkersOnWord(List<CoreLabel> labeledSequence,
+      int wordBegin, int wordEnd, List<String> segments) {
+    Pair<Integer, Integer> headBounds = getHeadBounds(segments);
+    int currentIndex = 0;
+    
+    for (int i = wordBegin; i < wordEnd; i++) {
+      String label = labeledSequence.get(i).get(CoreAnnotations.AnswerAnnotation.class);
+      labeledSequence.get(i).set(PrefixMarkerAnnotation.class, Boolean.FALSE);
+      labeledSequence.get(i).set(SuffixMarkerAnnotation.class, Boolean.FALSE);
+      if (label.equals(BeginSymbol)) {
+        // Add prefix markers for BEGIN characters up to and including the start of the head
+        // (but don't add prefix markers if there aren't any prefixes)
+        if (currentIndex <= headBounds.first && currentIndex != 0)
+          labeledSequence.get(i).set(PrefixMarkerAnnotation.class, Boolean.TRUE);
+        
+        // Add suffix markers for BEGIN characters starting one past the end of the head
+        // (headBounds.second is one past the end, no need to add one)
+        if (currentIndex >= headBounds.second)
+          labeledSequence.get(i).set(SuffixMarkerAnnotation.class, Boolean.TRUE);
+        
+        currentIndex++;
+      }
+    }
+  }
+
+  private static Pair<Integer, Integer> getHeadBounds(List<String> segments) {
+    final int NOT_FOUND = -1;
+    int potentialSuffix = segments.size() - 1;
+    int nonSuffix = NOT_FOUND;
+    int potentialPrefix = 0;
+    int nonPrefix = NOT_FOUND;
+    // Heuristic algorithm for finding the head of a segmented word:
+    while (true) {

@@ -1,0 +1,12 @@
+  public DocumentCategorizerME(DoccatModel model) {
+    this.model = model;
+    this.mContextGenerator = new DocumentCategorizerContextGenerator(this.model
+            .getFactory().getFeatureGenerators());
+  }
+
+  @Override
+  public double[] categorize(String[] text, Map<String, Object> extraInformation) {
+    return model.getMaxentModel().eval(
+        mContextGenerator.getContext(text, extraInformation));
+  }
+

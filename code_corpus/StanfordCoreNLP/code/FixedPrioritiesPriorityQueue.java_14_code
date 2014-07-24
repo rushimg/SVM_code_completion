@@ -1,0 +1,27 @@
+  public String toString(int maxKeysToPrint, String dblFmt) {
+    if (maxKeysToPrint <= 0) maxKeysToPrint = Integer.MAX_VALUE;
+    FixedPrioritiesPriorityQueue<E> pq = clone();
+    StringBuilder sb = new StringBuilder("[");
+    int numKeysPrinted = 0;
+    while (numKeysPrinted < maxKeysToPrint && pq.hasNext()) {
+      double priority = pq.getPriority();
+      E element = pq.next();
+      sb.append(element);
+      sb.append('=');
+      if (dblFmt == null) {
+        sb.append(priority);
+      } else {
+        sb.append(String.format(dblFmt, priority));
+      }
+      if (numKeysPrinted < size() - 1)
+        sb.append(", ");
+      numKeysPrinted++;
+    }
+    if (numKeysPrinted < size()) {
+      sb.append("...");
+    }
+    sb.append("]");
+    return sb.toString();
+  }
+
+

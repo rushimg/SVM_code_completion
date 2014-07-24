@@ -1,0 +1,18 @@
+  public List<T> replaceAllExtended(List<MatchReplacement<T>> replacement) {
+    List<T> res = new ArrayList<T>();
+    FindType oldFindType = findType;
+    findType = FindType.FIND_NONOVERLAPPING;
+    int index = 0;
+    while (find()) {
+      // Copy from current index to found index
+      res.addAll(elements().subList(index, start()));
+      for (MatchReplacement<T> r:replacement) {
+        r.append(this, res);
+      }
+      index = end();
+    }
+    res.addAll(elements().subList(index, elements().size()));
+    findType = oldFindType;
+    return res;
+  }
+

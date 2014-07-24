@@ -1,0 +1,38 @@
+  @SuppressWarnings("unchecked")
+  public <E,F extends E> F createInstance(Class<E> type, Object... params) {
+    Object obj = createInstance(params);
+    if (type.isInstance(obj)) {
+      return (F) obj;
+    } else {
+      throw new ClassCreationException("Cannot cast " + classname
+          + " into " + type.getName());
+    }
+  }
+
+  public boolean checkConstructor(Object... params){
+    try{
+      createInstance(params);
+      return true;
+    } catch(ConstructorNotFoundException e){
+      return false;
+    }
+  }
+
+  @Override
+  public String toString() {
+    return classname;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (o instanceof MetaClass) {
+      return ((MetaClass) o).classname.equals(this.classname);
+    }
+    return false;
+  }
+
+  @Override
+  public int hashCode() {
+    return classname.hashCode();
+  }
+

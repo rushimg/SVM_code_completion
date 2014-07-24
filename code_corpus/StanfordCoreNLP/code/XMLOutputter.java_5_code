@@ -1,0 +1,69 @@
+  private static void addConstituentTreeInfo(Element treeInfo, Tree tree, TreePrint constituentTreePrinter) {
+    StringWriter treeStrWriter = new StringWriter();
+    constituentTreePrinter.printTree(tree, new PrintWriter(treeStrWriter, true));
+    String temp = treeStrWriter.toString();
+    //System.err.println(temp);
+    treeInfo.appendChild(temp);
+  }
+
+  private static Element buildDependencyTreeInfo(String dependencyType, SemanticGraph graph, List<CoreLabel> tokens, String curNS) {
+    if(graph != null) {
+      Element depInfo = new Element("dependencies", curNS);
+      depInfo.addAttribute(new Attribute("type", dependencyType));
+      // The SemanticGraph doesn't explicitly encode the ROOT node,
+      // so we print that out ourselves
+      for (IndexedWord root : graph.getRoots()) {
+        String rel = GrammaticalRelation.ROOT.getLongName();
+        rel = rel.replaceAll("\\s+", ""); // future proofing
+        int source = 0;
+        int target = root.index();
+        String sourceWord = "ROOT";
+        String targetWord = tokens.get(target - 1).word();
+        boolean isExtra = false;
+
+        addDependencyInfo(depInfo, rel, isExtra, source, sourceWord, null, target, targetWord, null, curNS);
+      }
+      for (SemanticGraphEdge edge : graph.edgeListSorted()) {
+        String rel = edge.getRelation().toString();
+        rel = rel.replaceAll("\\s+", "");
+        int source = edge.getSource().index();
+        int target = edge.getTarget().index();
+        String sourceWord = tokens.get(source - 1).word();
+        String targetWord = tokens.get(target - 1).word();
+        Integer sourceCopy = edge.getSource().get(CoreAnnotations.CopyAnnotation.class);
+        Integer targetCopy = edge.getTarget().get(CoreAnnotations.CopyAnnotation.class);
+        boolean isExtra = edge.isExtra();
+
+        addDependencyInfo(depInfo, rel, isExtra, source, sourceWord, sourceCopy, target, targetWord, targetCopy, curNS);
+      }
+      return depInfo;
+    }
+    return null;
+  }
+
+  private static void addDependencyInfo(Element depInfo, String rel, boolean isExtra, int source, String sourceWord, Integer sourceCopy, int target, String targetWord, Integer targetCopy, String curNS) {
+    Element depElem = new Element("dep", curNS);
+    depElem.addAttribute(new Attribute("type", rel));
+    if (isExtra) {
+      depElem.addAttribute(new Attribute("extra", "true"));
+    }
+
+    Element govElem = new Element("governor", curNS);
+    govElem.addAttribute(new Attribute("idx", Integer.toString(source)));
+    govElem.appendChild(sourceWord);
+    if (sourceCopy != null) {
+      govElem.addAttribute(new Attribute("copy", Integer.toString(sourceCopy)));
+    }
+    depElem.appendChild(govElem);
+
+    Element dependElem = new Element("dependent", curNS);
+    dependElem.addAttribute(new Attribute("idx", Integer.toString(target)));
+    dependElem.appendChild(targetWord);
+    if (targetCopy != null) {
+      dependElem.addAttribute(new Attribute("copy", Integer.toString(targetCopy)));
+    }
+    depElem.appendChild(dependElem);
+
+    depInfo.appendChild(depElem);
+  }
+

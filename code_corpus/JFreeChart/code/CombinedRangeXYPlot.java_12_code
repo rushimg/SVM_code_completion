@@ -1,0 +1,73 @@
+    protected AxisSpace calculateAxisSpace(Graphics2D g2,
+                                           Rectangle2D plotArea) {
+
+        AxisSpace space = new AxisSpace();
+        PlotOrientation orientation = getOrientation();
+
+        // work out the space required by the domain axis...
+        AxisSpace fixed = getFixedRangeAxisSpace();
+        if (fixed != null) {
+            if (orientation == PlotOrientation.VERTICAL) {
+                space.setLeft(fixed.getLeft());
+                space.setRight(fixed.getRight());
+            }
+            else if (orientation == PlotOrientation.HORIZONTAL) {
+                space.setTop(fixed.getTop());
+                space.setBottom(fixed.getBottom());
+            }
+        }
+        else {
+            ValueAxis valueAxis = getRangeAxis();
+            RectangleEdge valueEdge = Plot.resolveRangeAxisLocation(
+                getRangeAxisLocation(), orientation
+            );
+            if (valueAxis != null) {
+                space = valueAxis.reserveSpace(g2, this, plotArea, valueEdge,
+                        space);
+            }
+        }
+
+        Rectangle2D adjustedPlotArea = space.shrink(plotArea, null);
+        // work out the maximum height or width of the non-shared axes...
+        int n = this.subplots.size();
+        int totalWeight = 0;
+        for (int i = 0; i < n; i++) {
+            XYPlot sub = (XYPlot) this.subplots.get(i);
+            totalWeight += sub.getWeight();
+        }
+
+        // calculate plotAreas of all sub-plots, maximum vertical/horizontal
+        // axis width/height
+        this.subplotAreas = new Rectangle2D[n];
+        double x = adjustedPlotArea.getX();
+        double y = adjustedPlotArea.getY();
+        double usableSize = 0.0;
+        if (orientation == PlotOrientation.VERTICAL) {
+        }
+        else if (orientation == PlotOrientation.HORIZONTAL) {
+        }
+
+        for (int i = 0; i < n; i++) {
+            XYPlot plot = (XYPlot) this.subplots.get(i);
+
+            // calculate sub-plot area
+            if (orientation == PlotOrientation.VERTICAL) {
+                this.subplotAreas[i] = new Rectangle2D.Double(x, y, w,
+                        adjustedPlotArea.getHeight());
+                x = x + w + this.gap;
+            }
+            else if (orientation == PlotOrientation.HORIZONTAL) {
+                this.subplotAreas[i] = new Rectangle2D.Double(x, y,
+                        adjustedPlotArea.getWidth(), h);
+                y = y + h + this.gap;
+            }
+
+            AxisSpace subSpace = plot.calculateDomainAxisSpace(g2,
+                    this.subplotAreas[i], null);
+            space.ensureAtLeast(subSpace);
+
+        }
+
+        return space;
+    }
+

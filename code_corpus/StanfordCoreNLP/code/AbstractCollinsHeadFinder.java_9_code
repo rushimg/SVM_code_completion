@@ -1,0 +1,52 @@
+  protected Tree determineNonTrivialHead(Tree t, Tree parent) {
+    Tree theHead = null;
+    String motherCat = tlp.basicCategory(t.label().value());
+    if (motherCat.startsWith("@")) {
+      motherCat = motherCat.substring(1);
+    }
+    if (DEBUG) {
+      System.err.println("Looking for head of " + t.label() +
+                         "; value is |" + t.label().value() + "|, " +
+                         " baseCat is |" + motherCat + '|');
+    }
+    // We know we have nonterminals underneath
+    // (a bit of a Penn Treebank assumption, but).
+
+    // Look at label.
+    // a total special case....
+    // first look for POS tag at end
+    // this appears to be redundant in the Collins case since the rule already would do that
+    //    Tree lastDtr = t.lastChild();
+    //    if (tlp.basicCategory(lastDtr.label().value()).equals("POS")) {
+    //      theHead = lastDtr;
+    //    } else {
+    String[][] how = nonTerminalInfo.get(motherCat);
+    Tree[] kids = t.children();
+    if (how == null) {
+      if (DEBUG) {
+        System.err.println("Warning: No rule found for " + motherCat +
+                           " (first char: " + motherCat.charAt(0) + ')');
+        System.err.println("Known nonterms are: " + nonTerminalInfo.keySet());
+      }
+      if (defaultRule != null) {
+        if (DEBUG) {
+          System.err.println("  Using defaultRule");
+        }
+        return traverseLocate(kids, defaultRule, true);
+      } else {
+        throw new IllegalArgumentException("No head rule defined for " + motherCat + " using " + this.getClass() + " in " + t);
+      }
+    }
+    for (int i = 0; i < how.length; i++) {
+      boolean lastResort = (i == how.length - 1);
+      theHead = traverseLocate(kids, how[i], lastResort);
+      if (theHead != null) {
+        break;
+      }
+    }
+    if (DEBUG) {
+      System.err.println("  Chose " + theHead.label());
+    }
+    return theHead;
+  }
+

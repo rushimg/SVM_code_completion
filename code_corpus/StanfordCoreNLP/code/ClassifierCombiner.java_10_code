@@ -1,0 +1,14 @@
+  static <INN extends CoreMap & HasWord> void mergeTwoDocuments(List<INN> mainDocument, List<INN> auxDocument, Set<String> auxLabels, String background) {
+    boolean insideAuxTag = false;
+    boolean auxTagValid = true;
+    String prevAnswer = background;
+    Collection<INN> constituents = new ArrayList<INN>();
+
+    Iterator<INN> auxIterator = auxDocument.listIterator();
+
+    for (INN wMain : mainDocument) {
+      String mainAnswer = wMain.get(CoreAnnotations.AnswerAnnotation.class);
+      INN wAux = auxIterator.next();
+      String auxAnswer = wAux.get(CoreAnnotations.AnswerAnnotation.class);
+      boolean insideMainTag = !mainAnswer.equals(background);
+

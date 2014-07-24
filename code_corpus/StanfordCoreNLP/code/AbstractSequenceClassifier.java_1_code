@@ -1,0 +1,26 @@
+public abstract class AbstractSequenceClassifier<IN extends CoreMap> implements Function<String, String> {
+
+  public SeqClassifierFlags flags;
+  public Index<String> classIndex; // = null;
+
+  // Thang Sep13: multiple feature factories (NERFeatureFactory, EmbeddingFeatureFactory)
+  public List<FeatureFactory<IN>> featureFactories;
+
+  protected IN pad;
+  private CoreTokenFactory<IN> tokenFactory;
+  public int windowSize;
+  // different threads can add or query knownLCWords at the same time,
+  // so we need a concurrent data structure.  created in reinit()
+  protected Set<String> knownLCWords = null;
+
+  private DocumentReaderAndWriter<IN> defaultReaderAndWriter;
+  public DocumentReaderAndWriter<IN> defaultReaderAndWriter() {
+    return defaultReaderAndWriter;
+  }
+
+  private DocumentReaderAndWriter<IN> plainTextReaderAndWriter;
+  public DocumentReaderAndWriter<IN> plainTextReaderAndWriter() {
+    return plainTextReaderAndWriter;
+  }
+
+

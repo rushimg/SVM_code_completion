@@ -1,0 +1,17 @@
+  @Override
+  public void annotate(Annotation annotation) {
+    Iterator<MutableLong> it = accumulatedTime.iterator();
+    Timing t = new Timing();
+    for (Annotator annotator : annotators) {
+      if (TIME) {
+        t.start();
+      }
+      annotator.annotate(annotation);
+      if (TIME) {
+        int elapsed = (int) t.stop();
+        MutableLong m = it.next();
+        m.incValue(elapsed);
+      }
+    }
+  }
+

@@ -1,0 +1,30 @@
+  public List<IN> classifySentence(List<? extends HasWord> sentence) {
+    List<IN> document = new ArrayList<IN>();
+    int i = 0;
+    for (HasWord word : sentence) {
+      IN wi; // initialized below
+      if (word instanceof CoreMap) {
+        // copy all annotations! some are required later in
+        // AbstractSequenceClassifier.classifyWithInlineXML
+        // wi = (IN) new ArrayCoreMap((ArrayCoreMap) word);
+        wi = tokenFactory.makeToken((IN) word);
+      } else {
+        wi = tokenFactory.makeToken();
+        wi.set(CoreAnnotations.TextAnnotation.class, word.word());
+        // wi.setWord(word.word());
+      }
+      wi.set(CoreAnnotations.PositionAnnotation.class, Integer.toString(i));
+      wi.set(CoreAnnotations.AnswerAnnotation.class, backgroundSymbol());
+      document.add(wi);
+      i++;
+    }
+
+    // TODO get rid of objectbankwrapper
+    ObjectBankWrapper<IN> wrapper = new ObjectBankWrapper<IN>(flags, null, knownLCWords);
+    wrapper.processDocument(document);
+
+    classify(document);
+
+    return document;
+  }
+

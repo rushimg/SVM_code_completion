@@ -1,0 +1,48 @@
+  public static String wordShape(String inStr, int wordShaper, Collection<String> knownLCWords) {
+    // this first bit is for backwards compatibility with how things were first
+    // implemented, where the word shaper name encodes whether to useLC.
+    // If the shaper is in the old compatibility list, then a specified
+    // list of knownLCwords is ignored
+    if (knownLCWords != null && dontUseLC(wordShaper)) {
+      knownLCWords = null;
+    }
+    switch (wordShaper) {
+      case NOWORDSHAPE:
+        return inStr;
+      case WORDSHAPEDAN1:
+        return wordShapeDan1(inStr);
+      case WORDSHAPECHRIS1:
+        return wordShapeChris1(inStr);
+      case WORDSHAPEDAN2:
+        return wordShapeDan2(inStr, knownLCWords);
+      case WORDSHAPEDAN2USELC:
+        return wordShapeDan2(inStr, knownLCWords);
+      case WORDSHAPEDAN2BIO:
+        return wordShapeDan2Bio(inStr, knownLCWords);
+      case WORDSHAPEDAN2BIOUSELC:
+        return wordShapeDan2Bio(inStr, knownLCWords);
+      case WORDSHAPEJENNY1:
+        return wordShapeJenny1(inStr, knownLCWords);
+      case WORDSHAPEJENNY1USELC:
+        return wordShapeJenny1(inStr, knownLCWords);
+      case WORDSHAPECHRIS2:
+        return wordShapeChris2(inStr, false, knownLCWords);
+      case WORDSHAPECHRIS2USELC:
+        return wordShapeChris2(inStr, false, knownLCWords);
+      case WORDSHAPECHRIS3:
+        return wordShapeChris2(inStr, true, knownLCWords);
+      case WORDSHAPECHRIS3USELC:
+        return wordShapeChris2(inStr, true, knownLCWords);
+      case WORDSHAPECHRIS4:
+        return wordShapeChris4(inStr, false, knownLCWords);
+      case WORDSHAPEDIGITS:
+        return wordShapeDigits(inStr);
+      case WORDSHAPECHINESE:
+        return wordShapeChinese(inStr);
+      case WORDSHAPECLUSTER1:
+        return wordShapeCluster1(inStr);
+      default:
+        throw new IllegalStateException("Bad WordShapeClassifier");
+    }
+  }
+

@@ -1,0 +1,198 @@
+
+public class QNMinimizer implements Minimizer<DiffFunction>, HasEvaluators {
+
+  private int fevals = 0; // the number of function evaluations
+  private int maxFevals = -1;
+  private int mem = 10; // the number of s,y pairs to retain for BFGS
+  private int its = 0; // the number of iterations
+  private final Function monitor;
+  private boolean quiet;
+  private static final NumberFormat nf = new DecimalFormat("0.000E0");
+  private static final NumberFormat nfsec = new DecimalFormat("0.00"); // for times
+  private static final double ftol = 1e-4; // Linesearch parameters
+  private double gtol = 0.9;
+  private static final double aMin = 1e-12; // Min step size
+  private static final double aMax = 1e12; // Max step size
+  private static final double p66 = 0.66; // used to check getting more than 2/3 of width improvement
+  private static final double p5 = 0.5; // Some other magic constant
+  private static final int a = 0;  // used as array index
+  private static final int f = 1;  // used as array index
+  private static final int g = 2;  // used as array index
+  public boolean outputToFile = false;
+  private boolean success = false;
+  private boolean bracketed = false; // used for linesearch
+  private QNInfo presetInfo = null;
+  private boolean noHistory = true;
+
+  // parameters for OWL-QN (L-BFGS with L1-regularization)
+  private boolean useOWLQN = false;
+  private double lambdaOWL = 0;
+
+  private boolean useAveImprovement = true;
+  private boolean useRelativeNorm = true;
+  private boolean useNumericalZero = true;
+  private boolean useEvalImprovement = false;
+  private boolean useMaxItr = false;
+  private int maxItr = 0;
+
+  private boolean suppressTestPrompt = false;
+  private int terminateOnEvalImprovementNumOfEpoch = 1;
+
+  private int evaluateIters = 0;    // Evaluate every x iterations (0 = no evaluation)
+  private int startEvaluateIters = 0; // starting evaluation after x iterations
+  private Evaluator[] evaluators;  // separate set of evaluators to check how optimization is going
+
+  public enum eState {
+    TERMINATE_MAXEVALS, TERMINATE_RELATIVENORM, TERMINATE_GRADNORM, TERMINATE_AVERAGEIMPROVE, CONTINUE, TERMINATE_EVALIMPROVE, TERMINATE_MAXITR
+  }
+
+  public enum eLineSearch {
+    BACKTRACK, MINPACK
+  }
+
+  public enum eScaling {
+    DIAGONAL, SCALAR
+  }
+
+  eLineSearch lsOpt = eLineSearch.MINPACK;// eLineSearch.MINPACK;
+  eScaling scaleOpt = eScaling.DIAGONAL;// eScaling.DIAGONAL;
+  eState state = eState.CONTINUE;
+
+
+  public QNMinimizer() {
+    this((Function) null);
+  }
+
+  public QNMinimizer(int m) {
+    this(null, m);
+  }
+
+  public QNMinimizer(int m, boolean useRobustOptions) {
+    this(null, m, useRobustOptions);
+  }
+
+  public QNMinimizer(Function monitor) {
+    this.monitor = monitor;
+  }
+
+  public QNMinimizer(Function monitor, int m) {
+    this(monitor, m, false);
+  }
+
+  public QNMinimizer(Function monitor, int m, boolean useRobustOptions) {
+    this.monitor = monitor;
+    mem = m;
+    if (useRobustOptions) {
+      this.setRobustOptions();
+    }
+  }
+
+  public QNMinimizer(FloatFunction monitor) {
+    throw new UnsupportedOperationException("Doesn't support floats yet");
+  }
+
+  public void setOldOptions() {
+    useAveImprovement = true;
+    useRelativeNorm = false;
+    useNumericalZero = false;
+    lsOpt = eLineSearch.BACKTRACK;
+    scaleOpt = eScaling.SCALAR;
+  }
+
+  public final void setRobustOptions() {
+    useAveImprovement = true;
+    useRelativeNorm = true;
+    useNumericalZero = true;
+    lsOpt = eLineSearch.MINPACK;
+    scaleOpt = eScaling.DIAGONAL;
+  }
+
+  @Override
+  public void setEvaluators(int iters, Evaluator[] evaluators) {
+    this.evaluateIters = iters;
+    this.evaluators = evaluators;
+  }
+
+  public void setEvaluators(int iters, int startEvaluateIters, Evaluator[] evaluators) {
+    this.evaluateIters = iters;
+    this.startEvaluateIters = startEvaluateIters;
+    this.evaluators = evaluators;
+  }
+
+  public void terminateOnRelativeNorm(boolean toTerminate) {
+    useRelativeNorm = toTerminate;
+  }
+
+  public void terminateOnNumericalZero(boolean toTerminate) {
+    useNumericalZero = toTerminate;
+  }
+
+  public void terminateOnAverageImprovement(boolean toTerminate) {
+    useAveImprovement = toTerminate;
+  }
+
+  public void terminateOnEvalImprovement(boolean toTerminate) {
+    useEvalImprovement = toTerminate;
+  }
+
+  public void terminateOnMaxItr(int maxItr) {
+    if (maxItr > 0) {
+      useMaxItr = true;
+      this.maxItr = maxItr;
+    }
+  }
+
+  public void suppressTestPrompt(boolean suppressTestPrompt) {
+    this.suppressTestPrompt = suppressTestPrompt;
+  }
+
+  public void setTerminateOnEvalImprovementNumOfEpoch(int terminateOnEvalImprovementNumOfEpoch) {
+    this.terminateOnEvalImprovementNumOfEpoch = terminateOnEvalImprovementNumOfEpoch;
+  }
+
+  public void useMinPackSearch() {
+    lsOpt = eLineSearch.MINPACK;
+  }
+
+  public void useBacktracking() {
+    lsOpt = eLineSearch.BACKTRACK;
+  }
+
+  public void useDiagonalScaling() {
+    scaleOpt = eScaling.DIAGONAL;
+  }
+
+  public void useScalarScaling() {
+    scaleOpt = eScaling.SCALAR;
+  }
+
+  public boolean wasSuccessful() {
+    return success;
+  }
+
+  public void shutUp() {
+    this.quiet = true;
+  }
+
+  public void setM(int m) {
+    mem = m;
+  }
+
+  public static class SurpriseConvergence extends Throwable {
+
+    private static final long serialVersionUID = 4290178321643529559L;
+
+    public SurpriseConvergence(String s) {
+      super(s);
+    }
+  }
+
+  private static class MaxEvaluationsExceeded extends Throwable {
+
+    private static final long serialVersionUID = 8044806163343218660L;
+
+    public MaxEvaluationsExceeded(String s) {
+      super(s);
+    }
+  }
+

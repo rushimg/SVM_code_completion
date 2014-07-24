@@ -1,0 +1,18 @@
+    protected void add(State nextState) {
+      if (next == null) {
+        next = new LinkedHashSet<State>();
+      }
+      next.add(nextState);
+    }
+
+    public <T> Object value(int bid, SequenceMatcher.MatchedStates<T> matchedStates) {
+      if (hasSavedValue) {
+        HasInterval<Integer> matchedInterval = matchedStates.getBranchStates().getMatchedInterval(bid, this);
+        if (matchedInterval != null && matchedInterval instanceof ValuedInterval) {
+          return ((ValuedInterval) matchedInterval).getValue();
+        }
+      }
+      return null;
+    }
+  }
+

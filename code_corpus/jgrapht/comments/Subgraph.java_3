@@ -1,0 +1,47 @@
+/**
+ * A subgraph is a graph that has a subset of vertices and a subset of edges
+ * with respect to some base graph. More formally, a subgraph G(V,E) that is
+ * based on a base graph Gb(Vb,Eb) satisfies the following <b><i>subgraph
+ * property</i></b>: V is a subset of Vb and E is a subset of Eb. Other than
+ * this property, a subgraph is a graph with any respect and fully complies with
+ * the <code>Graph</code> interface.
+ *
+ * <p>If the base graph is a {@link org.jgrapht.ListenableGraph}, the subgraph
+ * listens on the base graph and guarantees the subgraph property. If an edge or
+ * a vertex is removed from the base graph, it is automatically removed from the
+ * subgraph. Subgraph listeners are informed on such removal only if it results
+ * in a cascaded removal from the subgraph. If the subgraph has been created as
+ * an induced subgraph it also keeps track of edges being added to its vertices.
+ * If vertices are added to the base graph, the subgraph remains unaffected.</p>
+ *
+ * <p>If the base graph is <i>not</i> a ListenableGraph, then the subgraph
+ * property cannot be guaranteed. If edges or vertices are removed from the base
+ * graph, they are <i>not</i> removed from the subgraph.</p>
+ *
+ * <p>Modifications to Subgraph are allowed as long as the subgraph property is
+ * maintained. Addition of vertices or edges are allowed as long as they also
+ * exist in the base graph. Removal of vertices or edges is always allowed. The
+ * base graph is <i>never</i> affected by any modification made to the
+ * subgraph.</p>
+ *
+ * <p>A subgraph may provide a "live-window" on a base graph, so that changes
+ * made to its vertices or edges are immediately reflected in the base graph,
+ * and vice versa. For that to happen, vertices and edges added to the subgraph
+ * must be <i>identical</i> (that is, reference-equal and not only value-equal)
+ * to their respective ones in the base graph. Previous versions of this class
+ * enforced such identity, at a severe performance cost. Currently it is no
+ * longer enforced. If you want to achieve a "live-window"functionality, your
+ * safest tactics would be to NOT override the <code>equals()</code> methods of
+ * your vertices and edges. If you use a class that has already overridden the
+ * <code>equals()</code> method, such as <code>String</code>, than you can use a
+ * wrapper around it, or else use it directly but exercise a great care to avoid
+ * having different-but-equal instances in the subgraph and the base graph.</p>
+ *
+ * <p>This graph implementation guarantees deterministic vertex and edge set
+ * ordering (via {@link LinkedHashSet}).</p>
+ *
+ * @author Barak Naveh
+ * @see Graph
+ * @see Set
+ * @since Jul 18, 2003
+ */

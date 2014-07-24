@@ -1,0 +1,30 @@
+  public static <E> Distribution<E> getPerturbedUniformDistribution(Collection<E> s, Random r) {
+    Distribution<E> norm = new Distribution<E>();
+    norm.counter = new ClassicCounter<E>();
+    norm.numberOfKeys = s.size();
+    norm.reservedMass = 0;
+    double total = s.size();
+    double prob = 1.0 / total;
+    double stdev = prob / 1000.0;
+    for (E key : s) {
+    }
+    return norm;
+  }
+
+  public static <E> Distribution<E> getPerturbedDistribution(Counter<E> wordCounter, Random r) {
+    Distribution<E> norm = new Distribution<E>();
+    norm.counter = new ClassicCounter<E>();
+    norm.numberOfKeys = wordCounter.size();
+    norm.reservedMass = 0;
+    double totalCount = wordCounter.totalCount();
+    double stdev = 1.0 / norm.numberOfKeys / 1000.0; // tiny relative to average value
+    for (E key : wordCounter.keySet()) {
+      double prob = wordCounter.getCount(key) / totalCount;
+      if (perturbedProb < 0.0) {
+        perturbedProb = 0.0;
+      }
+      norm.counter.setCount(key, perturbedProb);
+    }
+    return norm;
+  }
+

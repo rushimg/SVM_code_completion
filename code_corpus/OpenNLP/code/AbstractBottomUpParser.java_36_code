@@ -1,0 +1,82 @@
+  public static Dictionary buildDictionary(ObjectStream<Parse> data, HeadRules rules, TrainingParameters params)
+      throws IOException {
+
+    int cutoff = 5;
+
+    String cutoffString = params.getSettings("dict").
+        get(TrainingParameters.CUTOFF_PARAM);
+
+    if (cutoffString != null) {
+      // TODO: Maybe throw illegal argument exception if not parse able
+      cutoff = Integer.parseInt(cutoffString);
+    }
+
+    NGramModel mdict = new NGramModel();
+    Parse p;
+    while((p = data.read()) != null) {
+      p.updateHeads(rules);
+      Parse[] pwords = p.getTagNodes();
+      String[] words = new String[pwords.length];
+      //add all uni-grams
+      for (int wi=0;wi<words.length;wi++) {
+        words[wi] = pwords[wi].getCoveredText();
+      }
+
+      mdict.add(new StringList(words), 1, 1);
+      //add tri-grams and bi-grams for inital sequence
+      Parse[] chunks = collapsePunctuation(ParserEventStream.getInitialChunks(p),rules.getPunctuationTags());
+      String[] cwords = new String[chunks.length];
+      for (int wi=0;wi<cwords.length;wi++) {
+        cwords[wi] = chunks[wi].getHead().getCoveredText();
+      }
+      mdict.add(new StringList(cwords), 2, 3);
+
+      //emulate reductions to produce additional n-grams
+      int ci = 0;
+      while (ci < chunks.length) {
+        //System.err.println("chunks["+ci+"]="+chunks[ci].getHead().getCoveredText()+" chunks.length="+chunks.length + "  " + chunks[ci].getParent());
+
+        if (chunks[ci].getParent() == null) {
+          chunks[ci].show();
+        }
+        if (lastChild(chunks[ci], chunks[ci].getParent(),rules.getPunctuationTags())) {
+          //perform reduce
+          int reduceStart = ci;
+          while (reduceStart >=0 && chunks[reduceStart].getParent() == chunks[ci].getParent()) {
+            reduceStart--;
+          }
+          reduceStart++;
+          chunks = ParserEventStream.reduceChunks(chunks,ci,chunks[ci].getParent());
+          ci = reduceStart;
+          if (chunks.length != 0) {
+            String[] window = new String[5];
+            int wi = 0;
+            if (ci-2 >= 0) window[wi++] = chunks[ci-2].getHead().getCoveredText();
+            if (ci-1 >= 0) window[wi++] = chunks[ci-1].getHead().getCoveredText();
+            window[wi++] = chunks[ci].getHead().getCoveredText();
+            if (ci+1 < chunks.length) window[wi++] = chunks[ci+1].getHead().getCoveredText();
+            if (ci+2 < chunks.length) window[wi++] = chunks[ci+2].getHead().getCoveredText();
+            if (wi < 5) {
+              String[] subWindow = new String[wi];
+              for (int swi=0;swi<wi;swi++) {
+                subWindow[swi]=window[swi];
+              }
+              window = subWindow;
+            }
+            if (window.length >=3) {
+              mdict.add(new StringList(window), 2, 3);
+            }
+            else if (window.length == 2) {
+              mdict.add(new StringList(window), 2, 2);
+            }
+          }
+          ci=reduceStart-1; //ci will be incremented at end of loop
+        }
+        ci++;
+      }
+    }
+    //System.err.println("gas,and="+mdict.getCount((new TokenList(new String[] {"gas","and"}))));
+    mdict.cutoff(cutoff, Integer.MAX_VALUE);
+    return mdict.toDictionary(true);
+  }
+

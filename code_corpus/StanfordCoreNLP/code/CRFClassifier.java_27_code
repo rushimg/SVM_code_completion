@@ -1,0 +1,41 @@
+  protected List<CRFDatum<? extends Collection<String>, ? extends CharSequence>> extractDatumSequence(int[][][] allData, int beginPosition, int endPosition,
+      List<IN> labeledWordInfos) {
+    List<CRFDatum<? extends Collection<String>, ? extends CharSequence>> result = new ArrayList<CRFDatum<? extends Collection<String>, ? extends CharSequence>>();
+    int beginContext = beginPosition - windowSize + 1;
+    if (beginContext < 0) {
+      beginContext = 0;
+    }
+    // for the beginning context, add some dummy datums with no features!
+    // TODO: is there any better way to do this?
+    for (int position = beginContext; position < beginPosition; position++) {
+      List<Collection<String>> cliqueFeatures = new ArrayList<Collection<String>>();
+      List<double[]> featureVals = new ArrayList<double[]>();
+      for (int i = 0; i < windowSize; i++) {
+        // create a feature list
+        cliqueFeatures.add(Collections.<String>emptyList());
+        featureVals.add(null);
+      }
+      CRFDatum<Collection<String>, String> datum = new CRFDatum<Collection<String>, String>(cliqueFeatures,
+              labeledWordInfos.get(position).get(CoreAnnotations.AnswerAnnotation.class), featureVals);
+      result.add(datum);
+    }
+    // now add the real datums
+    for (int position = beginPosition; position <= endPosition; position++) {
+      List<Collection<String>> cliqueFeatures = new ArrayList<Collection<String>>();
+      List<double[]> featureVals = new ArrayList<double[]>();
+      for (int i = 0; i < windowSize; i++) {
+        // create a feature list
+        Collection<String> features = new ArrayList<String>();
+        for (int j = 0; j < allData[position][i].length; j++) {
+          features.add(featureIndex.get(allData[position][i][j]));
+        }
+        cliqueFeatures.add(features);
+        featureVals.add(null);
+      }
+      CRFDatum<Collection<String>,String> datum = new CRFDatum<Collection<String>,String>(cliqueFeatures,
+              labeledWordInfos.get(position).get(CoreAnnotations.AnswerAnnotation.class), featureVals);
+      result.add(datum);
+    }
+    return result;
+  }
+

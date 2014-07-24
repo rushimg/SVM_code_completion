@@ -1,0 +1,70 @@
+  public static String expand(String pathUri, Object parameters,
+      boolean addUnusedParamsAsQueryParams) {
+    Map<String, Object> variableMap = getMap(parameters);
+    StringBuilder pathBuf = new StringBuilder();
+    int cur = 0;
+    int length = pathUri.length();
+    while (cur < length) {
+      int next = pathUri.indexOf('{', cur);
+      if (next == -1) {
+        if (cur == 0 && !addUnusedParamsAsQueryParams) {
+          // No expansions exist and we do not need to add any query parameters.
+          return pathUri;
+        }
+        pathBuf.append(pathUri.substring(cur));
+        break;
+      }
+      pathBuf.append(pathUri.substring(cur, next));
+      int close = pathUri.indexOf('}', next + 2);
+      String template = pathUri.substring(next + 1, close);
+      cur = close + 1;
+
+      CompositeOutput compositeOutput = getCompositeOutput(template);
+
+      int varNameStartIndex = compositeOutput.getVarNameStartIndex();
+      int varNameEndIndex = template.length();
+      if (containsExplodeModifier) {
+        varNameEndIndex = varNameEndIndex - 1;
+      }
+      // Now get varName devoid of any prefixes and explode modifiers.
+      String varName = template.substring(varNameStartIndex, varNameEndIndex);
+
+      Object value = variableMap.remove(varName);
+      if (value == null) {
+        // The value for this variable is undefined. continue with the next template.
+        continue;
+      }
+      if (value instanceof Iterator<?>) {
+        // Get the list property value.
+        Iterator<?> iterator = (Iterator<?>) value;
+        value = getListPropertyValue(varName, iterator, containsExplodeModifier, compositeOutput);
+      } else if (value instanceof Iterable<?> || value.getClass().isArray()) {
+       // Get the list property value.
+        Iterator<?> iterator = Types.iterableOf(value).iterator();
+        value = getListPropertyValue(varName, iterator, containsExplodeModifier, compositeOutput);
+      } else if (value.getClass().isEnum()) {
+        String name = FieldInfo.of((Enum<?>) value).getName();
+        if (name != null) {
+          value = CharEscapers.escapeUriPath(name);
+        }
+      } else if (!Data.isValueOfPrimitiveType(value)) {
+        // Parse the value as a key/value map.
+        Map<String, Object> map = getMap(value);
+        value = getMapPropertyValue(varName, map, containsExplodeModifier, compositeOutput);
+      } else {
+        // For everything else...
+        if (compositeOutput.getReservedExpansion()) {
+          value = CharEscapers.escapeUriPathWithoutReserved(value.toString());
+        } else {
+          value = CharEscapers.escapeUriPath(value.toString());
+        }
+      }
+      pathBuf.append(value);
+    }
+    if (addUnusedParamsAsQueryParams) {
+      // Add the parameters remaining in the variableMap as query parameters.
+      GenericUrl.addQueryParams(variableMap.entrySet(), pathBuf);
+    }
+    return pathBuf.toString();
+  }
+

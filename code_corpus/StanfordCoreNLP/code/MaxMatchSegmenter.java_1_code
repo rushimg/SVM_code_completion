@@ -1,0 +1,67 @@
+public class MaxMatchSegmenter implements WordSegmenter {
+
+  private static final boolean DEBUG = false;
+
+  private Set<String> words = Generics.newHashSet();
+  private int len=-1;
+  private int edgesNb=0;
+  private static final int maxLength = 10;
+  private List<DFSAState<Word, Integer>> states;
+  private DFSA<Word, Integer> lattice=null;
+  public enum MatchHeuristic { MINWORDS, MAXWORDS, MAXLEN }
+
+  private static final Pattern chineseStartChars = Pattern.compile("^[\u4E00-\u9FFF]");
+  private static final Pattern chineseEndChars = Pattern.compile("[\u4E00-\u9FFF]$");
+  private static final Pattern chineseChars = Pattern.compile("[\u4E00-\u9FFF]");
+
+  private static final Pattern excludeChars = Pattern.compile("[0-9\uff10-\uff19" +
+        "\u4e00\u4e8c\u4e09\u56db\u4e94\u516d\u4e03\u516b\u4E5D\u5341" +
+        "\u96F6\u3007\u767E\u5343\u4E07\u4ebf\u5169\u25cb\u25ef\u3021-\u3029\u3038-\u303A" +
+
+  @Override
+  public void initializeTraining(double numTrees) {}
+
+  @Override
+  public void train(Collection<Tree> trees) {
+    for (Tree tree : trees) {
+      train(tree);
+    }
+  }
+
+  @Override
+  public void train(Tree tree) {
+    train(tree.taggedYield());
+  }
+
+  @Override
+  public void train(List<TaggedWord> sentence) {
+    for (TaggedWord word : sentence) {
+      if (word.word().length() <= maxLength) {
+        addStringToLexicon(word.word());
+      }
+    }
+  }
+
+  @Override
+  public void finishTraining() {}
+
+  public void loadSegmenter(String filename) {
+    addLexicon(filename);
+  }
+
+  public List<HasWord> segment(String s) {
+    buildSegmentationLattice(s);
+    ArrayList<Word> sent = maxMatchSegmentation();
+    printlnErr("raw output: "+Sentence.listToString(sent));
+    ArrayList<Word> postProcessedSent = postProcessSentence(sent);
+    printlnErr("processed output: "+Sentence.listToString(postProcessedSent));
+    String postSentString = ChineseStringUtils.postProcessingAnswerCTB(postProcessedSent.toString(),false,false);
+    printlnErr("Sighan2005 output: "+postSentString);
+    String[] postSentArray = postSentString.split("\\s+");
+    ArrayList<Word> postSent = new ArrayList<Word>();
+    for(String w : postSentArray) {
+      postSent.add(new Word(w));
+    }
+    return new ArrayList<HasWord>(postSent);
+  }
+

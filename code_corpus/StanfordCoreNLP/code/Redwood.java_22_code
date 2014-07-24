@@ -1,0 +1,31 @@
+  public static void startTrack(final Object... args){
+    if(isClosed){ return; }
+    //--Create Record
+    final int len = args.length == 0 ? 0 : args.length-1;
+    final Object content = args.length == 0 ? "" : args[len];
+    final Object[] tags = new Object[len];
+    final long timestamp = System.currentTimeMillis();
+    System.arraycopy(args,0,tags,0,len);
+    //--Create Task
+    final Runnable startTrack = new Runnable(){
+      @Override
+      public void run(){
+        assert !isThreaded || control.isHeldByCurrentThread();
+        Record toPass = new Record(content,tags,depth,timestamp);
+        depth += 1;
+        titleStack.push(args.length == 0 ? "" : args[len].toString());
+        handlers.process(toPass, MessageType.START_TRACK, depth, toPass.timesstamp);
+        assert !isThreaded || control.isHeldByCurrentThread();
+      }
+    };
+    //--Run Task
+    if(isThreaded){
+      //(case: multithreaded)
+      long threadId = Thread.currentThread().getId();
+      attemptThreadControl( threadId, startTrack );
+    } else {
+      //(case: no threading)
+      startTrack.run();
+    }
+  }
+

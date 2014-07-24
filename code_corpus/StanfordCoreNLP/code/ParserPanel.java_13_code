@@ -1,0 +1,18 @@
+  public void parse() {
+    if (textPane.getText().length() == 0) {
+      return;
+    }
+
+    // use endIndex+1 because substring subtracts 1
+    String text = textPane.getText().substring(startIndex, endIndex + 1).trim();
+
+    if (parser != null && text.length() > 0) {
+      //Tokenizer<? extends HasWord> toke = tlp.getTokenizerFactory().getTokenizer(new CharArrayReader(text.toCharArray()));
+      Tokenizer<? extends HasWord> toke = tlp.getTokenizerFactory().getTokenizer(new StringReader(text));
+      List<? extends HasWord> wordList = toke.tokenize();
+      parseThread = new ParseThread(wordList);
+      parseThread.start();
+      startProgressMonitor("Parsing", PARSE_TIME);
+    }
+  }
+

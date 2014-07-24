@@ -1,0 +1,44 @@
+//   private List split(List data, int numFolds) {
+//     List folds = new ArrayList();
+//     int foldSize = data.size() / numFolds;
+
+//     int index = 0;
+//     for (int i = 0; i < numFolds; i++) {
+//       List fold = new ArrayList();
+//       int end = (i < r ? foldSize + 1 : foldSize);
+//       for (int j = 0; j < end; j++) {
+//         fold.add(data.get(index++));
+//       }
+//       folds.add(fold);
+//     }
+
+//     return folds;
+//   }
+
+  @Override
+  public void serializeClassifier(String serializePath) {
+
+    System.err.print("Serializing classifier to " + serializePath + "...");
+
+    try {
+      ObjectOutputStream oos = IOUtils.writeStreamFromString(serializePath);
+
+      oos.writeObject(classifier);
+      oos.writeObject(flags);
+      oos.writeObject(featureFactories);
+      oos.writeObject(classIndex);
+      oos.writeObject(answerArrays);
+      //oos.writeObject(WordShapeClassifier.getKnownLowerCaseWords());
+
+      oos.writeObject(knownLCWords);
+
+      oos.close();
+      System.err.println("Done.");
+
+    } catch (Exception e) {
+      System.err.println("Error serializing to " + serializePath);
+      e.printStackTrace();
+    }
+  }
+
+

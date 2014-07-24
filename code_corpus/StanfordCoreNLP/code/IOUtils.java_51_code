@@ -1,0 +1,15 @@
+  public static String slurpURL(URL u) throws IOException {
+    String lineSeparator = System.getProperty("line.separator");
+    URLConnection uc = u.openConnection();
+    String encoding = getUrlEncoding(uc);
+    InputStream is = uc.getInputStream();
+    BufferedReader br = new BufferedReader(new InputStreamReader(is, encoding));
+    StringBuilder buff = new StringBuilder(SLURP_BUFFER_SIZE); // make biggish
+    for (String temp; (temp = br.readLine()) != null; ) {
+      buff.append(temp);
+      buff.append(lineSeparator);
+    }
+    br.close();
+    return buff.toString();
+  }
+

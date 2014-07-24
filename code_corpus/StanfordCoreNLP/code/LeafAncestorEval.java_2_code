@@ -1,0 +1,101 @@
+  private static List<List<CoreLabel>> makeLineages(final Tree t) {
+    if(t == null) return null;
+
+    ((HasIndex) t.label()).setIndex(0);
+
+    final Stack<Tree> treeStack = new Stack<Tree>();
+    treeStack.push(t);
+
+    final Stack<CoreLabel> labelStack = new Stack<CoreLabel>();
+    CoreLabel rootLabel = new CoreLabel(t.label());
+    rootLabel.setIndex(0);
+    labelStack.push(rootLabel);
+
+    final List<List<CoreLabel>> lineages = new ArrayList<List<CoreLabel>>();
+
+    while(!treeStack.isEmpty()) {
+      Tree node = treeStack.pop();
+      int nodeDepth = ((HasIndex) node.label()).index();
+      while(!labelStack.isEmpty() && labelStack.peek().index() != nodeDepth - 1)
+        labelStack.pop();
+
+      if(node.isPreTerminal()) {
+        List<CoreLabel> lin = new ArrayList<CoreLabel>(labelStack);
+        lineages.add(lin);
+
+      } else {
+        for(Tree kid : node.children()) {
+          ((HasIndex) kid.label()).setIndex(nodeDepth + 1);
+          treeStack.push(kid);
+        }
+        CoreLabel nodeLabel = new CoreLabel(node.label());
+        nodeLabel.setIndex(nodeDepth);
+        labelStack.add(nodeLabel);
+      }
+    }
+
+    if(DEBUG) {
+      System.out.println("Lineages:");
+      for(List<CoreLabel> lin : lineages) {
+        for(CoreLabel cl : lin)
+          System.out.print(cl.value() + " <- ");
+        System.out.println();
+      }
+    }
+
+    return lineages;
+  }
+
+  private void updateCatAverages(final List<CoreLabel> lineage, double score) {
+    if(catAvg.get(lineage) == null) {
+      catAvg.put(lineage, score);
+      catNum.put(lineage, 1.0);
+
+    } else {
+      double newAvg = catAvg.get(lineage) + score;
+      catAvg.put(lineage, newAvg);
+      double newNum = catNum.get(lineage) + 1.0;
+      catNum.put(lineage, newNum);
+    }
+  }
+
+  public void evaluate(Tree guess, Tree gold, PrintWriter pw) {
+    if(gold == null || guess == null) {
+      System.err.printf("%s: Cannot compare against a null gold or guess tree!\n",this.getClass().getName());
+      return;
+    }
+
+    final List<List<CoreLabel>> guessLineages = makeLineages(guess);
+    final List<List<CoreLabel>> goldLineages = makeLineages(gold);
+
+    if(guessLineages.size() == goldLineages.size()) {
+
+      double localScores = 0.0;
+      for(int i = 0; i < guessLineages.size(); i++) {
+        List<CoreLabel> guessLin = guessLineages.get(i);
+        List<CoreLabel> goldLin = goldLineages.get(i);
+
+        double levDist = editDistance(guessLin, goldLin);
+        double la = 1.0 - (levDist / (double) (guessLin.size() + goldLin.size()));
+
+        localScores += la;
+
+        updateCatAverages(goldLin, la);
+      }
+
+      corpusAvg += localScores;
+      corpusNum += goldLineages.size();
+
+      double localSentAvg = localScores / goldLineages.size();
+      if(localSentAvg == 1.0) sentExact++;
+      sentAvg += localSentAvg;
+      sentNum++;
+
+    } else {
+      System.err.printf("%s: Number of guess (%d) gold (%d) don't match!\n",this.getClass().getName(),guessLineages.size(),goldLineages.size());
+      System.err.println("Cannot evaluate!");
+      System.err.printf("GUESS tree:\n%s\n", guess.toString());
+      System.err.printf("GOLD tree:\n%s\n", gold.toString());
+    }
+  }
+

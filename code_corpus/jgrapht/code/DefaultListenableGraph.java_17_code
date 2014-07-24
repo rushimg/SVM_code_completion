@@ -1,0 +1,18 @@
+    public boolean removeVertex(V v)
+    {
+        if (containsVertex(v)) {
+            Set<E> touchingEdgesList = edgesOf(v);
+
+            // copy set to avoid ConcurrentModificationException
+            removeAllEdges(new ArrayList<E>(touchingEdgesList));
+
+            super.removeVertex(v); // remove the vertex itself
+
+            fireVertexRemoved(v);
+
+            return true;
+        } else {
+            return false;
+        }
+    }
+

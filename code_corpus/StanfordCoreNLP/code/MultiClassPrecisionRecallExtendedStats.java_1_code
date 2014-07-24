@@ -1,0 +1,47 @@
+public class MultiClassPrecisionRecallExtendedStats<L> extends MultiClassPrecisionRecallStats<L> {
+  protected IntCounter<L> correctGuesses;
+  protected IntCounter<L> foundCorrect;
+  protected IntCounter<L> foundGuessed;
+  protected int tokensCount = 0;
+  protected int tokensCorrect = 0;
+  protected int noLabel = 0;
+
+  protected Function<String,L> stringConverter;
+
+  public <F> MultiClassPrecisionRecallExtendedStats(Classifier<L,F> classifier, GeneralDataset<L,F> data, L negLabel)
+  {
+    super(classifier, data, negLabel);
+  }
+
+  public MultiClassPrecisionRecallExtendedStats(L negLabel)
+  {
+    super(negLabel);
+  }
+
+  public MultiClassPrecisionRecallExtendedStats(Index<L> dataLabelIndex, L negLabel)
+  {
+    this(negLabel);
+    setLabelIndex(dataLabelIndex);
+  }
+
+  public void setLabelIndex(Index<L> dataLabelIndex) {
+    labelIndex = dataLabelIndex;
+    negIndex = labelIndex.indexOf(negLabel);
+  }
+
+  public <F> double score(Classifier<L,F> classifier, GeneralDataset<L,F> data) {
+    labelIndex = new HashIndex<L>();
+    labelIndex.addAll(classifier.labels());
+    labelIndex.addAll(data.labelIndex.objectsList());
+    clearCounts();
+    int[] labelsArr = data.getLabelsArray();
+    for (int i = 0; i < data.size(); i++) {
+      Datum<L, F> d = data.getRVFDatum(i);
+      L guess = classifier.classOf(d);
+      addGuess(guess, labelIndex.get(labelsArr[i]));
+    }
+    finalizeCounts();
+
+    return getFMeasure();
+  }
+

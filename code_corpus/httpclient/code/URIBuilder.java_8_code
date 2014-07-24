@@ -1,0 +1,83 @@
+    public URI build() throws URISyntaxException {
+        return new URI(buildString());
+    }
+
+    private String buildString() {
+        final StringBuilder sb = new StringBuilder();
+        if (this.scheme != null) {
+            sb.append(this.scheme).append(':');
+        }
+        if (this.encodedSchemeSpecificPart != null) {
+            sb.append(this.encodedSchemeSpecificPart);
+        } else {
+            if (this.encodedAuthority != null) {
+                sb.append("//").append(this.encodedAuthority);
+            } else if (this.host != null) {
+                sb.append("//");
+                if (this.encodedUserInfo != null) {
+                    sb.append(this.encodedUserInfo).append("@");
+                } else if (this.userInfo != null) {
+                    sb.append(encodeUserInfo(this.userInfo)).append("@");
+                }
+                if (InetAddressUtils.isIPv6Address(this.host)) {
+                    sb.append("[").append(this.host).append("]");
+                } else {
+                    sb.append(this.host);
+                }
+                if (this.port >= 0) {
+                    sb.append(":").append(this.port);
+                }
+            }
+            if (this.encodedPath != null) {
+                sb.append(normalizePath(this.encodedPath));
+            } else if (this.path != null) {
+                sb.append(encodePath(normalizePath(this.path)));
+            }
+            if (this.encodedQuery != null) {
+                sb.append("?").append(this.encodedQuery);
+            } else if (this.queryParams != null) {
+                sb.append("?").append(encodeUrlForm(this.queryParams));
+            } else if (this.query != null) {
+                sb.append("?").append(encodeUric(this.query));
+            }
+        }
+        if (this.encodedFragment != null) {
+            sb.append("#").append(this.encodedFragment);
+        } else if (this.fragment != null) {
+            sb.append("#").append(encodeUric(this.fragment));
+        }
+        return sb.toString();
+    }
+
+    private void digestURI(final URI uri) {
+        this.scheme = uri.getScheme();
+        this.encodedSchemeSpecificPart = uri.getRawSchemeSpecificPart();
+        this.encodedAuthority = uri.getRawAuthority();
+        this.host = uri.getHost();
+        this.port = uri.getPort();
+        this.encodedUserInfo = uri.getRawUserInfo();
+        this.userInfo = uri.getUserInfo();
+        this.encodedPath = uri.getRawPath();
+        this.path = uri.getPath();
+        this.encodedQuery = uri.getRawQuery();
+        this.queryParams = parseQuery(uri.getRawQuery(), this.charset != null ? this.charset : Consts.UTF_8);
+        this.encodedFragment = uri.getRawFragment();
+        this.fragment = uri.getFragment();
+    }
+
+    private String encodeUserInfo(final String userInfo) {
+        return URLEncodedUtils.encUserInfo(userInfo, this.charset != null ? this.charset : Consts.UTF_8);
+    }
+
+    private String encodePath(final String path) {
+        return URLEncodedUtils.encPath(path, this.charset != null ? this.charset : Consts.UTF_8);
+    }
+
+    private String encodeUrlForm(final List<NameValuePair> params) {
+        return URLEncodedUtils.format(params, this.charset != null ? this.charset : Consts.UTF_8);
+    }
+
+    private String encodeUric(final String fragment) {
+        return URLEncodedUtils.encUric(fragment, this.charset != null ? this.charset : Consts.UTF_8);
+    }
+

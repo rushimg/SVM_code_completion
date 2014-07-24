@@ -1,0 +1,21 @@
+    String getEncodedValue(String value) {
+      String encodedValue;
+      if (reservedExpansion) {
+        // Reserved expansion allows pct-encoded triplets and characters in the reserved set.
+        encodedValue = CharEscapers.escapeUriPath(value);
+      } else {
+        encodedValue = CharEscapers.escapeUri(value);
+      }
+      return encodedValue;
+    }
+
+    boolean getReservedExpansion() {
+      return reservedExpansion;
+    }
+  }
+
+  static CompositeOutput getCompositeOutput(String propertyName) {
+    CompositeOutput compositeOutput = COMPOSITE_PREFIXES.get(propertyName.charAt(0));
+    return compositeOutput == null ? CompositeOutput.SIMPLE : compositeOutput;
+  }
+

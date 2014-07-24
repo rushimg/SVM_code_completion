@@ -1,0 +1,59 @@
+  private static class MultiNodePatternState extends State {
+
+    private final MultiNodePattern pattern;
+
+    protected MultiNodePatternState(MultiNodePattern p) {
+      this.pattern = p;
+    }
+
+    @Override
+    protected <T> boolean match(int bid, SequenceMatcher.MatchedStates<T> matchedStates, boolean consume, State prevState)
+    {
+      if (consume) {
+        HasInterval<Integer> matchedInterval = matchedStates.getBranchStates().getMatchedInterval(bid, this);
+        int cur = matchedStates.curPosition;
+        if (matchedInterval == null) {
+          // Haven't tried to match this node before, try now
+          // Get element and return if it matched or not
+          List<? extends T> nodes = matchedStates.elements();
+          // TODO: Fix type checking
+          Collection<HasInterval<Integer>> matched = pattern.match(nodes, cur);
+          // TODO: Check intervals are valid?   Start at cur and ends after?
+          if (matched != null && matched.size() > 0) {
+            int nBranches = matched.size();
+            int i = 0;
+            for (HasInterval<Integer> interval:matched) {
+              i++;
+              int bid2 = matchedStates.getBranchStates().getBranchId(bid, i, nBranches);
+              matchedStates.getBranchStates().setMatchedInterval(bid2, this, interval);
+              // If matched, need to add next states to the queue of states to be processed
+              // keep in current state until end node reached
+              if (interval.getInterval().getEnd()-1 <= cur) {
+                matchedStates.addStates(bid2, next);
+              } else {
+                matchedStates.addState(bid2, this);
+              }
+            }
+            return true;
+          } else {
+            return false;
+          }
+        } else {
+          // Previously matched this state - just need to step through until we get to end of matched interval
+          if (matchedInterval.getInterval().getEnd()-1 <= cur) {
+            matchedStates.addStates(bid, next);
+          } else {
+            matchedStates.addState(bid, this);
+          }
+          return true;
+        }
+      } else {
+        // Not consuming element - add this state back to queue of states to be processed
+        // This state was not successfully matched
+        matchedStates.addState(bid, this);
+        return false;
+      }
+    }
+
+  }
+

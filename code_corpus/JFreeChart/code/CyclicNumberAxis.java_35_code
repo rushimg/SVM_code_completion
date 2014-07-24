@@ -1,0 +1,38 @@
+    public AxisSpace reserveSpace(Graphics2D g2,
+                                  Plot plot,
+                                  Rectangle2D plotArea,
+                                  RectangleEdge edge,
+                                  AxisSpace space) {
+
+        this.internalMarkerCycleBoundTick = null;
+        AxisSpace ret = super.reserveSpace(g2, plot, plotArea, edge, space);
+        if (this.internalMarkerCycleBoundTick == null) {
+            return ret;
+        }
+
+        FontMetrics fm = g2.getFontMetrics(getTickLabelFont());
+        Rectangle2D r = TextUtilities.getTextBounds(
+            this.internalMarkerCycleBoundTick.getText(), g2, fm
+        );
+
+        if (RectangleEdge.isTopOrBottom(edge)) {
+            if (isVerticalTickLabels()) {
+                space.add(r.getHeight() / 2, RectangleEdge.RIGHT);
+            }
+            else {
+                space.add(r.getWidth() / 2, RectangleEdge.RIGHT);
+            }
+        }
+        else if (RectangleEdge.isLeftOrRight(edge)) {
+            if (isVerticalTickLabels()) {
+                space.add(r.getWidth() / 2, RectangleEdge.TOP);
+            }
+            else {
+                space.add(r.getHeight() / 2, RectangleEdge.TOP);
+            }
+        }
+
+        return ret;
+
+    }
+

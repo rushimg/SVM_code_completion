@@ -1,0 +1,19 @@
+  public void add(K key, V value) {
+    if (treatCollectionsAsImmutable) {
+      Collection<V> newC = cf.newCollection();
+      Collection<V> c = map.get(key);
+      if (c != null) {
+        newC.addAll(c);
+      }
+      newC.add(value);
+      map.put(key, newC); // replacing the old collection
+    } else {
+      Collection<V> c = map.get(key);
+      if (c == null) {
+        c = cf.newCollection();
+        map.put(key, c);
+      }
+      c.add(value); // modifying the old collection
+    }
+  }
+  

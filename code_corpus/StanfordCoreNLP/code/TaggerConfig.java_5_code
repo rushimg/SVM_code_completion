@@ -1,0 +1,74 @@
+  public double getDefaultScore() {
+    String approx = getProperty("approximate");
+    if ("false".equalsIgnoreCase(approx)) {
+      return -1.0;
+    } else if ("true".equalsIgnoreCase(approx)) {
+      return 1.0;
+    } else {
+      return Double.parseDouble(approx);
+    }
+  }
+
+
+  public void dump() { dump(new PrintWriter(System.err)); }
+
+  public void dump(PrintStream stream) {
+    PrintWriter pw = new PrintWriter(stream);
+    dump(pw);
+  }
+
+  private void dump(PrintWriter pw) {
+    pw.println("                   model = " + getProperty("model"));
+    pw.println("                    arch = " + getProperty("arch"));
+    pw.println("            wordFunction = " + getProperty("wordFunction"));
+    if (this.getMode() == Mode.TRAIN || this.getMode() == Mode.DUMP) {
+      pw.println("               trainFile = " + getProperty("file"));
+    } else if (this.getMode() == Mode.TAG) {
+      pw.println("                textFile = " + getProperty("file"));
+    } else if (this.getMode() == Mode.TEST) {
+      pw.println("                testFile = " + getProperty("file"));
+    }
+
+    pw.println("         closedClassTags = " + getProperty("closedClassTags"));
+    pw.println(" closedClassTagThreshold = " + getProperty("closedClassTagThreshold"));
+    pw.println(" curWordMinFeatureThresh = " + getProperty("curWordMinFeatureThresh"));
+    pw.println("                   debug = " + getProperty("debug"));
+    pw.println("             debugPrefix = " + getProperty("debugPrefix"));
+    pw.println("            " + TAG_SEPARATOR_PROPERTY + " = " +
+               getProperty(TAG_SEPARATOR_PROPERTY));
+    pw.println("                " + ENCODING_PROPERTY + " = " +
+               getProperty(ENCODING_PROPERTY));
+    pw.println("              iterations = " + getProperty("iterations"));
+    pw.println("                    lang = " + getProperty("lang"));
+    pw.println("    learnClosedClassTags = " + getProperty("learnClosedClassTags"));
+    pw.println("        minFeatureThresh = " + getProperty("minFeatureThresh"));
+    pw.println("           openClassTags = " + getProperty("openClassTags"));
+    pw.println("rareWordMinFeatureThresh = " + getProperty("rareWordMinFeatureThresh"));
+    pw.println("          rareWordThresh = " + getProperty("rareWordThresh"));
+    pw.println("                  search = " + getProperty("search"));
+    pw.println("                    sgml = " + getProperty("sgml"));
+    pw.println("            sigmaSquared = " + getProperty("sigmaSquared"));
+    pw.println("                   regL1 = " + getProperty("regL1"));
+    pw.println("               tagInside = " + getProperty("tagInside"));
+    pw.println("                tokenize = " + getProperty("tokenize"));
+    pw.println("        tokenizerFactory = " + getProperty("tokenizerFactory"));
+    pw.println("        tokenizerOptions = " + getProperty("tokenizerOptions"));
+    pw.println("                 verbose = " + getProperty("verbose"));
+    pw.println("          verboseResults = " + getProperty("verboseResults"));
+    pw.println("    veryCommonWordThresh = " + getProperty("veryCommonWordThresh"));
+    pw.println("                xmlInput = " + getProperty("xmlInput"));
+    pw.println("              outputFile = " + getProperty("outputFile"));
+    pw.println("            outputFormat = " + getProperty("outputFormat"));
+    pw.println("     outputFormatOptions = " + getProperty("outputFormatOptions"));
+    pw.println("                nthreads = " + getProperty("nthreads"));
+    pw.flush();
+  }
+
+  @Override
+  public String toString() {
+    StringWriter sw = new StringWriter(200);
+    PrintWriter pw = new PrintWriter(sw);
+    dump(pw);
+    return sw.toString();
+  }
+

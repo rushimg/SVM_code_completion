@@ -1,0 +1,132 @@
+  public ISODateInstance(ISODateInstance referenceDate, String relativeDate) {
+    Pair<DateField, Integer> relation = relativeDateMap.get(relativeDate.toLowerCase());
+    if (relation != null) {
+      switch (relation.first()) {
+        case DAY:
+          incrementDay(referenceDate, relation);
+          break;
+        case MONTH:
+          incrementMonth(referenceDate, relation);
+          break;
+        case YEAR:
+          incrementYear(referenceDate, relation);
+          break;
+      }
+    }
+  }
+
+
+  private void incrementYear(ISODateInstance referenceDate, Pair<DateField, Integer> relation) {
+    String origDateString = referenceDate.getStartDate();
+    String yearString = origDateString.substring(0, 4);
+      isoDate = origDateString;
+      return;
+    }
+    isoDate = makeStringYearChange(origDateString, Integer.parseInt(yearString) + relation.second());
+  }
+
+  private void incrementMonth(ISODateInstance referenceDate, Pair<DateField, Integer> relation) {
+    String origDateString = referenceDate.getStartDate();
+    String monthString = origDateString.substring(4, 6);
+      isoDate = origDateString;
+      return;
+    }
+    //Month is not a variable
+    Integer monthNum = Integer.parseInt(monthString);
+    //Check if we're an edge case
+    if (((monthNum + relation.second()) > 12) || ((monthNum + relation.second) < 1)) {
+      boolean decreasing = ((monthNum + relation.second) < 1);
+      int newMonthNum = (monthNum + relation.second()) % 12;
+      if (newMonthNum < 0) {
+      }
+      //Set the month appropriately
+      isoDate = makeStringMonthChange(origDateString, newMonthNum);
+      //Increment the year if possible
+      String yearString = origDateString.substring(0, 4);
+        //How much we increment depends on above mod
+        int numYearsToIncrement = (int) Math.ceil(relation.second() / 12.0);
+        if (decreasing) {
+          isoDate = makeStringYearChange(isoDate, Integer.parseInt(yearString) - numYearsToIncrement);
+        } else {
+          isoDate = makeStringYearChange(isoDate, Integer.parseInt(yearString) + numYearsToIncrement);
+        }
+      }
+    } else {
+      isoDate = makeStringMonthChange(origDateString, (monthNum + relation.second()));
+    }
+  }
+
+
+  private void incrementDay(ISODateInstance referenceDate, Pair<DateField, Integer> relation) {
+    String origDateString = referenceDate.getStartDate();
+    String dayString = origDateString.substring(origDateString.length() - 2, origDateString.length());
+      isoDate = origDateString;
+      return;
+    }
+    //Date is not a variable
+    Integer dayNum = Integer.parseInt(dayString);
+    String monthString = origDateString.substring(origDateString.length() - 4, origDateString.length() - 2);
+    int numDaysInMonth = 30;//default - assume this if month is a variable
+    int monthNum = -1;//ie, we don't know the month yet - this remains -1 if the month is a variable
+      //Set appropriate numDaysInMonth and monthNum
+      monthNum = Integer.parseInt(monthString);
+      numDaysInMonth = daysPerMonth.get(monthNum);
+    }
+
+    //Now, find out if we're an edge case (potential to increment month)
+    if (dayNum + relation.second() <= numDaysInMonth && dayNum + relation.second() >= 1) {
+      //Not an edge case - just increment the day, create a new string, and return
+      dayNum += relation.second();
+      isoDate = makeStringDayChange(origDateString, dayNum);
+      return;
+    }
+
+    //Since we're an edge case, the month can't be a variable - if it is a variable, just set this to the reference string
+    if (monthNum == -1) {
+      isoDate = origDateString;
+      return;
+    }
+    //At this point, neither our day nor our month is a variable
+    isoDate = origDateString;
+    boolean decreasing = (dayNum + relation.second() < 1);
+    //Need to increment the month, set the date appropriately - we need the new month num to set the day appropriately, so do month first
+    int newMonthNum;
+    //Now, check if we're an edge case for month
+    if ((monthNum + 1 > 12 && !decreasing) || (monthNum - 1 < 1 && decreasing)) {
+      //First, change the month
+      if (decreasing) {
+        newMonthNum = 12;
+      } else {
+        newMonthNum = 1;
+      }
+      //If we can, increment the year
+      //TODO: fix this to work more nicely with variables and thus handle more cases
+      String yearString = origDateString.substring(0, 4);
+        if (decreasing) {
+          isoDate = makeStringYearChange(isoDate, Integer.parseInt(yearString) - 1);
+        } else {
+          isoDate = makeStringYearChange(isoDate, Integer.parseInt(yearString) + 1);
+        }
+      }
+    } else {
+      //We're not an edge case for month - just increment
+      if (decreasing) {
+        newMonthNum = monthNum - 1;
+      } else {
+        newMonthNum = monthNum + 1;
+      }
+    }
+    //do the increment
+    isoDate = makeStringMonthChange(isoDate, newMonthNum);
+    int newDateNum;
+    if (decreasing) {
+      newDateNum = -relation.second() + daysPerMonth.get(newMonthNum) - dayNum;
+    } else {
+      newDateNum = relation.second() - dayNum + daysPerMonth.get(monthNum);
+    }
+    //Now, change the day in our original string to be appropriate
+    isoDate = makeStringDayChange(isoDate, newDateNum);
+
+
+  }
+

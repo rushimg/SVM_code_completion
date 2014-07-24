@@ -1,0 +1,17 @@
+  private <T> void parseArray(Field fieldContext, Collection<T> destinationCollection,
+      Type destinationItemType, ArrayList<Type> context, CustomizeJsonParser customizeParser)
+      throws IOException {
+    JsonToken curToken = startParsingObjectOrArray();
+    while (curToken != JsonToken.END_ARRAY) {
+      @SuppressWarnings("unchecked")
+      T parsedValue = (T) parseValue(fieldContext,
+          destinationItemType,
+          context,
+          destinationCollection,
+          customizeParser,
+          true);
+      destinationCollection.add(parsedValue);
+      curToken = nextToken();
+    }
+  }
+

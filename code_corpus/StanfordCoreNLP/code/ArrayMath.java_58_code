@@ -1,0 +1,398 @@
+  public static double sigLevelByApproxRand(double[] A, double[] B, int iterations) {
+    if (A.length == 0)
+      throw new IllegalArgumentException("Input arrays must not be empty!");
+    if (A.length != B.length)
+      throw new IllegalArgumentException("Input arrays must have equal length!");
+    if (iterations <= 0)
+      throw new IllegalArgumentException("Number of iterations must be positive!");
+    double testStatistic = absDiffOfMeans(A, B, false); // not randomized
+    int successes = 0;
+    for (int i = 0; i < iterations; i++) {
+      double t =  absDiffOfMeans(A, B, true); // randomized
+      if (t >= testStatistic) successes++;
+    }
+    return (double) (successes + 1) / (double) (iterations + 1);
+  }
+
+  public static double sigLevelByApproxRand(int[] A, int[] B) {
+    return sigLevelByApproxRand(A, B, 1000);
+  }
+
+  public static double sigLevelByApproxRand(int[] A, int[] B, int iterations) {
+    if (A.length == 0)
+      throw new IllegalArgumentException("Input arrays must not be empty!");
+    if (A.length != B.length)
+      throw new IllegalArgumentException("Input arrays must have equal length!");
+    if (iterations <= 0)
+      throw new IllegalArgumentException("Number of iterations must be positive!");
+    double[] X = new double[A.length];
+    double[] Y = new double[B.length];
+    for (int i = 0; i < A.length; i++) {
+      X[i] = A[i];
+      Y[i] = B[i];
+    }
+    return sigLevelByApproxRand(X, Y, iterations);
+  }
+
+  public static double sigLevelByApproxRand(boolean[] A, boolean[] B) {
+    return sigLevelByApproxRand(A, B, 1000);
+  }
+
+  public static double sigLevelByApproxRand(boolean[] A, boolean[] B, int iterations) {
+    if (A.length == 0)
+      throw new IllegalArgumentException("Input arrays must not be empty!");
+    if (A.length != B.length)
+      throw new IllegalArgumentException("Input arrays must have equal length!");
+    if (iterations <= 0)
+      throw new IllegalArgumentException("Number of iterations must be positive!");
+    double[] X = new double[A.length];
+    double[] Y = new double[B.length];
+    for (int i = 0; i < A.length; i++) {
+      X[i] = (A[i] ? 1.0 : 0.0);
+      Y[i] = (B[i] ? 1.0 : 0.0);
+    }
+    return sigLevelByApproxRand(X, Y, iterations);
+  }
+
+
+  // Returns the absolute difference between the means of arrays A and B.
+  // If 'randomize' is true, swaps matched A & B entries with 50% probability
+  // Assumes input arrays have equal, non-zero length.
+  private static double absDiffOfMeans(double[] A, double[] B, boolean randomize) {
+    Random random = new Random();
+    double aTotal = 0.0;
+    double bTotal = 0.0;
+    for (int i = 0; i < A.length; i++) {
+      if (randomize && random.nextBoolean()) {
+        aTotal += B[i];
+        bTotal += A[i];
+      } else {
+        aTotal += A[i];
+        bTotal += B[i];
+      }
+    }
+    double aMean = aTotal / A.length;
+    double bMean = bTotal / B.length;
+    return Math.abs(aMean - bMean);
+  }
+
+  // PRINTING FUNCTIONS
+
+  public static String toBinaryString(byte[] b) {
+    StringBuilder s = new StringBuilder();
+    for (byte by : b) {
+      for (int j = 7; j >= 0; j--) {
+        if ((by & (1 << j)) > 0) {
+          s.append('1');
+        } else {
+          s.append('0');
+        }
+      }
+      s.append(' ');
+    }
+    return s.toString();
+  }
+
+  public static String toString(double[] a) {
+    return toString(a, null);
+  }
+
+  public static String toString(double[] a, NumberFormat nf) {
+    if (a == null) return null;
+    if (a.length == 0) return "[]";
+    StringBuilder b = new StringBuilder();
+    b.append('[');
+    for (int i = 0; i < a.length - 1; i++) {
+      String s;
+      if (nf == null) {
+        s = String.valueOf(a[i]);
+      } else {
+        s = nf.format(a[i]);
+      }
+      b.append(s);
+      b.append(", ");
+    }
+    String s;
+    if (nf == null) {
+      s = String.valueOf(a[a.length - 1]);
+    } else {
+      s = nf.format(a[a.length - 1]);
+    }
+    b.append(s);
+    b.append(']');
+    return b.toString();
+  }
+
+  public static String toString(float[] a) {
+    return toString(a, null);
+  }
+
+  public static String toString(float[] a, NumberFormat nf) {
+    if (a == null) return null;
+    if (a.length == 0) return "[]";
+    StringBuilder b = new StringBuilder();
+    b.append('[');
+    for (int i = 0; i < a.length - 1; i++) {
+      String s;
+      if (nf == null) {
+        s = String.valueOf(a[i]);
+      } else {
+        s = nf.format(a[i]);
+      }
+      b.append(s);
+      b.append(", ");
+    }
+    String s;
+    if (nf == null) {
+      s = String.valueOf(a[a.length - 1]);
+    } else {
+      s = nf.format(a[a.length - 1]);
+    }
+    b.append(s);
+    b.append(']');
+    return b.toString();
+  }
+
+  public static String toString(int[] a) {
+    return toString(a, null);
+  }
+
+  public static String toString(int[] a, NumberFormat nf) {
+    if (a == null) return null;
+    if (a.length == 0) return "[]";
+    StringBuilder b = new StringBuilder();
+    b.append('[');
+    for (int i = 0; i < a.length - 1; i++) {
+      String s;
+      if (nf == null) {
+        s = String.valueOf(a[i]);
+      } else {
+        s = nf.format(a[i]);
+      }
+      b.append(s);
+      b.append(", ");
+    }
+    String s;
+    if (nf == null) {
+      s = String.valueOf(a[a.length - 1]);
+    } else {
+      s = nf.format(a[a.length - 1]);
+    }
+    b.append(s);
+    b.append(']');
+    return b.toString();
+  }
+
+  public static String toString(byte[] a) {
+    return toString(a, null);
+  }
+
+  public static String toString(byte[] a, NumberFormat nf) {
+    if (a == null) return null;
+    if (a.length == 0) return "[]";
+    StringBuilder b = new StringBuilder();
+    b.append('[');
+    for (int i = 0; i < a.length - 1; i++) {
+      String s;
+      if (nf == null) {
+        s = String.valueOf(a[i]);
+      } else {
+        s = nf.format(a[i]);
+      }
+      b.append(s);
+      b.append(", ");
+    }
+    String s;
+    if (nf == null) {
+      s = String.valueOf(a[a.length - 1]);
+    } else {
+      s = nf.format(a[a.length - 1]);
+    }
+    b.append(s);
+    b.append(']');
+    return b.toString();
+  }
+
+  public static String toString(int[][] counts) {
+    return toString(counts, null, null, 10, 10, NumberFormat.getInstance(), false);
+  }
+
+  public static String toString(int[][] counts, Object[] rowLabels, Object[] colLabels, int labelSize, int cellSize, NumberFormat nf, boolean printTotals) {
+    // first compute row totals and column totals
+    if (counts.length==0 || counts[0].length==0) return "";
+    int[] rowTotals = new int[counts.length];
+    int[] colTotals = new int[counts[0].length]; // assume it's square
+    int total = 0;
+    for (int i = 0; i < counts.length; i++) {
+      for (int j = 0; j < counts[i].length; j++) {
+        rowTotals[i] += counts[i][j];
+        colTotals[j] += counts[i][j];
+        total += counts[i][j];
+      }
+    }
+    StringBuilder result = new StringBuilder();
+    // column labels
+    if (colLabels != null) {
+      result.append(StringUtils.padLeft("", labelSize)); // spacing for the row labels!
+      for (int j = 0; j < counts[0].length; j++) {
+        String s = (colLabels[j]==null ? "null" : colLabels[j].toString());
+        if (s.length() > cellSize - 1) {
+          s = s.substring(0, cellSize - 1);
+        }
+        s = StringUtils.padLeft(s, cellSize);
+        result.append(s);
+      }
+      if (printTotals) {
+        result.append(StringUtils.padLeftOrTrim("Total", cellSize));
+      }
+      result.append('\n');
+    }
+    for (int i = 0; i < counts.length; i++) {
+      // row label
+      if (rowLabels != null) {
+        String s = (rowLabels[i]==null ? "null" : rowLabels[i].toString());
+        s = StringUtils.padOrTrim(s, labelSize); // left align this guy only
+        result.append(s);
+      }
+      // value
+      for (int j = 0; j < counts[i].length; j++) {
+        result.append(StringUtils.padLeft(nf.format(counts[i][j]), cellSize));
+      }
+      // the row total
+      if (printTotals) {
+        result.append(StringUtils.padLeft(nf.format(rowTotals[i]), cellSize));
+      }
+      result.append('\n');
+    }
+    // the col totals
+    if (printTotals) {
+      result.append(StringUtils.pad("Total", labelSize));
+      for (int colTotal : colTotals) {
+        result.append(StringUtils.padLeft(nf.format(colTotal), cellSize));
+      }
+      result.append(StringUtils.padLeft(nf.format(total), cellSize));
+    }
+    return result.toString();
+  }
+
+
+  public static String toString(double[][] counts) {
+    return toString(counts, 10, null, null, NumberFormat.getInstance(), false);
+  }
+
+  public static String toString(double[][] counts, int cellSize, Object[] rowLabels, Object[] colLabels, NumberFormat nf, boolean printTotals) {
+    if (counts==null) return null;
+    // first compute row totals and column totals
+    double[] rowTotals = new double[counts.length];
+    double[] colTotals = new double[counts[0].length]; // assume it's square
+    double total = 0.0;
+    for (int i = 0; i < counts.length; i++) {
+      for (int j = 0; j < counts[i].length; j++) {
+        rowTotals[i] += counts[i][j];
+        colTotals[j] += counts[i][j];
+        total += counts[i][j];
+      }
+    }
+    StringBuilder result = new StringBuilder();
+    // column labels
+    if (colLabels != null) {
+      result.append(StringUtils.padLeft("", cellSize));
+      for (int j = 0; j < counts[0].length; j++) {
+        String s = colLabels[j].toString();
+        if (s.length() > cellSize - 1) {
+          s = s.substring(0, cellSize - 1);
+        }
+        s = StringUtils.padLeft(s, cellSize);
+        result.append(s);
+      }
+      if (printTotals) {
+        result.append(StringUtils.padLeftOrTrim("Total", cellSize));
+      }
+      result.append('\n');
+    }
+    for (int i = 0; i < counts.length; i++) {
+      // row label
+      if (rowLabels != null) {
+        String s = rowLabels[i].toString();
+        s = StringUtils.padOrTrim(s, cellSize); // left align this guy only
+        result.append(s);
+      }
+      // value
+      for (int j = 0; j < counts[i].length; j++) {
+        result.append(StringUtils.padLeft(nf.format(counts[i][j]), cellSize));
+      }
+      // the row total
+      if (printTotals) {
+        result.append(StringUtils.padLeft(nf.format(rowTotals[i]), cellSize));
+      }
+      result.append('\n');
+    }
+    // the col totals
+    if (printTotals) {
+      result.append(StringUtils.pad("Total", cellSize));
+      for (double colTotal : colTotals) {
+        result.append(StringUtils.padLeft(nf.format(colTotal), cellSize));
+      }
+      result.append(StringUtils.padLeft(nf.format(total), cellSize));
+    }
+    return result.toString();
+  }
+
+  public static String toString(float[][] counts) {
+    return toString(counts, 10, null, null, NumberFormat.getIntegerInstance(), false);
+  }
+
+  public static String toString(float[][] counts, int cellSize, Object[] rowLabels, Object[] colLabels, NumberFormat nf, boolean printTotals) {
+    // first compute row totals and column totals
+    double[] rowTotals = new double[counts.length];
+    double[] colTotals = new double[counts[0].length]; // assume it's square
+    double total = 0.0;
+    for (int i = 0; i < counts.length; i++) {
+      for (int j = 0; j < counts[i].length; j++) {
+        rowTotals[i] += counts[i][j];
+        colTotals[j] += counts[i][j];
+        total += counts[i][j];
+      }
+    }
+    StringBuilder result = new StringBuilder();
+    // column labels
+    if (colLabels != null) {
+      result.append(StringUtils.padLeft("", cellSize));
+      for (int j = 0; j < counts[0].length; j++) {
+        String s = colLabels[j].toString();
+        s = StringUtils.padLeftOrTrim(s, cellSize);
+        result.append(s);
+      }
+      if (printTotals) {
+        result.append(StringUtils.padLeftOrTrim("Total", cellSize));
+      }
+      result.append('\n');
+    }
+    for (int i = 0; i < counts.length; i++) {
+      // row label
+      if (rowLabels != null) {
+        String s = rowLabels[i].toString();
+        s = StringUtils.pad(s, cellSize); // left align this guy only
+        result.append(s);
+      }
+      // value
+      for (int j = 0; j < counts[i].length; j++) {
+        result.append(StringUtils.padLeft(nf.format(counts[i][j]), cellSize));
+      }
+      // the row total
+      if (printTotals) {
+        result.append(StringUtils.padLeft(nf.format(rowTotals[i]), cellSize));
+      }
+      result.append('\n');
+    }
+    // the col totals
+    if (printTotals) {
+      result.append(StringUtils.pad("Total", cellSize));
+      for (double colTotal : colTotals) {
+        result.append(StringUtils.padLeft(nf.format(colTotal), cellSize));
+      }
+      result.append(StringUtils.padLeft(nf.format(total), cellSize));
+    }
+    return result.toString();
+  }
+

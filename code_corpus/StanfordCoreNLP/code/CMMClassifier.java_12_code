@@ -1,0 +1,30 @@
+  public void retrain(ObjectBank<List<IN>> featureLabels, Index<String> featureIndex, Index<String> labelIndex) {
+    int fs = featureIndex.size(); // old dim
+    int ls = labelIndex.size();   // old dim
+
+    Dataset<String, String> adapt = getDataset(featureLabels, featureIndex, labelIndex);
+
+    int prior = LogPrior.LogPriorType.QUADRATIC.ordinal();
+    LinearClassifier<String, String> lc = (LinearClassifier<String, String>) classifier;
+    LinearClassifierFactory<String, String> lcf = new LinearClassifierFactory<String, String>(flags.tolerance, flags.useSum, prior, flags.sigma, flags.epsilon, flags.QNsize);
+
+    double[][] weights = lc.weights();  // old dim
+    Index<String> newF = adapt.featureIndex;
+    Index<String> newL = adapt.labelIndex;
+    int newFS = newF.size();
+    int newLS = newL.size();
+    //System.err.println("old  ["+fs+"]"+"["+ls+"]");
+    //System.err.println("new  ["+newFS+"]"+"["+newLS+"]");
+    for (int i = 0; i < fs; i++) {
+      for (int j = 0; j < ls; j++) {
+        String f = featureIndex.get(i);
+        String l = labelIndex.get(j);
+        x[newi] = weights[i][j];
+        //System.err.println("What??"+i+"\t"+j);
+        //}
+      }
+    }
+    weights = lcf.trainWeights(adapt, x);
+    //System.err.println("weights[144745]"+"[0]="+weights[144745][0]);
+
+    lc.setWeights(weights);

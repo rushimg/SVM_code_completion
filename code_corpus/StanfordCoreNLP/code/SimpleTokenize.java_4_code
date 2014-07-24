@@ -1,0 +1,45 @@
+  public static ArrayList<String> tokenizeWithQuotes(String line) {
+    ArrayList<String> tokens = new ArrayList<String>();
+    int position = 0;
+
+    while ((position = findNonWhitespace(line, position)) != -1) {
+      int end = -1;
+
+      // found quoted token (not preceded by \)
+      if (line.charAt(position) == '\"' && (position == 0 || line.charAt(position - 1) != '\\')) {
+
+        // find the first quote not preceded by \
+        int current = position;
+        for (;;) {
+          // found end of string first
+          if ((end = line.indexOf('\"', current + 1)) == -1) {
+            end = line.length();
+            break;
+          } else { // found a quote
+            if (line.charAt(end - 1) != '\\') { // valid quote
+              end++;
+              break;
+            } else { // quote preceded by \
+              current = end;
+            }
+          }
+        }
+
+        // do not include the quotes in the token
+        tokens.add(normalizeQuotes(line.substring(position + 1, end - 1)));
+      }
+
+      // regular token
+      else {
+        if ((end = findWhitespace(line, position + 1)) == -1)
+          end = line.length();
+
+        tokens.add(new String(line.substring(position, end)));
+      }
+
+      position = end;
+    }
+
+    return tokens;
+  }
+

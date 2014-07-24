@@ -1,0 +1,38 @@
+  static class ConjEndState extends State {
+
+    private final ConjStartState startState;
+    private final int childIndex;
+
+    public ConjEndState(ConjStartState startState, int childIndex)
+    {
+      this.startState = startState;
+      this.childIndex = childIndex;
+    }
+
+    @Override
+    protected <T> boolean match(int bid, SequenceMatcher.MatchedStates<T> matchedStates, boolean consume, State prevState)
+    {
+      // Opposite of ConjStartState
+      // Don't do anything when we are about to consume an element
+      // Only we are done consuming, and preparing to go on to the next element
+      // do we check if all branches matched
+      if (consume) {
+        return false;
+      } else {
+        // NOTE: There is a delayed matched here, in that we actually want to remember
+        //  which of the incoming branches succeeded
+        // Use the bid of the corresponding ConjAndState?
+        ConjMatchStateInfo stateInfo = (ConjMatchStateInfo) matchedStates.getBranchStates().getMatchStateInfo(bid, startState);
+        if (stateInfo != null) {
+          stateInfo.addChildBid(childIndex, bid, matchedStates.curPosition);
+          int[] matchedBids = stateInfo.getAllChildMatchedBids(childIndex, bid, matchedStates.curPosition);
+          if (matchedBids != null) {
+            matchedStates.getBranchStates().addBidsToCollapse(bid, matchedBids);
+            return super.match(bid, matchedStates, consume, prevState);
+          }
+        }
+        return false;
+      }
+    }
+  }
+

@@ -1,0 +1,85 @@
+  public static class Arc<NODE, IN, OUT> {
+
+    private NODE sourceNode;
+    private NODE targetNode;
+    private IN input;
+    private OUT output;
+
+    public NODE getSourceNode() {
+      return sourceNode;
+    }
+
+    public NODE getTargetNode() {
+      return targetNode;
+    }
+
+    public IN getInput() {
+      return input;
+    }
+
+    public OUT getOutput() {
+      return output;
+    }
+
+    public void setSourceNode(NODE o) {
+      sourceNode = o;
+    }
+
+    public void setTargetNode(NODE o) {
+      targetNode = o;
+    }
+
+    public void setInput(IN o) {
+      input = o;
+    }
+
+    public void setOutput(OUT o) {
+      output = o;
+    }
+
+    @Override
+    public int hashCode() {
+      return sourceNode.hashCode() ^ (targetNode.hashCode() << 16) ^ (input.hashCode() << 16);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (o == this) {
+        return true;
+      }
+      if (!(o instanceof Arc)) {
+        return false;
+      }
+      Arc a = (Arc) o;
+      return ((sourceNode == null ? a.sourceNode == null : sourceNode.equals(a.sourceNode)) && (targetNode == null ? a.targetNode == null : targetNode.equals(a.targetNode)) && (input == null ? a.input == null : input.equals(a.input)));
+    }
+
+    // makes a copy of Arc a
+    protected Arc(Arc<NODE,IN,OUT> a) {
+      this(a.getSourceNode(), a.getTargetNode(), a.getInput(), a.getOutput());
+    }
+
+    protected Arc(NODE sourceNode, NODE targetNode) {
+      this(sourceNode, targetNode, null, null);
+    }
+
+    protected Arc(NODE sourceNode, NODE targetNode, IN input) {
+      this(sourceNode, targetNode, input, null);
+    }
+
+    protected Arc(NODE sourceNode, NODE targetNode, IN input, OUT output) {
+      this.sourceNode = sourceNode;
+      this.targetNode = targetNode;
+      this.input = input;
+      this.output = output;
+    }
+
+    @Override
+    public String toString() {
+      return sourceNode + " --> " + targetNode + " (" + input + " : " + output + ")";
+    }
+
+  } // end static class Arc
+
+
+  public static interface ArcProcessor {

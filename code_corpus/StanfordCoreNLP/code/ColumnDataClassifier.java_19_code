@@ -1,0 +1,41 @@
+        String classifierDesc = c.topFeaturesToString(topFeatures);
+        System.err.println("Printing top " + globalFlags.limitFeatures + " features with weights above "
+                + globalFlags.featureWeightThreshold);
+        if (globalFlags.limitFeaturesLabels != null) {
+          System.err.println("  Limited to labels: " + globalFlags.limitFeaturesLabels);
+        }
+        System.err.println(classifierDesc);
+      } catch (RuntimeException ex) {
+        if (ex.getMessage() != null && ex.getMessage().startsWith("L-BFGS chose a non-descent direction")) {
+          System.err.println("Error in optimization, will try again with different l1reg");
+          ex.printStackTrace(System.err);
+        } else {
+          throw ex;
+        }
+      }
+      if (featureCount < 0 || featureCount < globalFlags.limitFeatures - limitFeatureTol) {
+        // Too few features or some other bad thing happened => decrease l1reg
+        l1regtop = l1reg;
+        if (l1regtop - l1reg < l1regminchange) {
+          System.err.println("Stopping: old l1reg  " + l1regtop + "- new l1reg " + l1reg
+                  + ", difference less than " + l1regminchange);
+          break;
+        }
+      } else if (featureCount > globalFlags.limitFeatures + limitFeatureTol) {
+        // Too many features => increase l1reg
+        l1regbottom = l1reg;
+        if (l1reg - l1regbottom < l1regminchange) {
+          System.err.println("Stopping: new l1reg  " + l1reg + "- old l1reg " + l1regbottom
+                  + ", difference less than " + l1regminchange);
+          break;
+        }
+      } else {
+        System.err.println("Stopping: # of features within " + limitFeatureTol + " of target");
+        break;
+      }
+    }
+    // Update flags for later serialization
+    globalFlags.l1reg = l1reg;
+    return lc;
+  }
+

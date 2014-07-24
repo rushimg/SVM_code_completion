@@ -1,0 +1,21 @@
+  public TokenizerME(TokenizerModel model, Factory factory) {
+    String languageCode = model.getLanguage();
+
+    this.alphanumeric = factory.getAlphanumeric(languageCode);
+    this.cg = factory.createTokenContextGenerator(languageCode,
+        getAbbreviations(model.getAbbreviations()));
+
+    this.model = model.getMaxentModel();
+    useAlphaNumericOptimization = model.useAlphaNumericOptimization();
+
+    newTokens = new ArrayList<Span>();
+    tokProbs = new ArrayList<Double>(50);
+  }
+
+  private static Set<String> getAbbreviations(Dictionary abbreviations) {
+    if(abbreviations == null) {
+      return Collections.<String>emptySet();
+    }
+    return abbreviations.asStringSet();
+  }
+

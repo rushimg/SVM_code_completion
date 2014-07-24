@@ -1,0 +1,17 @@
+  private static <E extends CoreMap> String timeEntityToString(List<E> l) {
+    String entityType = l.get(0).get(CoreAnnotations.AnswerAnnotation.class);
+    int size = l.size();
+    for (E w : l) {
+      assert(w.get(CoreAnnotations.AnswerAnnotation.class) == null ||
+          w.get(CoreAnnotations.AnswerAnnotation.class).equals(entityType));
+      Matcher m = timePattern.matcher(w.get(CoreAnnotations.TextAnnotation.class));
+      if (m.matches())
+        return w.get(CoreAnnotations.TextAnnotation.class);
+    }
+    if (DEBUG) {
+      System.err.println("default: " + l.get(size-1).get(CoreAnnotations.TextAnnotation.class));
+    }
+    return l.get(size-1).get(CoreAnnotations.TextAnnotation.class);
+  }
+
+

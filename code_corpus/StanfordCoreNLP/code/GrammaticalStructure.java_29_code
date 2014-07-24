@@ -1,0 +1,94 @@
+  public static void printDependencies(GrammaticalStructure gs, Collection<TypedDependency> deps, Tree tree, boolean conllx, boolean extraSep) {
+    System.out.println(dependenciesToString(gs, deps, tree, conllx, extraSep));
+  }
+
+  public static String dependenciesToString(GrammaticalStructure gs, Collection<TypedDependency> deps, Tree tree, boolean conllx, boolean extraSep) {
+    StringBuilder bf = new StringBuilder();
+
+    Map<Integer, Integer> indexToPos = Generics.newHashMap();
+    indexToPos.put(0,0); // to deal with the special node "ROOT"
+    List<Tree> gsLeaves = gs.root.getLeaves();
+    for (int i = 0; i < gsLeaves.size(); i++) {
+      TreeGraphNode leaf = (TreeGraphNode) gsLeaves.get(i);
+      indexToPos.put(leaf.label.index(), i + 1);
+    }
+
+    if (conllx) {
+      List<Tree> leaves = tree.getLeaves();
+      String[] words = new String[leaves.size()];
+      String[] pos = new String[leaves.size()];
+      String[] relns = new String[leaves.size()];
+      int[] govs = new int[leaves.size()];
+
+      int index = 0;
+      for (Tree leaf : leaves) {
+        index++;
+        if (!indexToPos.containsKey(index)) {
+          continue;
+        }
+        int depPos = indexToPos.get(index) - 1;
+        words[depPos] = leaf.value();
+        pos[depPos] = leaf.parent(tree).value(); // use slow, but safe, parent look up
+      }
+
+      for (TypedDependency dep : deps) {
+        int depPos = indexToPos.get(dep.dep().index()) - 1;
+        govs[depPos] = indexToPos.get(dep.gov().index());
+        relns[depPos] = dep.reln().toString();
+      }
+
+      for (int i = 0; i < relns.length; i++) {
+        if (words[i] == null) {
+          continue;
+        }
+        String out = String.format("%d\t%s\t_\t%s\t%s\t_\t%d\t%s\t_\t_\n", i + 1, words[i], pos[i], pos[i], govs[i], (relns[i] != null ? relns[i] : "erased"));
+        bf.append(out);
+      }
+
+    } else {
+      if (extraSep) {
+        List<TypedDependency> extraDeps = new ArrayList<TypedDependency>();
+        for (TypedDependency dep : deps) {
+          if (dep.extra()) {
+            extraDeps.add(dep);
+          } else {
+            bf.append(toStringIndex(dep, indexToPos));
+            bf.append("\n");
+          }
+        }
+        // now we print the separator for extra dependencies, and print these if
+        // there are some
+        if (!extraDeps.isEmpty()) {
+          bf.append("======\n");
+          for (TypedDependency dep : extraDeps) {
+            bf.append(toStringIndex(dep, indexToPos));
+            bf.append("\n");
+          }
+        }
+      } else {
+        for (TypedDependency dep : deps) {
+          bf.append(toStringIndex(dep, indexToPos));
+          bf.append("\n");
+        }
+      }
+    }
+
+    return bf.toString();
+  }
+
+  private static String toStringIndex(TypedDependency td, Map<Integer, Integer> indexToPos) {
+    TreeGraphNode gov = td.gov();
+    TreeGraphNode dep = td.dep();
+    return td.reln() + "(" + gov.value() + "-" + indexToPos.get(gov.index()) + gov.toPrimes() + ", " + dep.value() + "-" + indexToPos.get(dep.index()) + dep.toPrimes() + ")";
+  }
+
+
+  // Note that these field constants are 0-based whereas much documentation is 1-based
+
+  public static final int CoNLLX_WordField = 1;
+  public static final int CoNLLX_POSField = 3;
+  public static final int CoNLLX_GovField = 6;
+  public static final int CoNLLX_RelnField = 7;
+
+  public static final int CoNLLX_FieldCount = 10;
+

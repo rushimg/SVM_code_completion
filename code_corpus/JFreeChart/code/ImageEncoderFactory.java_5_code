@@ -1,0 +1,17 @@
+    public static ImageEncoder newInstance(String format) {
+        ImageEncoder imageEncoder = null;
+        String className = (String) encoders.get(format);
+        if (className == null) {
+            throw new IllegalArgumentException("Unsupported image format - "
+                    + format);
+        }
+        try {
+            Class imageEncoderClass = Class.forName(className);
+            imageEncoder = (ImageEncoder) imageEncoderClass.newInstance();
+        }
+        catch (Exception e) {
+            throw new IllegalArgumentException(e.toString());
+        }
+        return imageEncoder;
+    }
+

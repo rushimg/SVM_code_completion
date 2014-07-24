@@ -1,0 +1,83 @@
+  protected Counter<String> typeProbabilities;
+
+  public ExtractionObject(String objectId, 
+      CoreMap sentence,
+      Span span,
+      String type,
+      String subtype) {
+    this.objectId = objectId;
+    this.sentence = sentence;
+    this.extentTokenSpan = span;
+    this.type = type.intern();
+    this.subType = (subtype != null ? subtype.intern() : null);
+    this.attributeMap = null;
+  }
+
+  public String getObjectId() {
+    return objectId;
+  }
+
+  public String getDocumentId() {
+    return sentence.get(CoreAnnotations.DocIDAnnotation.class);
+  }
+  
+  public CoreMap getSentence() {
+    return sentence;
+  }
+  
+  public void setSentence(CoreMap sent) {
+  	this.sentence = sent;
+  }
+  
+  public int getExtentTokenStart() { return extentTokenSpan.start(); }
+
+  public int getExtentTokenEnd() { return extentTokenSpan.end(); }
+  
+  public Span getExtent() { return extentTokenSpan; }
+  
+  public void setExtent(Span s) {
+    extentTokenSpan = s;
+  }
+  
+  public String getExtentString() {
+    List<CoreLabel> tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
+    StringBuilder sb = new StringBuilder();
+    for (int i = extentTokenSpan.start(); i < extentTokenSpan.end(); i ++){
+      CoreLabel token = tokens.get(i);
+      if(i > extentTokenSpan.start()) sb.append(" ");
+      sb.append(token.word());
+    }
+    return sb.toString();
+  }
+  
+  public String getType() { return type; }
+  
+  public String getSubType() { return subType; }
+  
+  @Override
+  public boolean equals(Object other) {
+    if(! (other instanceof ExtractionObject)) return false;
+    ExtractionObject o = (ExtractionObject) other;
+    return o.objectId.equals(objectId) && o.sentence.get(CoreAnnotations.TextAnnotation.class).equals(sentence.get(CoreAnnotations.TextAnnotation.class));
+  }
+
+  static class CompByExtent implements Comparator<ExtractionObject> {
+    public int compare(ExtractionObject o1, ExtractionObject o2) {
+      if(o1.getExtentTokenStart() < o2.getExtentTokenStart()){
+        return -1;
+      } else if(o1.getExtentTokenStart() > o2.getExtentTokenStart()){
+        return 1;
+      } else if(o1.getExtentTokenEnd() < o2.getExtentTokenEnd()) {
+        return -1;
+      } else if(o1.getExtentTokenEnd() > o2.getExtentTokenEnd()) {
+        return 1;
+      } else {
+        return 0;
+      }
+    }
+  }
+  
+  public static void sortByExtent(List<ExtractionObject> objects) {
+    Collections.sort(objects, new CompByExtent());
+  }
+  

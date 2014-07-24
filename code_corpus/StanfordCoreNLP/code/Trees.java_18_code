@@ -1,0 +1,26 @@
+  public static Tree getLowestCommonAncestor(List<Tree> nodes, Tree root) {
+    List<List<Tree>> paths = new ArrayList<List<Tree>>();
+    int min = Integer.MAX_VALUE;
+    for (Tree t : nodes) {
+      List<Tree> path = pathFromRoot(t, root);
+      if (path == null) return null;
+      min = Math.min(min, path.size());
+      paths.add(path);
+    }
+    Tree commonAncestor = null;
+    for (int i = 0; i < min; ++i) {
+      Tree ancestor = paths.get(0).get(i);
+      boolean quit = false;
+      for (List<Tree> path : paths) {
+        if (!path.get(i).equals(ancestor)) {
+          quit = true;
+          break;
+        }
+      }
+      if (quit) break;
+      commonAncestor = ancestor;
+    }
+    return commonAncestor;
+  }
+
+

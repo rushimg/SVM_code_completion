@@ -1,0 +1,16 @@
+  public RedwoodConfiguration output(final String method) {
+    if (method.equalsIgnoreCase("stdout") || method.equalsIgnoreCase("out")){
+      edu.stanford.nlp.util.logging.JavaUtilLoggingAdaptor.adapt();
+      this.outputHandler = Redwood.ConsoleHandler.out();
+    } else if (method.equalsIgnoreCase("stderr") || method.equalsIgnoreCase("err")) {
+        edu.stanford.nlp.util.logging.JavaUtilLoggingAdaptor.adapt();
+        this.outputHandler = Redwood.ConsoleHandler.err();
+    } else if (method.equalsIgnoreCase("java.util.logging")){
+      edu.stanford.nlp.util.logging.JavaUtilLoggingAdaptor.adapt();
+      this.outputHandler = RedirectOutputHandler.fromJavaUtilLogging(Logger.getLogger("``error``"));
+    } else {
+      throw new IllegalArgumentException("Unknown value for log.method");
+    }
+    return this;
+  }
+

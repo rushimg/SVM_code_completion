@@ -1,0 +1,26 @@
+  protected Collection<String> featuresCnC(PaddedList<? extends CoreLabel> cInfo, int loc) {
+    Collection<String> features = new ArrayList<String>();
+    if (flags.useWordn) {
+      CoreLabel c = cInfo.get(loc);
+      CoreLabel c2 = cInfo.get(loc + 1);
+      CoreLabel p = cInfo.get(loc - 1);
+      CoreLabel p2 = cInfo.get(loc - 2);
+      String charc = c.getString(CoreAnnotations.CharAnnotation.class);
+      String charc2 = c2.getString(CoreAnnotations.CharAnnotation.class);
+      String charp = p.getString(CoreAnnotations.CharAnnotation.class);
+      String charp2 = p2.getString(CoreAnnotations.CharAnnotation.class);
+
+      features.add(charc +"c");
+      features.add(charc2+"c2");
+      features.add(charp +"p");
+      features.add(charp2 + "p2");
+      features.add(charp2 + charp  +"p2p");
+      features.add(charp + charc  +"pc");
+      features.add(charc + charc2  +"cc2");
+      features.add(charp + "-" + charc2 + "pc2");
+      features.add("cliqueCnC");
+    }
+    return features;
+  } //end of CnC
+
+

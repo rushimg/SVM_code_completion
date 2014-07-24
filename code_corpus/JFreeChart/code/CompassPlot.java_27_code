@@ -1,0 +1,117 @@
+    public void draw(Graphics2D g2, Rectangle2D area, Point2D anchor,
+                     PlotState parentState,
+                     PlotRenderingInfo info) {
+
+        int outerRadius = 0;
+        int innerRadius = 0;
+        int x1, y1, x2, y2;
+        double a;
+
+        if (info != null) {
+            info.setPlotArea(area);
+        }
+
+        // adjust for insets...
+        RectangleInsets insets = getInsets();
+        insets.trim(area);
+
+        // draw the background
+        if (this.drawBorder) {
+            drawBackground(g2, area);
+        }
+
+        int midX = (int) (area.getWidth() / 2);
+        int midY = (int) (area.getHeight() / 2);
+        int radius = midX;
+        if (midY < midX) {
+            radius = midY;
+        }
+        --radius;
+
+        midX += (int) area.getMinX();
+        midY += (int) area.getMinY();
+
+        this.circle1.setFrame(midX - radius, midY - radius, diameter, diameter);
+        this.circle2.setFrame(
+            midX - radius + 15, midY - radius + 15,
+            diameter - 30, diameter - 30
+        );
+        g2.setPaint(this.rosePaint);
+        this.a1 = new Area(this.circle1);
+        this.a2 = new Area(this.circle2);
+        this.a1.subtract(this.a2);
+        g2.fill(this.a1);
+
+        g2.setPaint(this.roseCenterPaint);
+        x1 = diameter - 30;
+        g2.fillOval(midX - radius + 15, midY - radius + 15, x1, x1);
+        g2.setPaint(this.roseHighlightPaint);
+        g2.drawOval(midX - radius, midY - radius, diameter, diameter);
+        x1 = diameter - 20;
+        g2.drawOval(midX - radius + 10, midY - radius + 10, x1, x1);
+        x1 = diameter - 30;
+        g2.drawOval(midX - radius + 15, midY - radius + 15, x1, x1);
+        x1 = diameter - 80;
+        g2.drawOval(midX - radius + 40, midY - radius + 40, x1, x1);
+
+        outerRadius = radius - 20;
+        innerRadius = radius - 32;
+        for (int w = 0; w < 360; w += 15) {
+            a = Math.toRadians(w);
+            g2.drawLine(x1, y1, x2, y2);
+        }
+
+        g2.setPaint(this.roseHighlightPaint);
+        innerRadius = radius - 26;
+        outerRadius = 7;
+        for (int w = 45; w < 360; w += 90) {
+            a = Math.toRadians(w);
+        }
+
+        /// Squares
+        for (int w = 0; w < 360; w += 90) {
+            a = Math.toRadians(w);
+
+            Polygon p = new Polygon();
+            p.addPoint(x1 - outerRadius, y1);
+            p.addPoint(x1, y1 + outerRadius);
+            p.addPoint(x1 + outerRadius, y1);
+            p.addPoint(x1, y1 - outerRadius);
+            g2.fillPolygon(p);
+        }
+
+        /// Draw N, S, E, W
+        innerRadius = radius - 42;
+        Font f = getCompassFont(radius);
+        g2.setFont(f);
+        g2.drawString("N", midX - 5, midY - innerRadius + f.getSize());
+        g2.drawString("S", midX - 5, midY + innerRadius - 5);
+        g2.drawString("W", midX - innerRadius + 5, midY + 5);
+        g2.drawString("E", midX + innerRadius - f.getSize(), midY + 5);
+
+        // plot the data (unless the dataset is null)...
+        y1 = radius / 2;
+        x1 = radius / 6;
+        Rectangle2D needleArea = new Rectangle2D.Double(
+        );
+        int x = this.seriesNeedle.length;
+        int current = 0;
+        double value = 0;
+        int i = (this.datasets.length - 1);
+        for (; i >= 0; --i) {
+            ValueDataset data = this.datasets[i];
+
+            if (data != null && data.getValue() != null) {
+                value = (data.getValue().doubleValue())
+                    % this.revolutionDistance;
+                current = i % x;
+                this.seriesNeedle[current].draw(g2, needleArea, value);
+            }
+        }
+
+        if (this.drawBorder) {
+            drawOutline(g2, area);
+        }
+
+    }
+

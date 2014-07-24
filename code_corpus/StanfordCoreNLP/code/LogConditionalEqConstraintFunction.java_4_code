@@ -1,0 +1,37 @@
+  protected Index<IntTuple> createIndex() {
+    Index<IntTuple> index = new HashIndex<IntTuple>();
+    for (int c = 0; c < numClasses; c++) {
+      index.add(new IntUni(c));
+      for (int f = 0; f < numFeatures; f++) {
+        for (int val = 0; val < numValues[f]; val++) {
+          index.add(new IntTriple(c, f, val));
+        }
+      }
+    }
+
+    return index;
+  }
+
+  public double[][][] to3D(double[] x1) {
+    double[] x = normalize(x1);
+    double[][][] x2 = new double[numClasses][numFeatures][];
+    for (int c = 0; c < numClasses; c++) {
+      for (int f = 0; f < numFeatures; f++) {
+        x2[c][f] = new double[numValues[f]];
+        for (int val = 0; val < numValues[f]; val++) {
+          x2[c][f][val] = x[indexOf(f, c, val)];
+        }
+      }
+    }
+    return x2;
+  }
+
+  public double[] priors(double[] x1) {
+    double[] x = normalize(x1);
+    double[] x2 = new double[numClasses];
+    for (int c = 0; c < numClasses; c++) {
+      x2[c] = x[indexOf(c)];
+    }
+    return x2;
+  }
+

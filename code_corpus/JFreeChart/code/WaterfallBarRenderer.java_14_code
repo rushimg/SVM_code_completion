@@ -1,0 +1,126 @@
+    public void drawItem(Graphics2D g2,
+                         CategoryItemRendererState state,
+                         Rectangle2D dataArea,
+                         CategoryPlot plot,
+                         CategoryAxis domainAxis,
+                         ValueAxis rangeAxis,
+                         CategoryDataset dataset,
+                         int row,
+                         int column,
+                         int pass) {
+
+        double previous = state.getSeriesRunningTotal();
+        if (column == dataset.getColumnCount() - 1) {
+            previous = 0.0;
+        }
+        double current = 0.0;
+        Number n = dataset.getValue(row, column);
+        if (n != null) {
+            current = previous + n.doubleValue();
+        }
+        state.setSeriesRunningTotal(current);
+
+        int categoryCount = getColumnCount();
+        PlotOrientation orientation = plot.getOrientation();
+
+        double rectX = 0.0;
+        double rectY = 0.0;
+
+        RectangleEdge rangeAxisLocation = plot.getRangeAxisEdge();
+
+        // Y0
+        double j2dy0 = rangeAxis.valueToJava2D(previous, dataArea,
+                rangeAxisLocation);
+
+        // Y1
+        double j2dy1 = rangeAxis.valueToJava2D(current, dataArea,
+                rangeAxisLocation);
+
+        double valDiff = current - previous;
+        if (j2dy1 < j2dy0) {
+            double temp = j2dy1;
+            j2dy1 = j2dy0;
+            j2dy0 = temp;
+        }
+
+        // BAR WIDTH
+        double rectWidth = state.getBarWidth();
+
+        // BAR HEIGHT
+        double rectHeight = Math.max(getMinimumBarLength(),
+                Math.abs(j2dy1 - j2dy0));
+
+        Comparable seriesKey = dataset.getRowKey(row);
+        Comparable categoryKey = dataset.getColumnKey(column);
+        if (orientation == PlotOrientation.HORIZONTAL) {
+            rectY = domainAxis.getCategorySeriesMiddle(categoryKey, seriesKey,
+                    dataset, getItemMargin(), dataArea, RectangleEdge.LEFT);
+
+            rectX = j2dy0;
+            rectHeight = state.getBarWidth();
+            rectY = rectY - rectHeight / 2.0;
+            rectWidth = Math.max(getMinimumBarLength(),
+                    Math.abs(j2dy1 - j2dy0));
+
+        }
+        else if (orientation == PlotOrientation.VERTICAL) {
+            rectX = domainAxis.getCategorySeriesMiddle(categoryKey, seriesKey,
+                    dataset, getItemMargin(), dataArea, RectangleEdge.TOP);
+            rectX = rectX - rectWidth / 2.0;
+            rectY = j2dy0;
+        }
+        Rectangle2D bar = new Rectangle2D.Double(rectX, rectY, rectWidth,
+                rectHeight);
+        Paint seriesPaint = getFirstBarPaint();
+        if (column == 0) {
+            seriesPaint = getFirstBarPaint();
+        }
+        else if (column == categoryCount - 1) {
+            seriesPaint = getLastBarPaint();
+        }
+        else {
+            if (valDiff < 0.0) {
+                seriesPaint = getNegativeBarPaint();
+            }
+            else if (valDiff > 0.0) {
+                seriesPaint = getPositiveBarPaint();
+            }
+            else {
+                seriesPaint = getLastBarPaint();
+            }
+        }
+        if (getGradientPaintTransformer() != null
+                && seriesPaint instanceof GradientPaint) {
+            GradientPaint gp = (GradientPaint) seriesPaint;
+            seriesPaint = getGradientPaintTransformer().transform(gp, bar);
+        }
+        g2.setPaint(seriesPaint);
+        g2.fill(bar);
+
+        // draw the outline...
+        if (isDrawBarOutline()
+                && state.getBarWidth() > BAR_OUTLINE_WIDTH_THRESHOLD) {
+            Stroke stroke = getItemOutlineStroke(row, column);
+            Paint paint = getItemOutlinePaint(row, column);
+            if (stroke != null && paint != null) {
+                g2.setStroke(stroke);
+                g2.setPaint(paint);
+                g2.draw(bar);
+            }
+        }
+
+        CategoryItemLabelGenerator generator
+            = getItemLabelGenerator(row, column);
+        if (generator != null && isItemLabelVisible(row, column)) {
+            drawItemLabel(g2, dataset, row, column, plot, generator, bar,
+                    (valDiff < 0.0));
+        }
+
+        // add an item entity, if this information is being collected
+        EntityCollection entities = state.getEntityCollection();
+        if (entities != null) {
+            addItemEntity(entities, dataset, row, column, bar);
+        }
+
+    }
+

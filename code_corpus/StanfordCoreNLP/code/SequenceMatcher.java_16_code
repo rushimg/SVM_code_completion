@@ -1,0 +1,24 @@
+  private boolean findNextNonOverlapping()
+  {
+    if (nextMatchStart < 0) { return false; }
+    return find(nextMatchStart, false);
+  }
+
+  private boolean findNextAll()
+  {
+    if (curMatchIter != null && curMatchIter.hasNext()) {
+      int next = curMatchIter.next();
+      curMatchStates.setMatchedGroups(next);
+      return true;
+    }
+    if (nextMatchStart < 0) { return false; }
+    boolean matched = find(nextMatchStart, false);
+    if (matched) {
+      Collection<Integer> matchedBranches = curMatchStates.getMatchIndices();
+      curMatchIter = matchedBranches.iterator();
+      int next = curMatchIter.next();
+      curMatchStates.setMatchedGroups(next);
+    }
+    return matched;
+  }
+

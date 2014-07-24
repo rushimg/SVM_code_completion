@@ -1,0 +1,120 @@
+  public Score score(List<Collection<TypedDependency>> system) {
+    int parserCnt = 0;
+    int goldCnt = 0;
+    int parserUnlabeledCnt = 0;
+    int goldUnlabeledCnt = 0;
+    int correctAttachment = 0;
+    int correctUnlabeledAttachment = 0;
+    int labelCnt = 0;
+    int labelCorrect = 0;
+
+    ClassicCounter<String> unlabeledErrorCounts = new ClassicCounter<String>();
+    ClassicCounter<String> labeledErrorCounts = new ClassicCounter<String>();
+    //System.out.println("Gold size: "+ goldDeps.size() + " System size: "+system.size());
+    for (int i = 0; i < system.size(); i++) {
+      List<Set<TypedDependency>> l = toSets(system.get(i));
+      if (ignorePunc) {
+        removeHeadsAssignedToPunc(l.get(0));
+        removeHeadsAssignedToPunc(l.get(1));
+      }
+
+      parserCnt += l.get(0).size();
+      goldCnt += goldDeps.get(i).size();
+
+      parserUnlabeledCnt += l.get(1).size();
+      goldUnlabeledCnt += goldDepsUnlabeled.get(i).size();
+
+      l.get(0).retainAll(goldDeps.get(i));
+      l.get(1).retainAll(goldDepsUnlabeled.get(i));
+      correctAttachment += l.get(0).size();
+      correctUnlabeledAttachment += l.get(1).size();
+      labelCnt += l.get(1).size();
+      labelCorrect += l.get(0).size();
+      //System.out.println(""+i+" Acc: "+(l.get(0).size())/(double)localCnt+" "+l.get(0).size()+"/"+localCnt);
+
+
+      // identify errors
+      List<Set<TypedDependency>> errl = toSets(system.get(i));
+      errl.get(0).removeAll(goldDeps.get(i));
+      errl.get(1).removeAll(goldDepsUnlabeled.get(i));
+      Map<String,String> childCorrectWithLabel = Generics.newHashMap();
+      Map<String,String> childCorrectWithOutLabel = Generics.newHashMap();
+
+      for (TypedDependency goldDep: goldDeps.get(i)) {
+          //System.out.print(goldDep);
+          String prefixLabeled = "";
+          String prefixUnlabeled = "";
+          if (childCorrectWithLabel.containsKey(sChild)) {
+            prefixLabeled = childCorrectWithLabel.get(sChild)+", ";
+            prefixUnlabeled = childCorrectWithOutLabel.get(sChild)+", ";
+          }
+      }
+
+      for (TypedDependency labeledError: errl.get(0)) {
+          labeledErrorCounts.incrementCount(labeledError.reln().toString()+"("+sGov+", "+sChild+") <= "+childCorrectWithLabel.get(sChild));
+      }
+      for (TypedDependency unlabeledError: errl.get(1)) {
+          unlabeledErrorCounts.incrementCount("dep("+sGov+", "+sChild+") <= "+childCorrectWithOutLabel.get(sChild));
+      }
+    }
+    return new Score(parserCnt, goldCnt, parserUnlabeledCnt, goldUnlabeledCnt, correctAttachment, correctUnlabeledAttachment, labelCnt, labelCorrect, labeledErrorCounts, unlabeledErrorCounts);
+  }
+
+  public static class Score {
+    final int parserCnt;
+    final int goldCnt;
+    final int parserUnlabeledCnt;
+    final int goldUnlabeledCnt;
+    final int correctAttachment;
+    final int correctUnlabeledAttachment;
+    final int labelCnt;
+    final int labelCorrect;
+    final ClassicCounter<String> unlabeledErrorCounts;
+    final ClassicCounter<String> labeledErrorCounts;
+
+    public Score(int parserCnt, int goldCnt, int parserUnlabeledCnt, int goldUnlabeledCnt, int correctAttachment, int correctUnlabeledAttachment, int labelCnt, int labelCorrect, ClassicCounter<String> labeledErrorCounts, ClassicCounter<String> unlabeledErrorCounts) {
+      this.parserCnt = parserCnt;
+      this.goldCnt = goldCnt;
+      this.parserUnlabeledCnt = parserUnlabeledCnt;
+      this.goldUnlabeledCnt = goldUnlabeledCnt;
+      this.correctAttachment = correctAttachment;
+      this.correctUnlabeledAttachment = correctUnlabeledAttachment;
+      this.labelCnt = labelCnt;
+      this.labelCorrect = labelCorrect;
+      this.unlabeledErrorCounts = new ClassicCounter<String>(unlabeledErrorCounts);
+      this.labeledErrorCounts = new ClassicCounter<String>(labeledErrorCounts);
+    }
+
+    public String toString() {
+      return toStringFScore(false, false);
+    }
+
+    public String toStringAttachmentScore(boolean json) {
+       if (parserCnt != goldCnt) {
+         throw new RuntimeException(
+           String.format("AttachmentScore cannot be used when count(gold deps:%d) != count(system deps:%d)", parserCnt, goldCnt));
+       }
+       double las = correctAttachment/(double)goldCnt;
+       double uas = correctUnlabeledAttachment/(double)goldCnt;
+       StringBuilder sbuild = new StringBuilder();
+
+       if (json) {
+         sbuild.append("{");
+         sbuild.append(String.format("'LAS' : %.3f, ", las));
+         sbuild.append(String.format("'UAS' : %.3f, ", uas));
+         sbuild.append("}");
+       } else {
+         sbuild.append(String.format("|| Labeled Attachment Score   ||"));
+         sbuild.append(String.format(" %.3f (%d/%d) ||\n", las, correctAttachment, goldCnt));
+
+         sbuild.append(String.format("|| Unlabeled Attachment Score ||"));
+         sbuild.append(String.format(" %.3f (%d/%d) ||\n", uas, correctUnlabeledAttachment, goldCnt));
+       }
+
+       return sbuild.toString();
+    }
+
+    public String toStringFScore(boolean verbose, boolean json) {
+
+      double lp = correctAttachment/(double)parserCnt;
+      double lr = correctAttachment/(double)goldCnt;

@@ -1,0 +1,229 @@
+package edu.stanford.nlp.semgraph.semgrex;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import edu.stanford.nlp.ling.AnnotationLookup;
+import edu.stanford.nlp.ling.IndexedWord;
+import edu.stanford.nlp.semgraph.SemanticGraph;
+import edu.stanford.nlp.util.Generics;
+import edu.stanford.nlp.util.Pair;
+
+public class NodePattern extends SemgrexPattern {
+
+  private static final long serialVersionUID = -5981133879119233896L;
+  private GraphRelation reln;
+  private boolean negDesc;
+  private Map<String, Pattern> attributes;
+  private boolean isRoot;
+  private boolean isLink;
+  private boolean isEmpty;
+  private String name;
+  private String descString;
+  SemgrexPattern child;
+  // specifies the groups in a regex that are captured as
+  // matcher-global string variables
+  private List<Pair<Integer, String>> variableGroups;
+
+  public NodePattern(GraphRelation r, boolean negDesc,
+                     Map<String, String> attrs,
+                     boolean root, boolean empty, String name) {
+    this(r, negDesc, attrs, root, empty, name,
+         new ArrayList<Pair<Integer, String>>(0));
+  }
+
+  // TODO: there is no capacity for named variable groups in the
+  // parser right now
+  public NodePattern(GraphRelation r, boolean negDesc,
+                     Map<String, String> attrs,
+                     boolean root, boolean empty, String name,
+                     List<Pair<Integer, String>> variableGroups) {
+    this.reln = r;
+    this.negDesc = negDesc;
+    attributes = Generics.newHashMap();
+    descString = "{";
+    for (Map.Entry<String, String> entry : attrs.entrySet()) {
+      if (!descString.equals("{"))
+        descString += ";";
+      String key = entry.getKey();
+      String value = entry.getValue();
+      if (value.equals("__")) {
+        attributes.put(key, Pattern.compile(value.substring(1, value.length() - 1)));
+      } else { // raw description
+        attributes.put(key, Pattern.compile("^(" + value + ")$"));
+      }
+      descString += (key + ':' + value);
+    }
+    if (root)
+      descString += "$";
+    else if (empty)
+      descString += "#";
+    descString += '}';
+
+    this.name = name;
+    this.child = null;
+    this.isRoot = root;
+    this.isEmpty = empty;
+
+    this.variableGroups = variableGroups;
+  }
+
+  @SuppressWarnings("unchecked")
+  public boolean nodeAttrMatch(IndexedWord node, final SemanticGraph sg, boolean ignoreCase) {
+    // System.out.println(node.word());
+    if (isRoot)
+      return (negDesc ? !sg.getRoots().contains(node) : sg.getRoots().contains(node));
+    // System.out.println("not root");
+    if (isEmpty)
+      return (negDesc ? !node.equals(IndexedWord.NO_WORD) : node.equals(IndexedWord.NO_WORD));
+
+    // System.err.println("Attributes are: " + attributes);
+    for (Map.Entry<String, Pattern> attr : attributes.entrySet()) {
+      String key = attr.getKey();
+      // System.out.println(key);
+      String nodeValue;
+      // if (key.equals("idx"))
+      // nodeValue = Integer.toString(node.index());
+      // else {
+      Object value = node.get(AnnotationLookup.getCoreKey(key).coreKey);
+      if (value == null)
+        nodeValue = null;
+      else
+        nodeValue = value.toString();
+      // }
+      // System.out.println(nodeValue);
+      if (nodeValue == null)
+        return negDesc;
+      Pattern valuePattern = attr.getValue();
+      boolean matches = false;
+      if (ignoreCase) {
+        if (Pattern.compile(valuePattern.pattern(), Pattern.CASE_INSENSITIVE).matcher(nodeValue).matches())
+          matches = true;
+      } else {
+        if (nodeValue.matches(valuePattern.pattern()))
+          matches = true;
+      }
+      if (!matches) {
+
+        // System.out.println("doesnt match");
+        // System.out.println("");
+        return negDesc;
+      }
+    }
+    // System.out.println("matches");
+    // System.out.println("");
+    return !negDesc;
+  }
+
+  public void makeLink() {
+    isLink = true;
+  }
+
+  public boolean isRoot() {
+    return isRoot;
+  }
+
+  public boolean isNull() {
+    return isEmpty;
+  }
+
+  @Override
+  public String localString() {
+    return toString(true, false);
+  }
+
+  @Override
+  public String toString() {
+    return toString(true, true);
+  }
+
+  @Override
+  public String toString(boolean hasPrecedence) {
+    return toString(hasPrecedence, true);
+  }
+
+  public String toString(boolean hasPrecedence, boolean addChild) {
+    StringBuilder sb = new StringBuilder();
+    if (isNegated()) {
+      sb.append('!');
+    }
+    if (isOptional()) {
+      sb.append('?');
+    }
+    sb.append(' ');
+    if (reln != null) {
+      sb.append(reln.toString());
+      sb.append(' ');
+    }
+    if (!hasPrecedence && addChild && child != null) {
+      sb.append('(');
+    }
+    if (negDesc) {
+      sb.append('!');
+    }
+    sb.append(descString);
+    if (name != null) {
+      sb.append('=').append(name);
+    }
+    if (addChild && child != null) {
+      sb.append(' ');
+      sb.append(child.toString(false));
+      if (!hasPrecedence) {
+        sb.append(')');
+      }
+    }
+    return sb.toString();
+  }
+
+  @Override
+  public void setChild(SemgrexPattern n) {
+    child = n;
+  }
+
+  @Override
+  public List<SemgrexPattern> getChildren() {
+    if (child == null) {
+      return Collections.emptyList();
+    } else {
+      return Collections.singletonList(child);
+    }
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  @Override
+  public SemgrexMatcher matcher(SemanticGraph sg, IndexedWord node,
+                                Map<String, IndexedWord> namesToNodes,
+                                Map<String, String> namesToRelations,
+                                VariableStrings variableStrings,
+                                boolean ignoreCase) {
+    return new NodeMatcher(this, sg, null, null, true, node, namesToNodes, namesToRelations, variableStrings,
+        ignoreCase);
+  }
+
+  @Override
+  public SemgrexMatcher matcher(SemanticGraph sg,
+                                Alignment alignment, SemanticGraph sg_align,
+                                boolean hyp, IndexedWord node,
+                                Map<String, IndexedWord> namesToNodes,
+                                Map<String, String> namesToRelations,
+                                VariableStrings variableStrings,
+                                boolean ignoreCase) {
+    // System.err.println("making matcher: " +
+    // ((reln.equals(GraphRelation.ALIGNED_ROOT)) ? false : hyp));
+    return new NodeMatcher(this, sg, alignment, sg_align,
+                           (reln.equals(GraphRelation.ALIGNED_ROOT)) ? false : hyp,
+                           (reln.equals(GraphRelation.ALIGNED_ROOT)) ? sg_align.getFirstRoot() : node,
+                           namesToNodes, namesToRelations,
+                           variableStrings, ignoreCase);
+  }
+
+  private static class NodeMatcher extends SemgrexMatcher {
+

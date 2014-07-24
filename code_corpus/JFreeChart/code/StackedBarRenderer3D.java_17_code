@@ -1,0 +1,73 @@
+    private Shape[] createVerticalBlock(double x0, double width, double y0,
+            double y1, boolean inverted) {
+        Shape[] result = new Shape[6];
+        Point2D p00 = new Point2D.Double(x0, y0);
+        Point2D p01 = new Point2D.Double(x0 + width, y0);
+        Point2D p02 = new Point2D.Double(p01.getX() + getXOffset(),
+                p01.getY() - getYOffset());
+        Point2D p03 = new Point2D.Double(p00.getX() + getXOffset(),
+                p00.getY() - getYOffset());
+
+
+        Point2D p0 = new Point2D.Double(x0, y1);
+        Point2D p1 = new Point2D.Double(x0 + width, y1);
+        Point2D p2 = new Point2D.Double(p1.getX() + getXOffset(),
+                p1.getY() - getYOffset());
+        Point2D p3 = new Point2D.Double(p0.getX() + getXOffset(),
+                p0.getY() - getYOffset());
+
+        GeneralPath right = new GeneralPath();
+        right.moveTo((float) p1.getX(), (float) p1.getY());
+        right.lineTo((float) p01.getX(), (float) p01.getY());
+        right.lineTo((float) p02.getX(), (float) p02.getY());
+        right.lineTo((float) p2.getX(), (float) p2.getY());
+        right.closePath();
+
+        GeneralPath left = new GeneralPath();
+        left.moveTo((float) p0.getX(), (float) p0.getY());
+        left.lineTo((float) p00.getX(), (float) p00.getY());
+        left.lineTo((float) p03.getX(), (float) p03.getY());
+        left.lineTo((float) p3.getX(), (float) p3.getY());
+        left.closePath();
+
+        GeneralPath back = new GeneralPath();
+        back.moveTo((float) p2.getX(), (float) p2.getY());
+        back.lineTo((float) p02.getX(), (float) p02.getY());
+        back.lineTo((float) p03.getX(), (float) p03.getY());
+        back.lineTo((float) p3.getX(), (float) p3.getY());
+        back.closePath();
+
+        GeneralPath front = new GeneralPath();
+        front.moveTo((float) p0.getX(), (float) p0.getY());
+        front.lineTo((float) p1.getX(), (float) p1.getY());
+        front.lineTo((float) p01.getX(), (float) p01.getY());
+        front.lineTo((float) p00.getX(), (float) p00.getY());
+        front.closePath();
+
+        GeneralPath top = new GeneralPath();
+        top.moveTo((float) p0.getX(), (float) p0.getY());
+        top.lineTo((float) p1.getX(), (float) p1.getY());
+        top.lineTo((float) p2.getX(), (float) p2.getY());
+        top.lineTo((float) p3.getX(), (float) p3.getY());
+        top.closePath();
+
+        GeneralPath bottom = new GeneralPath();
+        bottom.moveTo((float) p00.getX(), (float) p00.getY());
+        bottom.lineTo((float) p01.getX(), (float) p01.getY());
+        bottom.lineTo((float) p02.getX(), (float) p02.getY());
+        bottom.lineTo((float) p03.getX(), (float) p03.getY());
+        bottom.closePath();
+
+        result[0] = bottom;
+        result[1] = back;
+        result[2] = left;
+        result[3] = right;
+        result[4] = top;
+        result[5] = front;
+        if (inverted) {
+            result[0] = top;
+            result[4] = bottom;
+        }
+        return result;
+    }
+

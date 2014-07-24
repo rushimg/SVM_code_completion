@@ -1,0 +1,40 @@
+    protected void drawLeftLabel(Graphics2D g2, PiePlotState state,
+                                 PieLabelRecord record) {
+
+        double anchorX = state.getLinkArea().getMinX();
+        double targetX = anchorX - record.getGap();
+        double targetY = record.getAllocatedY();
+
+        if (this.labelLinksVisible) {
+            double theta = record.getAngle();
+            double linkX = state.getPieCenterX() + Math.cos(theta)
+            double linkY = state.getPieCenterY() - Math.sin(theta)
+            double elbowX = state.getPieCenterX() + Math.cos(theta)
+            double elbowY = state.getPieCenterY() - Math.sin(theta)
+            double anchorY = elbowY;
+            g2.setPaint(this.labelLinkPaint);
+            g2.setStroke(this.labelLinkStroke);
+            PieLabelLinkStyle style = getLabelLinkStyle();
+            if (style.equals(PieLabelLinkStyle.STANDARD)) {
+                g2.draw(new Line2D.Double(linkX, linkY, elbowX, elbowY));
+                g2.draw(new Line2D.Double(anchorX, anchorY, elbowX, elbowY));
+                g2.draw(new Line2D.Double(anchorX, anchorY, targetX, targetY));
+            }
+            else if (style.equals(PieLabelLinkStyle.QUAD_CURVE)) {
+                QuadCurve2D q = new QuadCurve2D.Float();
+                q.setCurve(targetX, targetY, anchorX, anchorY, elbowX, elbowY);
+                g2.draw(q);
+                g2.draw(new Line2D.Double(elbowX, elbowY, linkX, linkY));
+            }
+            else if (style.equals(PieLabelLinkStyle.CUBIC_CURVE)) {
+                CubicCurve2D c = new CubicCurve2D .Float();
+                c.setCurve(targetX, targetY, anchorX, anchorY, elbowX, elbowY,
+                        linkX, linkY);
+                g2.draw(c);
+            }
+        }
+        TextBox tb = record.getLabel();
+        tb.draw(g2, (float) targetX, (float) targetY, RectangleAnchor.RIGHT);
+
+    }
+

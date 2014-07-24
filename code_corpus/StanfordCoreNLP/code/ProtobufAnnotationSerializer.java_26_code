@@ -1,0 +1,41 @@
+  private CorefChain fromProto(CoreNLPProtos.CorefChain proto, Annotation partialDocument) {
+    // Get chain ID
+    int cid = proto.getChainID();
+    // Get mentions
+    Map<IntPair, Set<CorefChain.CorefMention>> mentions = new HashMap<IntPair, Set<CorefChain.CorefMention>>();
+    CorefChain.CorefMention representative = null;
+    for (int i = 0; i < proto.getMentionCount(); ++i) {
+      CoreNLPProtos.CorefChain.CorefMention mentionProto = proto.getMention(i);
+      // Create mention
+      StringBuilder mentionSpan = new StringBuilder();
+      List<CoreLabel> sentenceTokens = partialDocument.get(SentencesAnnotation.class).get(mentionProto.getSentenceIndex()).get(TokensAnnotation.class);
+      for (int k = mentionProto.getStartIndex(); k < mentionProto.getEndIndex(); ++k) {
+        mentionSpan.append(" ").append(sentenceTokens.get(k).word());
+      }
+      // Set the coref cluster id for the token
+      CorefChain.CorefMention mention = new CorefChain.CorefMention(
+          Dictionaries.MentionType.valueOf(mentionProto.getMentionType()),
+          Dictionaries.Number.valueOf(mentionProto.getNumber()),
+          Dictionaries.Gender.valueOf(mentionProto.getGender()),
+          Dictionaries.Animacy.valueOf(mentionProto.getAnimacy()),
+          mentionProto.getStartIndex() + 1,
+          mentionProto.getEndIndex() + 1,
+          mentionProto.getHeadIndex() + 1,
+          cid,
+          mentionProto.getMentionID(),
+          mentionProto.getSentenceIndex() + 1,
+          new IntTuple(new int[]{ mentionProto.getSentenceIndex() + 1, mentionProto.getPosition() }),
+          mentionSpan.substring(mentionSpan.length() > 0 ? 1 : 0));
+      // Register mention
+      IntPair key = new IntPair(mentionProto.getSentenceIndex() - 1, mentionProto.getHeadIndex() - 1);
+      if (!mentions.containsKey(key)) { mentions.put(key, new HashSet<CorefChain.CorefMention>()); }
+      mentions.get(key).add(mention);
+      // Check for representative
+      if (proto.hasRepresentative() && i == proto.getRepresentative()) {
+        representative = mention;
+      }
+    }
+    // Return
+    return new CorefChain(cid, mentions, representative);
+  }
+

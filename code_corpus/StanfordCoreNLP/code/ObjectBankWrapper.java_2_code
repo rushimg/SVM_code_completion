@@ -1,0 +1,62 @@
+  private void fixDocLengths(List<List<IN>> docs) {
+    final int maxDocSize = flags.maxDocSize;
+
+    WordToSentenceProcessor<IN> wts = new WordToSentenceProcessor<IN>();
+    List<List<IN>> newDocuments = new ArrayList<List<IN>>();
+    for (List<IN> document : docs) {
+      if (maxDocSize <= 0 || document.size() <= maxDocSize) {
+        if (flags.keepEmptySentences || !document.isEmpty()) {
+          newDocuments.add(document);
+        }
+        continue;
+      }
+      List<List<IN>> sentences = wts.process(document);
+      List<IN> newDocument = new ArrayList<IN>();
+      for (List<IN> sentence : sentences) {
+        if (newDocument.size() + sentence.size() > maxDocSize) {
+          if (!newDocument.isEmpty()) {
+            newDocuments.add(newDocument);
+          }
+          newDocument = new ArrayList<IN>();
+        }
+        newDocument.addAll(sentence);
+      }
+      if (flags.keepEmptySentences || !newDocument.isEmpty()) {
+        newDocuments.add(newDocument);
+      }
+    }
+
+    docs.clear();
+    docs.addAll(newDocuments);
+  }
+
+  private void iobTags(List<IN> doc) {
+    String lastTag = "";
+    for (IN wi : doc) {
+      String answer = wi.get(CoreAnnotations.AnswerAnnotation.class);
+      if (!flags.backgroundSymbol.equals(answer) && answer != null) {
+        int index = answer.indexOf('-');
+        String prefix;
+        String label;
+        if (index < 0) {
+          prefix = "";
+          label = answer;
+        } else {
+          prefix = answer.substring(0,index);
+          label = answer.substring(index+1);
+        }
+
+        if (!prefix.equals("B")) {
+          if (!label.equals(lastTag)) {
+            wi.set(CoreAnnotations.AnswerAnnotation.class, "B-" + label);
+          } else {
+            wi.set(CoreAnnotations.AnswerAnnotation.class, "I-" + label);
+          }
+        }
+        lastTag = label;
+      } else {
+        lastTag = answer;
+      }
+    }
+  }
+

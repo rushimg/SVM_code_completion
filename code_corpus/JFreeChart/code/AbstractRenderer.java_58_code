@@ -1,0 +1,23 @@
+    public Paint lookupSeriesOutlinePaint(int series) {
+
+        // return the override, if there is one...
+        if (this.outlinePaint != null) {
+            return this.outlinePaint;
+        }
+
+        // otherwise look up the paint table
+        Paint seriesOutlinePaint = getSeriesOutlinePaint(series);
+        if (seriesOutlinePaint == null && this.autoPopulateSeriesOutlinePaint) {
+            DrawingSupplier supplier = getDrawingSupplier();
+            if (supplier != null) {
+                seriesOutlinePaint = supplier.getNextOutlinePaint();
+                setSeriesOutlinePaint(series, seriesOutlinePaint, false);
+            }
+        }
+        if (seriesOutlinePaint == null) {
+            seriesOutlinePaint = this.baseOutlinePaint;
+        }
+        return seriesOutlinePaint;
+
+    }
+

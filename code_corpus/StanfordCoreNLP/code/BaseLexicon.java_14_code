@@ -1,0 +1,28 @@
+  void buildPT_T() {
+    int numTags = tagIndex.size();
+    m_TT = new double[numTags][numTags];
+    m_T = new double[numTags];
+    double[] tmp = new double[numTags];
+    for (IntTaggedWord word : words) {
+      double tot = 0.0;
+      for (int t = 0; t < numTags; t++) {
+        IntTaggedWord iTW = new IntTaggedWord(word.word, t);
+        tmp[t] = seenCounter.getCount(iTW);
+        tot += tmp[t];
+      }
+      if (tot < 10) {
+        continue;
+      }
+      for (int t = 0; t < numTags; t++) {
+        for (int t2 = 0; t2 < numTags; t2++) {
+          if (tmp[t2] > 0.0) {
+            double c = tmp[t] / tot;
+            m_T[t] += c;
+            m_TT[t2][t] += c;
+          }
+        }
+      }
+    }
+  }
+
+

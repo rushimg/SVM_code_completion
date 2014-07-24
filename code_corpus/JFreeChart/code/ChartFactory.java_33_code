@@ -1,0 +1,39 @@
+    public static JFreeChart createTimeSeriesChart(String title,
+                                                   String timeAxisLabel,
+                                                   String valueAxisLabel,
+                                                   XYDataset dataset,
+                                                   boolean legend,
+                                                   boolean tooltips,
+                                                   boolean urls) {
+
+        ValueAxis timeAxis = new DateAxis(timeAxisLabel);
+        timeAxis.setLowerMargin(0.02);  // reduce the default margins
+        timeAxis.setUpperMargin(0.02);
+        NumberAxis valueAxis = new NumberAxis(valueAxisLabel);
+        valueAxis.setAutoRangeIncludesZero(false);  // override default
+        XYPlot plot = new XYPlot(dataset, timeAxis, valueAxis, null);
+
+        XYToolTipGenerator toolTipGenerator = null;
+        if (tooltips) {
+            toolTipGenerator
+                = StandardXYToolTipGenerator.getTimeSeriesInstance();
+        }
+
+        XYURLGenerator urlGenerator = null;
+        if (urls) {
+            urlGenerator = new StandardXYURLGenerator();
+        }
+
+        XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer(true,
+                false);
+        renderer.setBaseToolTipGenerator(toolTipGenerator);
+        renderer.setURLGenerator(urlGenerator);
+        plot.setRenderer(renderer);
+
+        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT,
+                plot, legend);
+        currentTheme.apply(chart);
+        return chart;
+
+    }
+

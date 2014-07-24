@@ -1,0 +1,75 @@
+  private TokenizerFactory<CoreLabel> getTokenizerFactory() {
+    TokenizerFactory<CoreLabel> tokFactory = null;
+    if ( ! isTokenized) {
+      if (tokenizerOptions == null) {
+        tokFactory = ArabicTokenizer.atbFactory();
+        String atbVocOptions = "removeProMarker,removeMorphMarker,removeLengthening";
+        tokFactory.setOptions(atbVocOptions);
+      } else {
+        if (tokenizerOptions.contains("removeSegMarker")) {
+          throw new RuntimeException("Option 'removeSegMarker' cannot be used with ArabicSegmenter");
+        }
+        tokFactory = ArabicTokenizer.factory();
+        tokFactory.setOptions(tokenizerOptions);
+      }
+      System.err.println("Loaded ArabicTokenizer with options: " + tokenizerOptions);
+    }
+    return tokFactory;
+  }
+
+  @Override
+  public void initializeTraining(double numTrees) {
+    throw new UnsupportedOperationException("Training is not supported!");
+  }
+
+  @Override
+  public void train(Collection<Tree> trees) {
+    throw new UnsupportedOperationException("Training is not supported!");
+  }
+
+  @Override
+  public void train(Tree tree) {
+    throw new UnsupportedOperationException("Training is not supported!");
+  }
+
+  @Override
+  public void train(List<TaggedWord> sentence) {
+    throw new UnsupportedOperationException("Training is not supported!");
+  }
+
+  @Override
+  public void finishTraining() {
+    throw new UnsupportedOperationException("Training is not supported!");
+  }
+
+  @Override
+  public String process(String nextInput) {
+    return segmentString(nextInput);
+  }
+
+  @Override
+  public ThreadsafeProcessor<String, String> newInstance() {
+    return new ArabicSegmenter(this);
+  }
+
+  @Override
+  public List<HasWord> segment(String line) {
+    String segmentedString = segmentString(line);
+    return Sentence.toWordList(segmentedString.split("\\s+"));
+  }
+
+  public String segmentString(String line) {
+    List<CoreLabel> tokenList;
+    if (tf == null) {
+      // Whitespace tokenization.
+      tokenList = IOBUtils.StringToIOB(line);
+    } else {
+      List<CoreLabel> tokens = tf.getTokenizer(new StringReader(line)).tokenize();
+      tokenList = IOBUtils.StringToIOB(tokens, null, false);
+    }
+    IOBUtils.labelDomain(tokenList, domain);
+    tokenList = classifier.classify(tokenList);
+    String segmentedString = IOBUtils.IOBToString(tokenList, prefixMarker, suffixMarker);
+    return segmentedString;
+  }
+

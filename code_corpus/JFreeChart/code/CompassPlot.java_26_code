@@ -1,0 +1,28 @@
+    public void addDataset(ValueDataset dataset, MeterNeedle needle) {
+
+        if (dataset != null) {
+            int i = this.datasets.length + 1;
+            ValueDataset[] t = new ValueDataset[i];
+            MeterNeedle[] p = new MeterNeedle[i];
+            i = i - 2;
+            for (; i >= 0; --i) {
+                t[i] = this.datasets[i];
+                p[i] = this.seriesNeedle[i];
+            }
+            i = this.datasets.length;
+            t[i] = dataset;
+            p[i] = ((needle != null) ? needle : p[i - 1]);
+
+            ValueDataset[] a = this.datasets;
+            MeterNeedle[] b = this.seriesNeedle;
+            this.datasets = t;
+            this.seriesNeedle = p;
+
+            for (--i; i >= 0; --i) {
+                a[i] = null;
+                b[i] = null;
+            }
+            dataset.addChangeListener(this);
+        }
+    }
+

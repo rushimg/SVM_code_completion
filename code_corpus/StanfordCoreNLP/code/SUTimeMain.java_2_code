@@ -1,0 +1,26 @@
+            String[] attrFields = {
+                  "type",
+                  tmx.timexType(),
+            };
+            attrPw.println(extString + "\t" + StringUtils.join(attrFields, "\t"));
+            if (tmx.value() != null) {
+              String val = tmx.value();
+              // Fix up expression values (needed for GUTime)
+              if (useGUTime) {
+                if ("TIME".equals(tmx.timexType())) {
+                  if (val.matches("T\\d{4}")) {
+                    val = "T" + val.substring(1,3) + ":" + val.substring(3,5);
+                  }
+                } else if ("DATE".equals(tmx.timexType())) {
+                    val = val.substring(0,4) + "-" + val.substring(4,6) + "-" + val.substring(6);
+                  } else if (val.matches("\\d{8}")) {
+                    val = val.substring(0,4) + "-" + val.substring(4,6) + "-" + val.substring(6,8);
+                  } else if (val.matches("\\d\\d\\d\\d..")) {
+                    val = val.substring(0,4) + "-" + val.substring(4,6);
+                    if (val.length() > 7) {
+                      val = val.substring(0,4) + "-" + val.substring(4,7) + "-" + val.substring(7);
+                    } else {
+                      val = val.substring(0,4) + "-" + val.substring(4,7);
+                    }
+                  }
+                }

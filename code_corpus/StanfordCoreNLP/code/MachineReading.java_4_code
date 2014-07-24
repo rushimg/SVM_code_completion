@@ -1,0 +1,46 @@
+  private Annotation [][] predictions;
+  
+  private Set<ResultsPrinter> entityResultsPrinterSet;
+  private Set<ResultsPrinter> relationResultsPrinterSet;
+  @SuppressWarnings("unused")
+  private Set<ResultsPrinter> eventResultsPrinterSet;
+  
+  public static final int ENTITY_LEVEL = 0;
+  public static final int RELATION_LEVEL = 1;
+  public static final int EVENT_LEVEL = 2;
+  
+  public static void main(String[] args) throws Exception {
+    MachineReading mr = makeMachineReading(args);
+    mr.run();
+  }
+  
+  public static void setLoggerLevel(Level level) {
+  	setConsoleLevel(Level.FINEST);
+  	MachineReadingProperties.logger.setLevel(level);
+  }
+  
+  public static void setConsoleLevel(Level level) {
+  	// get the top Logger:
+    Logger topLogger = java.util.logging.Logger.getLogger("");
+
+    // Handler for console (reuse it if it already exists)
+    Handler consoleHandler = null;
+    // see if there is already a console handler
+    for (Handler handler : topLogger.getHandlers()) {
+        if (handler instanceof ConsoleHandler) {
+            // found the console handler
+            consoleHandler = handler;
+            break;
+        }
+    }
+
+    if (consoleHandler == null) {
+        // there was no console handler found, create a new one
+        consoleHandler = new ConsoleHandler();
+        topLogger.addHandler(consoleHandler);
+    }
+    // set the console handler level:
+    consoleHandler.setLevel(level);
+    consoleHandler.setFormatter(new SimpleFormatter());
+  }
+  

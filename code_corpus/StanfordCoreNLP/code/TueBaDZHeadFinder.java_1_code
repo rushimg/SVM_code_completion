@@ -1,0 +1,40 @@
+   protected Tree findMarkedHead(Tree t) {
+     Tree[] kids = t.children();
+     for (int i = 0, n = kids.length; i < n; i++) {
+       if (headMarkedPattern.matcher(kids[i].label().value()).find() || headMarkedPattern2.matcher(kids[i].label().value()).find()) {
+         //System.err.println("found manually-labeled head " + kids[i] + " for tree " + t);
+         return kids[i];
+       }
+     }
+     return null;
+   }
+
+ //Taken from AbstractTreebankLanguage pack b/c we have a slightly different definition of
+   //basic category for head finding - we strip grammatical function tags.
+   public String basicCategory(String category) {
+     if (category == null) {
+       return null;
+     }
+     return category.substring(0, postBasicCategoryIndex(category));
+   }
+
+   private int postBasicCategoryIndex(String category) {
+     boolean sawAtZero = false;
+     char seenAtZero = '\u0000';
+     int i = 0;
+     for (int leng = category.length(); i < leng; i++) {
+       char ch = category.charAt(i);
+       if (isLabelAnnotationIntroducingCharacter(ch)) {
+         if (i == 0) {
+           sawAtZero = true;
+           seenAtZero = ch;
+         } else if (sawAtZero && ch == seenAtZero) {
+           sawAtZero = false;
+         } else {
+           break;
+         }
+       }
+     }
+     return i;
+   }
+

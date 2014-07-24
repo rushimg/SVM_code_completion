@@ -1,0 +1,91 @@
+  public static String americanize(String str, boolean capitalizeTimex) {
+    // System.err.println("str is |" + str + "|");
+    // System.err.println("timexMapping.contains is " +
+    //            timexMapping.containsKey(str));
+    // No ver short words are changed, so short circuit them
+    int length = str.length();
+    if (length < MINIMUM_LENGTH_CHANGED) {
+      return str;
+    }
+    String result;
+    if (capitalizeTimex) {
+      result = timexMapping.get(str);
+      if (result != null) {
+        return result;
+      }
+    }
+    result = mapping.get(str);
+    if (result != null) {
+      return result;
+    }
+
+    if (length < MINIMUM_LENGTH_PATTERN_MATCH) {
+      return str;
+    }
+    // first do one disjunctive regex and return unless matches. Faster!
+    // (But still allocates matcher each time; avoiding this would make this class not threadsafe....)
+    if ( ! disjunctivePattern.matcher(str).find()) {
+      return str;
+    }
+    for (int i = 0; i < pats.length; i++) {
+      Matcher m = pats[i].matcher(str);
+      if (m.find()) {
+        Pattern ex = excepts[i];
+        if (ex != null) {
+          Matcher me = ex.matcher(str);
+          if (me.find()) {
+            continue;
+          }
+        }
+        // System.err.println("Replacing " + word + " with " +
+        //             pats[i].matcher(word).replaceAll(reps[i]));
+        return m.replaceAll(reps[i]);
+      }
+    }
+    return str;
+  }
+
+  private static final String[] patStrings = { "haem(at)?o", "aemia$", "([lL])eukaem",
+          "programme(s?)$", "^([a-z]{3,})our(s?)$",
+
+  };
+
+  private static final Pattern[] pats = new Pattern[patStrings.length];
+
+  private static final Pattern disjunctivePattern;
+
+  static {
+    StringBuilder foo = new StringBuilder();
+    for (int i = 0, len = pats.length; i < len; i++) {
+      pats[i] = Pattern.compile(patStrings[i]);
+      if (i > 0) {
+        foo.append('|');
+      }
+      foo.append("(?:");
+      // Remove groups from String before appending for speed
+      foo.append(patStrings[i].replaceAll("[()]", ""));
+      foo.append(')');
+    }
+    disjunctivePattern = Pattern.compile(foo.toString());
+  }
+
+  private static final String[] OUR_EXCEPTIONS = {
+    "abatjour", "beflour", "bonjour",
+    "calambour", "carrefour", "cornflour", "contour",
+    "de[tv]our", "dortour", "dyvour", "downpour",
+    "giaour", "glamour", "holour", "inpour", "outpour",
+    "pandour", "paramour", "pompadour", "recontour", "repour", "ryeflour",
+    "sompnour",
+    "tambour", "troubadour", "tregetour", "velour"
+  };
+
+  private static final Pattern[] excepts = {
+    null, null, null, null,
+    Pattern.compile(StringUtils.join(OUR_EXCEPTIONS, "|"))
+  };
+
+  private static final String[] reps = {
+    "hem$1o", "emia", "$1eukem", "program$1", "$1or$2"
+  };
+
+

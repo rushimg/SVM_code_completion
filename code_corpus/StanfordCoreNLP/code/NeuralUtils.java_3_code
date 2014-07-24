@@ -1,0 +1,28 @@
+  public static SimpleMatrix loadTextMatrix(File file) {
+    return convertTextMatrix(IOUtils.slurpFileNoExceptions(file));
+  }
+
+  public static SimpleMatrix convertTextMatrix(String text) {
+    List<String> lines = CollectionUtils.filterAsList(Arrays.asList(text.split("\n")), new Filter<String>() { 
+        public boolean accept(String s) {
+          return s.trim().length() > 0;
+        }
+        private static final long serialVersionUID = 1;
+      });
+    int numRows = lines.size();
+    int numCols = lines.get(0).trim().split("\\s+").length;
+    double[][] data = new double[numRows][numCols];
+    for (int row = 0; row < numRows; ++row) {
+      String line = lines.get(row);
+      String[] pieces = line.trim().split("\\s+");
+      if (pieces.length != numCols) {
+        throw new RuntimeException("Unexpected row length in line " + row);
+      }
+      for (int col = 0; col < numCols; ++col) {
+        data[row][col] = Double.valueOf(pieces[col]);
+      }
+    }
+    return new SimpleMatrix(data);
+  }
+
+

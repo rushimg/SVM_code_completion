@@ -1,0 +1,60 @@
+  public <V2> void addAll(TwoDimensionalMap<? extends K1, ? extends K2, ? extends V2> other, Function<V2, V> function) {
+    for (TwoDimensionalMap.Entry<? extends K1, ? extends K2, ? extends V2> entry : other) {
+      put(entry.getFirstKey(), entry.getSecondKey(), function.apply(entry.getValue()));
+    }
+  }
+
+  public TwoDimensionalMap() {
+    this(MapFactory.<K1, Map<K2, V>>hashMapFactory(), MapFactory.<K2, V>hashMapFactory());
+  }
+
+  public TwoDimensionalMap(TwoDimensionalMap<K1, K2, V> tdm) {
+    this(tdm.mf1, tdm.mf2);
+    for (K1 k1 : tdm.map.keySet()) {
+      Map<K2, V> m = tdm.map.get(k1);
+      Map<K2, V> copy = mf2.newMap();
+      copy.putAll(m);
+      this.map.put(k1, copy);
+    }
+  }
+
+  public TwoDimensionalMap(MapFactory<K1, Map<K2, V>> mf1, MapFactory<K2, V> mf2) {
+    this.mf1 = mf1;
+    this.mf2 = mf2;
+    this.map = mf1.newMap();
+  }
+
+  public static <K1, K2, V> TwoDimensionalMap<K1, K2, V> hashMap() {
+    return new TwoDimensionalMap<K1, K2, V>(MapFactory.<K1, Map<K2, V>>hashMapFactory(), MapFactory.<K2, V>hashMapFactory());
+  }
+
+  public static <K1, K2, V> TwoDimensionalMap<K1, K2, V> treeMap() {
+    return new TwoDimensionalMap<K1, K2, V>(MapFactory.<K1, Map<K2, V>>treeMapFactory(), MapFactory.<K2, V>treeMapFactory());
+  }
+
+  public static <K1, K2, V> TwoDimensionalMap<K1, K2, V> identityHashMap() {
+    return new TwoDimensionalMap<K1, K2, V>(MapFactory.<K1, Map<K2, V>>identityHashMapFactory(), MapFactory.<K2, V>identityHashMapFactory());
+  }
+
+  @Override
+  public String toString() {
+    return map.toString();
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (o == this) {
+      return true;
+    }
+    if (!(o instanceof TwoDimensionalMap)) {
+      return false;
+    }
+    TwoDimensionalMap<?, ?, ?> other = (TwoDimensionalMap<?, ?, ?>) o;
+    return map.equals(other.map);
+  }
+
+  @Override
+  public int hashCode() {
+    return map.hashCode();
+  }
+

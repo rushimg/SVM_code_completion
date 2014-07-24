@@ -1,0 +1,32 @@
+    public static <T> FibonacciHeap<T> union(
+        FibonacciHeap<T> h1,
+        FibonacciHeap<T> h2)
+    {
+        FibonacciHeap<T> h = new FibonacciHeap<T>();
+
+        if ((h1 != null) && (h2 != null)) {
+            h.minNode = h1.minNode;
+
+            if (h.minNode != null) {
+                if (h2.minNode != null) {
+                    h.minNode.right.left = h2.minNode.left;
+                    h2.minNode.left.right = h.minNode.right;
+                    h.minNode.right = h2.minNode;
+                    h2.minNode.left = h.minNode;
+
+                    if (h2.minNode.key < h1.minNode.key) {
+                        h.minNode = h2.minNode;
+                    }
+                }
+            } else {
+                h.minNode = h2.minNode;
+            }
+
+            h.nNodes = h1.nNodes + h2.nNodes;
+        }
+
+        return h;
+    }
+
+    // union
+

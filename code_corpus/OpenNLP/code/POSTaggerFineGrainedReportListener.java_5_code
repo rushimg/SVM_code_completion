@@ -1,0 +1,69 @@
+  private void printLine(int size) {
+    for (int i = 0; i < size; i++) {
+      printStream.append("-");
+    }
+    printStream.append("\n");
+  }
+
+  private static final String generateAlphaLabel(int index) {
+
+    char labelChars[] = new char[3];
+    int i;
+
+    for (i = 2; i >= 0; i--) {
+      labelChars[i] = alpha[index % alpha.length];
+      index = index / alpha.length - 1;
+      if (index < 0) {
+        break;
+      }
+    }
+
+    return new String(labelChars);
+  }
+
+  private class Stats {
+
+    // general statistics
+    private final Mean accuracy = new Mean();
+    private final Mean averageSentenceLength = new Mean();
+    private int minimalSentenceLength = Integer.MAX_VALUE;
+    private int maximumSentenceLength = Integer.MIN_VALUE;
+
+    // token statistics
+    private final Map<String, Mean> tokAccuracies = new HashMap<String, Mean>();
+    private final Map<String, Counter> tokOcurrencies = new HashMap<String, Counter>();
+    private final Map<String, Counter> tokErrors = new HashMap<String, Counter>();
+
+    // tag statistics
+    private final Map<String, Counter> tagOcurrencies = new HashMap<String, Counter>();
+    private final Map<String, Counter> tagErrors = new HashMap<String, Counter>();
+    private final Map<String, FMeasure> tagFMeasure = new HashMap<String, FMeasure>();
+
+    // represents a Confusion Matrix that aggregates all tokens
+    private final Map<String, ConfusionMatrixLine> generalConfusionMatrix = new HashMap<String, ConfusionMatrixLine>();
+
+    // represents a set of Confusion Matrix for each token
+    private final Map<String, Map<String, ConfusionMatrixLine>> tokenConfusionMatrix = new HashMap<String, Map<String, ConfusionMatrixLine>>();
+
+    public void add(POSSample reference, POSSample prediction) {
+      int length = reference.getSentence().length;
+      averageSentenceLength.add(length);
+
+      if (minimalSentenceLength > length) {
+        minimalSentenceLength = length;
+      }
+      if (maximumSentenceLength < length) {
+        maximumSentenceLength = length;
+      }
+
+      String[] toks = reference.getSentence();
+      String[] refs = reference.getTags();
+      String[] preds = prediction.getTags();
+
+      updateTagFMeasure(refs, preds);
+
+      for (int i = 0; i < toks.length; i++) {
+        add(toks[i], refs[i], preds[i]);
+      }
+    }
+

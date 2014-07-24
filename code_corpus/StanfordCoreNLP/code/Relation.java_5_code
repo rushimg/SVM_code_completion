@@ -1,0 +1,36 @@
+  static Relation getRelation(String s,
+                              Function<String, String> basicCatFunction,
+                              HeadFinder headFinder)
+    throws ParseException
+  {
+    if (SIMPLE_RELATIONS_MAP.containsKey(s))
+      return SIMPLE_RELATIONS_MAP.get(s);
+
+    // these are shorthands for relations with arguments
+    if (s.equals("<,")) {
+      return getRelation("<", "1", basicCatFunction, headFinder);
+    } else if (parentOfLastChild.matcher(s).matches()) {
+      return getRelation("<", "-1", basicCatFunction, headFinder);
+    } else if (s.equals(">,")) {
+      return getRelation(">", "1", basicCatFunction, headFinder);
+    } else if (lastChildOfParent.matcher(s).matches()) {
+      return getRelation(">", "-1", basicCatFunction, headFinder);
+    }
+
+    // finally try relations with headFinders
+    Relation r;
+    if (s.equals(">>#")) {
+      r = new Heads(headFinder);
+    } else if (s.equals("<<#")) {
+      r = new HeadedBy(headFinder);
+    } else if (s.equals(">#")) {
+      r = new ImmediatelyHeads(headFinder);
+    } else if (s.equals("<#")) {
+      r = new ImmediatelyHeadedBy(headFinder);
+    } else {
+      throw new ParseException("Unrecognized simple relation " + s);
+    }
+
+    return Interner.globalIntern(r);
+  }
+

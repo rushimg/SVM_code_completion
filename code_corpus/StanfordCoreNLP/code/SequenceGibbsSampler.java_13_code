@@ -1,0 +1,21 @@
+  private Pair<Integer, Double> samplePositionHelper(SequenceModel model, int[] sequence, int pos, double temperature) {
+    double[] distribution = model.scoresOf(sequence, pos);
+    if (temperature!=1.0) {
+      if (temperature==0.0) {
+        // set the max to 1.0
+        int argmax = ArrayMath.argmax(distribution);
+        Arrays.fill(distribution, Double.NEGATIVE_INFINITY);
+        distribution[argmax] = 0.0;
+      } else {
+        // take all to a power
+        // use the temperature to increase/decrease the entropy of the sampling distribution
+        ArrayMath.multiplyInPlace(distribution, 1.0/temperature);
+      }
+    }
+    ArrayMath.logNormalize(distribution);
+    ArrayMath.expInPlace(distribution);
+    int newTag = ArrayMath.sampleFromDistribution(distribution, random);
+    double newProb = distribution[newTag];
+    return new Pair<Integer, Double>(newTag, newProb);
+  }
+

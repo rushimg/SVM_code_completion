@@ -1,0 +1,22 @@
+  public static String joinWithOriginalWhiteSpace(List<CoreLabel> tokens) {
+    if (tokens.isEmpty()) {
+      return "";
+    }
+
+    CoreLabel lastToken = tokens.get(0);
+    StringBuilder buffer = new StringBuilder(lastToken.word());
+
+    for (int i = 1; i < tokens.size(); i++) {
+      CoreLabel currentToken = tokens.get(i);
+      int numSpaces = currentToken.beginPosition() - lastToken.endPosition();
+      if (numSpaces < 0) {
+        numSpaces = 0;
+      }
+
+      buffer.append(repeat(' ', numSpaces)).append(currentToken.word());
+      lastToken = currentToken;
+    }
+
+    return buffer.toString();
+  }
+

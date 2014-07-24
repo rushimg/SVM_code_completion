@@ -1,0 +1,51 @@
+public class SsurgeonPattern {
+  protected String UID;
+  protected String notes = "";
+  protected List<SsurgeonEdit> editScript;
+  protected SemgrexPattern semgrexPattern;
+  protected SemanticGraph semgrexGraph = null; // Source graph semgrex pattern was derived from (used for pattern learning)
+  protected SsurgPred predicateTest = null; // Predicate tests to apply, if non-null, must return true to execute.
+
+  // NodeMap is used to maintain a list of named nodes outside of the set in the SemgrexMatcher.
+  // Primarily for newly inserted nodes.
+  private Map<String, IndexedWord> nodeMap = null;
+  
+  public SsurgeonPattern(String UID, SemgrexPattern pattern, List<SsurgeonEdit> editScript) {
+    semgrexPattern = pattern;
+    this.UID = UID;
+    this.editScript = editScript;
+  }
+
+  public SsurgeonPattern(String UID, SemgrexPattern pattern) {
+    this.UID = UID;
+    this.semgrexPattern = pattern;
+    this.editScript = new ArrayList<SsurgeonEdit>();
+  }
+
+  public SsurgeonPattern(String UID, SemgrexPattern pattern, SemanticGraph patternGraph) {
+    this(UID, pattern);
+    this.semgrexGraph = patternGraph;
+  }
+
+  public SsurgeonPattern(SemgrexPattern pattern, List<SsurgeonEdit> editScript) {
+    this(pattern.toString(), pattern, editScript);
+  }
+
+  public SsurgeonPattern(SemgrexPattern pattern) {
+    this(pattern.toString(), pattern);
+  }
+
+  public SsurgeonPattern(SemgrexPattern pattern, SemanticGraph patternGraph) {
+    this(pattern);
+    this.semgrexGraph = patternGraph;
+  }
+
+  public void setPredicate(SsurgPred predicateTest) {
+    this.predicateTest = predicateTest;
+  }
+
+  public void addEdit(SsurgeonEdit newEdit) {
+    newEdit.setOwningPattern(this);
+    editScript.add(newEdit);
+  }
+

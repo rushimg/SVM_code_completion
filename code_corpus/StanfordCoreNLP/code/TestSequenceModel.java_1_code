@@ -1,0 +1,65 @@
+public class TestSequenceModel implements SequenceModel {
+
+  private final int window;
+  private final int numClasses;
+  private final CRFCliqueTree cliqueTree;
+  private final int[] backgroundTag;
+
+  private final int[] allTags;
+  private int[][] allowedTagsAtPosition;
+  
+  public TestSequenceModel(CRFCliqueTree cliqueTree) {
+    this(cliqueTree, null, null);
+  }
+
+  public TestSequenceModel(CRFCliqueTree<String> cliqueTree,
+      LabelDictionary labelDictionary, List<? extends CoreMap> document) {
+    // this.factorTables = factorTables;
+    this.cliqueTree = cliqueTree;
+    // this.window = factorTables[0].windowSize();
+    this.window = cliqueTree.window();
+    // this.numClasses = factorTables[0].numClasses();
+    this.numClasses = cliqueTree.getNumClasses();
+
+    this.backgroundTag = new int[] { cliqueTree.backgroundIndex() };
+    allTags = new int[numClasses];
+    for (int i = 0; i < allTags.length; i++) {
+      allTags[i] = i;
+    }
+    if (labelDictionary != null) {
+      // Constrained
+      allowedTagsAtPosition = new int[document.size()][];
+      for (int i = 0; i < allowedTagsAtPosition.length; ++i) {
+        CoreMap token  = document.get(i);
+        String observation = token.get(CoreAnnotations.TextAnnotation.class);
+        allowedTagsAtPosition[i] = labelDictionary.isConstrained(observation) ?
+            labelDictionary.getConstrainedSet(observation) : allTags;
+      }
+    }
+  }
+
+  @Override
+  public int length() {
+    return cliqueTree.length();
+  }
+
+  @Override
+  public int leftWindow() {
+    return window - 1;
+  }
+
+  @Override
+  public int rightWindow() {
+    return 0;
+  }
+
+  @Override
+  public int[] getPossibleValues(int pos) {
+    if (pos < leftWindow()) {
+      return backgroundTag;
+    }
+    int realPos = pos - window + 1;
+    return allowedTagsAtPosition == null ? allTags :
+      allowedTagsAtPosition[realPos];
+  }
+

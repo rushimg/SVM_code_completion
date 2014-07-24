@@ -1,0 +1,60 @@
+  @Override
+  public Iterator<Entry<KEY,T>> iterator() {
+    final File[] files = cacheDir.listFiles();
+    if (files == null || files.length == 0) return Generics.<Entry<KEY,T>>newLinkedList().iterator();
+    for (int i = 0; i < files.length; ++i) {
+      try {
+        files[i] = canonicalFile.intern(files[i].getCanonicalFile());
+      } catch (IOException e) {
+        throw throwSafe(e);
+      }
+    }
+
+    return new Iterator<Entry<KEY,T>>() {
+      Iterator<Pair<KEY, T>> elements = readBlock(files[0]).iterator();
+      int index = 1;
+
+      @Override
+      public boolean hasNext() {
+        // Still have elements in this block
+        if (elements.hasNext()) return true;
+        // Still have files to traverse
+        elements = null;
+        while (index < files.length && elements == null) {
+          try {
+            elements = readBlock(files[index]).iterator();
+          } catch (OutOfMemoryError e) {
+            warn("FileBackedCache", "Caught out of memory error (clearing cache): " + e.getMessage());
+            FileBackedCache.this.clear();
+            //noinspection EmptyCatchBlock
+            try { Thread.sleep(1000); } catch (InterruptedException e2) { }
+            elements = readBlock(files[index]).iterator();
+          } catch (RuntimeException e) {
+            err(e);
+          }
+          index += 1;
+        }
+        // No more elements
+        return elements != null && hasNext();
+      }
+      @Override
+      public Entry<KEY, T> next() {
+        if (!hasNext()) throw new NoSuchElementException();
+        // Convert a pair to an entry
+        final Pair<KEY, T> pair =  elements.next();
+        return new Entry<KEY, T>() {
+          @Override
+          public KEY getKey() { return pair.first; }
+          @Override
+          public T getValue() { return pair.second; }
+          @Override
+          public T setValue(T value) { throw new RuntimeException("Cannot set entry"); }
+        };
+      }
+      @Override
+      public void remove() {
+        throw new RuntimeException("Remove not implemented");
+      }
+    };
+  }
+

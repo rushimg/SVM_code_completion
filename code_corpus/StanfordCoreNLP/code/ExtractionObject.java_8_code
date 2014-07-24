@@ -1,0 +1,44 @@
+  public static String concatenateTypes(String t1, String t2) {
+    String [] t1Toks = t1.split(TYPE_SEP);
+    String [] t2Toks = t2.split(TYPE_SEP);
+    Set<String> uniqueTypes = Generics.newHashSet();
+    for(String t: t1Toks) uniqueTypes.add(t);
+    for(String t: t2Toks) uniqueTypes.add(t);
+    String [] types = new String[uniqueTypes.size()];
+    uniqueTypes.toArray(types);
+    Arrays.sort(types);
+    StringBuffer os = new StringBuffer();
+    for(int i = 0; i < types.length; i ++){
+      if(i > 0) os.append(TYPE_SEP);
+      os.append(types[i]);
+    }
+    return os.toString();
+  }
+  
+  public CoreMap attributeMap() {
+    if(attributeMap == null){
+      attributeMap = new ArrayCoreMap();
+    }
+    return attributeMap;
+  }
+  
+  public void setTypeProbabilities(Counter<String> probs) {
+    typeProbabilities = probs;
+  }
+  public Counter<String> getTypeProbabilities() {
+    return typeProbabilities;
+  }
+  String probsToString() {
+    List<Pair<String, Double>> sorted = Counters.toDescendingMagnitudeSortedListWithCounts(typeProbabilities);
+    StringBuffer os = new StringBuffer();
+    os.append("{");
+    boolean first = true;
+    for(Pair<String, Double> lv: sorted) {
+      if(! first) os.append("; ");
+      os.append(lv.first + ", " + lv.second);
+      first = false;
+    }
+    os.append("}");
+    return os.toString();
+  }
+  

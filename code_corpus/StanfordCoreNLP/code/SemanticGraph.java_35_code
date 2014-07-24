@@ -1,0 +1,27 @@
+  public boolean isAuxiliaryVerb(IndexedWord vertex) {
+    Set<GrammaticalRelation> relns = relns(vertex);
+    if (relns.isEmpty())
+      return false;
+
+    boolean result = relns.contains(EnglishGrammaticalRelations.AUX_MODIFIER)
+        || relns.contains(EnglishGrammaticalRelations.AUX_PASSIVE_MODIFIER);
+    // System.err.println("I say " + vertex + (result ? " is" : " is not") +
+    // " an aux");
+    return result;
+  }
+
+  public Set<IndexedWord> getLeafVertices() {
+    Set<IndexedWord> result = Generics.newHashSet();
+    Set<IndexedWord> vertices = vertexSet();
+    for (IndexedWord v : vertices) {
+      if (outDegree(v) == 0) {
+        result.add(v);
+      }
+    }
+    return result;
+  }
+
+  public int size() {
+    return this.vertexSet().size();
+  }
+

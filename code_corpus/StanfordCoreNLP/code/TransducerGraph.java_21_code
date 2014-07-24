@@ -1,0 +1,32 @@
+  private void depthFirstSearchHelper(Object node, Set marked, int level, boolean forward, StringBuilder b) {
+    if (marked.contains(node)) {
+      return;
+    }
+    marked.add(node);
+    Set<Arc> arcs;
+    if (forward) {
+      arcs = this.getArcsBySource(node);
+    } else {
+      arcs = this.getArcsByTarget(node);
+    }
+    if (arcs == null) {
+      return;
+    }
+    for (Arc newArc : arcs) {
+      // print it out
+      for (int i = 0; i < level; i++) {
+        b.append("  ");
+      }
+      if (getEndNodes().contains(newArc.getTargetNode())) {
+        b.append(newArc + " END\n");
+      } else {
+        b.append(newArc + "\n");
+      }
+      if (forward) {
+        depthFirstSearchHelper(newArc.getTargetNode(), marked, level + 1, forward, b);
+      } else {
+        depthFirstSearchHelper(newArc.getSourceNode(), marked, level + 1, forward, b);
+      }
+    }
+  }
+

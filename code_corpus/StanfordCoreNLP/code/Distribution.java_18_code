@@ -1,0 +1,17 @@
+  public static <E> Distribution<E> distributionFromLogisticCounter(Counter<E> cntr) {
+    double expSum = 0.0;
+    int numKeys = 0;
+    for (E key : cntr.keySet()) {
+      expSum += Math.exp(cntr.getCount(key));
+      numKeys++;
+    }
+    Distribution<E> probs = new Distribution<E>();
+    probs.counter = new ClassicCounter<E>();
+    probs.reservedMass = 0.0;
+    probs.numberOfKeys = numKeys;
+    for (E key : cntr.keySet()) {
+      probs.counter.setCount(key, Math.exp(cntr.getCount(key)) / expSum);
+    }
+    return probs;
+  }
+

@@ -1,0 +1,75 @@
+  @SuppressWarnings({"SuspiciousMethodCalls", "unchecked"})
+  @Override
+  public T get(Object key) {
+    SoftReference<T> likelyReferenceOrNull = mapping.get(key);
+    T referenceOrNull = likelyReferenceOrNull == null ? null : likelyReferenceOrNull.get();
+    if (likelyReferenceOrNull == null) {
+      // Case: We don't know about this element being in the cache
+      if (!tryFile(key)) { return null; }  // Case: there's no hope of finding this element
+      Collection<Pair<KEY, T>> elemsRead = readBlock(key);  // Read the block for this key
+      for (Pair<KEY, T> pair : elemsRead) {
+        if (pair.first.equals(key)) { return pair.second; }
+      }
+      return null;
+    } else if (referenceOrNull == null) {
+      // Case: This element once was in the cache
+      mapping.remove(key);
+      return get(key);  // try again
+    } else {
+      if (referenceOrNull instanceof Collection) {
+        return (T) Collections.unmodifiableCollection((Collection) referenceOrNull);
+      } else if (referenceOrNull instanceof Map) {
+        return (T) Collections.unmodifiableMap((Map) referenceOrNull);
+      } else {
+        return referenceOrNull;
+      }
+    }
+  }
+
+  @Override
+  public T put(KEY key, T value) {
+    T existing = get(key);
+    if (existing == value || (existing != null && existing.equals(value))) {
+      // Make sure we flush objects which have changed
+      if (existing != null && !existing.equals(value)) {
+        updateBlockOrDelete(key, value);
+      }
+      // Return the same object back
+      return existing;
+    } else {
+      // In-memory
+      SoftReference<T> ref = new SoftReference<T>(value, this.reaper);
+      mapping.put(key, ref);
+      // On Disk
+      if (existing == null) {
+        appendBlock(key, value);
+      } else {
+        updateBlockOrDelete(key, value);
+      }
+      // Return
+      return existing;
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  @Override
+  public T remove(Object key) {
+    if (!tryFile(key)) return null;
+    try {
+      return updateBlockOrDelete((KEY) key, null);
+    } catch (ClassCastException e) {
+      return null;
+    }
+  }
+
+  @Override
+  public void putAll(Map<? extends KEY, ? extends T> m) {
+    for (Entry<? extends KEY, ? extends T> entry : m.entrySet()) {
+      try {
+        put( entry.getKey(), entry.getValue() );
+      } catch (RuntimeException e) {
+        err(e);
+      }
+    }
+  }
+

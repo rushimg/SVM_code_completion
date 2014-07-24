@@ -1,0 +1,23 @@
+    private RegularTimePeriod createInstance(Class periodClass, 
+            Date millisecond, TimeZone zone, Locale locale) {
+        RegularTimePeriod result = null;
+        try {
+            Constructor c = periodClass.getDeclaredConstructor(new Class[] {
+                    Date.class, TimeZone.class, Locale.class});
+            result = (RegularTimePeriod) c.newInstance(new Object[] {
+                    millisecond, zone, locale});
+        }
+        catch (Exception e) {
+            try {
+                Constructor c = periodClass.getDeclaredConstructor(new Class[] {
+                        Date.class});
+                result = (RegularTimePeriod) c.newInstance(new Object[] {
+                        millisecond});
+            }
+            catch (Exception e2) {
+                // do nothing
+            }
+        }
+        return result;
+    }
+

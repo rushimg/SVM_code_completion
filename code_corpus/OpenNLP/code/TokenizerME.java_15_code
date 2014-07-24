@@ -1,0 +1,21 @@
+  public static TokenizerModel train(String languageCode,
+      ObjectStream<TokenSample> samples, Dictionary abbreviations,
+      boolean useAlphaNumericOptimization, TrainingParameters mlParams)
+      throws IOException {
+    Factory factory = new Factory();
+
+    Map<String, String> manifestInfoEntries = new HashMap<String, String>();
+
+    ObjectStream<Event> eventStream = new TokSpanEventStream(samples,
+        useAlphaNumericOptimization, factory.getAlphanumeric(languageCode),
+        factory.createTokenContextGenerator(languageCode,
+            getAbbreviations(abbreviations)));
+
+    MaxentModel maxentModel = TrainUtil.train(eventStream,
+        mlParams.getSettings(), manifestInfoEntries);
+
+    return new TokenizerModel(languageCode, maxentModel, abbreviations,
+        useAlphaNumericOptimization, manifestInfoEntries);
+  }
+
+

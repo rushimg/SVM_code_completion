@@ -1,0 +1,19 @@
+  public static void finishThread(){
+    //--Create Task
+    final long threadId = Thread.currentThread().getId();
+    Runnable finish = new Runnable(){
+      @Override
+      public void run(){
+        releaseThreadControl(threadId);
+      }
+    };
+    //--Run Task
+    if(isThreaded){
+      //(case: multithreaded)
+      attemptThreadControl( threadId, finish );
+    } else {
+      //(case: no threading)
+      Redwood.log(Flag.WARN, "finishThreads() called outside of threaded environment");
+    }
+  }
+

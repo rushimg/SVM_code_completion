@@ -1,0 +1,38 @@
+  public Iterable<SequenceMatchResult<T>> findAllNonOverlapping() {
+    Iterator<SequenceMatchResult<T>> iter = new Iterator<SequenceMatchResult<T>>() {
+      SequenceMatchResult<T> next;
+
+      private SequenceMatchResult<T> getNext() {
+        boolean found = find();
+        if (found) {
+          return toBasicSequenceMatchResult();
+        } else {
+          return null;
+        }
+      }
+
+      @Override
+      public boolean hasNext() {
+        if (next == null) {
+          next = getNext();
+          return (next != null);
+        } else {
+          return true;
+        }
+      }
+
+      @Override
+      public SequenceMatchResult<T> next() {
+        if (!hasNext()) { throw new NoSuchElementException(); }
+        SequenceMatchResult<T> res = next;
+        next = null;
+        return res;
+      }
+
+      public void remove() {
+        throw new UnsupportedOperationException();
+      }
+    };
+    return new IterableIterator<SequenceMatchResult<T>>(iter);
+  }
+

@@ -1,0 +1,51 @@
+  public static void saveCorefChain(PrintWriter pw, int cid, CorefChain cluster) {
+    pw.println(cid + " " + countMentions(cluster));
+    // each mention saved on one line
+    Map<IntPair, Set<CorefChain.CorefMention>> mentionMap = cluster.getMentionMap();
+    for(IntPair mid: mentionMap.keySet()) {
+      // all mentions with the same head
+      Set<CorefChain.CorefMention> mentions = mentionMap.get(mid);
+      for(CorefChain.CorefMention mention: mentions) {
+        // one mention per line
+        pw.print(mid.getSource() + " " + mid.getTarget());
+        if(mention == cluster.getRepresentativeMention()) pw.print(" " + 1);
+        else pw.print(" " + 0);
+
+        pw.print(" " + mention.mentionType);
+        pw.print(" " + mention.number);
+        pw.print(" " + mention.gender);
+        pw.print(" " + mention.animacy);
+        pw.print(" " + mention.startIndex);
+        pw.print(" " + mention.endIndex);
+        pw.print(" " + mention.headIndex);
+        pw.print(" " + mention.corefClusterID);
+        pw.print(" " + mention.mentionID);
+        pw.print(" " + mention.sentNum);
+        pw.print(" " + mention.position.length());
+        for(int i = 0; i < mention.position.length(); i ++)
+          pw.print(" " + mention.position.get(i));
+        pw.print(" " + escapeSpace(mention.mentionSpan));
+        pw.println();
+      }
+    }
+  }
+
+  private static String escapeSpace(String s) {
+    return s.replaceAll("\\s", SPACE_HOLDER);
+  }
+  private static String unescapeSpace(String s) {
+    return s.replaceAll(SPACE_HOLDER, " ");
+  }
+  private static Dictionaries.MentionType parseMentionType(String s) {
+    return Dictionaries.MentionType.valueOf(s);
+  }
+  private static Dictionaries.Number parseNumber(String s) {
+    return Dictionaries.Number.valueOf(s);
+  }
+  private static Dictionaries.Gender parseGender(String s) {
+    return Dictionaries.Gender.valueOf(s);
+  }
+  private static Dictionaries.Animacy parseAnimacy(String s) {
+    return Dictionaries.Animacy.valueOf(s);
+  }
+

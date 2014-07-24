@@ -1,0 +1,149 @@
+  protected final Function<List<? extends HasWord>, List<TaggedWord>> tagger;
+
+  public EvaluateTreebank(LexicalizedParser parser) {
+    this(parser.getOp(), parser.lex, parser);
+  }
+
+  public EvaluateTreebank(Options op, Lexicon lex, ParserGrammar pqFactory) {
+    this(op, lex, pqFactory, loadTagger(op));
+  }
+
+  public EvaluateTreebank(Options op, Lexicon lex, ParserGrammar pqFactory, Function<List<? extends HasWord>,List<TaggedWord>> tagger) {
+    this.op = op;
+    this.debinarizer = new Debinarizer(op.forceCNF);
+    this.subcategoryStripper = op.tlpParams.subcategoryStripper();
+
+    this.evals = Generics.newArrayList();
+    evals.addAll(pqFactory.getExtraEvals());
+    this.parserQueryEvals = pqFactory.getParserQueryEvals();
+
+    // this.lex = lex;
+    this.pqFactory = pqFactory;
+
+    this.tagger = tagger;
+
+    collinizer = op.tlpParams.collinizer();
+    boundaryRemover = new BoundaryRemover();
+
+    boolean runningAverages = Boolean.parseBoolean(op.testOptions.evals.getProperty("runningAverages"));
+    summary = Boolean.parseBoolean(op.testOptions.evals.getProperty("summary"));
+    tsv = Boolean.parseBoolean(op.testOptions.evals.getProperty("tsv"));
+
+    if (!op.trainOptions.leftToRight) {
+      binarizerOnly = new TreeAnnotatorAndBinarizer(op.tlpParams, op.forceCNF, false, false, op);
+    } else {
+      binarizerOnly = new TreeAnnotatorAndBinarizer(op.tlpParams.headFinder(), new LeftHeadFinder(), op.tlpParams, op.forceCNF, false, false, op);
+    }
+
+
+    if (Boolean.parseBoolean(op.testOptions.evals.getProperty("pcfgLB"))) {
+      pcfgLB = new Evalb("pcfg LP/LR", runningAverages);
+    }
+    // TODO: might be nice to allow more than one child-specific scorer
+    if (op.testOptions.evals.getProperty("pcfgChildSpecific") != null) {
+      String filter = op.testOptions.evals.getProperty("pcfgChildSpecific");
+      pcfgChildSpecific = FilteredEval.childFilteredEval("pcfg children matching " + filter + " LP/LR", runningAverages, op.langpack(), filter);
+    }
+    if (Boolean.parseBoolean(op.testOptions.evals.getProperty("pcfgLA"))) {
+      pcfgLA = new LeafAncestorEval("pcfg LeafAncestor");
+    }
+    if (Boolean.parseBoolean(op.testOptions.evals.getProperty("pcfgCB"))) {
+      pcfgCB = new Evalb.CBEval("pcfg CB", runningAverages);
+    }
+    if (Boolean.parseBoolean(op.testOptions.evals.getProperty("pcfgDA"))) {
+      pcfgDA = new UnlabeledAttachmentEval("pcfg DA", runningAverages, op.langpack().headFinder());
+    }
+    if (Boolean.parseBoolean(op.testOptions.evals.getProperty("pcfgTA"))) {
+      pcfgTA = new TaggingEval("pcfg Tag", runningAverages, lex);
+    }
+    if (Boolean.parseBoolean(op.testOptions.evals.getProperty("depDA"))) {
+      depDA = new UnlabeledAttachmentEval("dep DA", runningAverages, null, op.langpack().punctuationWordRejectFilter());
+    }
+    if (Boolean.parseBoolean(op.testOptions.evals.getProperty("depTA"))) {
+      depTA = new TaggingEval("dep Tag", runningAverages, lex);
+    }
+    if (Boolean.parseBoolean(op.testOptions.evals.getProperty("factLB"))) {
+      factLB = new Evalb("factor LP/LR", runningAverages);
+    }
+    if (op.testOptions.evals.getProperty("factChildSpecific") != null) {
+      String filter = op.testOptions.evals.getProperty("factChildSpecific");
+      factChildSpecific = FilteredEval.childFilteredEval("fact children matching " + filter + " LP/LR", runningAverages, op.langpack(), filter);
+    }
+    if (Boolean.parseBoolean(op.testOptions.evals.getProperty("factLA"))) {
+      factLA = new LeafAncestorEval("factor LeafAncestor");
+    }
+    if (Boolean.parseBoolean(op.testOptions.evals.getProperty("factCB"))) {
+      factCB = new Evalb.CBEval("fact CB", runningAverages);
+    }
+    if (Boolean.parseBoolean(op.testOptions.evals.getProperty("factDA"))) {
+      factDA = new UnlabeledAttachmentEval("factor DA", runningAverages, null);
+    }
+    if (Boolean.parseBoolean(op.testOptions.evals.getProperty("factTA"))) {
+      factTA = new TaggingEval("factor Tag", runningAverages, lex);
+    }
+    if (Boolean.parseBoolean(op.testOptions.evals.getProperty("pcfgRUO"))) {
+      pcfgRUO = new AbstractEval.RuleErrorEval("pcfg Rule under/over");
+    }
+    if (Boolean.parseBoolean(op.testOptions.evals.getProperty("pcfgCUO"))) {
+      pcfgCUO = new AbstractEval.CatErrorEval("pcfg Category under/over");
+    }
+    if (Boolean.parseBoolean(op.testOptions.evals.getProperty("pcfgCatE"))) {
+      pcfgCatE = new EvalbByCat("pcfg Category Eval", runningAverages);
+    }
+    if (Boolean.parseBoolean(op.testOptions.evals.getProperty("pcfgLL"))) {
+      pcfgLL = new AbstractEval.ScoreEval("pcfgLL", runningAverages);
+    }
+    if (Boolean.parseBoolean(op.testOptions.evals.getProperty("depLL"))) {
+      depLL = new AbstractEval.ScoreEval("depLL", runningAverages);
+    }
+    if (Boolean.parseBoolean(op.testOptions.evals.getProperty("factLL"))) {
+      factLL = new AbstractEval.ScoreEval("factLL", runningAverages);
+    }
+    if (Boolean.parseBoolean(op.testOptions.evals.getProperty("topMatch"))) {
+      evals.add(new TopMatchEval("topMatch", runningAverages));
+    }
+    // this one is for the various k Good/Best options.  Just for individual results
+    kGoodLB = new Evalb("kGood LP/LR", false);
+
+    if (Boolean.parseBoolean(op.testOptions.evals.getProperty("pcfgTopK"))) {
+      topKEvals.add(new BestOfTopKEval(new Evalb("pcfg top k comparisons", false), new Evalb("pcfg top k LP/LR", runningAverages)));
+    }
+
+    if (topKEvals.size() > 0) {
+      kbestPCFG = op.testOptions.evalPCFGkBest;
+    }
+    if (op.testOptions.printPCFGkBest > 0) {
+      kbestPCFG = Math.max(kbestPCFG, op.testOptions.printPCFGkBest);
+    }
+
+  }
+
+  private static Function<List<? extends HasWord>,List<TaggedWord>> loadTagger(Options op) {
+    if (op.testOptions.preTag) {
+      return ReflectionLoading.loadByReflection("edu.stanford.nlp.tagger.maxent.MaxentTagger", op.testOptions.taggerSerializedFile);
+    } else {
+      return null;
+    }
+  }
+
+  public double getLBScore() {
+    if (factLB != null) {
+      return factLB.getEvalbF1Percent();
+    }
+    if (pcfgLB != null) {
+      return pcfgLB.getEvalbF1Percent();
+    }
+    return 0.0;
+  }
+
+  public double getTagScore() {
+    if (factTA != null) {
+      return factTA.getEvalbF1Percent();
+    }
+    if (pcfgTA != null) {
+      return pcfgTA.getEvalbF1Percent();
+    }
+    return 0.0;
+  }
+
+

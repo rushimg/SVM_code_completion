@@ -1,0 +1,141 @@
+  @Override
+  public float score(IntTaggedWord iTW, int loc, String word, String featureSpec) {
+    // both actual
+    double c_TW = seenCounter.getCount(iTW);
+    // double x_TW = xferCounter.getCount(iTW);
+
+    IntTaggedWord temp = new IntTaggedWord(iTW.word, nullTag);
+    // word counts
+    double c_W = seenCounter.getCount(temp);
+    // double x_W = xferCounter.getCount(temp);
+
+    // totals
+    double total = seenCounter.getCount(NULL_ITW);
+    double totalUnseen = uwModel.unSeenCounter().getCount(NULL_ITW);
+
+    temp = new IntTaggedWord(nullWord, iTW.tag);
+    // tag counts
+    double c_T = seenCounter.getCount(temp);
+    double c_Tunseen = uwModel.unSeenCounter().getCount(temp);
+
+    double pb_W_T; // always set below
+
+    if (DEBUG_LEXICON) {
+      // dump info about last word
+      if (iTW.word != debugLastWord) {
+        if (debugLastWord >= 0 && debugPrefix != null) {
+          // the 2nd conjunct in test above handles older serialized files
+          EncodingPrintWriter.err.println(debugPrefix + debugProbs + debugNoProbs, "UTF-8");
+        }
+      }
+    }
+
+    boolean seen = (c_W > 0.0);
+
+    if (seen) {
+
+      // known word model for P(T|W)
+      if (DEBUG_LEXICON_SCORE) {
+        System.err.println("Lexicon.score " + wordIndex.get(iTW.word) + "/" + tagIndex.get(iTW.tag) + " as known word.");
+      }
+
+      // c_TW = Math.sqrt(c_TW); [cdm: funny math scaling? dunno who played with this]
+      // c_TW += 0.5;
+
+      double p_T_U;
+      if (useSignatureForKnownSmoothing) { // only works for English currently
+        p_T_U = getUnknownWordModel().scoreProbTagGivenWordSignature(iTW, loc, smooth[0], word);
+        if (DEBUG_LEXICON_SCORE) System.err.println("With useSignatureForKnownSmoothing, P(T|U) is " + p_T_U + " rather than " + (c_Tunseen / totalUnseen));
+      } else {
+        p_T_U = c_Tunseen / totalUnseen;
+      }
+      double pb_T_W; // always set below
+
+      if (DEBUG_LEXICON_SCORE) {
+        System.err.println("c_W is " + c_W  + " mle = " + (c_TW/c_W)+ " smoothInUnknownsThresh is " +
+                smoothInUnknownsThreshold + " base p_T_U is " + c_Tunseen + "/" + totalUnseen + " = " + p_T_U);
+      }
+      if (c_W > smoothInUnknownsThreshold && c_TW > 0.0 && c_W > 0.0) {
+        // we've seen the word enough times to have confidence in its tagging
+        pb_T_W = c_TW / c_W;
+      } else {
+        // we haven't seen the word enough times to have confidence in its
+        // tagging
+        if (smartMutation) {
+          int numTags = tagIndex.size();
+          if (m_TT == null || numTags != m_T.length) {
+            buildPT_T();
+          }
+          // System.out.println("Checking "+iTW);
+          for (int t = 0; t < numTags; t++) {
+            IntTaggedWord iTW2 = new IntTaggedWord(iTW.word, t);
+            double p_T_W2 = seenCounter.getCount(iTW2) / c_W;
+            if (p_T_W2 > 0) {
+              // System.out.println(" Observation of "+tagIndex.get(t)+"
+              // ("+seenCounter.getCount(iTW2)+") mutated to
+              // "+tagIndex.get(iTW.tag)+" at rate
+              // "+(m_TT[tag][t]/m_T[t]));
+            }
+          }
+        }
+        if (DEBUG_LEXICON_SCORE) {
+          System.err.println("c_TW = " + c_TW + " c_W = " + c_W +
+                             " p_T_U = " + p_T_U);
+        }
+      }
+      double p_T = (c_T / total);
+      double p_W = (c_W / total);
+
+      if (DEBUG_LEXICON) {
+        if (iTW.word != debugLastWord) {
+          debugLastWord = iTW.word;
+          debugLoc = loc;
+          debugProbs = new StringBuilder();
+          debugNoProbs = new StringBuilder("impossible: ");
+          debugPrefix = "Lexicon: " + wordIndex.get(debugLastWord) + " (known): ";
+        }
+        if (pb_W_T > Double.NEGATIVE_INFINITY) {
+          NumberFormat nf = NumberFormat.getNumberInstance();
+          nf.setMaximumFractionDigits(3);
+          debugProbs.append(tagIndex.get(iTW.tag) + ": cTW=" + c_TW + " c_T=" + c_T
+                  + " pb_T_W=" + nf.format(pb_T_W) + " log pb_W_T=" + nf.format(pb_W_T)
+                  + ", ");
+          // debugProbs.append("\n" + "smartMutation=" + smartMutation + "
+          // smoothInUnknownsThreshold=" + smoothInUnknownsThreshold + "
+          // smooth0=" + smooth[0] + "smooth1=" + smooth[1] + " p_T_U=" + p_T_U
+          // + " c_W=" + c_W);
+        } else {
+          debugNoProbs.append(tagIndex.get(iTW.tag)).append(' ');
+        }
+      } // end if (DEBUG_LEXICON)
+
+    } else { // when unseen
+      if (loc >= 0) {
+        pb_W_T = getUnknownWordModel().score(iTW, loc, c_T, total, smooth[0], word);
+      } else {
+        // For negative we now do a weighted average for the dependency grammar :-)
+        double pb_W0_T = getUnknownWordModel().score(iTW, 0, c_T, total, smooth[0], word);
+        double pb_W1_T = getUnknownWordModel().score(iTW, 1, c_T, total, smooth[0], word);
+      }
+    }
+
+    String tag = tagIndex.get(iTW.tag());
+
+    // Categorical cutoff if score is too low
+    if (pb_W_T > -100.0) {
+      return (float) pb_W_T;
+    }
+    return Float.NEGATIVE_INFINITY;
+  } // end score()
+
+
+  private transient int debugLastWord = -1;
+
+  private transient int debugLoc = -1;
+
+  private transient StringBuilder debugProbs;
+
+  private transient StringBuilder debugNoProbs;
+
+  private transient String debugPrefix;
+

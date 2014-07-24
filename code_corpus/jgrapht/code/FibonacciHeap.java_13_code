@@ -1,0 +1,49 @@
+    public FibonacciHeapNode<T> removeMin()
+    {
+        FibonacciHeapNode<T> z = minNode;
+
+        if (z != null) {
+            int numKids = z.degree;
+            FibonacciHeapNode<T> x = z.child;
+            FibonacciHeapNode<T> tempRight;
+
+            // for each child of z do...
+            while (numKids > 0) {
+                tempRight = x.right;
+
+                // remove x from child list
+                x.left.right = x.right;
+                x.right.left = x.left;
+
+                // add x to root list of heap
+                x.left = minNode;
+                x.right = minNode.right;
+                minNode.right = x;
+                x.right.left = x;
+
+                // set parent[x] to null
+                x.parent = null;
+                x = tempRight;
+                numKids--;
+            }
+
+            // remove z from root list of heap
+            z.left.right = z.right;
+            z.right.left = z.left;
+
+            if (z == z.right) {
+                minNode = null;
+            } else {
+                minNode = z.right;
+                consolidate();
+            }
+
+            // decrement size of heap
+            nNodes--;
+        }
+
+        return z;
+    }
+
+    // removeMin
+

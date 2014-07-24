@@ -1,0 +1,80 @@
+  public void setMatches(List<TreeFromFile> matches, Map<TreeFromFile, List<Tree>> matchedParts) {
+    // cdm Nov 2010: I rewrote this so the performance wasn't dreadful.
+    // In the old days, one by one updates to active Swing components gave dreadful performance, so
+    // I changed that, but that wasn't really the problem, it was that the if part didn't honor
+    // maxMatches!
+    removeAllMatches();
+    final DefaultListModel newModel = new DefaultListModel();
+    newModel.ensureCapacity(matches.size());
+
+    //Two cases:
+    // 1) Trees contain file and sentence annotations -> we can display differences
+    // 2) Trees do not contain file and sentence annotations -> we display all matches with no differences
+    //
+    if(TregexGUI.getInstance().isTdiffEnabled()) {
+      FileTreeNode refTreebank = FilePanel.getInstance().getActiveTreebanks().get(0); //First selected treebank is the reference
+      String refFileName = refTreebank.getFilename();
+      List<Tree> treeList = null;
+      Map<TreeFromFile, List<Tree>> filteredMatchedParts = Generics.newHashMap();
+
+      for (TreeFromFile t2 : matches) {
+        if (t2.getFilename() == null || t2.getSentenceId() < 0) { //Trees were not read by PennTreeReader.
+          newModel.addElement(t2);
+          filteredMatchedParts.put(t2, matchedParts.get(t2));
+
+        } else if( ! t2.getFilename().equals(refFileName)) {
+          if (treeList == null) //Lazy loading to account for the if statement above
+            treeList = getTreebankAsList(refTreebank.getTreebank());
+
+          int treeId = t2.getSentenceId() - 1;
+          if(treeId >= treeList.size())
+            continue;
+
+          Tree t1 = treeList.get(treeId);
+          Tree treeT2 = t2.getTree();
+          Set<Constituent> inT1notT2 = Tdiff.markDiff(t1, treeT2);
+          t2.setDiffConstituents(inT1notT2);
+          t2.setDiffDecoratedTree(treeT2);
+
+          newModel.addElement(t2);
+          if(matchedParts != null && matchedParts.containsKey(t2))
+            filteredMatchedParts.put(t2, matchedParts.get(t2));
+        } //else skip this tree
+        if(newModel.size() >= maxMatches) break;
+      }
+      matchedParts = filteredMatchedParts;
+
+    } else if (!showOnlyMatchedPortion || matchedParts == null) {
+      int i = 0;
+      for (TreeFromFile t : matches) {
+        newModel.addElement(t);
+        i++;
+        if (i >= maxMatches) break;
+      }
+    } else {
+      int i = 0;
+      for (TreeFromFile t : matchedParts.keySet()) {
+        List<Tree> curMatches = matchedParts.get(t);
+        for (Tree match : curMatches) {
+          newModel.addElement(new TreeFromFile(match, t.getFilename()));
+          i++;
+          if (i >= maxMatches) break;
+        }
+      }
+    }
+
+    if (! newModel.isEmpty())
+      SwingUtilities.invokeLater(new Runnable() {
+        public void run() {
+          list.setModel(newModel);
+          list.setSelectedIndex(0);
+          sendToListeners();
+        }
+      });
+
+    setMatchedParts(matchedParts);
+    this.setPreferredSize(this.getSize());
+  }
+
+
+

@@ -1,0 +1,33 @@
+    public String getImageMapAreaTag(
+            ToolTipTagFragmentGenerator toolTipTagFragmentGenerator,
+            URLTagFragmentGenerator urlTagFragmentGenerator) {
+
+        StringBuffer tag = new StringBuffer();
+        boolean hasURL = (this.urlText == null ? false
+                : !this.urlText.equals(""));
+        boolean hasToolTip = (this.toolTipText == null ? false
+                : !this.toolTipText.equals(""));
+        if (hasURL || hasToolTip) {
+            tag.append("<area shape=\"" + getShapeType() + "\"" + " coords=\""
+                    + getShapeCoords() + "\"");
+            if (hasToolTip) {
+                tag.append(toolTipTagFragmentGenerator.generateToolTipFragment(
+                        this.toolTipText));
+            }
+            if (hasURL) {
+                tag.append(urlTagFragmentGenerator.generateURLFragment(
+                        this.urlText));
+            }
+            else {
+                tag.append(" nohref=\"nohref\"");
+            }
+            // if there is a tool tip, we expect it to generate the title and
+            // alt values, so we only add an empty alt if there is no tooltip
+            if (!hasToolTip) {
+                tag.append(" alt=\"\"");
+            }
+            tag.append("/>");
+        }
+        return tag.toString();
+    }
+

@@ -1,0 +1,127 @@
+  public static boolean fixChunkSentenceBoundaries(CoreMap docAnnotation, List<IntPair> chunkCharOffsets,
+                                                   boolean offsetsAreNotSorted,
+                                                   boolean extendedFixSentence, boolean moreExtendedFixSentence)
+  {
+    String text = docAnnotation.get(CoreAnnotations.TextAnnotation.class);
+    List<CoreMap> sentences = docAnnotation.get(CoreAnnotations.SentencesAnnotation.class);
+    if (sentences == null || sentences.size() == 0) return true;
+    if (chunkCharOffsets != null) {
+      int i = 0;
+      CoreMap sentence = sentences.get(i);
+      for (IntPair offsets:chunkCharOffsets) {
+        int offsetBegin = offsets.getSource();
+        int offsetEnd = offsets.getTarget();
+        // Find sentence where sentence begins after chunk starts
+        // and sentence ends after chunk starts
+        while (offsetBegin < sentence.get(CoreAnnotations.CharacterOffsetBeginAnnotation.class)
+                || offsetBegin >= sentence.get(CoreAnnotations.CharacterOffsetEndAnnotation.class)) {
+          i++;
+          if (i >= sentences.size()) { return false; }
+          sentence = sentences.get(i);
+        }
+        // offsetBegin is now >= sentence begin and < sentence end
+        // Check if sentence end includes chunk
+        if (sentence.get(CoreAnnotations.CharacterOffsetEndAnnotation.class) >= offsetEnd) {
+          // success!  sentence contains chunk
+        } else {
+          // hmm, sentence contains beginning of chunk, but not end
+          // Lets find sentence that contains end of chunk and merge sentences
+          int startSentIndex = i;
+          while (offsetEnd > sentence.get(CoreAnnotations.CharacterOffsetEndAnnotation.class)) {
+            i++;
+            if (i >= sentences.size()) { return false; }
+            sentence = sentences.get(i);
+          }
+          Integer firstNonWsCharOffset = getFirstNonWsCharOffset(sentence, false);
+          if (firstNonWsCharOffset != null && firstNonWsCharOffset >= offsetEnd) {
+            // Ends before first real character of this sentence, don't include this sentence
+            i--;
+            sentence = sentences.get(i);
+          }
+          // Okay, now let's merge sentences from startSendIndex to i (includes i)
+          mergeChunks(sentences, text, startSentIndex, i+1);
+          // Reset our iterating index i to startSentIndex
+          i = startSentIndex;
+          sentence = sentences.get(i);
+        }
+        if (extendedFixSentence) {
+          //System.err.println("Doing extended fixing of sentence:" + text.substring(offsetBegin,offsetEnd));
+          if (i+1 < sentences.size()) {
+            // Extended sentence fixing:
+            // Check if entity is at the end of this sentence and if next sentence starts with uppercase
+            // If not uppercase, merge with next sentence
+            boolean entityAtSentEnd = true;
+            int sentCharBegin = sentence.get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);
+            String sentText = sentence.get(CoreAnnotations.TextAnnotation.class);
+            int offsetEndInSentText = offsetEnd - sentCharBegin;
+            for (int j = offsetEndInSentText; j < sentText.length(); j++) {
+              char c = sentText.charAt(j);
+              if (!Character.isWhitespace(c)) {
+                entityAtSentEnd = false;
+                break;
+              }
+            }
+            boolean doMerge = false;
+            if (entityAtSentEnd) {
+              CoreMap nextSentence = sentences.get(i+1);
+              Character c = getFirstNonWsChar(nextSentence);
+              if (c != null) {
+                doMerge = !Character.isUpperCase(c);
+                if (!doMerge) {
+                  logger.finer("No merge: c is '" + c + "'");
+                }
+              } else {
+                logger.finer("No merge: no char");
+              }
+            } else {
+              logger.finer("No merge: entity not at end");
+            }
+            if (doMerge) {
+              logger.finer("Merge chunks");
+              mergeChunks(sentences, text, i, i+2);
+            }
+          }
+        }
+        if (offsetsAreNotSorted) {
+          i = 0;
+        }
+        sentence = sentences.get(i);
+      }
+    }
+    // Do a bit more sentence fixing
+    if (moreExtendedFixSentence) {
+      int i = 0;
+      while (i+1 < sentences.size()) {
+        boolean doMerge = false;
+        CoreMap sentence = sentences.get(i);
+        CoreMap nextSentence = sentences.get(i+1);
+        String sentTrimmedText = getTrimmedText(sentence);
+        String nextSentTrimmedText = getTrimmedText(nextSentence);
+        if (sentTrimmedText.length() <= 1 || nextSentTrimmedText.length() <= 1) {
+          // Merge
+          doMerge = true;
+        } else {
+ //         List<CoreLabel> sentTokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
+ //         CoreLabel lastSentToken = sentTokens.get(sentTokens.size()-1);
+          Character c = getFirstNonWsChar(nextSentence);
+ //         List<CoreLabel> nextSentTokens = nextSentence.get(CoreAnnotations.TokensAnnotation.class);
+          if (c != null && !Character.isUpperCase(c)) {
+            if (c == ',' || (Character.isLowerCase(c))) {
+              doMerge = true;
+            }
+          }
+        }
+        if (doMerge) {
+          mergeChunks(sentences, text, i, i+2);
+        } else {
+          i++;
+        }
+      }
+    }
+    // Set sentence indices
+    for (int i = 0; i < sentences.size(); i++) {
+      CoreMap sentence = sentences.get(i);
+      sentence.set(CoreAnnotations.SentenceIndexAnnotation.class, i);
+    }
+    return true;
+  }

@@ -1,0 +1,20 @@
+  public static double[] paramsToVector(int totalSize, Iterator<SimpleMatrix> ... matrices) {
+    double[] theta = new double[totalSize];
+    int index = 0;
+    for (Iterator<SimpleMatrix> matrixIterator : matrices) {
+      while (matrixIterator.hasNext()) {
+        SimpleMatrix matrix = matrixIterator.next();
+        int numElements = matrix.getNumElements();
+        //System.out.println(Integer.toString(numElements)); // to know what matrices are
+        for (int i = 0; i < numElements; ++i) {
+          theta[index] = matrix.get(i);
+          ++index;
+        }
+      }
+    }
+    if (index != totalSize) {
+      throw new AssertionError("Did not entirely fill the theta vector: expected " + totalSize + " used " + index);
+    }
+    return theta;
+  }
+

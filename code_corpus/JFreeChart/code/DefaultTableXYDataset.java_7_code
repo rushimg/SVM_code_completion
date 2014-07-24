@@ -1,0 +1,16 @@
+    public void addSeries(XYSeries series) {
+        if (series == null) {
+            throw new IllegalArgumentException("Null 'series' argument.");
+        }
+        if (series.getAllowDuplicateXValues()) {
+            throw new IllegalArgumentException(
+                "Cannot accept XYSeries that allow duplicate values. "
+                + "Use XYSeries(seriesName, <sort>, false) constructor."
+            );
+        }
+        updateXPoints(series);
+        this.data.add(series);
+        series.addChangeListener(this);
+        fireDatasetChanged();
+    }
+

@@ -1,0 +1,47 @@
+
+    // If no apparent root candidates are available, likely due to loop back
+    // edges (rcmod), find the node that dominates the most nodes, and let
+    // that be the new root. Note this implementation epitomizes K.I.S.S., and
+    // is brain dead and non-optimal, and will require further work.
+    ClassicCounter<Pair<IndexedWord, IndexedWord>> nodeDists = new ClassicCounter<Pair<IndexedWord, IndexedWord>>();
+    TreeSet<IndexedWord> nodes = new TreeSet<IndexedWord>(vertexSet());
+
+    for (IndexedWord node1 : nodes) {
+      for (IndexedWord node2 : nodes) {
+        // want directed paths only
+        Pair<IndexedWord, IndexedWord> key = new Pair<IndexedWord, IndexedWord>(node1, node2);
+        List<SemanticGraphEdge> path = getShortestDirectedPathEdges(node1, node2);
+        if (path != null) {
+          int dist = path.size();
+          nodeDists.setCount(key, dist);
+        }
+      }
+    }
+
+    // K.I.S.S. alg: just sum up and see who's on top, values don't have much
+    // meaning outside of determining dominance.
+    ClassicCounter<IndexedWord> dominatedEdgeCount = new ClassicCounter<IndexedWord>();
+    TreeSet<IndexedWord> nodesList = new TreeSet<IndexedWord>(vertexSet());
+    for (IndexedWord outer : nodesList) {
+      for (IndexedWord inner : nodesList) {
+        Pair<IndexedWord, IndexedWord> key = new Pair<IndexedWord, IndexedWord>(outer, inner);
+        dominatedEdgeCount.incrementCount(outer, nodeDists.getCount(key));
+      }
+    }
+
+    IndexedWord winner = Counters.argmax(dominatedEdgeCount);
+    // TODO: account for multiply rooted graphs later
+    setRoot(winner);
+
+  }
+
+  public void setRoot(IndexedWord word) {
+    roots.clear();
+    roots.add(word);
+  }
+
+  public void setRoots(Collection<IndexedWord> words) {
+    roots.clear();
+    roots.addAll(words);
+  }
+

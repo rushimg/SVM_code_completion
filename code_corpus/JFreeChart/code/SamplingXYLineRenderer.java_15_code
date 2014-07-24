@@ -1,0 +1,29 @@
+    public LegendItem getLegendItem(int datasetIndex, int series) {
+
+        XYPlot plot = getPlot();
+        if (plot == null) {
+            return null;
+        }
+
+        LegendItem result = null;
+        XYDataset dataset = plot.getDataset(datasetIndex);
+        if (dataset != null) {
+            if (getItemVisible(series, 0)) {
+                String label = getLegendItemLabelGenerator().generateLabel(
+                        dataset, series);
+                result = new LegendItem(label);
+                result.setLabelFont(lookupLegendTextFont(series));
+                Paint labelPaint = lookupLegendTextPaint(series);
+                if (labelPaint != null) {
+                    result.setLabelPaint(labelPaint);
+                }
+                result.setSeriesKey(dataset.getSeriesKey(series));
+                result.setSeriesIndex(series);
+                result.setDataset(dataset);
+                result.setDatasetIndex(datasetIndex);
+            }
+        }
+        return result;
+
+    }
+

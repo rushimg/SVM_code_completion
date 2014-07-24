@@ -1,0 +1,44 @@
+                return new Iterator<V>() {
+                  V last = null;
+
+                  public boolean hasNext() {
+                    // get next if we need to and one is available
+                    if (next == null && it.hasNext()) {
+                      next = it.next();
+                    }
+
+                    // if next and last both have values, compare them
+                    if (last != null && next != null) {
+                      return comparator.compare(last, next) == 0;
+                    }
+
+                    // one of them was not null - have more if it was next
+                    return next != null;
+                  }
+
+                  public V next() {
+                    if (!hasNext()) {
+                      throw new IllegalStateException("Didn't have next");
+                    }
+                    V rv = next;
+                    last = next;
+                    next = null;
+                    return rv;
+                  }
+
+                  public void remove() {
+                    throw new UnsupportedOperationException();
+                  }
+                };
+              }
+            };
+          }
+
+          public void remove() {
+            throw new UnsupportedOperationException();
+          }
+        };
+      }
+    };
+  }
+

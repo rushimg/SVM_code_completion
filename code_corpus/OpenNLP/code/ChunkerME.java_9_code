@@ -1,0 +1,49 @@
+  public double[] probs() {
+    return bestSequence.getProbs();
+  }
+
+    public static ChunkerModel train(String lang, ObjectStream<ChunkSample> in,
+      TrainingParameters mlParams, ChunkerFactory factory) throws IOException {
+
+    String beamSizeString = mlParams.getSettings().get(BeamSearch.BEAM_SIZE_PARAMETER);
+
+    int beamSize = NameFinderME.DEFAULT_BEAM_SIZE;
+    if (beamSizeString != null) {
+      beamSize = Integer.parseInt(beamSizeString);
+    }
+
+    Map<String, String> manifestInfoEntries = new HashMap<String, String>();
+
+    TrainerType trainerType = TrainerFactory.getTrainerType(mlParams.getSettings());
+
+
+    MaxentModel chunkerModel = null;
+    SequenceClassificationModel<String> seqChunkerModel = null;
+
+    if (TrainerType.EVENT_MODEL_TRAINER.equals(trainerType)) {
+      ObjectStream<Event> es = new ChunkerEventStream(in, factory.getContextGenerator());
+      EventTrainer trainer = TrainerFactory.getEventTrainer(mlParams.getSettings(),
+          manifestInfoEntries);
+      chunkerModel = trainer.train(es);
+    }
+    else if (TrainerType.SEQUENCE_TRAINER.equals(trainerType)) {
+      SequenceTrainer trainer = TrainerFactory.getSequenceModelTrainer(
+          mlParams.getSettings(), manifestInfoEntries);
+
+      // TODO: This will probably cause issue, since the feature generator uses the outcomes array
+
+      ChunkSampleSequenceStream ss = new ChunkSampleSequenceStream(in, factory.getContextGenerator());
+      seqChunkerModel = trainer.train(ss);
+    }
+    else {
+      throw new IllegalArgumentException("Trainer type is not supported: " + trainerType);
+    }
+
+    if (chunkerModel != null) {
+      return new ChunkerModel(lang, chunkerModel, manifestInfoEntries, factory);
+    }
+    else {
+      return new ChunkerModel(lang, seqChunkerModel, manifestInfoEntries, factory);
+    }
+  }
+

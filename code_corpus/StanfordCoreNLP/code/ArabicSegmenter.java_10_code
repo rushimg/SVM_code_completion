@@ -1,0 +1,33 @@
+  private static double decode(ArabicSegmenter segmenter, BufferedReader br,
+                               PrintWriter pwOut, int nThreads) {
+    assert nThreads > 0;
+    long nChars = 0;
+    final long startTime = System.nanoTime();
+    if (nThreads > 1) {
+      MulticoreWrapper<String,String> wrapper = new MulticoreWrapper<String,String>(nThreads, segmenter);
+      try {
+        for (String line; (line = br.readLine()) != null;) {
+          nChars += line.length();
+          wrapper.put(line);
+          while (wrapper.peek()) {
+            pwOut.println(wrapper.poll());
+          }
+        }
+
+        wrapper.join();
+        while (wrapper.peek()) {
+          pwOut.println(wrapper.poll());
+        }
+
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+
+    } else {
+      nChars = segmenter.segment(br, pwOut);
+    }
+    long duration = System.nanoTime() - startTime;
+    double charsPerSec = (double) nChars / (duration / 1000000000.0);
+    return charsPerSec;
+  }
+

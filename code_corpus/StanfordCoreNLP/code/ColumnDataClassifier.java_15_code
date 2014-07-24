@@ -1,0 +1,10 @@
+    private static <F> void addFeature(Object features, F newFeature, double value) {
+      if (features instanceof Counter<?>) {
+        ErasureUtils.<Counter<F>>uncheckedCast(features).setCount(newFeature, value);
+      } else if(features instanceof Collection<?>) {
+        ErasureUtils.<Collection<F>>uncheckedCast(features).add(newFeature);
+      } else {
+        throw new RuntimeException("addFeature was called with a features object that is neither a counter nor a collection!");
+      }
+    }
+

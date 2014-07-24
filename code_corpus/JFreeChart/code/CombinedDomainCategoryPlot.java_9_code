@@ -1,0 +1,25 @@
+    public void remove(CategoryPlot subplot) {
+        if (subplot == null) {
+            throw new IllegalArgumentException("Null 'subplot' argument.");
+        }
+        int position = -1;
+        int size = this.subplots.size();
+        int i = 0;
+        while (position == -1 && i < size) {
+            if (this.subplots.get(i) == subplot) {
+                position = i;
+            }
+            i++;
+        }
+        if (position != -1) {
+            this.subplots.remove(position);
+            subplot.setParent(null);
+            subplot.removeChangeListener(this);
+            CategoryAxis domain = getDomainAxis();
+            if (domain != null) {
+                domain.configure();
+            }
+            fireChangeEvent();
+        }
+    }
+

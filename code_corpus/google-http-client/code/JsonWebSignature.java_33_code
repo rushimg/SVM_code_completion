@@ -1,0 +1,22 @@
+    public JsonWebSignature parse(String tokenString) throws IOException {
+      // split on the dots
+      int firstDot = tokenString.indexOf('.');
+      Preconditions.checkArgument(firstDot != -1);
+      byte[] headerBytes = Base64.decodeBase64(tokenString.substring(0, firstDot));
+      int secondDot = tokenString.indexOf('.', firstDot + 1);
+      Preconditions.checkArgument(secondDot != -1);
+      Preconditions.checkArgument(tokenString.indexOf('.', secondDot + 1) == -1);
+      // decode the bytes
+      byte[] payloadBytes = Base64.decodeBase64(tokenString.substring(firstDot + 1, secondDot));
+      byte[] signatureBytes = Base64.decodeBase64(tokenString.substring(secondDot + 1));
+      byte[] signedContentBytes = StringUtils.getBytesUtf8(tokenString.substring(0, secondDot));
+      // parse the header and payload
+      Header header =
+          jsonFactory.fromInputStream(new ByteArrayInputStream(headerBytes), headerClass);
+      Preconditions.checkArgument(header.getAlgorithm() != null);
+      Payload payload =
+          jsonFactory.fromInputStream(new ByteArrayInputStream(payloadBytes), payloadClass);
+      return new JsonWebSignature(header, payload, signatureBytes, signedContentBytes);
+    }
+  }
+

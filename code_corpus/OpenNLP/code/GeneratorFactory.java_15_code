@@ -1,0 +1,53 @@
+  static class WindowFeatureGeneratorFactory implements XmlFeatureGeneratorFactory {
+
+    public AdaptiveFeatureGenerator create(Element generatorElement,
+        FeatureGeneratorResourceProvider resourceManager)  throws InvalidFormatException {
+
+      Element nestedGeneratorElement = null;
+
+      NodeList kids = generatorElement.getChildNodes();
+
+      for (int i = 0; i < kids.getLength(); i++) {
+        Node childNode = kids.item(i);
+
+        if (childNode instanceof Element) {
+          nestedGeneratorElement = (Element) childNode;
+          break;
+        }
+      }
+
+      if (nestedGeneratorElement == null) {
+        throw new InvalidFormatException("window feature generator must contain" +
+        		" an aggregator element");
+      }
+
+      AdaptiveFeatureGenerator nestedGenerator = GeneratorFactory.createGenerator(nestedGeneratorElement, resourceManager);
+
+      String prevLengthString = generatorElement.getAttribute("prevLength");
+
+      int prevLength;
+
+      try {
+        prevLength = Integer.parseInt(prevLengthString);
+      } catch (NumberFormatException e) {
+        throw new InvalidFormatException("prevLength attribute '" + prevLengthString + "' is not a number!", e);
+      }
+
+      String nextLengthString = generatorElement.getAttribute("nextLength");
+
+      int nextLength;
+
+      try {
+        nextLength = Integer.parseInt(nextLengthString);
+      } catch (NumberFormatException e) {
+        throw new InvalidFormatException("nextLength attribute '" + nextLengthString + "' is not a number!", e);
+      }
+
+      return new WindowFeatureGenerator(nestedGenerator, prevLength, nextLength);
+    }
+
+    static void register(Map<String, XmlFeatureGeneratorFactory> factoryMap) {
+      factoryMap.put("window", new WindowFeatureGeneratorFactory());
+    }
+  }
+

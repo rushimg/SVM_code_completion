@@ -1,0 +1,15 @@
+  public static <E> Distribution<E> laplaceWithExplicitUnknown(Counter<E> counter, double lambda, E UNK) {
+    Distribution<E> norm = new Distribution<E>();
+    norm.counter = new ClassicCounter<E>();
+    norm.numberOfKeys = counter.size();
+    norm.reservedMass = 0.0;
+    for (E key : counter.keySet()) {
+      if (key.equals(UNK)) {
+        norm.counter.setCount(key, counter.getCount(key) / total);
+      } else {
+        norm.counter.setCount(key, (counter.getCount(key) + lambda) / total);
+      }
+    }
+    return norm;
+  }
+

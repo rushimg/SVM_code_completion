@@ -1,0 +1,29 @@
+  public static boolean fixTokenOffsets(CoreMap docAnnotation)
+  {
+    List<CoreLabel> docTokens = docAnnotation.get(CoreAnnotations.TokensAnnotation.class);
+    List<CoreMap> sentences = docAnnotation.get(CoreAnnotations.SentencesAnnotation.class);
+    int i = 0;
+    CoreLabel curDocToken = docTokens.get(0);
+    for (CoreMap sentence:sentences) {
+      List<CoreLabel> sentTokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
+      CoreLabel sentTokenFirst = sentTokens.get(0);
+      while (curDocToken != sentTokenFirst) {
+        i++;
+        if (i >= docTokens.size()) { return false; }
+        curDocToken = docTokens.get(i);
+      }
+      int sentTokenBegin = i;
+      CoreLabel sentTokenLast = sentTokens.get(sentTokens.size()-1);
+      while (curDocToken != sentTokenLast) {
+        i++;
+        if (i >= docTokens.size()) { return false; }
+        curDocToken = docTokens.get(i);
+      }
+      int sentTokenEnd = i+1;
+      sentence.set(CoreAnnotations.TokenBeginAnnotation.class, sentTokenBegin);
+      sentence.set(CoreAnnotations.TokenEndAnnotation.class, sentTokenEnd);
+    }
+    return true;
+  }
+
+

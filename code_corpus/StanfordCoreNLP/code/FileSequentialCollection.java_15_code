@@ -1,0 +1,80 @@
+    private File primeNextFile() {
+      while (rootsIndex < roots.length) {
+        while (!fileArrayStack.empty()) {
+          // System.err.println("fileArrayStack: " + fileArrayStack);
+          Object obj = fileArrayStack.peek();
+          if (obj instanceof File[]) {
+            // System.err.println("Got a File[]");
+            File[] files = (File[]) obj;
+            Integer index = fileArrayStackIndices.pop();
+            int ind = index.intValue();
+            if (ind < files.length) {
+              index = Integer.valueOf(ind + 1);
+              fileArrayStackIndices.push(index);
+              fileArrayStack.push(files[ind]);
+              // loop around to process this new file
+            } else {
+              // this directory is finished and we pop up
+              fileArrayStack.pop();
+            }
+          } else {
+            // take it off the stack: tail recursion optimization
+            fileArrayStack.pop();
+            if (obj instanceof String) {
+              obj = new File((String) obj);
+            }
+            if (!(obj instanceof File)) {
+              throw new IllegalArgumentException("Collection elements must be Files or Strings");
+            }
+            File path = (File) obj;
+            if (path.isDirectory()) {
+              // System.err.println("Got directory " + path);
+              // if path is a directory, look into it
+              File[] directoryListing = path.listFiles(filt);
+              if (directoryListing == null) {
+                throw new IllegalArgumentException("Directory access problem for: " + path);
+              }
+              // System.err.println("  with " +
+              //	    directoryListing.length + " files in it.");
+              if (includeDirs) {
+                // System.err.println("Include dir as answer");
+                if (directoryListing.length > 0) {
+                  fileArrayStack.push(directoryListing);
+                  fileArrayStackIndices.push(Integer.valueOf(0));
+                }
+                return path;
+              } else {
+                // we don't include the dir, so we'll push
+                // the directory and loop around again ...
+                if (directoryListing.length > 0) {
+                  fileArrayStack.push(directoryListing);
+                  fileArrayStackIndices.push(Integer.valueOf(0));
+                }
+                // otherwise there was nothing in the
+                // directory; we will pop back up
+              }
+            } else {
+              // it's just a fixed file
+              // System.err.println("Got a plain file " + path);
+              if (!path.exists()) {
+                throw new IllegalArgumentException("File doesn't exist: " + path);
+              }
+              return path;
+            }
+          }
+          // go through loop again. we've pushed or popped as needed
+        }
+        // finished this root entry; go on to the next
+        rootsIndex++;
+        if (rootsIndex < roots.length) {
+          fileArrayStack.add(roots[rootsIndex]);
+          fileArrayStackIndices.push(Integer.valueOf(0));
+        }
+      }
+      // finished everything
+      return null;
+    }
+
+  }
+
+

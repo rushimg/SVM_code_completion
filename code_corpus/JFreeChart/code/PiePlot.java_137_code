@@ -1,0 +1,36 @@
+    public void draw(Graphics2D g2, Rectangle2D area, Point2D anchor,
+                     PlotState parentState, PlotRenderingInfo info) {
+
+        // adjust for insets...
+        RectangleInsets insets = getInsets();
+        insets.trim(area);
+
+        if (info != null) {
+            info.setPlotArea(area);
+            info.setDataArea(area);
+        }
+
+        drawBackground(g2, area);
+        drawOutline(g2, area);
+
+        Shape savedClip = g2.getClip();
+        g2.clip(area);
+
+        Composite originalComposite = g2.getComposite();
+        g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER,
+                getForegroundAlpha()));
+
+        if (!DatasetUtilities.isEmptyOrNull(this.dataset)) {
+            drawPie(g2, area, info);
+        }
+        else {
+            drawNoDataMessage(g2, area);
+        }
+
+        g2.setClip(savedClip);
+        g2.setComposite(originalComposite);
+
+        drawOutline(g2, area);
+
+    }
+

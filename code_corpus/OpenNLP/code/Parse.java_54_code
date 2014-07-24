@@ -1,0 +1,41 @@
+  public static void pruneParse(Parse parse) {
+    List<Parse> nodes = new LinkedList<Parse>();
+    nodes.add(parse);
+    while(nodes.size() != 0) {
+      Parse node = nodes.remove(0);
+      Parse[] children = node.getChildren();
+      if (children.length == 1 && node.getType().equals(children[0].getType())) {
+        int index = node.getParent().parts.indexOf(node);
+        children[0].setParent(node.getParent());
+        node.getParent().parts.set(index,children[0]);
+        node.parent = null;
+        node.parts = null;
+      }
+      nodes.addAll(Arrays.asList(children));
+    }
+  }
+
+  public static void fixPossesives(Parse parse) {
+    Parse[] tags = parse.getTagNodes();
+    for (int ti=0;ti<tags.length;ti++) {
+      if (tags[ti].getType().equals("POS")) {
+        if (ti+1 < tags.length && tags[ti+1].getParent() == tags[ti].getParent().getParent()) {
+          int start = tags[ti+1].getSpan().getStart();
+          int end = tags[ti+1].getSpan().getEnd();
+          for (int npi=ti+2;npi<tags.length;npi++) {
+            if (tags[npi].getParent() == tags[npi-1].getParent()) {
+              end = tags[npi].getSpan().getEnd();
+            }
+            else {
+              break;
+            }
+          }
+          Parse npPos = new Parse(parse.getText(),new Span(start,end),"NP",1,tags[ti+1]);
+          parse.insert(npPos);
+        }
+      }
+    }
+  }
+
+
+

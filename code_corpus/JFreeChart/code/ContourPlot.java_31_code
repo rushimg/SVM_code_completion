@@ -1,0 +1,111 @@
+    public void pointRenderer(Graphics2D g2,
+                              Rectangle2D dataArea,
+                              PlotRenderingInfo info,
+                              ContourPlot plot,
+                              ValueAxis domainAxis,
+                              ValueAxis rangeAxis,
+                              ColorBar colorBar,
+                              ContourDataset data,
+                              CrosshairState crosshairState) {
+
+        // setup for collecting optional entity info...
+        RectangularShape entityArea = null;
+        EntityCollection entities = null;
+        if (info != null) {
+            entities = info.getOwner().getEntityCollection();
+        }
+
+//      Rectangle2D.Double rect = null;
+//      rect = new Rectangle2D.Double();
+        RectangularShape rect = new Ellipse2D.Double();
+
+
+        //turn off anti-aliasing when filling rectangles
+        Object antiAlias = g2.getRenderingHint(RenderingHints.KEY_ANTIALIASING);
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                RenderingHints.VALUE_ANTIALIAS_OFF);
+
+        // if (tooltips!=null) tooltips.clearToolTips(); // reset collection
+        // get the data points
+        Number[] xNumber = data.getXValues();
+        Number[] yNumber = data.getYValues();
+        Number[] zNumber = data.getZValues();
+
+        double[] x = new double[xNumber.length];
+        double[] y = new double[yNumber.length];
+
+        for (int i = 0; i < x.length; i++) {
+            x[i] = xNumber[i].doubleValue();
+            y[i] = yNumber[i].doubleValue();
+        }
+
+        double transX = 0.0;
+        double transDX = 0.0;
+        double transY = 0.0;
+        double transDY = 0.0;
+        for (int k = 0; k < x.length; k++) {
+
+            transX = domainAxis.valueToJava2D(x[k], dataArea,
+            transY = rangeAxis.valueToJava2D(y[k], dataArea, RectangleEdge.LEFT)
+            transDX = size;
+            transDY = size;
+
+            rect.setFrame(transX, transY, transDX, transDY);
+
+            if (zNumber[k] != null) {
+                g2.setPaint(colorBar.getPaint(zNumber[k].doubleValue()));
+                g2.fill(rect);
+            }
+            else if (this.missingPaint != null) {
+                g2.setPaint(this.missingPaint);
+                g2.fill(rect);
+            }
+
+
+            entityArea = rect;
+
+            // add an entity for the item...
+            if (entities != null) {
+                String tip = null;
+                if (getToolTipGenerator() != null) {
+                    tip = this.toolTipGenerator.generateToolTip(data, k);
+                }
+                String url = null;
+                // if (getURLGenerator() != null) {   //dmo: look at this later
+                //   url = getURLGenerator().generateURL(data, series, item);
+                // }
+                // Unlike XYItemRenderer, we need to clone entityArea since it
+                // reused.
+                ContourEntity entity = new ContourEntity(
+                        (RectangularShape) entityArea.clone(), tip, url);
+                entity.setIndex(k);
+                entities.add(entity);
+            }
+
+            // do we need to update the crosshair values?
+            if (plot.isDomainCrosshairLockedOnData()) {
+                if (plot.isRangeCrosshairLockedOnData()) {
+                    // both axes
+                    crosshairState.updateCrosshairPoint(x[k], y[k], transX,
+                            transY, PlotOrientation.VERTICAL);
+                }
+                else {
+                    // just the horizontal axis...
+                    crosshairState.updateCrosshairX(transX);
+                }
+            }
+            else {
+                if (plot.isRangeCrosshairLockedOnData()) {
+                    // just the vertical axis...
+                    crosshairState.updateCrosshairY(transY);
+                }
+            }
+        }
+
+
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, antiAlias);
+
+        return;
+
+    }
+

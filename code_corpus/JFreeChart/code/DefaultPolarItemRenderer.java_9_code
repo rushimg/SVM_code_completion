@@ -1,0 +1,30 @@
+    public void drawSeries(Graphics2D g2,
+                           Rectangle2D dataArea,
+                           PlotRenderingInfo info,
+                           PolarPlot plot,
+                           XYDataset dataset,
+                           int seriesIndex) {
+
+        Polygon poly = new Polygon();
+        int numPoints = dataset.getItemCount(seriesIndex);
+        for (int i = 0; i < numPoints; i++) {
+            double theta = dataset.getXValue(seriesIndex, i);
+            double radius = dataset.getYValue(seriesIndex, i);
+            Point p = plot.translateValueThetaRadiusToJava2D(theta, radius,
+                    dataArea);
+            poly.addPoint(p.x, p.y);
+        }
+        g2.setPaint(lookupSeriesPaint(seriesIndex));
+        g2.setStroke(lookupSeriesStroke(seriesIndex));
+        if (isSeriesFilled(seriesIndex)) {
+            Composite savedComposite = g2.getComposite();
+            g2.setComposite(AlphaComposite.getInstance(
+                    AlphaComposite.SRC_OVER, 0.5f));
+            g2.fill(poly);
+            g2.setComposite(savedComposite);
+        }
+        else {
+            g2.draw(poly);
+        }
+    }
+

@@ -1,0 +1,15 @@
+  public static ClassicCounter<String> fromString(String s) {
+    ClassicCounter<String> result = new ClassicCounter<String>();
+    if (!s.startsWith("{") || !s.endsWith("}")) {
+      throw new RuntimeException("invalid format: ||"+s+"||");
+    }
+    s = s.substring(1, s.length()-1);
+    String[] lines = s.split(", ");
+    for (String line : lines) {
+      String[] fields = line.split("=");
+      if (fields.length!=2) throw new RuntimeException("Got unsplittable line: \"" + line + '\"');
+      result.setCount(fields[0], Double.parseDouble(fields[1]));
+    }
+    return result;
+  }
+

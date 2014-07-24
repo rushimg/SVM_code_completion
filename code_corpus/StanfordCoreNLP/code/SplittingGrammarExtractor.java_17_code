@@ -1,0 +1,73 @@
+  public void splitBetas() {
+    TwoDimensionalMap<String, String, double[][]> tempUnaryBetas = new TwoDimensionalMap<String, String, double[][]>();
+    ThreeDimensionalMap<String, String, String, double[][][]> tempBinaryBetas = new ThreeDimensionalMap<String, String, String, double[][][]>();
+
+    for (String parent : unaryBetas.firstKeySet()) {
+      for (String child : unaryBetas.get(parent).keySet()) {
+        double[][] betas = unaryBetas.get(parent, child);
+        int parentStates = betas.length;
+        int childStates = betas[0].length;
+        
+        double[][] newBetas;
+        if (!startSymbols.contains(parent)) {
+          for (int i = 0; i < parentStates; ++i) {
+            for (int j = 0; j < childStates; ++j) {
+            }
+          }
+          betas = newBetas;
+        }
+        if (!child.equals(Lexicon.BOUNDARY_TAG)) {
+          for (int i = 0; i < parentStates; ++i) {
+            for (int j = 0; j < childStates; ++j) {
+            }
+          }
+          betas = newBetas;
+        }
+        tempUnaryBetas.put(parent, child, betas);
+      }
+    }
+
+    for (String parent : binaryBetas.firstKeySet()) {
+      for (String left : binaryBetas.get(parent).firstKeySet()) {
+        for (String right : binaryBetas.get(parent).get(left).keySet()) {
+          double[][][] betas = binaryBetas.get(parent, left, right);
+          int parentStates = betas.length;
+          int leftStates = betas[0].length;
+          int rightStates = betas[0][0].length;
+        
+          double[][][] newBetas;
+          if (!startSymbols.contains(parent)) {
+            for (int i = 0; i < parentStates; ++i) {
+              for (int j = 0; j < leftStates; ++j) {
+                for (int k = 0; k < rightStates; ++k) {
+                }
+              }
+            }
+            betas = newBetas;
+          }
+
+          for (int i = 0; i < parentStates; ++i) {
+            for (int j = 0; j < leftStates; ++j) {
+              for (int k = 0; k < rightStates; ++k) {
+              }
+            }
+          }
+          betas = newBetas;
+
+          if (!right.equals(Lexicon.BOUNDARY_TAG)) {
+            for (int i = 0; i < parentStates; ++i) {
+              for (int j = 0; j < leftStates; ++j) {
+                for (int k = 0; k < rightStates; ++k) {
+                }
+              }
+            }
+          }
+          tempBinaryBetas.put(parent, left, right, newBetas);
+        }
+      }
+    }
+    unaryBetas = tempUnaryBetas;
+    binaryBetas = tempBinaryBetas;
+  }
+
+

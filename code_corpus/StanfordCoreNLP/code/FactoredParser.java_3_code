@@ -1,0 +1,78 @@
+        if (parser.scoreBinarizedTree(tree2b,true) < parser.scoreBinarizedTree(binaryTree,true)) {
+          System.out.println("SCORE INVERSION");
+          parser.validateBinarizedTree(binaryTree,0);
+        }
+        tree.pennPrint(pw);
+      } // end if doPCFG
+
+      if (op.testOptions.evalb) {
+        if (op.doPCFG && op.doDep) {
+          EvalbFormatWriter.writeEVALBline(tcEvalb.transformTree(tree), tcEvalb.transformTree(tree4));
+        } else if (op.doPCFG) {
+          EvalbFormatWriter.writeEVALBline(tcEvalb.transformTree(tree), tcEvalb.transformTree(tree2));
+        } else if (op.doDep) {
+          EvalbFormatWriter.writeEVALBline(tcEvalb.transformTree(tree), tcEvalb.transformTree(tree3db));
+        }
+      }
+    } // end for each tree in test treebank
+
+    if (op.testOptions.evalb) {
+      EvalbFormatWriter.closeEVALBfiles();
+    }
+
+    // op.testOptions.display();
+    if (op.doPCFG) {
+      pcfgPE.display(false, pw);
+      System.out.println("Grammar size: " + stateIndex.size());
+      pcfgCB.display(false, pw);
+      if (op.doDep) {
+        comboPE.display(false, pw);
+      }
+      pcfgTE.display(false, pw);
+      pcfgTEnoPunct.display(false, pw);
+      if (op.doDep) {
+        comboTE.display(false, pw);
+        comboTEnoPunct.display(false, pw);
+      }
+    }
+    if (op.doDep) {
+      depTE.display(false, pw);
+      depDE.display(false, pw);
+    }
+    if (op.doPCFG && op.doDep) {
+      comboDE.display(false, pw);
+    }
+    // pcfgPE.printGoodBad();
+  }
+
+
+  private static List<TaggedWord> cleanTags(List<TaggedWord> twList, TreebankLanguagePack tlp) {
+    int sz = twList.size();
+    List<TaggedWord> l = new ArrayList<TaggedWord>(sz);
+    for (int i = 0; i < sz; i++) {
+      TaggedWord tw = twList.get(i);
+      TaggedWord tw2 = new TaggedWord(tw.word(), tlp.basicCategory(tw.tag()));
+      l.add(tw2);
+    }
+    return l;
+  }
+
+  private static ArrayList<Word> wordify(List wList) {
+    ArrayList<Word> s = new ArrayList<Word>();
+    for (Object obj : wList) {
+      s.add(new Word(obj.toString()));
+    }
+    return s;
+  }
+
+  private static ArrayList<Word> cutLast(ArrayList<Word> s) {
+    return new ArrayList<Word>(s.subList(0, s.size() - 1));
+  }
+
+  private static ArrayList<Word> addLast(ArrayList<? extends Word> s) {
+    ArrayList<Word> s2 = new ArrayList<Word>(s);
+    //s2.add(new StringLabel(Lexicon.BOUNDARY));
+    s2.add(new Word(Lexicon.BOUNDARY));
+    return s2;
+  }
+

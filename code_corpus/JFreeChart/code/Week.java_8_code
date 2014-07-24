@@ -1,0 +1,34 @@
+    public Week(Date time, TimeZone zone, Locale locale) {
+        if (time == null) {
+            throw new IllegalArgumentException("Null 'time' argument.");
+        }
+        if (zone == null) {
+            throw new IllegalArgumentException("Null 'zone' argument.");
+        }
+        if (locale == null) {
+            throw new IllegalArgumentException("Null 'locale' argument.");
+        }
+        Calendar calendar = Calendar.getInstance(zone, locale);
+        calendar.setTime(time);
+
+        // sometimes the last few days of the year are considered to fall in
+        // GregorianCalendar.
+        int tempWeek = calendar.get(Calendar.WEEK_OF_YEAR);
+        if (tempWeek == 1
+                && calendar.get(Calendar.MONTH) == Calendar.DECEMBER) {
+            this.week = 1;
+            this.year = (short) (calendar.get(Calendar.YEAR) + 1);
+        }
+        else {
+            this.week = (byte) Math.min(tempWeek, LAST_WEEK_IN_YEAR);
+            int yyyy = calendar.get(Calendar.YEAR);
+            // alternatively, sometimes the first few days of the year are
+            if (calendar.get(Calendar.MONTH) == Calendar.JANUARY
+                    && this.week >= 52) {
+                yyyy--;
+            }
+            this.year = (short) yyyy;
+        }
+        peg(calendar);
+    }
+

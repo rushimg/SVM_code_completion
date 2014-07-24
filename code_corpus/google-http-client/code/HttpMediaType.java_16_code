@@ -1,0 +1,27 @@
+  public String build() {
+    if (cachedBuildResult != null) {
+      return cachedBuildResult;
+    }
+
+    StringBuilder str = new StringBuilder();
+    str.append(type);
+    str.append('/');
+    str.append(subType);
+    if (parameters != null) {
+      for (Entry<String, String> entry : parameters.entrySet()) {
+        String value = entry.getValue();
+        str.append("; ");
+        str.append(entry.getKey());
+        str.append("=");
+        str.append(!matchesToken(value) ? quoteString(value) : value);
+      }
+    }
+    cachedBuildResult = str.toString();
+    return cachedBuildResult;
+  }
+
+  @Override
+  public String toString() {
+    return build();
+  }
+

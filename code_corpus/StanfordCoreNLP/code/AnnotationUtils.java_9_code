@@ -1,0 +1,19 @@
+  public static Annotation deepMentionCopy(CoreMap dataset) {
+    Annotation newDataset = new Annotation("");
+
+    List<CoreMap> sents = dataset.get(CoreAnnotations.SentencesAnnotation.class);
+    List<CoreMap> newSents = new ArrayList<CoreMap>();
+    if(sents != null){
+      for(CoreMap sent: sents){
+        if(! (sent instanceof Annotation)){
+          throw new RuntimeException("ERROR: Sentences must instantiate Annotation!");
+        }
+        CoreMap newSent = sentenceDeepMentionCopy((Annotation) sent);
+        newSents.add(newSent);
+      }
+    }
+
+    addSentences(newDataset, newSents);
+    return newDataset;
+  }
+

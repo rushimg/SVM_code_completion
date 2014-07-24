@@ -1,0 +1,110 @@
+public class DependencyScoring {
+  public final static boolean VERBOSE = false;
+
+  public final List<Set<TypedDependency>> goldDeps;
+  public final List<Set<TypedDependency>> goldDepsUnlabeled;
+  public final boolean ignorePunc;
+
+
+  private static List<Set<TypedDependency>> toSets(Collection<TypedDependency> depCollection) {
+    Set<TypedDependency> depSet = Generics.newHashSet();
+    Set<TypedDependency> unlabeledDepSet = Generics.newHashSet();
+    for (TypedDependency dep : depCollection) {
+      unlabeledDepSet.add(new TypedDependencyStringEquality(null, dep.gov(), dep.dep()));
+      depSet.add(new TypedDependencyStringEquality(dep.reln(), dep.gov(), dep.dep()));
+    }
+
+    List<Set<TypedDependency>> l = new ArrayList<Set<TypedDependency>>(2);
+    l.add(depSet);
+    l.add(unlabeledDepSet);
+    return l;
+  }
+
+  public DependencyScoring(List<Collection<TypedDependency>> goldDeps, boolean ignorePunc) {
+    this.goldDeps = new ArrayList<Set<TypedDependency>>(goldDeps.size());
+    this.goldDepsUnlabeled = new ArrayList<Set<TypedDependency>>(goldDeps.size());
+    this.ignorePunc = ignorePunc;
+
+    for (Collection<TypedDependency> depCollection : goldDeps) {
+      List<Set<TypedDependency>> sets = toSets(depCollection);
+      this.goldDepsUnlabeled.add(sets.get(1));
+      this.goldDeps.add(sets.get(0));
+    }
+    if (ignorePunc) {
+      removeHeadsAssignedToPunc(this.goldDeps);
+      removeHeadsAssignedToPunc(this.goldDepsUnlabeled);
+    }
+  }
+
+  private static void removeHeadsAssignedToPunc(Set<TypedDependency> depSet) {
+    List<TypedDependency> deps = new ArrayList<TypedDependency>(depSet);
+    for (TypedDependency dep : deps) {
+      if (langIndependentPuncCheck(dep.dep().label().word())) {
+        if (VERBOSE) {
+           System.err.printf("Dropping Punctuation Dependency: %s\n", dep);
+        }
+        depSet.remove(dep);
+      }
+    }
+  }
+
+  private static void removeHeadsAssignedToPunc(List<Set<TypedDependency>> depSets) {
+    for (Set<TypedDependency> depSet : depSets) {
+      removeHeadsAssignedToPunc(depSet);
+    }
+  }
+
+  public static boolean langIndependentPuncCheck(String token) {
+    boolean isNotWord = true;
+    for (int offset = 0; offset < token.length(); ) {
+       final int codepoint = token.codePointAt(offset);
+       if (Character.isLetterOrDigit(codepoint)) {
+         isNotWord = false;
+       }
+       offset += Character.charCount(codepoint);
+    }
+    return isNotWord;
+  }
+
+  public static DependencyScoring newInstanceStringEquality(List<Collection<TypedDependency>> goldDeps, boolean ignorePunc) {
+    return new DependencyScoring(convertStringEquality(goldDeps), ignorePunc);
+  }
+
+  public DependencyScoring(String filename, boolean CoNLLX, boolean ignorePunc) throws IOException {
+    this((CoNLLX ? readDepsCoNLLX(filename) : readDeps(filename)), ignorePunc);
+  }
+
+  public DependencyScoring(String filename) throws IOException {
+    this(filename, false, false);
+  }
+
+  public static List<Collection<TypedDependency>> convertStringEquality(List<Collection<TypedDependency>> deps){
+    List<Collection<TypedDependency>> convertedDeps = new ArrayList<Collection<TypedDependency>>();
+    for(Collection<TypedDependency> depSet : deps){
+      Collection<TypedDependency> converted = Generics.newHashSet();
+      for(TypedDependency dep : depSet){
+        converted.add(new TypedDependencyStringEquality(dep.reln(), dep.gov(), dep.dep()));
+      }
+      convertedDeps.add(converted);
+    }
+    return convertedDeps;
+  }
+
+  static private class TypedDependencyStringEquality extends TypedDependency {
+    private static final long serialVersionUID = 1L;
+
+    public TypedDependencyStringEquality(GrammaticalRelation reln, TreeGraphNode gov, TreeGraphNode dep)  {
+       super(reln, gov, dep);
+    }
+
+    public boolean equals(Object o) {
+       // some parsers, like Relex, screw up the casing
+       return o.toString().toLowerCase().equals(this.toString().toLowerCase());
+    }
+
+    @Override
+    public int hashCode() {
+       return toString().toLowerCase().hashCode();
+    }
+  }
+

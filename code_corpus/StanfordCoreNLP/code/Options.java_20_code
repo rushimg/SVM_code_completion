@@ -1,0 +1,75 @@
+    public String wordClassesFile;
+
+
+
+    private static final long serialVersionUID = 2805351374506855632L;
+
+    private static final String[] params = { "useUnknownWordSignatures",
+                                             "smoothInUnknownsThreshold",
+                                             "smartMutation",
+                                             "useUnicodeType",
+                                             "unknownSuffixSize",
+                                             "unknownPrefixSize",
+                                             "flexiTag",
+                                             "useSignatureForKnownSmoothing",
+                                             "wordClassesFile" };
+
+    @Override
+    public String toString() {
+      return params[0] + " " + useUnknownWordSignatures + "\n" +
+        params[1] + " " + smoothInUnknownsThreshold + "\n" +
+        params[2] + " " + smartMutation + "\n" +
+        params[3] + " " + useUnicodeType + "\n" +
+        params[4] + " " + unknownSuffixSize + "\n" +
+        params[5] + " " + unknownPrefixSize + "\n" +
+        params[6] + " " + flexiTag + "\n" +
+        params[7] + " " + useSignatureForKnownSmoothing + "\n" +
+        params[8] + " " + wordClassesFile + "\n";
+    }
+
+    public void readData(BufferedReader in) throws IOException {
+      for (int i = 0; i < params.length; i++) {
+        String line = in.readLine();
+        int idx = line.indexOf(' ');
+        String key = line.substring(0, idx);
+        String value = line.substring(idx + 1);
+        if ( ! key.equalsIgnoreCase(params[i])) {
+          System.err.println("Yikes!!! Expected " + params[i] + " got " + key);
+        }
+        switch (i) {
+        case 0:
+          useUnknownWordSignatures = Integer.parseInt(value);
+          break;
+        case 1:
+          smoothInUnknownsThreshold = Integer.parseInt(value);
+          break;
+        case 2:
+          smartMutation = Boolean.parseBoolean(value);
+          break;
+        case 3:
+          useUnicodeType = Boolean.parseBoolean(value);
+          break;
+        case 4:
+          unknownSuffixSize = Integer.parseInt(value);
+          break;
+        case 5:
+          unknownPrefixSize = Integer.parseInt(value);
+          break;
+        case 6:
+          flexiTag = Boolean.parseBoolean(value);
+          break;
+        case 7:
+          useSignatureForKnownSmoothing = Boolean.parseBoolean(value);
+          break;
+        case 8:
+          wordClassesFile = value;
+          break;
+        }
+      }
+    }
+
+  } // end class LexOptions
+
+
+  public LexOptions lexOptions = new LexOptions();
+

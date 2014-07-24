@@ -1,0 +1,41 @@
+  private List<U> sortKeys() {
+    Set<U> labels = uniqueLabels();
+    if (labels.size() == 0) {
+      return Collections.emptyList();
+    }
+
+    boolean comparable = true;
+    for (U label : labels) {
+      if (!(label instanceof Comparable)) {
+        comparable = false;
+        break;
+      }
+    }
+    if (comparable) {
+      List<Comparable<Object>> sorted = Generics.newArrayList();
+      for (U label : labels) {
+        sorted.add(ErasureUtils.<Comparable<Object>>uncheckedCast(label));
+      }
+      Collections.sort(sorted);
+      List<U> ret = Generics.newArrayList();
+      for (Object o : sorted) {
+        ret.add(ErasureUtils.<U>uncheckedCast(o));
+      }
+      return ret;
+    } else {
+      ArrayList<String> names = new ArrayList<String>();
+      HashMap<String, U> lookup = new HashMap<String, U>();
+      for (U label : labels) {
+        names.add(label.toString());
+        lookup.put(label.toString(), label);
+      }
+      Collections.sort(names);
+    
+      ArrayList<U> ret = new ArrayList<U>();
+      for (String name : names) {
+        ret.add(lookup.get(name));
+      }
+      return ret;
+    }
+  }
+  

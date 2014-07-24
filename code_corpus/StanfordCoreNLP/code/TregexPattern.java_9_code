@@ -1,0 +1,25 @@
+  public void prettyPrint() {
+    prettyPrint(System.out);
+  }
+
+
+  private static final Pattern codePattern = Pattern.compile("([0-9]+):([0-9]+)");
+
+  private static void extractSubtrees(List<String> codeStrings, String treeFile) {
+    List<Pair<Integer,Integer>> codes = new ArrayList<Pair<Integer,Integer>>();
+    for(String s : codeStrings) {
+      Matcher m = codePattern.matcher(s);
+      if(m.matches())
+        codes.add(new Pair<Integer,Integer>(Integer.parseInt(m.group(1)),Integer.parseInt(m.group(2))));
+      else
+        throw new RuntimeException("Error: illegal node code " + s);
+    }
+    TreeReaderFactory trf = new TRegexTreeReaderFactory();
+    MemoryTreebank treebank = new MemoryTreebank(trf);
+    treebank.loadPath(treeFile,null, true);
+    for (Pair<Integer,Integer> code : codes) {
+      Tree t = treebank.get(code.first()-1);
+      t.getNodeNumber(code.second()).pennPrint();
+    }
+  }
+

@@ -1,0 +1,45 @@
+    public void drawRangeGridline(Graphics2D g2, CategoryPlot plot,
+            ValueAxis axis, Rectangle2D dataArea, double value) {
+
+        Range range = axis.getRange();
+
+        if (!range.contains(value)) {
+            return;
+        }
+
+        Rectangle2D adjusted = new Rectangle2D.Double(dataArea.getX(),
+                dataArea.getY() + getYOffset(), dataArea.getWidth()
+                - getXOffset(), dataArea.getHeight() - getYOffset());
+
+        Line2D line1 = null;
+        Line2D line2 = null;
+        PlotOrientation orientation = plot.getOrientation();
+        if (orientation == PlotOrientation.HORIZONTAL) {
+            double x0 = axis.valueToJava2D(value, adjusted,
+                    plot.getRangeAxisEdge());
+            double x1 = x0 + getXOffset();
+            double y0 = dataArea.getMaxY();
+            double y1 = y0 - getYOffset();
+            double y2 = dataArea.getMinY();
+            line1 = new Line2D.Double(x0, y0, x1, y1);
+            line2 = new Line2D.Double(x1, y1, x1, y2);
+        }
+        else if (orientation == PlotOrientation.VERTICAL) {
+            double y0 = axis.valueToJava2D(value, adjusted,
+                    plot.getRangeAxisEdge());
+            double y1 = y0 - getYOffset();
+            double x0 = dataArea.getMinX();
+            double x1 = x0 + getXOffset();
+            double x2 = dataArea.getMaxX();
+            line1 = new Line2D.Double(x0, y0, x1, y1);
+            line2 = new Line2D.Double(x1, y1, x2, y1);
+        }
+        Paint paint = plot.getRangeGridlinePaint();
+        Stroke stroke = plot.getRangeGridlineStroke();
+        g2.setPaint(paint != null ? paint : Plot.DEFAULT_OUTLINE_PAINT);
+        g2.setStroke(stroke != null ? stroke : Plot.DEFAULT_OUTLINE_STROKE);
+        g2.draw(line1);
+        g2.draw(line2);
+
+    }
+

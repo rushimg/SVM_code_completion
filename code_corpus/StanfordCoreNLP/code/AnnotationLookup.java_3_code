@@ -1,0 +1,14 @@
+  @SuppressWarnings("unchecked")
+  public static Class<?> getValueType(Class<? extends CoreAnnotation> key) {
+    Class type = valueCache.get(key);
+    if (type == null) {
+      try {
+        type = key.newInstance().getType();
+      } catch (Exception e) {
+        throw new RuntimeException("Unexpected failure to instantiate - is your key class fancy?", e);
+      }
+      valueCache.put((Class)key, type);
+    }
+    return type;
+  }
+

@@ -1,0 +1,65 @@
+  @Override 
+  public void train(Collection<Tree> trees, Collection<Tree> rawTrees) {
+    double weight = 1.0;
+    // Train uw model on words
+    uwModelTrainer.train(trees, weight);
+    
+    final double numTrees = trees.size();
+    Iterator<Tree> rawTreesItr = rawTrees == null ? null : rawTrees.iterator();
+    Iterator<Tree> treeItr = trees.iterator();
+    
+    // Train factored lexicon on lemmas and morph tags
+    int treeId = 0;
+    while (treeItr.hasNext()) {
+      Tree tree = treeItr.next();
+      // CoreLabels, with morph analysis in the originalText annotation
+      List<Label> yield = rawTrees == null ? tree.yield() : rawTreesItr.next().yield();
+      // Annotated, binarized tree for the tags (labels are usually CategoryWordTag)
+      List<Label> pretermYield = tree.preTerminalYield();
+
+      int yieldLen = yield.size();
+      for (int i = 0; i < yieldLen; ++i) {
+        String word = yield.get(i).value();
+        int wordId = wordIndex.indexOf(word, true); // Don't do anything with words
+        String tag = pretermYield.get(i).value();
+        int tagId = tagIndex.indexOf(tag, true);
+
+        // Use the word as backup if there is no lemma
+        String featureStr = ((CoreLabel) yield.get(i)).originalText();
+        Pair<String,String> lemmaMorph = MorphoFeatureSpecification.splitMorphString(word, featureStr);
+        String lemma = lemmaMorph.first();
+        int lemmaId = wordIndex.indexOf(lemma, true);
+        String richMorphTag = lemmaMorph.second();
+        String reducedMorphTag = morphoSpec.strToFeatures(richMorphTag).toString().trim();
+        reducedMorphTag = reducedMorphTag.length() == 0 ? NO_MORPH_ANALYSIS : reducedMorphTag;
+        int morphId = morphIndex.indexOf(reducedMorphTag, true);
+        
+        // Seen event counts
+        wordTag.incrementCount(wordId, tagId);
+        lemmaTag.incrementCount(lemmaId, tagId);
+        morphTag.incrementCount(morphId, tagId);
+        tagCounter.incrementCount(tagId);
+        
+        // Unseen event counts
+          if (! wordTag.firstKeySet().contains(wordId) || wordTag.getCounter(wordId).totalCount() < 2) {
+            wordTagUnseen.incrementCount(tagId);
+          }
+          if (! lemmaTag.firstKeySet().contains(lemmaId) || lemmaTag.getCounter(lemmaId).totalCount() < 2) {
+            lemmaTagUnseen.incrementCount(tagId);
+          }
+          if (! morphTag.firstKeySet().contains(morphId) || morphTag.getCounter(morphId).totalCount() < 2) {
+            morphTagUnseen.incrementCount(tagId);
+          }
+        }
+      }
+      ++treeId;
+
+      if (DEBUG && (treeId % 100) == 0) {
+        System.err.printf("[%d]",treeId);
+      }
+      if (DEBUG && (treeId % 10000) == 0) {
+        System.err.println();
+      }
+    }
+  }
+  

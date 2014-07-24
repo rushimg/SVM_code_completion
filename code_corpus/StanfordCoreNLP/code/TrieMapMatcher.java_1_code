@@ -1,0 +1,22 @@
+public class TrieMapMatcher<K,V> {
+  TrieMap<K,V> root;
+  TrieMap<K,V> rootWithDelimiter;
+  List<K> multimatchDelimiter;
+
+  public TrieMapMatcher(TrieMap<K, V> root) {
+    this.root = root;
+    this.rootWithDelimiter = root;
+  }
+
+  public TrieMapMatcher(TrieMap<K, V> root, List<K> multimatchDelimiter) {
+    this.root = root;
+    this.multimatchDelimiter = multimatchDelimiter;
+    if (multimatchDelimiter != null && !multimatchDelimiter.isEmpty()) {
+      // Create a new root that always starts with the delimiter
+      rootWithDelimiter = new TrieMap<K, V>();
+      rootWithDelimiter.putChildTrie(multimatchDelimiter, root);
+    } else {
+      rootWithDelimiter = root;
+    }
+  }
+

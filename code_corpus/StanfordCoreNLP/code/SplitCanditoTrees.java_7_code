@@ -1,0 +1,22 @@
+  private static String treeToMorfette(Tree tree) {
+    StringBuilder sb = new StringBuilder();
+    List<Label> yield = tree.yield();
+    List<Label> tagYield = tree.preTerminalYield();
+    assert yield.size() == tagYield.size();
+    int listLen = yield.size();
+    for (int i = 0; i < listLen; ++i) {
+      CoreLabel token = (CoreLabel) yield.get(i);
+      CoreLabel tag = (CoreLabel) tagYield.get(i);
+      String morphStr = token.originalText();
+      if (morphStr == null || morphStr.equals("")) {
+        morphStr = tag.value();
+      }
+      String lemma = token.lemma();
+      if (lemma == null || lemma.equals("")) {
+        lemma = token.value();
+      }
+      sb.append(String.format("%s %s %s%n", token.value(), lemma, morphStr));
+    }
+    return sb.toString();
+  }
+

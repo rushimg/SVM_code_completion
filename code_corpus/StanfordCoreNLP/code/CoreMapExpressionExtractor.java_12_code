@@ -1,0 +1,25 @@
+  public static CoreMapExpressionExtractor createExtractorFromString(Env env, String str) throws IOException, ParseException {
+    TokenSequenceParser parser = new TokenSequenceParser();
+    CoreMapExpressionExtractor extractor = parser.getExpressionExtractor(env, new StringReader(str));
+    return extractor;
+  }
+
+  public Value getValue(String varname)
+  {
+    Expression expr = (Expression) env.get(varname);
+    if (expr != null) {
+      return expr.evaluate(env);
+    } else {
+      throw new RuntimeException("Unable get expression for variable " + varname);
+    }
+  }
+
+  public List<CoreMap> extractCoreMapsToList(List<CoreMap> res, CoreMap annotation)
+  {
+    List<T> exprs = extractExpressions(annotation);
+    for (T expr:exprs) {
+      res.add(expr.getAnnotation());
+    }
+    return res;
+  }
+

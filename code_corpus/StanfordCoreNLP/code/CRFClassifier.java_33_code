@@ -1,0 +1,24 @@
+  public void loadDefaultClassifier() {
+    loadJarClassifier(DEFAULT_CLASSIFIER, null);
+  }
+
+  public void loadTagIndex() {
+    if (tagIndex == null) {
+      tagIndex = new HashIndex<String>();
+      for (String tag: classIndex.objectsList()) {
+        String[] parts = tag.split("-");
+        // if (parts.length > 1)
+        tagIndex.add(parts[parts.length-1]);
+      }
+      tagIndex.add(flags.backgroundSymbol);
+    }
+    if (flags.useNERPriorBIO) {
+      if (entityMatrices == null)
+        entityMatrices = readEntityMatrices(flags.entityMatrix, tagIndex);
+    }
+  }
+
+   static double[][] parseMatrix(String[] lines, Index<String> tagIndex, int matrixSize, boolean smooth) {
+      return parseMatrix(lines, tagIndex, matrixSize, smooth, true);
+   }
+

@@ -1,0 +1,154 @@
+  private static class SemanticGraphParsingTask extends StringParsingTask<SemanticGraph> {
+
+    private SemanticGraph sg;
+    private Set<Integer> indexesUsed = Generics.newHashSet();
+
+    public SemanticGraphParsingTask(String s) {
+      super(s);
+    }
+
+    @Override
+    public SemanticGraph parse() {
+      sg = new SemanticGraph();
+      try {
+        readWhiteSpace();
+        if (!isLeftBracket(peek()))
+          return null;
+        readDep(null, null);
+        return sg;
+      } catch (ParserException e) {
+        System.err.println("SemanticGraphParser warning: " + e.getMessage());
+        return null;
+      }
+    }
+
+    private void readDep(IndexedWord gov, String reln) {
+      readWhiteSpace();
+      if (!isLeftBracket(peek())) { // it's a leaf
+        String label = readName();
+        IndexedWord dep = makeVertex(label);
+        sg.addVertex(dep);
+        if (gov == null)
+          sg.roots.add(dep);
+        sg.addEdge(gov, dep, GrammaticalRelation.valueOf(reln), Double.NEGATIVE_INFINITY, false);
+      } else {
+        readLeftBracket();
+        String label = readName();
+        IndexedWord dep = makeVertex(label);
+        sg.addVertex(dep);
+        if (gov == null)
+          sg.roots.add(dep);
+        if (gov != null && reln != null) {
+          sg.addEdge(gov, dep, GrammaticalRelation.valueOf(reln), Double.NEGATIVE_INFINITY, false);
+        }
+        readWhiteSpace();
+        while (!isRightBracket(peek()) && !isEOF) {
+          reln = readName();
+          readColon();
+          readDep(dep, reln);
+          readWhiteSpace();
+        }
+        readRightBracket();
+      }
+    }
+
+    private IndexedWord makeVertex(String word) {
+      Integer index; // initialized below
+      Pair<String, Integer> wordAndIndex = readWordAndIndex(word);
+      if (wordAndIndex != null) {
+        word = wordAndIndex.first();
+        index = wordAndIndex.second();
+      } else {
+        index = getNextFreeIndex();
+      }
+      indexesUsed.add(index);
+      // Note that, despite the use of indexesUsed and getNextFreeIndex(),
+      // nothing is actually enforcing that no indexes are used twice. This
+      // could occur if some words in the string representation being parsed
+      // come with index markers and some do not.
+      IndexedWord ifl = new IndexedWord(null, 0, index);
+      // System.err.println("SemanticGraphParsingTask>>> word = " + word);
+      // System.err.println("SemanticGraphParsingTask>>> index = " + index);
+      // System.err.println("SemanticGraphParsingTask>>> indexesUsed = " +
+      // indexesUsed);
+      String[] wordAndTag = word.split("/");
+      ifl.set(CoreAnnotations.TextAnnotation.class, wordAndTag[0]);
+      if (wordAndTag.length > 1)
+        ifl.set(CoreAnnotations.PartOfSpeechAnnotation.class, wordAndTag[1]);
+      return ifl;
+    }
+
+    private static Pair<String, Integer> readWordAndIndex(String word) {
+      Matcher matcher = WORD_AND_INDEX_PATTERN.matcher(word);
+      if (!matcher.matches()) {
+        return null;
+      } else {
+        word = matcher.group(1);
+        Integer index = Integer.valueOf(matcher.group(2));
+        return new Pair<String, Integer>(word, index);
+      }
+    }
+
+    private Integer getNextFreeIndex() {
+      int i = 0;
+      while (indexesUsed.contains(i))
+        i++;
+      return i;
+    }
+
+    private void readLeftBracket() {
+      // System.out.println("Read left.");
+      readWhiteSpace();
+      char ch = read();
+      if (!isLeftBracket(ch))
+        throw new ParserException("Expected left paren!");
+    }
+
+    private void readRightBracket() {
+      // System.out.println("Read right.");
+      readWhiteSpace();
+      char ch = read();
+      if (!isRightBracket(ch))
+        throw new ParserException("Expected right paren!");
+    }
+
+    private void readColon() {
+      readWhiteSpace();
+      if (isColon(peek()))
+        read();
+    }
+
+    private static boolean isLeftBracket(char ch) {
+      return ch == '[';
+    }
+
+    private static boolean isRightBracket(char ch) {
+      return ch == ']';
+    }
+
+    private static boolean isColon(char ch) {
+      return ch == ':';
+    }
+
+    @Override
+    protected boolean isPunct(char ch) {
+      return isLeftBracket(ch) || isRightBracket(ch) || isColon(ch);
+    }
+
+  } // end SemanticGraphParsingTask
+
+  // =======================================================================
+
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof SemanticGraph))
+      return false;
+    SemanticGraph g = (SemanticGraph) o;
+    return graph.equals(g.graph) && roots.equals(g.roots);
+  }
+
+  @Override
+  public int hashCode() {
+    return graph.hashCode();
+  }
+

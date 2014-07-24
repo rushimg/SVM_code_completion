@@ -1,0 +1,20 @@
+  public Entity extractEntity(int[] sequence, int position) {
+    Entity entity = new Entity();
+    entity.type = sequence[position];
+    entity.startPosition = position;
+    entity.words = new ArrayList<String>();
+    for ( ; position < sequence.length; position++) {
+      if (sequence[position] == entity.type) {
+      	String word = doc.get(position).get(CoreAnnotations.TextAnnotation.class);
+        entity.words.add(word);
+        if (position == sequence.length - 1) {
+          entity.otherOccurrences = otherOccurrences(entity);
+        }
+      } else {
+        entity.otherOccurrences = otherOccurrences(entity);
+        break;
+      }
+    }
+    return entity;
+  }
+

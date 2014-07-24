@@ -1,0 +1,29 @@
+  public static final GrammaticalRelation RELATIVE_CLAUSE_MODIFIER =
+    new GrammaticalRelation(Language.English, "rcmod", "relative clause modifier",
+        new String[] {
+          // Each of the following expressions includes a section
+          // which makes sure it does not have a left sister
+          // equivalent to the current node.  The reason for this is
+          // to make sure you do not get two neighboring nodes both
+          // labeled as rcmod to the same SBAR expression.  For
+          // example, this prevents rcmod(34, works) in a sentence
+          // such as "John Bauer, 34, who works at Stanford..."
+          // It does also prevent rcmods in potentially useful
+          // situations, such as "John Bauer, programmer, who works at
+          // Stanford..."  However, it seems better to eliminate some
+          // useful dependencies rather than introduce some wrong
+          // dependencies.
+          // Note that we want to eliminate situations where we
+          // conflict with conj by looking for CC|CONJP to the right
+          // of the noun
+          "@NP|WHNP|NML=np $++ (SBAR=target [ <+(SBAR) WHPP|WHNP | <: (S !< (VP < TO)) ]) !$-- @NP|WHNP|NML !$++ " + ETC_PAT + " !$++ " + FW_ETC_PAT + " > @NP|WHNP : (=np !$++ (CC|CONJP $++ =target))",
+          "NP|NML $++ (SBAR=target < (WHADVP < (WRB </^(?i:where|why|when)/))) !$-- NP|NML !$++ " + ETC_PAT + " !$++ " + FW_ETC_PAT + " > @NP",
+          // for case of relative clauses with no relativizer
+          // (it doesn't distinguish whether actually gapped).
+          "@NP|WHNP < RRC=target <# NP|WHNP|NML|DT|S",
+          "@ADVP < (@ADVP < (RB < /where$/)) < @SBAR=target",
+          "NP < (NP $++ (SBAR=target !< (IN < /^(?i:than|that|whether)$/) !< (WHPP|WHNP|WHADVP) < (S < (@NP $++ (VP !< (/^(?:VB|AUX)/ < " + copularWordRegex + " !$+ VP)  !<+(VP) (/^(?:VB|AUX)/ < " + copularWordRegex + " $+ (VP < VBN|VBD)) !<+(VP) NP !< SBAR !<+(VP) (PP <- IN|TO)))) !<: (S !< (VP < TO))) !$++ (CC $++ =target))"
+        });
+  public static class RelativeClauseModifierGRAnnotation extends GrammaticalRelationAnnotation { }
+
+

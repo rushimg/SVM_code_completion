@@ -1,0 +1,86 @@
+  private static void collapse2WPbis(Collection<TypedDependency> list) {
+    Collection<TypedDependency> newTypedDeps = new ArrayList<TypedDependency>();
+
+    for (String[] mwp : MULTIWORD_PREPS) {
+      newTypedDeps.clear();
+
+      TreeGraphNode mwp0 = null;
+      TreeGraphNode mwp1 = null;
+      TreeGraphNode governor = null;
+
+      TypedDependency prep = null;
+      TypedDependency dep = null;
+      TypedDependency pobj = null;
+      TypedDependency newtd = null;
+
+      // first find the first part of the multi_preposition: advmod|prt(gov, mwp[0])
+
+      for (TypedDependency td : list) {
+        if (td.dep().value().equalsIgnoreCase(mwp[0]) && (td.reln() == PHRASAL_VERB_PARTICLE || td.reln() == ADVERBIAL_MODIFIER || td.reln() == DEPENDENT || td.reln() == MULTI_WORD_EXPRESSION)) {
+          // we found advmod(gov, mwp0) or prt(gov, mwp0)
+          governor = td.gov();
+          mwp0 = td.dep();
+          dep = td;
+        }
+      }
+
+      // now search for the second part: prep(gov, mwp1)
+      // the two words in the mwp should be next to another in the sentence
+      // (difference of indexes = 1)
+
+      for (TypedDependency td1 : list) {
+        if (mwp0 != null && td1.dep().value().equalsIgnoreCase(mwp[1]) && td1.gov() == governor && td1.reln() == PREPOSITIONAL_MODIFIER && Math.abs(td1.dep().index() - mwp0.index()) == 1) {// we
+          // found
+          // prep(gov,
+          // mwp1)
+          mwp1 = td1.dep();
+          prep = td1;
+        }
+      }
+
+      // search for the complement: pobj|pcomp(mwp1,X)
+      for (TypedDependency td2 : list) {
+        if (td2.gov() == mwp1 && td2.reln() == PREPOSITIONAL_OBJECT) {
+          pobj = td2;
+          // create the new gr relation
+          GrammaticalRelation gr = EnglishGrammaticalRelations.getPrep(mwp[0] + '_' + mwp[1]);
+          if (governor != null) {
+            newtd = new TypedDependency(gr, governor, pobj.dep());
+          }
+        }
+        if (td2.gov() == mwp1 && td2.reln() == PREPOSITIONAL_COMPLEMENT) {
+          pobj = td2;
+          // create the new gr relation
+          GrammaticalRelation gr = EnglishGrammaticalRelations.getPrepC(mwp[0] + '_' + mwp[1]);
+          if (governor != null) {
+            newtd = new TypedDependency(gr, governor, pobj.dep());
+          }
+        }
+      }
+
+      // only if we found the three parts, set to KILL and remove
+      // and add the new one
+      if (prep != null && pobj != null && newtd != null) {
+        prep.setReln(KILL);
+        dep.setReln(KILL);
+        pobj.setReln(KILL);
+        newTypedDeps.add(newtd);
+
+        // now remove typed dependencies with reln "kill"
+        // and promote possible orphans
+        for (TypedDependency td1 : list) {
+          if (td1.reln() != KILL) {
+            if (td1.gov() == mwp0 || td1.gov() == mwp1) {
+              td1.setGov(governor);
+            }
+            if (!newTypedDeps.contains(td1)) {
+              newTypedDeps.add(td1);
+            }
+          }
+        }
+        list.clear();
+        list.addAll(newTypedDeps);
+      }
+    }
+  }
+

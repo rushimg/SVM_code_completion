@@ -1,0 +1,51 @@
+public class LineIterator<X> extends AbstractIterator<X> {
+
+  private final Function<String,X> op;
+  private final BufferedReader in;
+  private X nextToken; // = null;
+
+  @SuppressWarnings({"unchecked"})
+  public LineIterator(Reader r) {
+    this(r, new IdentityFunction());  // it seems like this can't be generified: seems a weird brokenness of Java to me! [cdm]
+  }
+
+  public LineIterator(Reader r, Function<String,X> op) {
+    this.op = op;
+    in = new BufferedReader(r);
+    setNext();
+  }
+
+  private void setNext() {
+    String line = null;
+    try {
+      line = in.readLine();
+    } catch (IOException ioe) {
+      ioe.printStackTrace();
+    }
+    if (line != null) {
+      nextToken = op.apply(line);
+    } else {
+      nextToken = null;
+    }
+  }
+
+  @Override
+  public boolean hasNext() {
+    return nextToken != null;
+  }
+
+  @Override
+  public X next() {
+    if (nextToken == null) {
+      throw new NoSuchElementException("LineIterator reader exhausted");
+    }
+    X token = nextToken;
+    setNext();
+
+    return token;
+  }
+
+  public Object peek() {
+    return nextToken;
+  }
+

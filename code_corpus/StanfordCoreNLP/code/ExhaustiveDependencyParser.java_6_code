@@ -1,0 +1,463 @@
+  float iScoreTotal(int start, int end, int head, int tag) {
+    if (!doiScoreHSum) {
+      throw new RuntimeException("Summed inner scores not computed");
+    }
+    return iScoreHSum[head][dg.tagBin(tag)][start] + iScoreHSum[head][dg.tagBin(tag)][end];
+  }
+
+  public double oScore(Edge edge) {
+    return oScore(edge.start, edge.end, edge.head, edge.tag);
+  }
+
+  public double iScore(Edge edge) {
+    return iScore(edge.start, edge.end, edge.head, edge.tag);
+  }
+
+  public boolean oPossible(Hook hook) {
+    return (hook.isPreHook() ? oPossibleByR[hook.end][hook.head][dg.tagBin(hook.tag)] : oPossibleByL[hook.start][hook.head][dg.tagBin(hook.tag)]);
+  }
+
+  public boolean iPossible(Hook hook) {
+    return (hook.isPreHook() ? iPossibleByR[hook.start][hook.head][dg.tagBin(hook.tag)] : iPossibleByL[hook.end][hook.head][dg.tagBin(hook.tag)]);
+  }
+
+  public boolean parse(List<? extends HasWord> sentence) {
+    if (op.testOptions.verbose) {
+      Timing.tick("Starting dependency parse.");
+    }
+    this.sentence = sentence;
+    int length = sentence.size();
+    if (length > arraySize) {
+      if (length > op.testOptions.maxLength + 1 || length >= myMaxLength) {
+        throw new OutOfMemoryError("Refusal to create such large arrays.");
+      } else {
+        try {
+          createArrays(length + 1);
+        } catch (OutOfMemoryError e) {
+          myMaxLength = length;
+          if (arraySize > 0) {
+            try {
+              createArrays(arraySize);
+            } catch (OutOfMemoryError e2) {
+              throw new RuntimeException("CANNOT EVEN CREATE ARRAYS OF ORIGINAL SIZE!!! " + arraySize);
+            }
+          }
+          throw e;
+        }
+        arraySize = length + 1;
+        if (op.testOptions.verbose) {
+          System.err.println("Created dparser arrays of size " + arraySize);
+        }
+      }
+    }
+    if (op.testOptions.verbose) {
+      System.err.print("Initializing...");
+    }
+
+    // map to words
+    words = new int[length];
+    int numTags = dg.numTagBins();//tagIndex.size();
+    //System.out.println("\nNumTags: "+numTags);
+    //System.out.println(tagIndex);
+    boolean[][] hasTag = new boolean[length][numTags];
+    for (int i = 0; i < length; i++) {
+      //if (wordIndex.contains(sentence.get(i).toString()))
+      words[i] = wordIndex.indexOf(sentence.get(i).word(), true);
+      //else
+      //words[i] = wordIndex.indexOf(Lexicon.UNKNOWN_WORD);
+    }
+    for (int head = 0; head < length; head++) {
+      for (int tag = 0; tag < numTags; tag++) {
+        Arrays.fill(iScoreH[head][tag], Float.NEGATIVE_INFINITY);
+        Arrays.fill(oScoreH[head][tag], Float.NEGATIVE_INFINITY);
+        if (doiScoreHSum) {
+          Arrays.fill(iScoreHSum[head][tag], Float.NEGATIVE_INFINITY);
+        }
+      }
+    }
+    for (int head = 0; head < length; head++) {
+      for (int loc = 0; loc <= length; loc++) {
+        rawDistance[head][loc] = (head >= loc ? head - loc : loc - head - 1);
+        binDistance[head][loc] = dg.distanceBin(rawDistance[head][loc]);
+      }
+    }
+
+    if (Thread.interrupted()) {
+      throw new RuntimeInterruptedException();
+    }
+
+    // do tags
+    for (int start = 0; start + 1 <= length; start++) {
+
+      //Force tags
+      String trueTagStr = null;
+      if (sentence.get(start) instanceof HasTag) {
+        trueTagStr = ((HasTag) sentence.get(start)).tag();
+        if ("".equals(trueTagStr)) {
+          trueTagStr = null;
+        }
+      }
+
+      //Word context (e.g., morphosyntactic info)
+      String wordContextStr = null;
+      if(sentence.get(start) instanceof HasContext) {
+        wordContextStr = ((HasContext) sentence.get(start)).originalText();
+        if("".equals(wordContextStr))
+          wordContextStr = null;
+      }
+
+      int word = words[start];
+      for (Iterator<IntTaggedWord> taggingI = lex.ruleIteratorByWord(word, start, wordContextStr); taggingI.hasNext();) {
+        IntTaggedWord tagging = taggingI.next();
+        if (trueTagStr != null) {
+          if (!tlp.basicCategory(tagging.tagString(tagIndex)).equals(trueTagStr)) {
+            continue;
+          }
+        }
+        float score = lex.score(tagging, start, wordIndex.get(tagging.word), wordContextStr);
+        if (score > Float.NEGATIVE_INFINITY) {
+          int tag = tagging.tag;
+          iScoreH[start][dg.tagBin(tag)][start] = 0.0f;
+          iScoreH[start][dg.tagBin(tag)][start + 1] = 0.0f;
+          if (doiScoreHSum) {
+            iScoreHSum[start][dg.tagBin(tag)][start] = 0.0f;
+            iScoreHSum[start][dg.tagBin(tag)][start+1] = 0.0f;
+          }
+          if (DEBUG) System.err.println("DepParser accepted tagging: " + wordIndex.get(tagging.word)+"|"+tagIndex.get(tagging.tag) + ", got score " + score);
+        }
+      }
+    }
+    for (int hWord = 0; hWord < length; hWord++) {
+      for (int hTag = 0; hTag < numTags; hTag++) {
+        hasTag[hWord][hTag] = (iScoreH[hWord][hTag][hWord] + iScoreH[hWord][hTag][hWord + 1] > Float.NEGATIVE_INFINITY);
+        Arrays.fill(headStop[hWord][hTag], Float.NEGATIVE_INFINITY);
+        for (int aWord = 0; aWord < length; aWord++) {
+          for (int dist = 0; dist < dg.numDistBins(); dist++) {
+            Arrays.fill(headScore[dist][hWord][hTag][aWord], Float.NEGATIVE_INFINITY);
+          }
+        }
+      }
+    }
+    // score and cache all pairs -- headScores and stops
+    //int hit = 0;
+    for (int hWord = 0; hWord < length; hWord++) {
+      for (int hTag = 0; hTag < numTags; hTag++) {
+        //Arrays.fill(headStopL[hWord][hTag], Float.NEGATIVE_INFINITY);
+        //Arrays.fill(headStopR[hWord][hTag], Float.NEGATIVE_INFINITY);
+        //Arrays.fill(headStop[hWord][hTag], Float.NEGATIVE_INFINITY);
+        if (!hasTag[hWord][hTag]) {
+          continue;
+        }
+        for (int split = 0; split <= length; split++) {
+          if (split <= hWord) {
+            headStop[hWord][hTag][split] = (float) dg.scoreTB(words[hWord], hTag, -2, -2, false, hWord - split);
+            //System.out.println("headstopL " + hWord +" " + hTag + " " + split + " " + headStopL[hWord][hTag][split]); // debugging
+          } else {
+            headStop[hWord][hTag][split] = (float) dg.scoreTB(words[hWord], hTag, -2, -2, true, split - hWord - 1);
+            //System.out.println("headstopR " + hWord +" " + hTag + " " + split + " " + headStopR[hWord][hTag][split]); // debugging
+          }
+          //hit++;
+        }
+        //Timing.tick("hWord: "+hWord+" hTag: "+hTag+" piddle count: "+hit);
+        for (int aWord = 0; aWord < length; aWord++) {
+          if (aWord == hWord) {
+            continue;  // can't be argument of yourself
+          }
+          boolean leftHeaded = hWord < aWord;
+          int start;
+          int end;
+          if (leftHeaded) {
+            start = hWord + 1;
+            end = aWord + 1;
+          } else {
+            start = aWord + 1;
+            end = hWord + 1;
+          }
+          for (int aTag = 0; aTag < numTags; aTag++) {
+            if ( ! hasTag[aWord][aTag]) {
+              continue;
+            }
+            for (int split = start; split < end; split++) {
+              // Moved this stuff out two loops- GMA
+              //              for (int split = 0; split <= length; split++) {
+              // if leftHeaded, go from hWord+1 to aWord
+              // else go from aWord+1 to hWord
+              //              if ((leftHeaded && (split <= hWord || split > aWord)) ||
+              //                      ((!leftHeaded) && (split <= aWord || split > hWord)))
+              //                continue;
+              int headDistance = rawDistance[hWord][split];
+              int binDist = binDistance[hWord][split];
+              headScore[binDist][hWord][hTag][aWord][aTag] = (float) dg.scoreTB(words[hWord], hTag, words[aWord], aTag, leftHeaded, headDistance);
+              //hit++;
+              if (DEBUG) {
+                System.err.println("Dep score head -> dep: " + wordIndex.get(words[hWord]) + "/" + tagIndex.get(hTag) + "[" + hWord + "] -> " + wordIndex.get(words[aWord]) + "/" + tagIndex.get(aTag) + "[" + aWord + "] split [" + split + "] = " + headScore[binDist][hWord][hTag][aWord][aTag]);
+              }
+              // skip other splits with same binDist
+              while (split + 1 < end && binDistance[hWord][split + 1] == binDist) {
+                split++;
+              }
+            } // end split
+          } // end aTag
+        } // end aWord
+      } // end hTag
+    } // end hWord
+    if (op.testOptions.verbose) {
+      Timing.tick("done.");
+      // displayHeadScores();
+      System.err.print("Starting insides...");
+    }
+    // do larger spans
+    for (int diff = 2; diff <= length; diff++) {
+      if (Thread.interrupted()) {
+        throw new RuntimeInterruptedException();
+      }
+      if (DEBUG_MORE) System.err.println("SPAN " + diff + ": score = headPrev + argLeft + argRight + dep + argLStop + argRStop");
+      for (int start = 0; start + diff <= length; start++) {
+        int end = start + diff;
+
+
+        // left extension
+        int endHead = end - 1;
+        for (int endTag = 0; endTag < numTags; endTag++) {
+          if ( ! hasTag[endHead][endTag]) {
+            continue;
+          }
+          // bestScore is max for iScoreH
+          float bestScore = Float.NEGATIVE_INFINITY;
+
+          for (int argHead = start; argHead < endHead; argHead++) {
+            for (int argTag = 0; argTag < numTags; argTag++) {
+              if (!hasTag[argHead][argTag]) {
+                continue;
+              }
+              float argLeftScore = iScoreH[argHead][argTag][start];
+              if (argLeftScore == Float.NEGATIVE_INFINITY) {
+                continue;
+              }
+              float stopLeftScore = headStop[argHead][argTag][start];
+              if (stopLeftScore == Float.NEGATIVE_INFINITY) {
+                continue;
+              }
+              for (int split = argHead + 1; split < end; split++) {
+                // short circuit if dependency is impossible
+                float depScore = headScore[binDistance[endHead][split]][endHead][endTag][argHead][argTag];
+                if (depScore == Float.NEGATIVE_INFINITY) {
+                  continue;
+                }
+                float score = iScoreH[endHead][endTag][split] + argLeftScore + iScoreH[argHead][argTag][split] + depScore + stopLeftScore + headStop[argHead][argTag][split];
+                if (DEBUG_MORE) {
+                  System.err.println("Left extend " + wordIndex.get(words[endHead]) + "/" + tagIndex.get(endTag) + "[" + endHead + "] -> " + wordIndex.get(words[argHead]) + "/" + tagIndex.get(argTag) + "[" + argHead + "](" + start + "," + split + ")");
+                  System.err.println("  " + score + " = SUM " + iScoreH[endHead][endTag][split] + " " + argLeftScore + " " + iScoreH[argHead][argTag][split] + " " + depScore + " " + headStop[argHead][argTag][start] + " " + headStop[argHead][argTag][split]);
+                }
+                if (score > bestScore) {
+                  bestScore = score;
+                }
+              } // end for split
+              // sum for iScoreHSum
+              if (doiScoreHSum) {
+                double p = Math.exp(iScoreHSum[endHead][endTag][start]);
+                for (int split = argHead + 1; split < end; split++) {
+                  p += Math.exp(iScoreH[argHead][argTag][start] +
+                                iScoreH[argHead][argTag][split] +
+                                headScore[binDistance[endHead][split]][endHead][endTag][argHead][argTag] +
+                                headStop[argHead][argTag][start] +
+                                headStop[argHead][argTag][split]);
+                }
+                iScoreHSum[endHead][endTag][start] = (float)Math.log(p);
+              }
+            } // end for argTag : tags
+          } // end for argHead
+
+          iScoreH[endHead][endTag][start] = bestScore;
+
+        } // end for endTag : tags
+        // right extension
+        int startHead = start;
+        for (int startTag = 0; startTag < numTags; startTag++) {
+          if ( ! hasTag[startHead][startTag]) {
+            continue;
+          }
+          // bestScore is max for iScoreH
+          float bestScore = Float.NEGATIVE_INFINITY;
+
+          for (int argHead = start + 1; argHead < end; argHead++) {
+            for (int argTag = 0; argTag < numTags; argTag++) {
+              if (!hasTag[argHead][argTag]) {
+                continue;
+              }
+              float argRightScore = iScoreH[argHead][argTag][end];
+              if (argRightScore == Float.NEGATIVE_INFINITY) {
+                continue;
+              }
+              float stopRightScore = headStop[argHead][argTag][end];
+              if (stopRightScore == Float.NEGATIVE_INFINITY) {
+                continue;
+              }
+              for (int split = start + 1; split <= argHead; split++) {
+                // short circuit if dependency is impossible
+                float depScore = headScore[binDistance[startHead][split]][startHead][startTag][argHead][argTag];
+                if (depScore == Float.NEGATIVE_INFINITY) {
+                  continue;
+                }
+                float score = iScoreH[startHead][startTag][split] + iScoreH[argHead][argTag][split] + argRightScore + depScore + stopRightScore + headStop[argHead][argTag][split];
+                if (DEBUG_MORE) {
+                  System.err.println("Right extend " + wordIndex.get(words[startHead]) + "/" + tagIndex.get(startTag) + "[" + startHead + "] -> " + wordIndex.get(words[argHead]) + "/" + tagIndex.get(argTag) + "[" + argHead + "](" + split + "," + end + ")");
+                  System.err.println("  " + score + " = SUM " + iScoreH[startHead][startTag][split] + " " + iScoreH[argHead][argTag][split] + " " + argRightScore + " " + depScore + " " + headStop[argHead][argTag][end] + " " + headStop[argHead][argTag][split]);
+                }
+                if (score > bestScore) {
+                  bestScore = score;
+                }
+              }
+
+              // sum for iScoreHSum
+              if (doiScoreHSum) {
+                double p = Math.exp(iScoreHSum[startHead][startTag][end]);
+                for (int split = argHead + 1; split < end; split++) {
+                  p += Math.exp(iScoreH[startHead][startTag][split] +
+                      iScoreH[argHead][argTag][split] +
+                      iScoreH[argHead][argTag][end] +
+                      headScore[binDistance[startHead][split]][startHead][startTag][argHead][argTag] +
+                      headStop[argHead][argTag][end] +
+                      headStop[argHead][argTag][split]);
+                }
+                iScoreHSum[startHead][startTag][end] = (float)Math.log(p);
+              }
+
+            } // end for argTag: tags
+          } // end for argHead
+
+          iScoreH[startHead][startTag][end] = bestScore;
+
+        } // end for startTag: tags
+      } // end for start
+    } // end for diff (i.e., span)
+    int goalTag = dg.tagBin(tagIndex.indexOf(Lexicon.BOUNDARY_TAG));
+    if (op.testOptions.verbose) {
+      Timing.tick("done.");
+      System.err.println("Dep  parsing " + length + " words (incl. stop): insideScore " + (iScoreH[length - 1][goalTag][0] + iScoreH[length - 1][goalTag][length]));
+    }
+    if ( ! op.doPCFG) {
+      return hasParse();
+    }
+    if (op.testOptions.verbose) {
+      System.err.print("Starting outsides...");
+    }
+    oScoreH[length - 1][goalTag][0] = 0.0f;
+    oScoreH[length - 1][goalTag][length] = 0.0f;
+    for (int diff = length; diff > 1; diff--) {
+      if (Thread.interrupted()) {
+        throw new RuntimeInterruptedException();
+      }
+      for (int start = 0; start + diff <= length; start++) {
+        int end = start + diff;
+        // left half
+        int endHead = end - 1;
+        for (int endTag = 0; endTag < numTags; endTag++) {
+          if (!hasTag[endHead][endTag]) {
+            continue;
+          }
+          for (int argHead = start; argHead < endHead; argHead++) {
+            for (int argTag = 0; argTag < numTags; argTag++) {
+              if (!hasTag[argHead][argTag]) {
+                continue;
+              }
+              for (int split = argHead; split <= endHead; split++) {
+                float subScore = (oScoreH[endHead][endTag][start] + headScore[binDistance[endHead][split]][endHead][endTag][argHead][argTag] + headStop[argHead][argTag][start] + headStop[argHead][argTag][split]);
+                float scoreRight = (subScore + iScoreH[argHead][argTag][start] + iScoreH[argHead][argTag][split]);
+                float scoreMid = (subScore + iScoreH[argHead][argTag][start] + iScoreH[endHead][endTag][split]);
+                float scoreLeft = (subScore + iScoreH[argHead][argTag][split] + iScoreH[endHead][endTag][split]);
+                if (scoreRight > oScoreH[endHead][endTag][split]) {
+                  oScoreH[endHead][endTag][split] = scoreRight;
+                }
+                if (scoreMid > oScoreH[argHead][argTag][split]) {
+                  oScoreH[argHead][argTag][split] = scoreMid;
+                }
+                if (scoreLeft > oScoreH[argHead][argTag][start]) {
+                  oScoreH[argHead][argTag][start] = scoreLeft;
+                }
+              }
+            }
+          }
+        }
+        // right half
+        int startHead = start;
+        for (int startTag = 0; startTag < numTags; startTag++) {
+          if (!hasTag[startHead][startTag]) {
+            continue;
+          }
+          for (int argHead = startHead + 1; argHead < end; argHead++) {
+            for (int argTag = 0; argTag < numTags; argTag++) {
+              if (!hasTag[argHead][argTag]) {
+                continue;
+              }
+              for (int split = startHead + 1; split <= argHead; split++) {
+                float subScore = (oScoreH[startHead][startTag][end] + headScore[binDistance[startHead][split]][startHead][startTag][argHead][argTag] + headStop[argHead][argTag][split] + headStop[argHead][argTag][end]);
+                float scoreLeft = (subScore + iScoreH[argHead][argTag][split] + iScoreH[argHead][argTag][end]);
+                float scoreMid = (subScore + iScoreH[startHead][startTag][split] + iScoreH[argHead][argTag][end]);
+                float scoreRight = (subScore + iScoreH[startHead][startTag][split] + iScoreH[argHead][argTag][split]);
+                if (scoreLeft > oScoreH[startHead][startTag][split]) {
+                  oScoreH[startHead][startTag][split] = scoreLeft;
+                }
+                if (scoreMid > oScoreH[argHead][argTag][split]) {
+                  oScoreH[argHead][argTag][split] = scoreMid;
+                }
+                if (scoreRight > oScoreH[argHead][argTag][end]) {
+                  oScoreH[argHead][argTag][end] = scoreRight;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    if (op.testOptions.verbose) {
+      Timing.tick("done.");
+      System.err.print("Starting half-filters...");
+    }
+    for (int loc = 0; loc <= length; loc++) {
+      for (int head = 0; head < length; head++) {
+        Arrays.fill(iPossibleByL[loc][head], false);
+        Arrays.fill(iPossibleByR[loc][head], false);
+        Arrays.fill(oPossibleByL[loc][head], false);
+        Arrays.fill(oPossibleByR[loc][head], false);
+      }
+    }
+    if (Thread.interrupted()) {
+      throw new RuntimeInterruptedException();
+    }
+    for (int head = 0; head < length; head++) {
+      for (int tag = 0; tag < numTags; tag++) {
+        if (!hasTag[head][tag]) {
+          continue;
+        }
+        for (int start = 0; start <= head; start++) {
+          for (int end = head + 1; end <= length; end++) {
+            if (iScoreH[head][tag][start] + iScoreH[head][tag][end] > Float.NEGATIVE_INFINITY && oScoreH[head][tag][start] + oScoreH[head][tag][end] > Float.NEGATIVE_INFINITY) {
+              iPossibleByR[end][head][tag] = true;
+              iPossibleByL[start][head][tag] = true;
+              oPossibleByR[end][head][tag] = true;
+              oPossibleByL[start][head][tag] = true;
+            }
+          }
+        }
+      }
+    }
+    if (op.testOptions.verbose) {
+      Timing.tick("done.");
+    }
+    return hasParse();
+  }
+
+  public boolean hasParse() {
+    return getBestScore() > Float.NEGATIVE_INFINITY;
+  }
+
+  public double getBestScore() {
+    int length = sentence.size();
+    if (length > arraySize) {
+      return Float.NEGATIVE_INFINITY;
+    }
+    int goalTag = tagIndex.indexOf(Lexicon.BOUNDARY_TAG);
+    return iScore(0, length, length - 1, goalTag);
+  }
+

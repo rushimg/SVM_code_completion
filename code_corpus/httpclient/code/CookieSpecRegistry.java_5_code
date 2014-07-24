@@ -1,0 +1,12 @@
+    public CookieSpec getCookieSpec(final String name, final HttpParams params)
+        throws IllegalStateException {
+
+        Args.notNull(name, "Name");
+        final CookieSpecFactory factory = registeredSpecs.get(name.toLowerCase(Locale.ENGLISH));
+        if (factory != null) {
+            return factory.newInstance(params);
+        } else {
+            throw new IllegalStateException("Unsupported cookie spec: " + name);
+        }
+    }
+

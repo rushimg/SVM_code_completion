@@ -1,0 +1,71 @@
+  class SaveOutputThread extends Thread {
+    String filename;
+    JProgressBar progress;
+    JDialog dialog;
+    JButton button;
+    List<List<HasWord>> sentences;
+
+    boolean cancelled;
+
+    public SaveOutputThread(String filename, JProgressBar progress,
+                            JDialog dialog, JButton button,
+                            List<List<HasWord>> sentences) {
+      this.filename = filename;
+      this.progress = progress;
+      this.dialog = dialog;
+      this.button = button;
+      this.sentences = sentences;
+    }
+
+    public void run() {
+      int failures = 0;
+      try {
+        FileOutputStream fos = new FileOutputStream(filename);
+        OutputStreamWriter ow = new OutputStreamWriter(fos, "utf-8");
+        BufferedWriter bw = new BufferedWriter(ow);
+
+        for (List<HasWord> sentence : sentences) {
+          Tree tree = parser.parseTree(sentence);
+          if (tree == null) {
+            ++failures;
+            System.err.println("Failed on sentence " + sentence);
+          } else {
+            bw.write(tree.toString());
+            bw.newLine();
+          }
+
+          progress.setValue(progress.getValue() + 1);
+          if (cancelled) {
+            break;
+          }
+        }
+        bw.flush();
+        bw.close();
+        ow.close();
+        fos.close();
+      } catch (IOException e) {
+        JOptionPane.showMessageDialog(ParserPanel.this, "Could not save file " + filename + "\n" + e, null, JOptionPane.ERROR_MESSAGE);
+        e.printStackTrace();
+        setStatus("Error saving parsed document");
+      }
+
+      if (failures == 0) {
+        button.setText("Success!");
+      } else {
+        button.setText("Done.  " + failures + " parses failed");
+      }
+      if (cancelled && failures == 0) {
+        dialog.setVisible(false);
+      } else {
+        button.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+              dialog.setVisible(false);
+            }
+          });
+      }
+    }
+
+    static final int WAIT = 2000;
+    static final int CYCLE = 50;
+  }
+

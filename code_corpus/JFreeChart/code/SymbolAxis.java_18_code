@@ -1,0 +1,71 @@
+    protected void autoAdjustRange() {
+
+        Plot plot = getPlot();
+        if (plot == null) {
+            return;  // no plot, no data
+        }
+
+        if (plot instanceof ValueAxisPlot) {
+
+            // ensure that all the symbols are displayed
+            double upper = this.symbols.size() - 1;
+            double lower = 0;
+            double range = upper - lower;
+
+            // ensure the autorange is at least <minRange> in size...
+            double minRange = getAutoRangeMinimumSize();
+            if (range < minRange) {
+                upper = (upper + lower + minRange) / 2;
+                lower = (upper + lower - minRange) / 2;
+            }
+
+            // this ensure that the grid bands will be displayed correctly.
+            double upperMargin = 0.5;
+            double lowerMargin = 0.5;
+
+            if (getAutoRangeIncludesZero()) {
+                if (getAutoRangeStickyZero()) {
+                    if (upper <= 0.0) {
+                        upper = 0.0;
+                    }
+                    else {
+                        upper = upper + upperMargin;
+                    }
+                    if (lower >= 0.0) {
+                        lower = 0.0;
+                    }
+                    else {
+                        lower = lower - lowerMargin;
+                    }
+                }
+                else {
+                    upper = Math.max(0.0, upper + upperMargin);
+                    lower = Math.min(0.0, lower - lowerMargin);
+                }
+            }
+            else {
+                if (getAutoRangeStickyZero()) {
+                    if (upper <= 0.0) {
+                        upper = Math.min(0.0, upper + upperMargin);
+                    }
+                    else {
+                    }
+                    if (lower >= 0.0) {
+                        lower = Math.max(0.0, lower - lowerMargin);
+                    }
+                    else {
+                        lower = lower - lowerMargin;
+                    }
+                }
+                else {
+                    upper = upper + upperMargin;
+                    lower = lower - lowerMargin;
+                }
+            }
+
+            setRange(new Range(lower, upper), false, false);
+
+        }
+
+    }
+

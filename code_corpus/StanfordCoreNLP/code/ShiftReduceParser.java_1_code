@@ -1,0 +1,43 @@
+public class ShiftReduceParser extends ParserGrammar implements Serializable {
+  Index<Transition> transitionIndex;
+  Map<String, Weight> featureWeights;
+  //final Map<String, List<ScoredObject<Integer>>> featureWeights;
+
+  ShiftReduceOptions op;
+
+  FeatureFactory featureFactory;
+
+  Set<String> knownStates;
+
+  public ShiftReduceParser(ShiftReduceOptions op) {
+    this.transitionIndex = new HashIndex<Transition>();
+    this.featureWeights = Generics.newHashMap();
+    this.op = op;
+    this.knownStates = Generics.newHashSet();
+
+    String[] classes = op.featureFactoryClass.split(";");
+    if (classes.length == 1) {
+      this.featureFactory = ReflectionLoading.loadByReflection(classes[0]);
+    } else {
+      FeatureFactory[] factories = new FeatureFactory[classes.length];
+      for (int i = 0; i < classes.length; ++i) {
+        int paren = classes[i].indexOf("(");
+        if (paren >= 0) {
+          String arg = classes[i].substring(paren + 1, classes[i].length() - 1);
+          factories[i] = ReflectionLoading.loadByReflection(classes[i].substring(0, paren), arg);
+        } else {
+          factories[i] = ReflectionLoading.loadByReflection(classes[i]);
+        }
+      }
+      this.featureFactory = new CombinationFeatureFactory(factories);
+    }
+  }
+
+  private ShiftReduceParser(ShiftReduceOptions op, FeatureFactory factory) {
+    this.transitionIndex = new HashIndex<Transition>();
+    this.featureWeights = Generics.newHashMap();
+    this.op = op;
+    this.featureFactory = factory;
+    this.knownStates = Generics.newHashSet();
+  }
+

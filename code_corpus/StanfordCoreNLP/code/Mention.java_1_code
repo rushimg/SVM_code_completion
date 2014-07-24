@@ -1,0 +1,77 @@
+  public Set<Mention> belongToLists = null;
+
+  // Mention is identified as being this speaker....
+  public SpeakerInfo speakerInfo;
+
+  transient private String spanString = null;
+  transient private String lowercaseNormalizedSpanString = null;
+
+  @Override
+  public Class<Mention> getType() {
+    return Mention.class;
+  }
+
+  public boolean isPronominal() {
+    return mentionType == MentionType.PRONOMINAL;
+  }
+
+  @Override
+  public String toString() {
+    return spanToString();
+  }
+
+  public String spanToString() {
+//    synchronized(this) {
+      if (spanString == null) {
+        StringBuilder os = new StringBuilder();
+        for(int i = 0; i < originalSpan.size(); i ++){
+          if(i > 0) os.append(" ");
+          os.append(originalSpan.get(i).get(CoreAnnotations.TextAnnotation.class));
+        }
+        spanString = os.toString();
+      }
+//    }
+    return spanString;
+  }
+
+  public String lowercaseNormalizedSpanString() {
+//    synchronized(this) {
+      if (lowercaseNormalizedSpanString == null) {
+        // We always normalize to lowercase!!!
+        lowercaseNormalizedSpanString = spanString.toLowerCase();
+      }
+//    }
+    return lowercaseNormalizedSpanString;
+  }
+
+  // Retrieves part of the span that corresponds to the NER (going out from head)
+  public List<CoreLabel> nerTokens() {
+    if (nerString == null || "O".equals(nerString)) return null;
+
+    int start = headIndex-startIndex;
+    int end = headIndex-startIndex+1;
+    while (start > 0) {
+      CoreLabel prev = originalSpan.get(start-1);
+      if (nerString.equals(prev.ner())) {
+        start--;
+      } else {
+        break;
+      }
+    }
+    while (end < originalSpan.size()) {
+      CoreLabel next = originalSpan.get(end);
+      if (nerString.equals(next.ner())) {
+        end++;
+      } else {
+        break;
+      }
+    }
+    return originalSpan.subList(start, end);
+  }
+
+  // Retrieves part of the span that corresponds to the NER (going out from head)
+  public String nerName() {
+    List<CoreLabel> t = nerTokens();
+    return (t != null)? StringUtils.joinWords(t, " "):null;
+  }
+

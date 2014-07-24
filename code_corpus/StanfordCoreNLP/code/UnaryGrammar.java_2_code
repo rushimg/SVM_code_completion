@@ -1,0 +1,35 @@
+  // Not needed any more as we reconstruct unaries in extractBestParse
+  public List<Integer> getBestPath(int parent, int child) {
+    List<Integer> path = new ArrayList<Integer>();
+    UnaryRule tempR = new UnaryRule();
+    tempR.parent = parent;
+    tempR.child = child;
+    //System.out.println("Building path...");
+    int loc = parent;
+    while (loc != child) {
+      path.add(new Integer(loc));
+      //System.out.println("Path is "+path);
+      tempR.parent = loc;
+      Integer nextInt = backTrace.get(tempR);
+      if (nextInt == null) {
+        loc = child;
+      } else {
+        loc = nextInt.intValue();
+      }
+      //System.out.println(Numberer.getGlobalNumberer(stateSpace).object(parent)+"->"+Numberer.getGlobalNumberer(stateSpace).object(child)+" went via "+Numberer.getGlobalNumberer(stateSpace).object(loc));
+      if (path.size() > 10) {
+        throw new RuntimeException("UnaryGrammar path > 10");
+      }
+    }
+    path.add(new Integer(child));
+    return path;
+  }
+
+  private void closeRulesUnderMax(UnaryRule ur) {
+    for (int i = 0, isz = closedRulesWithChild[ur.parent].size(); i < isz; i++) {
+      UnaryRule pr = closedRulesWithChild[ur.parent].get(i);
+      for (int j = 0, jsz = closedRulesWithParent[ur.child].size(); j < jsz; j++) {
+        UnaryRule cr = closedRulesWithParent[ur.child].get(j);
+        UnaryRule resultR = new UnaryRule(pr.parent, cr.child,
+                                          pr.score + cr.score + ur.score);
+        relaxRule(resultR);

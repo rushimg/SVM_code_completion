@@ -1,0 +1,21 @@
+    public String generateLabel(XYDataset dataset, int series) {
+        if (dataset == null) {
+            throw new IllegalArgumentException("Null 'dataset' argument.");
+        }
+        StringBuffer label = new StringBuffer();
+        label.append(MessageFormat.format(this.formatPattern,
+                createItemArray(dataset, series)));
+        Integer key = new Integer(series);
+        List extraLabels = (List) this.seriesLabelLists.get(key);
+        if (extraLabels != null) {
+            Object[] temp = new Object[1];
+            for (int i = 0; i < extraLabels.size(); i++) {
+                temp[0] = extraLabels.get(i);
+                String labelAddition = MessageFormat.format(
+                        this.additionalFormatPattern, temp);
+                label.append(labelAddition);
+            }
+        }
+        return label.toString();
+    }
+

@@ -1,0 +1,34 @@
+  public  List<SemanticGraph> expandFromPatterns(List<SsurgeonPattern> patternList, SemanticGraph sg) throws Exception {
+    List<SemanticGraph> retList = new ArrayList<SemanticGraph>();
+    for (SsurgeonPattern pattern :patternList) {
+      Collection<SemanticGraph> generated = pattern.execute(sg);
+      for (SemanticGraph orderedGraph : generated) {
+        //orderedGraph.vertexList(true);
+        //orderedGraph.edgeList(true);
+        retList.add(orderedGraph);
+        System.out.println("\ncompact = "+orderedGraph.toCompactString());
+        System.out.println("regular="+orderedGraph.toString());
+      }
+      
+      if (generated.size() > 0) {
+        if (log != null) {
+          log.info("Pre remove duplicates, num="+generated.size());
+        }
+        SemanticGraphUtils.removeDuplicates(generated, sg);
+        if (log != null) {
+          log.info("Expand from patterns");
+          if (logPrefix != null) log.info(logPrefix);
+          log.info("Pattern = '"+pattern.getUID()+"' generated "+generated.size()+" matches");
+          log.info("= = = = = = = = = =\nSrc graph:\n"+sg.toString()+"\n= = = = = = = = = =\n");
+          int index=1;
+          for (SemanticGraph genSg : generated) {
+            log.info("REWRITE "+(index++));
+            log.info(genSg.toString());
+            log.info(". . . . .\n");
+          }
+        }
+      }
+    }
+    return retList;
+  }
+  

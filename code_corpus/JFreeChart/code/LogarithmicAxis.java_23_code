@@ -1,0 +1,43 @@
+    protected double computeLogCeil(double upper) {
+
+        double logCeil;
+        if (this.allowNegativesFlag) {
+            //negative values are allowed
+            if (upper > 10.0) {
+                //parameter value is > 10
+                // The Math.log() function is based on e not 10.
+                logCeil = Math.log(upper) / LOG10_VALUE;
+                logCeil = Math.ceil(logCeil);
+                logCeil = Math.pow(10, logCeil);
+            }
+            else if (upper < -10.0) {
+                //parameter value is < -10
+                //calculate log using positive value:
+                logCeil = Math.log(-upper) / LOG10_VALUE;
+                //calculate ceil using negative value:
+                logCeil = Math.ceil(-logCeil);
+                //calculate power using positive value; then negate
+                logCeil = -Math.pow(10, -logCeil);
+            }
+            else {
+               //parameter value is -10 > val < 10
+               logCeil = Math.ceil(upper);     //use as-is
+            }
+        }
+        else {
+            //negative values not allowed
+            if (upper > 0.0) {
+                //parameter value is > 0
+                // The Math.log() function is based on e not 10.
+                logCeil = Math.log(upper) / LOG10_VALUE;
+                logCeil = Math.ceil(logCeil);
+                logCeil = Math.pow(10, logCeil);
+            }
+            else {
+                //parameter value is <= 0
+                logCeil = Math.ceil(upper);     //use as-is
+            }
+        }
+        return logCeil;
+    }
+

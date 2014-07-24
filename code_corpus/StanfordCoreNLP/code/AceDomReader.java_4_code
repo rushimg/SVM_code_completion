@@ -1,0 +1,25 @@
+  private static AceEventMention parseEventMention(Node node,
+               AceDocument doc) {
+    String id = getAttributeValue(node, "ID");
+    AceCharSeq extent = parseCharSeq(getChildByName(node, "extent"));
+    AceCharSeq anchor = parseCharSeq(getChildByName(node, "anchor"));
+
+    // create the mention
+    AceEventMention mention = new AceEventMention(id, extent, anchor);
+
+    // find the mention args
+    List<Node> args = getChildrenByName(node, "event_mention_argument");
+    for (Node arg : args) {
+      String role = getAttributeValue(arg, "ROLE");
+      String refid = getAttributeValue(arg, "REFID");
+      AceEntityMention am = doc.getEntityMention(refid);
+
+      if(am != null){
+        am.addEventMention(mention);
+        mention.addArg(am, role);
+      }
+    }
+
+    return mention;
+  }
+

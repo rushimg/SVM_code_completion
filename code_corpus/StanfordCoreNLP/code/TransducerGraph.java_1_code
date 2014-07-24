@@ -1,0 +1,83 @@
+// TODO: needs some work to make type-safe.
+// (In several places, it takes an Object and does instanceof to see what
+// it is, or assumes one of the alphabets is a Double, etc....)
+public class TransducerGraph implements Cloneable {
+
+  public static final String EPSILON_INPUT = "EPSILON";
+
+  private static final String DEFAULT_START_NODE = "START";
+
+  private static final Random r = new Random();
+
+  // internal data structures
+  private final Set<Arc> arcs;
+  private final Map<Object, Set<Arc>> arcsBySource;
+  private final Map<Object, Set<Arc>> arcsByTarget;
+  private final Map<Object, Set<Arc>> arcsByInput;
+  private Map<Pair<Object, Object>, Arc> arcsBySourceAndInput;
+  private Map<Object, Set<Arc>> arcsByTargetAndInput;
+  private Object startNode;
+  private Set endNodes;
+  private boolean checkDeterminism = false;
+
+  public void setDeterminism(boolean checkDeterminism) {
+    this.checkDeterminism = checkDeterminism;
+  }
+
+  public TransducerGraph() {
+    arcs = Generics.newHashSet();
+    arcsBySource = Generics.newHashMap();
+    arcsByTarget = Generics.newHashMap();
+    arcsByInput = Generics.newHashMap();
+    arcsBySourceAndInput = Generics.newHashMap();
+    arcsByTargetAndInput = Generics.newHashMap();
+    endNodes = Generics.newHashSet();
+    setStartNode(DEFAULT_START_NODE);
+  }
+
+  public TransducerGraph(TransducerGraph other) {
+    this(other, (ArcProcessor) null);
+  }
+
+  public TransducerGraph(TransducerGraph other, ArcProcessor arcProcessor) {
+    this(other.getArcs(), other.getStartNode(), other.getEndNodes(), arcProcessor, null);
+  }
+
+  public TransducerGraph(TransducerGraph other, NodeProcessor nodeProcessor) {
+    this(other.getArcs(), other.getStartNode(), other.getEndNodes(), null, nodeProcessor);
+  }
+
+  public TransducerGraph(Set<Arc> newArcs, Object startNode, Set endNodes, ArcProcessor arcProcessor, NodeProcessor nodeProcessor) {
+    this();
+    ArcProcessor arcProcessor2 = null;
+    if (nodeProcessor != null) {
+      arcProcessor2 = new NodeProcessorWrappingArcProcessor(nodeProcessor);
+    }
+    for (Arc a : newArcs) {
+      a = new Arc(a); // make a copy
+      if (arcProcessor != null) {
+        a = arcProcessor.processArc(a);
+      }
+      if (arcProcessor2 != null) {
+        a = arcProcessor2.processArc(a);
+      }
+      addArc(a);
+    }
+    if (nodeProcessor != null) {
+      this.startNode = nodeProcessor.processNode(startNode);
+    } else {
+      this.startNode = startNode;
+    }
+    if (nodeProcessor != null) {
+      if (endNodes != null) {
+        for (Object o : endNodes) {
+          this.endNodes.add(nodeProcessor.processNode(o));
+        }
+      }
+    } else {
+      if (endNodes != null) {
+        this.endNodes.addAll(endNodes);
+      }
+    }
+  }
+

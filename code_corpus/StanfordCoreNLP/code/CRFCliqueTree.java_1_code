@@ -1,0 +1,53 @@
+  CRFCliqueTree(FactorTable[] factorTables, Index<E> classIndex, E backgroundSymbol, double z) {
+    this.factorTables = factorTables;
+    this.z = z;
+    this.classIndex = classIndex;
+    this.backgroundSymbol = backgroundSymbol;
+    backgroundIndex = classIndex.indexOf(backgroundSymbol);
+    windowSize = factorTables[0].windowSize();
+    numClasses = classIndex.size();
+    possibleValues = new int[numClasses];
+    for (int i = 0; i < numClasses; i++) {
+      possibleValues[i] = i;
+    }
+
+    // Debug only
+    // System.out.println("CRFCliqueTree constructed::numClasses: " +
+    // numClasses);
+  }
+
+  public FactorTable[] getFactorTables() {
+    return this.factorTables;
+  }
+
+  public Index<E> classIndex() {
+    return classIndex;
+  }
+
+  // SEQUENCE MODEL METHODS
+
+  @Override
+  public int length() {
+    return factorTables.length;
+  }
+
+  @Override
+  public int leftWindow() {
+    return windowSize;
+  }
+
+  @Override
+  public int rightWindow() {
+    return 0;
+  }
+
+  @Override
+  public int[] getPossibleValues(int position) {
+    return possibleValues;
+  }
+
+  @Override
+  public double scoreOf(int[] sequence, int pos) {
+    return scoresOf(sequence, pos)[sequence[pos]];
+  }
+

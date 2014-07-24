@@ -1,0 +1,21 @@
+  private static void runTest(TaggerConfig config) {
+    if (config.getVerbose()) {
+      System.err.println("## tagger testing invoked at " + new Date() + " with arguments:");
+      config.dump();
+    }
+
+    try {
+      MaxentTagger tagger = new MaxentTagger(config.getModel(), config);
+
+      Timing t = new Timing();
+      TestClassifier testClassifier = new TestClassifier(tagger);
+      long millis = t.stop();
+      printErrWordsPerSec(millis, testClassifier.getNumWords());
+      testClassifier.printModelAndAccuracy(tagger);
+    } catch (Exception e) {
+      System.err.println("An error occurred while testing the tagger.");
+      e.printStackTrace();
+    }
+  }
+
+

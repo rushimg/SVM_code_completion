@@ -1,0 +1,89 @@
+/**
+ * <p>
+ *   A serializer using Google's protocol buffer format.
+ *   The files produced by this serializer, in addition to being language-independent,
+ *   are a little over 10% the size and 4x faster to read+write versus the default Java serialization
+ *   (see {@link GenericAnnotationSerializer}), when both files are compressed with gzip.
+ * </p>
+ *
+ * <p>
+ *   Note that this handles only a subset of the possible annotations
+ *   that can be attached to a sentence. Nonetheless, it is guaranteed to be
+ *   lossless with the default set of named annotators you can create from a
+ *   {@link StanfordCoreNLP} pipeline, with default properties defined for each annotator.
+ *   Note that the serializer does not gzip automatically -- this must be done by passing in a GZipOutputStream
+ *   and calling a GZipInputStream manually. For most Annotations, gzipping provides a notable decrease in size (~2.5x)
+ *   due to most of the data being raw Strings.
+ * </p>
+ *
+ * <p>
+ *   To allow lossy serialization, use {@link ProtobufAnnotationSerializer#ProtobufAnnotationSerializer(boolean)}.
+ *   Otherwise, an exception is thrown if an unknown key appears in the annotation which would not be saved to th
+ *   protocol buffer.
+ *   If such keys exist, and are a part of the standard CoreNLP pipeline, please let us know!
+ *   If you would like to serialize keys in addition to those serialized by default (e.g., you are attaching
+ *   your own annotations), then you should do the following:
+ * </p>
+ *
+ * <ol>
+ *   <li>
+ *     Create a .proto file which extends one or more of Document, Sentence, or Token. Each of these have fields
+ *     100-255 left open for user extensions. An example of such an extension is:
+ *     <pre>
+ *       package edu.stanford.nlp.pipeline;
+ *
+ *       option java_package = "com.example.my.awesome.nlp.app";
+ *       option java_outer_classname = "MyAppProtos";
+ *
+ *       import "CoreNLP.proto";
+ *
+ *       extend Sentence {
+ *         optional uint32 myNewField    = 101;
+ *       }
+ *     </pre>
+ *   </li>
+ *
+ *   <li>
+ *     Compile your .proto file with protoc. For example (from CORENLP_HOME):
+ *     <pre>
+ *        protoc -I=src/edu/stanford/nlp/pipeline/:/path/to/folder/contining/your/proto/file --java_out=/path/to/output/src/folder/  /path/to/proto/file
+ *     </pre>
+ *   </li>
+ *
+ *   <li>
+ *     <p>
+ *     Extend {@link ProtobufAnnotationSerializer} to serialize and deserialize your field.
+ *     Generally, this entail overriding two functions -- one to write the proto and one to read it.
+ *     In both cases, you usually want to call the superclass' implementation of the function, and add on to it
+ *     from there.
+ *     In our running example, adding a field to the {@link CoreNLPProtos.Sentence} proto, you would overwrite:
+ *     </p>
+ *
+ *     <ul>
+ *       <li>{@link ProtobufAnnotationSerializer#toProtoBuilder(edu.stanford.nlp.util.CoreMap, java.util.Set)}</li>
+ *       <li>{@link ProtobufAnnotationSerializer#fromProtoNoTokens(edu.stanford.nlp.pipeline.CoreNLPProtos.Sentence)}</li>
+ *     </ul>
+ *
+ *     <p>
+ *     Note, importantly, that for the serializer to be able to check for lossless serialization, all annotations added
+ *     to the proto must be registered as added by being removed from the set passed to
+ *     {@link ProtobufAnnotationSerializer#toProtoBuilder(edu.stanford.nlp.util.CoreMap, java.util.Set)} (and the analogous
+ *     functions for documents and tokens).
+ *     </p>
+ *
+ *     <p>
+ *       Lastly, the new annotations must be registered in the original .proto file; this can be achieved by including
+ *       a static block in the overwritten class:
+ *     </p>
+ *     <pre>
+ *       static {
+ *         ExtensionRegistry registry = ExtensionRegistry.newInstance();
+ *         registry.add(MyAppProtos.myNewField);
+ *         CoreNLPProtos.registerAllExtensions(registry);
+ *       }
+ *     </pre>
+ *   </li>
+ * </ol>
+ *
+ * @author Gabor Angeli
+ */

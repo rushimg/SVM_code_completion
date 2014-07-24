@@ -1,0 +1,27 @@
+  boolean parse(HTKLatticeReader lr) {
+    TreePrint treePrint = getTreePrint();
+    PrintWriter pwOut = op.tlpParams.pw();
+    parseSucceeded = false;
+    parseNoMemory = false;
+    parseUnparsable = false;
+    parseSkipped = false;
+    parseFallback = false;
+    whatFailed = null;
+    originalSentence = null;
+    if (lr.getNumStates() > op.testOptions.maxLength + 1) {  // + 1 for boundary symbol
+      parseSkipped = true;
+      throw new UnsupportedOperationException("Lattice too big: " + lr.getNumStates());
+    }
+    if (op.doPCFG) {
+      if (!pparser.parse(lr)) {
+        return parseSucceeded;
+      }
+      if (op.testOptions.verbose) {
+        pwOut.println("PParser output");
+        treePrint.printTree(getBestPCFGParse(false), pwOut);
+      }
+    }
+    parseSucceeded = true;
+    return true;
+  }
+

@@ -1,0 +1,112 @@
+  private double getFinalScore(String metricType, CorefScorer.SubScoreType subScoreType) {
+    metricType = metricType.toLowerCase();
+    int passIndex = sieveClassNames.length - 1;
+    String scoreDesc = metricType;
+    double finalScore;
+    if ("combined".equals(metricType)) {
+      finalScore = (scoreMUC.get(passIndex).getScore(subScoreType)
+            + scoreBcubed.get(passIndex).getScore(subScoreType)
+            + scorePairwise.get(passIndex).getScore(subScoreType))/3;
+      scoreDesc = "(muc + bcub + pairwise)/3";
+    } else if ("muc".equals(metricType)) {
+      finalScore = scoreMUC.get(passIndex).getScore(subScoreType);
+    } else if ("bcub".equals(metricType) || "bcubed".equals(metricType)) {
+      finalScore = scoreBcubed.get(passIndex).getScore(subScoreType);
+    } else if ("pairwise".equals(metricType)) {
+      finalScore = scorePairwise.get(passIndex).getScore(subScoreType);
+    } else {
+        throw new IllegalArgumentException("Invalid sub score type:" + subScoreType);
+    }
+    logger.info("Final score (" + scoreDesc + ") " + subScoreType + " = " + (new DecimalFormat("#.##")).format(finalScore));
+    return finalScore;
+  }
+
+  public static void printConllOutput(Document document, PrintWriter writer, boolean gold) {
+    printConllOutput(document, writer, gold, false);
+  }
+
+  public static void printConllOutput(Document document, PrintWriter writer, boolean gold, boolean filterSingletons) {
+    List<List<Mention>> orderedMentions;
+    if (gold) {
+      orderedMentions = document.goldOrderedMentionsBySentence;
+    } else {
+      orderedMentions = document.predictedOrderedMentionsBySentence;
+    }
+    if (filterSingletons) {
+      orderedMentions = filterMentionsWithSingletonClusters(document, orderedMentions);
+    }
+    printConllOutput(document, writer, orderedMentions, gold);
+  }
+
+  public static void printConllOutput(Document document, PrintWriter writer, List<List<Mention>> orderedMentions, boolean gold)
+  {
+    Annotation anno = document.annotation;
+    List<List<String[]>> conllDocSentences = document.conllDoc.sentenceWordLists;
+    String docID = anno.get(CoreAnnotations.DocIDAnnotation.class);
+    StringBuilder sb = new StringBuilder();
+    sb.append("#begin document ").append(docID).append("\n");
+    List<CoreMap> sentences = anno.get(CoreAnnotations.SentencesAnnotation.class);
+    for(int sentNum = 0 ; sentNum < sentences.size() ; sentNum++){
+      List<CoreLabel> sentence = sentences.get(sentNum).get(CoreAnnotations.TokensAnnotation.class);
+      List<String[]> conllSentence = conllDocSentences.get(sentNum);
+      Map<Integer,Set<Mention>> mentionBeginOnly = Generics.newHashMap();
+      Map<Integer,Set<Mention>> mentionEndOnly = Generics.newHashMap();
+      Map<Integer,Set<Mention>> mentionBeginEnd = Generics.newHashMap();
+
+      for(int i=0 ; i<sentence.size(); i++){
+        mentionBeginOnly.put(i, new LinkedHashSet<Mention>());
+        mentionEndOnly.put(i, new LinkedHashSet<Mention>());
+        mentionBeginEnd.put(i, new LinkedHashSet<Mention>());
+      }
+
+      for(Mention m : orderedMentions.get(sentNum)) {
+        if(m.startIndex==m.endIndex-1) {
+          mentionBeginEnd.get(m.startIndex).add(m);
+        } else {
+          mentionBeginOnly.get(m.startIndex).add(m);
+          mentionEndOnly.get(m.endIndex-1).add(m);
+        }
+      }
+
+      for(int i=0 ; i<sentence.size(); i++){
+        StringBuilder sb2 = new StringBuilder();
+        for(Mention m : mentionBeginOnly.get(i)){
+          if (sb2.length() > 0) {
+            sb2.append("|");
+          }
+          int corefClusterId = (gold)? m.goldCorefClusterID:m.corefClusterID;
+          sb2.append("(").append(corefClusterId);
+        }
+        for(Mention m : mentionBeginEnd.get(i)){
+          if (sb2.length() > 0) {
+            sb2.append("|");
+          }
+          int corefClusterId = (gold)? m.goldCorefClusterID:m.corefClusterID;
+          sb2.append("(").append(corefClusterId).append(")");
+        }
+        for(Mention m : mentionEndOnly.get(i)){
+          if (sb2.length() > 0) {
+            sb2.append("|");
+          }
+          int corefClusterId = (gold)? m.goldCorefClusterID:m.corefClusterID;
+          sb2.append(corefClusterId).append(")");
+        }
+        if(sb2.length() == 0) sb2.append("-");
+
+        String[] columns = conllSentence.get(i);
+        for(int j = 0 ; j < columns.length-1 ; j++){
+          String column = columns[j];
+          sb.append(column).append("\t");
+        }
+        sb.append(sb2).append("\n");
+      }
+      sb.append("\n");
+    }
+
+    sb.append("#end document").append("\n");
+    //    sb.append("#end document ").append(docID).append("\n");
+
+    writer.print(sb.toString());
+    writer.flush();
+  }
+

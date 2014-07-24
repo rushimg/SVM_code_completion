@@ -1,0 +1,53 @@
+  void classifyAndWriteAnswers(Collection<List<IN>> documents,
+                                      List<Triple<int[][][], int[], double[][][]>> documentDataAndLabels,
+                                      PrintWriter printWriter,
+                                      DocumentReaderAndWriter<IN> readerAndWriter) throws IOException {
+    Timing timer = new Timing();
+
+    Counter<String> entityTP = new ClassicCounter<String>();
+    Counter<String> entityFP = new ClassicCounter<String>();
+    Counter<String> entityFN = new ClassicCounter<String>();
+    boolean resultsCounted = true;
+
+    int numWords = 0;
+    int numDocs = 0;
+    for (List<IN> doc : documents) {
+      classify(doc, documentDataAndLabels.get(numDocs));
+      numWords += doc.size();
+      writeAnswers(doc, printWriter, readerAndWriter);
+      resultsCounted = resultsCounted && countResults(doc, entityTP, entityFP, entityFN);
+      numDocs++;
+    }
+    long millis = timer.stop();
+    double wordspersec = numWords / (((double) millis) / 1000);
+    NumberFormat nf = new DecimalFormat("0.00"); // easier way!
+    if (!flags.suppressTestDebug)
+      System.err.println(StringUtils.getShortClassName(this) + " tagged " + numWords + " words in " + numDocs
+        + " documents at " + nf.format(wordspersec) + " words per second.");
+    if (resultsCounted && !flags.suppressTestDebug) {
+      printResults(entityTP, entityFP, entityFN);
+    }
+  }
+
+  @Override
+  public SequenceModel getSequenceModel(List<IN> doc) {
+    Triple<int[][][], int[], double[][][]> p = documentToDataAndLabels(doc);
+    return getSequenceModel(p, doc);
+  }
+
+  private SequenceModel getSequenceModel(Triple<int[][][], int[], double[][][]> documentDataAndLabels, List<IN> document) {
+    return labelDictionary == null ? new TestSequenceModel(getCliqueTree(documentDataAndLabels)) :
+      new TestSequenceModel(getCliqueTree(documentDataAndLabels), labelDictionary, document);
+  }
+
+  protected CliquePotentialFunction getCliquePotentialFunctionForTest() {
+    if (cliquePotentialFunction == null) {
+      cliquePotentialFunction = new LinearCliquePotentialFunction(weights);
+    }
+    return cliquePotentialFunction;
+  }
+
+  public void updateWeightsForTest(double[] x) {
+    cliquePotentialFunction = cliquePotentialFunctionHelper.getCliquePotentialFunction(x);
+  }
+

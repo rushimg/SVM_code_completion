@@ -1,0 +1,109 @@
+    protected void drawItemPass1(Graphics2D x_graphics,
+                                 Rectangle2D x_dataArea,
+                                 PlotRenderingInfo x_info,
+                                 XYPlot x_plot,
+                                 ValueAxis x_domainAxis,
+                                 ValueAxis x_rangeAxis,
+                                 XYDataset x_dataset,
+                                 int x_series,
+                                 int x_item,
+                                 CrosshairState x_crosshairState) {
+
+        Shape l_entityArea = null;
+        EntityCollection l_entities = null;
+        if (null != x_info) {
+            l_entities = x_info.getOwner().getEntityCollection();
+        }
+
+        Paint l_seriesPaint   = getItemPaint(x_series, x_item);
+        Stroke l_seriesStroke = getItemStroke(x_series, x_item);
+        x_graphics.setPaint(l_seriesPaint);
+        x_graphics.setStroke(l_seriesStroke);
+
+        PlotOrientation l_orientation      = x_plot.getOrientation();
+        RectangleEdge l_domainAxisLocation = x_plot.getDomainAxisEdge();
+        RectangleEdge l_rangeAxisLocation  = x_plot.getRangeAxisEdge();
+
+        double l_x0 = x_dataset.getXValue(x_series, x_item);
+        double l_y0 = x_dataset.getYValue(x_series, x_item);
+        double l_x1 = x_domainAxis.valueToJava2D(l_x0, x_dataArea,
+                l_domainAxisLocation);
+        double l_y1 = x_rangeAxis.valueToJava2D(l_y0, x_dataArea,
+                l_rangeAxisLocation);
+
+        if (getShapesVisible()) {
+            Shape l_shape = getItemShape(x_series, x_item);
+            if (l_orientation == PlotOrientation.HORIZONTAL) {
+                l_shape = ShapeUtilities.createTranslatedShape(l_shape,
+                        l_y1, l_x1);
+            }
+            else {
+                l_shape = ShapeUtilities.createTranslatedShape(l_shape,
+                        l_x1, l_y1);
+            }
+            if (l_shape.intersects(x_dataArea)) {
+                x_graphics.setPaint(getItemPaint(x_series, x_item));
+                x_graphics.fill(l_shape);
+            }
+            l_entityArea = l_shape;
+        }
+
+        // add an entity for the item...
+        if (null != l_entities) {
+            if (null == l_entityArea) {
+                l_entityArea = new Rectangle2D.Double((l_x1 - 2), (l_y1 - 2),
+                        4, 4);
+            }
+            String l_tip = null;
+            XYToolTipGenerator l_tipGenerator = getToolTipGenerator(x_series,
+                    x_item);
+            if (null != l_tipGenerator) {
+                l_tip = l_tipGenerator.generateToolTip(x_dataset, x_series,
+                        x_item);
+            }
+            String l_url = null;
+            XYURLGenerator l_urlGenerator = getURLGenerator();
+            if (null != l_urlGenerator) {
+                l_url = l_urlGenerator.generateURL(x_dataset, x_series,
+                        x_item);
+            }
+            XYItemEntity l_entity = new XYItemEntity(l_entityArea, x_dataset,
+                    x_series, x_item, l_tip, l_url);
+            l_entities.add(l_entity);
+        }
+
+        // draw the item label if there is one...
+        if (isItemLabelVisible(x_series, x_item)) {
+            drawItemLabel(x_graphics, l_orientation, x_dataset, x_series,
+                          x_item, l_x1, l_y1, (l_y1 < 0.0));
+        }
+
+        int l_domainAxisIndex = x_plot.getDomainAxisIndex(x_domainAxis);
+        int l_rangeAxisIndex  = x_plot.getRangeAxisIndex(x_rangeAxis);
+        updateCrosshairValues(x_crosshairState, l_x0, l_y0, l_domainAxisIndex,
+                              l_rangeAxisIndex, l_x1, l_y1, l_orientation);
+
+        if (0 == x_item) {
+            return;
+        }
+
+        double l_x2 = x_domainAxis.valueToJava2D(x_dataset.getXValue(x_series,
+                (x_item - 1)), x_dataArea, l_domainAxisLocation);
+        double l_y2 = x_rangeAxis.valueToJava2D(x_dataset.getYValue(x_series,
+                (x_item - 1)), x_dataArea, l_rangeAxisLocation);
+
+        Line2D l_line = null;
+        if (PlotOrientation.HORIZONTAL == l_orientation) {
+            l_line = new Line2D.Double(l_y1, l_x1, l_y2, l_x2);
+        }
+        else if (PlotOrientation.VERTICAL == l_orientation) {
+            l_line = new Line2D.Double(l_x1, l_y1, l_x2, l_y2);
+        }
+
+        if ((null != l_line) && l_line.intersects(x_dataArea)) {
+            x_graphics.setPaint(getItemPaint(x_series, x_item));
+            x_graphics.setStroke(getItemStroke(x_series, x_item));
+            x_graphics.draw(l_line);
+        }
+    }
+

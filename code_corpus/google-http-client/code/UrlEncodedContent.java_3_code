@@ -1,0 +1,31 @@
+  public UrlEncodedContent(Object data) {
+    super(UrlEncodedParser.MEDIA_TYPE);
+    setData(data);
+  }
+
+  public void writeTo(OutputStream out) throws IOException {
+    Writer writer = new BufferedWriter(new OutputStreamWriter(out, getCharset()));
+    boolean first = true;
+    for (Map.Entry<String, Object> nameValueEntry : Data.mapOf(data).entrySet()) {
+      Object value = nameValueEntry.getValue();
+      if (value != null) {
+        String name = CharEscapers.escapeUri(nameValueEntry.getKey());
+        Class<? extends Object> valueClass = value.getClass();
+        if (value instanceof Iterable<?> || valueClass.isArray()) {
+          for (Object repeatedValue : Types.iterableOf(value)) {
+            first = appendParam(first, writer, name, repeatedValue);
+          }
+        } else {
+          first = appendParam(first, writer, name, value);
+        }
+      }
+    }
+    writer.flush();
+  }
+
+  @Override
+  public UrlEncodedContent setMediaType(HttpMediaType mediaType) {
+    super.setMediaType(mediaType);
+    return this;
+  }
+

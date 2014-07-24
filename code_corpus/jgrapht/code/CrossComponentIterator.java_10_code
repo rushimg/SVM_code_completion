@@ -1,0 +1,33 @@
+    public CrossComponentIterator(Graph<V, E> g, V startVertex)
+    {
+        super();
+
+        if (g == null) {
+            throw new IllegalArgumentException("graph must not be null");
+        }
+        graph = g;
+
+        specifics = createGraphSpecifics(g);
+        vertexIterator = g.vertexSet().iterator();
+        setCrossComponentTraversal(startVertex == null);
+
+        reusableEdgeEvent = new FlyweightEdgeEvent<V, E>(this, null);
+        reusableVertexEvent = new FlyweightVertexEvent<V>(this, null);
+
+        if (startVertex == null) {
+            // pick a start vertex if graph not empty
+            if (vertexIterator.hasNext()) {
+                this.startVertex = vertexIterator.next();
+            } else {
+                this.startVertex = null;
+            }
+        } else if (g.containsVertex(startVertex)) {
+            this.startVertex = startVertex;
+        } else {
+            throw new IllegalArgumentException(
+                "graph must contain the start vertex");
+        }
+    }
+
+    //~ Methods ----------------------------------------------------------------
+

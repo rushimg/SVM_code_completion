@@ -1,0 +1,47 @@
+  public boolean isLegal(State state, List<ParserConstraint> constraints) {
+    if (state.finished) {
+      return false;
+    }
+    if (state.tokenPosition >= state.sentence.size()) {
+      return false;
+    }
+    // We disallow shifting when the previous transition was a right
+    // head transition to a partial (binarized) state
+    // TODO: I don't have an explanation for this, it was just stated
+    // in Zhang & Clark 2009
+    if (state.stack.size() > 0) {
+      Tree top = state.stack.peek();
+      // Temporary node, eg part of a binarized sequence
+      if (top.label().value().startsWith("@") && top.children().length == 2 && 
+          ShiftReduceUtils.getBinarySide(top) == BinaryTransition.Side.RIGHT) {
+        return false;
+      }
+    }
+
+    if (constraints == null || state.stack.size() == 0) {
+      return true;
+    }
+    final Tree top = state.stack.peek();
+    // If there are ParserConstraints, you can only shift if shifting
+    // will not make a constraint unsolvable.  This happens if we
+    // shift beyond the right end of a constraint which is not solved.
+    for (ParserConstraint constraint : constraints) {
+      // either went past or haven't gotten to this constraint yet
+      if (ShiftReduceUtils.rightIndex(top) != constraint.end - 1) {
+        continue;
+      }
+      int left = ShiftReduceUtils.leftIndex(top);
+      if (left < constraint.start) {
+        continue;
+      }
+      if (left > constraint.start) {
+        return false;
+      }
+      if (!ShiftReduceUtils.constraintMatchesTreeTop(top, constraint)) {
+        return false;
+      }
+    }
+    
+    return true;
+  }
+

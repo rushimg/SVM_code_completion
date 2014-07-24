@@ -1,0 +1,50 @@
+  private static class Frag {
+    State start;
+    Set<State> out;
+
+    protected Frag() {
+ //     this(new State());
+    }
+
+    protected Frag(State start) {
+      this.start = start;
+      this.out = new LinkedHashSet<State> ();
+      start.updateOutStates(out);
+    }
+
+    protected Frag(State start, Set<State> out) {
+      this.start = start;
+      this.out = out;
+    }
+
+    protected void add(State outState) {
+      if (out == null) {
+        out = new LinkedHashSet<State>();
+      }
+      out.add(outState);
+    }
+
+    protected void add(Collection<State> outStates) {
+      if (out == null) {
+        out = new LinkedHashSet<State>();
+      }
+      out.addAll(outStates);
+    }
+
+    // Connect frag f to the out states of this frag
+    // the out states of this frag is updated to be the out states of f
+    protected void connect(Frag f) {
+      for (State s:out) {
+        s.add(f.start);
+      }
+      out = f.out;
+    }
+
+    // Connect state to the out states of this frag
+    // the out states of this frag is updated to be the out states of state
+    protected void connect(State state) {
+      for (State s:out) {
+        s.add(state);
+      }
+      out = new LinkedHashSet<State>();
+      state.updateOutStates(out);

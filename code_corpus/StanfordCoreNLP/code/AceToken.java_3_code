@@ -1,0 +1,246 @@
+  public static void loadProximityClasses(String proxFileName) throws java.io.IOException {
+
+    System.err.println("Loading proximity classes...");
+
+    BufferedReader in = null;
+    try {
+      in = new BufferedReader(new FileReader(proxFileName));
+    } catch (java.io.IOException e) {
+      System.err.println("Warning: no proximity database found.");
+      return;
+    }
+
+    String line;
+    while ((line = in.readLine()) != null) {
+      ArrayList<String> tokens = SimpleTokenize.tokenize(line);
+      if (tokens.size() > 0) {
+        Integer key = WORDS.get(tokens.get(0));
+        ArrayList<Integer> value = new ArrayList<Integer>();
+
+        for (int i = 0; i < tokens.size() && i < PROXIMITY_CLASS_SIZE; i++) {
+          Integer word = WORDS.get(tokens.get(i));
+          value.add(word);
+        }
+
+        PROX_CLASSES.put(key, value);
+      }
+    }
+
+    in.close();
+    System.err.println("Finished loading proximity classes.");
+  }
+
+  public String getLiteral() {
+    return mLiteral;
+  }
+
+  public int getWord() {
+    return mWord;
+  }
+
+  public int getCase() {
+    return mCase;
+  }
+
+  public int[] getSuffixes() {
+    return mSuffixes;
+  }
+
+  public int getLemma() {
+    return mLemma;
+  }
+
+  public int getPos() {
+    return mPos;
+  }
+
+  public int getChunk() {
+    return mChunk;
+  }
+
+  public int getNerc() {
+    return mNerc;
+  }
+
+  public Span getByteOffset() {
+    return mByteOffset;
+  }
+
+  public int getByteStart() {
+    return mByteOffset.start();
+  }
+
+  public int getByteEnd() {
+    return mByteOffset.end();
+  }
+
+  public int getSentence() {
+    return mSentence;
+  }
+
+  public Span getRawByteOffset() {
+    return mRawByteOffset;
+  }
+
+  public int getRawByteStart() {
+    return mRawByteOffset.start();
+  }
+
+  public int getRawByteEnd() {
+    return mRawByteOffset.end();
+  }
+
+  public void setMassiClass(String i) {
+    mMassiClass = i;
+  }
+
+  public String getMassiClass() {
+    return mMassiClass;
+  }
+
+  public void setMassiBbn(String i) {
+    mMassiBbn = i;
+  }
+
+  public String getMassiBbn() {
+    return mMassiBbn;
+  }
+
+  public void setMassiWnss(String i) {
+    mMassiWnss = i;
+  }
+
+  public String getMassiWnss() {
+    return mMassiWnss;
+  }
+
+  public static boolean isSgml(String s) {
+    Matcher match = SGML_PATTERN.matcher(s);
+    return match.find(0);
+  }
+
+  public static String removeSpaces(String s) {
+    if (s == null)
+      return s;
+    return s.replaceAll(" ", "_");
+  }
+
+  public static final int CASE_OTHER = 0;
+  public static final int CASE_ALLCAPS = 1;
+  public static final int CASE_ALLCAPSORDOTS = 2;
+  public static final int CASE_CAPINI = 3;
+  public static final int CASE_INCAP = 4;
+  public static final int CASE_ALLDIGITS = 5;
+  public static final int CASE_ALLDIGITSORDOTS = 6;
+
+  private static int detectCase(String word) {
+
+    //
+    // is the word all caps? (e.g. IBM)
+    //
+    boolean isAllCaps = true;
+    for (int i = 0; i < word.length(); i++) {
+      if (!Character.isUpperCase(word.charAt(i))) {
+        isAllCaps = false;
+        break;
+      }
+    }
+    if (isAllCaps)
+      return CASE_ALLCAPS;
+
+    //
+    // is the word all caps or dots?(e.g. I.B.M.)
+    //
+    boolean isAllCapsOrDots = true;
+    if (Character.isUpperCase(word.charAt(0))) {
+      for (int i = 0; i < word.length(); i++) {
+        if (!Character.isUpperCase(word.charAt(i)) && word.charAt(i) != '.') {
+          isAllCapsOrDots = false;
+          break;
+        }
+      }
+    } else {
+      isAllCapsOrDots = false;
+    }
+    if (isAllCapsOrDots)
+      return CASE_ALLCAPSORDOTS;
+
+    //
+    // does the word start with a cap?(e.g. Tuesday)
+    //
+    boolean isInitialCap = false;
+    if (Character.isUpperCase(word.charAt(0)))
+      isInitialCap = true;
+    if (isInitialCap)
+      return CASE_CAPINI;
+
+    //
+    // does the word contain a capitalized letter?
+    //
+    boolean isInCap = false;
+    for (int i = 1; i < word.length(); i++) {
+      if (Character.isUpperCase(word.charAt(i))) {
+        isInCap = true;
+        break;
+      }
+    }
+    if (isInCap)
+      return CASE_INCAP;
+
+    //
+    // is the word all digits? (e.g. 123)
+    //
+    boolean isAllDigits = false;
+    for (int i = 0; i < word.length(); i++) {
+      if (!Character.isDigit(word.charAt(i))) {
+        isAllDigits = false;
+        break;
+      }
+    }
+    if (isAllDigits)
+      return CASE_ALLDIGITS;
+
+    //
+    // is the word all digits or . or ,? (e.g. 1.3)
+    //
+    boolean isAllDigitsOrDots = true;
+    if (Character.isDigit(word.charAt(0))) {
+      for (int i = 0; i < word.length(); i++) {
+        if (!Character.isDigit(word.charAt(i)) && word.charAt(i) != '.' && word.charAt(i) != ',') {
+          isAllDigitsOrDots = false;
+          break;
+        }
+      }
+    } else {
+      isAllDigitsOrDots = false;
+    }
+    if (isAllDigitsOrDots)
+      return CASE_ALLDIGITSORDOTS;
+
+    return CASE_OTHER;
+  }
+
+  private static int[] extractSuffixes(String word) {
+    String lower = word.toLowerCase();
+    ArrayList<Integer> suffixes = new ArrayList<Integer>();
+    for (int i = 2; i <= 4; i++) {
+      if (lower.length() >= i) {
+        try {
+          String suf = lower.substring(lower.length() - i);
+          suffixes.add(WORDS.get(suf));
+        } catch (java.lang.RuntimeException e) {
+          // unknown suffix
+        }
+      } else {
+        break;
+      }
+    }
+
+    int[] sufs = new int[suffixes.size()];
+    for (int i = 0; i < suffixes.size(); i++) {
+      sufs[i] = suffixes.get(i);
+    }
+
+    return sufs;
+  }
+

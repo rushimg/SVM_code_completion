@@ -1,0 +1,30 @@
+    public static Number findMinimumStackedRangeValue(CategoryDataset dataset) {
+        if (dataset == null) {
+            throw new IllegalArgumentException("Null 'dataset' argument.");
+        }
+        Number result = null;
+        boolean hasValidData = false;
+        double minimum = 0.0;
+        int categoryCount = dataset.getColumnCount();
+        for (int item = 0; item < categoryCount; item++) {
+            double total = 0.0;
+            int seriesCount = dataset.getRowCount();
+            for (int series = 0; series < seriesCount; series++) {
+                Number number = dataset.getValue(series, item);
+                if (number != null) {
+                    hasValidData = true;
+                    double value = number.doubleValue();
+                    if (value < 0.0) {
+                        total = total + value;
+                        // '+', remember value is negative
+                    }
+                }
+            }
+            minimum = Math.min(minimum, total);
+        }
+        if (hasValidData) {
+            result = new Double(minimum);
+        }
+        return result;
+    }
+

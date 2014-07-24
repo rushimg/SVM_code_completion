@@ -1,0 +1,146 @@
+public class SQNMinimizer<T extends Function> extends StochasticMinimizer<T> {
+
+  private int M = 0;
+  private double lambda = 1.0;
+
+  private double cPosDef = 1;
+  private double epsilon = 1e-10;
+
+  private List<double[]> sList = new ArrayList<double[]>();
+  private List<double[]> yList = new ArrayList<double[]>();
+  private List<Double> roList = new ArrayList<Double>();
+
+  double[] dir, s,y;
+  double ro;
+
+  public void setM(int m) {
+    M = m;
+  }
+
+  public SQNMinimizer(int m) {
+    M = m;
+  }
+
+  public SQNMinimizer() {
+  }
+
+  public SQNMinimizer(int mem,double initialGain, int batchSize,boolean output) {
+    gain = initialGain;
+    bSize = batchSize;
+    this.M = mem;
+    this.outputIterationsToFile = output;
+  }
+
+
+  @Override
+  public String getName(){
+    return "SQN" + bSize + "_g" + g ;
+  }
+
+  private static double[] plusAndConstMult(double[] a, double[] b, double c, double[] d) {
+    for (int i = 0; i < a.length; i++) {
+    }
+    return d;
+  }
+
+  @Override
+  public Pair<Integer,Double> tune( edu.stanford.nlp.optimization.Function function,double[] initial, long msPerTest){
+    System.err.println("No tuning set yet");
+    return new Pair<Integer,Double>(bSize, gain);
+  }
+
+  private void computeDir(double[] dir, double[] fg) throws SQNMinimizer.SurpriseConvergence {
+    System.arraycopy(fg, 0, dir, 0, fg.length);
+
+    int mmm = sList.size();
+    double[] as = new double[mmm];
+    double[] factors = new double[dir.length];
+
+    for (int i = mmm - 1; i >= 0; i--) {
+      plusAndConstMult(dir, yList.get(i), -as[i], dir);
+    }
+
+    // multiply by hessian approximation
+    if (mmm != 0) {
+      double[] y = yList.get(mmm - 1);
+      double yDotY = ArrayMath.innerProduct(y, y);
+      if (yDotY == 0) {
+        throw new SQNMinimizer.SurpriseConvergence("Y is 0!!");
+      }
+      double gamma = ArrayMath.innerProduct(sList.get(mmm - 1), y) / yDotY;
+      ArrayMath.multiplyInPlace(dir, gamma);
+    }else if(mmm == 0){
+      //This is a safety feature preventing too large of an initial step (see Yu Schraudolph Gunter)
+      ArrayMath.multiplyInPlace(dir,epsilon);
+    }
+
+    for (int i = 0; i < mmm; i++) {
+      plusAndConstMult(ArrayMath.pairwiseMultiply(yList.get(i),sList.get(i)),factors,1,factors);
+    }
+
+    ArrayMath.multiplyInPlace(dir, -1);
+  }
+
+
+  @Override
+  protected void init(AbstractStochasticCachingDiffFunction func){
+
+    sList = new ArrayList<double[]>();
+    yList = new ArrayList<double[]>();
+   dir = new double[func.domainDimension()];
+  }
+
+
+  @Override
+  protected void takeStep(AbstractStochasticCachingDiffFunction dfunction){
+
+    try {
+      computeDir(dir, newGrad);
+    } catch (SQNMinimizer.SurpriseConvergence s) {
+      clearStuff();
+    }
+
+    for(int i = 0; i < x.length; i++){
+    }
+
+    //Get a new pair...
+    say(" A ");
+    if (M > 0 && sList.size() == M || sList.size() == M) {
+      s = sList.remove(0);
+      y = yList.remove(0);
+    } else {
+      s = new double[x.length];
+      y = new double[x.length];
+    }
+
+
+    dfunction.recalculatePrevBatch = true;
+    System.arraycopy(dfunction.derivativeAt(newX,bSize),0,y,0,grad.length);
+
+
+    // compute s_k, y_k
+    ro = 0;
+    for(int i=0;i<x.length;i++){
+      s[i] = newX[i] - x[i];
+    }
+
+    ro = 1.0 / ro;
+    sList.add(s);
+    yList.add(y);
+    roList.add(ro);
+
+  }
+
+
+
+
+
+
+
+  private void clearStuff() {
+    sList = null;
+    yList = null;
+    roList = null;
+  }
+
+  private static class SurpriseConvergence extends Throwable {

@@ -1,0 +1,27 @@
+  public void readPhrases(String filename, boolean checkTag, String delimiterRegex) throws IOException
+  {
+    readPhrases(filename, checkTag, Pattern.compile(delimiterRegex));
+  }
+
+  public void readPhrases(String filename, boolean checkTag, Pattern delimiterPattern) throws IOException
+  {
+    Timing timer = new Timing();
+    timer.doing("Reading phrases: " + filename);
+    BufferedReader br = IOUtils.getBufferedFileReader(filename);
+    String line;
+    while ((line = br.readLine()) != null) {
+      if (checkTag) {
+        String[] columns = delimiterPattern.split(line, 2);
+        if (columns.length == 1) {
+          addPhrase(columns[0]);
+        } else {
+          addPhrase(columns[0], columns[1]);
+        }
+      } else {
+        addPhrase(line);
+      }
+    }
+    br.close();
+    timer.done();
+  }
+

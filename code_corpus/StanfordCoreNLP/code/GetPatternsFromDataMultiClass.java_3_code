@@ -1,0 +1,77 @@
+  public GetPatternsFromDataMultiClass(Properties props, Map<String, List<CoreLabel>> sents, Set<String> seedSet, boolean labelUsingSeedSets,
+      String answerLabel) throws IOException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException,
+      NoSuchMethodException, SecurityException, InterruptedException, ExecutionException, ClassNotFoundException {
+    this(props, sents, seedSet, labelUsingSeedSets, PatternsAnnotations.PatternLabel1.class, answerLabel);
+  }
+
+  @SuppressWarnings("rawtypes")
+  public GetPatternsFromDataMultiClass(Properties props, Map<String, List<CoreLabel>> sents, Set<String> seedSet, boolean labelUsingSeedSets,
+      Class answerClass, String answerLabel) throws IOException, InstantiationException, IllegalAccessException, IllegalArgumentException,
+      InvocationTargetException, NoSuchMethodException, SecurityException, InterruptedException, ExecutionException, ClassNotFoundException {
+    this.props = props;
+    Map<String, Class<? extends TypesafeMap.Key<String>>> ansCl = new HashMap<String, Class<? extends TypesafeMap.Key<String>>>();
+    ansCl.put(answerLabel, answerClass);
+
+    Map<String, Class> generalizeClasses = new HashMap<String, Class>();
+
+    Map<String, Map<Class, Object>> ignoreClasses = new HashMap<String, Map<Class, Object>>();
+    ignoreClasses.put(answerLabel, new HashMap<Class, Object>());
+
+    Map<String, Set<String>> seedSets = new HashMap<String, Set<String>>();
+    seedSets.put(answerLabel, seedSet);
+    setUpConstructor(sents, seedSets, labelUsingSeedSets, ansCl, generalizeClasses, ignoreClasses);
+
+  }
+
+  @SuppressWarnings("rawtypes")
+  public GetPatternsFromDataMultiClass(Properties props, Map<String, List<CoreLabel>> sents, Set<String> seedSet, boolean labelUsingSeedSets,
+      String answerLabel, Map<String, Class> generalizeClasses, Map<Class, Object> ignoreClasses) throws IOException, InstantiationException,
+      IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, InterruptedException,
+      ExecutionException, ClassNotFoundException {
+    this(props, sents, seedSet, labelUsingSeedSets, PatternsAnnotations.PatternLabel1.class, answerLabel, generalizeClasses, ignoreClasses);
+  }
+
+  @SuppressWarnings("rawtypes")
+  public GetPatternsFromDataMultiClass(Properties props, Map<String, List<CoreLabel>> sents, Set<String> seedSet, boolean labelUsingSeedSets,
+      Class answerClass, String answerLabel, Map<String, Class> generalizeClasses, Map<Class, Object> ignoreClasses) throws IOException,
+      InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException,
+      InterruptedException, ExecutionException, ClassNotFoundException {
+    this.props = props;
+    Map<String, Class<? extends TypesafeMap.Key<String>>> ansCl = new HashMap<String, Class<? extends TypesafeMap.Key<String>>>();
+    ansCl.put(answerLabel, answerClass);
+
+    Map<String, Map<Class, Object>> iC = new HashMap<String, Map<Class, Object>>();
+    iC.put(answerLabel, ignoreClasses);
+
+    Map<String, Set<String>> seedSets = new HashMap<String, Set<String>>();
+    seedSets.put(answerLabel, seedSet);
+    setUpConstructor(sents, seedSets, labelUsingSeedSets, ansCl, generalizeClasses, iC);
+  }
+
+  @SuppressWarnings("rawtypes")
+  public GetPatternsFromDataMultiClass(Properties props, Map<String, List<CoreLabel>> sents, Map<String, Set<String>> seedSets,
+      boolean labelUsingSeedSets) throws IOException, InstantiationException, IllegalAccessException, IllegalArgumentException,
+      InvocationTargetException, NoSuchMethodException, SecurityException, ClassNotFoundException, InterruptedException, ExecutionException {
+    this.props = props;
+    Map<String, Class<? extends TypesafeMap.Key<String>>> ansCl = new HashMap<String, Class<? extends TypesafeMap.Key<String>>>();
+    Map<String, Class> gC = new HashMap<String, Class>();
+    Map<String, Map<Class, Object>> iC = new HashMap<String, Map<Class, Object>>();
+    int i = 1;
+    for (String label : seedSets.keySet()) {
+      String ansclstr = "edu.stanford.nlp.patterns.surface.PatternsAnnotations$PatternLabel" + i;
+      ansCl.put(label, (Class<? extends Key<String>>) Class.forName(ansclstr));
+      iC.put(label, new HashMap<Class, Object>());
+      i++;
+    }
+
+    setUpConstructor(sents, seedSets, labelUsingSeedSets, ansCl, gC, iC);
+  }
+
+  @SuppressWarnings("rawtypes")
+  public GetPatternsFromDataMultiClass(Properties props, Map<String, List<CoreLabel>> sents, Map<String, Set<String>> seedSets,
+      boolean labelUsingSeedSets, Map<String, Class<? extends TypesafeMap.Key<String>>> answerClass) throws IOException, InstantiationException,
+      IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, InterruptedException,
+      ExecutionException, ClassNotFoundException {
+    this(props, sents, seedSets, labelUsingSeedSets, answerClass, new HashMap<String, Class>(), new HashMap<String, Map<Class, Object>>());
+  }
+

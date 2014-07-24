@@ -1,0 +1,26 @@
+    protected Object[] createItemArray(CategoryDataset dataset,
+                                       int row, int column) {
+        Object[] result = new Object[4];
+        result[0] = dataset.getRowKey(row).toString();
+        result[1] = dataset.getColumnKey(column).toString();
+        Number value = dataset.getValue(row, column);
+        if (value != null) {
+            if (this.numberFormat != null) {
+                result[2] = this.numberFormat.format(value);
+            }
+            else if (this.dateFormat != null) {
+                result[2] = this.dateFormat.format(value);
+            }
+        }
+        else {
+            result[2] = this.nullValueString;
+        }
+        if (value != null) {
+            double total = DataUtilities.calculateColumnTotal(dataset, column);
+            double percent = value.doubleValue() / total;
+            result[3] = this.percentFormat.format(percent);
+        }
+
+        return result;
+    }
+

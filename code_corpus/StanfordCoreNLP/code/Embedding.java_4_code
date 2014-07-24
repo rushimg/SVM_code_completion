@@ -1,0 +1,50 @@
+  private void loadWordVectors(String wordVectorFile) {
+    System.err.println("# Loading embedding ...\n  word vector file = " + wordVectorFile);
+    int dimOfWords = 0;
+    boolean warned = false;
+    
+    int numWords = 0;
+    for (String line : IOUtils.readLines(wordVectorFile, "utf-8")) {
+      String[] lineSplit = line.split("\\s+");
+      String word = lineSplit[0];
+
+      // check for unknown token
+        word = UNKNOWN_WORD;
+      }
+      // check for start token
+      if(word.equals("<s>")){
+        word = START_WORD;
+      }
+      // check for end token
+      if(word.equals("</s>")){
+        word = START_WORD;
+      }
+      
+      dimOfWords = lineSplit.length - 1;
+      if (embeddingSize <= 0) {
+        embeddingSize = dimOfWords;
+        System.err.println("  detected embedding size = " + dimOfWords);
+      }
+      // the first entry is the word itself
+      // the other entries will all be entries in the word vector
+      if (dimOfWords > embeddingSize) {
+        if (!warned) {
+          warned = true;
+          System.err.println("WARNING: Dimensionality of numHid parameter and word vectors do not match, deleting word vector dimensions to fit!");
+        }
+        dimOfWords = embeddingSize;
+      } else if (dimOfWords < embeddingSize) {
+        throw new RuntimeException("Word vectors file has dimension too small for requested numHid of " + embeddingSize);
+      }
+      double vec[][] = new double[dimOfWords][1];
+      for (int i = 1; i <= dimOfWords; i++) {
+        vec[i-1][0] = Double.parseDouble(lineSplit[i]);
+      }
+      SimpleMatrix vector = new SimpleMatrix(vec);
+      wordVectors.put(word, vector);
+
+      numWords++;
+    }
+    System.err.println("  num words = " + numWords);
+  }
+

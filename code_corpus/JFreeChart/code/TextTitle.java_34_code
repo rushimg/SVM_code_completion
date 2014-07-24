@@ -1,0 +1,39 @@
+    protected void drawHorizontal(Graphics2D g2, Rectangle2D area) {
+        Rectangle2D titleArea = (Rectangle2D) area.clone();
+        g2.setFont(this.font);
+        g2.setPaint(this.paint);
+        TextBlockAnchor anchor = null;
+        float x = 0.0f;
+        HorizontalAlignment horizontalAlignment = getHorizontalAlignment();
+        if (horizontalAlignment == HorizontalAlignment.LEFT) {
+            x = (float) titleArea.getX();
+            anchor = TextBlockAnchor.TOP_LEFT;
+        }
+        else if (horizontalAlignment == HorizontalAlignment.RIGHT) {
+            x = (float) titleArea.getMaxX();
+            anchor = TextBlockAnchor.TOP_RIGHT;
+        }
+        else if (horizontalAlignment == HorizontalAlignment.CENTER) {
+            x = (float) titleArea.getCenterX();
+            anchor = TextBlockAnchor.TOP_CENTER;
+        }
+        float y = 0.0f;
+        RectangleEdge position = getPosition();
+        if (position == RectangleEdge.TOP) {
+            y = (float) titleArea.getY();
+        }
+        else if (position == RectangleEdge.BOTTOM) {
+            y = (float) titleArea.getMaxY();
+            if (horizontalAlignment == HorizontalAlignment.LEFT) {
+                anchor = TextBlockAnchor.BOTTOM_LEFT;
+            }
+            else if (horizontalAlignment == HorizontalAlignment.CENTER) {
+                anchor = TextBlockAnchor.BOTTOM_CENTER;
+            }
+            else if (horizontalAlignment == HorizontalAlignment.RIGHT) {
+                anchor = TextBlockAnchor.BOTTOM_RIGHT;
+            }
+        }
+        this.content.draw(g2, x, y, anchor);
+    }
+

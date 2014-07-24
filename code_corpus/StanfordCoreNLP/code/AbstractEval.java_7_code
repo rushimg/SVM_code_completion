@@ -1,0 +1,83 @@
+    double prec = (num > 0.0 ? precision/num : 0.0);
+    double rec = (num > 0.0 ? recall/num : 0.0);
+    double f = (num > 0.0 ? f1/num : 0.0);
+    System.out.println(" Precision: "+prec);
+    System.out.println(" Recall:    "+rec);
+    System.out.println(" F1:        "+f);
+  }
+
+
+  public static class RuleErrorEval extends AbstractEval {
+
+    //private boolean verbose = false;
+
+    private ClassicCounter<String> over = new ClassicCounter<String>();
+    private ClassicCounter<String> under = new ClassicCounter<String>();
+
+    protected static String localize(Tree tree) {
+      if (tree.isLeaf()) {
+        return "";
+      }
+      StringBuilder sb = new StringBuilder();
+      sb.append(tree.label());
+      sb.append(" ->");
+      for (int i = 0; i < tree.children().length; i++) {
+        sb.append(' ');
+        sb.append(tree.children()[i].label());
+      }
+      return sb.toString();
+    }
+
+    @Override
+    protected Set<String> makeObjects(Tree tree) {
+      Set<String> localTrees = Generics.newHashSet();
+      for (Tree st : tree.subTreeList()) {
+        localTrees.add(localize(st));
+      }
+      return localTrees;
+    }
+
+    @Override
+    public void evaluate(Tree t1, Tree t2, PrintWriter pw) {
+      Set<String> s1 = makeObjects(t1);
+      Set<String> s2 = makeObjects(t2);
+      for (String o1 : s1) {
+        if (!s2.contains(o1)) {
+          over.incrementCount(o1);
+        }
+      }
+      for (String o2 : s2) {
+        if (!s1.contains(o2)) {
+          under.incrementCount(o2);
+        }
+      }
+    }
+
+    private static <T> void display(ClassicCounter<T> c, int num, PrintWriter pw) {
+      List<T> rules = new ArrayList<T>(c.keySet());
+      Collections.sort(rules, Counters.toComparatorDescending(c));
+      int rSize = rules.size();
+      if (num > rSize) {
+        num = rSize;
+      }
+      for (int i = 0; i < num; i++) {
+        pw.println(rules.get(i) + " " + c.getCount(rules.get(i)));
+      }
+    }
+
+    @Override
+    public void display(boolean verbose, PrintWriter pw) {
+      //this.verbose = verbose;
+      pw.println("Most frequently underproposed rules:");
+      display(under, (verbose ? 100 : 10), pw);
+      pw.println("Most frequently overproposed rules:");
+      display(over, (verbose ? 100 : 10), pw);
+    }
+
+    public RuleErrorEval(String str) {
+      super(str);
+    }
+
+  } // end class RuleErrorEval
+
+

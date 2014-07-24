@@ -1,0 +1,20 @@
+    public static RuntimeException fail(){ return new RuntimeException(); }
+
+    public static void startTrack(Object...objs){ Redwood.startTrack(objs); }
+    public static void forceTrack(String title){ Redwood.startTrack(FORCE, title); }
+    public static void endTrack(String check){ Redwood.endTrack(check); }
+    public static void endTrack(){ Redwood.endTrack(); }
+    public static void endTrackIfOpen(String check) {
+      if (!Redwood.titleStack.empty() && Redwood.titleStack.peek().equals(check)) { Redwood.endTrack(check); }
+    }
+    public static void endTracksUntil(String check) {
+     while (!Redwood.titleStack.empty() && !Redwood.titleStack.peek().equals(check)) { Redwood.endTrack(Redwood.titleStack.peek()); }
+    }
+    public static void endTracksTo(String check) { endTracksUntil(check); endTrack(check); }
+
+    public static void startThreads(String title){ Redwood.startThreads(title); }
+    public static void finishThread(){ Redwood.finishThread(); }
+    public static void endThreads(String check){ Redwood.endThreads(check); }
+
+    public static RedwoodChannels channels(Object... channels) { return new RedwoodChannels(channels); }
+

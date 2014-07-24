@@ -1,0 +1,17 @@
+  private void parseMap(Field fieldContext, Map<String, Object> destinationMap, Type valueType,
+      ArrayList<Type> context, CustomizeJsonParser customizeParser) throws IOException {
+    JsonToken curToken = startParsingObjectOrArray();
+    while (curToken == JsonToken.FIELD_NAME) {
+      String key = getText();
+      nextToken();
+      // stop at items for feeds
+      if (customizeParser != null && customizeParser.stopAt(destinationMap, key)) {
+        return;
+      }
+      Object value =
+          parseValue(fieldContext, valueType, context, destinationMap, customizeParser, true);
+      destinationMap.put(key, value);
+      curToken = nextToken();
+    }
+  }
+

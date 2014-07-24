@@ -1,0 +1,24 @@
+  protected MockHttpTransport(Builder builder) {
+    supportedMethods = builder.supportedMethods;
+    lowLevelHttpRequest = builder.lowLevelHttpRequest;
+    lowLevelHttpResponse = builder.lowLevelHttpResponse;
+  }
+
+  @Override
+  public boolean supportsMethod(String method) throws IOException {
+    return supportedMethods == null || supportedMethods.contains(method);
+  }
+
+  @Override
+  public LowLevelHttpRequest buildRequest(String method, String url) throws IOException {
+    Preconditions.checkArgument(supportsMethod(method), "HTTP method %s not supported", method);
+    if (lowLevelHttpRequest != null) {
+      return lowLevelHttpRequest;
+    }
+    MockLowLevelHttpRequest request = new MockLowLevelHttpRequest(url);
+    if (lowLevelHttpResponse != null) {
+      request.setResponse(lowLevelHttpResponse);
+    }
+    return request;
+  }
+

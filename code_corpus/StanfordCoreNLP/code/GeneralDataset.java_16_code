@@ -1,0 +1,52 @@
+  public <E> void shuffleWithSideInformation(long randomSeed, List<E> sideInformation) {
+    if (size != sideInformation.size()) {
+      throw new IllegalArgumentException("shuffleWithSideInformation: sideInformation not of same size as Dataset");
+    }
+    Random rand = new Random(randomSeed);
+    for (int j = size - 1; j > 0; j--) {
+      // swap each item with some lower numbered item
+      int randIndex = rand.nextInt(j);
+
+      int[] tmp = data[randIndex];
+      data[randIndex] = data[j];
+      data[j] = tmp;
+
+      int tmpl = labels[randIndex];
+      labels[randIndex] = labels[j];
+      labels[j] = tmpl;
+
+      E tmpE = sideInformation.get(randIndex);
+      sideInformation.set(randIndex, sideInformation.get(j));
+      sideInformation.set(j, tmpE);
+    }
+  }
+
+  public GeneralDataset<L,F> sampleDataset(long randomSeed, double sampleFrac, boolean sampleWithReplacement) {
+    Random rand = new Random(randomSeed);
+    GeneralDataset<L,F> subset;
+    if (this instanceof RVFDataset) {
+      subset = new RVFDataset<L,F>();
+    } else if (this instanceof Dataset) {
+      subset = new Dataset<L,F>();
+    }
+    else {
+      throw new RuntimeException("Can't handle this type of GeneralDataset.");
+    }
+    if (sampleWithReplacement) {
+      for(int i = 0; i < sampleSize; i++){
+        int datumNum = rand.nextInt(this.size());
+        subset.add(this.getDatum(datumNum));
+      }
+    } else {
+      Set<Integer> indicedSampled = Generics.newHashSet();
+      while (subset.size() < sampleSize) {
+        int datumNum = rand.nextInt(this.size());
+        if (!indicedSampled.contains(datumNum)) {
+          subset.add(this.getDatum(datumNum));
+          indicedSampled.add(datumNum);
+        }
+      }
+    }
+    return subset;
+  }
+

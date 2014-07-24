@@ -1,0 +1,39 @@
+  private final Map<E,Entry<E>> keyToEntry;
+
+  private Entry<E> parent(Entry<E> entry) {
+    int index = entry.index;
+    return (index > 0 ? getEntry((index - 1) / 2) : null);
+  }
+
+  private Entry<E> leftChild(Entry<E> entry) {
+    return (leftIndex < size() ? getEntry(leftIndex) : null);
+  }
+
+  private Entry<E> rightChild(Entry<E> entry) {
+    int index = entry.index;
+    return (rightIndex < size() ? getEntry(rightIndex) : null);
+  }
+
+  private int compare(Entry<E> entryA, Entry<E> entryB) {
+    int result = compare(entryA.priority, entryB.priority);
+    if (result != 0) {
+      return result;
+    }
+    if ((entryA.key instanceof Comparable) && (entryB.key instanceof Comparable)) {
+      Comparable<E> key = ErasureUtils.uncheckedCast(entryA.key);
+      return key.compareTo(entryB.key);
+    }
+    return result;
+  }
+
+  private static int compare(double a, double b) {
+    double diff = a - b;
+    if (diff > 0.0) {
+      return 1;
+    }
+    if (diff < 0.0) {
+      return -1;
+    }
+    return 0;
+  }
+

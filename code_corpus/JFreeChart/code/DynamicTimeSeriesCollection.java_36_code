@@ -1,0 +1,19 @@
+    public void appendData(float[] newData) {
+        int nDataPoints = newData.length;
+        if (nDataPoints > this.valueHistory.length) {
+            throw new IllegalArgumentException(
+               "More data than series to put them in"
+            );
+        }
+        int s;   // index to select the "series"
+        for (s = 0; s < nDataPoints; s++) {
+            // check whether the "valueHistory" array member exists; if not,
+            // create them:
+            if (this.valueHistory[s] == null) {
+                this.valueHistory[s] = new ValueSequence(this.historyCount);
+            }
+            this.valueHistory[s].enterData(this.newestAt, newData[s]);
+        }
+        fireSeriesChanged();
+    }
+

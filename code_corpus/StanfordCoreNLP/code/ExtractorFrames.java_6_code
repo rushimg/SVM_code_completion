@@ -1,0 +1,44 @@
+  static class ExtractorTwoWords extends Extractor {
+
+    private static final long serialVersionUID = -1034112287022504917L;
+
+    private final int leftPosition;
+    private final int rightPosition;
+
+    public ExtractorTwoWords(int leftPosition) {
+      this(leftPosition, leftPosition+1);
+    }
+
+    public ExtractorTwoWords(int position1, int position2) {
+      super(0, false);
+      if (position1 > position2) {
+        leftPosition = position1;
+        rightPosition = position2;
+      } else {
+        leftPosition = position2;
+        rightPosition = position1;
+      }
+    }
+
+    @Override
+      String extract(History h, PairsHolder pH) {
+      // I ran a bunch of timing tests that seem to indicate it is
+      // cheaper to simply add string + char + string than use a
+      // StringBuilder or go through the StringBuildMemoizer -horatio
+      return pH.getWord(h, leftPosition) + '!' + pH.getWord(h, rightPosition);
+    }
+
+    @Override public boolean isLocal() { return false; }
+
+    // isDynamic --> false, but no need to override
+
+
+    @Override
+    public String toString() {
+      return (getClass().getName() + "(w" + leftPosition +
+              ",w" + rightPosition + ')');
+    }
+  }
+
+
+

@@ -1,0 +1,27 @@
+
+package opennlp.tools.tokenize;
+
+import java.io.IOException;
+
+import opennlp.tools.dictionary.Dictionary;
+import opennlp.tools.util.ObjectStream;
+import opennlp.tools.util.TrainingParameters;
+import opennlp.tools.util.eval.CrossValidationPartitioner;
+import opennlp.tools.util.eval.FMeasure;
+import opennlp.tools.util.model.ModelUtil;
+
+public class TokenizerCrossValidator {
+
+  private final TrainingParameters params;
+
+  private FMeasure fmeasure = new FMeasure();
+  private TokenizerEvaluationMonitor[] listeners;
+  private final TokenizerFactory factory;
+
+  public TokenizerCrossValidator(TrainingParameters params,
+      TokenizerFactory factory, TokenizerEvaluationMonitor... listeners) {
+    this.params = params;
+    this.listeners = listeners;
+    this.factory = factory;
+  }
+

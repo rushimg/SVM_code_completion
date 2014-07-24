@@ -1,0 +1,20 @@
+    public void startElement(String namespaceURI,
+                             String localName,
+                             String qName,
+                             Attributes atts) throws SAXException {
+
+        DefaultHandler current = getCurrentHandler();
+        if (current != this) {
+            current.startElement(namespaceURI, localName, qName, atts);
+        }
+        else if (qName.equals(PIEDATASET_TAG)) {
+            this.dataset = new DefaultPieDataset();
+        }
+        else if (qName.equals(ITEM_TAG)) {
+            ItemHandler subhandler = new ItemHandler(this, this);
+            getSubHandlers().push(subhandler);
+            subhandler.startElement(namespaceURI, localName, qName, atts);
+        }
+
+    }
+

@@ -1,0 +1,28 @@
+  @Override
+  @Deprecated
+  public NaiveBayesClassifier<L, F> trainClassifier(List<RVFDatum<L, F>> examples) {
+    RVFDatum<L, F> d0 = examples.get(0);
+    int numFeatures = d0.asFeatures().size();
+    int[][] data = new int[examples.size()][numFeatures];
+    int[] labels = new int[examples.size()];
+    labelIndex = new HashIndex<L>();
+    featureIndex = new HashIndex<F>();
+    for (int d = 0; d < examples.size(); d++) {
+      RVFDatum<L, F> datum = examples.get(d);
+      Counter<F> c = datum.asFeaturesCounter();
+      for (F feature: c.keySet()) {
+        if(featureIndex.add(feature)) {
+          int fNo = featureIndex.indexOf(feature);
+          int value = (int) c.getCount(feature);
+          data[d][fNo] = value;
+        }
+      }
+      labelIndex.add(datum.label());
+      labels[d] = labelIndex.indexOf(datum.label());
+
+    }
+    int numClasses = labelIndex.size();
+    return trainClassifier(data, labels, numFeatures, numClasses, labelIndex, featureIndex);
+  }
+
+

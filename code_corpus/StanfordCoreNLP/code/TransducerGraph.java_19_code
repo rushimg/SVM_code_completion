@@ -1,0 +1,49 @@
+  public static TransducerGraph createGraphFromPaths(List paths, int markovOrder) {
+    ClassicCounter pathCounter = new ClassicCounter();
+    for (Object o : paths) {
+      pathCounter.incrementCount(o);
+    }
+    return createGraphFromPaths(pathCounter, markovOrder);
+  }
+
+  public static <T> TransducerGraph createGraphFromPaths(ClassicCounter<List<T>> pathCounter, int markovOrder) {
+    TransducerGraph graph = new TransducerGraph(); // empty
+    for (List<T> path : pathCounter.keySet()) {
+      double count = pathCounter.getCount(path);
+      addOnePathToGraph(path, count, markovOrder, graph);
+    }
+    return graph;
+  }
+
+  // assumes that the path already has EPSILON as the last element.
+  public static void addOnePathToGraph(List path, double count, int markovOrder, TransducerGraph graph) {
+    Object source = graph.getStartNode();
+    for (int j = 0; j < path.size(); j++) {
+      Object input = path.get(j);
+      Arc a = graph.getArcBySourceAndInput(source, input);
+      if (a != null) {
+        // increment the arc weight
+        a.output = new Double(((Double) a.output).doubleValue() + count);
+      } else {
+        Object target;
+        if (input.equals(TransducerGraph.EPSILON_INPUT)) {
+          target = "END"; // to ensure they all share the same end node
+        } else if (markovOrder == 0) {
+          // we all transition back to the same state
+          target = source;
+        } else if (markovOrder > 0) {
+          // the state is described by the partial history
+          target = path.subList((j < markovOrder ? 0 : j - markovOrder + 1), j + 1);
+        } else {
+          // the state is described by the full history
+          target = path.subList(0, j + 1);
+        }
+        Double output = new Double(count);
+        a = new Arc(source, target, input, output);
+        graph.addArc(a);
+      }
+      source = a.getTargetNode();
+    }
+    graph.setEndNode(source);
+  }
+

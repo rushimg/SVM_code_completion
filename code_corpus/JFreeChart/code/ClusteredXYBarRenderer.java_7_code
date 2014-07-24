@@ -1,0 +1,30 @@
+    protected Range findDomainBoundsWithOffset(IntervalXYDataset dataset) {
+        if (dataset == null) {
+            throw new IllegalArgumentException("Null 'dataset' argument.");
+        }
+        double minimum = Double.POSITIVE_INFINITY;
+        double maximum = Double.NEGATIVE_INFINITY;
+        int seriesCount = dataset.getSeriesCount();
+        double lvalue;
+        double uvalue;
+        for (int series = 0; series < seriesCount; series++) {
+            int itemCount = dataset.getItemCount(series);
+            for (int item = 0; item < itemCount; item++) {
+                lvalue = dataset.getStartXValue(series, item);
+                uvalue = dataset.getEndXValue(series, item);
+                double offset = (uvalue - lvalue) / 2.0;
+                lvalue = lvalue - offset;
+                uvalue = uvalue - offset;
+                minimum = Math.min(minimum, lvalue);
+                maximum = Math.max(maximum, uvalue);
+            }
+        }
+
+        if (minimum > maximum) {
+            return null;
+        }
+        else {
+            return new Range(minimum, maximum);
+        }
+    }
+

@@ -1,0 +1,23 @@
+  public static <E> List<E> deleteOutofRange(Counter<E> c, int top, int bottom) {
+
+    List<E> purgedItems = new ArrayList<E>();
+    int numToPurge = top + bottom;
+    if (numToPurge <= 0) {
+      return purgedItems;
+    }
+
+    List<E> l = Counters.toSortedList(c);
+    for (int i = 0; i < top; i++) {
+      E item = l.get(i);
+      purgedItems.add(item);
+      c.remove(item);
+    }
+    int size = c.size();
+    for (int i = c.size() - 1; i >= (size - bottom); i--) {
+      E item = l.get(i);
+      purgedItems.add(item);
+      c.remove(item);
+    }
+    return purgedItems;
+  }
+

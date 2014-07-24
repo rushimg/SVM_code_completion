@@ -1,0 +1,63 @@
+  private CoreMap extractEntities(CoreMap sentence, int sentCount) {
+    // don't add answer annotations
+    List<CoreLabel> testSentence = AnnotationUtils.sentenceEntityMentionsToCoreLabels(sentence, false, annotationsToSkip, null, useSubTypes, useBIO);
+
+    // now label the sentence
+    List<CoreLabel> annotatedSentence = this.classifier.classify(testSentence);
+    logger.finest("CLASSFIER OUTPUT: " + annotatedSentence);
+
+    List<EntityMention> extractedEntities = new ArrayList<EntityMention>();
+    int i = 0;
+
+    // variables which keep track of partially seen entities (i.e. we've seen
+    // some but not all the words in them so far)
+    String lastType = null;
+    int startIndex = -1;
+
+    //
+    // note that labels may be in the BIO or just the IO format. we must handle both transparently
+    //
+    for (CoreLabel label : annotatedSentence) {
+      String type = label.get(AnswerAnnotation.class);
+      if (type.equals(SeqClassifierFlags.DEFAULT_BACKGROUND_SYMBOL)) {
+        type = null;
+      }
+
+      // this is an entity end boundary followed by O
+      if (type == null && lastType != null) {
+        makeEntityMention(sentence, startIndex, i, lastType, extractedEntities, sentCount);
+        logger.info("Found entity: " + extractedEntities.get(extractedEntities.size() - 1));
+        startIndex = -1;
+      }
+
+      // entity start preceded by an O
+      else if(lastType == null && type != null){
+        startIndex = i;
+      }
+
+      // entity end followed by another entity of different type
+      else if(lastType != null && type != null &&
+          (type.startsWith("B-") ||
+          (lastType.startsWith("I-") && type.startsWith("I-") && ! lastType.equals(type)) ||
+          (notBIO(lastType) && notBIO(type) && ! lastType.equals(type)))){
+        makeEntityMention(sentence, startIndex, i, lastType, extractedEntities, sentCount);
+        logger.info("Found entity: " + extractedEntities.get(extractedEntities.size() - 1));
+        startIndex = i;
+      }
+
+      lastType = type;
+      i++;
+    }
+
+    // replace the original annotation with the predicted entities
+    sentence.set(MachineReadingAnnotations.EntityMentionsAnnotation.class, extractedEntities);
+    logger.finest("EXTRACTED ENTITIES: ");
+    for(EntityMention e: extractedEntities){
+      logger.finest("\t" + e);
+    }
+
+    postprocessSentence(sentence, sentCount);
+
+    return sentence;
+  }
+

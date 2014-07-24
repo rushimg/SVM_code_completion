@@ -1,0 +1,152 @@
+  public static TreeGraphNode getSubject(TreeGraphNode t) {
+    TreeGraphNode subj = t.getNodeInRelation(NOMINAL_SUBJECT);
+    if (subj != null) {
+      return subj;
+    }
+    subj = t.getNodeInRelation(CLAUSAL_SUBJECT);
+    if (subj != null) {
+      return subj;
+    } else {
+      return t.getNodeInRelation(NOMINAL_PASSIVE_SUBJECT);
+    }
+  }
+
+  @Override
+  protected void correctDependencies(Collection<TypedDependency> list) {
+    if (DEBUG) {
+      printListSorted("At correctDependencies:", list);
+    }
+    correctSubjPassAndPoss(list);
+    if (DEBUG) {
+      printListSorted("After correctSubjPassAndPoss:", list);
+    }
+    removeExactDuplicates(list);
+    if (DEBUG) {
+      printListSorted("After removeExactDuplicates:", list);
+    }
+  }
+
+  private static void printListSorted(String title, Collection<TypedDependency> list) {
+    List<TypedDependency> lis = new ArrayList<TypedDependency>(list);
+    Collections.sort(lis);
+    if (title != null) {
+      System.err.println(title);
+    }
+    System.err.println(lis);
+  }
+
+  @Override
+  protected void postProcessDependencies(List<TypedDependency> list) {
+    convertRel(list);
+    if (DEBUG) {
+      printListSorted("After converting rel:", list);
+    }
+  }
+
+  @Override
+  protected void getExtras(List<TypedDependency> list) {
+    addRef(list);
+    if (DEBUG) {
+      printListSorted("After adding ref:", list);
+    }
+
+    addXSubj(list);
+    if (DEBUG) {
+      printListSorted("After adding xsubj:", list);
+    }
+
+    addStrandedPobj(list);
+    if (DEBUG) {
+      printListSorted("After adding stranded pobj:", list);
+    }
+  }
+
+  // TODO: we would love to turn addStrandedPobj into something more
+  // readable like this.  However, SemanticGraph/Semgrex is a lot
+  // slower than tregex, so this is probably not feasible for now.
+  // static final SemgrexPattern strandedPobjSemgrex = SemgrexPattern.compile("{}=head >rcmod ({} [ == {}=prepgov | >xcomp {}=prepgov | >conj {}=prepgov ]) : {}=prepgov >prep ({}=prepdep !>pcomp {} !> pobj {})");
+  //
+  // // Deal with preposition stranding in relative clauses.
+  // // For example, "the only thing I'm rooting for"
+  // // This method will add pobj(for, thing) by connecting using the rcmod and prep
+  // private static void addStrandedPobj(List<TypedDependency> list) {
+  //   SemanticGraph graph = new SemanticGraph(list);
+  //
+  //   SemgrexMatcher matcher = strandedPobjSemgrex.matcher(graph);
+  //   TreeGraphNode[] nodeToWords = null;
+  //   while (matcher.find()) {
+  //     IndexedWord gov = matcher.getNode("prepdep");
+  //     IndexedWord dep = matcher.getNode("head");
+  //
+  //     if (nodeToWords == null) {
+  //       nodeToWords = getNodesToWords(list);
+  //     }
+  //     TypedDependency newDep = new TypedDependency(PREPOSITIONAL_OBJECT, nodeToWords[gov.index()], nodeToWords[dep.index()]);
+  //
+  //     newDep.setExtra();
+  //     list.add(newDep);
+  //   }
+  // }
+  //
+  // private static TreeGraphNode[] getNodesToWords(List<TypedDependency> list) {
+  //   for (TypedDependency dependency : list) {
+  //     nodes[dependency.gov().index()] = dependency.gov();
+  //     nodes[dependency.dep().index()] = dependency.dep();
+  //   }
+  //   return nodes;
+  // }
+
+
+  // Deal with preposition stranding in relative clauses.
+  // For example, "the only thing I'm rooting for"
+  // This method will add pobj(for, thing) by connecting using the rcmod and prep
+  private static void addStrandedPobj(List<TypedDependency> list) {
+    List<TreeGraphNode> depNodes = null;
+    List<TypedDependency> newDeps = null;
+    for (TypedDependency rcmod : list) {
+      if (rcmod.reln() != RELATIVE_CLAUSE_MODIFIER) {
+        continue;
+      }
+
+      TreeGraphNode head = rcmod.gov();
+      if (depNodes == null) {
+        depNodes = Generics.newArrayList();
+      } else {
+        depNodes.clear();
+      }
+      depNodes.add(rcmod.dep());
+      for (TypedDependency connected : list) {
+        if (connected.gov() == rcmod.dep() && (connected.reln() == XCLAUSAL_COMPLEMENT || connected.reln() == CONJUNCT)) {
+          depNodes.add(connected.dep());
+        }
+      }
+
+      for (TreeGraphNode dep : depNodes) {
+        for (TypedDependency prep : list) {
+          if (prep.gov() != dep || prep.reln() != PREPOSITIONAL_MODIFIER) {
+            continue;
+          }
+
+          boolean found = false;
+          for (TypedDependency other : list) {
+            if (other.gov() == prep.dep() && (other.reln() == PREPOSITIONAL_COMPLEMENT || other.reln() == PREPOSITIONAL_OBJECT)) {
+              found = true;
+              break;
+            }
+          }
+          if (!found) {
+            if (newDeps == null) {
+              newDeps = Generics.newArrayList();
+            }
+            TypedDependency newDep = new TypedDependency(PREPOSITIONAL_OBJECT, prep.dep(), head);
+            newDeps.add(newDep);
+          }
+        }
+      }
+
+    }
+    if (newDeps != null) {
+      list.addAll(newDeps);
+    }
+  }
+

@@ -1,0 +1,32 @@
+  public List<Tree> pathNodeToNode(Tree t1, Tree t2) {
+    if (!contains(t1) || !contains(t2)) {
+      return null;
+    }
+    if (t1 == t2) {
+      return Collections.singletonList(t1);
+    }
+    if (t1.dominates(t2)) {
+      return t1.dominationPath(t2);
+    }
+    if (t2.dominates(t1)) {
+      List<Tree> path = t2.dominationPath(t1);
+      Collections.reverse(path);
+      return path;
+    }
+    Tree joinNode = joinNode(t1, t2);
+    if (joinNode == null) {
+      return null;
+    }
+    List<Tree> t1DomPath = joinNode.dominationPath(t1);
+    List<Tree> t2DomPath = joinNode.dominationPath(t2);
+    if (t1DomPath == null || t2DomPath == null) {
+      return null;
+    }
+    ArrayList<Tree> path = new ArrayList<Tree>();
+    path.addAll(t1DomPath);
+    Collections.reverse(path);
+    path.remove(joinNode);
+    path.addAll(t2DomPath);
+    return path;
+  }
+

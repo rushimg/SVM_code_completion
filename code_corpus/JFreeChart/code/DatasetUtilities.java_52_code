@@ -1,0 +1,37 @@
+    public static Range findStackedRangeBounds(TableXYDataset dataset,
+                                               double base) {
+        if (dataset == null) {
+            throw new IllegalArgumentException("Null 'dataset' argument.");
+        }
+        double minimum = base;
+        double maximum = base;
+        for (int itemNo = 0; itemNo < dataset.getItemCount(); itemNo++) {
+            double positive = base;
+            double negative = base;
+            int seriesCount = dataset.getSeriesCount();
+            for (int seriesNo = 0; seriesNo < seriesCount; seriesNo++) {
+                double y = dataset.getYValue(seriesNo, itemNo);
+                if (!Double.isNaN(y)) {
+                    if (y > 0.0) {
+                        positive += y;
+                    }
+                    else {
+                        negative += y;
+                    }
+                }
+            }
+            if (positive > maximum) {
+                maximum = positive;
+            }
+            if (negative < minimum) {
+                minimum = negative;
+            }
+        }
+        if (minimum <= maximum) {
+            return new Range(minimum, maximum);
+        }
+        else {
+            return null;
+        }
+    }
+

@@ -1,0 +1,30 @@
+  static String normalizedDateString(String s, String openRangeMarker, Timex timexFromSUTime) {
+    if(timexFromSUTime != null) {
+      if(timexFromSUTime.value() != null){
+        // fully disambiguated temporal
+        return timexFromSUTime.value();
+      } else {
+        // this is a relative date, e.g., "yesterday"
+        return timexFromSUTime.altVal();
+      }
+    }
+
+    ISODateInstance d = new ISODateInstance(s, openRangeMarker);
+    if (DEBUG2) err.println("normalizeDate: " + s + " to " + d.getDateString());
+    return (d.getDateString());
+  }
+
+  static String normalizedDurationString(String s, Timex timexFromSUTime) {
+    if(timexFromSUTime != null) {
+      if(timexFromSUTime.value() != null){
+        // fully disambiguated temporal
+        return timexFromSUTime.value();
+      } else {
+        // something else
+        return timexFromSUTime.altVal();
+      }
+    }
+    // TODO: normalize duration ourselves
+    return null;
+  }
+

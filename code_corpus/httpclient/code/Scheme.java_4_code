@@ -1,0 +1,18 @@
+    public Scheme(final String name, final int port, final SchemeSocketFactory factory) {
+        Args.notNull(name, "Scheme name");
+        Args.check(port > 0 && port <= 0xffff, "Port is invalid");
+        Args.notNull(factory, "Socket factory");
+        this.name = name.toLowerCase(Locale.ENGLISH);
+        this.defaultPort = port;
+        if (factory instanceof SchemeLayeredSocketFactory) {
+            this.layered = true;
+            this.socketFactory = factory;
+        } else if (factory instanceof LayeredSchemeSocketFactory) {
+            this.layered = true;
+            this.socketFactory = new SchemeLayeredSocketFactoryAdaptor2((LayeredSchemeSocketFactory) factory);
+        } else {
+            this.layered = false;
+            this.socketFactory = factory;
+        }
+    }
+

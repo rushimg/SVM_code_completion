@@ -1,0 +1,23 @@
+    public void startElement(String namespaceURI,
+                             String localName,
+                             String qName,
+                             Attributes atts) throws SAXException {
+
+        if (qName.equals(SERIES_TAG)) {
+            setSeriesKey(atts.getValue("name"));
+            ItemHandler subhandler = new ItemHandler(this.root, this);
+            this.root.pushSubHandler(subhandler);
+        }
+        else if (qName.equals(ITEM_TAG)) {
+            ItemHandler subhandler = new ItemHandler(this.root, this);
+            this.root.pushSubHandler(subhandler);
+            subhandler.startElement(namespaceURI, localName, qName, atts);
+        }
+
+        else {
+            throw new SAXException(
+                "Expecting <Series> or <Item> tag...found " + qName
+            );
+        }
+    }
+

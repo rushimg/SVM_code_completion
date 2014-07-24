@@ -1,0 +1,31 @@
+  private static void printHistCounts(int ind, String title, PrintWriter pw, double[][] hist, Object[][] histEg) {
+    pw.println(title);
+    for (int i = 0; i < 200; i++) {
+      int intpart, fracpart;
+      if (i < 100) {
+        intpart = 10 - ((i + 9) / 10);
+        fracpart = (10 - (i % 10)) % 10;
+      } else {
+        intpart = (i / 10) - 10;
+        fracpart = i % 10;
+      }
+      pw.print("[" + ((i < 100) ? "-" : "") + intpart + "." + fracpart + ", " + ((i < 100) ? "-" : "") + intpart + "." + fracpart + "+0.1): " + hist[ind][i]);
+      if (histEg[ind][i] != null) {
+        pw.print("  [" + histEg[ind][i] + ((hist[ind][i] > 1) ? ", ..." : "") + "]");
+      }
+      pw.println();
+    }
+  }
+
+
+  //TODO: Sort of assumes that Labels are Strings...
+  public String toAllWeightsString() {
+    StringWriter sw = new StringWriter();
+    PrintWriter pw = new PrintWriter(sw);
+    pw.println("Linear classifier with the following weights");
+    Datum<L, F> allFeatures = new BasicDatum<L, F>(features(), (L)null);
+    justificationOf(allFeatures, pw);
+    return sw.toString();
+  }
+
+

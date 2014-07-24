@@ -1,0 +1,45 @@
+  protected DEPENDENCY_TYPE dependencyType;
+
+  public RelationFeatureFactory(String... featureList) {
+    this.doNotLexicalizeFirstArg = false;
+    this.dependencyType = DEPENDENCY_TYPE.COLLAPSED_CCPROCESSED;
+    this.featureList = Collections.unmodifiableList(Arrays.asList(featureList));
+  }
+
+  public void setDoNotLexicalizeFirstArgument(boolean doNotLexicalizeFirstArg) {
+    this.doNotLexicalizeFirstArg = doNotLexicalizeFirstArg;
+  }
+
+  public Datum<String,String> createDatum(RelationMention rel) {
+    return createDatum(rel, (Logger) null);
+  }
+
+  public Datum<String,String> createDatum(RelationMention rel, Logger logger) {
+    Counter<String> features = new ClassicCounter<String>();
+    if (rel.getArgs().size() != 2) {
+      return null;
+    }
+
+    addFeatures(features, rel, featureList, logger);
+
+    String labelString = rel.getType();
+    return new RVFDatum<String, String>(features, labelString);
+  }
+
+  public Datum<String,String> createDatum(RelationMention rel, String positiveLabel) {
+    Counter<String> features = new ClassicCounter<String>();
+    if (rel.getArgs().size() != 2) {
+      return null;
+    }
+
+    addFeatures(features, rel, featureList);
+
+    String labelString = rel.getType();
+    if(! labelString.equals(positiveLabel)) labelString = RelationMention.UNRELATED;
+    return new RVFDatum<String, String>(features, labelString);
+  }
+
+  public boolean addFeatures(Counter<String> features, RelationMention rel, List<String> types) {
+    return addFeatures(features, rel, types, null);
+  }
+

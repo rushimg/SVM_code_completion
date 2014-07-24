@@ -1,0 +1,51 @@
+  private void formatSGNode(SemanticGraph sg,
+                            IndexedWord node,
+                            int spaces) {
+    used.add(node);
+    String oneline = formatSGNodeOneline(sg, node);
+    boolean toolong = (spaces + oneline.length() > width);
+    boolean breakable = sg.hasChildren(node);
+    if (toolong && breakable) {
+      formatSGNodeMultiline(sg, node, spaces);
+    } else {
+      out.append(oneline);
+    }
+  }
+
+  private String formatSGNodeOneline(SemanticGraph sg,
+      IndexedWord node) {
+    StringBuilder sb = new StringBuilder();
+    Set<IndexedWord> usedOneline = Generics.newHashSet();
+    formatSGNodeOnelineHelper(sg, node, sb, usedOneline);
+    return sb.toString();
+  }
+
+  private void formatSGNodeOnelineHelper(SemanticGraph sg,
+                                         IndexedWord node,
+                                         StringBuilder sb,
+                                         Set<IndexedWord> usedOneline) {
+    usedOneline.add(node);
+    boolean isntLeaf = (sg.outDegree(node) > 0);
+    if (isntLeaf) {
+      sb.append(LPAREN);
+    }
+    sb.append(formatLabel(node));
+    for (SemanticGraphEdge depcy : sg.getOutEdgesSorted(node)) {
+      IndexedWord dep = depcy.getDependent();
+      sb.append(SPACE);
+      if (showRelns) {
+        sb.append(depcy.getRelation());
+        sb.append(COLON);
+      }
+      if (!usedOneline.contains(dep) &&
+          !used.contains(dep)) { // avoid infinite loop
+        formatSGNodeOnelineHelper(sg, dep, sb, usedOneline);
+      } else {
+        sb.append(formatLabel(dep));
+      }
+    }
+    if (isntLeaf) {
+      sb.append(RPAREN);
+    }
+  }
+

@@ -1,0 +1,28 @@
+  public static CoreMap getMergedChunk(List<? extends CoreMap> chunkList, String origText,
+                                       int chunkIndexStart, int chunkIndexEnd)
+  {
+    CoreMap firstChunk = chunkList.get(chunkIndexStart);
+    CoreMap lastChunk = chunkList.get(chunkIndexEnd-1);
+    int firstCharOffset = firstChunk.get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);
+    int lastCharOffset = lastChunk.get(CoreAnnotations.CharacterOffsetEndAnnotation.class);
+    int firstTokenIndex = firstChunk.get(CoreAnnotations.TokenBeginAnnotation.class);
+    int lastTokenIndex = lastChunk.get(CoreAnnotations.TokenEndAnnotation.class);
+
+    String chunkText = origText.substring(firstCharOffset, lastCharOffset);
+    CoreMap newChunk = new Annotation(chunkText);
+
+    newChunk.set(CoreAnnotations.CharacterOffsetBeginAnnotation.class, firstCharOffset);
+    newChunk.set(CoreAnnotations.CharacterOffsetEndAnnotation.class, lastCharOffset);
+    newChunk.set(CoreAnnotations.TokenBeginAnnotation.class, firstTokenIndex);
+    newChunk.set(CoreAnnotations.TokenEndAnnotation.class, lastTokenIndex);
+    List<CoreLabel> tokens = new ArrayList<CoreLabel>(lastTokenIndex-firstTokenIndex);
+    for (int i = chunkIndexStart; i < chunkIndexEnd; i++) {
+      CoreMap chunk = chunkList.get(i);
+      tokens.addAll(chunk.get(CoreAnnotations.TokensAnnotation.class));
+    }
+    newChunk.set(CoreAnnotations.TokensAnnotation.class, tokens);
+    // TODO: merge other keys into this new chunk ??
+
+    return newChunk;
+  }
+

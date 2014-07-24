@@ -1,0 +1,52 @@
+  private void addTMP9(final Tree tree) {
+    // do the head chain under it
+    Tree ht = headFinder.determineHead(tree);
+    // special fix for possessives! -- make noun before head
+    if (ht.value().equals("POS")) {
+      int j = tree.objectIndexOf(ht);
+      if (j > 0) {
+        ht = tree.getChild(j - 1);
+      }
+    }
+    // Note: this next bit changes the tree label, rather
+    // than creating a new tree node.  Beware!
+    if (ht.isPreTerminal() || ht.value().startsWith("NP") ||
+        ht.value().startsWith("PP") || ht.value().startsWith("ADVP")) {
+      if (!TmpPattern.matcher(ht.value()).matches()) {
+        LabelFactory lf = ht.labelFactory();
+        // System.err.println("TMP: Changing " + ht.value() + " to " +
+        //                   ht.value() + "-TMP");
+        ht.setLabel(lf.newLabel(ht.value() + "-TMP"));
+      }
+      if (ht.value().startsWith("NP") || ht.value().startsWith("PP") ||
+          ht.value().startsWith("ADVP")) {
+        addTMP9(ht);
+      }
+    }
+    // do the NPs under it (which may or may not be the head chain
+    Tree[] kidlets = tree.children();
+    for (int k = 0; k < kidlets.length; k++) {
+      ht = kidlets[k];
+      LabelFactory lf;
+      if (tree.isPrePreTerminal() && !TmpPattern.matcher(ht.value()).matches()) {
+        // System.err.println("TMP: Changing " + ht.value() + " to " +
+        //                   ht.value() + "-TMP");
+        lf = ht.labelFactory();
+        // Note: this next bit changes the tree label, rather
+        // than creating a new tree node.  Beware!
+        ht.setLabel(lf.newLabel(ht.value() + "-TMP"));
+      } else if (ht.value().startsWith("NP")) {
+        // don't add -TMP twice!
+        if (!TmpPattern.matcher(ht.value()).matches()) {
+          lf = ht.labelFactory();
+          // System.err.println("TMP: Changing " + ht.value() + " to " +
+          //                   ht.value() + "-TMP");
+          // Note: this next bit changes the tree label, rather
+          // than creating a new tree node.  Beware!
+          ht.setLabel(lf.newLabel(ht.value() + "-TMP"));
+        }
+        addTMP9(ht);
+      }
+    }
+  }
+

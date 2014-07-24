@@ -1,0 +1,159 @@
+  public static LexicalizedParser
+  getParserFromTreebank(Treebank trainTreebank,
+                        Treebank secondaryTrainTreebank,
+                        double weight,
+                        GrammarCompactor compactor,
+                        Options op,
+                        Treebank tuneTreebank,
+                        List<List<TaggedWord>> extraTaggedWords)
+  {
+    // System.err.println("Currently " + new Date()); // now printed when command-line args are printed
+    printOptions(true, op);
+    Timing.startTime();
+
+    Triple<Treebank, Treebank, Treebank> treebanks = TreeAnnotatorAndBinarizer.getAnnotatedBinaryTreebankFromTreebank(trainTreebank, secondaryTrainTreebank, tuneTreebank, op);
+    Timing.tick("done.");
+
+    Treebank trainTreebankRaw = trainTreebank;
+    trainTreebank = treebanks.first();
+    secondaryTrainTreebank = treebanks.second();
+    tuneTreebank = treebanks.third();
+
+    // +1 to account for the boundary symbol
+    trainTreebank = new FilteringTreebank(trainTreebank, new LengthTreeFilter(op.trainOptions.trainLengthLimit + 1));
+    if (secondaryTrainTreebank != null) {
+      secondaryTrainTreebank = new FilteringTreebank(secondaryTrainTreebank, new LengthTreeFilter(op.trainOptions.trainLengthLimit + 1));
+    }
+    if (tuneTreebank != null) {
+      tuneTreebank = new FilteringTreebank(tuneTreebank, new LengthTreeFilter(op.trainOptions.trainLengthLimit + 1));
+    }
+
+    Index<String> stateIndex;
+    Index<String> wordIndex;
+    Index<String> tagIndex;
+
+    Pair<UnaryGrammar, BinaryGrammar> bgug;
+    Lexicon lex;
+
+    if (op.trainOptions.predictSplits) {
+      SplittingGrammarExtractor extractor = new SplittingGrammarExtractor(op);
+      System.err.print("Extracting PCFG...");
+      // TODO: make use of the tagged text
+      if (secondaryTrainTreebank == null) {
+        extractor.extract(trainTreebank);
+      } else {
+        extractor.extract(trainTreebank, 1.0, secondaryTrainTreebank, weight);
+      }
+      bgug = extractor.bgug;
+      lex = extractor.lex;
+      stateIndex = extractor.stateIndex;
+      wordIndex = extractor.wordIndex;
+      tagIndex = extractor.tagIndex;
+      Timing.tick("done.");
+    } else {
+      stateIndex = new HashIndex<String>();
+      wordIndex = new HashIndex<String>();
+      tagIndex = new HashIndex<String>();
+
+      // extract grammars
+      BinaryGrammarExtractor bgExtractor = new BinaryGrammarExtractor(op, stateIndex);
+      // Extractor lexExtractor = new LexiconExtractor();
+      //TreeExtractor uwmExtractor = new UnknownWordModelExtractor(trainTreebank.size());
+      System.err.print("Extracting PCFG...");
+      if (secondaryTrainTreebank == null) {
+        bgug = bgExtractor.extract(trainTreebank);
+      } else {
+        bgug = bgExtractor.extract(trainTreebank, 1.0,
+                                   secondaryTrainTreebank, weight);
+      }
+      Timing.tick("done.");
+
+      System.err.print("Extracting Lexicon...");
+      lex = op.tlpParams.lex(op, wordIndex, tagIndex);
+
+      double trainSize = trainTreebank.size();
+      if (secondaryTrainTreebank != null) {
+      }
+      if (extraTaggedWords != null) {
+        trainSize += extraTaggedWords.size();
+      }
+
+      lex.initializeTraining(trainSize);
+      // wsg2012: The raw treebank has CoreLabels, which we need for FactoredLexicon
+      // training. If TreeAnnotator is updated so that it produces CoreLabels, then we can
+      // remove the trainTreebankRaw.
+      lex.train(trainTreebank, trainTreebankRaw);
+      if (secondaryTrainTreebank != null) {
+        lex.train(secondaryTrainTreebank, weight);
+      }
+      if (extraTaggedWords != null) {
+        for (List<TaggedWord> sentence : extraTaggedWords) {
+          // TODO: specify a weight?
+          lex.trainUnannotated(sentence, 1.0);
+        }
+      }
+      lex.finishTraining();
+      Timing.tick("done.");
+    }
+
+    //TODO: wsg2011 Not sure if this should come before or after
+    //grammar compaction
+    if (op.trainOptions.ruleSmoothing) {
+      System.err.print("Smoothing PCFG...");
+      Function<Pair<UnaryGrammar,BinaryGrammar>,Pair<UnaryGrammar,BinaryGrammar>> smoother = new LinearGrammarSmoother(op.trainOptions, stateIndex, tagIndex);
+      bgug = smoother.apply(bgug);
+      Timing.tick("done.");
+    }
+
+    if (compactor != null) {
+      System.err.print("Compacting grammar...");
+      Triple<Index<String>, UnaryGrammar, BinaryGrammar> compacted = compactor.compactGrammar(bgug, stateIndex);
+      stateIndex = compacted.first();
+      bgug.setFirst(compacted.second());
+      bgug.setSecond(compacted.third());
+      Timing.tick("done.");
+    }
+
+    System.err.print("Compiling grammar...");
+    BinaryGrammar bg = bgug.second;
+    bg.splitRules();
+    UnaryGrammar ug = bgug.first;
+    ug.purgeRules();
+    Timing.tick("done");
+
+    DependencyGrammar dg = null;
+    if (op.doDep) {
+      System.err.print("Extracting Dependencies...");
+      AbstractTreeExtractor<DependencyGrammar> dgExtractor = new MLEDependencyGrammarExtractor(op, wordIndex, tagIndex);
+      if (secondaryTrainTreebank == null) {
+        dg = dgExtractor.extract(trainTreebank);
+      } else {
+        dg = dgExtractor.extract(trainTreebank, 1.0, secondaryTrainTreebank, weight);
+      }
+      //System.err.print("Extracting Unknown Word Model...");
+      //UnknownWordModel uwm = (UnknownWordModel)uwmExtractor.extract(trainTreebank);
+      //Timing.tick("done.");
+      Timing.tick("done.");
+      if (tuneTreebank != null) {
+        System.err.print("Tuning Dependency Model...");
+        dg.setLexicon(lex); // MG2008: needed if using PwGt model
+        dg.tune(tuneTreebank);
+        Timing.tick("done.");
+      }
+    }
+
+    System.err.println("Done training parser.");
+    if (op.trainOptions.trainTreeFile!=null) {
+      try {
+        System.err.print("Writing out binary trees to "+ op.trainOptions.trainTreeFile+"...");
+        IOUtils.writeObjectToFile(trainTreebank, op.trainOptions.trainTreeFile);
+        IOUtils.writeObjectToFile(secondaryTrainTreebank, op.trainOptions.trainTreeFile);
+        Timing.tick("done.");
+      } catch (Exception e) {
+        System.err.println("Problem writing out binary trees.");
+      }
+    }
+    return new LexicalizedParser(lex, bg, ug, dg, stateIndex, wordIndex, tagIndex, op);
+  }
+
+

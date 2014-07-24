@@ -1,0 +1,23 @@
+  private HttpMediaType fromString(String combinedType) {
+    Matcher matcher = FULL_MEDIA_TYPE_REGEX.matcher(combinedType);
+    Preconditions.checkArgument(
+        matcher.matches(), "Type must be in the 'maintype/subtype; parameter=value' format");
+
+    setType(matcher.group(1));
+    setSubType(matcher.group(2));
+    String params = matcher.group(3);
+    if (params != null) {
+      matcher = PARAMETER_REGEX.matcher(params);
+      while (matcher.find()) {
+        // 1=key, 2=valueWithQuotes, 3=valueWithoutQuotes
+        String key = matcher.group(1);
+        String value = matcher.group(3);
+        if (value == null) {
+          value = matcher.group(2);
+        }
+        setParameter(key, value);
+      }
+    }
+    return this;
+  }
+

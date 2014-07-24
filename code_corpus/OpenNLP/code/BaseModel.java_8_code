@@ -1,0 +1,41 @@
+  private void finishLoadingArtifacts(InputStream in)
+      throws InvalidFormatException, IOException {
+
+    final ZipInputStream zip = new ZipInputStream(in);
+
+    Map<String, Object> artifactMap = new HashMap<String, Object>();
+
+    ZipEntry entry;
+    while((entry = zip.getNextEntry()) != null ) {
+
+      // Note: The manifest.properties file will be read here again,
+      // there should be no need to prevent that.
+
+      String entryName = entry.getName();
+      String extension = getEntryExtension(entryName);
+
+      ArtifactSerializer factory = artifactSerializers.get(extension);
+
+      String artifactSerializerClazzName =
+          getManifestProperty(SERIALIZER_CLASS_NAME_PREFIX + entryName);
+
+      if (artifactSerializerClazzName != null) {
+        if (artifactSerializerClazzName != null) {
+          factory = ExtensionLoader.instantiateExtension(ArtifactSerializer.class, artifactSerializerClazzName);
+        }
+      }
+
+      if (factory != null) {
+        artifactMap.put(entryName, factory.create(zip));
+      } else {
+        throw new InvalidFormatException("Unknown artifact format: " + extension);
+      }
+
+      zip.closeEntry();
+    }
+
+    this.artifactMap.putAll(artifactMap);
+
+    finishedLoadingArtifacts = true;
+  }
+

@@ -1,0 +1,60 @@
+  public static List<String> pathNodeToNode(Tree from, Tree to, Tree root) {
+    List<Tree> fromPath = pathFromRoot(from, root);
+    //System.out.println(treeListToCatList(fromPath));
+    if (fromPath == null)
+      return null;
+
+    List<Tree> toPath = pathFromRoot(to, root);
+    //System.out.println(treeListToCatList(toPath));
+    if (toPath == null)
+      return null;
+
+    //System.out.println(treeListToCatList(fromPath));
+    //System.out.println(treeListToCatList(toPath));
+
+    int last = 0;
+    int min = fromPath.size() <= toPath.size() ? fromPath.size() : toPath.size();
+
+    Tree lastNode = null;
+//     while((! (fromPath.isEmpty() || toPath.isEmpty())) &&  fromPath.get(0).equals(toPath.get(0))) {
+//       lastNode = (Tree) fromPath.remove(0);
+//       toPath.remove(0);
+//     }
+    while (last < min && fromPath.get(last).equals(toPath.get(last))) {
+      lastNode = fromPath.get(last);
+      last++;
+    }
+
+    //System.out.println(treeListToCatList(fromPath));
+    //System.out.println(treeListToCatList(toPath));
+    List<String> totalPath = new ArrayList<String>();
+
+    for (int i = fromPath.size() - 1; i >= last; i--) {
+      Tree t = fromPath.get(i);
+      totalPath.add("up-" + t.label().value());
+    }
+
+    if (lastNode != null)
+      totalPath.add("up-" + lastNode.label().value());
+
+    for (Tree t: toPath)
+      totalPath.add("down-" + t.label().value());
+
+
+//     for(ListIterator i = fromPath.listIterator(fromPath.size()); i.hasPrevious(); ){
+//       Tree t = (Tree) i.previous();
+//       totalPath.add("up-" + t.label().value());
+//     }
+
+//     if(lastNode != null)
+//     totalPath.add("up-" + lastNode.label().value());
+
+//     for(ListIterator j = toPath.listIterator(); j.hasNext(); ){
+//       Tree t = (Tree) j.next();
+//       totalPath.add("down-" + t.label().value());
+//     }
+
+    return totalPath;
+  }
+
+

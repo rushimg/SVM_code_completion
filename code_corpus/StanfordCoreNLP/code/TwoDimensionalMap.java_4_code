@@ -1,0 +1,29 @@
+  public Iterator<Entry<K1, K2, V>> iterator() {
+    return new TwoDimensionalMapIterator<K1, K2, V>(this);
+  }
+
+  public Iterator<V> valueIterator() {
+    return new TwoDimensionalMapValueIterator<K1, K2, V>(this);
+  }
+
+  static class TwoDimensionalMapValueIterator<K1, K2, V> implements Iterator<V> {
+    Iterator<Entry<K1, K2, V>> entryIterator;
+
+    TwoDimensionalMapValueIterator(TwoDimensionalMap<K1, K2, V> map) {
+      entryIterator = map.iterator();
+    }
+
+    public boolean hasNext() {
+      return entryIterator.hasNext();
+    }
+
+    public V next() {
+      Entry<K1, K2, V> next = entryIterator.next();
+      return next.getValue();
+    }
+
+    public void remove() {
+      entryIterator.remove();
+    }
+  }
+

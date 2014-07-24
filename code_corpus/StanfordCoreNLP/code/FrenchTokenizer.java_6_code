@@ -1,0 +1,34 @@
+    @Override
+    public void setOptions(String options) {
+      String[] optionList = options.split(",");
+      for (String option : optionList) {
+        String[] fields = option.split("=");
+        if (fields.length == 1) {
+          if (fields[0].equals("splitCompounds")) {
+            splitCompoundOption = true;
+          } else {
+            lexerProperties.put(option, "true");
+          }
+
+        } else if (fields.length == 2) {
+          if (fields[0].equals("splitCompounds")) {
+            splitCompoundOption = Boolean.valueOf(fields[1]);
+          } else {
+            lexerProperties.put(fields[0], fields[1]);
+          }
+
+        } else {
+          System.err.printf("%s: Bad option %s%n", this.getClass().getName(), option);
+        }
+      }
+    }
+
+    @Override
+    public Tokenizer<T> getTokenizer(Reader r, String extraOptions) {
+      setOptions(extraOptions);
+      return getTokenizer(r);
+    }
+
+  } // end static class FrenchTokenizerFactory
+
+

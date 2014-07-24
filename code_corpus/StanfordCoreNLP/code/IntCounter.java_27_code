@@ -1,0 +1,125 @@
+  public Set<Map.Entry<E,Double>> entrySet() {
+    return new AbstractSet<Map.Entry<E,Double>>() {
+      @Override
+      public Iterator<Entry<E, Double>> iterator() {
+        return new Iterator<Entry<E,Double>>() {
+          final Iterator<Entry<E,MutableInteger>> inner = map.entrySet().iterator();
+
+          public boolean hasNext() {
+            return inner.hasNext();
+          }
+
+          public Entry<E, Double> next() {
+            return new Map.Entry<E,Double>() {
+              final Entry<E,MutableInteger> e = inner.next();
+
+              public E getKey() {
+                return e.getKey();
+              }
+
+              public Double getValue() {
+                return e.getValue().doubleValue();
+              }
+
+              public Double setValue(Double value) {
+                final double old = e.getValue().doubleValue();
+                e.getValue().set(value.intValue());
+                totalCount = totalCount - (int)old + value.intValue();
+                return old;
+              }
+            };
+          }
+
+          public void remove() {
+            throw new UnsupportedOperationException();
+          }
+        };
+      }
+
+      @Override
+      public int size() {
+        return map.size();
+      }
+    };
+  }
+
+  // OBJECT STUFF
+
+  @SuppressWarnings("unchecked")
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof IntCounter)) {
+      return false;
+    }
+
+    final IntCounter counter = (IntCounter) o;
+
+    return map.equals(counter.map);
+  }
+
+  @Override
+  public int hashCode() {
+    return map.hashCode();
+  }
+
+  @Override
+  public String toString() {
+    return map.toString();
+  }
+
+
+  @SuppressWarnings("unchecked")
+  public String toString(NumberFormat nf, String preAppend, String postAppend, String keyValSeparator, String itemSeparator) {
+    StringBuilder sb = new StringBuilder();
+    sb.append(preAppend);
+    List<E> list = new ArrayList<E>(map.keySet());
+    try {
+      Collections.sort((List)list); // see if it can be sorted
+    } catch (Exception e) {
+    }
+    for (Iterator<E> iter = list.iterator(); iter.hasNext();) {
+      Object key = iter.next();
+      MutableInteger d = map.get(key);
+      sb.append(key + keyValSeparator);
+      sb.append(nf.format(d));
+      if (iter.hasNext()) {
+        sb.append(itemSeparator);
+      }
+    }
+    sb.append(postAppend);
+    return sb.toString();
+  }
+
+
+  @SuppressWarnings("unchecked")
+  public String toString(NumberFormat nf) {
+    StringBuilder sb = new StringBuilder();
+    sb.append("{");
+    List<E> list = new ArrayList<E>(map.keySet());
+    try {
+      Collections.sort((List)list); // see if it can be sorted
+    } catch (Exception e) {
+    }
+    for (Iterator<E> iter = list.iterator(); iter.hasNext();) {
+      Object key = iter.next();
+      MutableInteger d = map.get(key);
+      sb.append(key + "=");
+      sb.append(nf.format(d));
+      if (iter.hasNext()) {
+        sb.append(", ");
+      }
+    }
+    sb.append("}");
+    return sb.toString();
+  }
+
+  @Override
+  public Object clone() {
+    return new IntCounter<E>(this);
+  }
+
+  // EXTRA CALCULATION METHODS
+

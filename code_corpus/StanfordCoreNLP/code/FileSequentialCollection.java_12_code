@@ -1,0 +1,31 @@
+  private final class FileSequentialCollectionIterator implements Iterator<File> {
+
+    // current state is a rootsIterator, a position in a recursion
+    // under a directory listing, and a pointer in the current
+    // directory.
+
+    private Object[] roots;  // these may be of type File or String
+    private int rootsIndex;
+    // these next two simulate a list of pairs, but I was too lazy to
+    // make an extra class
+    private Stack<Object> fileArrayStack;
+    private Stack<Integer> fileArrayStackIndices;
+    private File next;
+
+    public FileSequentialCollectionIterator() {
+      // System.err.println("Coll is " + coll);
+      roots = coll.toArray();
+      rootsIndex = 0;
+      fileArrayStack = new Stack<Object>();
+      fileArrayStackIndices = new Stack<Integer>();
+      if (roots.length > 0) {
+        fileArrayStack.add(roots[rootsIndex]);
+        fileArrayStackIndices.push(Integer.valueOf(0));
+      }
+      next = primeNextFile();
+    }
+
+    public boolean hasNext() {
+      return next != null;
+    }
+

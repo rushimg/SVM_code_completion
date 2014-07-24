@@ -1,0 +1,44 @@
+public class WordsToSentencesAnnotator implements Annotator {
+
+  private final WordToSentenceProcessor<CoreLabel> wts;
+
+  private final boolean VERBOSE;
+
+  private final boolean countLineNumbers;
+
+  public WordsToSentencesAnnotator() {
+    this(false);
+  }
+
+  public WordsToSentencesAnnotator(boolean verbose) {
+    this(verbose, false, new WordToSentenceProcessor<CoreLabel>());
+  }
+
+  public WordsToSentencesAnnotator(boolean verbose, String boundaryTokenRegex,
+                                   Set<String> boundaryToDiscard, Set<String> htmlElementsToDiscard,
+                                   String newlineIsSentenceBreak) {
+    this(verbose, false,
+         new WordToSentenceProcessor<CoreLabel>(boundaryTokenRegex,
+                 boundaryToDiscard, htmlElementsToDiscard,
+                 WordToSentenceProcessor.stringToNewlineIsSentenceBreak(newlineIsSentenceBreak)));
+  }
+
+  public WordsToSentencesAnnotator(boolean verbose, String boundaryTokenRegex,
+                                   Set<String> boundaryToDiscard, Set<String> htmlElementsToDiscard,
+                                   String newlineIsSentenceBreak, String boundaryMultiTokenRegex,
+                                   Set<String> tokenRegexesToDiscard) {
+    this(verbose, false,
+            new WordToSentenceProcessor<CoreLabel>(boundaryTokenRegex,
+                    boundaryToDiscard, htmlElementsToDiscard,
+                    WordToSentenceProcessor.stringToNewlineIsSentenceBreak(newlineIsSentenceBreak),
+                    (boundaryMultiTokenRegex != null)? TokenSequencePattern.compile(boundaryMultiTokenRegex):null, tokenRegexesToDiscard));
+  }
+
+  private WordsToSentencesAnnotator(boolean verbose, boolean countLineNumbers,
+                                    WordToSentenceProcessor<CoreLabel> wts) {
+    VERBOSE = verbose;
+    this.countLineNumbers = countLineNumbers;
+    this.wts = wts;
+  }
+
+

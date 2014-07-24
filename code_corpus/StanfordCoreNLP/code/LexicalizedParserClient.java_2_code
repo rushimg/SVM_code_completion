@@ -1,0 +1,20 @@
+  public String getParse(String query)
+    throws IOException
+  {
+    Socket socket = new Socket(host, port);
+
+    Writer out = new OutputStreamWriter(socket.getOutputStream(), "utf-8");
+    out.write("parse " + query + "\n");
+    out.flush();
+
+    BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), "utf-8"));
+    StringBuilder result = new StringBuilder();
+    String line;
+    while ((line = reader.readLine()) != null) {
+      result.append(line);
+    }
+
+    socket.close();
+    return result.toString();
+  }
+

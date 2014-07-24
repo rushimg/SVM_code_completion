@@ -1,0 +1,79 @@
+  public int[] findBestUsingSampling(SequenceModel model, int numSamples, int sampleInterval, int[] initialSequence) {
+    List samples = collectSamples(model, numSamples, sampleInterval, initialSequence);
+    int[] best = null;
+    double bestScore = Double.NEGATIVE_INFINITY;
+    for (int i = 0; i < samples.size(); i++) {
+      int[] sequence = (int[]) samples.get(i);
+      double score = model.scoreOf(sequence);
+      if (score>bestScore) {
+        best = sequence;
+        bestScore = score;
+        System.err.println("found new best ("+bestScore+")");
+        System.err.println(ArrayMath.toString(best));
+      }
+    }
+    return best;
+  }
+
+  public int[] findBestUsingAnnealing(SequenceModel model, CoolingSchedule schedule) {
+    int[] initialSequence = getRandomSequence(model);
+    return findBestUsingAnnealing(model, schedule, initialSequence);
+  }
+
+  public int[] findBestUsingAnnealing(SequenceModel model, CoolingSchedule schedule, int[] initialSequence) {
+    if (verbose>0) System.err.println("Doing annealing");
+    listener.setInitialSequence(initialSequence);
+    List result = new ArrayList();
+    // so we don't change the initial, or the one we just stored
+    int[] sequence = copy(initialSequence);
+    int[] best = null;
+    double bestScore = Double.NEGATIVE_INFINITY;
+    double score = Double.NEGATIVE_INFINITY;
+    // if (!returnLastFoundSequence) {
+    //   score = model.scoreOf(sequence);
+    // }
+
+    Set<Integer> positionsChanged = null;
+    if (speedUpThreshold > 0)
+      positionsChanged = Generics.newHashSet();
+
+    for (int i=0; i<schedule.numIterations(); i++) {
+      double temperature = schedule.getTemperature(i);
+      if (speedUpThreshold <= 0) {
+        score = sampleSequenceForward(model, sequence, temperature, null); // modifies tagSequence
+      } else {
+        if (i < speedUpThreshold) {
+          score = sampleSequenceForward(model, sequence, temperature, null); // modifies tagSequence
+          for (int j = 0; j < sequence.length; j++) {
+            if (sequence[j] != initialSequence[j])
+              positionsChanged.add(j);
+          }
+        } else {
+          score = sampleSequenceForward(model, sequence, temperature, positionsChanged); // modifies tagSequence
+        }
+      }
+      result.add(sequence);
+      if (returnLastFoundSequence) {
+        best = sequence;
+      } else {
+        // score = model.scoreOf(sequence);
+        //System.err.println(i+" "+score+" "+Arrays.toString(sequence));
+        if (score>bestScore) {
+          best = sequence;
+          bestScore = score;
+        }      
+      }
+      if (i % 50 == 0) {
+        if (verbose > 1) System.err.println("itr " + i + ": " + bestScore + "\t");
+      }
+      if (verbose>0) System.err.print(".");
+    }
+    if (verbose>1) {
+      System.err.println();
+      printSamples(result, System.err);
+    }
+    if (verbose>0) System.err.println("done.");
+    //return sequence;
+    return best;
+  }
+

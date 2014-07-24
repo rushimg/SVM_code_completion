@@ -1,0 +1,25 @@
+  private void doSaveSentencesFile() {
+    if (chooser == null)
+      chooser = createFileChooser();
+    int status = chooser.showSaveDialog(this);
+    if(status == JFileChooser.APPROVE_OPTION) {
+      Thread t = new Thread() {
+        @Override
+        public void run() {
+          try {
+            BufferedWriter out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(chooser.getSelectedFile()), FileTreeModel.getCurEncoding()));
+            StringBuffer sb = MatchesPanel.getInstance().getMatchedSentences();
+            out.write(sb.toString());
+            out.flush();
+            out.close();
+          } catch(Exception e) {
+            System.err.println("Exception in save");
+            e.printStackTrace();
+          }
+        }
+      };
+      t.start();
+    }
+  }
+
+

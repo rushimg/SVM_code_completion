@@ -1,0 +1,31 @@
+  static class ConjStartState extends State {
+
+    private final int childCount;  // Number of children that this conjunction consists of
+
+    public ConjStartState(int childCount)
+    {
+      this.childCount = childCount;
+    }
+
+    @Override
+    protected <T> boolean match(int bid, SequenceMatcher.MatchedStates<T> matchedStates, boolean consume, State prevState)
+    {
+      matchedStates.getBranchStates().setMatchStateInfo(bid, this,
+              new ConjMatchStateInfo(bid, childCount, matchedStates.curPosition));
+      // Start of conjunction, mark start
+      boolean allMatch = true;
+      if (next != null) {
+        int i = 0;
+        for (State s:next) {
+          i++;
+          boolean m = s.match(matchedStates.getBranchStates().getBranchId(bid,i,next.size()), matchedStates, consume);
+          if (!m) {
+            allMatch = false;
+            break;
+          }
+        }
+      }
+      return allMatch;
+    }
+  }
+

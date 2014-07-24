@@ -1,0 +1,36 @@
+    protected boolean areAllEdgesEquivalent(
+        IsomorphismRelation<V, E> resultRelation,
+        EquivalenceComparator<? super E, ? super Graph<V, E>> edgeComparator)
+    {
+        boolean checkResult = true;
+
+        if (edgeComparator == null) {
+            // nothing to check
+            return true;
+        }
+
+        try {
+            Set<E> edgeSet = this.graph1.edgeSet();
+
+            for (E currEdge : edgeSet) {
+                E correspondingEdge =
+                    resultRelation.getEdgeCorrespondence(currEdge, true);
+
+                // if one edge test fail , fail the whole method
+                if (!edgeComparator.equivalenceCompare(
+                        currEdge,
+                        correspondingEdge,
+                        this.graph1,
+                        this.graph2))
+                {
+                    checkResult = false;
+                    break;
+                }
+            }
+        } catch (IllegalArgumentException illegal) {
+            checkResult = false;
+        }
+
+        return checkResult;
+    }
+

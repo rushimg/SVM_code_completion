@@ -1,0 +1,21 @@
+  public static Tree applyToProjections(TreeVisitor v, Tree head, Tree root, HeadFinder hf) {
+    Tree projection = head;
+    Tree parent = projection.parent(root);
+    if (parent == null && projection != root) {
+      return null;
+    }
+    v.visitTree(projection);
+    if (projection == root) {
+      return root;
+    }
+    while (hf.determineHead(parent) == projection) {
+      projection = parent;
+      v.visitTree(projection);
+      if (projection == root) {
+        return root;
+      }
+      parent = projection.parent(root);
+    }
+    return projection;
+  }
+

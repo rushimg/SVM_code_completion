@@ -1,0 +1,44 @@
+    public void zoom(Rectangle2D selection) {
+
+        // get the origin of the zoom selection in the Java2D space used for
+        // drawing the chart (that is, before any scaling to fit the panel)
+        Point2D selectOrigin = translateScreenToJava2D(new Point(
+                (int) Math.ceil(selection.getX()),
+                (int) Math.ceil(selection.getY())));
+        PlotRenderingInfo plotInfo = this.info.getPlotInfo();
+        Rectangle2D scaledDataArea = getScreenDataArea(
+                (int) selection.getCenterX(), (int) selection.getCenterY());
+        if ((selection.getHeight() > 0) && (selection.getWidth() > 0)) {
+
+            double hLower = (selection.getMinX() - scaledDataArea.getMinX())
+                / scaledDataArea.getWidth();
+            double hUpper = (selection.getMaxX() - scaledDataArea.getMinX())
+                / scaledDataArea.getWidth();
+            double vLower = (scaledDataArea.getMaxY() - selection.getMaxY())
+                / scaledDataArea.getHeight();
+            double vUpper = (scaledDataArea.getMaxY() - selection.getMinY())
+                / scaledDataArea.getHeight();
+
+            Plot p = this.chart.getPlot();
+            if (p instanceof Zoomable) {
+                // here we tweak the notify flag on the plot so that only
+                // one notification happens even though we update multiple
+                // axes...
+                boolean savedNotify = p.isNotify();
+                p.setNotify(false);
+                Zoomable z = (Zoomable) p;
+                if (z.getOrientation() == PlotOrientation.HORIZONTAL) {
+                    z.zoomDomainAxes(vLower, vUpper, plotInfo, selectOrigin);
+                    z.zoomRangeAxes(hLower, hUpper, plotInfo, selectOrigin);
+                }
+                else {
+                    z.zoomDomainAxes(hLower, hUpper, plotInfo, selectOrigin);
+                    z.zoomRangeAxes(vLower, vUpper, plotInfo, selectOrigin);
+                }
+                p.setNotify(savedNotify);
+            }
+
+        }
+
+    }
+

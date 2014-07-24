@@ -1,0 +1,30 @@
+  static TregexPattern constructMultiRelation(String s, List<DescriptionPattern> children,
+                                              Function<String, String> basicCatFunction,
+                                              HeadFinder headFinder) throws ParseException {
+    if (s.equals("<...")) {
+      List<TregexPattern> newChildren = Generics.newArrayList();
+      for (int i = 0; i < children.size(); ++i) {
+        Relation rel = getRelation("<", Integer.toString(i + 1), basicCatFunction, headFinder); 
+        DescriptionPattern oldChild = children.get(i);
+        TregexPattern newChild = new DescriptionPattern(rel, oldChild);
+        newChildren.add(newChild);
+      }
+      Relation rel = getRelation("<", Integer.toString(children.size() + 1), basicCatFunction, headFinder);
+      TregexPattern noExtraChildren = new DescriptionPattern(rel, false, "__", null, false, basicCatFunction, Collections.<Pair<Integer,String>>emptyList(), false, null);
+      noExtraChildren.negate();
+      newChildren.add(noExtraChildren);
+      return new CoordinationPattern(newChildren, true);
+    } else {
+      throw new ParseException("Unknown multi relation " + s);
+    }
+  }
+
+  private Relation(String symbol) {
+    this.symbol = symbol;
+  }
+
+  @Override
+  public String toString() {
+    return symbol;
+  }
+

@@ -1,0 +1,48 @@
+    protected void drawPrimaryLineAsPath(XYItemRendererState state,
+                                         Graphics2D g2, XYPlot plot,
+                                         XYDataset dataset,
+                                         int pass,
+                                         int series,
+                                         int item,
+                                         ValueAxis domainAxis,
+                                         ValueAxis rangeAxis,
+                                         Rectangle2D dataArea) {
+
+
+        RectangleEdge xAxisLocation = plot.getDomainAxisEdge();
+        RectangleEdge yAxisLocation = plot.getRangeAxisEdge();
+
+        // get the data point...
+        double x1 = dataset.getXValue(series, item);
+        double y1 = dataset.getYValue(series, item);
+        double transX1 = domainAxis.valueToJava2D(x1, dataArea, xAxisLocation);
+        double transY1 = rangeAxis.valueToJava2D(y1, dataArea, yAxisLocation);
+
+        State s = (State) state;
+        // update path to reflect latest point
+        if (!Double.isNaN(transX1) && !Double.isNaN(transY1)) {
+            float x = (float) transX1;
+            float y = (float) transY1;
+            PlotOrientation orientation = plot.getOrientation();
+            if (orientation == PlotOrientation.HORIZONTAL) {
+                x = (float) transY1;
+                y = (float) transX1;
+            }
+            if (s.isLastPointGood()) {
+                s.seriesPath.lineTo(x, y);
+            }
+            else {
+                s.seriesPath.moveTo(x, y);
+            }
+            s.setLastPointGood(true);
+        }
+        else {
+            s.setLastPointGood(false);
+        }
+        // if this is the last item, draw the path ...
+        if (item == s.getLastItemIndex()) {
+            // draw path
+            drawFirstPassShape(g2, pass, series, item, s.seriesPath);
+        }
+    }
+

@@ -1,0 +1,19 @@
+    private void drawStringInRect(Graphics2D g2, Rectangle2D bounds, Font font,
+                                  String text) {
+
+        g2.setFont(font);
+        FontMetrics fm = g2.getFontMetrics(font);
+        Rectangle2D r = TextUtilities.getTextBounds(text, g2, fm);
+        double x = bounds.getX();
+        if (r.getWidth() < bounds.getWidth()) {
+            x = x + (bounds.getWidth() - r.getWidth()) / 2;
+        }
+        LineMetrics metrics = font.getLineMetrics(
+            text, g2.getFontRenderContext()
+        );
+        g2.drawString(
+            text, (float) x, (float) (bounds.getMaxY()
+                - this.bottomInnerGap - metrics.getDescent())
+        );
+    }
+

@@ -1,0 +1,37 @@
+class ExtractorStartSentenceCap extends RareExtractor {
+
+  private transient Dictionary dict;
+
+  public ExtractorStartSentenceCap() {
+  }
+
+  @Override
+  protected void setGlobalHolder(MaxentTagger tagger) {
+    this.dict = tagger.dict;
+  }
+
+  @Override
+  String extract(History h, PairsHolder pH) {
+    String prevTag = pH.getTag(h, -1);
+    if(prevTag == null) { return zeroSt; }
+    if (!prevTag.equals(naTag)) {
+      return zeroSt;
+    }
+    String s = pH.getWord(h, 0);
+    if (startsUpperCase(s)) {
+      String s1 = s.toLowerCase();
+      if (dict.isUnknown(s1)) {
+        return zeroSt;
+      }
+      return dict.getFirstTag(s1);
+    }
+    return zeroSt;
+  }
+
+  private static final long serialVersionUID = 25L;
+
+  @Override public boolean isLocal() { return false; }
+  @Override public boolean isDynamic() { return true; }
+}
+
+

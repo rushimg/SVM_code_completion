@@ -1,0 +1,91 @@
+  public Classifier<String,String> makeClassifier(GeneralDataset<String,String> train) {
+    Classifier<String, String> lc;
+    if (globalFlags.useClassifierFactory != null) {
+      ClassifierFactory<String, String, Classifier<String,String>> cf;
+      if (globalFlags.classifierFactoryArgs != null) {
+        cf = ReflectionLoading.loadByReflection(globalFlags.useClassifierFactory, globalFlags.classifierFactoryArgs);
+      } else {
+        cf = ReflectionLoading.loadByReflection(globalFlags.useClassifierFactory);
+      }
+      lc = cf.trainClassifier(train);
+    } else if (globalFlags.useNB) {
+      double sigma = (globalFlags.prior == 0) ? 0.0 : globalFlags.sigma;
+      lc = new NBLinearClassifierFactory<String,String>(sigma, globalFlags.useClassFeature).trainClassifier(train);
+    } else if (globalFlags.useBinary) {
+      LogisticClassifierFactory<String,String> lcf = new LogisticClassifierFactory<String,String>();
+      LogPrior prior = new LogPrior(globalFlags.prior, globalFlags.sigma, globalFlags.epsilon);
+      lc = lcf.trainClassifier(train, globalFlags.l1reg, globalFlags.tolerance, prior, globalFlags.biased);
+    } else if (globalFlags.biased) {
+      LogisticClassifierFactory<String,String> lcf = new LogisticClassifierFactory<String,String>();
+      LogPrior prior = new LogPrior(globalFlags.prior, globalFlags.sigma, globalFlags.epsilon);
+      lc = lcf.trainClassifier(train, prior, true);
+    } else if (globalFlags.useAdaptL1 && globalFlags.limitFeatures > 0) {
+      lc = makeClassifierAdaptL1(train);
+    } else {
+      LinearClassifierFactory<String,String> lcf;
+      if (globalFlags.l1reg > 0.0) {
+        Minimizer<DiffFunction> minim = ReflectionLoading.loadByReflection("edu.stanford.nlp.optimization.OWLQNMinimizer", globalFlags.l1reg);
+        lcf = new LinearClassifierFactory<String,String>(minim, globalFlags.tolerance, globalFlags.useSum, globalFlags.prior, globalFlags.sigma, globalFlags.epsilon);
+      } else {
+        lcf  = new LinearClassifierFactory<String,String>(globalFlags.tolerance, globalFlags.useSum, globalFlags.prior, globalFlags.sigma, globalFlags.epsilon, globalFlags.QNsize);
+      }
+      if (!globalFlags.useQN) {
+        lcf.useConjugateGradientAscent();
+      }
+      lc = lcf.trainClassifier(train);
+    }
+    return lc;
+  }
+
+
+  private static String[] regexpTokenize(Pattern tokenizerRegexp, Pattern ignoreRegexp, String inWord) {
+    List<String> al = new ArrayList<String>();
+    String word = inWord;
+    while (word.length() > 0) {
+      // System.err.println("String to match on is " + word);
+      Matcher mig = null;
+      if (ignoreRegexp != null) {
+        mig = ignoreRegexp.matcher(word);
+      }
+      if (mig != null && mig.lookingAt()) {
+        word = word.substring(mig.end());
+      } else {
+        Matcher m = tokenizerRegexp.matcher(word);
+        if (m.lookingAt()) {
+          // System.err.println("Matched " + m.end() + " chars: " +
+          //		       word.substring(0, m.end()));
+          al.add(word.substring(0, m.end()));
+          word = word.substring(m.end());
+        } else {
+          System.err.println("Warning: regexpTokenize pattern " + tokenizerRegexp + " didn't match on |" +
+                  word.substring(0, 1) + "| of |" + word + '|');
+          // System.err.println("Default matched 1 char: " +
+          //		       word.substring(0, 1));
+          al.add(word.substring(0, 1));
+          word = word.substring(1);
+        }
+      }
+    }
+    String[] bits = al.toArray(new String[al.size()]);
+    return bits;
+  }
+
+  private static String[] splitTokenize(Pattern splitRegexp, Pattern ignoreRegexp, String cWord) {
+    String[] bits = splitRegexp.split(cWord);
+    if (ignoreRegexp != null) {
+      List<String> keepBits = new ArrayList<String>(bits.length);
+      for (String bit : bits) {
+        if ( ! ignoreRegexp.matcher(bit).matches()) {
+          keepBits.add(bit);
+        }
+      }
+      if (keepBits.size() != bits.length) {
+        bits = new String[keepBits.size()];
+        keepBits.toArray(bits);
+      }
+    }
+    return bits;
+  }
+
+
+

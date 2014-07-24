@@ -1,0 +1,65 @@
+  public void serialize(OutputStream out) throws IOException {
+    Iterator<Entry> entries = new Iterator<Entry>() {
+
+      Iterator<String> iterator = dictionary.keySet().iterator();
+
+      public boolean hasNext() {
+        return iterator.hasNext();
+      }
+
+      public Entry next() {
+
+        String word = iterator.next();
+
+        Attributes tagAttribute = new Attributes();
+        tagAttribute.setValue("tags", tagsToString(getTags(word)));
+
+        return new Entry(new StringList(word), tagAttribute);
+      }
+
+      public void remove() {
+        throw new UnsupportedOperationException();
+      }
+    };
+
+    DictionarySerializer.serialize(out, entries, caseSensitive);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+
+    if (o == this) {
+      return true;
+    }
+    else if (o instanceof POSDictionary) {
+      POSDictionary dictionary = (POSDictionary) o;
+
+      if (this.dictionary.size() == dictionary.dictionary.size()) {
+
+        for (String word : this) {
+
+          String aTags[] = getTags(word);
+          String bTags[] = dictionary.getTags(word);
+
+          if (!Arrays.equals(aTags, bTags)) {
+            return false;
+          }
+        }
+
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  @Override
+  public String toString() {
+    // it is time consuming to output the dictionary entries.
+    // will output something meaningful for debugging, like
+    // POSDictionary{size=100, caseSensitive=true}
+
+    return "POSDictionary{size=" + dictionary.size() + ", caseSensitive="
+        + this.caseSensitive + "}";
+  }
+

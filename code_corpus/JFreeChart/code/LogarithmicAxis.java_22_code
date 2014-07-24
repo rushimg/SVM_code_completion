@@ -1,0 +1,40 @@
+    protected double computeLogFloor(double lower) {
+
+        double logFloor;
+        if (this.allowNegativesFlag) {
+            //negative values are allowed
+            if (lower > 10.0) {   //parameter value is > 10
+                // The Math.log() function is based on e not 10.
+                logFloor = Math.log(lower) / LOG10_VALUE;
+                logFloor = Math.floor(logFloor);
+                logFloor = Math.pow(10, logFloor);
+            }
+            else if (lower < -10.0) {   //parameter value is < -10
+                //calculate log using positive value:
+                logFloor = Math.log(-lower) / LOG10_VALUE;
+                //calculate floor using negative value:
+                logFloor = Math.floor(-logFloor);
+                //calculate power using positive value; then negate
+                logFloor = -Math.pow(10, -logFloor);
+            }
+            else {
+                //parameter value is -10 > val < 10
+                logFloor = Math.floor(lower);   //use as-is
+            }
+        }
+        else {
+            //negative values not allowed
+            if (lower > 0.0) {   //parameter value is > 0
+                // The Math.log() function is based on e not 10.
+                logFloor = Math.log(lower) / LOG10_VALUE;
+                logFloor = Math.floor(logFloor);
+                logFloor = Math.pow(10, logFloor);
+            }
+            else {
+                //parameter value is <= 0
+                logFloor = Math.floor(lower);   //use as-is
+            }
+        }
+        return logFloor;
+    }
+

@@ -1,0 +1,21 @@
+	public Collection<V> getRoots() {
+		Collection<V> roots = new HashSet<V>();
+		for(V v : delegate.getVertices()) {
+			if(delegate.getPredecessorCount(v) == 0) {
+				roots.add(v);
+			}
+		}
+		return roots;
+	}
+
+	public Collection<Tree<V, E>> getTrees() {
+		Collection<Tree<V,E>> trees = new HashSet<Tree<V,E>>();
+		for(V v : getRoots()) {
+			Tree<V,E> tree = new DelegateTree<V,E>();
+			tree.addVertex(v);
+			TreeUtils.growSubTree(this, tree, v);
+			trees.add(tree);
+		}
+		return trees;
+	}
+

@@ -1,0 +1,24 @@
+  public static <E> E restrictedArgMax(Counter<E> c, Collection<E> restriction) {
+    E maxKey = null;
+    double max = Double.NEGATIVE_INFINITY;
+    for (E key : restriction) {
+      double count = c.getCount(key);
+      if (count > max) {
+        max = count;
+        maxKey = key;
+      }
+    }
+    return maxKey;
+  }
+
+  public static <T> Counter<T> toCounter(double[] counts, Index<T> index) {
+    if (index.size() < counts.length)
+      throw new IllegalArgumentException("Index not large enough to name all the array elements!");
+    Counter<T> c = new ClassicCounter<T>();
+    for (int i = 0; i < counts.length; i++) {
+      if (counts[i] != 0.0)
+        c.setCount(index.get(i), counts[i]);
+    }
+    return c;
+  }
+

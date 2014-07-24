@@ -1,0 +1,33 @@
+  public HashIndex(Collection<? extends E> c) {
+    this();
+    addAll(c);
+  }
+
+  public HashIndex(Index<? extends E> index) {
+    this();
+    // TODO: this assumes that no index supports deletion
+    addAll(index.objectsList());
+  }
+
+  @Override
+  public void saveToFilename(String file) {
+    BufferedWriter bw = null;
+    try {
+      bw = new BufferedWriter(new FileWriter(file));
+      for (int i = 0, sz = size(); i < sz; i++) {
+        bw.write(i + "=" + get(i) + '\n');
+      }
+      bw.close();
+    } catch (IOException e) {
+      e.printStackTrace();
+    } finally {
+      if (bw != null) {
+        try {
+          bw.close();
+        } catch (IOException ioe) {
+          // give up
+        }
+      }
+    }
+  }
+

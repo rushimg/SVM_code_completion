@@ -1,0 +1,47 @@
+  private static final class LineReaderIterable implements Iterable<String>
+  {
+    private final BufferedReader reader;
+
+    private LineReaderIterable( BufferedReader reader )
+    {
+      this.reader = reader;
+    }
+    @Override
+    public Iterator<String> iterator()
+    {
+      return new Iterator<String>() {
+        private String next = getNext();
+
+        private String getNext() {
+          try {
+            return reader.readLine();
+          } catch (IOException ex) {
+            throw new RuntimeIOException(ex);
+          }
+        }
+
+        @Override
+        public boolean hasNext()
+        {
+          return this.next != null;
+        }
+        @Override
+        public String next()
+        {
+          String nextLine = this.next;
+          if (nextLine == null) {
+            throw new NoSuchElementException();
+          }
+          next = getNext();
+          return nextLine;
+        }
+
+        @Override
+        public void remove()
+        {
+          throw new UnsupportedOperationException();
+        }
+      };
+    }
+  }
+

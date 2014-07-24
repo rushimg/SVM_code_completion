@@ -1,0 +1,18 @@
+    public void zoomRangeAxes(double factor, PlotRenderingInfo state,
+                              Point2D source, boolean useAnchor) {
+        // delegate 'state' and 'source' argument checks...
+        XYPlot subplot = findSubplot(state, source);
+        if (subplot != null) {
+            subplot.zoomRangeAxes(factor, state, source, useAnchor);
+        }
+        else {
+            // if the source point doesn't fall within a subplot, we do the
+            // zoom on all subplots...
+            Iterator iterator = getSubplots().iterator();
+            while (iterator.hasNext()) {
+                subplot = (XYPlot) iterator.next();
+                subplot.zoomRangeAxes(factor, state, source, useAnchor);
+            }
+        }
+    }
+

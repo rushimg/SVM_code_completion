@@ -1,0 +1,38 @@
+    public static JFreeChart createXYAreaChart(String title,
+                                               String xAxisLabel,
+                                               String yAxisLabel,
+                                               XYDataset dataset,
+                                               PlotOrientation orientation,
+                                               boolean legend,
+                                               boolean tooltips,
+                                               boolean urls) {
+
+        if (orientation == null) {
+            throw new IllegalArgumentException("Null 'orientation' argument.");
+        }
+        NumberAxis xAxis = new NumberAxis(xAxisLabel);
+        xAxis.setAutoRangeIncludesZero(false);
+        NumberAxis yAxis = new NumberAxis(yAxisLabel);
+        XYPlot plot = new XYPlot(dataset, xAxis, yAxis, null);
+        plot.setOrientation(orientation);
+        plot.setForegroundAlpha(0.5f);
+
+        XYToolTipGenerator tipGenerator = null;
+        if (tooltips) {
+            tipGenerator = new StandardXYToolTipGenerator();
+        }
+
+        XYURLGenerator urlGenerator = null;
+        if (urls) {
+            urlGenerator = new StandardXYURLGenerator();
+        }
+
+        plot.setRenderer(new XYAreaRenderer(XYAreaRenderer.AREA, tipGenerator,
+                urlGenerator));
+        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT,
+                plot, legend);
+        currentTheme.apply(chart);
+        return chart;
+
+    }
+

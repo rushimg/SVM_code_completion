@@ -1,0 +1,35 @@
+    @Override
+    public Header authenticate(
+            final Credentials credentials,
+            final HttpRequest request,
+            final HttpContext context) throws AuthenticationException {
+
+        Args.notNull(credentials, "Credentials");
+        Args.notNull(request, "HTTP request");
+        if (getParameter("realm") == null) {
+            throw new AuthenticationException("missing realm in challenge");
+        }
+        if (getParameter("nonce") == null) {
+            throw new AuthenticationException("missing nonce in challenge");
+        }
+        // Add method name and request-URI to the parameter map
+        getParameters().put("methodname", request.getRequestLine().getMethod());
+        getParameters().put("uri", request.getRequestLine().getUri());
+        final String charset = getParameter("charset");
+        if (charset == null) {
+            getParameters().put("charset", getCredentialsCharset(request));
+        }
+        return createDigestHeader(credentials, request);
+    }
+
+    private static MessageDigest createMessageDigest(
+            final String digAlg) throws UnsupportedDigestAlgorithmException {
+        try {
+            return MessageDigest.getInstance(digAlg);
+        } catch (final Exception e) {
+            throw new UnsupportedDigestAlgorithmException(
+              "Unsupported algorithm in HTTP Digest authentication: "
+               + digAlg);
+        }
+    }
+

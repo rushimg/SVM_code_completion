@@ -1,0 +1,36 @@
+  static class CachedFeatureGeneratorFactory implements XmlFeatureGeneratorFactory {
+
+    private CachedFeatureGeneratorFactory() {
+    }
+
+    public AdaptiveFeatureGenerator create(Element generatorElement,
+        FeatureGeneratorResourceProvider resourceManager) throws InvalidFormatException {
+
+      Element cachedGeneratorElement = null;
+
+      NodeList kids = generatorElement.getChildNodes();
+
+      for (int i = 0; i < kids.getLength(); i++) {
+        Node childNode = kids.item(i);
+
+        if (childNode instanceof Element) {
+          cachedGeneratorElement = (Element) childNode;
+          break;
+        }
+      }
+
+      if (cachedGeneratorElement == null) {
+        throw new InvalidFormatException("Could not find containing generator element!");
+      }
+
+      AdaptiveFeatureGenerator cachedGenerator =
+          GeneratorFactory.createGenerator(cachedGeneratorElement, resourceManager);
+
+      return new CachedFeatureGenerator(cachedGenerator);
+    }
+
+    static void register(Map<String, XmlFeatureGeneratorFactory> factoryMap) {
+      factoryMap.put("cache", new CachedFeatureGeneratorFactory());
+    }
+  }
+

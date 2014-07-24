@@ -1,0 +1,13 @@
+  private GeneralizedCounter<K> conditionalizeHelper(K o) {
+    if (depth > 1) {
+      GeneralizedCounter<K> next = ErasureUtils.<GeneralizedCounter<K>>uncheckedCast(map.get(o));
+      if (next == null) // adds a new GeneralizedCounter if needed
+      {
+        map.put(o, (next = new GeneralizedCounter<K>(depth - 1)));
+      }
+      return next;
+    } else {
+      throw new RuntimeException("Error -- can't conditionalize a distribution of depth 1");
+    }
+  }
+

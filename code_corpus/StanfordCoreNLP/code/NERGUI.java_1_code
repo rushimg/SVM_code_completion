@@ -1,0 +1,58 @@
+public class NERGUI {
+
+  private AbstractSequenceClassifier<CoreLabel> classifier;
+
+  private JFrame frame;
+  private JEditorPane editorPane;
+  private JToolBar tagPanel;
+  private static final int HEIGHT = 600;
+  private static final int WIDTH = 650;
+  private Map<String, Color> tagToColorMap;
+  private JFileChooser fileChooser = new JFileChooser();
+  private MutableAttributeSet defaultAttrSet = new SimpleAttributeSet();
+  private ActionListener actor = new ActionPerformer();
+  private File loadedFile;
+  private String taggedContents = null;
+  private String htmlContents = null;
+
+  private JMenuItem saveUntagged = null;
+  private JMenuItem saveTaggedAs = null;
+
+  private JButton extractButton = null;
+  private JMenuItem extract = null;
+
+  private void createAndShowGUI() {
+    //Make sure we have nice window decorations.
+    JFrame.setDefaultLookAndFeelDecorated(true);
+
+    //Create and set up the window.
+    frame = new JFrame("Stanford Named Entity Recognizer");
+    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    frame.getContentPane().setLayout(new BorderLayout());
+    frame.getContentPane().setPreferredSize(new Dimension(WIDTH, HEIGHT));
+
+    frame.setJMenuBar(addMenuBar());
+
+    buildTagPanel();
+    buildContentPanel();
+    buildExtractButton();
+    extractButton.setEnabled(false);
+    extract.setEnabled(false);
+
+    //Display the window.
+    frame.pack();
+    frame.setVisible(true);
+  }
+
+  private JMenuBar addMenuBar() {
+    JMenuBar menubar = new JMenuBar();
+
+    JMenu fileMenu = new JMenu("File");
+    menubar.add(fileMenu);
+
+    JMenu editMenu = new JMenu("Edit");
+    menubar.add(editMenu);
+
+    JMenu classifierMenu = new JMenu("Classifier");
+    menubar.add(classifierMenu);
+

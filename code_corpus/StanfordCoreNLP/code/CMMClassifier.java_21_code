@@ -1,0 +1,66 @@
+
+  @SuppressWarnings("unchecked")
+  @Override
+  public void loadClassifier(ObjectInputStream ois, Properties props) throws ClassCastException, IOException, ClassNotFoundException {
+    classifier = (LinearClassifier<String, String>) ois.readObject();
+    flags = (SeqClassifierFlags) ois.readObject();
+    Object featureFactory = ois.readObject();
+    if (featureFactory instanceof List) {
+      featureFactories = ErasureUtils.uncheckedCast(featureFactory);
+    } else if (featureFactory instanceof FeatureFactory) {
+      featureFactories = Generics.newArrayList();
+      featureFactories.add((FeatureFactory) featureFactory);
+    }
+
+    if (props != null) {
+      flags.setProperties(props);
+    }
+    reinit();
+
+    classIndex = (Index<String>) ois.readObject();
+    answerArrays = (Set<List<String>>) ois.readObject();
+
+    knownLCWords = (Set<String>) ois.readObject();
+  }
+
+
+  public static CMMClassifier<? extends CoreLabel> getClassifierNoExceptions(File file) {
+    CMMClassifier<? extends CoreLabel> cmm = new CMMClassifier<CoreLabel>();
+    cmm.loadClassifierNoExceptions(file);
+    return cmm;
+
+  }
+
+  public static CMMClassifier<? extends CoreLabel> getClassifier(File file) throws IOException, ClassCastException, ClassNotFoundException {
+
+    CMMClassifier<? extends CoreLabel> cmm = new CMMClassifier<CoreLabel>();
+    cmm.loadClassifier(file);
+    return cmm;
+  }
+
+  public static CMMClassifier<CoreLabel> getClassifierNoExceptions(String loadPath) {
+    CMMClassifier<CoreLabel> cmm = new CMMClassifier<CoreLabel>();
+    cmm.loadClassifierNoExceptions(loadPath);
+    return cmm;
+
+  }
+
+  public static CMMClassifier<? extends CoreLabel> getClassifier(String loadPath) throws IOException, ClassCastException, ClassNotFoundException {
+
+    CMMClassifier<? extends CoreLabel> cmm = new CMMClassifier<CoreLabel>();
+    cmm.loadClassifier(loadPath);
+    return cmm;
+  }
+
+  public static CMMClassifier<? extends CoreLabel> getClassifierNoExceptions(InputStream in) {
+    CMMClassifier<? extends CoreLabel> cmm = new CMMClassifier<CoreLabel>();
+    cmm.loadClassifierNoExceptions(new BufferedInputStream(in), null);
+    return cmm;
+  }
+
+  public static CMMClassifier<? extends CoreLabel> getClassifier(InputStream in) throws IOException, ClassCastException, ClassNotFoundException {
+    CMMClassifier<? extends CoreLabel> cmm = new CMMClassifier<CoreLabel>();
+    cmm.loadClassifier(new BufferedInputStream(in));
+    return cmm;
+  }
+

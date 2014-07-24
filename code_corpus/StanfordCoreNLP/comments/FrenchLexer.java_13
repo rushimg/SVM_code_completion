@@ -1,0 +1,69 @@
+  /**
+   * Constructs a new FrenchLexer.  You specify the type of result tokens with a
+   * LexedTokenFactory, and can specify the treatment of tokens by boolean
+   * options given in a comma separated String
+   * (e.g., "invertible,normalizeParentheses=true").
+   * If the String is <code>null</code> or empty, you get the traditional
+   * PTB3 normalization behaviour (i.e., you get ptb3Escaping=false).  If you
+   * want no normalization, then you should pass in the String
+   * "ptb3Escaping=false".  The known option names are:
+   * <ol>
+   * <li>invertible: Store enough information about the original form of the
+   *     token and the whitespace around it that a list of tokens can be
+   *     faithfully converted back to the original String.  Valid only if the
+   *     LexedTokenFactory is an instance of CoreLabelTokenFactory.  The
+   *     keys used in it are TextAnnotation for the tokenized form,
+   *     OriginalTextAnnotation for the original string, BeforeAnnotation and
+   *     AfterAnnotation for the whitespace before and after a token, and
+   *     perhaps BeginPositionAnnotation and EndPositionAnnotation to record
+   *     token begin/after end offsets, if they were specified to be recorded
+   *     in TokenFactory construction.  (Like the String class, begin and end
+   *     are done so end - begin gives the token length.)
+   * <li>tokenizeNLs: Whether end-of-lines should become tokens (or just
+   *     be treated as part of whitespace)
+   * <li>ptb3Escaping: Enable all traditional PTB3 token transforms
+   *     (like -LRB-, -RRB-).  This is a macro flag that sets or clears all the
+   *     options below.
+   * <li>normalizeAmpersandEntity: Whether to map the XML &amp;amp; to an
+   *      ampersand
+   * <li>normalizeFractions: Whether to map certain common composed
+   *     fraction characters to spelled out letter forms like "1/2"
+   * <li>normalizeParentheses: Whether to map round parentheses to -LRB-,
+   *     -RRB-, as in the Penn Treebank
+   * <li>normalizeOtherBrackets: Whether to map other common bracket characters
+   *     to -LCB-, -LRB-, -RCB-, -RRB-, roughly as in the Penn Treebank
+   * <li>ptb3Ellipsis: Whether to map ellipses to ..., the old PTB3 WSJ coding
+   *     of an ellipsis. If true, this takes precedence over the setting of
+   *     unicodeEllipsis; if both are false, no mapping is done.
+   * <li>unicodeEllipsis: Whether to map dot and optional space sequences to
+   *     U+2026, the Unicode ellipsis character
+   * <li>ptb3Dashes: Whether to turn various dash characters into "--",
+   *     the dominant encoding of dashes in the PTB3 WSJ
+   * <li>escapeForwardSlashAsterisk: Whether to put a backslash escape in front
+   *     of / and * as the old PTB3 WSJ does for some reason (something to do
+   *     with Lisp readers??).
+   * <li>untokenizable: What to do with untokenizable characters (ones not
+   *     known to the tokenizers).  Six options combining whether to log a
+   *     warning for none, the first, or all, and whether to delete them or
+   *     to include them as single character tokens in the output: noneDelete,
+   *     firstDelete, allDelete, noneKeep, firstKeep, allKeep.
+   *     The default is "firstDelete".
+   * <li>strictTreebank3: PTBTokenizer deliberately deviates from strict PTB3
+   *      WSJ tokenization in two cases.  Setting this improves compatibility
+   *      for those cases.  They are: (i) When an acronym is followed by a
+   *      sentence end, such as "Corp." at the end of a sentence, the PTB3
+   *      has tokens of "Corp" and ".", while by default PTBTokenzer duplicates
+   *      the period returning tokens of "Corp." and ".", and (ii) PTBTokenizer
+   *      will return numbers with a whole number and a fractional part like
+   *      "5 7/8" as a single token (with a non-breaking space in the middle),
+   *      while the PTB3 separates them into two tokens "5" and "7/8".
+   *      (Exception: for "U.S." the treebank does have the two tokens
+   *      "U.S." and "." like our default; strictTreebank3 now does that too.)
+   * </ol>
+   *
+   * @param r The Reader to tokenize text from
+   * @param tf The LexedTokenFactory that will be invoked to convert
+   *    each substring extracted by the lexer into some kind of Object
+   *    (such as a Word or CoreLabel).
+   * @param props Options to the tokenizer (see constructor Javadoc)
+   */

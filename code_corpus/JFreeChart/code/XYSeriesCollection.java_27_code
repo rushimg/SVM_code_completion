@@ -1,0 +1,23 @@
+    public double getDomainUpperBound(boolean includeInterval) {
+        if (includeInterval) {
+            return this.intervalDelegate.getDomainUpperBound(includeInterval);
+        }
+        else {
+            double result = Double.NaN;
+            int seriesCount = getSeriesCount();
+            for (int s = 0; s < seriesCount; s++) {
+                XYSeries series = getSeries(s);
+                double hiX = series.getMaxX();
+                if (Double.isNaN(result)) {
+                    result = hiX;
+                }
+                else {
+                    if (!Double.isNaN(hiX)) {
+                        result = Math.max(result, hiX);
+                    }
+                }
+            }
+            return result;
+        }
+    }
+

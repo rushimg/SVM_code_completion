@@ -1,0 +1,113 @@
+  protected Map<String, TransducerGraph> convertGrammarToGraphs(Pair<UnaryGrammar,BinaryGrammar> grammar, Set<UnaryRule> unaryRules, Set<BinaryRule> binaryRules) {
+    int numRules = 0;
+    UnaryGrammar ug = grammar.first;
+    BinaryGrammar bg = grammar.second;
+    Map<String, TransducerGraph> graphs = Generics.newHashMap();
+    // go through the BinaryGrammar and add everything
+    for (BinaryRule rule : bg) {
+      numRules++;
+      boolean wasAdded = addOneBinaryRule(rule, graphs);
+      if (!wasAdded)
+      // add it for later, since we don't make graphs for these
+      {
+        binaryRules.add(rule);
+      }
+    }
+    // now we need to use the UnaryGrammar to
+    // add start and end Arcs to the graphs
+    for (UnaryRule rule : ug) {
+      numRules++;
+      boolean wasAdded = addOneUnaryRule(rule, graphs);
+      if (!wasAdded)
+      // add it for later, since we don't make graphs for these
+      {
+        unaryRules.add(rule);
+      }
+    }
+    if (verbose) {
+      System.out.println("Number of raw rules: " + numRules);
+      System.out.println("Number of raw states: " + stateIndex.size());
+    }
+    return graphs;
+  }
+
+  protected static TransducerGraph getGraphFromMap(Map<String, TransducerGraph> m, String o) {
+    TransducerGraph graph = m.get(o);
+    if (graph == null) {
+      graph = new TransducerGraph();
+      graph.setEndNode(o);
+      m.put(o, graph);
+    }
+    return graph;
+  }
+
+  protected static String getTopCategoryOfSyntheticState(String s) {
+    if (s.charAt(0) != '@') {
+      return null;
+    }
+    int bar = s.indexOf('|');
+    if (bar < 0) {
+      throw new RuntimeException("Grammar format error. Expected bar in state name: " + s);
+    }
+    String topcat = s.substring(1, bar);
+    return topcat;
+  }
+
+  protected boolean addOneUnaryRule(UnaryRule rule, Map<String, TransducerGraph> graphs) {
+    String parentString = stateIndex.get(rule.parent);
+    String childString = stateIndex.get(rule.child);
+    if (isSyntheticState(parentString)) {
+      String topcat = getTopCategoryOfSyntheticState(parentString);
+      TransducerGraph graph = getGraphFromMap(graphs, topcat);
+      Double output = new Double(smartNegate(rule.score()));
+      graph.addArc(graph.getStartNode(), parentString, childString, output);
+      return true;
+    } else if (isSyntheticState(childString)) {
+      // need to add Arc from synthetic state to endState
+      TransducerGraph graph = getGraphFromMap(graphs, parentString);
+      Double output = new Double(smartNegate(rule.score()));
+      graph.addArc(childString, parentString, END, output); // parentString should the the same as endState
+      graph.setEndNode(parentString);
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  protected boolean addOneBinaryRule(BinaryRule rule, Map<String, TransducerGraph> graphs) {
+    // parent has to be synthetic in BinaryRule
+    String parentString = stateIndex.get(rule.parent);
+    String leftString = stateIndex.get(rule.leftChild);
+    String rightString = stateIndex.get(rule.rightChild);
+    String source, target, input;
+    String bracket = null;
+    if (op.trainOptions.markFinalStates) {
+      bracket = parentString.substring(parentString.length() - 1, parentString.length());
+    }
+    // the below test is not necessary with left to right grammars
+    if (isSyntheticState(leftString)) {
+      source = leftString;
+      input = rightString + (bracket == null ? ">" : bracket);
+    } else if (isSyntheticState(rightString)) {
+      source = rightString;
+      input = leftString + (bracket == null ? "<" : bracket);
+    } else {
+      // we don't know what to do with this rule
+      return false;
+    }
+    target = parentString;
+    Double output = new Double(smartNegate(rule.score())); // makes it a real  0 <= k <= infty
+    String topcat = getTopCategoryOfSyntheticState(source);
+    if (topcat == null) {
+      throw new RuntimeException("can't have null topcat");
+    }
+    TransducerGraph graph = getGraphFromMap(graphs, topcat);
+    graph.addArc(source, target, input, output);
+    return true;
+  }
+
+  protected static boolean isSyntheticState(String state) {
+    return state.charAt(0) == '@';
+  }
+
+

@@ -1,0 +1,30 @@
+    public static String getImageMap(String name, ChartRenderingInfo info,
+            ToolTipTagFragmentGenerator toolTipTagFragmentGenerator,
+            URLTagFragmentGenerator urlTagFragmentGenerator) {
+
+        StringBuffer sb = new StringBuffer();
+        sb.append("<map id=\"" + htmlEscape(name) + "\" name=\""
+                + htmlEscape(name) + "\">");
+        sb.append(StringUtils.getLineSeparator());
+        EntityCollection entities = info.getEntityCollection();
+        if (entities != null) {
+            int count = entities.getEntityCount();
+            for (int i = count - 1; i >= 0; i--) {
+                ChartEntity entity = entities.getEntity(i);
+                if (entity.getToolTipText() != null
+                        || entity.getURLText() != null) {
+                    String area = entity.getImageMapAreaTag(
+                            toolTipTagFragmentGenerator,
+                            urlTagFragmentGenerator);
+                    if (area.length() > 0) {
+                        sb.append(area);
+                        sb.append(StringUtils.getLineSeparator());
+                    }
+                }
+            }
+        }
+        sb.append("</map>");
+        return sb.toString();
+
+    }
+

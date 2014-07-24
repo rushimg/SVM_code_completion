@@ -1,0 +1,25 @@
+  public static final String RewriteTareefSymbol = "REWAL";
+
+  private static final String BoundarySymbol = ".##.";
+  private static final String BoundaryChar = ".#.";
+
+  // Patterns for tokens that should not be segmented.
+  private static final Pattern isPunc = Pattern.compile("\\p{Punct}+");
+  private static final Pattern isDigit = Pattern.compile("\\p{Digit}+");
+  private static final Pattern notUnicodeArabic = Pattern.compile("\\P{InArabic}+");
+
+  // Sets of known clitics for tagging when reconstructing the segmented sequences.
+  private static final Set<String> arPrefixSet;
+  private static final Set<String> arSuffixSet;
+  static {
+    String arabicPrefixString = "ل ف و م ما ح حا ه ها ك ب س";
+    arPrefixSet = Collections.unmodifiableSet(Generics.newHashSet(Arrays.asList(arabicPrefixString.split("\\s+"))));
+    String arabicSuffixString = "ل و ما ه ها هم هن نا كم تن تم ى ي هما ك ب ش";
+    arSuffixSet = Collections.unmodifiableSet(Generics.newHashSet(Arrays.asList(arabicSuffixString.split("\\s+"))));
+  }
+
+  // Only static methods
+  private IOBUtils() {}
+
+  public static String getBoundaryCharacter() { return BoundaryChar; }
+

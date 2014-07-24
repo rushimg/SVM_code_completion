@@ -1,0 +1,80 @@
+  public List<ScoredObject<Tree>> getKBestPCFGParses(int k) {
+    if (pparser == null) {
+      return null;
+    }
+    List<ScoredObject<Tree>> binaryTrees = pparser.getKBestParses(k);
+    if (binaryTrees == null) {
+      return null;
+    }
+    List<ScoredObject<Tree>> trees = new ArrayList<ScoredObject<Tree>>(k);
+    for (ScoredObject<Tree> p : binaryTrees) {
+      Tree t = debinarizer.transformTree(p.object());
+      t = subcategoryStripper.transformTree(t);
+      restoreOriginalWords(t);
+      trees.add(new ScoredObject<Tree>(t, p.score()));
+    }
+    return trees;
+  }
+
+
+  public Tree getBestPCFGParse() {
+    return getBestPCFGParse(true);
+  }
+
+  public Tree getBestPCFGParse(boolean stripSubcategories) {
+    if (pparser == null || parseSkipped || parseUnparsable) {
+      return null;
+    }
+    Tree binaryTree = pparser.getBestParse();
+
+    if (binaryTree == null) {
+      return null;
+    }
+    Tree t = debinarizer.transformTree(binaryTree);
+    if (stripSubcategories) {
+      t = subcategoryStripper.transformTree(t);
+    }
+    restoreOriginalWords(t);
+    return t;
+  }
+
+  @Override
+  public double getPCFGScore() {
+    return pparser.getBestScore();
+  }
+
+  double getPCFGScore(String goalStr) {
+    return pparser.getBestScore(goalStr);
+  }
+
+  void parsePCFG(List<? extends HasWord> sentence) {
+    parseSucceeded = false;
+    parseNoMemory = false;
+    parseUnparsable = false;
+    parseSkipped = false;
+    parseFallback = false;
+    whatFailed = null;
+    originalSentence = sentence;
+    pparser.parse(sentence);
+  }
+
+  public Tree getBestDependencyParse() {
+    return getBestDependencyParse(false);
+  }
+
+  @Override
+  public Tree getBestDependencyParse(boolean debinarize) {
+    if (dparser == null || parseSkipped || parseUnparsable) {
+      return null;
+    }
+    Tree t = dparser.getBestParse();
+    if (t != null) {
+      if (debinarize) {
+        t = debinarizer.transformTree(t);
+      }
+      t = boundaryRemover.transformTree(t); // remove boundary .$$. which is otherwise still there from dparser.
+      restoreOriginalWords(t);
+    }
+    return t;
+  }
+

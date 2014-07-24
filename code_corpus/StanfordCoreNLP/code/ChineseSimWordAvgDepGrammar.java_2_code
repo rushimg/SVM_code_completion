@@ -1,0 +1,72 @@
+
+  private double probTBwithSimWords(IntDependency dependency) {
+    boolean leftHeaded = dependency.leftHeaded && directional;
+    IntTaggedWord unknownHead = new IntTaggedWord(-1, dependency.head.tag);
+    IntTaggedWord unknownArg = new IntTaggedWord(-1, dependency.arg.tag);
+    if (verbose) {
+      System.out.println("Generating " + dependency);
+    }
+
+    short distance = dependency.distance;
+    int hW = dependency.head.word;
+    int aW = dependency.arg.word;
+    IntTaggedWord aTW = dependency.arg;
+    IntTaggedWord hTW = dependency.head;
+
+    double pb_stop_hTWds = getStopProb(dependency);
+
+    boolean isRoot = rootTW(dependency.head);
+    if (dependency.arg.word == -2) {
+      // did we generate stop?
+      if (isRoot) {
+        return 0.0;
+      }
+      return pb_stop_hTWds;
+    }
+
+    double pb_go_hTWds = 1.0 - pb_stop_hTWds;
+
+    if (isRoot) {
+      pb_go_hTWds = 1.0;
+    }
+
+    // generate the argument
+
+    int valenceBinDistance = valenceBin(distance);
+
+    // KEY:
+    // c_     count of
+    // p_     MLE prob of
+    // pb_    MAP prob of
+    // a      arg
+    // h      head
+    // T      tag
+    // W      word
+    // d      direction
+    // ds     distance
+
+    IntDependency temp = new IntDependency(dependency.head, dependency.arg, leftHeaded, valenceBinDistance);
+    double c_aTW_hTWd = argCounter.getCount(temp);
+    temp = new IntDependency(dependency.head, unknownArg, leftHeaded, valenceBinDistance);
+    double c_aT_hTWd = argCounter.getCount(temp);
+    temp = new IntDependency(dependency.head, wildTW, leftHeaded, valenceBinDistance);
+    double c_hTWd = argCounter.getCount(temp);
+    temp = new IntDependency(unknownHead, dependency.arg, leftHeaded, valenceBinDistance);
+    double c_aTW_hTd = argCounter.getCount(temp);
+    temp = new IntDependency(unknownHead, unknownArg, leftHeaded, valenceBinDistance);
+    double c_aT_hTd = argCounter.getCount(temp);
+    temp = new IntDependency(unknownHead, wildTW, leftHeaded, valenceBinDistance);
+    double c_hTd = argCounter.getCount(temp);
+    temp = new IntDependency(wildTW, dependency.arg, false, -1);
+    double c_aTW = argCounter.getCount(temp);
+    temp = new IntDependency(wildTW, unknownArg, false, -1);
+    double c_aT = argCounter.getCount(temp);
+
+    // do the magic
+    double p_aTW_hTd = (c_hTd > 0.0 ? c_aTW_hTd / c_hTd : 0.0);
+    double p_aT_hTd = (c_hTd > 0.0 ? c_aT_hTd / c_hTd : 0.0);
+    double p_aTW_aT = (c_aTW > 0.0 ? c_aTW / c_aT : 1.0);
+
+
+
+

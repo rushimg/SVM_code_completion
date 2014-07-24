@@ -1,0 +1,43 @@
+    public GraphSquare(final Graph<V, E> g, final boolean createLoops)
+    {
+        super(g.getEdgeFactory(), false, createLoops);
+        Graphs.addAllVertices(this, g.vertexSet());
+        addSquareEdges(g, createLoops);
+
+        if (g instanceof ListenableGraph) {
+            ((ListenableGraph<V, E>) g).addGraphListener(
+                new GraphListener<V, E>() {
+                    public void edgeAdded(GraphEdgeChangeEvent<V, E> e)
+                    {
+                        E edge = e.getEdge();
+                        addEdgesStartingAt(
+                            g,
+                            g.getEdgeSource(edge),
+                            g.getEdgeTarget(edge),
+                            createLoops);
+                        addEdgesStartingAt(
+                            g,
+                            g.getEdgeTarget(edge),
+                            g.getEdgeSource(edge),
+                            createLoops);
+                    }
+
+                    public void edgeRemoved(GraphEdgeChangeEvent<V, E> e)
+                    { // this is not a very performant implementation
+                        GraphSquare.super.removeAllEdges(edgeSet());
+                        addSquareEdges(g, createLoops);
+                    }
+
+                    public void vertexAdded(GraphVertexChangeEvent<V> e)
+                    {
+                    }
+
+                    public void vertexRemoved(GraphVertexChangeEvent<V> e)
+                    {
+                    }
+                });
+        }
+    }
+
+    //~ Methods ----------------------------------------------------------------
+

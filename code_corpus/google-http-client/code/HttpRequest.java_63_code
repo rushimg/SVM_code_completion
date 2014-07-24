@@ -1,0 +1,23 @@
+  public boolean handleRedirect(int statusCode, HttpHeaders responseHeaders) {
+    String redirectLocation = responseHeaders.getLocation();
+    if (getFollowRedirects() && HttpStatusCodes.isRedirect(statusCode)
+        && redirectLocation != null) {
+      // resolve the redirect location relative to the current location
+      setUrl(new GenericUrl(url.toURL(redirectLocation)));
+      // on 303 change method to GET
+      if (statusCode == HttpStatusCodes.STATUS_CODE_SEE_OTHER) {
+        setRequestMethod(HttpMethods.GET);
+        // GET requests do not support non-zero content length
+        setContent(null);
+      }
+      headers.setAuthorization((String) null);
+      headers.setIfMatch((String) null);
+      headers.setIfNoneMatch((String) null);
+      headers.setIfModifiedSince((String) null);
+      headers.setIfUnmodifiedSince((String) null);
+      headers.setIfRange((String) null);
+      return true;
+    }
+    return false;
+  }
+

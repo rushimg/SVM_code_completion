@@ -1,0 +1,20 @@
+    protected Object[] createItemArray(CategoryDataset dataset, int series,
+                                       int item) {
+        Object[] result = new Object[8];
+        result[0] = dataset.getRowKey(series);
+        Number y = dataset.getValue(series, item);
+        NumberFormat formatter = getNumberFormat();
+        result[1] = formatter.format(y);
+        if (dataset instanceof BoxAndWhiskerCategoryDataset) {
+            BoxAndWhiskerCategoryDataset d
+                = (BoxAndWhiskerCategoryDataset) dataset;
+            result[2] = formatter.format(d.getMeanValue(series, item));
+            result[3] = formatter.format(d.getMedianValue(series, item));
+            result[4] = formatter.format(d.getMinRegularValue(series, item));
+            result[5] = formatter.format(d.getMaxRegularValue(series, item));
+            result[6] = formatter.format(d.getQ1Value(series, item));
+            result[7] = formatter.format(d.getQ3Value(series, item));
+        }
+        return result;
+    }
+

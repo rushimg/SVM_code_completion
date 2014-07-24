@@ -1,0 +1,27 @@
+  private static final boolean DBG = false;
+
+  public static final int IGNORE = 0;
+  public static final int ACCEPT = 1;
+
+  public String match() {
+    return yytext();
+  }
+
+  private static void reportError(String yytext) {
+    try {
+      PrintWriter p = new PrintWriter(new OutputStreamWriter(System.err,
+                                                "GB18030"), true);
+      p.println("chtbl.flex tokenization error: \"" + yytext + "\"");
+      if (yytext.length() >= 1) {
+	p.println("First character is: " + yytext.charAt(0));
+	if (yytext.length() >= 2) {
+	  p.println("Second character is: " + yytext.charAt(1));
+        }
+      }		
+    } catch (UnsupportedEncodingException e) {
+      System.err.println("chtbl.flex tokenization and encoding present error");
+    }
+  }
+
+
+

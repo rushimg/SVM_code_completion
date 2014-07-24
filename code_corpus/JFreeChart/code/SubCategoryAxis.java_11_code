@@ -1,0 +1,28 @@
+    public AxisState draw(Graphics2D g2,
+                          double cursor,
+                          Rectangle2D plotArea,
+                          Rectangle2D dataArea,
+                          RectangleEdge edge,
+                          PlotRenderingInfo plotState) {
+
+        // if the axis is not visible, don't draw it...
+        if (!isVisible()) {
+            return new AxisState(cursor);
+        }
+
+        if (isAxisLineVisible()) {
+            drawAxisLine(g2, cursor, dataArea, edge);
+        }
+
+        // draw the category labels and axis label
+        AxisState state = new AxisState(cursor);
+        state = drawSubCategoryLabels(g2, plotArea, dataArea, edge, state, 
+                plotState);
+        state = drawCategoryLabels(g2, plotArea, dataArea, edge, state,
+                plotState);
+        state = drawLabel(getLabel(), g2, plotArea, dataArea, edge, state);
+
+        return state;
+
+    }
+

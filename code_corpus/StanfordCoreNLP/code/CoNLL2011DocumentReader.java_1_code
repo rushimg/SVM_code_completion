@@ -1,0 +1,352 @@
+          String corefId = corefSpan.third();
+          CoreMap mention = ChunkAnnotationUtils.getAnnotatedChunk(sentence, startToken, endToken+1);
+          mention.set(CorefCoreAnnotations.CorefAnnotation.class, corefId);
+          mention.set(CoreAnnotations.SentenceIndexAnnotation.class, sentence.get(CoreAnnotations.SentenceIndexAnnotation.class));
+          corefChainMap.add(corefId, mention);
+          Tree t = getTreeNonTerminal(tree, startToken, endToken, true);
+          mention.set(TreeCoreAnnotations.TreeAnnotation.class, t);
+          if (options.annotateTreeCoref) {
+            Label tlabel = t.label();
+            if (tlabel instanceof CoreLabel) {
+              ((CoreLabel) tlabel).set(CorefMentionAnnotation.class, mention);
+            }
+          }
+        }
+
+      }
+      document.corefChainMap = corefChainMap;
+      document.nerChunks = nerChunks;
+    }
+
+    private static final String docStart = "#begin document ";
+    private static final int docStartLength = docStart.length();
+
+    public Document readNextDocument() {
+      try {
+        List<String[]> curSentWords = new ArrayList<String[]>();
+        Document document = null;
+        for (String line; (line = br.readLine()) != null; ) {
+          lineCnt++;
+          line = line.trim();
+          if (line.length() != 0) {
+            if (line.startsWith(docStart)) {
+              // Start of new document
+              if (document != null) {
+                logger.warning("Unexpected begin document at line (\" + filename + \",\" + lineCnt + \")");
+              }
+              document = new Document();
+              document.documentIdPart = line.substring(docStartLength);
+            } else if (line.startsWith("#end document")) {
+              annotateDocument(document);
+              docCnt++;
+              return document;
+              // End of document
+            } else {
+              assert document != null;
+              String[] fields = delimiterPattern.split(line);
+              if (fields.length < FIELDS_MIN) {
+                throw new RuntimeException("Unexpected number of field " + fields.length +
+                        ", expected >= " + FIELDS_MIN + " for line (" + filename + "," + lineCnt + "): " + line);
+              }
+              String curDocId = fields[FIELD_DOC_ID];
+              String partNo = fields[FIELD_PART_NO];
+              if (document.getDocumentID() == null) {
+                document.setDocumentID(curDocId);
+                document.setPartNo(partNo);
+              } else {
+                // Check documentID didn't suddenly change on us
+                assert(document.getDocumentID().equals(curDocId));
+                assert(document.getPartNo().equals(partNo));
+              }
+              curSentWords.add(fields);
+            }
+          } else {
+            // Current sentence has ended, new sentence is about to be started
+            if (curSentWords.size() > 0) {
+              assert document != null;
+              document.addSentence(curSentWords);
+              curSentWords = new ArrayList<String[]>();
+            }
+          }
+        }
+      } catch (IOException ex) {
+        throw new RuntimeIOException(ex);
+      }
+      return null;
+    }
+
+    public void close() {
+      IOUtils.closeIgnoringExceptions(br);
+    }
+
+  } // end static class DocumentIterator
+
+  public static void usage()
+  {
+    System.err.println("java edu.stanford.nlp.dcoref.CoNLL2011DocumentReader [-ext <extension to match>] -i <inputpath> -o <outputfile>");
+  }
+
+  public static Pair<Integer,Integer> getMention(Integer index, String corefG, List<CoreLabel> sentenceAnno) {
+
+    Integer i = -1;
+    Integer end = index;
+    for (CoreLabel newAnno : sentenceAnno) {
+      i += 1;
+      if (i > index) {
+        String corefS = newAnno.get(CorefCoreAnnotations.CorefAnnotation.class);
+        if (corefS != null) {
+          String[] allC = corefS.split("\\|");
+          if (Arrays.asList(allC).contains(corefG)) {
+            end = i;
+          } else {
+            break;
+          }
+        } else {
+          break;
+        }
+      }
+    }
+    return Pair.makePair(index, end);
+  }
+
+  public static boolean include(Map<Pair<Integer,Integer>,String> sentenceInfo,
+                                Pair<Integer,Integer> mention,
+                                String corefG) {
+    Set<Pair<Integer,Integer>> keys = sentenceInfo.keySet();
+    for (Pair<Integer, Integer> key : keys) {
+      String corefS = sentenceInfo.get(key);
+      if (corefS != null && corefS.equals(corefG)) {
+        if (key.first < mention.first && key.second.equals(mention.second)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  public static void writeTabSep(PrintWriter pw, CoreMap sentence, CollectionValuedMap<String,CoreMap> chainmap)
+  {
+    HeadFinder headFinder = new ModCollinsHeadFinder();
+
+    List<CoreLabel> sentenceAnno = sentence.get(CoreAnnotations.TokensAnnotation.class);
+
+    Tree sentenceTree = sentence.get(TreeCoreAnnotations.TreeAnnotation.class);
+    Map<Pair<Integer,Integer>,String> sentenceInfo = Generics.newHashMap();
+
+    Set<Tree> sentenceSubTrees = sentenceTree.subTrees();
+    sentenceTree.setSpans();
+    Map<Pair<Integer,Integer>,Tree> treeSpanMap = Generics.newHashMap();
+    Map<Pair<Integer,Integer>,List<Tree>> wordSpanMap = Generics.newHashMap();
+
+    for (Tree ctree : sentenceSubTrees) {
+      IntPair span = ctree.getSpan();
+      if (span != null) {
+        treeSpanMap.put(Pair.makePair(span.getSource(), span.getTarget()), ctree);
+        wordSpanMap.put(Pair.makePair(span.getSource(), span.getTarget()), ctree.getLeaves());
+      }
+    }
+
+    String[][] finalSentence;
+    finalSentence = new String [sentenceAnno.size()][];
+    Map<Pair<Integer,Integer>,String> allHeads = Generics.newHashMap();
+
+    int index = -1;
+    for (CoreLabel newAnno : sentenceAnno) {
+      index += 1;
+      String word = newAnno.word();
+      String tag = newAnno.tag();
+      String cat = newAnno.ner();
+      String coref = newAnno.get(CorefCoreAnnotations.CorefAnnotation.class);
+      finalSentence[index] = new String[4];
+      finalSentence[index][0] = word;
+      finalSentence[index][1] = tag;
+      finalSentence[index][2] = cat;
+      finalSentence[index][3] = coref;
+
+      if (coref == null) {
+        sentenceInfo.put(Pair.makePair(index, index), coref);
+        finalSentence[index][3] = "O";
+
+      } else {
+        String[] allC = coref.split("\\|");
+        for (String corefG : allC) {
+          Pair<Integer, Integer> mention = getMention(index, corefG, sentenceAnno);
+
+          if ( ! include(sentenceInfo, mention, corefG)) {
+            // find largest NP in mention
+            sentenceInfo.put(mention, corefG);
+            Tree mentionTree = treeSpanMap.get(mention);
+            String head = null;
+            if (mentionTree != null) {
+              head = mentionTree.headTerminal(headFinder).nodeString();
+            } else if (mention.first.equals(mention.second)) {
+              head = word;
+            }
+            allHeads.put(mention, head);
+          }
+        }
+
+        if (allHeads.values().contains(word)) {
+          finalSentence[index][3] = "MENTION";
+        } else {
+          finalSentence[index][3] = "O";
+        }
+      }
+    }
+    for (int i=0;i<finalSentence.length;i++){
+      String[] wordInfo = finalSentence[i];
+      if (i<finalSentence.length-1){
+        String[] nextWordInfo = finalSentence[i+1];
+        if (nextWordInfo[3].equals("MENTION") && nextWordInfo[0].equals("'s")){
+          wordInfo[3] = "MENTION";
+          finalSentence[i+1][3] = "O";
+        }
+      }
+      pw.println(wordInfo[0] + "\t" + wordInfo[1] + "\t" + wordInfo[2] + "\t" + wordInfo[3]);
+    }
+
+    pw.println("");
+
+  }
+
+  public static class CorpusStats
+  {
+    IntCounter<String> mentionTreeLabelCounter = new IntCounter<String>();
+    IntCounter<String> mentionTreeNonPretermLabelCounter = new IntCounter<String>();
+    IntCounter<String> mentionTreePretermNonPretermNoMatchLabelCounter = new IntCounter<String>();
+    IntCounter<String> mentionTreeMixedLabelCounter = new IntCounter<String>();
+    IntCounter<Integer> mentionTokenLengthCounter = new IntCounter<Integer>();
+    IntCounter<Integer> nerMentionTokenLengthCounter = new IntCounter<Integer>();
+    int mentionExactTreeSpan = 0;
+    int nonPretermSpanMatches = 0;
+    int totalMentions = 0;
+    int nestedNerMentions = 0;
+    int nerMentions = 0;
+
+    public void process(Document doc)
+    {
+      List<CoreMap> sentences = doc.getAnnotation().get(CoreAnnotations.SentencesAnnotation.class);
+      for (String id:doc.corefChainMap.keySet()) {
+        Collection<CoreMap> mentions = doc.corefChainMap.get(id);
+        for (CoreMap m:mentions) {
+          CoreMap sent = sentences.get(m.get(CoreAnnotations.SentenceIndexAnnotation.class));
+          Tree root = sent.get(TreeCoreAnnotations.TreeAnnotation.class);
+          Tree t = m.get(TreeCoreAnnotations.TreeAnnotation.class);
+          Tree npt = t;
+          Tree npt2 = t;
+          if (npt.isPreTerminal()) {
+            npt = npt.parent(root);
+          }
+          int sentTokenStart = sent.get(CoreAnnotations.TokenBeginAnnotation.class);
+          int tokenStart = m.get(CoreAnnotations.TokenBeginAnnotation.class) - sentTokenStart;
+          int tokenEnd = m.get(CoreAnnotations.TokenEndAnnotation.class) - sentTokenStart;
+          int length = tokenEnd - tokenStart;
+          mentionTokenLengthCounter.incrementCount(length);
+          // Check if exact span
+          IntPair span = t.getSpan();
+          if (span != null) {
+            if (span.getSource() == tokenStart && span.getTarget() == tokenEnd - 1) {
+              mentionExactTreeSpan++;
+            } else {
+              logger.info("Tree span is " + span + ", tree node is " + t);
+              logger.info("Mention span is " + tokenStart + " " + (tokenEnd - 1) + ", mention is " + m);
+            }
+          } else {
+            logger.warning("No span for " + t);
+          }
+          IntPair nptSpan = npt.getSpan();
+          if (nptSpan.getSource() == tokenStart && nptSpan.getTarget() == tokenEnd - 1) {
+            nonPretermSpanMatches++;
+            npt2 = npt;
+          } else {
+            mentionTreePretermNonPretermNoMatchLabelCounter.incrementCount(t.label().value());
+            logger.info("NPT: Tree span is " + span + ", tree node is " + npt);
+            logger.info("NPT: Mention span is " + tokenStart + " " + (tokenEnd - 1) + ", mention is " + m);
+            Label tlabel = t.label();
+            if (tlabel instanceof CoreLabel) {
+              CoreMap mention = ((CoreLabel) tlabel).get(CorefMentionAnnotation.class);
+              String corefClusterId = mention.get(CorefCoreAnnotations.CorefAnnotation.class);
+              Collection<CoreMap> clusteredMentions = doc.corefChainMap.get(corefClusterId);
+              for (CoreMap m2:clusteredMentions) {
+                logger.info("NPT: Clustered mention " + m2.get(CoreAnnotations.TextAnnotation.class));
+              }
+            }
+
+          }
+          totalMentions++;
+          mentionTreeLabelCounter.incrementCount(t.label().value());
+          mentionTreeNonPretermLabelCounter.incrementCount(npt.label().value());
+          mentionTreeMixedLabelCounter.incrementCount(npt2.label().value());
+          Label tlabel = t.label();
+          if (tlabel instanceof CoreLabel) {
+            if (((CoreLabel) tlabel).containsKey(NamedEntityAnnotation.class)) {
+              // walk up tree
+              nerMentions++;
+              nerMentionTokenLengthCounter.incrementCount(length);
+
+              Tree parent = t.parent(root);
+              while (parent != null) {
+                Label plabel = parent.label();
+                if (plabel instanceof CoreLabel) {
+                  if (((CoreLabel) plabel).containsKey(NamedEntityAnnotation.class)) {
+                    logger.info("NER Mention: " + m);
+                    CoreMap parentNerChunk = ((CoreLabel) plabel).get(NamedEntityAnnotation.class);
+                    logger.info("Nested inside NER Mention: " + parentNerChunk);
+                    logger.info("Nested inside NER Mention parent node: " + parent);
+                    nestedNerMentions++;
+                    break;
+                  }
+                }
+                parent = parent.parent(root);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    private static void appendFrac(StringBuilder sb, String label, int num, int den)
+    {
+      double frac = ((double) num)/ den;
+      sb.append(label).append("\t").append(frac).append("\t(").append(num).append("/").append(den).append(")");
+    }
+
+    private static <E> void appendIntCountStats(StringBuilder sb, String label, IntCounter<E> counts)
+    {
+      sb.append(label).append("\n");
+      List<E> sortedKeys = Counters.toSortedList(counts);
+      int total = counts.totalIntCount();
+      for (E key:sortedKeys) {
+        int count = counts.getIntCount(key);
+        appendFrac(sb, key.toString(), count, total);
+        sb.append("\n");
+      }
+    }
+
+    public String toString()
+    {
+      StringBuilder sb = new StringBuilder();
+      appendIntCountStats(sb, "Mention Tree Labels (no preterminals)", mentionTreeNonPretermLabelCounter);
+      sb.append("\n");
+      appendIntCountStats(sb, "Mention Tree Labels (with preterminals)", mentionTreeLabelCounter);
+      sb.append("\n");
+      appendIntCountStats(sb, "Mention Tree Labels (preterminals with parent span not match)", mentionTreePretermNonPretermNoMatchLabelCounter);
+      sb.append("\n");
+      appendIntCountStats(sb, "Mention Tree Labels (mixed)", mentionTreeMixedLabelCounter);
+      sb.append("\n");
+      appendIntCountStats(sb, "Mention Lengths", mentionTokenLengthCounter);
+      sb.append("\n");
+      appendFrac(sb, "Mention Exact Non Preterm Tree Span", nonPretermSpanMatches, totalMentions);
+      sb.append("\n");
+      appendFrac(sb, "Mention Exact Tree Span", mentionExactTreeSpan, totalMentions);
+      sb.append("\n");
+      appendFrac(sb, "NER", nerMentions, totalMentions);
+      sb.append("\n");
+      appendFrac(sb, "Nested NER", nestedNerMentions, totalMentions);
+      sb.append("\n");
+      appendIntCountStats(sb, "NER Mention Lengths", nerMentionTokenLengthCounter);
+      return sb.toString();
+    }
+
+  }
+

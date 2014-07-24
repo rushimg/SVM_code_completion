@@ -1,0 +1,53 @@
+  @Override
+  public void addAll(Map<K, V> m) {
+    for (Map.Entry<K, V> e : m.entrySet()) {
+      add(e.getKey(), e.getValue());
+    }
+  }
+
+  @Override
+  public Collection<V> remove(Object key) {
+    Collection<V> result = get(key);
+    deltaMap.put(ErasureUtils.<K>uncheckedCast(key), ErasureUtils.<Collection<V>>uncheckedCast(removedValue));
+    return result;
+  }
+
+  @Override
+  public void removeMapping(K key, V value) {
+    Collection<V> deltaC = deltaMap.get(key);
+    if (deltaC == null) {
+      Collection<V> originalC = originalMap.get(key);
+      if (originalC != null && originalC.contains(value)) {
+        deltaC = cf.newCollection();
+        deltaC.addAll(originalC);
+        deltaMap.put(key, deltaC);
+      }
+    }
+    if (deltaC != null) {
+      deltaC.remove(value);
+    }
+  }
+
+  @Override
+  public boolean containsKey(Object key) {
+    // key could be not in original or in deltaMap
+    // key could be not in original but in deltaMap
+    // key could be in original but removed from deltaMap
+    // key could be in original but mapped to something else in deltaMap
+    Object value = deltaMap.get(key);
+    if (value == null) {
+      return originalMap.containsKey(key);
+    }
+    if (value == removedValue) {
+      return false;
+    }
+    return true;
+  }
+
+  @Override
+  public boolean containsValue(Object value) {
+    throw new UnsupportedOperationException();
+  }
+
+  // Bulk Operations
+

@@ -1,0 +1,161 @@
+public class ChineseMarkovWordSegmenter implements WordSegmenter {
+
+  private Distribution<String> initialPOSDist;
+  private Map<String, Distribution> markovPOSDists;
+  private ChineseCharacterBasedLexicon lex;
+  private Set<String> POSes;
+
+  private final Index<String> wordIndex;
+  private final Index<String> tagIndex;
+
+  public ChineseMarkovWordSegmenter(ChineseCharacterBasedLexicon lex, 
+                                    Index<String> wordIndex,
+                                    Index<String> tagIndex) {
+    this.lex = lex;
+    this.wordIndex = wordIndex;
+    this.tagIndex = tagIndex;
+  }
+
+  public ChineseMarkovWordSegmenter(ChineseTreebankParserParams params,
+                                    Index<String> wordIndex,
+                                    Index<String> tagIndex) {
+    lex = new ChineseCharacterBasedLexicon(params, wordIndex, tagIndex);
+    this.wordIndex = wordIndex;
+    this.tagIndex = tagIndex;
+  }
+
+  // Only used at training time
+  private transient ClassicCounter<String> initial;
+  private transient GeneralizedCounter ruleCounter;
+
+  @Override
+  public void initializeTraining(double numTrees) {
+    lex.initializeTraining(numTrees);
+
+    this.initial = new ClassicCounter<String>();
+    this.ruleCounter = new GeneralizedCounter(2);
+  }
+
+  @Override
+  public void train(Collection<Tree> trees) {
+    for (Tree tree : trees) {
+      train(tree);
+    }
+  }
+
+  @Override
+  public void train(Tree tree) {
+    train(tree.taggedYield());
+  }
+
+  @Override
+  public void train(List<TaggedWord> sentence) {
+    lex.train(sentence, 1.0);
+    
+    String last = null;
+    for (TaggedWord tagLabel : sentence) {
+      String tag = tagLabel.tag();
+      tagIndex.add(tag);
+      if (last == null) {
+        initial.incrementCount(tag);
+      } else {
+        ruleCounter.incrementCount2D(last, tag);
+      }
+      last = tag;
+    }
+  }
+
+  @Override
+  public void finishTraining() {
+    lex.finishTraining();
+
+    int numTags = tagIndex.size();
+    POSes = Generics.newHashSet(tagIndex.objectsList());
+    initialPOSDist = Distribution.laplaceSmoothedDistribution(initial, numTags, 0.5);
+    markovPOSDists = Generics.newHashMap();
+    Set entries = ruleCounter.lowestLevelCounterEntrySet();
+    for (Iterator iter = entries.iterator(); iter.hasNext();) {
+      Map.Entry entry = (Map.Entry) iter.next();
+      //      Map.Entry<List<String>, Counter> entry = (Map.Entry<List<String>, Counter>) iter.next();
+      Distribution d = Distribution.laplaceSmoothedDistribution((ClassicCounter) entry.getValue(), numTags, 0.5);
+      markovPOSDists.put(((List<String>) entry.getKey()).get(0), d);
+    }
+  }
+
+  public List<HasWord> segment(String s) {
+    return segmentWordsWithMarkov(s);
+  }
+
+  // CDM 2007: I wonder what this does differently from segmentWordsWithMarkov???
+  private ArrayList<TaggedWord> basicSegmentWords(String s) {
+    // We don't want to accidentally register words that we don't know
+    // about in the wordIndex, so we wrap it with a DeltaIndex
+    DeltaIndex<String> deltaWordIndex = new DeltaIndex<String>(wordIndex);
+    int length = s.length();
+    //    Set<String> POSes = (Set<String>) POSDistribution.keySet();  // 1.5
+    // best score of span
+    double[][] scores = new double[length][length + 1];
+    // best (last index of) first word for this span
+    int[][] splitBacktrace = new int[length][length + 1];
+    // best tag for word over this span
+    int[][] POSbacktrace = new int[length][length + 1];
+    for (int i = 0; i < length; i++) {
+      Arrays.fill(scores[i], Double.NEGATIVE_INFINITY);
+    }
+    // first fill in word probabilities
+    for (int diff = 1; diff <= 10; diff++) {
+      for (int start = 0; start + diff <= length; start++) {
+        int end = start + diff;
+        StringBuilder wordBuf = new StringBuilder();
+        for (int pos = start; pos < end; pos++) {
+          wordBuf.append(s.charAt(pos));
+        }
+        String word = wordBuf.toString();
+        //        for (String tag : POSes) {  // 1.5
+        for (Iterator<String> iter = POSes.iterator(); iter.hasNext();) {
+          String tag = iter.next();
+          IntTaggedWord itw = new IntTaggedWord(word, tag, deltaWordIndex, tagIndex);
+          double newScore = lex.score(itw, 0, word, null) + Math.log(lex.getPOSDistribution().probabilityOf(tag));
+          if (newScore > scores[start][end]) {
+            scores[start][end] = newScore;
+            splitBacktrace[start][end] = end;
+            POSbacktrace[start][end] = itw.tag();
+          }
+        }
+      }
+    }
+    // now fill in word combination probabilities
+    for (int diff = 2; diff <= length; diff++) {
+      for (int start = 0; start + diff <= length; start++) {
+        int end = start + diff;
+        for (int split = start + 1; split < end && split - start <= 10; split++) {
+          if (splitBacktrace[start][split] != split) {
+            continue; // only consider words on left
+          }
+          double newScore = scores[start][split] + scores[split][end];
+          if (newScore > scores[start][end]) {
+            scores[start][end] = newScore;
+            splitBacktrace[start][end] = split;
+          }
+        }
+      }
+    }
+
+    List<TaggedWord> words = new ArrayList<TaggedWord>();
+    int start = 0;
+    while (start < length) {
+      int end = splitBacktrace[start][length];
+      StringBuilder wordBuf = new StringBuilder();
+      for (int pos = start; pos < end; pos++) {
+        wordBuf.append(s.charAt(pos));
+      }
+      String word = wordBuf.toString();
+      String tag = tagIndex.get(POSbacktrace[start][end]);
+
+      words.add(new TaggedWord(word, tag));
+      start = end;
+    }
+
+    return new ArrayList<TaggedWord>(words);
+  }
+

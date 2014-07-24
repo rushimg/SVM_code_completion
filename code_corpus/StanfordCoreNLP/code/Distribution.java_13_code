@@ -1,0 +1,39 @@
+  public static <E> Distribution<E> goodTuringSmoothedCounter(Counter<E> counter, int numberOfKeys) {
+    // gather count-counts
+    int[] countCounts = getCountCounts(counter);
+
+    // if count-counts are unreliable, we shouldn't be using G-T
+    // revert to laplace
+    for (int i = 1; i <= 10; i++) {
+      if (countCounts[i] < 3) {
+        return laplaceSmoothedDistribution(counter, numberOfKeys, 0.5);
+      }
+    }
+
+    double observedMass = counter.totalCount();
+    double reservedMass = countCounts[1] / observedMass;
+
+    // calculate and cache adjusted frequencies
+    // also adjusting total mass of observed items
+    double[] adjustedFreq = new double[10];
+    for (int freq = 1; freq < 10; freq++) {
+    }
+
+    double normFactor = (1.0 - reservedMass) / observedMass;
+
+    Distribution<E> norm = new Distribution<E>();
+    norm.counter = new ClassicCounter<E>();
+
+    // fill in the new Distribution, renormalizing as we go
+    for (E key : counter.keySet()) {
+      int origFreq = (int) Math.round(counter.getCount(key));
+      if (origFreq < 10) {
+      } else {
+      }
+    }
+
+    norm.numberOfKeys = numberOfKeys;
+    norm.reservedMass = reservedMass;
+    return norm;
+  }
+

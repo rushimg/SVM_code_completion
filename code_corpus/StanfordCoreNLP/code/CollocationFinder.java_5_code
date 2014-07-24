@@ -1,0 +1,77 @@
+  public Tree getMangledTree() {
+    return getMangledTree(qTree);
+  }
+
+  private Tree getMangledTree(Tree t) {
+    Collocation matchingColl = null;
+    for (Tree child : t.children()) {
+      child = getMangledTree(child);
+    }
+    //boolean additionalCollocationsExist = false;
+    for (Collocation c : collocationCollector) {
+      // if there are multiple collocations with the same parent node,
+      // this will take the longer one
+      if (t.equals(c.parentNode)) {
+        if (matchingColl == null ||
+            (c.span.first() <= matchingColl.span.first() &&
+                c.span.second() >= matchingColl.span.second())) {
+          matchingColl = c;
+          if (DEBUG) {
+            err.println("Found matching collocation for tree:");
+            t.pennPrint();
+            err.print("  head label: " + c.headLabel);
+            err.println("; collocation string: " + c.collocationString);
+            err.println("  Constituents: "+ c.indicesOfConstituentChildren);
+          }
+        }
+      }
+    }
+
+    if (matchingColl == null) {
+      return t;
+    } else {
+      if (DEBUG) {
+        err.println("Collapsing " + matchingColl);
+      }
+      Tree[] allChildren = t.children();
+      // get the earliest child in the collocation and store it as first child.
+      // delete the rest.
+      StringBuffer mutatedString = new StringBuffer(160);
+      for (int i : matchingColl.indicesOfConstituentChildren) {
+        String strToAppend = mergeLeavesIntoCollocatedString(allChildren[i]);
+        mutatedString.append(strToAppend);
+        mutatedString.append("_");
+      }
+      mutatedString = mutatedString.deleteCharAt(mutatedString.length() - 1);
+
+      // Starting with the latest constituent, delete all the "pruned" children
+      if (DEBUG) { err.println("allChildren is: " + Arrays.toString(allChildren)); }
+      for (int index = matchingColl.indicesOfConstituentChildren.size() - 1; index > 0; index--) {
+        int thisConstituent = matchingColl.indicesOfConstituentChildren.get(index);
+        allChildren = (Tree[]) ArrayUtils.removeAt(allChildren, thisConstituent);
+        if (DEBUG) { err.println(" deleted " + thisConstituent + "; allChildren is: " + Arrays.toString(allChildren)); }
+      }
+      //name for the leaf string of our new collocation
+      String newNodeString = mutatedString.toString();
+
+      int firstChildIndex = matchingColl.indicesOfConstituentChildren.get(0);
+      //now we mutate the earliest constituent
+      Tree newCollocationChild = allChildren[firstChildIndex];
+      if (DEBUG) err.println("Manipulating: " + newCollocationChild);
+      newCollocationChild.setValue(matchingColl.headLabel.value());
+      Tree newCollocationLeaf = newCollocationChild.treeFactory().newLeaf(newNodeString);
+      newCollocationChild.setChildren(Collections.singletonList(newCollocationLeaf));
+      if (DEBUG) err.println("  changed to: " + newCollocationChild);
+
+      allChildren[firstChildIndex] = newCollocationChild;
+      t.setChildren(allChildren);
+
+      if (DEBUG) {
+        err.println("Restructured tree is:");
+        t.pennPrint();
+        err.println();
+      }
+      return t;
+    }
+  }
+

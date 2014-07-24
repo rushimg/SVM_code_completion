@@ -1,0 +1,19 @@
+    public static <V, E> boolean isEulerian(UndirectedGraph<V, E> g)
+    {
+        // If the graph is not connected, then no Eulerian circuit exists
+        if (!(new ConnectivityInspector<V, E>(g)).isGraphConnected()) {
+            return false;
+        }
+
+        // A graph is Eulerian if and only if all vertices have even degree
+        // So, this code will check for that
+        Iterator<V> iter = g.vertexSet().iterator();
+        while (iter.hasNext()) {
+            V v = iter.next();
+            if ((g.degreeOf(v) % 2) == 1) {
+                return false;
+            }
+        }
+        return true;
+    }
+

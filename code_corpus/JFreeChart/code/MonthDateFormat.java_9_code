@@ -1,0 +1,27 @@
+    public MonthDateFormat(TimeZone zone, Locale locale, int chars,
+                           boolean[] showYear, DateFormat yearFormatter) {
+        if (locale == null) {
+            throw new IllegalArgumentException("Null 'locale' argument.");
+        }
+        DateFormatSymbols dfs = new DateFormatSymbols(locale);
+        String[] monthsFromLocale = dfs.getMonths();
+        this.months = new String[12];
+        for (int i = 0; i < 12; i++) {
+            if (chars > 0) {
+                this.months[i] = monthsFromLocale[i].substring(0,
+                        Math.min(chars, monthsFromLocale[i].length()));
+            }
+            else {
+                this.months[i] = monthsFromLocale[i];
+            }
+        }
+        this.calendar = new GregorianCalendar(zone);
+        this.showYear = showYear;
+        this.yearFormatter = yearFormatter;
+
+        // the following is never used, but it seems that DateFormat requires
+        // it to be non-null.  It isn't well covered in the spec, refer to
+        // bug parade 5061189 for more info.
+        this.numberFormat = NumberFormat.getNumberInstance();
+    }
+

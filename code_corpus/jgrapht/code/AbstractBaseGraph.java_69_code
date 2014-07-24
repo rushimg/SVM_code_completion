@@ -1,0 +1,32 @@
+        public Set<E> getAllEdges(V sourceVertex, V targetVertex)
+        {
+            Set<E> edges = null;
+
+            if (containsVertex(sourceVertex)
+                && containsVertex(targetVertex))
+            {
+                edges = new ArrayUnenforcedSet<E>();
+
+                Iterator<E> iter =
+                    getEdgeContainer(sourceVertex).vertexEdges.iterator();
+
+                while (iter.hasNext()) {
+                    E e = iter.next();
+
+                    boolean equalStraight =
+                        sourceVertex.equals(getEdgeSource(e))
+                        && targetVertex.equals(getEdgeTarget(e));
+
+                    boolean equalInverted =
+                        sourceVertex.equals(getEdgeTarget(e))
+                        && targetVertex.equals(getEdgeSource(e));
+
+                    if (equalStraight || equalInverted) {
+                        edges.add(e);
+                    }
+                }
+            }
+
+            return edges;
+        }
+

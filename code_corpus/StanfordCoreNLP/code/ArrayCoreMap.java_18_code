@@ -1,0 +1,35 @@
+  public String toShortString(char separator, String... what) {
+    StringBuilder s = new StringBuilder();
+    for (int i = 0; i < size; i++) {
+      boolean include;
+      if (what.length > 0) {
+        String name = keys[i].getSimpleName();
+        int annoIdx = name.lastIndexOf("Annotation");
+        if (annoIdx >= 0) {
+          name = name.substring(0, annoIdx);
+        }
+        include = false;
+        for (String item : what) {
+          if (item.equals(name)) {
+            include = true;
+            break;
+          }
+        }
+      } else {
+        include = true;
+      }
+      if (include) {
+        if (s.length() > 0) {
+          s.append(separator);
+        }
+        s.append(values[i]);
+      }
+    }
+    String answer = s.toString();
+    if (answer.indexOf(' ') < 0) {
+      return answer;
+    } else {
+      return '{' + answer + '}';
+    }
+  }
+

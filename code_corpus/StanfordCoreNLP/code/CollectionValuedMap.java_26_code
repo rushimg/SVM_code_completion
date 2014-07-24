@@ -1,0 +1,15 @@
+  public CollectionValuedMap(CollectionValuedMap<K, V> cvm) {
+    this.mf = cvm.mf;
+    this.cf = cvm.cf;
+    this.treatCollectionsAsImmutable = cvm.treatCollectionsAsImmutable;
+    this.emptyValue = cvm.emptyValue;
+    map = Collections.synchronizedMap(mf.newMap());
+    for (Map.Entry<K, Collection<V>> entry : cvm.map.entrySet()) {
+      K key = entry.getKey();
+      Collection<V> c = entry.getValue();
+      for (V value : c) {
+        add(key, value);
+      }
+    }
+  }
+

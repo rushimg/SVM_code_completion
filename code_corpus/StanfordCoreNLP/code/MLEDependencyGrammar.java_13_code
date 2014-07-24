@@ -1,0 +1,188 @@
+  protected double probTB(IntDependency dependency) {
+    if (verbose) {
+      // System.out.println("tagIndex: " + tagIndex);
+      System.err.println("Generating " + dependency);
+    }
+
+    boolean leftHeaded = dependency.leftHeaded && directional;
+
+    int hW = dependency.head.word;
+    int aW = dependency.arg.word;
+    short hT = dependency.head.tag;
+    short aT = dependency.arg.tag;
+
+    IntTaggedWord aTW = dependency.arg;
+    IntTaggedWord hTW = dependency.head;
+
+    boolean isRoot = rootTW(dependency.head);
+    double pb_stop_hTWds;
+    if (isRoot) {
+      pb_stop_hTWds = 0.0;
+    } else {
+      pb_stop_hTWds = getStopProb(dependency);
+    }
+
+    if (dependency.arg.word == STOP_WORD_INT) {
+      // did we generate stop?
+      return pb_stop_hTWds;
+    }
+
+    double pb_go_hTWds = 1.0 - pb_stop_hTWds;
+
+    // generate the argument
+
+    short binDistance = valenceBin(dependency.distance);
+
+    // KEY:
+    // c_     count of (read as joint count of first and second)
+    // p_     MLE prob of (or MAP if useSmoothTagProjection)
+    // pb_    MAP prob of (read as prob of first given second thing)
+    // a      arg
+    // h      head
+    // T      tag
+    // PT     projected tag
+    // W      word
+    // d      direction
+    // ds     distance (implicit: there when direction is mentioned!)
+
+    IntTaggedWord anyHead = new IntTaggedWord(ANY_WORD_INT, dependency.head.tag);
+    IntTaggedWord anyArg = new IntTaggedWord(ANY_WORD_INT, dependency.arg.tag);
+    IntTaggedWord anyTagArg = new IntTaggedWord(dependency.arg.word, ANY_TAG_INT);
+
+    IntDependency temp = new IntDependency(dependency.head, dependency.arg, leftHeaded, binDistance);
+    double c_aTW_hTWd = argCounter.getCount(temp);
+    temp = new IntDependency(dependency.head, anyArg, leftHeaded, binDistance);
+    double c_aT_hTWd = argCounter.getCount(temp);
+    temp = new IntDependency(dependency.head, wildTW, leftHeaded, binDistance);
+    double c_hTWd = argCounter.getCount(temp);
+
+    temp = new IntDependency(anyHead, dependency.arg, leftHeaded, binDistance);
+    double c_aTW_hTd = argCounter.getCount(temp);
+    temp = new IntDependency(anyHead, anyArg, leftHeaded, binDistance);
+    double c_aT_hTd = argCounter.getCount(temp);
+    temp = new IntDependency(anyHead, wildTW, leftHeaded, binDistance);
+    double c_hTd = argCounter.getCount(temp);
+
+    // for smooth tag projection
+    short aPT = Short.MIN_VALUE;
+    double c_aPTW_hPTd = Double.NaN;
+    double c_aPT_hPTd = Double.NaN;
+    double c_hPTd = Double.NaN;
+    double c_aPTW_aPT = Double.NaN;
+    double c_aPT = Double.NaN;
+
+    if (useSmoothTagProjection) {
+      aPT = tagProject(dependency.arg.tag);
+      short hPT = tagProject(dependency.head.tag);
+      
+      IntTaggedWord projectedArg = new IntTaggedWord(dependency.arg.word, aPT);
+      IntTaggedWord projectedAnyHead = new IntTaggedWord(ANY_WORD_INT, hPT);
+      IntTaggedWord projectedAnyArg = new IntTaggedWord(ANY_WORD_INT, aPT);
+
+      temp = new IntDependency(projectedAnyHead, projectedArg, leftHeaded, binDistance);
+      c_aPTW_hPTd = argCounter.getCount(temp);
+      temp = new IntDependency(projectedAnyHead, projectedAnyArg, leftHeaded, binDistance);
+      c_aPT_hPTd = argCounter.getCount(temp);
+      temp = new IntDependency(projectedAnyHead, wildTW, leftHeaded, binDistance);
+      c_hPTd = argCounter.getCount(temp);
+
+      temp = new IntDependency(wildTW, projectedArg, false, ANY_DISTANCE_INT);
+      c_aPTW_aPT = argCounter.getCount(temp);
+      temp = new IntDependency(wildTW, projectedAnyArg, false, ANY_DISTANCE_INT);
+      c_aPT = argCounter.getCount(temp);
+    }
+
+    // wild head is always directionless and no use distance
+    temp = new IntDependency(wildTW, dependency.arg, false, ANY_DISTANCE_INT);
+    double c_aTW = argCounter.getCount(temp);
+    temp = new IntDependency(wildTW, anyArg, false, ANY_DISTANCE_INT);
+    double c_aT = argCounter.getCount(temp);
+    temp = new IntDependency(wildTW, anyTagArg, false, ANY_DISTANCE_INT);
+    double c_aW = argCounter.getCount(temp);
+
+    // do the Bayesian magic
+    // MLE probs
+    double p_aTW_hTd;
+    double p_aT_hTd;
+    double p_aTW_aT;
+    double p_aW;
+    double p_aPTW_aPT;
+    double p_aPTW_hPTd;
+    double p_aPT_hPTd;
+
+    // backoffs either mle or themselves bayesian smoothed depending on useSmoothTagProjection
+    if (useSmoothTagProjection) {
+      if (useUnigramWordSmoothing) {
+        p_aW = c_aW > 0.0 ? (c_aW / numWordTokens) : 1.0;  // NEED this 1.0 for unknown words!!!
+      } else {
+        p_aPTW_aPT = c_aPTW_aPT > 0.0 ? (c_aPTW_aPT / c_aPT) : 1.0;  // NEED this 1.0 for unknown words!!!
+      }
+
+      p_aPTW_hPTd = c_hPTd > 0.0 ? (c_aPTW_hPTd / c_hPTd): 0.0;
+
+      p_aPT_hPTd = c_hPTd > 0.0 ? (c_aPT_hPTd / c_hPTd) : 0.0;
+    } else {
+      // here word generation isn't smoothed - can't get previously unseen word with tag.  Ugh.
+      if (op.testOptions.useLexiconToScoreDependencyPwGt) {
+        // We don't know the position.  Now -1 means average over 0 and 1.
+        p_aTW_aT = dependency.leftHeaded ? Math.exp(lex.score(dependency.arg, 1, wordIndex.get(dependency.arg.word), null)): Math.exp(lex.score(dependency.arg, -1, wordIndex.get(dependency.arg.word), null));
+        // double oldScore = c_aTW > 0.0 ? (c_aTW / c_aT) : 1.0;
+        // if (oldScore == 1.0) {
+        //  System.err.println("#### arg=" + dependency.arg + " score=" + p_aTW_aT +
+        //                      " oldScore=" + oldScore + " c_aTW=" + c_aTW + " c_aW=" + c_aW);
+        // }
+      } else {
+        p_aTW_aT = c_aTW > 0.0 ? (c_aTW / c_aT) : 1.0;
+      }
+      p_aTW_hTd = c_hTd > 0.0 ? (c_aTW_hTd / c_hTd) : 0.0;
+      p_aT_hTd = c_hTd > 0.0 ? (c_aT_hTd / c_hTd) : 0.0;
+    }
+
+
+
+    if (verbose) {
+      NumberFormat nf = NumberFormat.getNumberInstance();
+      nf.setMaximumFractionDigits(2);
+      if (useSmoothTagProjection) {
+        if (useUnigramWordSmoothing) {
+          System.err.println("  c_aW=" + c_aW + ", numWordTokens=" + numWordTokens + ", p(aW)=" + nf.format(p_aW));
+        }
+        System.err.println("  c_aPTW_aPT=" + c_aPTW_aPT + ", c_aPT=" + c_aPT + ", smooth_aPTW_aPT=" + smooth_aPTW_aPT + ", p(aPTW|aPT)=" + nf.format(p_aPTW_aPT));
+      }
+      System.err.println("  c_aTW=" + c_aTW + ", c_aT=" + c_aT + ", smooth_aTW_aT=" + smooth_aTW_aT +", ## p(aTW|aT)=" + nf.format(p_aTW_aT));
+
+      if (useSmoothTagProjection) {
+        System.err.println("  c_aPTW_hPTd=" + c_aPTW_hPTd + ", c_hPTd=" + c_hPTd + ", p(aPTW|hPTd)=" + nf.format(p_aPTW_hPTd));
+      }
+      System.err.println("  c_aTW_hTd=" + c_aTW_hTd + ", c_hTd=" + c_hTd + ", smooth_aTW_hTd=" + smooth_aTW_hTd +", p(aTW|hTd)=" + nf.format(p_aTW_hTd));
+
+      if (useSmoothTagProjection) {
+        System.err.println("  c_aPT_hPTd=" + c_aPT_hPTd + ", c_hPTd=" + c_hPTd + ", p(aPT|hPTd)=" + nf.format(p_aPT_hPTd));
+      }
+      System.err.println("  c_aT_hTd=" + c_aT_hTd + ", c_hTd=" + c_hTd + ", smooth_aT_hTd=" + smooth_aT_hTd +", p(aT|hTd)=" + nf.format(p_aT_hTd));
+
+      System.err.println("  c_aTW_hTWd=" + c_aTW_hTWd + ", c_hTWd=" + c_hTWd + ", smooth_aTW_hTWd=" + smooth_aTW_hTWd +", ## p(aTW|hTWd)=" + nf.format(pb_aTW_hTWd));
+      System.err.println("  c_aT_hTWd=" + c_aT_hTWd + ", c_hTWd=" + c_hTWd + ", smooth_aT_hTWd=" + smooth_aT_hTWd +", ## p(aT|hTWd)=" + nf.format(pb_aT_hTWd));
+
+                         ", P(go|hTWds)=" + nf.format(pb_go_hTWds) + ", score=" + nf.format(score));
+    }
+
+    if (op.testOptions.prunePunc && pruneTW(aTW)) {
+      return 1.0;
+    }
+
+    if (Double.isNaN(score)) {
+      score = 0.0;
+    }
+
+    //if (op.testOptions.rightBonus && ! dependency.leftHeaded)
+    //  score -= 0.2;
+
+    if (score < MIN_PROBABILITY) {
+      score = 0.0;
+    }
+
+    return score;
+  }
+
+

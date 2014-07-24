@@ -1,0 +1,109 @@
+    public void drawItem(Graphics2D g2,
+                         CategoryItemRendererState state,
+                         Rectangle2D dataArea,
+                         CategoryPlot plot,
+                         CategoryAxis domainAxis,
+                         ValueAxis rangeAxis,
+                         CategoryDataset dataset,
+                         int row,
+                         int column,
+                         int pass) {
+
+        // nothing is drawn if the row index is not included in the list with
+        // the indices of the visible rows...
+        int visibleRow = state.getVisibleSeriesIndex(row);
+        if (visibleRow < 0) {
+            return;
+        }
+        // nothing is drawn for null values...
+        Number dataValue = dataset.getValue(row, column);
+        if (dataValue == null) {
+            return;
+        }
+
+        final double value = dataValue.doubleValue();
+        PlotOrientation orientation = plot.getOrientation();
+        double barW0 = calculateBarW0(plot, orientation, dataArea, domainAxis,
+                state, visibleRow, column);
+        double[] barL0L1 = calculateBarL0L1(value);
+        if (barL0L1 == null) {
+            return;  // the bar is not visible
+        }
+
+        RectangleEdge edge = plot.getRangeAxisEdge();
+        double transL0 = rangeAxis.valueToJava2D(barL0L1[0], dataArea, edge);
+        double transL1 = rangeAxis.valueToJava2D(barL0L1[1], dataArea, edge);
+
+        // in the following code, barL0 is (in Java2D coordinates) the LEFT
+        // end of the bar for a horizontal bar chart, and the TOP end of the
+        // bar for a vertical bar chart.  Whether this is the BASE of the bar
+        // or not depends also on (a) whether the data value is 'negative'
+        // relative to the base value and (b) whether or not the range axis is
+        // inverted.  This only matters if/when we apply the minimumBarLength
+        // attribute, because we should extend the non-base end of the bar
+        boolean positive = (value >= this.base);
+        boolean inverted = rangeAxis.isInverted();
+        double barL0 = Math.min(transL0, transL1);
+        double barLength = Math.abs(transL1 - transL0);
+        double barLengthAdj = 0.0;
+        if (barLength > 0.0 && barLength < getMinimumBarLength()) {
+            barLengthAdj = getMinimumBarLength() - barLength;
+        }
+        double barL0Adj = 0.0;
+        RectangleEdge barBase;
+        if (orientation == PlotOrientation.HORIZONTAL) {
+            if (positive && inverted || !positive && !inverted) {
+                barL0Adj = barLengthAdj;
+                barBase = RectangleEdge.RIGHT;
+            }
+            else {
+                barBase = RectangleEdge.LEFT;
+            }
+        }
+        else {
+            if (positive && !inverted || !positive && inverted) {
+                barL0Adj = barLengthAdj;
+                barBase = RectangleEdge.BOTTOM;
+            }
+            else {
+                barBase = RectangleEdge.TOP;
+            }
+        }
+
+        // draw the bar...
+        Rectangle2D bar = null;
+        if (orientation == PlotOrientation.HORIZONTAL) {
+            bar = new Rectangle2D.Double(barL0 - barL0Adj, barW0,
+                    barLength + barLengthAdj, state.getBarWidth());
+        }
+        else {
+            bar = new Rectangle2D.Double(barW0, barL0 - barL0Adj,
+                    state.getBarWidth(), barLength + barLengthAdj);
+        }
+        if (getShadowsVisible()) {
+            this.barPainter.paintBarShadow(g2, this, row, column, bar, barBase,
+                true);
+        }
+        this.barPainter.paintBar(g2, this, row, column, bar, barBase);
+
+        CategoryItemLabelGenerator generator = getItemLabelGenerator(row,
+                column);
+        if (generator != null && isItemLabelVisible(row, column)) {
+            drawItemLabel(g2, dataset, row, column, plot, generator, bar,
+                    (value < 0.0));
+        }
+
+        // submit the current data point as a crosshair candidate
+        int datasetIndex = plot.indexOf(dataset);
+        updateCrosshairValues(state.getCrosshairState(),
+                dataset.getRowKey(row), dataset.getColumnKey(column), value,
+                datasetIndex, barW0, barL0, orientation);
+
+        // add an item entity, if this information is being collected
+        EntityCollection entities = state.getEntityCollection();
+        if (entities != null) {
+            addItemEntity(entities, dataset, row, column, bar);
+        }
+
+    }
+

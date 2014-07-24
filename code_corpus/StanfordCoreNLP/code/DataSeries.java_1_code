@@ -1,0 +1,171 @@
+public interface DataSeries {
+
+  public String     name();
+  public double     get(int i);         // SAFE! if index out of bounds, return (double) i
+  public int        size();
+  public DataSeries domain();           // can be null; then domain = 0, 1, 2, ...
+
+
+  // .......................................................................
+
+  public static abstract class AbstractDataSeries implements DataSeries {
+    
+    private String   name;
+    private DataSeries domain;
+
+    public String name() { return name; }
+    public void setName(String name) { this.name = name; }
+
+    public DataSeries domain() { return domain; }
+    public void setDomain(DataSeries domain) { this.domain = domain; }
+
+    public List<Pair<Double, Double>> toListPairDouble() {
+      List<Pair<Double, Double>> list = new ArrayList<Pair<Double, Double>>();
+      for (int i = 0; i < size(); i++) {
+        double x = (domain() != null ? domain().get(i) : (double) i);
+        double y = get(i);
+        list.add(new Pair<Double, Double>(x, y));
+      }
+      return list;
+    }
+
+  }
+
+
+  // .......................................................................
+
+  public static class FunctionDataSeries extends AbstractDataSeries {
+
+    private Function<Object, Integer> sizeFn;
+    private Function<Integer, Double> function;
+
+    public FunctionDataSeries(String name, 
+                              Function<Integer, Double> function, 
+                              Function<Object, Integer> sizeFn,
+                              DataSeries domain) { 
+      setName(name);
+      this.function = function;
+      this.sizeFn = sizeFn;
+      setDomain(domain); 
+    }
+
+    public FunctionDataSeries(String name, 
+                              Function<Integer, Double> function, 
+                              Function<Object, Integer> sizeFn) { 
+      this(name, function, sizeFn, null); 
+    }
+
+    public FunctionDataSeries(String name, 
+                              Function<Integer, Double> function, 
+                              int size,
+                              DataSeries domain) { 
+      this(name, function, constantSizeFn(size), domain); 
+    }
+    
+    public FunctionDataSeries(String name, 
+                              Function<Integer, Double> function, 
+                              int size) { 
+      this(name, function, size, null);
+    }
+
+    public double get(int i) { 
+      if (i < 0 || i >= size()) return i;
+      return function.apply(i); 
+    }
+
+    public int size() { return sizeFn.apply(null); }
+
+    private static Function<Object, Integer> constantSizeFn(final int size) {
+      return new Function<Object, Integer>() {
+        public Integer apply(Object o) { return size; }
+      };
+    }
+
+  }
+
+
+  // .......................................................................
+
+  public static class ArrayDataSeries extends AbstractDataSeries {
+
+    private double[] data;
+
+    public ArrayDataSeries(String name) { 
+      setName(name);
+      setData(new double[0]);
+    }
+
+    public ArrayDataSeries(String name, double[] data) { 
+      this(name);
+      setData(data); 
+    }
+
+    public ArrayDataSeries(String name, double[] data, DataSeries domain) { 
+      this(name, data); 
+      setDomain(domain); 
+    }
+
+    public double[] data() { return data; }
+    public void setData(double[] data) { 
+      if (data == null) throw new NullPointerException();
+      this.data = data; 
+    }
+    
+    public double get(int i) { 
+      if (i < 0 || i >= data.length) return i;
+      return data[i]; 
+    }
+    public void set(int i, double x) { 
+      if (i < 0 || i >= data.length) return; // no-op
+      data[i] = x; 
+    }
+
+    public int size() { return data.length; }
+
+  }
+
+
+  // .......................................................................
+
+  public static class ListDataSeries extends AbstractDataSeries {
+
+    private List<Double> data;
+
+    public ListDataSeries(String name) { 
+      setName(name);
+      setData(new ArrayList<Double>());
+    }
+
+    public ListDataSeries(String name, List<Double> data) { 
+      this(name);
+      setData(data); 
+    }
+
+    public ListDataSeries(String name, List<Double> data, DataSeries domain) { 
+      this(name, data); 
+      setDomain(domain); 
+    }
+
+    public ListDataSeries(String name, DataSeries domain) { 
+      this(name); 
+      setDomain(domain); 
+    }
+
+    public List<Double> data() { return data; }
+    public void setData(List<Double> data) { 
+      if (data == null) throw new NullPointerException();
+      this.data = data; 
+    }
+
+    public double get(int i) { 
+      if (i < 0 || i >= data.size()) return i;
+      return data.get(i); 
+    }
+    public void set(int i, double x) { 
+      if (i < 0 || i >= data.size()) return; // no-op
+      data.set(i, x); 
+    }
+    public void add(double x) { data.add(new Double(x)); }
+
+    public int size() { return data.size(); }
+

@@ -1,0 +1,57 @@
+    public void add(List values, Comparable rowKey, Comparable columnKey) {
+
+        if (values == null) {
+            throw new IllegalArgumentException("Null 'values' argument.");
+        }
+        if (rowKey == null) {
+            throw new IllegalArgumentException("Null 'rowKey' argument.");
+        }
+        if (columnKey == null) {
+            throw new IllegalArgumentException("Null 'columnKey' argument.");
+        }
+        List vlist = new ArrayList(values.size());
+        Iterator iterator = values.listIterator();
+        while (iterator.hasNext()) {
+            Object obj = iterator.next();
+            if (obj instanceof Number) {
+                Number n = (Number) obj;
+                double v = n.doubleValue();
+                if (!Double.isNaN(v)) {
+                    vlist.add(n);
+                }
+            }
+        }
+        Collections.sort(vlist);
+        this.data.addObject(vlist, rowKey, columnKey);
+
+        if (vlist.size() > 0) {
+            double maxval = Double.NEGATIVE_INFINITY;
+            double minval = Double.POSITIVE_INFINITY;
+            for (int i = 0; i < vlist.size(); i++) {
+                Number n = (Number) vlist.get(i);
+                double v = n.doubleValue();
+                minval = Math.min(minval, v);
+                maxval = Math.max(maxval, v);
+            }
+
+            // update the cached range values...
+            if (this.maximumRangeValue == null) {
+                this.maximumRangeValue = new Double(maxval);
+            }
+            else if (maxval > this.maximumRangeValue.doubleValue()) {
+                this.maximumRangeValue = new Double(maxval);
+            }
+
+            if (this.minimumRangeValue == null) {
+                this.minimumRangeValue = new Double(minval);
+            }
+            else if (minval < this.minimumRangeValue.doubleValue()) {
+                this.minimumRangeValue = new Double(minval);
+            }
+            this.rangeBounds = new Range(this.minimumRangeValue.doubleValue(),
+                    this.maximumRangeValue.doubleValue());
+        }
+
+        fireDatasetChanged();
+    }
+

@@ -1,0 +1,18 @@
+  public Pattern getAlphaNumericPattern() {
+    if (this.alphaNumericPattern == null) {
+      if (artifactProvider != null) {
+        String prop = this.artifactProvider
+            .getManifestProperty(ALPHA_NUMERIC_PATTERN);
+        if (prop != null) {
+          this.alphaNumericPattern = Pattern.compile(prop);
+        }
+      }
+      // could not load from manifest, will get from language dependent factory
+      if (this.alphaNumericPattern == null) {
+        Factory f = new Factory();
+        this.alphaNumericPattern = f.getAlphanumeric(languageCode);
+      }
+    }
+    return this.alphaNumericPattern;
+  }
+

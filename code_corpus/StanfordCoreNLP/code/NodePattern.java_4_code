@@ -1,0 +1,143 @@
+    // when finished = false; break; is called, it means I successfully matched.
+    @SuppressWarnings("null")
+    private void goToNextNodeMatch() {
+      decommitVariableGroups(); // make sure variable groups are free.
+      decommitNamedNodes();
+      decommitNamedRelations();
+      finished = true;
+      Matcher m = null;
+      while (nodeMatchCandidateIterator.hasNext()) {
+        if (myNode.reln.getName() != null) {
+          String foundReln = namesToRelations.get(myNode.reln.getName());
+          nextMatchReln = ((GraphRelation.SearchNodeIterator) nodeMatchCandidateIterator).getReln();
+          if ((foundReln != null) && (!nextMatchReln.equals(foundReln))) {
+            nextMatch = nodeMatchCandidateIterator.next();
+            continue;
+          }
+        }
+
+        nextMatch = nodeMatchCandidateIterator.next();
+        // System.err.println("going to next match: " + nextMatch.word() + " " +
+        // myNode.descString + " " + myNode.isLink);
+        if (myNode.descString.equals("{}") && myNode.isLink) {
+          IndexedWord otherNode = namesToNodes.get(myNode.name);
+          if (otherNode != null) {
+            if (otherNode.equals(nextMatch)) {
+              if (myNode.negDesc) {
+                continue;
+              } else {
+                finished = false;
+                break;
+              }
+            } else {
+              if (myNode.negDesc) {
+                finished = false;
+                break;
+              } else {
+                continue;
+              }
+            }
+          } else {
+            boolean found = myNode.nodeAttrMatch(nextMatch,
+                                                 hyp ? sg : sg_aligned,
+                                                 ignoreCase);
+            if (found) {
+              for (Pair<Integer, String> varGroup : myNode.variableGroups) {
+                // if variables have been captured from a regex, they
+                // must match any previous matchings
+                String thisVariable = varGroup.second();
+                String thisVarString = variableStrings.getString(thisVariable);
+                if (thisVarString != null &&
+                    !thisVarString.equals(m.group(varGroup.first()))) {
+                  // failed to match a variable
+                  found = false;
+                  break;
+                }
+              }
+
+              // nodeAttrMatch already checks negDesc, so no need to
+              // check for that here
+              finished = false;
+              break;
+            }
+          }
+        } else { // try to match the description pattern.
+          boolean found = myNode.nodeAttrMatch(nextMatch,
+                                               hyp ? sg : sg_aligned,
+                                               ignoreCase);
+          if (found) {
+            for (Pair<Integer, String> varGroup : myNode.variableGroups) {
+              // if variables have been captured from a regex, they
+              // must match any previous matchings
+              String thisVariable = varGroup.second();
+              String thisVarString = variableStrings.getString(thisVariable);
+              if (thisVarString != null &&
+                  !thisVarString.equals(m.group(varGroup.first()))) {
+                // failed to match a variable
+                found = false;
+                break;
+              }
+            }
+
+            // nodeAttrMatch already checks negDesc, so no need to
+            // check for that here
+            finished = false;
+            break;
+          }
+        }
+      }
+      if (!finished) { // I successfully matched.
+        resetChild();
+        if (myNode.name != null) {
+          // note: have to fill in the map as we go for backreferencing
+          if (!namesToNodes.containsKey(myNode.name)) {
+            // System.err.println("making namedFirst");
+            namedFirst = true;
+          }
+          // System.err.println("adding named node: " + myNode.name + "=" +
+          // nextMatch.word());
+          namesToNodes.put(myNode.name, nextMatch);
+        }
+        if (myNode.reln.getName() != null) {
+          if (!namesToRelations.containsKey(myNode.reln.getName()))
+            relnNamedFirst = true;
+          namesToRelations.put(myNode.reln.getName(), nextMatchReln);
+        }
+        commitVariableGroups(m); // commit my variable groups.
+      }
+      // finished is false exiting this if and only if nextChild exists
+      // and has a label or backreference that matches
+      // (also it will just have been reset)
+    }
+
+    private void commitVariableGroups(Matcher m) {
+      committedVariables = true; // commit all my variable groups.
+      for (Pair<Integer, String> varGroup : myNode.variableGroups) {
+        String thisVarString = m.group(varGroup.first());
+        variableStrings.setVar(varGroup.second(), thisVarString);
+      }
+    }
+
+    private void decommitVariableGroups() {
+      if (committedVariables) {
+        for (Pair<Integer, String> varGroup : myNode.variableGroups) {
+          variableStrings.unsetVar(varGroup.second());
+        }
+      }
+      committedVariables = false;
+    }
+
+    private void decommitNamedNodes() {
+      if (namesToNodes.containsKey(myNode.name) && namedFirst) {
+        namedFirst = false;
+        namesToNodes.remove(myNode.name);
+      }
+    }
+
+    private void decommitNamedRelations() {
+      if (namesToRelations.containsKey(myNode.reln.name) && relnNamedFirst) {
+        relnNamedFirst = false;
+        namesToRelations.remove(myNode.reln.name);
+      }
+    }
+

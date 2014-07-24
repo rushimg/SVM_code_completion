@@ -1,0 +1,98 @@
+  public double lossDomination() {
+    // zero all the variables
+    double s = 0;
+    for (int i = 0; i < probConds.length; i++) {
+      for (int j = 0; j < probConds[i].length; j++) {
+        probConds[i][j] = 0;
+      }
+      zlambda[i] = 0;
+    }
+
+    //add up in pcond y|x the unnormalized scores
+
+    for (int fNo = 0, fSize = p.fSize; fNo < fSize; fNo++) {
+      // add for all occurrences of the function the values to probConds
+      Feature f = p.functions.get(fNo);
+      double fLambda = lambda[fNo];
+
+      //if(sum==0){continue;}
+
+      if (Math.abs(fLambda) > 200) {   // was 50
+        System.err.println("lambda " + fNo + " too big: " + fLambda);
+      }
+
+      for (int i = 0, length = f.len(); i < length; i++) {
+        int x = f.getX(i);
+        int y = f.getY(i);
+        if (ASSUME_BINARY) {
+          probConds[x][y] += fLambda;
+        } else {
+          double val = f.getVal(i);
+        }
+      } //for
+
+    } //for fNo
+
+    //will use zlambda[x] for the number of domination graphs for x
+    // keeping track of other arrays as well - sum[x][y], and sub[x][y]
+
+    //now two double loops over (x,y) to collect zlambda[x], sum[x][y], and sub[x][y];
+
+    sum = new double[probConds.length][];
+    sub = new double[probConds.length][];
+
+    for (int x = 0; x < probConds.length; x++) {
+      sum[x] = new double[probConds[x].length];
+      sub[x] = new double[probConds[x].length];
+      double localloss = 0;
+
+      for (int u = 0; u < sum[x].length; u++) {
+        boolean hasgraph = false;
+
+        for (int v = 0; v < sum[x].length; v++) {
+          //see if u dominates v
+          if (p.data.values[x][u] > p.data.values[x][v]) {
+            hasgraph = true;
+            sum[x][u] += Math.exp(probConds[x][v] - probConds[x][u]);
+          }
+        }
+        sum[x][u] += 1;
+
+        double weight = 1;
+        if (weightRanks) {
+          weight = p.data.values[x][u];
+        }
+        if (hasgraph) {
+          zlambda[x] += weight;
+        }
+      }
+
+      //another loop to get the sub[x][y]
+
+      for (int u = 0; u < sum[x].length; u++) {
+
+        for (int v = 0; v < sum[x].length; v++) {
+          //see if u dominates v
+          if (p.data.values[x][u] > p.data.values[x][v]) {
+
+            double weight = 1;
+            if (weightRanks) {
+              weight = p.data.values[x][u];
+            }
+
+          }
+        }
+      }
+
+      System.err.println(" for x " + x + " number graphs " + zlambda[x]);
+
+      if (zlambda[x] > 0) {
+        localloss /= zlambda[x];
+      }
+
+    }//x
+
+    return s;
+  }
+
+

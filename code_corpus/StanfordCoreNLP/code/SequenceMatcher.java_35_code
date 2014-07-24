@@ -1,0 +1,113 @@
+    protected MatchedStates split(int branchLimit)
+    {
+      Set<Integer> curBidSet = Generics.newHashSet();
+      for (State state:states) {
+        curBidSet.add(state.bid);
+      }
+      List<Integer> bids = new ArrayList<Integer>(curBidSet);
+      Collections.sort(bids, new Comparator<Integer>() {
+        public int compare(Integer o1, Integer o2) {
+          int res = compareMatches(o1, o2);
+          return res;
+        }
+      });
+
+      MatchedStates<T> newStates = new MatchedStates<T>(matcher, branchStates);
+      int v = Math.min(branchLimit, (bids.size()+1)/2);
+      Set<Integer> keepBidSet = Generics.newHashSet();
+      keepBidSet.addAll(bids.subList(0, v));
+      swapAndClear();
+      for (State s:oldStates) {
+        if (keepBidSet.contains(s.bid)) {
+          states.add(s);
+        } else {
+          newStates.states.add(s);
+        }
+      }
+      newStates.curPosition = curPosition;
+      branchStates.condense();
+      return newStates;
+    }
+
+    protected List<? extends T> elements()
+    {
+      return matcher.elements;
+    }
+
+    protected T get()
+    {
+      return matcher.get(curPosition);
+    }
+
+    protected int size()
+    {
+      return states.size();
+    }
+
+    protected int branchSize()
+    {
+      return branchStates.size();
+    }
+
+    private void swap()
+    {
+      List<State> tmpStates = oldStates;
+      oldStates = states;
+      states = tmpStates;
+    }
+
+    private void swapAndClear()
+    {
+      swap();
+      states.clear();
+    }
+
+    // Attempts to match element at the specified position
+    private boolean match(int position)
+    {
+      curPosition = position;
+      boolean matched = false;
+
+      swapAndClear();
+      // Start with old state, and try to match next element
+      // New states to search after successful match will be updated during the match process
+      for (State state:oldStates) {
+        if (state.tstate.match(state.bid, this)) {
+          matched = true;
+        }
+      }
+
+      // Run NFA to process non consuming states
+      boolean done = false;
+      while (!done) {
+        swapAndClear();
+        boolean matched0 = false;
+        for (State state:oldStates) {
+          if (state.tstate.match0(state.bid, this)) {
+            matched0 = true;
+          }
+        }
+        done = !matched0; 
+      }
+
+      branchStates.condense();
+      return matched;
+    }
+
+    protected int compareMatches(int bid1, int bid2)
+    {
+      if (bid1 == bid2) return 0;
+      List<Integer> p1 = branchStates.getParents(bid1);
+      p1.add(bid1);
+      List<Integer> p2 = branchStates.getParents(bid2);
+      p2.add(bid2);
+      int n = Math.min(p1.size(), p2.size());
+      for (int i = 0; i < n; i++) {
+        if (p1.get(i) < p2.get(i)) return -1;
+        if (p1.get(i) > p2.get(i)) return 1;
+      }
+      if (p1.size() < p2.size()) return -1;
+      if (p1.size() > p2.size()) return 1;
+      return 0;
+    }
+

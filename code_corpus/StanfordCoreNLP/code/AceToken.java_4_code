@@ -1,0 +1,44 @@
+  public AceToken(String word, String lemma, String pos, String chunk, String nerc, String start, String end,
+      int sentence) {
+    mLiteral = word;
+    if (word == null) {
+      mWord = -1;
+      mCase = -1;
+      mSuffixes = null;
+    } else {
+      mWord = WORDS.get(removeSpaces(word), false);
+      mCase = detectCase(word);
+      mSuffixes = extractSuffixes(word);
+    }
+
+    if (lemma == null)
+      mLemma = -1;
+    else
+      mLemma = LEMMAS.get(removeSpaces(lemma), false);
+
+    if (pos == null)
+      mPos = -1;
+    else
+      mPos = OTHERS.get(pos, false);
+
+    if (chunk == null)
+      mChunk = -1;
+    else
+      mChunk = OTHERS.get(chunk, false);
+
+    if (nerc == null)
+      mNerc = -1;
+    else
+      mNerc = OTHERS.get(nerc, false);
+
+    if (start != null && end != null) {
+      mByteOffset = new Span(Integer.parseInt(start), Integer.parseInt(end));
+      mRawByteOffset = new Span(Integer.parseInt(start), Integer.parseInt(end));
+    }
+    mSentence = sentence;
+
+    mMassiClass = "";
+    mMassiBbn = "";
+    mMassiWnss = "";
+  }
+

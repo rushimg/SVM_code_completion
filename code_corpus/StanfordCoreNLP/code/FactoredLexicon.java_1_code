@@ -1,0 +1,33 @@
+public class FactoredLexicon extends BaseLexicon {
+
+  private static final long serialVersionUID = -744693222804176489L;
+
+  private static final boolean DEBUG = false;
+  
+  private MorphoFeatureSpecification morphoSpec;
+  
+  private static final String NO_MORPH_ANALYSIS = "xXxNONExXx";
+  
+  private Index<String> morphIndex = new HashIndex<String>();
+  
+  private TwoDimensionalIntCounter<Integer,Integer> wordTag = new TwoDimensionalIntCounter<Integer,Integer>(40000);
+  private Counter<Integer> wordTagUnseen = new ClassicCounter<Integer>(500);
+  
+  private TwoDimensionalIntCounter<Integer,Integer> lemmaTag = new TwoDimensionalIntCounter<Integer,Integer>(40000);
+  private Counter<Integer> lemmaTagUnseen = new ClassicCounter<Integer>(500);
+  
+  private TwoDimensionalIntCounter<Integer,Integer> morphTag = new TwoDimensionalIntCounter<Integer,Integer>(500);
+  private Counter<Integer> morphTagUnseen = new ClassicCounter<Integer>(500);
+  
+  private Counter<Integer> tagCounter = new ClassicCounter<Integer>(300);
+  
+  public FactoredLexicon(MorphoFeatureSpecification morphoSpec, Index<String> wordIndex, Index<String> tagIndex) {
+    super(wordIndex, tagIndex);
+    this.morphoSpec = morphoSpec;
+  }
+
+  public FactoredLexicon(Options op, MorphoFeatureSpecification morphoSpec, Index<String> wordIndex, Index<String> tagIndex) {
+    super(op, wordIndex, tagIndex);
+    this.morphoSpec = morphoSpec;
+  }
+  

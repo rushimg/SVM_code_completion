@@ -1,0 +1,40 @@
+public class BasicEntityExtractor implements Extractor {
+
+  private static final long serialVersionUID = -4011478706866593869L;
+
+  // non-final so we can do cross validation
+  private CRFClassifier<CoreLabel> classifier;
+
+  private static final Class<? extends CoreAnnotation<String>> annotationForWord = TextAnnotation.class;
+
+  private static final boolean SAVE_CONLL_2003 = false;
+
+  protected String gazetteerLocation;
+
+  protected Set<String> annotationsToSkip;
+
+  protected boolean useSubTypes;
+
+  protected boolean useBIO;
+
+  protected EntityMentionFactory entityMentionFactory;
+
+  public final Logger logger;
+  
+  protected boolean useNERTags;
+  
+  public BasicEntityExtractor(
+		  String gazetteerLocation,
+		  boolean useSubTypes,
+		  Set<String> annotationsToSkip,
+		  boolean useBIO,
+		  EntityMentionFactory factory, boolean useNERTags) {
+    this.annotationsToSkip = annotationsToSkip;
+    this.gazetteerLocation = gazetteerLocation;
+    this.logger = Logger.getLogger(BasicEntityExtractor.class.getName());
+    this.useSubTypes = useSubTypes;
+    this.useBIO = useBIO;
+    this.entityMentionFactory = factory;
+    this.useNERTags = useNERTags;
+  }
+

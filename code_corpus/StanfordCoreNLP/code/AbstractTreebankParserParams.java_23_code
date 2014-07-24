@@ -1,0 +1,21 @@
+  public static Collection<Constituent> parsevalObjectify(Tree t, TreeTransformer collinizer, boolean labelConstituents) {
+    Collection<Constituent> spans = new ArrayList<Constituent>();
+    Tree t1 = collinizer.transformTree(t);
+    if (t1 == null) {
+      return spans;
+    }
+    for (Tree node : t1) {
+      if (node.isLeaf() || node.isPreTerminal() || (node != t1 && node.parent(t1) == null)) {
+        continue;
+      }
+      int leftEdge = t1.leftCharEdge(node);
+      int rightEdge = t1.rightCharEdge(node);
+      if(labelConstituents)
+        spans.add(new LabeledConstituent(leftEdge, rightEdge, node.label()));
+      else
+        spans.add(new SimpleConstituent(leftEdge, rightEdge));
+    }
+    return spans;
+  }
+
+

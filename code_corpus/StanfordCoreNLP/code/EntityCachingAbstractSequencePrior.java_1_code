@@ -1,0 +1,40 @@
+public abstract class EntityCachingAbstractSequencePrior<IN extends CoreMap> implements SequenceModel, SequenceListener {
+
+  protected int[] sequence;
+  protected int backgroundSymbol;
+  protected int numClasses;
+  protected int[] possibleValues;
+  protected Index<String> classIndex;
+  protected List<IN> doc;
+
+  public EntityCachingAbstractSequencePrior(String backgroundSymbol, Index<String> classIndex, List<IN> doc) {
+    this.classIndex = classIndex;
+    this.backgroundSymbol = classIndex.indexOf(backgroundSymbol);
+    this.numClasses = classIndex.size();
+    this.possibleValues = new int[numClasses];
+    for (int i=0; i<numClasses; i++) {
+      possibleValues[i] = i;
+    }
+    this.doc = doc;
+  }
+
+  private boolean VERBOSE = false;
+
+  Entity[] entities;
+
+  public int leftWindow() {
+    return Integer.MAX_VALUE; // not Markovian!
+  }
+
+  public int rightWindow() {
+    return Integer.MAX_VALUE; // not Markovian!
+  }
+
+  public int[] getPossibleValues(int position) {
+    return possibleValues;
+  }
+
+  public double scoreOf(int[] sequence, int pos) {
+    return scoresOf(sequence, pos)[sequence[pos]];
+  }
+

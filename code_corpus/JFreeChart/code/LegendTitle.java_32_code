@@ -1,0 +1,33 @@
+    public Object draw(Graphics2D g2, Rectangle2D area, Object params) {
+        Rectangle2D target = (Rectangle2D) area.clone();
+        Rectangle2D hotspot = (Rectangle2D) area.clone();
+        StandardEntityCollection sec = null;
+        if (params instanceof EntityBlockParams
+                && ((EntityBlockParams) params).getGenerateEntities()) {
+			sec = new StandardEntityCollection();
+            sec.add(new TitleEntity(hotspot,this));
+        }
+        target = trimMargin(target);
+        if (this.backgroundPaint != null) {
+            g2.setPaint(this.backgroundPaint);
+            g2.fill(target);
+        }
+        BlockFrame border = getFrame();
+        border.draw(g2, target);
+        border.getInsets().trim(target);
+        BlockContainer container = this.wrapper;
+        if (container == null) {
+            container = this.items;
+        }
+        target = trimPadding(target);
+        Object val = container.draw(g2, target, params);
+        if (val instanceof BlockResult){
+        	EntityCollection ec = ((BlockResult) val).getEntityCollection();
+        	if (ec != null && sec != null){
+        		sec.addAll(ec);
+        		((BlockResult) val).setEntityCollection(sec);
+        	}
+        }
+        return val;
+    }
+

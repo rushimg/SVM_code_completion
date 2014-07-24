@@ -1,0 +1,22 @@
+    public double valueToJava2D(double value, Rectangle2D area,
+                                RectangleEdge edge) {
+        double result = 0.0;
+        double v = mapValueToFixedRange(value);
+        if (this.displayStart < this.displayEnd) {  // regular number axis
+            result = trans(v, area, edge);
+        }
+        else {  // displayStart > displayEnd, need to handle split
+            double cutoff = (this.displayStart + this.displayEnd) / 2.0;
+            double length1 = this.fixedRange.getUpperBound()
+                             - this.displayStart;
+            double length2 = this.displayEnd - this.fixedRange.getLowerBound();
+            if (v > cutoff) {
+                result = transStart(v, area, edge, length1, length2);
+            }
+            else {
+                result = transEnd(v, area, edge, length1, length2);
+            }
+        }
+        return result;
+    }
+

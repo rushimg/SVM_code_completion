@@ -1,0 +1,16 @@
+  public static List<RelationMention> getRelations(RelationMentionFactory factory, CoreMap sentence, ExtractionObject... args) {
+    List<RelationMention> relationMentions = sentence.get(MachineReadingAnnotations.RelationMentionsAnnotation.class);
+    List<RelationMention> matchingRelationMentions = new ArrayList<RelationMention>();
+    if (relationMentions != null) {
+      for (RelationMention rel : relationMentions) {
+        if (rel.argsMatch(args)) {
+          matchingRelationMentions.add(rel);
+        }
+      }
+    }
+    if (matchingRelationMentions.size() == 0) {
+      matchingRelationMentions.add(RelationMention.createUnrelatedRelation(factory, args));
+    }
+    return matchingRelationMentions;
+  }
+

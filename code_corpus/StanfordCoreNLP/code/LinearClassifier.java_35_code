@@ -1,0 +1,91 @@
+  @Deprecated
+  public void justificationOf(RVFDatum<L, F> example, PrintWriter pw) {
+    int featureLength = 0;
+    int labelLength = 6;
+    NumberFormat nf = NumberFormat.getNumberInstance();
+    nf.setMinimumFractionDigits(2);
+    nf.setMaximumFractionDigits(2);
+    if (nf instanceof DecimalFormat) {
+      ((DecimalFormat) nf).setPositivePrefix(" ");
+    }
+    Counter<F> features = example.asFeaturesCounter();
+    for (F f : features.keySet()) {
+      featureLength = Math.max(featureLength, f.toString().length() + 2 +
+          nf.format(features.getCount(f)).length());
+    }
+    // make as wide as total printout
+    featureLength = Math.max(featureLength, "Total:".length());
+    // don't make it ridiculously wide
+    featureLength = Math.min(featureLength, MAX_FEATURE_ALIGN_WIDTH);
+
+    for (Object l : labels()) {
+      labelLength = Math.max(labelLength, l.toString().length());
+    }
+
+    StringBuilder header = new StringBuilder("");
+    for (int s = 0; s < featureLength; s++) {
+      header.append(' ');
+    }
+    for (L l : labels()) {
+      header.append(' ');
+      header.append(StringUtils.pad(l, labelLength));
+    }
+    pw.println(header);
+    for (F f : features.keySet()) {
+      String fStr = f.toString();
+      StringBuilder line = new StringBuilder(fStr);
+      line.append("[").append(nf.format(features.getCount(f))).append("]");
+      fStr = line.toString();
+      for (int s = fStr.length(); s < featureLength; s++) {
+        line.append(' ');
+      }
+      for (L l : labels()) {
+        String lStr = nf.format(weight(f, l));
+        line.append(' ');
+        line.append(lStr);
+        for (int s = lStr.length(); s < labelLength; s++) {
+          line.append(' ');
+        }
+      }
+      pw.println(line);
+    }
+    Counter<L> scores = scoresOf(example);
+    StringBuilder footer = new StringBuilder("Total:");
+    for (int s = footer.length(); s < featureLength; s++) {
+      footer.append(' ');
+    }
+    for (L l : labels()) {
+      footer.append(' ');
+      String str = nf.format(scores.getCount(l));
+      footer.append(str);
+      for (int s = str.length(); s < labelLength; s++) {
+        footer.append(' ');
+      }
+    }
+    pw.println(footer);
+    Distribution<L> distr = Distribution.distributionFromLogisticCounter(scores);
+    footer = new StringBuilder("Prob:");
+    for (int s = footer.length(); s < featureLength; s++) {
+      footer.append(' ');
+    }
+    for (L l : labels()) {
+      footer.append(' ');
+      String str = nf.format(distr.getCount(l));
+      footer.append(str);
+      for (int s = str.length(); s < labelLength; s++) {
+        footer.append(' ');
+      }
+    }
+    pw.println(footer);
+  }
+
+
+  public void justificationOf(Datum<L, F> example) {
+    PrintWriter pw = new PrintWriter(System.err, true);
+    justificationOf(example, pw);
+  }
+
+  public <T> void justificationOf(Datum<L, F> example, PrintWriter pw, Function<F, T> printer) {
+    justificationOf(example, pw, printer, false);
+  }
+

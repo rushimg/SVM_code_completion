@@ -1,0 +1,85 @@
+  public static void writeToFile(File tgtFile, List<SsurgeonPattern> patterns) {
+    try {
+      Document domDoc = createPatternXMLDoc(patterns);
+      if (domDoc != null) {
+        Transformer tformer = TransformerFactory.newInstance().newTransformer();
+        tformer.setOutputProperty(OutputKeys.INDENT, "yes");
+        tformer.transform(new DOMSource(domDoc), new StreamResult(tgtFile));
+      } else {
+        log.warning("Was not able to create XML document for pattern list, file not written.");
+      }
+    } catch (Exception e) {
+      log.throwing(Ssurgeon.class.getName(), "writeToFile", e);
+    }
+  }
+  
+  public static String writeToString(SsurgeonPattern pattern) {
+    try {
+      List<SsurgeonPattern> patterns = new LinkedList<SsurgeonPattern>();
+      patterns.add(pattern);
+      Document domDoc = createPatternXMLDoc(patterns);
+      if (domDoc != null) {
+        Transformer tformer = TransformerFactory.newInstance().newTransformer();
+        tformer.setOutputProperty(OutputKeys.INDENT, "yes");
+        StringWriter sw = new StringWriter();
+        tformer.transform(new DOMSource(domDoc), new StreamResult(sw));
+        return sw.toString();
+      } else {
+        log.warning("Was not able to create XML document for pattern list.");
+      }
+    } catch (Exception e) {
+      System.err.println("Error in writeToString, could not process pattern="+pattern);
+      e.printStackTrace();
+      return null;
+    }
+    return "";
+  }
+  
+  
+  private static Document createPatternXMLDoc(List<SsurgeonPattern> patterns) {
+    try {
+      DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+      DocumentBuilder db = dbf.newDocumentBuilder();
+      Document domDoc = db.newDocument();
+      Element rootElt = domDoc.createElement(SsurgeonPattern.ELT_LIST_TAG);
+      domDoc.appendChild(rootElt);
+      int ordinal = 1;
+      for (SsurgeonPattern pattern : patterns) {
+        Element patElt = domDoc.createElement(SsurgeonPattern.SSURGEON_ELEM_TAG);
+        patElt.setAttribute(SsurgeonPattern.ORDINAL_ATTR, String.valueOf(ordinal));
+        Element semgrexElt = domDoc.createElement(SsurgeonPattern.SEMGREX_ELEM_TAG);
+        semgrexElt.appendChild(domDoc.createTextNode(pattern.getSemgrexPattern().pattern()));
+        patElt.appendChild(semgrexElt);
+        Element uidElem = domDoc.createElement(SsurgeonPattern.UID_ELEM_TAG);
+        uidElem.appendChild(domDoc.createTextNode(pattern.getUID()));
+        patElt.appendChild(uidElem);
+        Element notesElem = domDoc.createElement(SsurgeonPattern.NOTES_ELEM_TAG);
+        notesElem.appendChild(domDoc.createTextNode(pattern.getNotes()));
+        patElt.appendChild(notesElem);
+        
+        SemanticGraph semgrexGraph = pattern.getSemgrexGraph();
+        if (semgrexGraph != null) {
+          Element patNode = domDoc.createElement(SsurgeonPattern.SEMGREX_GRAPH_ELEM_TAG);
+          patNode.appendChild(domDoc.createTextNode(semgrexGraph.toCompactString()));
+        }
+        Element editList = domDoc.createElement(SsurgeonPattern.EDIT_LIST_ELEM_TAG);
+        patElt.appendChild(editList);
+        int editOrdinal = 1;
+        for (SsurgeonEdit edit : pattern.getEditScript()) {
+          Element editElem = domDoc.createElement(SsurgeonPattern.EDIT_ELEM_TAG);
+          editElem.setAttribute(SsurgeonPattern.ORDINAL_ATTR, String.valueOf(editOrdinal));
+          editElem.appendChild(domDoc.createTextNode(edit.toEditString()));
+          editList.appendChild(editElem);
+          editOrdinal++;
+        }
+        rootElt.appendChild(patElt);
+        ordinal++;
+      }
+      return domDoc;
+    } catch (Exception e) {
+      log.throwing(Ssurgeon.class.getName(), "createPatternXML", e);
+      return null;
+    }
+  }
+  
+

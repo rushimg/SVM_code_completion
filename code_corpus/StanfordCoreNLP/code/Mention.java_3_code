@@ -1,0 +1,448 @@
+  public boolean isListMemberOf(Mention m) {
+    if (this.equals(m)) return false;
+    if (m.mentionType == MentionType.LIST && this.mentionType == MentionType.LIST) return false; // Don't handle nested lists
+    if (m.mentionType == MentionType.LIST) {
+      return this.includedIn(m);
+    }
+    return false;
+  }
+
+  public void addListMember(Mention m) {
+    if(listMembers == null) listMembers = Generics.newHashSet();
+    listMembers.add(m);
+  }
+
+  public void addBelongsToList(Mention m) {
+    if(belongToLists == null) belongToLists = Generics.newHashSet();
+    belongToLists.add(m);
+  }
+
+  public boolean isMemberOfSameList(Mention m) {
+    Set<Mention> l1 = belongToLists;
+    Set<Mention> l2 = m.belongToLists;
+    if (l1 != null && l2 != null && CollectionUtils.containsAny(l1, l2)) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  private boolean isListLike() {
+    // See if this mention looks to be a conjunction of things
+    // Check for "or" and "and" and ","
+    int commas = 0;
+//    boolean firstLabelLike = false;
+//    if (originalSpan.size() > 1) {
+//      String w = originalSpan.get(1).word();
+//      firstLabelLike = (w.equals(":") || w.equals("-"));
+//    }
+    String mentionSpanString = spanToString();
+    String subTreeSpanString = StringUtils.joinWords(mentionSubTree.yieldWords(), " ");
+    if (subTreeSpanString.equals(mentionSpanString)) {
+      // subtree represents this mention well....
+      List<Tree> children = mentionSubTree.getChildrenAsList();
+      for (Tree t:children) {
+        String label = t.value();
+        String ner = null;
+        if (t.isLeaf()) { ner = ((CoreLabel) t.getLeaves().get(0).label()).ner(); }
+        if ("CC".equals(label)) {
+          // Check NER type
+          if (ner == null || "O".equals(ner)) {
+            return true;
+          }
+        } else if (label.equals(",")) {
+          if (ner == null || "O".equals(ner)) {
+            commas++;
+          }
+        }
+      }
+    }
+
+    if (commas <= 2) {
+      // look at the string for and/or
+      boolean first = true;
+      for (CoreLabel t:originalSpan) {
+        String tag = t.tag();
+        String ner = t.ner();
+        String w = t.word();
+        if (tag.equals("TO") || tag.equals("IN") || tag.startsWith("VB")) {
+          // prepositions and verbs are too hard for us
+          return false;
+        }
+        if (!first) {
+          if (w.equalsIgnoreCase("and") || w.equalsIgnoreCase("or")) {
+            // Check NER type
+            if (ner == null || "O".equals(ner)) {
+              return true;
+            }
+          }
+        }
+        first = false;
+      }
+    }
+
+    return (commas > 2);
+  }
+
+  private void setType(Dictionaries dict) {
+    if (isListLike()) {
+      mentionType = MentionType.LIST;
+      SieveCoreferenceSystem.logger.finer("IS LIST: " + this);
+    } else if (headWord.has(CoreAnnotations.EntityTypeAnnotation.class)){    // ACE gold mention type
+      if (headWord.get(CoreAnnotations.EntityTypeAnnotation.class).equals("PRO")) {
+        mentionType = MentionType.PRONOMINAL;
+      } else if (headWord.get(CoreAnnotations.EntityTypeAnnotation.class).equals("NAM")) {
+        mentionType = MentionType.PROPER;
+      } else {
+        mentionType = MentionType.NOMINAL;
+      }
+    } else {    // MUC
+      if(!headWord.has(CoreAnnotations.NamedEntityTagAnnotation.class)) {   // temporary fix
+        mentionType = MentionType.NOMINAL;
+        SieveCoreferenceSystem.logger.finest("no NamedEntityTagAnnotation: "+headWord);
+      } else if (headWord.get(CoreAnnotations.PartOfSpeechAnnotation.class).startsWith("PRP")
+          || (originalSpan.size() == 1 && headWord.get(CoreAnnotations.NamedEntityTagAnnotation.class).equals("O")
+              && (dict.allPronouns.contains(headString) || dict.relativePronouns.contains(headString) ))) {
+        mentionType = MentionType.PRONOMINAL;
+      } else if (!headWord.get(CoreAnnotations.NamedEntityTagAnnotation.class).equals("O") || headWord.get(CoreAnnotations.PartOfSpeechAnnotation.class).startsWith("NNP")) {
+        mentionType = MentionType.PROPER;
+      } else {
+        mentionType = MentionType.NOMINAL;
+      }
+    }
+  }
+
+  private void setGender(Dictionaries dict, Gender genderNumberResult) {
+    gender = Gender.UNKNOWN;
+    if(genderNumberResult!=null && this.number!=Number.PLURAL){
+      gender = genderNumberResult;
+      SieveCoreferenceSystem.logger.finer("[Gender number count] New gender assigned:\t" + gender + ":\t" +  headString + "\tspan:" + spanToString());
+    }
+    if (mentionType == MentionType.PRONOMINAL) {
+      if (dict.malePronouns.contains(headString)) {
+        gender = Gender.MALE;
+      } else if (dict.femalePronouns.contains(headString)) {
+        gender = Gender.FEMALE;
+      }
+    } else {
+      // Bergsma or user provided list
+      if(gender == Gender.UNKNOWN)  {
+        if ("PERSON".equals(nerString) || "PER".equals(nerString)) {
+          // Try to get gender of the named entity
+          // Start with first name until we get gender...
+          List<CoreLabel> nerToks = nerTokens();
+          for (CoreLabel t:nerToks) {
+            String name = t.word().toLowerCase();
+            if(dict.maleWords.contains(name)) {
+              gender = Gender.MALE;
+              SieveCoreferenceSystem.logger.finer("[Bergsma List] New gender assigned:\tMale:\t" +  name + "\tspan:" + spanToString());
+              break;
+            }
+            else if(dict.femaleWords.contains(name))  {
+              gender = Gender.FEMALE;
+              SieveCoreferenceSystem.logger.finer("[Bergsma List] New gender assigned:\tFemale:\t" +  name + "\tspan:" + spanToString());
+              break;
+            }
+          }
+        } else {
+          if(dict.maleWords.contains(headString)) {
+            gender = Gender.MALE;
+            SieveCoreferenceSystem.logger.finer("[Bergsma List] New gender assigned:\tMale:\t" +  headString + "\tspan:" + spanToString());
+          }
+          else if(dict.femaleWords.contains(headString))  {
+            gender = Gender.FEMALE;
+            SieveCoreferenceSystem.logger.finer("[Bergsma List] New gender assigned:\tFemale:\t" +  headString + "\tspan:" + spanToString());
+          }
+          else if(dict.neutralWords.contains(headString))   {
+            gender = Gender.NEUTRAL;
+            SieveCoreferenceSystem.logger.finer("[Bergsma List] New gender assigned:\tNeutral:\t" +  headString + "\tspan:" + spanToString());
+          }
+        }
+      }
+    }
+  }
+
+  protected void setNumber(Dictionaries dict) {
+    if (mentionType == MentionType.PRONOMINAL) {
+      if (dict.pluralPronouns.contains(headString)) {
+        number = Number.PLURAL;
+      } else if (dict.singularPronouns.contains(headString)) {
+        number = Number.SINGULAR;
+      } else {
+        number = Number.UNKNOWN;
+      }
+    } else if (mentionType == MentionType.LIST) {
+      number = Number.PLURAL;
+    } else if(! nerString.equals("O") && mentionType!=MentionType.NOMINAL){
+      // Check to see if this is a list of things
+      if(! (nerString.equals("ORGANIZATION") || nerString.startsWith("ORG"))){
+        number = Number.SINGULAR;
+      } else {
+        // ORGs can be both plural and singular
+        number = Number.UNKNOWN;
+      }
+    } else {
+      String tag = headWord.get(CoreAnnotations.PartOfSpeechAnnotation.class);
+      if (tag.startsWith("N") && tag.endsWith("S")) {
+        number = Number.PLURAL;
+      } else if (tag.startsWith("N")) {
+        number = Number.SINGULAR;
+      } else {
+        number = Number.UNKNOWN;
+      }
+    }
+
+    if(mentionType != MentionType.PRONOMINAL) {
+      if(number == Number.UNKNOWN){
+        if(dict.singularWords.contains(headString)) {
+          number = Number.SINGULAR;
+          SieveCoreferenceSystem.logger.finest("[Bergsma] Number set to:\tSINGULAR:\t" + headString);
+        }
+        else if(dict.pluralWords.contains(headString))  {
+          number = Number.PLURAL;
+          SieveCoreferenceSystem.logger.finest("[Bergsma] Number set to:\tPLURAL:\t" + headString);
+        }
+      }
+
+      final String enumerationPattern = "NP < (NP=tmp $.. (/,|CC/ $.. NP))";
+
+      TregexPattern tgrepPattern = TregexPattern.compile(enumerationPattern);
+      TregexMatcher m = tgrepPattern.matcher(this.mentionSubTree);
+      while (m.find()) {
+        //        Tree t = m.getMatch();
+        if(this.mentionSubTree==m.getNode("tmp")
+           && this.spanToString().toLowerCase().contains(" and ")) {
+          number = Number.PLURAL;
+        }
+      }
+    }
+  }
+
+  private void setAnimacy(Dictionaries dict) {
+    if (mentionType == MentionType.PRONOMINAL) {
+      if (dict.animatePronouns.contains(headString)) {
+        animacy = Animacy.ANIMATE;
+      } else if (dict.inanimatePronouns.contains(headString)) {
+        animacy = Animacy.INANIMATE;
+      } else {
+        animacy = Animacy.UNKNOWN;
+      }
+    } else if (nerString.equals("PERSON") || nerString.startsWith("PER")) {
+      animacy = Animacy.ANIMATE;
+    } else if (nerString.equals("LOCATION")|| nerString.startsWith("LOC")) {
+      animacy = Animacy.INANIMATE;
+    } else if (nerString.equals("MONEY")) {
+      animacy = Animacy.INANIMATE;
+    } else if (nerString.equals("NUMBER")) {
+      animacy = Animacy.INANIMATE;
+    } else if (nerString.equals("PERCENT")) {
+      animacy = Animacy.INANIMATE;
+    } else if (nerString.equals("DATE")) {
+      animacy = Animacy.INANIMATE;
+    } else if (nerString.equals("TIME")) {
+      animacy = Animacy.INANIMATE;
+    } else if (nerString.equals("MISC")) {
+      animacy = Animacy.UNKNOWN;
+    } else if (nerString.startsWith("VEH")) {
+      animacy = Animacy.UNKNOWN;
+    } else if (nerString.startsWith("FAC")) {
+      animacy = Animacy.INANIMATE;
+    } else if (nerString.startsWith("GPE")) {
+      animacy = Animacy.INANIMATE;
+    } else if (nerString.startsWith("WEA")) {
+      animacy = Animacy.INANIMATE;
+    } else if (nerString.startsWith("ORG")) {
+      animacy = Animacy.INANIMATE;
+    } else {
+      animacy = Animacy.UNKNOWN;
+    }
+    if(mentionType != MentionType.PRONOMINAL) {
+      if(Constants.USE_ANIMACY_LIST){
+        // Better heuristics using DekangLin:
+        if(animacy == Animacy.UNKNOWN)  {
+          if(dict.animateWords.contains(headString))  {
+            animacy = Animacy.ANIMATE;
+            SieveCoreferenceSystem.logger.finest("Assigned Dekang Lin animacy:\tANIMATE:\t" + headString);
+          }
+          else if(dict.inanimateWords.contains(headString)) {
+            animacy = Animacy.INANIMATE;
+            SieveCoreferenceSystem.logger.finest("Assigned Dekang Lin animacy:\tINANIMATE:\t" + headString);
+          }
+        }
+      }
+    }
+  }
+
+  private static final String [] commonNESuffixes = {
+    "Corp", "Co", "Inc", "Ltd"
+  };
+
+  private static boolean knownSuffix(String s) {
+    if(s.endsWith(".")) s = s.substring(0, s.length() - 1);
+    for(String suff: commonNESuffixes){
+      if(suff.equalsIgnoreCase(s)){
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private void setHeadString() {
+    this.headString = headWord.get(CoreAnnotations.TextAnnotation.class).toLowerCase();
+    String ner = headWord.get(CoreAnnotations.NamedEntityTagAnnotation.class);
+    if (ner != null && !ner.equals("O")) {
+      // make sure that the head of a NE is not a known suffix, e.g., Corp.
+      int start = headIndex - startIndex;
+      if (originalSpan.size() > 0 && start >= originalSpan.size()) {
+        throw new RuntimeException("Invalid start index " + start + "=" + headIndex + "-" + startIndex
+                + ": originalSpan=[" + StringUtils.joinWords(originalSpan, " ") + "], head=" + headWord);
+      }
+      while (start >= 0) {
+        String head = originalSpan.size() > 0 ? originalSpan.get(start).get(CoreAnnotations.TextAnnotation.class).toLowerCase() : "";
+        if (knownSuffix(head)) {
+          start --;
+        } else {
+          this.headString = head;
+          this.headWord = originalSpan.get(start);
+          this.headIndex = startIndex + start;
+          break;
+        }
+      }
+    }
+  }
+
+  private void setNERString() {
+    if(headWord.has(CoreAnnotations.EntityTypeAnnotation.class)){ // ACE
+      if(headWord.has(CoreAnnotations.NamedEntityTagAnnotation.class) &&
+              headWord.get(CoreAnnotations.EntityTypeAnnotation.class).equals("NAM")){
+        this.nerString = headWord.get(CoreAnnotations.NamedEntityTagAnnotation.class);
+      } else {
+        this.nerString = "O";
+      }
+    }
+    else{ // MUC
+      if (headWord.has(CoreAnnotations.NamedEntityTagAnnotation.class)) {
+        this.nerString = headWord.get(CoreAnnotations.NamedEntityTagAnnotation.class);
+      } else {
+        this.nerString = "O";
+      }
+    }
+  }
+
+  public boolean sameSentence(Mention m) {
+    return m.sentenceWords == sentenceWords;
+  }
+
+  private static boolean included(CoreLabel small, List<CoreLabel> big) {
+    if(small.tag().equals("NNP")){
+      for(CoreLabel w: big){
+        if(small.word().equals(w.word()) ||
+            small.word().length() > 2 && w.word().startsWith(small.word())){
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  protected boolean headsAgree(Mention m) {
+    // we allow same-type NEs to not match perfectly, but rather one could be included in the other, e.g., "George" -> "George Bush"
+    if (!nerString.equals("O") && !m.nerString.equals("O") && nerString.equals(m.nerString) &&
+            (included(headWord, m.originalSpan) || included(m.headWord, originalSpan))) {
+      return true;
+    }
+    return headString.equals(m.headString);
+  }
+
+  public boolean numbersAgree(Mention m){
+    return numbersAgree(m, false);
+  }
+  private boolean numbersAgree(Mention m, boolean strict) {
+    if (strict) {
+      return number == m.number;
+    } else {
+      return number == Number.UNKNOWN ||
+              m.number == Number.UNKNOWN ||
+              number == m.number;
+    }
+  }
+
+  public boolean gendersAgree(Mention m){
+    return gendersAgree(m, false);
+  }
+  public boolean gendersAgree(Mention m, boolean strict) {
+    if (strict) {
+      return gender == m.gender;
+    } else {
+      return gender == Gender.UNKNOWN ||
+              m.gender == Gender.UNKNOWN ||
+              gender == m.gender;
+    }
+  }
+
+  public boolean animaciesAgree(Mention m){
+    return animaciesAgree(m, false);
+  }
+  public boolean animaciesAgree(Mention m, boolean strict) {
+    if (strict) {
+      return animacy == m.animacy;
+    } else {
+      return animacy == Animacy.UNKNOWN ||
+              m.animacy == Animacy.UNKNOWN ||
+              animacy == m.animacy;
+    }
+  }
+
+  public boolean entityTypesAgree(Mention m, Dictionaries dict){
+    return entityTypesAgree(m, dict, false);
+  }
+
+  public boolean entityTypesAgree(Mention m, Dictionaries dict, boolean strict) {
+    if (strict) {
+      return nerString.equals(m.nerString);
+    } else {
+      if (isPronominal()) {
+        if (nerString.contains("-") || m.nerString.contains("-")) { //for ACE with gold NE
+          if (m.nerString.equals("O")) {
+            return true;
+          } else if (m.nerString.startsWith("ORG")) {
+            return dict.organizationPronouns.contains(headString);
+          } else if (m.nerString.startsWith("PER")) {
+            return dict.personPronouns.contains(headString);
+          } else if (m.nerString.startsWith("LOC")) {
+            return dict.locationPronouns.contains(headString);
+          } else if (m.nerString.startsWith("GPE")) {
+            return dict.GPEPronouns.contains(headString);
+          } else if (m.nerString.startsWith("VEH") || m.nerString.startsWith("FAC") || m.nerString.startsWith("WEA")) {
+            return dict.facilityVehicleWeaponPronouns.contains(headString);
+          } else {
+            return false;
+          }
+        } else {  // ACE w/o gold NE or MUC
+          if (m.nerString.equals("O")) {
+            return true;
+          } else if (m.nerString.equals("MISC")) {
+            return true;
+          } else if (m.nerString.equals("ORGANIZATION")) {
+            return dict.organizationPronouns.contains(headString);
+          } else if (m.nerString.equals("PERSON")) {
+            return dict.personPronouns.contains(headString);
+          } else if (m.nerString.equals("LOCATION")) {
+            return dict.locationPronouns.contains(headString);
+          } else if (m.nerString.equals("DATE") || m.nerString.equals("TIME")) {
+            return dict.dateTimePronouns.contains(headString);
+          } else if (m.nerString.equals("MONEY") || m.nerString.equals("PERCENT") || m.nerString.equals("NUMBER")) {
+            return dict.moneyPercentNumberPronouns.contains(headString);
+          } else {
+            return false;
+          }
+        }
+      }
+      return nerString.equals("O") ||
+              m.nerString.equals("O") ||
+              nerString.equals(m.nerString);
+    }
+  }
+
+
+

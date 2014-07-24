@@ -1,0 +1,85 @@
+  private boolean extractMMDDYY(String inputDate) {
+    Matcher m = pat.matcher(inputDate);
+    if (m.matches()) {
+      if (DEBUG) {
+        System.err.println("MMDDYY succeeded");
+      }
+      String monthValue = m.group(1);
+      if (monthValue.length() < 2)//we always use two digit months
+      {
+        monthValue = '0' + monthValue;
+      }
+      String dayValue = m.group(2);
+      if (dayValue.length() < 2) {
+        dayValue = '0' + dayValue;
+      }
+      String yearString; // always initialized below
+      if (m.group(3).length() == 2) {
+        int yearInt = Integer.parseInt(m.group(3));
+        //Now we add "20" or "19" to the front of the two digit year depending on its value....
+        if (yearInt < 50) {
+          yearString = "20" + m.group(3);
+        } else {
+          yearString = "19" + m.group(3);
+        }
+
+      } else {
+        yearString = m.group(3);
+      }
+      //lastYearSet = new Integer(yearString).intValue();
+      isoDate = yearString + monthValue + dayValue;
+      return true;
+    }
+    return false;
+  }
+
+  private Pattern re1 = Pattern.compile("[1-2][0-9]{3}|'[0-9]{2}");
+
+  public boolean extractYear(String inputDate) {
+    if (DEBUG) {
+      System.err.println("Extracting year from: |" + inputDate + '|');
+    }
+    String extract;
+    Matcher m1 = re1.matcher(inputDate);
+    Matcher m2 = re2.matcher(inputDate);
+    if (m1.find()) {
+      extract = m1.group(0);
+    } else if (m2.find()) {
+      extract = m2.group(1);
+    } else {
+      extract = foundMiscYearPattern(inputDate);
+      if (extract == null || extract.equals("")) {
+        return false;
+      }
+    }
+
+    if ( ! "".equals(extract)) {
+      if (extract.charAt(0) == '\'') {
+        extract = extract.substring(1);
+      }
+      extract = extract.trim();
+      if (extract.length() == 2) {
+        if (extract.charAt(0) < '5') {
+          extract = "20" + extract;
+        } else {
+          extract = "19" + extract;
+        }
+      }
+      if (inputDate.charAt(inputDate.length() - 1) == 's') {//decade or century marker
+        if (extract.charAt(2) == '0') {//e.g., 1900s -> 1900/1999
+          String endDate = Integer.toString((Integer.parseInt(extract) + 99));
+          extract = extract + '/' + endDate;
+        } else {//e.g., 1920s -> 1920/1929
+          String endDate = Integer.toString((Integer.parseInt(extract) + 9));
+          extract = extract + '/' + endDate;
+        }
+      }
+      isoDate = extract;
+      if (DEBUG) {
+        System.err.println("year extracted:" + extract);
+      }
+      return true;
+    }
+    return false;
+  }
+

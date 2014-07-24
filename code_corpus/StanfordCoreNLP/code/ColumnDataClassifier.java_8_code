@@ -1,0 +1,76 @@
+  private Pair<GeneralDataset<String,String>, List<String[]>> readDataset(String filename, boolean inTestPhase) {
+    Timing tim = new Timing();
+    System.err.print("Reading dataset from " + filename + " ... ");
+    GeneralDataset<String,String> dataset;
+    List<String[]> lineInfos = null;
+    if ((inTestPhase && Flags.testFromSVMLight) || (!inTestPhase && Flags.trainFromSVMLight)) {
+      List<String> lines = null;
+      if (inTestPhase) {
+        lines = new ArrayList<String>();
+      }
+      if (globalFlags.usesRealValues) {
+        dataset = RVFDataset.readSVMLightFormat(filename, lines);
+      } else {
+        dataset = Dataset.readSVMLightFormat(filename, lines);
+      }
+      if (lines != null) {
+        lineInfos = makeSVMLightLineInfos(lines);
+      }
+    } else {
+      try {
+        if (inTestPhase) {
+          lineInfos = new ArrayList<String[]>();
+        }
+        if (globalFlags.usesRealValues) {
+          dataset = new RVFDataset<String,String>();
+        } else {
+          dataset = new Dataset<String,String>();
+        }
+        int lineNo = 0;
+        int minColumns = Integer.MAX_VALUE;
+        int maxColumns = 0;
+        for (String line : ObjectBank.getLineIterator(new File(filename), Flags.encoding)) {
+          lineNo++;
+          String[] strings = splitLineToFields(line);
+          if (strings.length < 2) {
+            throw new RuntimeException("Line format error at line " + lineNo + ": " + line);
+          }
+          if (strings.length < minColumns) {
+            minColumns = strings.length;
+          }
+          if (strings.length > maxColumns) {
+            maxColumns = strings.length;
+          }
+          if (inTestPhase) {
+            lineInfos.add(strings);
+          }
+          dataset.add(makeDatumFromStrings(strings));
+        }
+        if (lineNo > 0 && minColumns != maxColumns) {
+          System.err.println();
+          System.err.println("WARNING: Number of tab-separated columns in " +
+                  filename + " varies between " + minColumns + " and " + maxColumns);
+        }
+      } catch (Exception e) {
+        throw new RuntimeException("Dataset could not be processed", e);
+      }
+    }
+
+    System.err.println("done [" + tim.toSecondsString() + "s, " + dataset.size() + " items].");
+    return new Pair<GeneralDataset<String,String>,List<String[]>>(dataset, lineInfos);
+  }
+
+  //Split according to whether we are using tsv file (default) or csv files
+  private String[] splitLineToFields(String line) {
+    if(globalFlags.csvFormat) {
+      String[] strings = StringUtils.splitOnCharWithQuoting(line, ',', '"', '"');
+      for (int i = 0; i < strings.length; ++i) {
+        if (strings[i].startsWith("\"") && strings[i].endsWith("\""))
+          strings[i] = strings[i].substring(1,strings[i].length()-1);
+      }
+      return strings;
+    }
+    else
+      return tab.split(line);
+  }
+

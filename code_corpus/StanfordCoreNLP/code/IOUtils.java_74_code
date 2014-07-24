@@ -1,0 +1,18 @@
+  private static void copyFile(File source, File target) throws IOException {
+    FileChannel sourceChannel = new FileInputStream( source ).getChannel();
+    FileChannel targetChannel = new FileOutputStream( target ).getChannel();
+
+    // allow for the case that it doesn't all transfer in one go (though it probably does for a file cp)
+    long pos = 0;
+    long toCopy = sourceChannel.size();
+    while (toCopy > 0) {
+      long bytes = sourceChannel.transferTo(pos, toCopy, targetChannel);
+      pos += bytes;
+      toCopy -= bytes;
+    }
+
+    sourceChannel.close();
+    targetChannel.close();
+  }
+
+

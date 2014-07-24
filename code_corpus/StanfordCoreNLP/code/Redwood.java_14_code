@@ -1,0 +1,98 @@
+      ---------------------------------------------------------
+      HELPER METHODS
+      ---------------------------------------------------------
+
+  private static void queueTask(long threadId, Runnable toRun){
+    assert control.isHeldByCurrentThread();
+    assert threadId != currentThread;
+    //(get queue)
+    if(!threadedLogQueue.containsKey(threadId)){
+      threadedLogQueue.put(threadId, new LinkedList<Runnable>());
+    }
+    Queue<Runnable> threadLogQueue = threadedLogQueue.get(threadId);
+    //(add to queue)
+    threadLogQueue.offer( toRun );
+    //(register this thread as waiting)
+    if(!threadsWaiting.contains(threadId)){
+      threadsWaiting.offer(threadId);
+      assert threadedLogQueue.get(threadId) != null && !threadedLogQueue.get(threadId).isEmpty();
+    }
+  }
+
+  private static void releaseThreadControl(long threadId){
+    assert !isThreaded || control.isHeldByCurrentThread();
+    assert currentThread < 0L || currentThread == threadId;
+    //(release control)
+    currentThread = -1L;
+  }
+
+  private static void attemptThreadControl(long threadId, Runnable r){
+    //(get lock)
+    boolean tookLock = false;
+    if(!control.isHeldByCurrentThread()){
+      control.lock();
+      tookLock = true;
+    }
+    //(perform action)
+    attemptThreadControlThreadsafe(threadId);
+    if(threadId == currentThread){
+      r.run();
+    } else {
+      queueTask(threadId, r);
+    }
+    //(release lock)
+    assert control.isHeldByCurrentThread();
+    if(tookLock){
+      control.unlock();
+    }
+  }
+
+  private static void attemptThreadControlThreadsafe(long threadId){
+    //--Assertions
+    assert control.isHeldByCurrentThread();
+    //--Update Current Thread
+    boolean hopeless = true;
+    if(currentThread < 0L){
+      //(case: no one has control)
+      if(threadsWaiting.isEmpty()){
+        currentThread = threadId;
+      } else {
+        currentThread = threadsWaiting.poll();
+        hopeless = false;
+        assert threadedLogQueue.get(currentThread) == null || !threadedLogQueue.get(currentThread).isEmpty();
+      }
+    } else if(currentThread == threadId) {
+      //(case: we have control)
+      threadsWaiting.remove(currentThread);
+    } else if(currentThread >= 0L){
+      //(case: someone else has control
+      threadsWaiting.remove(currentThread);
+    } else {
+      assert false;
+    }
+    //--Clear Backlog
+    long activeThread = currentThread;
+    Queue<Runnable> backlog = threadedLogQueue.get(currentThread);
+    if(backlog != null){
+      //(run backlog)
+      while(!backlog.isEmpty() && currentThread >= 0L){
+        backlog.poll().run();
+      }
+      //(requeue, if applicable)
+      if(currentThread < 0L && !backlog.isEmpty()){
+        threadsWaiting.offer(activeThread);
+        hopeless = false;
+      }
+    }
+    //--Recursive
+    if(!hopeless &&  currentThread != threadId){
+      attemptThreadControlThreadsafe(threadId);
+    }
+    assert !threadsWaiting.contains(currentThread);
+    assert control.isHeldByCurrentThread();
+  }
+
+  protected static RecordHandlerTree rootHandler() {
+    return handlers;
+  }
+

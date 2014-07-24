@@ -1,0 +1,38 @@
+  public static void writeModel(String modelName, File modelFile, BaseModel model) {
+
+    CmdLineUtil.checkOutputFile(modelName + " model", modelFile);
+
+    System.err.print("Writing " + modelName + " model ... ");
+
+    long beginModelWritingTime = System.currentTimeMillis();
+
+    OutputStream modelOut = null;
+    try {
+      modelOut = new BufferedOutputStream(new FileOutputStream(modelFile), IO_BUFFER_SIZE);
+      model.serialize(modelOut);
+    } catch (IOException e) {
+      System.err.println("failed");
+      throw new TerminateToolException(-1, "Error during writing model file '" + modelFile + "'", e);
+    } finally {
+      if (modelOut != null) {
+        try {
+          modelOut.close();
+        } catch (IOException e) {
+          System.err.println("Failed to properly close model file '" + modelFile + "': " +
+              e.getMessage());
+        }
+      }
+    }
+
+    long modelWritingDuration = System.currentTimeMillis() - beginModelWritingTime;
+
+    System.err.printf("done (%.3fs)\n", modelWritingDuration / 1000d);
+
+    System.err.println();
+
+    System.err.println("Wrote " + modelName + " model to");
+    System.err.println("path: " + modelFile.getAbsolutePath());
+
+    System.err.println();
+  }
+

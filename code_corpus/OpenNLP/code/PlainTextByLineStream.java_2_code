@@ -1,0 +1,21 @@
+public class PlainTextByLineStream implements ObjectStream<String> {
+
+  private final FileChannel channel;
+  private final String encoding;
+
+  private InputStreamFactory inputStreamFactory;
+
+  private BufferedReader in;
+
+  public PlainTextByLineStream(InputStreamFactory inputStreamFactory, String charsetName) throws IOException {
+    this(inputStreamFactory, Charset.forName(charsetName));
+  }
+
+  public PlainTextByLineStream(InputStreamFactory inputStreamFactory, Charset charset) throws IOException {
+    this.inputStreamFactory = inputStreamFactory;
+    this.channel = null;
+    this.encoding = charset.name();
+
+    reset();
+  }
+

@@ -1,0 +1,54 @@
+/**
+ * <p>
+ * A Map backed by the filesystem.
+ * The primary use-case for this class is in reading a large cache which is convenient to store on disk.
+ * The class will load subsets of data on demand; if the JVM is in danger of running out of memory, these will
+ * be dropped from memory, and re-queried from disk if requested again.
+ * For best results, make sure to set a maximum number of files (by default, any number of files can be created);
+ * and, make sure this number is the same when reading and writing to the database.
+ * </p>
+ *
+ * <p>
+ * The keys should have a consistent hash code.
+ * That is, the value of the hash code of an object should be consistent between runs of the JVM.
+ * Note that this is <b>not</b> enforced in the specification of a hash code; in fact, in Java 7
+ * the hash code of a String may change between JVM invocations. The user is advised to be wary.
+ * </p>
+ *
+ * <p>
+ * Furthermore, note that many of the operations on this class are expensive, as they require traversing
+ *   a potentially large portion of disk, reading it into memory.
+ * Some operations, such as those requiring all the values to be enumerated, may cause a spike in memory
+ *   usage.
+ * </p>
+ *
+ * <p>
+ * This class is thread-safe, but not necessarily process-safe.
+ * If two processes write to the same block, there is no guarantee that both values will actually be written.
+ * This is very important -- <b>this class is a cache and not a database</b>.
+ * If you care about data integrity, you should use a real database.
+ * </p>
+ *
+ * <p>
+ *   The values in this map should not be modified once read -- the cache has no reliable way to pick up this change
+ *   and synchronize it with the disk.
+ *   To enforce this, the cache will cast collections to their unmodifiable counterparts -- to avoid class cast exceptions,
+ *   you should not parameterize the class with a particular type of collection
+ *   (e.g., use {@link java.util.Map} rather than {@link java.util.HashMap}).
+ * </p>
+ *
+ * <p>
+ *   The serialization behavior can be safely changed by overwriting:
+ *   <ul>
+ *     <li>@See FileBackedCache#newInputStream</li>
+ *     <li>@See FileBackedCache#newOutputStream</li>
+ *     <li>@See FileBackedCache#writeNextObject</li>
+ *     <li>@See FileBackedCache#readNextObject</li>
+ *   </ul>
+ * </p>
+ *
+ * @param <KEY> The key to cache by
+ * @param <T> The object to cache
+ *
+ * @author Gabor Angeli (angeli at cs)
+ */

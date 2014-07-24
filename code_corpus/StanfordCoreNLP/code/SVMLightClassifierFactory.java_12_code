@@ -1,0 +1,13 @@
+  private ClassicCounter<Pair<F, L>> convertSVMLightWeights(ClassicCounter<Integer> weights, Index<F> featureIndex, Index<L> labelIndex) {
+    ClassicCounter<Pair<F, L>> newWeights = new ClassicCounter<Pair<F, L>>();
+    for (int i : weights.keySet()) {
+      F f = featureIndex.get(i-1);
+      double w = weights.getCount(i);
+      // the first guy in the labelIndex was the +1 class and the second guy
+      // was the -1 class
+      newWeights.incrementCount(new Pair<F, L>(f, labelIndex.get(0)),w);
+      newWeights.incrementCount(new Pair<F, L>(f, labelIndex.get(1)),-w);
+    }
+    return newWeights;
+  }
+

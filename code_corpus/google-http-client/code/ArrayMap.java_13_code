@@ -1,0 +1,48 @@
+  public final void ensureCapacity(int minCapacity) {
+    if (minCapacity < 0) {
+      throw new IndexOutOfBoundsException();
+    }
+    Object[] data = this.data;
+    int minDataCapacity = minCapacity << 1;
+    int oldDataCapacity = data == null ? 0 : data.length;
+    if (minDataCapacity > oldDataCapacity) {
+      if (newDataCapacity % 2 != 0) {
+        newDataCapacity++;
+      }
+      if (newDataCapacity < minDataCapacity) {
+        newDataCapacity = minDataCapacity;
+      }
+      setDataCapacity(newDataCapacity);
+    }
+  }
+
+  private void setDataCapacity(int newDataCapacity) {
+    if (newDataCapacity == 0) {
+      this.data = null;
+      return;
+    }
+    int size = this.size;
+    Object[] oldData = this.data;
+    if (size == 0 || newDataCapacity != oldData.length) {
+      Object[] newData = this.data = new Object[newDataCapacity];
+      if (size != 0) {
+        System.arraycopy(oldData, 0, newData, 0, size << 1);
+      }
+    }
+  }
+
+  private void setData(int dataIndexOfKey, K key, V value) {
+    Object[] data = this.data;
+    data[dataIndexOfKey] = key;
+    data[dataIndexOfKey + 1] = value;
+  }
+
+  private V valueAtDataIndex(int dataIndex) {
+    if (dataIndex < 0) {
+      return null;
+    }
+    @SuppressWarnings("unchecked")
+    V result = (V) this.data[dataIndex];
+    return result;
+  }
+

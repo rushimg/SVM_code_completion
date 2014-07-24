@@ -1,0 +1,17 @@
+  public static class HttpBackOffIOExceptionHandler implements HttpIOExceptionHandler {
+    BackOff backOff;
+    Sleeper sleeper;
+    public boolean handle(HttpRequest request, boolean supportsRetry) throws IOException {
+      if (!supportsRetry) {
+        return false;
+      }
+      try {
+        return BackOffUtils.next(sleeper, backOff);
+      } catch (InterruptedException exception) {
+        return false;
+      }
+    }
+  }
+@Beta
+public interface HttpIOExceptionHandler {
+

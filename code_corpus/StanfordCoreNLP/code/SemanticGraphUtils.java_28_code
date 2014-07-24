@@ -1,0 +1,55 @@
+  public static String printEdges(Iterable<SemanticGraphEdge> edges) {
+    StringWriter buf = new StringWriter();
+    for (SemanticGraphEdge edge : edges) {
+      buf.append("\t");
+      buf.append(edge.getRelation().toString());
+      buf.append("(");
+      buf.append(edge.getGovernor().toString());
+      buf.append(", ");
+      buf.append(edge.getDependent().toString());
+      buf.append(")\n");
+    }
+    return buf.toString();
+  }
+
+  public static class PrintVerticeParams {
+    public boolean showWord = true;
+    public boolean showIndex = true;
+    public boolean showSentIndex = false;
+    public boolean showPOS = false;
+    public int wrapAt = 8;
+  }
+
+  public static String printVertices(SemanticGraph sg) {
+    return printVertices(sg, new PrintVerticeParams());
+  }
+
+  public static String printVertices(SemanticGraph sg, PrintVerticeParams params) {
+    StringWriter buf = new StringWriter();
+    int count = 0;
+    for (IndexedWord word : sg.vertexListSorted()) {
+      count++;
+      if (count % params.wrapAt == 0) { buf.write("\n\t"); }
+      if (params.showIndex) {
+        buf.write(String.valueOf(word.index()));
+        buf.write(":");
+      }
+      if (params.showSentIndex) {
+        buf.write("s");
+        buf.write(String.valueOf(word.sentIndex()));
+        buf.write("/");
+      }
+      if (params.showPOS) {
+        buf.write(word.tag());
+        buf.write("/");
+      }
+
+      if (params.showWord) {
+        buf.write(word.word());
+      }
+
+      buf.write(" ");
+    }
+    return buf.toString();
+  }
+

@@ -1,0 +1,28 @@
+  protected static int codePointAt(CharSequence seq, int index, int end) {
+    if (index < end) {
+      char c1 = seq.charAt(index++);
+      if (c1 < Character.MIN_HIGH_SURROGATE || c1 > Character.MAX_LOW_SURROGATE) {
+        // Fast path (first test is probably all we need to do)
+        return c1;
+      } else if (c1 <= Character.MAX_HIGH_SURROGATE) {
+        // If the high surrogate was the last character, return its inverse
+        if (index == end) {
+          return -c1;
+        }
+        // Otherwise look for the low surrogate following it
+        char c2 = seq.charAt(index);
+        if (Character.isLowSurrogate(c2)) {
+          return Character.toCodePoint(c1, c2);
+        }
+        throw new IllegalArgumentException(
+            "Expected low surrogate but got char '" + c2 + "' with value " + (int) c2 + " at index "
+                + index);
+      } else {
+        throw new IllegalArgumentException(
+            "Unexpected low surrogate character '" + c1 + "' with value " + (int) c1 + " at index "
+                + (index - 1));
+      }
+    }
+    throw new IndexOutOfBoundsException("Index exceeds specified range");
+  }
+

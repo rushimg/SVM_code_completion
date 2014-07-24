@@ -1,0 +1,31 @@
+    protected void cut(FibonacciHeapNode<T> x, FibonacciHeapNode<T> y)
+    {
+        // remove x from childlist of y and decrement degree[y]
+        x.left.right = x.right;
+        x.right.left = x.left;
+        y.degree--;
+
+        // reset y.child if necessary
+        if (y.child == x) {
+            y.child = x.right;
+        }
+
+        if (y.degree == 0) {
+            y.child = null;
+        }
+
+        // add x to root list of heap
+        x.left = minNode;
+        x.right = minNode.right;
+        minNode.right = x;
+        x.right.left = x;
+
+        // set parent[x] to nil
+        x.parent = null;
+
+        // set mark[x] to false
+        x.mark = false;
+    }
+
+    // cut
+

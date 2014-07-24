@@ -1,0 +1,49 @@
+  public void crossValidateSetSigma(GeneralDataset<L, F> dataset,int kfold, final Scorer<L> scorer, LineSearcher minimizer) {
+    System.err.println("##in Cross Validate, folds = " + kfold);
+    System.err.println("##Scorer is " + scorer);
+
+    featureIndex = dataset.featureIndex;
+    labelIndex = dataset.labelIndex;
+
+    final CrossValidator<L, F> crossValidator = new CrossValidator<L, F>(dataset,kfold);
+    final Function<Triple<GeneralDataset<L, F>,GeneralDataset<L, F>,CrossValidator.SavedState>,Double> score =
+      new Function<Triple<GeneralDataset<L, F>,GeneralDataset<L, F>,CrossValidator.SavedState>,Double> ()
+      {
+        public Double apply (Triple<GeneralDataset<L, F>,GeneralDataset<L, F>,CrossValidator.SavedState> fold) {
+          GeneralDataset<L, F> trainSet = fold.first();
+          GeneralDataset<L, F> devSet   = fold.second();
+
+          double[] weights = (double[])fold.third().state;
+          double[][] weights2D;
+
+          weights2D = trainWeights(trainSet, weights,true); // must of course bypass sigma tuning here.
+
+          fold.third().state = ArrayUtils.flatten(weights2D);
+
+          LinearClassifier<L, F> classifier = new LinearClassifier<L, F>(weights2D, trainSet.featureIndex, trainSet.labelIndex);
+
+          double score = scorer.score(classifier, devSet);
+          //System.out.println("score: "+score);
+          System.out.print(".");
+          return score;
+        }
+      };
+
+    Function<Double,Double> negativeScorer =
+      new Function<Double,Double> ()
+      {
+        public Double apply(Double sigmaToTry) {
+          //sigma = sigmaToTry;
+          setSigma(sigmaToTry);
+          Double averageScore = crossValidator.computeAverage(score);
+          System.err.print("##sigma = "+getSigma()+" ");
+          System.err.println("-> average Score: "+averageScore);
+          return -averageScore;
+        }
+      };
+
+    double bestSigma = minimizer.minimize(negativeScorer);
+    System.err.println("##best sigma: " + bestSigma);
+    setSigma(bestSigma);
+  }
+

@@ -1,0 +1,48 @@
+public abstract class AbstractDependencyGrammar implements DependencyGrammar {
+
+  protected TagProjection tagProjection;
+  protected final Index<String> tagIndex;
+  protected final Index<String> wordIndex;
+  protected int numTagBins;
+  protected int[] tagBin;
+  protected TreebankLanguagePack tlp;
+  protected boolean directional;
+  protected boolean useDistance;
+  protected boolean useCoarseDistance;
+
+  protected Lexicon lex;
+
+  protected final IntTaggedWord stopTW;
+  protected final IntTaggedWord wildTW;
+
+  protected transient Map<IntDependency,IntDependency> expandDependencyMap = Generics.newHashMap();
+
+  private static final boolean DEBUG = false;
+
+  protected int[] coarseDistanceBins = {0, 2, 5};
+  protected int[] regDistanceBins = {0, 1, 5, 10};
+
+  protected final Options op;
+
+  transient protected Interner<IntTaggedWord> itwInterner =
+    new Interner<IntTaggedWord>();
+
+  public AbstractDependencyGrammar(TreebankLanguagePack tlp, TagProjection tagProjection, boolean directional, boolean useDistance, boolean useCoarseDistance, Options op, Index<String> wordIndex, Index<String> tagIndex) {
+    this.tlp = tlp;
+    this.tagProjection = tagProjection;
+    this.directional = directional;
+    this.useDistance = useDistance;
+    this.useCoarseDistance = useCoarseDistance;
+    this.op = op;
+    this.wordIndex = wordIndex;
+    this.tagIndex = tagIndex;
+    stopTW = new IntTaggedWord(STOP_WORD_INT, STOP_TAG_INT);
+    wildTW = new IntTaggedWord(ANY_WORD_INT, ANY_TAG_INT);
+
+    initTagBins();
+  }
+
+  public void setLexicon(Lexicon lexicon) {
+    lex = lexicon;
+  }
+

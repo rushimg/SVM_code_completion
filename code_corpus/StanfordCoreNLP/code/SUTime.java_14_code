@@ -1,0 +1,101 @@
+      if (tl != null) {
+        return tl.getPeriod();
+      StandardTemporalType tlt = getStandardTemporalType();
+      if (tlt != null) {
+        return tlt.getPeriod();
+      }
+      if (base == null) {
+        return null;
+      }
+      DateTimeFieldType mostGeneral = JodaTimeUtils.getMostGeneral(base);
+      DurationFieldType df = mostGeneral.getRangeDurationType();
+      // if (df == null) {
+      // df = mostGeneral.getDurationType();
+      // }
+      if (df != null) {
+        try {
+          return new DurationWithFields(new Period().withField(df, 1));
+        } catch (Exception ex) {
+          // TODO: Do something intelligent here
+        }
+      }
+      return null;
+    }
+
+    public List<Temporal> toList() {
+      if (JodaTimeUtils.hasField(base, DateTimeFieldType.year())
+         && JodaTimeUtils.hasField(base, DateTimeFieldType.monthOfYear())
+         && JodaTimeUtils.hasField(base, DateTimeFieldType.dayOfWeek())) {
+        List<Temporal> list = new ArrayList<Temporal>();
+        Partial pt = new Partial();
+        pt = JodaTimeUtils.setField(pt, DateTimeFieldType.year(), base.get(DateTimeFieldType.year()));
+        pt = JodaTimeUtils.setField(pt, DateTimeFieldType.monthOfYear(), base.get(DateTimeFieldType.monthOfYear()));
+        pt = JodaTimeUtils.setField(pt, DateTimeFieldType.dayOfMonth(), 1);
+
+        Partial candidate = JodaTimeUtils.resolveDowToDay(base, pt);
+        if (candidate.get(DateTimeFieldType.monthOfYear()) != base.get(DateTimeFieldType.monthOfYear())) {
+          pt = JodaTimeUtils.setField(pt, DateTimeFieldType.dayOfMonth(), 8);
+          candidate = JodaTimeUtils.resolveDowToDay(base, pt);
+          if (candidate.get(DateTimeFieldType.monthOfYear()) != base.get(DateTimeFieldType.monthOfYear())) {
+            // give up
+            return null;
+          }
+        }
+        try {
+          while (candidate.get(DateTimeFieldType.monthOfYear()) == base.get(DateTimeFieldType.monthOfYear())) {
+            list.add(new PartialTime(this, candidate));
+            pt = JodaTimeUtils.setField(pt, DateTimeFieldType.dayOfMonth(), pt.get(DateTimeFieldType.dayOfMonth()) + 7);
+            candidate = JodaTimeUtils.resolveDowToDay(base, pt);
+          }
+        } catch (IllegalFieldValueException ex) {}
+        return list;
+      } else {
+        return null;
+      }
+    }
+
+    @Override
+    public Time intersect(Time t) {
+      if (t == null || t == TIME_UNKNOWN)
+        return this;
+      if (base == null) {
+        if (dateTimeZone != null) {
+          return (Time) t.setTimeZone(dateTimeZone);
+        } else {
+          return t;
+        }
+      }
+      if (t instanceof CompositePartialTime) {
+        return t.intersect(this);
+      } else if (t instanceof PartialTime) {
+        Pair<PartialTime,PartialTime> compatible = getCompatible(this, (PartialTime) t);
+        if (compatible == null) {
+          return null;
+        }
+        Partial p = JodaTimeUtils.combine(compatible.first.base, compatible.second.base);
+        // Take timezone if there is one
+        DateTimeZone dtz = (dateTimeZone != null)? dateTimeZone: ((PartialTime) t).dateTimeZone;
+        PartialTime res = new PartialTime(p);
+        if (dtz != null) return res.setTimeZone(dtz);
+        else return res;
+      } else if (t instanceof OrdinalTime) {
+        Temporal temp = t.resolve(this);
+        if (temp instanceof PartialTime) return (Time) temp;
+        else return t.intersect(this);
+      } else if (t instanceof GroundedTime) {
+        return t.intersect(this);
+      } else if (t instanceof RelativeTime) {
+        return t.intersect(this);
+      } else {
+        Time cpt = makeComposite(this, t);
+        if (cpt != null) {
+          return cpt;
+        }
+        if (t instanceof InexactTime) {
+          return t.intersect(this);
+        }
+      }
+      return null;
+      // return new RelativeTime(this, TemporalOp.INTERSECT, t);
+    }
+

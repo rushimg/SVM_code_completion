@@ -1,0 +1,47 @@
+  @Override
+  public List<Record> signalEndTrack(int newDepth, long timeOfEnd) {
+    //(pop info)
+    TrackInfo childInfo = this.info;
+    if (childInfo == null) {
+      throw new IllegalStateException("OutputHandler received endTrack() without matching startTrack() --" +
+          "are your handlers mis-configured?");
+    }
+    if(trackStack.empty()){
+      this.info = null;
+    } else {
+      this.info = this.trackStack.pop();
+      this.info.numElementsPrinted += childInfo.numElementsPrinted;
+    }
+    //(handle track)
+    if(this.queuedTracks.isEmpty()){
+      StringBuilder b = new StringBuilder();
+      if (!this.missingOpenBracket) {
+        //(write margin)
+        for(int i=0; i<this.leftMargin; i++) {
+          b.append(' ');
+        }
+        //(null content)
+        writeContent(newDepth, "", b);
+        //(write bracket)
+        b.append("} ");
+      }
+      this.missingOpenBracket = false;
+      //(write matching line)
+      if (childInfo.numElementsPrinted > this.minLineCountForTrackNameReminder) {
+        b.append("<< ").append(childInfo.name).append(' ');
+      }
+      //(write time)
+      if (timeOfEnd-childInfo.beginTime > 100) {
+        b.append('[');
+        Redwood.formatTimeDifference(timeOfEnd-childInfo.beginTime,b);
+        b.append(']');
+      }
+      //(print)
+      b.append('\n');
+      print(null, this.style(new StringBuilder(), b.toString(), trackColor, trackStyle).toString());
+    } else {
+      this.queuedTracks.removeLast();
+    }
+    return EMPTY; //don't send extra records
+  }
+

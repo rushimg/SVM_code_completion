@@ -1,0 +1,58 @@
+/**
+ * Thread-safe abstract HTTP transport.
+ *
+ * <p>
+ * Implementation is thread-safe, and sub-classes must be thread-safe. For maximum efficiency,
+ * applications should use a single globally-shared instance of the HTTP transport.
+ * </p>
+ *
+ * <p>
+ * The recommended concrete implementation HTTP transport library to use depends on what environment
+ * you are running in:
+ * </p>
+ * <ul>
+ * <li>Google App Engine: use
+ * {@code com.google.api.client.extensions.appengine.http.UrlFetchTransport}.
+ * <ul>
+ * <li>{@code com.google.api.client.apache.ApacheHttpTransport} doesn't work on App Engine because
+ * the Apache HTTP Client opens its own sockets (though in theory there are ways to hack it to work
+ * on App Engine that might work).</li>
+ * <li>{@code com.google.api.client.javanet.NetHttpTransport} is discouraged due to a bug in the App
+ * Engine SDK itself in how it parses HTTP headers in the response.</li>
+ * </ul>
+ * </li>
+ * <li>Android:
+ * <ul>
+ * <li>For maximum backwards compatibility with older SDK's use {@code newCompatibleTransport} from
+ * {@code com.google.api.client.extensions.android.http.AndroidHttp} (read its JavaDoc for details).
+ * </li>
+ * <li>If your application is targeting Gingerbread (SDK 2.3) or higher, simply use
+ * {@code com.google.api.client.javanet.NetHttpTransport}.</li>
+ * </ul>
+ * </li>
+ * <li>Other Java environments
+ * <ul>
+ * <li>{@code com.google.api.client.javanet.NetHttpTransport} is based on the HttpURLConnection
+ * built into the Java SDK, so it is normally the preferred choice.</li>
+ * <li>{@code com.google.api.client.apache.ApacheHttpTransport} is a good choice for users of the
+ * Apache HTTP Client, especially if you need some of the configuration options available in that
+ * library.</li>
+ * </ul>
+ * </li>
+ * </ul>
+ *
+ * <p>
+ * Some HTTP transports do not support all HTTP methods. Use {@link #supportsMethod(String)} to
+ * check if a certain HTTP method is supported. Calling {@link #buildRequest()} on a method that is
+ * not supported will result in an {@link IllegalArgumentException}.
+ * </p>
+ *
+ * <p>
+ * Subclasses should override {@link #supportsMethod(String)} and
+ * {@link #buildRequest(String, String)} to build requests and specify which HTTP methods are
+ * supported.
+ * </p>
+ *
+ * @since 1.0
+ * @author Yaniv Inbar
+ */

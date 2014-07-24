@@ -1,0 +1,31 @@
+  private String getFeatureString(List<IN> document) {
+     int docSize = document.size();
+     if (classifier.flags.useReverse) {
+      Collections.reverse(document);
+    }
+
+    StringBuilder sb = new StringBuilder();
+    for (int j = 0; j < docSize; j++) {
+      IN token = document.get(j);
+      sb.append(token.get(CoreAnnotations.TextAnnotation.class));
+      sb.append(delimiter);
+      sb.append(token.get(CoreAnnotations.AnswerAnnotation.class));
+
+      CRFDatum<List<String>,CRFLabel> d = classifier.makeDatum(document, j, classifier.featureFactories);
+
+      List<List<String>> features = d.asFeatures();
+      for (Collection<String> cliqueFeatures : features) {
+        for (String feat : cliqueFeatures) {
+          feat = ubPrefixFeatureString(feat);
+          sb.append(delimiter);
+          sb.append(feat);
+        }
+      }
+      sb.append(eol);
+    }
+    if (classifier.flags.useReverse) {
+      Collections.reverse(document);
+    }
+    return sb.toString();
+  }
+

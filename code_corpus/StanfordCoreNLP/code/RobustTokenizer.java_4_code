@@ -1,0 +1,118 @@
+    StringBuffer buffer = new StringBuffer();
+    for(int i = 0; i < originalString.length(); i ++){
+    	int c = (int) originalString.charAt(i);
+    	//
+    	// regular character
+    	//
+    	if(c > 31 && c < 127) buffer.append((char) c);
+
+    	else{
+    		System.err.println("Control character at position " + i + ": " + c);
+
+    		//
+    		// DOS new line counts as two characters
+    		// 
+    		if(c == 10) buffer.append(" ");
+
+    		//
+    		// other control character
+    		//
+    		else buffer.append(' ');
+    	}
+    }
+
+    Matcher match = wordPattern.matcher(buffer);
+    int previousEndMatch = 0;
+
+    //
+    // Straight tokenization, ignoring known abbreviations
+    //
+    while(match.find()){
+      String crtMatch = match.group();
+      int endMatch = match.end();
+      int startMatch = endMatch - crtMatch.length();
+      int i;
+
+      // found word ending in "n't"
+      if (crtMatch.endsWith("n't")){
+        if (crtMatch.length() > 3){
+          WordToken token1 = 
+            new WordToken(
+                crtMatch.substring(0, crtMatch.length() - 3), 
+                startMatch, endMatch - 3,
+                countNewLines(buffer, previousEndMatch, startMatch));
+          result.add(token1);
+        }
+        WordToken token2 = 
+          new WordToken(crtMatch.substring(crtMatch.length() - 3, 
+              crtMatch.length()),
+              endMatch - 3, endMatch, 0);
+        result.add(token2);
+      } 
+
+      // found word containing an appostrophe
+      // XXX: is this too relaxed? e.g. "O'Hare"
+      else if ((i = hasApostropheBlock(crtMatch)) != -1){
+        WordToken token1 = new WordToken(crtMatch.substring(0, i), 
+            startMatch, startMatch + i, countNewLines(buffer, previousEndMatch, startMatch));
+        WordToken token2 = 
+          new WordToken(crtMatch.substring(i, crtMatch.length()),
+              startMatch + i, endMatch, 0);
+        result.add(token1);
+        result.add(token2);
+      }
+
+      // just a regular word
+      else{
+        WordToken token = new WordToken(crtMatch, startMatch, endMatch, 
+            countNewLines(buffer, previousEndMatch, startMatch));
+        result.add(token);
+      }
+
+      previousEndMatch = endMatch;
+    }   
+
+    //
+    // Merge known abreviations
+    //
+    List<WordToken> resultWithAbs = new ArrayList<WordToken>();
+    for(int i = 0; i < result.size(); i ++){
+      // where the mw ends
+      int end = result.size();
+      if(end > i + MAX_MULTI_WORD_SIZE) end = i + MAX_MULTI_WORD_SIZE; 
+
+      boolean found = false;
+
+      // must have at least two tokens per multiword
+      for(; end > i + 1; end --){
+        WordToken startToken = result.get(i);
+        WordToken endToken = result.get(end - 1);
+        if(countNewLines(result, i, end) == 0){ // abbreviation tokens cannot appear on different lines
+          String conc = concatenate(result, i, end);
+          found = false;
+
+          // found a multiword
+          if((mAbbreviations.contains(conc) == true)){
+            found = true;
+            WordToken token = new WordToken(conc, 
+                startToken.getStart(), 
+                endToken.getEnd(),
+                startToken.getNewLineCount());
+            resultWithAbs.add(token);
+            i = end - 1;
+            break;
+          }
+        }
+      }
+
+      // no multiword starting at this position found
+      if(! found){
+        resultWithAbs.add(result.get(i));
+      }
+    }
+    
+    resultWithAbs = postprocess(resultWithAbs);
+
+    return resultWithAbs;
+  }
+  

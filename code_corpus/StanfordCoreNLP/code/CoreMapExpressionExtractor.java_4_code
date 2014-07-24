@@ -1,0 +1,44 @@
+    Filter<T> filterRule;
+
+    private static <I,O> SequenceMatchRules.ExtractRule<I,O> addRule(SequenceMatchRules.ExtractRule<I, O> origRule,
+                                                                     SequenceMatchRules.ExtractRule<I, O> rule)
+    {
+      SequenceMatchRules.ListExtractRule<I,O> r;
+      if (origRule instanceof SequenceMatchRules.ListExtractRule) {
+        r = (SequenceMatchRules.ListExtractRule<I,O>) origRule;
+      } else {
+        r = new SequenceMatchRules.ListExtractRule<I,O>();
+        if (origRule != null)
+        r.addRules(origRule);
+      }
+      r.addRules(rule);
+      return r;
+    }
+
+    private void addCompositeRule(SequenceMatchRules.ExtractRule<List<? extends CoreMap>, T> rule)
+    {
+      compositeExtractRule = addRule(compositeExtractRule, rule);
+    }
+
+    private void addBasicRule(SequenceMatchRules.ExtractRule<CoreMap, T> rule)
+    {
+      basicExtractRule = addRule(basicExtractRule, rule);
+    }
+
+    private void addFilterRule(Filter<T> rule)
+    {
+      Filters.DisjFilter<T> r;
+      if (filterRule instanceof Filters.DisjFilter) {
+        r = (Filters.DisjFilter<T>) filterRule;
+        r.addFilter(rule);
+      } else {
+        if (filterRule == null) {
+          r = new Filters.DisjFilter<T>(rule);
+        } else {
+          r = new Filters.DisjFilter<T>(filterRule, rule);
+        }
+        filterRule = r;
+      }
+    }
+  }
+

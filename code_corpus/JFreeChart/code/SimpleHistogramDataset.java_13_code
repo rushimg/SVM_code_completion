@@ -1,0 +1,18 @@
+    public void addObservation(double value, boolean notify) {
+        boolean placed = false;
+        Iterator iterator = this.bins.iterator();
+        while (iterator.hasNext() && !placed) {
+            SimpleHistogramBin bin = (SimpleHistogramBin) iterator.next();
+            if (bin.accepts(value)) {
+                bin.setItemCount(bin.getItemCount() + 1);
+                placed = true;
+            }
+        }
+        if (!placed) {
+            throw new RuntimeException("No bin.");
+        }
+        if (notify) {
+            notifyListeners(new DatasetChangeEvent(this, this));
+        }
+    }
+

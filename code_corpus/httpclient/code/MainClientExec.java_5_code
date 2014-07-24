@@ -1,0 +1,81 @@
+    private boolean createTunnelToTarget(
+            final AuthState proxyAuthState,
+            final HttpClientConnection managedConn,
+            final HttpRoute route,
+            final HttpRequest request,
+            final HttpClientContext context) throws HttpException, IOException {
+
+        final RequestConfig config = context.getRequestConfig();
+        final int timeout = config.getConnectTimeout();
+
+        final HttpHost target = route.getTargetHost();
+        final HttpHost proxy = route.getProxyHost();
+        HttpResponse response = null;
+
+        final String authority = target.toHostString();
+        final HttpRequest connect = new BasicHttpRequest("CONNECT", authority, request.getProtocolVersion());
+
+        this.requestExecutor.preProcess(connect, this.proxyHttpProcessor, context);
+
+        while (response == null) {
+            if (!managedConn.isOpen()) {
+                this.connManager.connect(
+                        managedConn,
+                        route,
+                        timeout > 0 ? timeout : 0,
+                        context);
+            }
+
+            connect.removeHeaders(AUTH.PROXY_AUTH_RESP);
+            this.authenticator.generateAuthResponse(connect, proxyAuthState, context);
+
+            response = this.requestExecutor.execute(connect, managedConn, context);
+
+            final int status = response.getStatusLine().getStatusCode();
+            if (status < 200) {
+                throw new HttpException("Unexpected response to CONNECT request: " +
+                        response.getStatusLine());
+            }
+
+            if (config.isAuthenticationEnabled()) {
+                if (this.authenticator.isAuthenticationRequested(proxy, response,
+                        this.proxyAuthStrategy, proxyAuthState, context)) {
+                    if (this.authenticator.handleAuthChallenge(proxy, response,
+                            this.proxyAuthStrategy, proxyAuthState, context)) {
+                        // Retry request
+                        if (this.reuseStrategy.keepAlive(response, context)) {
+                            this.log.debug("Connection kept alive");
+                            // Consume response content
+                            final HttpEntity entity = response.getEntity();
+                            EntityUtils.consume(entity);
+                        } else {
+                            managedConn.close();
+                        }
+                        response = null;
+                    }
+                }
+            }
+        }
+
+        final int status = response.getStatusLine().getStatusCode();
+
+        if (status > 299) {
+
+            // Buffer response content
+            final HttpEntity entity = response.getEntity();
+            if (entity != null) {
+                response.setEntity(new BufferedHttpEntity(entity));
+            }
+
+            managedConn.close();
+            throw new TunnelRefusedException("CONNECT refused by proxy: " +
+                    response.getStatusLine(), response);
+        }
+
+        // How to decide on security of the tunnelled connection?
+        // The socket factory knows only about the segment to the proxy.
+        // Even if that is secure, the hop to the target may be insecure.
+        // Leave it to derived classes, consider insecure by default here.
+        return false;
+    }
+

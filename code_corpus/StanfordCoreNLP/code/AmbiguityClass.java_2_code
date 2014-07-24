@@ -1,0 +1,40 @@
+  public boolean belongs(String word) {
+    String[] tags = GlobalHolder.dict.getTags(word);
+    if (tags.length != sortedIds.size()) {
+      return false;
+    }
+    for (int i = 0; i < tags.length; i++) {
+      if (!s.contains(tags[i])) {
+        return false;
+      }
+    }
+    members++;
+    return true;
+  } // belongs
+
+  private boolean add(int tagId) {
+    for (int j = 0; j < sortedIds.size(); j++) {
+      if (tagId < sortedIds.get(j)) {
+        sortedIds.add(j, tagId);
+        return true;
+      }
+      if (tagId == sortedIds.get(j)) {
+        return false;
+      }
+    }
+    sortedIds.add(tagId);
+    return true;
+  }
+
+  @Override
+  public String toString() {
+    if (single) {
+      return word;
+    }
+    StringBuilder sb = new StringBuilder();
+    for (Integer sID : sortedIds) {
+      sb.append(':').append(sID.intValue());
+    }
+    return sb.toString();
+  }
+

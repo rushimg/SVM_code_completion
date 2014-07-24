@@ -1,0 +1,38 @@
+  @SuppressWarnings("unchecked")
+  public static <T> Iterable<T> iterableOf(final Object value) {
+    if (value instanceof Iterable<?>) {
+      return (Iterable<T>) value;
+    }
+    Class<?> valueClass = value.getClass();
+    Preconditions.checkArgument(valueClass.isArray(), "not an array or Iterable: %s", valueClass);
+    Class<?> subClass = valueClass.getComponentType();
+    if (!subClass.isPrimitive()) {
+      return Arrays.<T>asList((T[]) value);
+    }
+    return new Iterable<T>() {
+
+      public Iterator<T> iterator() {
+        return new Iterator<T>() {
+
+          final int length = Array.getLength(value);
+          int index = 0;
+
+          public boolean hasNext() {
+            return index < length;
+          }
+
+          public T next() {
+            if (!hasNext()) {
+              throw new NoSuchElementException();
+            }
+            return (T) Array.get(value, index++);
+          }
+
+          public void remove() {
+            throw new UnsupportedOperationException();
+          }
+        };
+      }
+    };
+  }
+

@@ -1,0 +1,19 @@
+  public static void printResults(Counter<String> entityTP, Counter<String> entityFP,
+                           Counter<String> entityFN) {
+    Set<String> entities = new TreeSet<String>();
+    entities.addAll(entityTP.keySet());
+    entities.addAll(entityFP.keySet());
+    entities.addAll(entityFN.keySet());
+    boolean printedHeader = false;
+    for (String entity : entities) {
+      double tp = entityTP.getCount(entity);
+      double fp = entityFP.getCount(entity);
+      double fn = entityFN.getCount(entity);
+      printedHeader = printPRLine(entity, tp, fp, fn, printedHeader);
+    }
+    double tp = entityTP.totalCount();
+    double fp = entityFP.totalCount();
+    double fn = entityFN.totalCount();
+    printedHeader = printPRLine("Totals", tp, fp, fn, printedHeader);
+  }
+

@@ -1,0 +1,35 @@
+  public static List<String> toPathParts(String encodedPath) {
+    if (encodedPath == null || encodedPath.length() == 0) {
+      return null;
+    }
+    List<String> result = new ArrayList<String>();
+    int cur = 0;
+    boolean notDone = true;
+    while (notDone) {
+      int slash = encodedPath.indexOf('/', cur);
+      notDone = slash != -1;
+      String sub;
+      if (notDone) {
+        sub = encodedPath.substring(cur, slash);
+      } else {
+        sub = encodedPath.substring(cur);
+      }
+      result.add(CharEscapers.decodeUri(sub));
+      cur = slash + 1;
+    }
+    return result;
+  }
+
+  private void appendRawPathFromParts(StringBuilder buf) {
+    int size = pathParts.size();
+    for (int i = 0; i < size; i++) {
+      String pathPart = pathParts.get(i);
+      if (i != 0) {
+        buf.append('/');
+      }
+      if (pathPart.length() != 0) {
+        buf.append(CharEscapers.escapeUriPath(pathPart));
+      }
+    }
+  }
+

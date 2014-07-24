@@ -1,0 +1,31 @@
+    public static <V, E> Set<V> find2ApproximationCover(Graph<V, E> g)
+    {
+        // C <-- {}
+        Set<V> cover = new HashSet<V>();
+
+        // G'=(V',E') <-- G(V,E)
+        Subgraph<V, E, Graph<V, E>> sg =
+            new Subgraph<V, E, Graph<V, E>>(
+                g,
+                null,
+                null);
+
+        // while E' is non-empty
+        while (sg.edgeSet().size() > 0) {
+            // let (u,v) be an arbitrary edge of E'
+            E e = sg.edgeSet().iterator().next();
+
+            // C <-- C U {u,v}
+            V u = g.getEdgeSource(e);
+            V v = g.getEdgeTarget(e);
+            cover.add(u);
+            cover.add(v);
+
+            // remove from E' every edge incident on either u or v
+            sg.removeVertex(u);
+            sg.removeVertex(v);
+        }
+
+        return cover; // return C
+    }
+

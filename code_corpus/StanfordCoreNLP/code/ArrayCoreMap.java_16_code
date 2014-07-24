@@ -1,0 +1,34 @@
+  @Override
+  public String toShorterString(String... what) {
+    StringBuilder s = new StringBuilder("[");
+    for (int i = 0; i < size; i++) {
+      String name = keys[i].getSimpleName();
+      int annoIdx = name.lastIndexOf("Annotation");
+      if (annoIdx >= 0) {
+        name = name.substring(0, annoIdx);
+      }
+      boolean include;
+      if (what.length > 0) {
+        include = false;
+        for (String item : what) {
+          if (item.equals(name)) {
+            include = true;
+            break;
+          }
+        }
+      } else {
+        include = true;
+      }
+      if (include) {
+        if (s.length() > 1) {
+          s.append(' ');
+        }
+        s.append(name);
+        s.append('=');
+        s.append(values[i]);
+      }
+    }
+    s.append(']');
+    return s.toString();
+  }
+

@@ -4,8 +4,8 @@ import xml.etree.ElementTree as ET
 
 MATCH = "*.java"
 #DIR_NAME = "../../twitter4j"
-DIR_NAME = "../../../sdks/jung-read-only/jung/jung-graph-impl/src/main/"
-OUT_DIR_NAME = "../../code_corpus/jung/"
+DIR_NAME = "../../../sdks/jung-read-only/jung/jung-api/src/main/"
+OUT_DIR_NAME = "../../code_corpus/jung_api/"
 
 def process_files():
 	matches = []

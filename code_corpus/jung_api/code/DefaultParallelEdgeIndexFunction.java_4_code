@@ -1,0 +1,66 @@
+    public int getIndex(Graph<V,E> graph, E e)
+    {
+    	
+        Integer index = edge_index.get(Context.<Graph<V,E>,E>getInstance(graph,e));
+        	//edge_index.get(e);
+        if(index == null) {
+        	Pair<V> endpoints = graph.getEndpoints(e);
+        	V u = endpoints.getFirst();
+        	V v = endpoints.getSecond();
+        	if(u.equals(v)) {
+        		index = getIndex(graph, e, v);
+        	} else {
+        		index = getIndex(graph, e, u, v);
+        	}
+        }
+        return index.intValue();
+    }
+
+    protected int getIndex(Graph<V,E> graph, E e, V v, V u) {
+    	Collection<E> commonEdgeSet = new HashSet<E>(graph.getIncidentEdges(u));
+    	commonEdgeSet.retainAll(graph.getIncidentEdges(v));
+    	for(Iterator<E> iterator=commonEdgeSet.iterator(); iterator.hasNext(); ) {
+    		E edge = iterator.next();
+    		Pair<V> ep = graph.getEndpoints(edge);
+    		V first = ep.getFirst();
+    		V second = ep.getSecond();
+    		// remove loops
+    		if(first.equals(second) == true) {
+    			iterator.remove();
+    		}
+    		// remove edges in opposite direction
+    		if(first.equals(v) == false) {
+    			iterator.remove();
+    		}
+    	}
+    	int count=0;
+    	for(E other : commonEdgeSet) {
+    		if(e.equals(other) == false) {
+    			edge_index.put(Context.<Graph<V,E>,E>getInstance(graph,other), count);
+    			count++;
+    		}
+    	}
+    	edge_index.put(Context.<Graph<V,E>,E>getInstance(graph,e), count);
+    	return count;
+     }
+    
+    protected int getIndex(Graph<V,E> graph, E e, V v) {
+    	Collection<E> commonEdgeSet = new HashSet<E>();
+    	for(E another : graph.getIncidentEdges(v)) {
+    		V u = graph.getOpposite(v, another);
+    		if(u.equals(v)) {
+    			commonEdgeSet.add(another);
+    		}
+    	}
+    	int count=0;
+    	for(E other : commonEdgeSet) {
+    		if(e.equals(other) == false) {
+    			edge_index.put(Context.<Graph<V,E>,E>getInstance(graph,other), count);
+    			count++;
+    		}
+    	}
+    	edge_index.put(Context.<Graph<V,E>,E>getInstance(graph,e), count);
+    	return count;
+    }
+
+    

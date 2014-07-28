@@ -15,19 +15,23 @@ def annotate(in_f,out_f):
 	with open(in_f, 'rb') as csvfile:
 		reader = csv.reader(csvfile, delimiter='\t')
 		#length = str(len(reader))
-        	#counter = 0
-		list_out = list()
+        	counter = 1
+		#list_out = list()
+		f = open(out_f,'w')
 		for row in reader:
+			list_out = list()
+			print 'Finished: ' + str(counter)
+			counter += 1
 			#print str(counter) + ' of ' + length + ' processed'
 			method_a = row[0]
 			method_b = row[1]
 			api = row[2]
 			list_out += create_features(method_a, method_b, api)
 	
-	f = open(out_f,'w')
-	for el in list_out:
-		f.write(el)
-	f.close()
+			#f = open(out_f,'w')
+			for el in list_out:
+				f.write(el)
+		f.close()
 #def create_features(api, initial_queryi,out_f):
 def create_features(method_a, method_b, api):
 	f = open(method_a,'r')
@@ -41,13 +45,13 @@ def create_features(method_a, method_b, api):
                         matches.append(os.path.join(root, filename))			
 	features = dict()
 	list_out = list()	
-	length = str(len(matches))
-        counter = 1
+	#length = str(len(matches))
+        #counter = 1
 	for match in matches:
-		print str(counter) + ' of ' + length + ' processed'
+		#print str(counter) + ' of ' + length + ' processed'
 		#if counter < 20:
 			#print match
-		counter += 1
+		#counter += 1
 		features[match] = calc_feature_vector(match,iq_nouns,iq_verbs,iq_text)
 		list_out.append(method_a + '\t' + match+'\t'+str(features[match][0]) + '\t'+ str(features[match][1]) + '\t' + str(features[match][2])+'\t'+'0' + '\n')
 	

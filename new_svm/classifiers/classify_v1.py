@@ -16,6 +16,7 @@ from sklearn.metrics import classification_report
 import csv,sys,os
 import urllib2
 from sklearn import cross_validation
+from sklearn import svm
 
 def run_svm(in_f):
 	with open(in_f, 'rb') as csvfile:
@@ -23,16 +24,21 @@ def run_svm(in_f):
 		training_data = []
 		training_labels = []
 		total_count = 0
-		pos_count =0
+		pos_count = 0
 		for row in reader:
 			data = list()
 			#get_html_text(row[1])
+			#if int(row[6]) == 1:
+			#	data.append(float(0.45))
+			#else:
 			data.append(float(row[2]))
 			data.append(float(row[3]))
 			data.append(float(row[4]))
+			data.append(float(row[5]))
 			training_data.append(data)
-			training_labels.append(int(row[5]))
-	
+			training_labels.append(int(row[6]))
+			if int(row[6]) == 1:
+				print row[2]	
 	text_data = training_data
 	text_labels = training_labels
 	#trainset_size = int(round(len(text_data)*0.75)) # i chose this threshold arbitrarily...to discuss
@@ -42,7 +48,7 @@ def run_svm(in_f):
 	Y = np.array([el for el in text_labels])
 
 	model = LinearSVC()
-        scores = cross_validation.cross_val_score(model, X, Y,cv=4,scoring='f1')
+        scores = cross_validation.cross_val_score(model, X, Y,cv=2,scoring='f1')
 	#scores = cross_validation.cross_val_score(model, X, Y,cv=2,scoring='accuracy')
         #print("Baseline: %0.2f (+/- %0.2f)" % (baseline_scores.mean(), baseline_scores.std() * 2))
         print scores

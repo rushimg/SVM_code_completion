@@ -1,0 +1,49 @@
+    public int getIndex(Graph<V,E> graph, E e)
+    {
+        Integer index = edge_index.get(e);
+        if(index == null) {
+        	Pair<V> endpoints = graph.getEndpoints(e);
+        	V u = endpoints.getFirst();
+        	V v = endpoints.getSecond();
+        	if(u.equals(v)) {
+        		index = getIndex(graph, e, v);
+        	} else {
+        		index = getIndex(graph, e, u, v);
+        	}
+        }
+        return index.intValue();
+    }
+
+    protected int getIndex(Graph<V,E> graph, E e, V u, V v) {
+    	Collection<E> commonEdgeSet = new HashSet<E>(graph.getIncidentEdges(u));
+    	int count=0;
+    	for(E other : commonEdgeSet) {
+    		if(e.equals(other) == false) {
+    			edge_index.put(other, count);
+    			count++;
+    		}
+    	}
+    	edge_index.put(e, count);
+    	return count;
+     }
+    
+    protected int getIndex(Graph<V,E> graph, E e, V v) {
+    	Collection<E> commonEdgeSet = new HashSet<E>();
+    	for(E another : graph.getIncidentEdges(v)) {
+    		V u = graph.getOpposite(v, another);
+    		if(u.equals(v)) {
+    			commonEdgeSet.add(another);
+    		}
+    	}
+    	int count=0;
+    	for(E other : commonEdgeSet) {
+    		if(e.equals(other) == false) {
+    			edge_index.put(other, count);
+    			count++;
+    		}
+    	}
+    	edge_index.put(e, count);
+    	return count;
+    }
+
+    

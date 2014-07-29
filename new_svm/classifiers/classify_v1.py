@@ -37,8 +37,8 @@ def run_svm(in_f):
 			data.append(float(row[5]))
 			training_data.append(data)
 			training_labels.append(int(row[6]))
-			if int(row[6]) == 1:
-				print row[2]	
+			#if int(row[6]) == 1:
+			#	print row[5]	
 	text_data = training_data
 	text_labels = training_labels
 	#trainset_size = int(round(len(text_data)*0.75)) # i chose this threshold arbitrarily...to discuss
@@ -48,7 +48,7 @@ def run_svm(in_f):
 	Y = np.array([el for el in text_labels])
 
 	model = LinearSVC()
-        scores = cross_validation.cross_val_score(model, X, Y,cv=2,scoring='f1')
+        scores = cross_validation.cross_val_score(model, X, Y,cv=5,scoring='f1')
 	#scores = cross_validation.cross_val_score(model, X, Y,cv=2,scoring='accuracy')
         #print("Baseline: %0.2f (+/- %0.2f)" % (baseline_scores.mean(), baseline_scores.std() * 2))
         print scores

@@ -38,7 +38,7 @@ def create_features(method_a, method_b, api):
 	f = open(method_a,'r')
 	iq_text = f.read().lower()
 	f.close()
-	iq_nouns,iq_verbs = filter_pos(iq_text)
+	#iq_nouns,iq_verbs = filter_pos(iq_text)
 	
 	matches = []
         for root, dirnames, filenames in os.walk(api):
@@ -67,15 +67,14 @@ def calc_feature_vector(match,iq_text):
 	f = open(match)
 	text = f.read().lower()
 	f.close()
-	iq_nouns,iq_verbs = filter_pos(iq_text)
+	#iq_nouns,iq_verbs = filter_pos(iq_text)
 	feature_vector.append(overlapping_text(text,iq_text))
 	feature_vector.append(diff_length(iq_text,text))
-	m_nouns, m_verbs = filter_pos(text)
-	#feature_vector.append(.5)
-        #feature_vector.append(.5)
-	feature_vector.append(jaccard_dist((m_nouns),(iq_nouns)))
-	feature_vector.append(jaccard_dist((m_verbs),(iq_verbs)))
-	feature_vector.append(diff_length(iq_text,text))
+	#m_nouns, m_verbs = filter_pos(text)
+	feature_vector.append(.5)
+        feature_vector.append(.5)
+	#feature_vector.append(jaccard_dist((m_nouns),(iq_nouns)))
+	#feature_vector.append(jaccard_dist((m_verbs),(iq_verbs)))
 	return feature_vector
 
 def overlapping_text(text_1, text_2):

@@ -13,32 +13,44 @@ from nltk.corpus import stopwords
 from nltk.stem.lancaster import LancasterStemmer
 
 def annotate(in_f,out_f):
+	most_freq = get_most_frequent()
 	with open(in_f, 'rb') as csvfile:
 		reader = csv.reader(csvfile, delimiter='\t')
-		#length = str(len(reader))
         	counter = 1
-		#list_out = list()
 		f = open(out_f,'w')
 		for row in reader:
 			list_out = list()
 			print 'Finished: ' + str(counter)
 			counter += 1
-			#print str(counter) + ' of ' + length + ' processed'
 			method_a = row[0]
 			method_b = row[1]
 			api = row[2]
-			list_out += create_features(method_a, method_b, api)
+			list_out += create_features(method_a, method_b, api, most_freq)
 	
-			#f = open(out_f,'w')
 			for el in list_out:
 				f.write(el)
 		f.close()
-#def create_features(api, initial_queryi,out_f):
-def create_features(method_a, method_b, api):
+
+def clean_text(text, most_freq):
+	ret_text = ''
+	for word in text:
+		if word not in most_freq:
+			ret_text += (' ' + word)
+	return ret_text
+
+def get_most_frequent():
+	most_freq = list()
+	mf =open('most_freq.txt','r')
+	for i in range(5000):
+		most_freq.append(mf.next())
+	mf.close()
+	return most_freq
+
+
+def create_features(method_a, method_b, api, most_freq):
 	f = open(method_a,'r')
-	iq_text = f.read().lower()
+	iq_text = clean_text(f.read().lower(),most_freq)
 	f.close()
-	#iq_nouns,iq_verbs = filter_pos(iq_text)
 	
 	matches = []
         for root, dirnames, filenames in os.walk(api):
@@ -48,22 +60,19 @@ def create_features(method_a, method_b, api):
 	list_out = list()
 	iq_nouns,iq_verbs = filter_pos(iq_text)	
 	for match in matches:
-		features[match] = calc_feature_vector(match,iq_text,iq_nouns,iq_verbs)
-		#list_out.append(method_a + '\t' + match+'\t'+str(features[match][0]) +'\t'+str(features[match][1]) + '\t'+'0' + '\n')
+		features[match] = calc_feature_vector(match,iq_text,iq_nouns,iq_verbs, most_freq)
 		list_out.append(method_a + '\t' + match+'\t'+str(features[match][0]) +'\t'+str(features[match][1]) + '\t'+str(features[match][2]) + '\t'+str(features[match][3]) + '\t'+'0' + '\n')
 	
 	# now do the correct one
- 	features[method_b] = calc_feature_vector(method_b,iq_text,iq_nouns,iq_verbs)
-	#list_out.append(method_a + '\t' + method_b+'\t'+str(features[method_b][0]) +'\t'+str(features[match][1]) + '\t'+'1' + '\n')
+ 	features[method_b] = calc_feature_vector(method_b,iq_text,iq_nouns,iq_verbs, most_freq)
 	list_out.append(method_a + '\t' + method_b+'\t'+str(features[method_b][0]) +'\t'+str(features[method_b][1]) + '\t'+str(features[method_b][2]) + '\t'+str(features[method_b][3]) + '\t'+'1' + '\n')
 	return list_out
 	
-def calc_feature_vector(match,iq_text,iq_nouns,iq_verbs):
+def calc_feature_vector(match,iq_text,iq_nouns,iq_verbs,most_freq):
 	feature_vector = list()
 	f = open(match)
-	text = f.read().lower()
+	text = clean_text(f.read().lower(),most_freq)
 	f.close()
-	#iq_nouns,iq_verbs = filter_pos(iq_text)
 	feature_vector.append(overlapping_text(text,iq_text))
 	feature_vector.append(diff_length(iq_text,text))
 	m_nouns, m_verbs = filter_pos(text)

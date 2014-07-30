@@ -11,7 +11,7 @@ import nltk
 from collections import Counter
 
 
-APIS = ['../../code_corpus/google-http-client/comments/','../../code_corpus/httpclient/comments/','../../code_corpus/jgrapht/comments/','../../code_corpus/jung_api/comments/','../../code_corpus/HtmlCleaner/comments/']
+APIS = ['../../code_corpus/google-http-client/comments/','../../code_corpus/httpclient/comments/','../../code_corpus/jgrapht/comments/','../../code_corpus/jung_api/comments/','../../code_corpus/HtmlCleaner/comments/', '../../code_corpus/aws-sdk-java/comments/']
 
 def cal_most_freq():
 	text = ''
@@ -21,9 +21,12 @@ def cal_most_freq():
 	#print fd.most_common()
 	c = Counter(text.split(' '))
 	temp_list = list()
-	for (el,num) in c.most_common()[:100]:
-		temp_list.append(el)
-	print temp_list
+	f = open('most_freq.txt','w')
+	for (el,num) in c.most_common():
+		f.write(el+'\n')
+	f.close()
+	#temp_list.append(el)
+	#print temp_list
 	#print c.most_common()[:100]	
 
 def get_all_words(api):

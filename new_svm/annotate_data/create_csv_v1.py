@@ -9,10 +9,12 @@ import csv,sys,os
 import urllib2
 import nltk
 import fnmatch
+import math
 from nltk.corpus import stopwords
 from nltk.stem.lancaster import LancasterStemmer
 
 def annotate(in_f,out_f):
+	most_freq = get_most_frequent()
 	with open(in_f, 'rb') as csvfile:
 		reader = csv.reader(csvfile, delimiter='\t')
 		#length = str(len(reader))
@@ -27,16 +29,33 @@ def annotate(in_f,out_f):
 			method_a = row[0]
 			method_b = row[1]
 			api = row[2]
-			list_out += create_features(method_a, method_b, api)
-	
-			#f = open(out_f,'w')
+			list_out += create_features(method_a, method_b, api,most_freq)
+			#list_out += create_features(method_a, method_b, api)
 			for el in list_out:
 				f.write(el)
 		f.close()
-#def create_features(api, initial_queryi,out_f):
-def create_features(method_a, method_b, api):
+
+def clean_text(text, most_freq):
+	ret_text = ''
+	for word in text.split(' '):
+		if not(word in most_freq):
+			ret_text += (' ' + word)
+	return ret_text
+
+def get_most_frequent():
+	most_freq = list()
+	mf =open('most_freq.txt','r')
+	length = sum(1 for line in open('most_freq.txt','r'))
+	for i in range(int(length/6)):
+		most_freq.append(mf.next())
+	mf.close()
+	return list()
+
+def create_features(method_a, method_b, api,most_freq):
+#def create_features(method_a, method_b, api)
 	f = open(method_a,'r')
-	iq_text = f.read().lower()
+	iq_text = clean_text(f.read().lower(),most_freq)
+	#iq_text = f.read().lower()
 	f.close()
 	#iq_nouns,iq_verbs = filter_pos(iq_text)
 	
@@ -46,29 +65,23 @@ def create_features(method_a, method_b, api):
                         matches.append(os.path.join(root, filename))			
 	features = dict()
 	list_out = list()	
-	#length = str(len(matches))
-        #counter = 1
 	for match in matches:
-		#print str(counter) + ' of ' + length + ' processed'
-		#if counter < 20:
-			#print match
-		#counter += 1
-		features[match] = calc_feature_vector(match,iq_text)
+		features[match] = calc_feature_vector(match,iq_text,most_freq)
 		#list_out.append(method_a + '\t' + match+'\t'+str(features[match][0]) +'\t'+str(features[match][1]) + '\t'+'0' + '\n')
 		list_out.append(method_a + '\t' + match+'\t'+str(features[match][0]) +'\t'+str(features[match][1]) + '\t'+str(features[match][2]) + '\t'+str(features[match][3]) + '\t'+'0' + '\n')
 	# now do the correct one
- 	features[method_b] = calc_feature_vector(method_b,iq_text)
+ 	features[method_b] = calc_feature_vector(method_b,iq_text,most_freq)
 	#list_out.append(method_a + '\t' + method_b+'\t'+str(features[method_b][0]) +'\t'+str(features[match][1]) + '\t'+'1' + '\n')
 	list_out.append(method_a + '\t' + method_b+'\t'+str(features[method_b][0]) +'\t'+str(features[method_b][1]) + '\t'+str(features[method_b][2]) + '\t'+str(features[method_b][3]) + '\t'+'1' + '\n')
 	return list_out
 	
-def calc_feature_vector(match,iq_text):
+def calc_feature_vector(match,iq_text,most_freq):
 	feature_vector = list()
 	f = open(match)
-	text = f.read().lower()
+	text = clean_text(f.read().lower(),most_freq)
 	f.close()
 	#iq_nouns,iq_verbs = filter_pos(iq_text)
-	feature_vector.append(overlapping_text(text,iq_text))
+	feature_vector.append(overlapping_text(text,iq_text,most_freq))
 	feature_vector.append(diff_length(iq_text,text))
 	#m_nouns, m_verbs = filter_pos(text)
 	feature_vector.append(.5)
@@ -77,20 +90,28 @@ def calc_feature_vector(match,iq_text):
 	#feature_vector.append(jaccard_dist((m_verbs),(iq_verbs)))
 	return feature_vector
 
-def overlapping_text(text_1, text_2):
+def overlapping_text(text_1, text_2,most_freq):
 	st = LancasterStemmer()
 	cachedStopWords = get_stopwords()
+	text_1_list = ([st.stem(word) for word in text_1.split() if word not in cachedStopWords])
+	text_2_list = ([st.stem(word) for word in text_2.split() if word not in cachedStopWords])
+	return jaccard_dist(text_1_list, text_2_list)
+	'''
+	st = LancasterStemmer()
+	#cachedStopWords = get_stopwords()
 	#cachedStopWords.append('/**')	
 	#cachedStopWords.append('*/')
 	#cachedStopWords.append('*')
-	text_1_list = ([st.stem(word) for word in text_1.split() if word not in cachedStopWords])
-	text_2_list = ([st.stem(word) for word in text_2.split() if word not in cachedStopWords])
+	text_1_list = ([st.stem(word) for word in text_1.split() if word not in most_freq])
+	text_2_list = ([st.stem(word) for word in text_2.split() if word not in most_freq])
 	#st.stem(word)
 	#print text_1_list
 	return jaccard_dist(text_1_list, text_2_list)
-
+	'''
 def get_stopwords():
+	
 	cachedStopWords = stopwords.words("english")
+	'''
 	cachedStopWords.append('/**')
 	cachedStopWords.append('*/')
 	cachedStopWords.append('*')
@@ -119,7 +140,7 @@ def get_stopwords():
 	cachedStopWords.append('without')
 	cachedStopWords.append('use')
 	cachedStopWords.append('return')
-	cachedStopWords += ['', '*', 'the', '*\n', 'of', '*/\n', 'to', '/**\n', 'a', 'this', 'for', 'or', 'is', 'in', '@param', 'software', 'license', 'under', 'and', 'you', 'by', '{@link', 'be', 'on', 'distributed', 'apache', 'with', 'if', 'may', 'not', '{@code', 'see', '@since', 'that', 'an', 'copyright', 'without', 'use', '@return', 'it', 'version', 'either', 'returns', '<p>\n', 'any', 'copy', 'free', 'license,', 'as', 'the\n', 'file\n', '====================================================================\n', 'will', '</p>\n', 'vertex', 'graph', '@see', 'more', 'specific', 'required', 'license.\n', '(c)', 'file', 'general', 'unless', 'obtain', 'are', 'barak', 'at\n', 'applicable', 'gnu', 'lesser', 'permissions', 'conditions', 'language', '2.0', 'governing', 'licensed', 'law', 'warranties', 'http://www.apache.org/licenses/license-2.0\n', 'is"', '"as', 'agreed', 'kind,', '/*\n', ':', 'edge', 'license.', 'basis,', '"license");', 'implied.', 'which', 'from', 'specified', 'http', 'new', '\n', 'can', 'given']
+	'''
 	return cachedStopWords
 
 def diff_length(text_1,text_2):

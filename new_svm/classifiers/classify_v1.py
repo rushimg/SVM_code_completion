@@ -29,8 +29,8 @@ def run_svm(in_f):
 			data = list()
 			data.append(float(row[2]))
 			data.append(float(row[3]))
-			#data.append(float(row[4]))
-			#data.append(float(row[5]))
+			data.append(float(row[4]))
+			data.append(float(row[5]))
 			training_data.append(data)
 			training_labels.append(int(row[6]))
 			if int(row[6]) == 1:

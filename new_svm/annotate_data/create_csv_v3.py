@@ -150,7 +150,7 @@ def jaccard_dist(a,b):
 	len_union = float(len(union))
 	len_inter = float(len(inter))
 	try:
-		jsim = len_inter/(len_union-len_inter)
+		jsim = len_inter/abs(len_union-len_inter)
 	except ZeroDivisionError:
 		jsim = 0
 	jdist = 1-jsim

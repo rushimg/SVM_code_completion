@@ -24,7 +24,7 @@ def annotate(in_f):
 			method_b = row[1]
 
 			#print open(method_a,'r').read()
-			
+			print method_a	
 			lines_1 = open(method_a,'r').readlines() 	
 			counter = 0
 			for line in lines_1:

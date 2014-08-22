@@ -28,15 +28,15 @@ def run_svm(in_f):
 		for row in reader:
 			data = list()
 			data.append(float(row[2]))
-			data.append(float(row[3]))
-			data.append(float(row[4]))
-			data.append(float(row[5]))
+			#data.append(float(row[3]))
+			#data.append(float(row[4]))
+			#data.append(float(row[5]))
 			training_data.append(data)
 			training_labels.append(int(row[6]))
 			if int(row[6]) == 1:
-				print row[0] + ' : ' + row[2]
+				print row[0] + ' : ' + str(row[5])
 			else:
-				tot_wrong += float(row[2])
+				tot_wrong += float(row[5])
 				avg_wrong += 1
 	print "Average for 0 label = " + str(tot_wrong/float(avg_wrong))
 						

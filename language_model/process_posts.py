@@ -19,8 +19,8 @@ def process_comments(in_f,out_f):
 			# get everything other than code -> "comments"
 			[s.extract() for s in soup('script')]
 			comments = soup.get_text().replace('\n','').replace('\t','').encode('ascii', 'ignore')
-			
-			out.write(id + '\t' + str(all_methods) + '\t'+ comments + '\n') 
+			print comments
+			#out.write(id + '\t' + str(all_methods) + '\t'+ comments + '\n') 
 # TODO: do this less hacky
 def get_methods(line):
 	methods = list()

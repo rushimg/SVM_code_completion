@@ -11,16 +11,18 @@ def trim(in_f, out_f, factor):
 	with open(in_f, 'rb') as csvfile:
     		reader = csv.reader(csvfile, delimiter='\t')
 		for row in reader:
-			if row[1] == '0':
+			if row[1] == '0' or row[1] == '1':
 				rand = random.randint(1, int(factor))
 				if rand == int(factor):
 					for el in row:
 						f.write(el+'\t') 
 					f.write('\n')
+			
 			else:
 				for el in row:
 					f.write(el+'\t')
 				f.write('\n')
+	
 	f.close()
 
 if __name__ == '__main__':

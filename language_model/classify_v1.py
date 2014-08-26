@@ -16,9 +16,7 @@ def run_svm(in_f):
 		reader = csv.reader(csvfile, delimiter='\t')
 		training_data = []
 		training_labels = []
-		tot_wrong = 0
-		avg_wrong = 0
-		#counter = 0
+		counter = 0
 		for row in reader:
 			#manually filtering:
 			
@@ -28,7 +26,9 @@ def run_svm(in_f):
 			data.append(float(row[0]))
 			training_data.append(data)
 			training_labels.append(int(row[1]))
-					
+			if int(row[1]) == 1:
+				counter += 1
+	print counter 		
 	text_data = training_data
 	text_labels = training_labels
 
